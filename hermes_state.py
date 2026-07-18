@@ -884,6 +884,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     model_config TEXT,
     system_prompt TEXT,
     parent_session_id TEXT,
+    root_session_id TEXT,
     started_at REAL NOT NULL,
     ended_at REAL,
     end_reason TEXT,
@@ -1033,6 +1034,39 @@ CREATE INDEX IF NOT EXISTS idx_sessions_gateway_peer
     ON sessions(source, user_id, chat_id, chat_type, thread_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sessions_handoff_state
     ON sessions(handoff_state, started_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_root
+    ON sessions(root_session_id);
+"""
+
+# Backfill sessions.root_session_id from parent chains (run whenever NULL
+# roots exist — same heal-on-startup pattern as the ``active`` repair).
+# Anchors are sessions that are their own root in practice: no parent, a
+# self-parent, or a dangling parent pointer (parent row deleted by a legacy
+# build before FK enforcement). Children inherit their anchor's root.
+# Cycle-safe: a cycle can never descend from an anchor (every cycle member's
+# parent is inside the cycle), and the depth cap bounds degenerate chains.
+_ROOT_BACKFILL_SQL = """
+WITH RECURSIVE root_map(id, root, depth) AS (
+    SELECT s.id, s.id, 0
+      FROM sessions s
+     WHERE s.parent_session_id IS NULL
+        OR s.parent_session_id = s.id
+        OR NOT EXISTS (
+               SELECT 1 FROM sessions p WHERE p.id = s.parent_session_id
+           )
+    UNION ALL
+    SELECT c.id, r.root, r.depth + 1
+      FROM sessions c
+      JOIN root_map r ON c.parent_session_id = r.id
+     WHERE r.depth < 64
+       AND c.id != c.parent_session_id
+)
+UPDATE sessions
+   SET root_session_id = (
+           SELECT root FROM root_map WHERE root_map.id = sessions.id
+       )
+ WHERE root_session_id IS NULL
+   AND (SELECT root FROM root_map WHERE root_map.id = sessions.id) IS NOT NULL
 """
 
 # ── Deferred FTS rebuild bookkeeping (schema v23) ──
@@ -2681,20 +2715,23 @@ class SessionDB:
         finally:
             ref.close()
 
-    def _reconcile_columns(self, cursor: sqlite3.Cursor) -> None:
-        """Ensure live tables have every column declared in SCHEMA_SQL.
+    def _reconcile_columns(
+        self, cursor: sqlite3.Cursor, schema_sql: str = None
+    ) -> None:
+        """Ensure live tables have every column declared in *schema_sql*.
 
         Follows the Beets/sqlite-utils pattern: the CREATE TABLE definition
-        in SCHEMA_SQL is the single source of truth for the desired schema.
+        in SCHEMA_SQL (or the given *schema_sql* — e.g. the science-layer
+        schema) is the single source of truth for the desired schema.
         On every startup this method diffs the live columns (via PRAGMA
         table_info) against the declared columns, and ADDs any that are
         missing.
 
         This makes column additions a declarative operation — just add
-        the column to SCHEMA_SQL and it appears on the next startup.
+        the column to the schema constant and it appears on the next startup.
         Version-gated migration blocks are no longer needed for ADD COLUMN.
         """
-        expected = self._parse_schema_columns(SCHEMA_SQL)
+        expected = self._parse_schema_columns(schema_sql or SCHEMA_SQL)
         for table_name, declared_cols in expected.items():
             # Get current columns from the live table
             try:
@@ -2782,6 +2819,38 @@ class SessionDB:
             )
         except sqlite3.OperationalError:
             pass
+
+        # ── Science layer (execution_log / host_call_log / artifacts /
+        # content_snapshots) ───────────────────────────────────────────
+        # The science tables live in state.db — not a sidecar DB — so a
+        # tool-result append and its execution/provenance rows can commit
+        # in one transaction. Their DDL is owned by science/schema.py and
+        # goes through the same declarative reconciliation as SCHEMA_SQL.
+        # Index creation is deferred until after reconciliation for the
+        # same reason as DEFERRED_INDEX_SQL above.
+        try:
+            from science.schema import SCIENCE_INDEX_SQL, SCIENCE_SCHEMA_SQL
+
+            cursor.executescript(SCIENCE_SCHEMA_SQL)
+            self._reconcile_columns(cursor, schema_sql=SCIENCE_SCHEMA_SQL)
+            cursor.executescript(SCIENCE_INDEX_SQL)
+        except ImportError as exc:
+            # Partial installs (e.g. a trimmed vendored copy) may lack the
+            # science package; core session persistence must keep working.
+            logger.warning("science schema unavailable, skipping: %s", exc)
+
+        # Heal NULL root_session_id rows on every startup (same idempotent
+        # pattern as the ``active`` repair above). This is both the one-time
+        # backfill after the reconciler ADDs the column on a legacy DB, and
+        # ongoing repair for rows written by older builds sharing this DB.
+        try:
+            needs_root_backfill = cursor.execute(
+                "SELECT 1 FROM sessions WHERE root_session_id IS NULL LIMIT 1"
+            ).fetchone()
+            if needs_root_backfill:
+                cursor.execute(_ROOT_BACKFILL_SQL)
+        except sqlite3.OperationalError as exc:
+            logger.debug("root_session_id backfill skipped: %s", exc)
 
         fts5_available = self._sqlite_supports_fts5(cursor)
         fts_migrations_complete = True
@@ -3214,13 +3283,25 @@ class SessionDB:
         without a recoverable routing mapping (#59527).
         """
         def _do(conn):
+            # root_session_id: a child inherits its parent's root (falling
+            # back to the parent itself for parents predating the column);
+            # a top-level session — or one whose parent row is missing —
+            # is its own root.
+            root_session_id = session_id
+            if parent_session_id and parent_session_id != session_id:
+                parent_root = conn.execute(
+                    "SELECT COALESCE(root_session_id, id) FROM sessions WHERE id = ?",
+                    (parent_session_id,),
+                ).fetchone()
+                if parent_root and parent_root[0]:
+                    root_session_id = parent_root[0]
             conn.execute(
                 """INSERT INTO sessions (
                    id, source, user_id, session_key, chat_id, chat_type, thread_id,
-                   model, model_config, system_prompt, parent_session_id, cwd,
-                   profile_name, git_repo_root, started_at
+                   model, model_config, system_prompt, parent_session_id,
+                   root_session_id, cwd, profile_name, git_repo_root, started_at
                 )
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(id) DO UPDATE SET
                        model = COALESCE(sessions.model, excluded.model),
                        model_config = COALESCE(sessions.model_config, excluded.model_config),
@@ -3230,6 +3311,12 @@ class SessionDB:
                        chat_type = COALESCE(sessions.chat_type, excluded.chat_type),
                        thread_id = COALESCE(sessions.thread_id, excluded.thread_id),
                        parent_session_id = COALESCE(sessions.parent_session_id, excluded.parent_session_id),
+                       root_session_id = CASE
+                           WHEN sessions.parent_session_id IS NULL
+                                AND excluded.parent_session_id IS NOT NULL
+                           THEN excluded.root_session_id
+                           ELSE COALESCE(sessions.root_session_id, excluded.root_session_id)
+                       END,
                        cwd = COALESCE(sessions.cwd, excluded.cwd),
                        profile_name = COALESCE(sessions.profile_name, excluded.profile_name),
                        git_repo_root = COALESCE(sessions.git_repo_root, excluded.git_repo_root)""",
@@ -3245,6 +3332,7 @@ class SessionDB:
                     json.dumps(model_config) if model_config else None,
                     system_prompt,
                     parent_session_id,
+                    root_session_id,
                     cwd,
                     profile_name,
                     git_repo_root,
