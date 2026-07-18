@@ -1,0 +1,180 @@
+"""Host-bridge contracts: auth, cell gating, logging, spill, allowlist."""
+
+import json
+import socket
+
+import pytest
+
+from science.host_bridge import HostBridge
+from science.store import ScienceStore
+
+
+class FakeCompletions:
+    def __init__(self, reply_fn):
+        self._reply_fn = reply_fn
+
+    def create(self, **kwargs):
+        text = self._reply_fn(kwargs)
+
+        class _Msg:
+            content = text
+
+        class _Choice:
+            message = _Msg()
+
+        class _Resp:
+            choices = [_Choice()]
+
+        return _Resp()
+
+
+class FakeLLMClient:
+    def __init__(self, reply_fn):
+        class _Chat:
+            completions = FakeCompletions(reply_fn)
+
+        self.chat = _Chat()
+
+
+def call_bridge(bridge, method, params, token=None):
+    payload = json.dumps(
+        {
+            "token": token if token is not None else bridge.endpoint["token"],
+            "method": method,
+            "params": params,
+        }
+    ).encode() + b"\n"
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.settimeout(30)
+        s.connect(bridge.endpoint["socket"])
+        s.sendall(payload)
+        chunks = []
+        while True:
+            chunk = s.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if chunk.endswith(b"\n"):
+                break
+    finally:
+        s.close()
+    return json.loads(b"".join(chunks).decode())
+
+
+@pytest.fixture
+def store(db):
+    db.create_session("s1", source="cli")
+    return ScienceStore(db)
+
+
+@pytest.fixture
+def cell(store):
+    return store.record_cell("s1", "code", "python", "k1")
+
+
+@pytest.fixture
+def bridge(tmp_path, store, monkeypatch):
+    bridge = HostBridge(tmp_path / "ws", store, allowed_tools=["echo_tool"])
+    monkeypatch.setattr(
+        HostBridge,
+        "_llm_client",
+        lambda self, model: (
+            FakeLLMClient(lambda kw: f"reply:{kw['messages'][-1]['content']}"),
+            model or "fake-model",
+        ),
+    )
+    bridge.start()
+    yield bridge
+    bridge.stop()
+
+
+class TestAuthAndGating:
+    def test_bad_token_is_refused(self, bridge, cell):
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "llm", {"prompt": "hi"}, token="wrong")
+        assert "invalid token" in reply["error"]
+
+    def test_out_of_cell_calls_are_refused(self, bridge):
+        reply = call_bridge(bridge, "llm", {"prompt": "hi"})
+        assert "while a cell is executing" in reply["error"]
+
+    def test_unknown_method(self, bridge, cell):
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "teleport", {})
+        assert "unknown host method" in reply["error"]
+
+
+class TestLLM:
+    def test_llm_returns_text_and_logs_call(self, bridge, store, cell):
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "llm", {"prompt": "classify this"})
+        assert reply["data"] == "reply:classify this"
+        [call] = store.host_calls_for_cell(cell)
+        assert call["method"] == "llm"
+        assert call["data_inline"] == "reply:classify this"
+        assert call["error"] is None
+        args = json.loads(call["args_json"])
+        assert args["model"] == "fake-model"
+
+    def test_llm_batch_returns_aligned_results(self, bridge, store, cell):
+        with bridge.current_cell(cell):
+            reply = call_bridge(
+                bridge,
+                "llm_batch",
+                {"prompts": ["a", "b", "c"], "max_concurrency": 2},
+            )
+        assert [r["text"] for r in reply["data"]] == ["reply:a", "reply:b", "reply:c"]
+        [call] = store.host_calls_for_cell(cell)
+        assert call["method"] == "llm_batch"
+        assert json.loads(call["args_json"])["count"] == 3
+
+    def test_large_result_spills_to_snapshot(self, bridge, store, cell, monkeypatch):
+        monkeypatch.setattr(
+            HostBridge,
+            "_llm_client",
+            lambda self, model: (FakeLLMClient(lambda kw: "y" * 50_000), "fake"),
+        )
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "llm", {"prompt": "big"})
+        assert reply["data"] == "y" * 50_000
+        [call] = store.host_calls_for_cell(cell)
+        assert call["data_inline"] is None
+        assert call["data_ref"]
+        assert store.get_snapshot(call["data_ref"]) == "y" * 50_000
+
+    def test_llm_failure_is_logged_with_error(self, bridge, store, cell, monkeypatch):
+        def _boom(self, model):
+            raise RuntimeError("no provider configured")
+
+        monkeypatch.setattr(HostBridge, "_llm_client", _boom)
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "llm", {"prompt": "hi"})
+        assert "no provider configured" in reply["error"]
+        [call] = store.host_calls_for_cell(cell)
+        assert "no provider configured" in call["error"]
+        assert call["data_inline"] is None
+
+
+class TestToolAllowlist:
+    def test_tool_outside_allowlist_is_refused(self, bridge, store, cell):
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "tool", {"name": "terminal", "args": {}})
+        assert "not in the science.host_tools allowlist" in reply["error"]
+
+    def test_allowed_tool_dispatches_and_logs(self, bridge, store, cell, monkeypatch):
+        import model_tools
+
+        monkeypatch.setattr(
+            model_tools,
+            "handle_function_call",
+            lambda name, args, **kw: json.dumps({"echoed": args}),
+        )
+        with bridge.current_cell(cell):
+            reply = call_bridge(
+                bridge, "tool", {"name": "echo_tool", "args": {"x": 1}}
+            )
+        assert reply["data"] == {"echoed": {"x": 1}}
+        [call] = store.host_calls_for_cell(cell)
+        assert call["method"] == "tool"
+        assert json.loads(call["args_json"])["name"] == "echo_tool"
