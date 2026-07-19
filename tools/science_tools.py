@@ -68,12 +68,14 @@ registry.register(
         "description": (
             "Execute code in a persistent per-session kernel (variables and "
             "imports survive across calls). Every cell is recorded for "
-            "reproducibility. In-kernel helpers: load_artifact(version_id) "
-            "returns a local path for a declared input; "
-            "save_artifact(data_or_path, filename) publishes an output as a "
-            "versioned artifact; host.llm(prompt) / host.llm_batch(prompts) "
-            "call the model from code. Declare artifact inputs in `inputs` "
-            "so lineage is tracked."
+            "reproducibility. The kernel runs in an isolated workspace, NOT "
+            "your current directory — to read an existing local file, pass "
+            "its ABSOLUTE path (a bare/relative filename will not resolve). "
+            "In-kernel helpers: save_artifact(data_or_path, filename) "
+            "publishes an output as a versioned artifact; "
+            "load_artifact(version_id) returns a local path for an input "
+            "declared in `inputs`; host.llm(prompt) / host.llm_batch(prompts) "
+            "call the model from code."
         ),
         "parameters": {
             "type": "object",
@@ -154,57 +156,6 @@ registry.register(
         "parameters": {"type": "object", "properties": {}},
     },
     handler=lambda args, **kw: list_artifacts(session_id=_session(kw)),
-)
-
-
-def ingest_file(path: str, filename: str = None, session_id: str = "adhoc") -> str:
-    try:
-        result = _runtime().ingest_file(session_id, path, filename=filename)
-        result["note"] = (
-            "declare this version_id in run_code `inputs` and read it with "
-            "load_artifact(version_id) so the analysis is tracked and reproducible"
-        )
-        return json.dumps(result, ensure_ascii=False)
-    except FileNotFoundError as exc:
-        return json.dumps({"error": str(exc)})
-    except Exception as exc:
-        return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
-
-
-registry.register(
-    name="ingest_file",
-    toolset="science",
-    schema={
-        "name": "ingest_file",
-        "description": (
-            "Register a local file as a tracked artifact so run_code can use "
-            "it reproducibly. Use this instead of reading an on-disk path "
-            "directly: the persistent kernel runs in an isolated workspace, "
-            "so relative paths won't resolve and raw absolute reads aren't "
-            "tracked. Returns a version_id to pass in run_code `inputs` and "
-            "read via load_artifact(version_id). Re-ingesting an unchanged "
-            "file reuses its version."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Local filesystem path to ingest.",
-                },
-                "filename": {
-                    "type": "string",
-                    "description": "Artifact name (defaults to the basename).",
-                },
-            },
-            "required": ["path"],
-        },
-    },
-    handler=lambda args, **kw: ingest_file(
-        path=args.get("path", ""),
-        filename=args.get("filename"),
-        session_id=_session(kw),
-    ),
 )
 
 
