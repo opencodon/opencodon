@@ -157,6 +157,57 @@ registry.register(
 )
 
 
+def ingest_file(path: str, filename: str = None, session_id: str = "adhoc") -> str:
+    try:
+        result = _runtime().ingest_file(session_id, path, filename=filename)
+        result["note"] = (
+            "declare this version_id in run_code `inputs` and read it with "
+            "load_artifact(version_id) so the analysis is tracked and reproducible"
+        )
+        return json.dumps(result, ensure_ascii=False)
+    except FileNotFoundError as exc:
+        return json.dumps({"error": str(exc)})
+    except Exception as exc:
+        return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
+
+
+registry.register(
+    name="ingest_file",
+    toolset="science",
+    schema={
+        "name": "ingest_file",
+        "description": (
+            "Register a local file as a tracked artifact so run_code can use "
+            "it reproducibly. Use this instead of reading an on-disk path "
+            "directly: the persistent kernel runs in an isolated workspace, "
+            "so relative paths won't resolve and raw absolute reads aren't "
+            "tracked. Returns a version_id to pass in run_code `inputs` and "
+            "read via load_artifact(version_id). Re-ingesting an unchanged "
+            "file reuses its version."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Local filesystem path to ingest.",
+                },
+                "filename": {
+                    "type": "string",
+                    "description": "Artifact name (defaults to the basename).",
+                },
+            },
+            "required": ["path"],
+        },
+    },
+    handler=lambda args, **kw: ingest_file(
+        path=args.get("path", ""),
+        filename=args.get("filename"),
+        session_id=_session(kw),
+    ),
+)
+
+
 def load_artifact(version_id: str, session_id: str = "adhoc") -> str:
     """Materialize a version into the session workspace; returns its path."""
     try:

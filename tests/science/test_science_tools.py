@@ -23,6 +23,7 @@ class TestRegistration:
         assert toolset is not None
         for name in (
             "run_code",
+            "ingest_file",
             "load_artifact",
             "list_artifacts",
             "artifact_lineage",
@@ -75,6 +76,37 @@ class TestHandlers:
 
         lineage = json.loads(science_tools.artifact_lineage(version_id))
         assert lineage["lineage"] == []
+
+    def test_ingest_file_then_use_as_input(self, db, tmp_path):
+        db.create_session("s1", source="cli")
+        src = tmp_path / "raw.csv"
+        src.write_text("7\n8\n")
+        ingested = json.loads(
+            science_tools.ingest_file(str(src), session_id="s1")
+        )
+        assert ingested["version_number"] == 1
+        assert "note" in ingested
+
+        listed = json.loads(science_tools.list_artifacts(session_id="s1"))
+        assert listed["artifacts"][0]["is_user_upload"] is True
+
+        code = (
+            f"p = load_artifact('{ingested['version_id']}')\n"
+            "save_artifact(str(sum(int(x) for x in open(p))), 'sum.txt')\n"
+        )
+        out = json.loads(
+            science_tools.run_code(
+                code, inputs=[ingested["version_id"]], session_id="s1"
+            )
+        )
+        assert out["status"] == "ok"
+
+    def test_ingest_missing_file_reports_error(self, db):
+        db.create_session("s1", source="cli")
+        result = json.loads(
+            science_tools.ingest_file("/nope/missing.csv", session_id="s1")
+        )
+        assert "no such file" in result["error"]
 
     def test_bad_version_reports_error_json(self):
         result = json.loads(science_tools.load_artifact("nope"))

@@ -227,7 +227,7 @@ TOOLSETS = {
 
     "science": {
         "description": "Persistent kernels + reproducible execution/artifact lineage (science layer)",
-        "tools": ["run_code", "load_artifact", "list_artifacts",
+        "tools": ["run_code", "ingest_file", "load_artifact", "list_artifacts",
                   "artifact_lineage", "reproduce_artifact"],
         "includes": []
     },

@@ -126,6 +126,66 @@ class TestArtifactIngestion:
             science_runtime.run_cell("s1", "pass", inputs=["no-such-version"])
 
 
+class TestIngestFile:
+    def test_ingest_creates_user_upload_artifact(self, science_runtime, db, tmp_path):
+        db.create_session("s1", source="cli")
+        src = tmp_path / "data.csv"
+        src.write_text("a,b\n1,2\n")
+        result = science_runtime.ingest_file("s1", src)
+        assert result["filename"] == "data.csv"
+        assert result["version_number"] == 1
+        assert result["reused"] is False
+        artifact = science_runtime.store.get_artifact(result["artifact_id"])
+        assert artifact["is_user_upload"] == 1
+        assert artifact["root_session_id"] == "s1"
+        assert science_runtime.blobs.read_bytes(result["sha256"]) == b"a,b\n1,2\n"
+
+    def test_ingested_file_is_usable_as_run_code_input(self, science_runtime, db, tmp_path):
+        db.create_session("s1", source="cli")
+        src = tmp_path / "nums.txt"
+        src.write_text("10\n20\n30\n")
+        ingested = science_runtime.ingest_file("s1", src)
+        code = (
+            f"path = load_artifact('{ingested['version_id']}')\n"
+            "save_artifact(str(sum(int(x) for x in open(path))), 'total.txt')\n"
+        )
+        out = science_runtime.run_cell(
+            "s1", code, inputs=[ingested["version_id"]]
+        )
+        assert out["status"] == "ok"
+        [produced] = out["artifacts"]
+        assert science_runtime.blobs.read_bytes(produced["sha256"]) == b"60"
+        # The upload shows up as upstream lineage of the derived artifact.
+        upstream = science_runtime.store.lineage(produced["version_id"])
+        assert ingested["version_id"] in {v["id"] for v in upstream}
+
+    def test_unchanged_reingest_reuses_version(self, science_runtime, db, tmp_path):
+        db.create_session("s1", source="cli")
+        src = tmp_path / "same.csv"
+        src.write_text("x\n1\n")
+        first = science_runtime.ingest_file("s1", src)
+        second = science_runtime.ingest_file("s1", src)
+        assert second["reused"] is True
+        assert second["version_id"] == first["version_id"]
+
+    def test_changed_reingest_bumps_version(self, science_runtime, db, tmp_path):
+        db.create_session("s1", source="cli")
+        src = tmp_path / "evolving.csv"
+        src.write_text("v1")
+        first = science_runtime.ingest_file("s1", src)
+        src.write_text("v2 changed")
+        second = science_runtime.ingest_file("s1", src)
+        assert second["version_number"] == 2
+        assert second["reused"] is False
+        version = science_runtime.store.get_version(second["version_id"])
+        assert version["parent_version_id"] == first["version_id"]
+
+    def test_missing_file_raises(self, science_runtime, db):
+        db.create_session("s1", source="cli")
+        with pytest.raises(FileNotFoundError):
+            science_runtime.ingest_file("s1", "/no/such/file.csv")
+
+
 class TestRootScoping:
     def test_artifacts_scoped_to_root_session(self, science_runtime, db):
         db.create_session("root", source="cli")
