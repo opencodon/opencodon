@@ -8390,12 +8390,12 @@ class TestPluginAPIAuth:
         """Auth must be plugin-agnostic, not kanban-specific.
 
         The middleware fix is at the gate level (no per-plugin allowlist),
-        so any plugin's API surface — kanban, hermes-achievements, future
+        so any plugin's API surface — kanban, disk-cleanup, future
         plugins — must require the session token. Hit a non-kanban plugin
         path to lock that in.
         """
-        # Real plugin path (hermes-achievements is loaded by default).
-        resp = self.client.get("/api/plugins/hermes-achievements/overview")
+        # Real plugin path (disk-cleanup is bundled).
+        resp = self.client.get("/api/plugins/disk-cleanup/overview")
         assert resp.status_code == 401
         # Same for an arbitrary plugin namespace that doesn't even exist —
         # the middleware should 401 before routing decides 404, so an
