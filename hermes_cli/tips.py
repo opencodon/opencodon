@@ -242,7 +242,6 @@ TIPS = [
     "Checkpoints use shadow repos in ~/.hermes/checkpoints/ — your project's .git is never touched.",
 
     # --- Batch & Data ---
-    "batch_runner.py processes hundreds of prompts in parallel for training data generation.",
     "hermes chat -Q enables quiet mode for programmatic use — suppresses banner and spinner.",
     "Trajectory saving (--save-trajectories) captures full tool-use traces for model training.",
 
@@ -407,8 +406,6 @@ TIPS = [
     'TELEGRAM_WEBHOOK_SECRET is required whenever TELEGRAM_WEBHOOK_URL is set — generate with openssl rand -hex 32.',
 
     # --- Batch ---
-    "batch_runner.py --resume content-matches completed prompts by text so dataset reorders don't re-run finished work.",
-
     # --- Less-Known Slash Commands ---
     '/new starts a fresh session in place (alias /reset) — fresh session ID, clean history, CLI stays open.',
     '/clear wipes the terminal screen AND starts a new session — one shortcut for a visual reset.',
