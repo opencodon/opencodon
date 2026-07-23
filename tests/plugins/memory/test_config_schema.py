@@ -8,9 +8,14 @@ def test_unknown_provider_is_none():
     assert get_provider_config_schema("builtin") is None
 
 
-def test_plugin_without_schema_is_none():
-    # mem0 is a real plugin dir that declares no config_schema.py.
-    assert get_provider_config_schema("mem0") is None
+def test_plugin_without_schema_is_none(monkeypatch, tmp_path):
+    # A plugin dir that declares no config_schema.py yields None.
+    import plugins.memory as memory
+
+    plugin_dir = tmp_path / "noschema"
+    plugin_dir.mkdir()
+    monkeypatch.setattr(memory, "find_provider_dir", lambda name: plugin_dir)
+    assert get_provider_config_schema("noschema") is None
 
 
 def test_schemas_are_cached_per_provider():

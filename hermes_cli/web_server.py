@@ -5660,9 +5660,6 @@ def _memory_provider_setup_info(name: str) -> Dict[str, Any]:
 
 _MEMORY_PROVIDER_IMPORT_NAMES = {
     "honcho-ai": "honcho",
-    "mem0ai": "mem0",
-    "hindsight-client": "hindsight_client",
-    "hindsight-all": "hindsight",
 }
 
 
@@ -6052,13 +6049,6 @@ def _read_memory_provider_existing_values(name: str) -> Dict[str, Any]:
         legacy_cfg = memory_cfg.get("provider_config")
         if isinstance(legacy_cfg, dict):
             values = {**legacy_cfg, **values}
-
-    # Holographic stores under plugins.hermes-memory-store.
-    plugins_cfg = cfg.get("plugins") if isinstance(cfg, dict) else {}
-    if name == "holographic" and isinstance(plugins_cfg, dict):
-        holographic_cfg = plugins_cfg.get("hermes-memory-store")
-        if isinstance(holographic_cfg, dict):
-            values.update(holographic_cfg)
 
     return values
 

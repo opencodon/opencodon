@@ -2293,8 +2293,7 @@ DEFAULT_CONFIG = {
         "memory_char_limit": 2200,   # ~800 tokens at 2.75 chars/token
         "user_char_limit": 1375,     # ~500 tokens at 2.75 chars/token
         # External memory provider plugin (empty = built-in only).
-        # Set to a provider name to activate: "openviking", "mem0",
-        # "hindsight", "holographic", "retaindb", "byterover".
+        # Set to a provider name to activate, e.g. "honcho".
         # Only ONE external provider is allowed at a time.
         "provider": "",
     },
@@ -4211,83 +4210,6 @@ OPTIONAL_ENV_VARS = {
         "description": "Base URL for self-hosted Honcho instances (no API key needed)",
         "prompt": "Honcho base URL (e.g. http://localhost:8000)",
         "category": "tool",
-    },
-
-    # ── Hindsight ──
-    "HINDSIGHT_API_KEY": {
-        "description": "Hindsight API key for graph-aware persistent memory",
-        "prompt": "Hindsight API key",
-        "url": "https://hindsight.vectorize.io",
-        "tools": ["hindsight_recall"],
-        "password": True,
-        "category": "tool",
-    },
-    "HINDSIGHT_API_URL": {
-        "description": "Base URL for the Hindsight API (default: https://api.hindsight.vectorize.io)",
-        "prompt": "Hindsight API URL",
-        "category": "tool",
-        "advanced": True,
-    },
-
-    # ── Supermemory ──
-    "SUPERMEMORY_API_KEY": {
-        "description": "Supermemory API key for conversation-scoped persistent memory",
-        "prompt": "Supermemory API key",
-        "url": "https://supermemory.ai",
-        "tools": ["supermemory_search"],
-        "password": True,
-        "category": "tool",
-    },
-
-    # ── Mem0 ──
-    "MEM0_API_KEY": {
-        "description": "Mem0 Platform API key for semantic persistent memory",
-        "prompt": "Mem0 API key",
-        "url": "https://app.mem0.ai",
-        "tools": ["mem0_search"],
-        "password": True,
-        "category": "tool",
-    },
-
-    # ── RetainDB ──
-    "RETAINDB_API_KEY": {
-        "description": "RetainDB API key for persistent memory",
-        "prompt": "RetainDB API key",
-        "url": "https://retaindb.com",
-        "tools": ["retaindb_search"],
-        "password": True,
-        "category": "tool",
-    },
-    "RETAINDB_BASE_URL": {
-        "description": "Base URL for self-hosted RetainDB instances (default: https://api.retaindb.com)",
-        "prompt": "RetainDB base URL",
-        "category": "tool",
-        "advanced": True,
-    },
-
-    # ── ByteRover ──
-    "BRV_API_KEY": {
-        "description": "ByteRover API key (optional, for cloud sync — local-first by default)",
-        "prompt": "ByteRover API key",
-        "url": "https://app.byterover.dev",
-        "tools": ["brv_query"],
-        "password": True,
-        "category": "tool",
-    },
-
-    # ── OpenViking ──
-    "OPENVIKING_API_KEY": {
-        "description": "OpenViking API key (leave blank for local dev mode)",
-        "prompt": "OpenViking API key",
-        "tools": ["viking_search"],
-        "password": True,
-        "category": "tool",
-    },
-    "OPENVIKING_ENDPOINT": {
-        "description": "OpenViking server URL (default: http://127.0.0.1:1933)",
-        "prompt": "OpenViking endpoint",
-        "category": "tool",
-        "advanced": True,
     },
 
     # ── Langfuse observability ──

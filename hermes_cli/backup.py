@@ -125,7 +125,7 @@ _IMPORT_SKIP_NAMES = {
 _SECRET_FILE_NAMES = {".env", "auth.json", "state.db"}
 
 # Reserved archive subtree for provider state that lives OUTSIDE HERMES_HOME
-# (e.g. ~/.honcho, ~/.hindsight). The active memory provider declares these via
+# (e.g. ~/.honcho). The active memory provider declares these via
 # MemoryProvider.backup_paths(); they're stored under this prefix encoded
 # relative to the user's home directory, and restored to their original
 # home-relative location on import. Anything not under home is skipped.
@@ -352,7 +352,7 @@ def run_backup(args) -> None:
 
             files_to_add.append((fpath, rel))
 
-    # External memory-provider state (e.g. ~/.honcho, ~/.hindsight) lives
+    # External memory-provider state (e.g. ~/.honcho) lives
     # outside HERMES_HOME, so the walk above never sees it. Ask the active
     # provider for its declared paths and stage them under the reserved
     # ``_external/`` arc prefix, encoded relative to the user's home dir.
@@ -784,7 +784,6 @@ _QUICK_STATE_FILES = (
     # WAL-safely via _safe_copy_db.
     "projects.db",                      # per-profile project store
     "response_store.db",                # gateway conversation history / tool payloads
-    "memory_store.db",                  # holographic memory facts/entities
     "verification_evidence.db",         # agent verification audit trail
     "kanban.db",                        # default board (back-compat <root>/kanban.db)
     "kanban/boards",                    # non-default boards: each <slug>/kanban.db + board metadata (workspaces/ + attachments/ are skipped as regenerable)

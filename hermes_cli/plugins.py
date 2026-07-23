@@ -1091,7 +1091,7 @@ class PluginContext:
             ctx.register_auxiliary_task(
                 key="memory_retain_filter",
                 display_name="Memory retain filter",
-                description="hindsight pre-retain dedup/extract",
+                description="pre-retain dedup/extract",
                 defaults={"provider": "auto", "timeout": 30},
             )
         """

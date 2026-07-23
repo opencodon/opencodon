@@ -313,7 +313,6 @@ class TestActiveFeatures:
         active = ld.active_features()
         assert "memory.honcho" in active
         # Backends the user never enabled stay quiet.
-        assert "memory.hindsight" not in active
         assert "platform.slack" not in active
 
     def test_multi_package_feature_active_if_any_present(self, monkeypatch):

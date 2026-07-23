@@ -4,7 +4,7 @@ Memory providers give the agent persistent recall across sessions.
 The MemoryManager enforces a one-external-provider limit to prevent
 tool schema bloat and conflicting memory backends.
 
-External providers (Honcho, Hindsight, Mem0, etc.) are registered
+External providers (e.g. Honcho) are registered
 and managed via MemoryManager. Only one external provider runs at a
 time.
 
@@ -46,7 +46,7 @@ class MemoryProvider(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Short identifier for this provider (e.g. 'builtin', 'honcho', 'hindsight')."""
+        """Short identifier for this provider (e.g. 'builtin', 'honcho')."""
 
     # -- Core lifecycle (implement these) ------------------------------------
 
@@ -300,7 +300,7 @@ class MemoryProvider(ABC):
         """Return extra on-disk paths this provider stores OUTSIDE HERMES_HOME.
 
         ``hermes backup`` only walks HERMES_HOME, so any provider state kept
-        under ``~/.honcho``, ``~/.hindsight``, ``~/.openviking``, etc. is lost
+        under ``~/.honcho`` etc. is lost
         across a backup/import cycle unless it's declared here.
 
         Return a list of absolute path strings (files or directories). The

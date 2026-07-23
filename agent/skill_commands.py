@@ -32,17 +32,15 @@ _SKILL_MULTI_HYPHEN = re.compile(r"-{2,}")
 # When a user invokes a /skill (or /bundle), Hermes expands the turn into a
 # model-facing message that embeds the full skill body plus scaffolding. That
 # expanded text is what flows into the agent loop — and into memory providers
-# via MemoryManager. Providers that store or embed the raw user turn (mem0,
-# openviking, hindsight, retaindb, byterover, honcho, supermemory) would
-# otherwise capture the entire skill body instead of what the user actually
-# asked. ``extract_user_instruction_from_skill_message`` recovers just the
-# user's instruction so memory stays clean.
+# via MemoryManager. Providers that store or embed the raw user turn (e.g.
+# honcho) would otherwise capture the entire skill body instead of what the
+# user actually asked. ``extract_user_instruction_from_skill_message``
+# recovers just the user's instruction so memory stays clean.
 #
 # These markers MUST stay byte-identical to the builders below
 # (``_build_skill_message`` here, ``build_bundle_invocation_message`` in
 # agent/skill_bundles.py). They are co-located with the single-skill builder
-# on purpose, and the bundle markers are asserted against the bundle builder in
-# tests/openviking_plugin/test_openviking.py::test_skill_markers_match_hermes_scaffolding.
+# on purpose.
 # ---------------------------------------------------------------------------
 _SKILL_INVOCATION_PREFIX = "[IMPORTANT: The user has invoked the "
 _SINGLE_SKILL_MARKER = "The full skill content is loaded below.]"

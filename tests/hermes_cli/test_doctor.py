@@ -326,9 +326,8 @@ class TestDoctorMemoryProviderSection:
         out = self._run_doctor_and_capture(monkeypatch, tmp_path, provider="")
         assert "Memory Provider" in out
         assert "Built-in memory active" in out
-        # Should NOT mention Honcho or Mem0 errors
+        # Should NOT mention Honcho errors
         assert "Honcho API key" not in out
-        assert "Mem0" not in out
 
     def test_honcho_provider_not_installed_shows_fail(self, monkeypatch, tmp_path):
         # Make honcho import fail
@@ -338,13 +337,6 @@ class TestDoctorMemoryProviderSection:
         out = self._run_doctor_and_capture(monkeypatch, tmp_path, provider="honcho")
         assert "Memory Provider" in out
         # Should show failure since honcho is set but not importable
-        assert "Built-in memory active" not in out
-
-    def test_mem0_provider_not_installed_shows_fail(self, monkeypatch, tmp_path):
-        # Make mem0 import fail
-        monkeypatch.setitem(sys.modules, "plugins.memory.mem0", None)
-        out = self._run_doctor_and_capture(monkeypatch, tmp_path, provider="mem0")
-        assert "Memory Provider" in out
         assert "Built-in memory active" not in out
 
 

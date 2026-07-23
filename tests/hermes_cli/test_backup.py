@@ -1813,7 +1813,7 @@ class TestQuickSnapshotProjectsKanban:
         # All per-profile user-created stores that the upgrade can wipe.
         for name in (
             "projects.db", "kanban.db", "kanban/boards",
-            "response_store.db", "memory_store.db", "verification_evidence.db",
+            "response_store.db", "verification_evidence.db",
         ):
             assert name in _QUICK_STATE_FILES, name
 
@@ -1888,15 +1888,13 @@ class TestQuickSnapshotProjectsKanban:
         assert rows == [("w1", "ship")]
 
     def test_additional_per_profile_dbs_round_trip(self, hermes_home):
-        """#52889 completeness: response_store.db (conversation history),
-        memory_store.db (holographic memory) and verification_evidence.db are
-        the same upgrade-wiped data-loss class as projects.db and must also be
-        snapshotted + restored."""
+        """#52889 completeness: response_store.db (conversation history)
+        and verification_evidence.db are the same upgrade-wiped data-loss
+        class as projects.db and must also be snapshotted + restored."""
         from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
 
         seeded = {
             "response_store.db": ("responses", ("r1", "hello")),
-            "memory_store.db": ("facts", ("f1", "the sky is blue")),
             "verification_evidence.db": ("verification_events", ("v1", "passed")),
         }
         for name, (table, row) in seeded.items():
@@ -2600,7 +2598,7 @@ class TestRestoreCronJobsIfEmptied:
 
 
 # ---------------------------------------------------------------------------
-# Memory-provider external paths (~/.honcho, ~/.hindsight, ...) — captured via
+# Memory-provider external paths (~/.honcho, ...) — captured via
 # MemoryProvider.backup_paths() and restored to their original home-relative
 # location, NOT under HERMES_HOME. (backup/import cycle data-loss fix)
 # ---------------------------------------------------------------------------
@@ -2749,10 +2747,3 @@ class TestMemoryProviderExternalPaths:
         paths = HonchoMemoryProvider().backup_paths()
         assert str(tmp_path / ".honcho") in paths
 
-    def test_hindsight_provider_declares_legacy_dir(self, tmp_path, monkeypatch):
-        """The hindsight provider's backup_paths() resolves to ~/.hindsight."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        from plugins.memory.hindsight import HindsightMemoryProvider
-
-        paths = HindsightMemoryProvider().backup_paths()
-        assert str(tmp_path / ".hindsight") in paths

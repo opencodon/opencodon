@@ -2442,32 +2442,8 @@ def run_doctor(args):
             )
         except Exception as _e:
             check_warn("Honcho check failed", str(_e))
-    elif _active_memory_provider == "mem0":
-        try:
-            from plugins.memory.mem0 import _load_config as _load_mem0_config
-            mem0_cfg = _load_mem0_config()
-            mem0_key = mem0_cfg.get("api_key", "")
-            if mem0_key:
-                check_ok("Mem0 API key configured")
-                check_info(f"user_id={mem0_cfg.get('user_id', '?')}  agent_id={mem0_cfg.get('agent_id', '?')}")
-            else:
-                _fail_and_issue(
-                    "Mem0 API key not set",
-                    "(set MEM0_API_KEY in .env or run hermes memory setup)",
-                    "Mem0 is set as memory provider but API key is missing",
-                    issues,
-                )
-        except ImportError:
-            _fail_and_issue(
-                "Mem0 plugin not loadable",
-                "pip install mem0ai",
-                "Mem0 is set as memory provider but mem0ai is not installed",
-                issues,
-            )
-        except Exception as _e:
-            check_warn("Mem0 check failed", str(_e))
     else:
-        # Generic check for other memory providers (openviking, hindsight, etc.)
+        # Generic check for other memory providers (user-installed plugins)
         try:
             from plugins.memory import load_memory_provider
             _provider = load_memory_provider(_active_memory_provider)

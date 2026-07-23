@@ -165,13 +165,6 @@ RUN npm install --prefer-offline --no-audit --fetch-retries=5 && \
 # so Docker users can use these providers without requiring runtime
 # lazy-install access to PyPI (often blocked in containerized envs).
 #
-# The hindsight memory provider's client (hindsight-client) is baked in
-# for the same reason: it lazy-installs into /opt/hermes/.venv at first
-# use, which lives inside the (immutable) image layer rather than the
-# mounted /opt/data volume, so it is lost on every container recreate /
-# image update and recall/retain then fails with
-# `ModuleNotFoundError: No module named 'hindsight_client'` (#38128).
-#
 # The Matrix gateway's deps ([matrix] extra) are baked in because
 # python-olm (transitive via mautrix[encryption]) builds from source on
 # Python/image combinations without usable wheels.  The Docker image is
@@ -182,7 +175,7 @@ RUN npm install --prefer-offline --no-audit --fetch-retries=5 && \
 # The editable link is created after the source copy below.
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra hindsight --extra matrix
+RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra matrix
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't

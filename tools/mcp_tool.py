@@ -5995,7 +5995,7 @@ def refresh_agent_mcp_tools(
     Crucially it is **additive-preserving**: ``get_tool_definitions`` returns
     only the registry-derived tools, but ``agent_init`` appends two further
     families directly onto ``agent.tools`` *after* that — external
-    memory-provider tools (mem0/honcho/…) and context-engine tools
+    memory-provider tools (honcho/…) and context-engine tools
     (``lcm_*``).  A naive ``agent.tools = get_tool_definitions(...)`` would
     silently DELETE those.  So after rebuilding the registry set we re-run the
     same post-build injectors ``agent_init`` used, reconstructing the full
@@ -6114,7 +6114,7 @@ def _reinject_post_build_tools(agent, tools_list: list, name_set: set) -> set:
         name_set.add(name)
         return True
 
-    # Memory-provider tools (mem0/honcho/byterover/supermemory/…).
+    # Memory-provider tools (honcho/…).
     try:
         memory_manager = getattr(agent, "_memory_manager", None)
         get_mem_schemas = getattr(memory_manager, "get_all_tool_schemas", None) if memory_manager else None
