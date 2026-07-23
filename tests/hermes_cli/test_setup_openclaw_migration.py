@@ -487,18 +487,6 @@ class TestGetSectionConfigSummary:
         assert result is not None
         assert "WhatsApp" in result
 
-    def test_gateway_recognises_signal_http_url(self):
-        """Signal uses SIGNAL_HTTP_URL (not SIGNAL_ACCOUNT)."""
-        def env_side(key):
-            return "http://signal.local" if key == "SIGNAL_HTTP_URL" else ""
-
-        import hermes_cli.gateway as gateway_mod
-        with patch.object(setup_mod, "get_env_value", side_effect=env_side), \
-             patch.object(gateway_mod, "get_env_value", side_effect=env_side):
-            result = setup_mod._get_section_config_summary({}, "gateway")
-        assert result is not None
-        assert "Signal" in result
-
     def test_model_ignores_bare_gh_token(self):
         """GH_TOKEN is commonly set for `gh` / git and must NOT count as a
         configured inference provider on its own — mirrors the copilot

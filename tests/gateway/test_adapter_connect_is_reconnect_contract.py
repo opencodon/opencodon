@@ -111,8 +111,8 @@ def test_adapter_discovery_finds_platforms():
     adapters. If this drops to a trivial number, the glob broke and the
     contract test below is silently passing on nothing.
     """
-    assert len(ADAPTER_FILES) >= 20, (
-        f"Expected to discover >=20 platform adapter files under "
+    assert len(ADAPTER_FILES) >= 4, (
+        f"Expected to discover >=4 platform adapter files under "
         f"{[str(p) for p in ADAPTER_ROOTS]}, found {len(ADAPTER_FILES)}. "
         f"The discovery glob is likely broken."
     )

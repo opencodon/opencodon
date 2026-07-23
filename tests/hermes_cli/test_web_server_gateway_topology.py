@@ -68,10 +68,10 @@ class TestProfilePlatformPorts:
             "platforms": {
                 "webhook": {"state": "fatal"},
                 "api_server": {"state": "disconnected"},
-                "msgraph_webhook": {"state": "connected"},
+                "whatsapp_cloud": {"state": "connected"},
             }
         }
-        assert _profile_platform_ports(tmp_path, runtime) == {"msgraph_webhook": 8646}
+        assert _profile_platform_ports(tmp_path, runtime) == {"whatsapp_cloud": 8090}
 
     def test_invalid_port_value_falls_back_to_default(self, tmp_path):
         (tmp_path / "config.yaml").write_text(

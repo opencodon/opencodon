@@ -149,12 +149,7 @@ def test_setup_gateway_skips_service_install_when_systemctl_missing(monkeypatch,
         "DISCORD_HOME_CHANNEL": "",
         "SLACK_BOT_TOKEN": "",
         "SLACK_HOME_CHANNEL": "",
-        "MATRIX_HOMESERVER": "https://matrix.example.com",
-        "MATRIX_USER_ID": "@alice:example.com",
-        "MATRIX_PASSWORD": "",
-        "MATRIX_ACCESS_TOKEN": "token",
-        "BLUEBUBBLES_SERVER_URL": "",
-        "BLUEBUBBLES_HOME_CHANNEL": "",
+        "TELEGRAM_BOT_TOKEN": "token",
         "WHATSAPP_ENABLED": "",
         "WEBHOOK_ENABLED": "",
     }
@@ -170,6 +165,9 @@ def test_setup_gateway_skips_service_install_when_systemctl_missing(monkeypatch,
     monkeypatch.setattr(setup_mod, "prompt_checklist", lambda _q, _items, pre=(), **k: list(pre))
     import hermes_cli.gateway as _gw_mod
     monkeypatch.setattr(_gw_mod, "_configure_platform", lambda *a, **k: None)
+    # Post-cut, platform status is registry-driven; force one "configured"
+    # platform so the post-config service guidance runs.
+    monkeypatch.setattr(_gw_mod, "_platform_status", lambda _p: "configured")
     monkeypatch.setattr("platform.system", lambda: "Linux")
 
     monkeypatch.setattr(gateway_mod, "supports_systemd_services", lambda: False)
@@ -194,12 +192,7 @@ def test_setup_gateway_in_container_shows_docker_guidance(monkeypatch, capsys):
         "DISCORD_HOME_CHANNEL": "",
         "SLACK_BOT_TOKEN": "",
         "SLACK_HOME_CHANNEL": "",
-        "MATRIX_HOMESERVER": "https://matrix.example.com",
-        "MATRIX_USER_ID": "@alice:example.com",
-        "MATRIX_PASSWORD": "",
-        "MATRIX_ACCESS_TOKEN": "token",
-        "BLUEBUBBLES_SERVER_URL": "",
-        "BLUEBUBBLES_HOME_CHANNEL": "",
+        "TELEGRAM_BOT_TOKEN": "token",
         "WHATSAPP_ENABLED": "",
         "WEBHOOK_ENABLED": "",
     }
@@ -215,6 +208,9 @@ def test_setup_gateway_in_container_shows_docker_guidance(monkeypatch, capsys):
     monkeypatch.setattr(setup_mod, "prompt_checklist", lambda _q, _items, pre=(), **k: list(pre))
     import hermes_cli.gateway as _gw_mod
     monkeypatch.setattr(_gw_mod, "_configure_platform", lambda *a, **k: None)
+    # Post-cut, platform status is registry-driven; force one "configured"
+    # platform so the post-config service guidance runs.
+    monkeypatch.setattr(_gw_mod, "_platform_status", lambda _p: "configured")
     monkeypatch.setattr("platform.system", lambda: "Linux")
 
     monkeypatch.setattr(gateway_mod, "supports_systemd_services", lambda: False)

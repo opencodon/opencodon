@@ -189,45 +189,9 @@ def test_get_platform_tools_default_whatsapp_includes_web():
     assert "web" in enabled
 
 
-def test_get_platform_tools_homeassistant_platform_keeps_homeassistant_toolset():
-    enabled = _get_platform_tools({}, "homeassistant")
-
-    assert "homeassistant" in enabled
-
-
-def test_get_platform_tools_homeassistant_toolset_enabled_for_cron_when_hass_token_set(monkeypatch):
-    """HA toolset is runtime-gated by check_fn (requires HASS_TOKEN).
-
-    When HASS_TOKEN is set, the user has explicitly opted in — _DEFAULT_OFF_TOOLSETS
-    shouldn't also strip HA from platforms (like cron) that run through
-    _get_platform_tools without an explicit saved toolset list.
-
-    Regression guard for Norbert's HA cron breakage after #14798 made cron
-    honor per-platform tool config.
-    """
-    monkeypatch.setenv("HASS_TOKEN", "fake-test-token")
-
-    cron_enabled = _get_platform_tools({}, "cron")
-    assert "homeassistant" in cron_enabled
-    # moa must stay off — the original goal of #14798
-    assert "moa" not in cron_enabled
-
-    cli_enabled = _get_platform_tools({}, "cli")
-    assert "homeassistant" in cli_enabled
-
-
-def test_get_platform_tools_homeassistant_toolset_off_for_cron_when_hass_token_missing(monkeypatch):
-    """Without HASS_TOKEN, HA stays off by default — preserves #14798's behavior
-    for users who never configured HA."""
-    monkeypatch.delenv("HASS_TOKEN", raising=False)
-
-    cron_enabled = _get_platform_tools({}, "cron")
-    assert "homeassistant" not in cron_enabled
-
-
 def test_get_platform_tools_x_search_auto_enabled_when_xai_oauth_present(monkeypatch):
     """x_search toolset auto-enables across platforms when xAI Grok OAuth
-    tokens are present, mirroring the HASS_TOKEN → homeassistant rule.
+    tokens are present.
 
     The user already authenticated via SuperGrok OAuth; they shouldn't have
     to also click through `hermes tools` → X (Twitter) Search to flip the
@@ -1504,19 +1468,6 @@ def test_save_platform_tools_strips_restricted_toolsets():
     assert "discord_admin" not in saved
     assert "web" in saved
     assert "terminal" in saved
-
-
-def test_get_platform_tools_feishu_includes_doc_and_drive():
-    enabled = _get_platform_tools({}, "feishu")
-    assert "feishu_doc" in enabled
-    assert "feishu_drive" in enabled
-
-
-def test_get_platform_tools_feishu_tools_not_on_other_platforms():
-    for plat in ["cli", "telegram", "discord"]:
-        enabled = _get_platform_tools({}, plat)
-        assert "feishu_doc" not in enabled, f"feishu_doc leaked onto {plat}"
-        assert "feishu_drive" not in enabled, f"feishu_drive leaked onto {plat}"
 
 
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():

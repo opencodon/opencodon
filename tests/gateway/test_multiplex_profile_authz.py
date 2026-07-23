@@ -271,7 +271,7 @@ def test_secondary_open_policy_fails_startup_guard(monkeypatch):
 
     secondary_cfg = GatewayConfig(multiplex_profiles=True)
     secondary_cfg.platforms = {
-        Platform.WECOM: PlatformConfig(
+        Platform.WHATSAPP: PlatformConfig(
             enabled=True,
             extra={"dm_policy": "open"},
         ),
@@ -279,5 +279,5 @@ def test_secondary_open_policy_fails_startup_guard(monkeypatch):
 
     violation = _own_policy_open_startup_violation(secondary_cfg)
     assert violation is not None
-    assert "wecom" in violation
+    assert "whatsapp" in violation
     assert "open policy" in violation

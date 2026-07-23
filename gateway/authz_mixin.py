@@ -356,12 +356,9 @@ class GatewayAuthorizationMixin:
         5. Default: deny
         """
         from gateway.run import logger
-        # Home Assistant events are system-generated (state changes), not
-        # user-initiated messages.  The HASS_TOKEN already authenticates the
-        # connection, so HA events are always authorized.
         # Webhook events are authenticated via HMAC signature validation in
         # the adapter itself — no user allowlist applies.
-        if source.platform in {Platform.HOMEASSISTANT, Platform.WEBHOOK}:
+        if source.platform in {Platform.WEBHOOK}:
             return True
 
         adapter_profile = self._adapter_profile_for_source(source)
@@ -414,7 +411,6 @@ class GatewayAuthorizationMixin:
         if source.chat_type in {"group", "forum", "channel"} and source.chat_id:
             chat_allowlist_env = {
                 Platform.TELEGRAM: "TELEGRAM_GROUP_ALLOWED_CHATS",
-                Platform.QQBOT: "QQ_GROUP_ALLOWED_USERS",
             }.get(source.platform, "")
             if chat_allowlist_env:
                 raw_chat_allowlist = os.getenv(chat_allowlist_env, "").strip()
@@ -453,7 +449,6 @@ class GatewayAuthorizationMixin:
         # the chat-scoped allowlist above runs early).
         platform_allow_bots_map = {
             Platform.DISCORD: "DISCORD_ALLOW_BOTS",
-            Platform.FEISHU: "FEISHU_ALLOW_BOTS",
             Platform.TELEGRAM: "TELEGRAM_ALLOW_BOTS",
             Platform.SLACK: "SLACK_ALLOW_BOTS",
         }
@@ -471,26 +466,12 @@ class GatewayAuthorizationMixin:
             Platform.WHATSAPP: "WHATSAPP_ALLOWED_USERS",
             Platform.WHATSAPP_CLOUD: "WHATSAPP_CLOUD_ALLOWED_USERS",
             Platform.SLACK: "SLACK_ALLOWED_USERS",
-            Platform.SIGNAL: "SIGNAL_ALLOWED_USERS",
-            Platform.EMAIL: "EMAIL_ALLOWED_USERS",
-            Platform.SMS: "SMS_ALLOWED_USERS",
-            Platform.MATTERMOST: "MATTERMOST_ALLOWED_USERS",
-            Platform.MATRIX: "MATRIX_ALLOWED_USERS",
-            Platform.DINGTALK: "DINGTALK_ALLOWED_USERS",
-            Platform.FEISHU: "FEISHU_ALLOWED_USERS",
-            Platform.WECOM: "WECOM_ALLOWED_USERS",
-            Platform.WECOM_CALLBACK: "WECOM_CALLBACK_ALLOWED_USERS",
-            Platform.WEIXIN: "WEIXIN_ALLOWED_USERS",
-            Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOWED_USERS",
-            Platform.QQBOT: "QQ_ALLOWED_USERS",
-            Platform.YUANBAO: "YUANBAO_ALLOWED_USERS",
         }
         platform_group_user_env_map = {
             Platform.TELEGRAM: "TELEGRAM_GROUP_ALLOWED_USERS",
         }
         platform_group_chat_env_map = {
             Platform.TELEGRAM: "TELEGRAM_GROUP_ALLOWED_CHATS",
-            Platform.QQBOT: "QQ_GROUP_ALLOWED_USERS",
         }
         platform_allow_all_map = {
             Platform.TELEGRAM: "TELEGRAM_ALLOW_ALL_USERS",
@@ -498,19 +479,6 @@ class GatewayAuthorizationMixin:
             Platform.WHATSAPP: "WHATSAPP_ALLOW_ALL_USERS",
             Platform.WHATSAPP_CLOUD: "WHATSAPP_CLOUD_ALLOW_ALL_USERS",
             Platform.SLACK: "SLACK_ALLOW_ALL_USERS",
-            Platform.SIGNAL: "SIGNAL_ALLOW_ALL_USERS",
-            Platform.EMAIL: "EMAIL_ALLOW_ALL_USERS",
-            Platform.SMS: "SMS_ALLOW_ALL_USERS",
-            Platform.MATTERMOST: "MATTERMOST_ALLOW_ALL_USERS",
-            Platform.MATRIX: "MATRIX_ALLOW_ALL_USERS",
-            Platform.DINGTALK: "DINGTALK_ALLOW_ALL_USERS",
-            Platform.FEISHU: "FEISHU_ALLOW_ALL_USERS",
-            Platform.WECOM: "WECOM_ALLOW_ALL_USERS",
-            Platform.WECOM_CALLBACK: "WECOM_CALLBACK_ALLOW_ALL_USERS",
-            Platform.WEIXIN: "WEIXIN_ALLOW_ALL_USERS",
-            Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOW_ALL_USERS",
-            Platform.QQBOT: "QQ_ALLOW_ALL_USERS",
-            Platform.YUANBAO: "YUANBAO_ALLOW_ALL_USERS",
         }
 
         # Plugin platforms: check the registry for auth env var names
@@ -711,15 +679,6 @@ class GatewayAuthorizationMixin:
         # numeric id — operators only see display names, so that's what they
         # naturally put in the env var. Match both so the allowlist works
         # regardless of which form was chosen.
-        # Plugin platform: compare by value since Platform.SIMPLEX is not a
-        # hardcoded enum member (it's a dynamic plugin platform).
-        if (
-            source.platform is not None
-            and source.platform.value == "simplex"
-            and source.user_name
-        ):
-            check_ids.add(source.user_name)
-
         return bool(check_ids & allowed_ids)
 
     def _get_unauthorized_dm_behavior(
@@ -755,14 +714,6 @@ class GatewayAuthorizationMixin:
                 # Operator explicitly configured behavior for this platform — respect it.
                 return config.get_unauthorized_dm_behavior(platform)
 
-        # Email is inbox-shaped, not chat-shaped: an agent mailbox may contain
-        # unrelated unread human email. Require an explicit per-platform
-        # ``unauthorized_dm_behavior: pair`` opt-in before replying to unknown
-        # senders with pairing codes. Keep this before the global fallback to
-        # match GatewayConfig.get_unauthorized_dm_behavior().
-        if platform == Platform.EMAIL:
-            return "ignore"
-
         # Check for an explicit global config override.
         if config and hasattr(config, "unauthorized_dm_behavior"):
             if config.unauthorized_dm_behavior != "pair":  # non-default → explicit override
@@ -796,25 +747,12 @@ class GatewayAuthorizationMixin:
                 Platform.WHATSAPP: "WHATSAPP_ALLOWED_USERS",
                 Platform.WHATSAPP_CLOUD: "WHATSAPP_CLOUD_ALLOWED_USERS",
                 Platform.SLACK:    "SLACK_ALLOWED_USERS",
-                Platform.SIGNAL:   "SIGNAL_ALLOWED_USERS",
-                Platform.EMAIL:    "EMAIL_ALLOWED_USERS",
-                Platform.SMS:      "SMS_ALLOWED_USERS",
-                Platform.MATTERMOST: "MATTERMOST_ALLOWED_USERS",
-                Platform.MATRIX:   "MATRIX_ALLOWED_USERS",
-                Platform.DINGTALK: "DINGTALK_ALLOWED_USERS",
-                Platform.FEISHU:   "FEISHU_ALLOWED_USERS",
-                Platform.WECOM:    "WECOM_ALLOWED_USERS",
-                Platform.WECOM_CALLBACK: "WECOM_CALLBACK_ALLOWED_USERS",
-                Platform.WEIXIN:   "WEIXIN_ALLOWED_USERS",
-                Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOWED_USERS",
-                Platform.QQBOT:    "QQ_ALLOWED_USERS",
             }
             platform_group_env_map = {
                 Platform.TELEGRAM: (
                     "TELEGRAM_GROUP_ALLOWED_USERS",
                     "TELEGRAM_GROUP_ALLOWED_CHATS",
                 ),
-                Platform.QQBOT: ("QQ_GROUP_ALLOWED_USERS",),
             }
             if os.getenv(platform_env_map.get(platform, ""), "").strip():
                 return "ignore"

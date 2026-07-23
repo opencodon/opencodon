@@ -109,7 +109,7 @@ def test_programmatic_surfaces_keep_raw_status():
     """
     message = "⏳ Retrying in 4.2s (attempt 1/3)..."
 
-    for platform in ("local", "api_server", "webhook", "msgraph_webhook"):
+    for platform in ("local", "api_server", "webhook"):
         assert (
             _prepare_gateway_status_message(platform, "lifecycle", message) == message
         )

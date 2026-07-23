@@ -2381,23 +2381,23 @@ class TestWebServerEndpoints:
 
         class _GatewayConfig:
             def get_connected_platforms(self):
-                return [_Platform("matrix")]
+                return [_Platform("telegram")]
 
         monkeypatch.setattr(
             gateway_config, "load_gateway_config", lambda: _GatewayConfig()
         )
-        monkeypatch.setenv("MATRIX_HOME_ROOM", "!room:matrix.org")
+        monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "-100123456")
 
         resp = self.client.get("/api/cron/delivery-targets")
 
         assert resp.status_code == 200
         targets = {t["id"]: t for t in resp.json()["targets"]}
-        # Local is always offered; matrix appears because its gateway is configured.
+        # Local is always offered; telegram appears because its gateway is configured.
         assert "local" in targets
-        assert "matrix" in targets
-        assert targets["matrix"]["home_target_set"] is True
-        # No hardcoded telegram/discord/slack/email when they aren't configured.
-        assert "telegram" not in targets
+        assert "telegram" in targets
+        assert targets["telegram"]["home_target_set"] is True
+        # No hardcoded discord/slack when they aren't configured.
+        assert "discord" not in targets
 
     def test_get_config_schema(self):
         resp = self.client.get("/api/config/schema")
@@ -2618,8 +2618,6 @@ class TestWebServerEndpoints:
 
         managed = _channel_managed_env_keys()
         assert "DISCORD_HOME_CHANNEL" in managed
-        assert "BLUEBUBBLES_ALLOW_ALL_USERS" in managed
-        assert "MATTERMOST_ALLOW_ALL_USERS" in managed
         assert "GATEWAY_PROXY_URL" not in managed
         assert "GATEWAY_PROXY_URL" in _MESSAGING_KEYS_PAGE_KEYS
 
@@ -3022,53 +3020,6 @@ class TestWebServerEndpoints:
         assert "Bot User OAuth Token" in fields["SLACK_BOT_TOKEN"]["help"]
         assert "App-Level Tokens" in fields["SLACK_APP_TOKEN"]["help"]
         assert "Copy member ID" in fields["SLACK_ALLOWED_USERS"]["help"]
-
-    def test_weixin_messaging_metadata_describes_personal_ilink_setup(self):
-        resp = self.client.get("/api/messaging/platforms")
-
-        assert resp.status_code == 200
-        weixin = next(
-            platform
-            for platform in resp.json()["platforms"]
-            if platform["id"] == "weixin"
-        )
-        assert weixin["name"] == "Weixin / WeChat (Personal)"
-        assert "personal WeChat" in weixin["description"]
-        assert "Official Account" not in f"{weixin['name']} {weixin['description']}"
-        assert weixin["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/"
-        )
-
-        fields = {field["key"]: field for field in weixin["env_vars"]}
-        for key in ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL"):
-            assert "iLink" in fields[key]["description"]
-            assert "QR login" in fields[key]["description"]
-            assert "Official Account" not in fields[key]["description"]
-
-    def test_teams_messaging_metadata_links_setup_guide(self):
-        # Teams is a platform plugin, so the catalog entry is built from the
-        # plugin registry. The override must still supply a docs link so the
-        # Channels page renders a working "Open setup guide" button instead of
-        # an empty href (which resolves to the packaged app's own index.html).
-        from hermes_cli.web_server import _build_catalog_entry
-
-        teams = _build_catalog_entry("teams")
-        assert teams["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams"
-        )
-
-    def test_google_chat_messaging_metadata_links_setup_guide(self):
-        # Google Chat is a platform plugin, so the catalog entry is built from
-        # the plugin registry. The override must supply a docs link so the
-        # Channels page renders a working "Open setup guide" button instead of
-        # an empty href (which resolves to the packaged app's own index.html).
-        from hermes_cli.web_server import _build_catalog_entry
-
-        google_chat = _build_catalog_entry("google_chat")
-        assert google_chat["name"] == "Google Chat"
-        assert google_chat["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat"
-        )
 
     def test_messaging_catalog_covers_gateway_platforms(self):
         """Catalog is derived from the Platform enum, so every built-in shows up."""

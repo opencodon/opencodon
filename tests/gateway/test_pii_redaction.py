@@ -134,12 +134,6 @@ class TestBuildSessionContextPromptRedaction:
         assert "+15551234567" not in prompt
         assert "user_" in prompt
 
-    def test_signal_ids_redacted(self):
-        ctx = _make_context(user_id="+15551234567", platform=Platform.SIGNAL)
-        prompt = build_session_context_prompt(ctx, redact_pii=True)
-        assert "+15551234567" not in prompt
-        assert "user_" in prompt
-
     def test_slack_ids_not_redacted(self):
         """Slack may need IDs for mentions too."""
         ctx = _make_context(user_id="U12345ABC", platform=Platform.SLACK)

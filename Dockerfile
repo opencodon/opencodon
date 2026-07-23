@@ -28,7 +28,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
 # hermes process, the dashboard, and per-profile gateways.
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
-    ca-certificates curl iputils-ping python3 python-is-python3 ripgrep ffmpeg gcc g++ make cmake python3-dev python3-venv libffi-dev libolm-dev procps git openssh-client docker-cli xz-utils && \
+    ca-certificates curl iputils-ping python3 python-is-python3 ripgrep ffmpeg gcc g++ make cmake python3-dev python3-venv libffi-dev procps git openssh-client docker-cli xz-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # ---------- s6-overlay install ----------
@@ -165,17 +165,10 @@ RUN npm install --prefer-offline --no-audit --fetch-retries=5 && \
 # so Docker users can use these providers without requiring runtime
 # lazy-install access to PyPI (often blocked in containerized envs).
 #
-# The Matrix gateway's deps ([matrix] extra) are baked in because
-# python-olm (transitive via mautrix[encryption]) builds from source on
-# Python/image combinations without usable wheels.  The Docker image is
-# Linux-only, so keeping the native libolm/build-toolchain packages here
-# avoids the cross-platform failures that kept [matrix] out of [all]
-# while still making Matrix work in the published container. Fixes #30399.
-#
 # The editable link is created after the source copy below.
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra matrix
+RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't
@@ -291,7 +284,7 @@ ENV HERMES_WRITE_SAFE_ROOT=/opt/data
 ENV HERMES_DISABLE_LAZY_INSTALLS=1
 # The published image seals /opt/hermes (root-owned, read-only) so a runtime
 # lazy install can't mutate the agent's own venv and brick it. But opt-in
-# backends (Firecrawl web search, Exa, Feishu, …) keep their SDKs in
+# backends (Firecrawl web search, Exa, …) keep their SDKs in
 # tools/lazy_deps.py — deliberately NOT baked into [all] (see pyproject.toml
 # policy 2026-05-12: one quarantined release must not break every install).
 # Redirect those lazy installs to a writable dir on the durable data volume.

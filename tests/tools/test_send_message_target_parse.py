@@ -17,8 +17,8 @@ def _run_async_immediately(coro):
     return asyncio.run(coro)
 
 
-def test_photon_e164_target_is_explicit() -> None:
-    chat_id, thread_id, is_explicit = _parse_target_ref("photon", "+15551234567")
+def test_whatsapp_e164_target_is_explicit() -> None:
+    chat_id, thread_id, is_explicit = _parse_target_ref("whatsapp", "+15551234567")
 
     assert chat_id == "+15551234567"
     assert thread_id is None
@@ -26,7 +26,7 @@ def test_photon_e164_target_is_explicit() -> None:
 
 
 def test_e164_target_still_requires_phone_platform() -> None:
-    assert _parse_target_ref("matrix", "+15551234567")[2] is False
+    assert _parse_target_ref("telegram", "+15551234567")[2] is False
 
 
 def test_whatsapp_group_jid_target_is_explicit() -> None:

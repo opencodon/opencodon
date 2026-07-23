@@ -194,8 +194,6 @@ TIPS = [
     # --- Gateway & Messaging ---
     "Hermes runs on 21 messaging platforms: Telegram, Discord, Slack, WhatsApp, Signal, Matrix, IRC, Microsoft Teams, email, and more.",
     "hermes gateway install sets it up as a system service that starts on boot.",
-    "DingTalk uses Stream Mode — no webhooks or public URL needed.",
-    "BlueBubbles brings iMessage to Hermes via a local macOS server.",
     "Webhook routes support HMAC validation, rate limiting, and event filtering.",
     "The API server exposes an OpenAI-compatible endpoint compatible with Open WebUI and LibreChat.",
     "Discord voice channel mode: the bot joins VC, transcribes speech, and talks back.",
@@ -402,7 +400,6 @@ TIPS = [
     'GATEWAY_PROXY_URL runs a split setup: platform I/O locally, agent work delegated to a remote API server.',
 
     # --- Platform-specific ---
-    'MATRIX_DEVICE_ID pins a stable device ID for E2EE — without it, keys rotate every start and historic decrypt breaks.',
     'TELEGRAM_WEBHOOK_SECRET is required whenever TELEGRAM_WEBHOOK_URL is set — generate with openssl rand -hex 32.',
 
     # --- Batch ---

@@ -36,10 +36,6 @@ from gateway.session import SessionSource
 
 # Platforms whose adapters own their access policy at intake.
 _OWN_POLICY_PLATFORMS = [
-    Platform.WECOM,
-    Platform.WEIXIN,
-    Platform.YUANBAO,
-    Platform.QQBOT,
     Platform.WHATSAPP,
 ]
 
@@ -108,10 +104,6 @@ def test_base_adapter_defaults_to_not_owning_access_policy():
 @pytest.mark.parametrize(
     "module_path, class_name",
     [
-        ("plugins.platforms.wecom.adapter", "WeComAdapter"),
-        ("gateway.platforms.weixin", "WeixinAdapter"),
-        ("gateway.platforms.yuanbao", "YuanbaoAdapter"),
-        ("gateway.platforms.qqbot.adapter", "QQAdapter"),
         ("plugins.platforms.whatsapp.adapter", "WhatsAppAdapter"),
     ],
 )
@@ -224,9 +216,6 @@ def test_own_policy_open_group_not_authorized_without_allowlist(monkeypatch, pla
     "module_path, class_name, dm_helper",
     [
         ("plugins.platforms.whatsapp.adapter", "WhatsAppAdapter", "_is_dm_allowed"),
-        ("plugins.platforms.wecom.adapter", "WeComAdapter", "_is_dm_allowed"),
-        ("gateway.platforms.weixin", "WeixinAdapter", "_is_dm_allowed"),
-        ("gateway.platforms.qqbot.adapter", "QQAdapter", "_is_dm_allowed"),
     ],
 )
 def test_pairing_dm_policy_strict_intake_auth_denies_unknown(
@@ -247,8 +236,6 @@ def test_pairing_dm_policy_strict_intake_auth_denies_unknown(
 @pytest.mark.parametrize(
     "module_path, class_name, intake_helper",
     [
-        ("gateway.platforms.qqbot.adapter", "QQAdapter", "_is_dm_intake_allowed"),
-        ("plugins.platforms.wecom.adapter", "WeComAdapter", "_is_dm_intake_allowed"),
         ("plugins.platforms.whatsapp.adapter", "WhatsAppAdapter", "_is_dm_intake_allowed"),
     ],
 )
@@ -266,22 +253,6 @@ def test_pairing_dm_intake_denies_blank_principal(
     adapter_cls = getattr(module, class_name)
     adapter = adapter_cls(PlatformConfig(enabled=True, extra={"dm_policy": "pairing"}))
     assert getattr(adapter, intake_helper)(blank_sender) is False
-
-
-@pytest.mark.parametrize("blank_sender", ["", "   ", None])
-def test_yuanbao_pairing_dm_intake_denies_blank_principal(monkeypatch, blank_sender):
-    """Yuanbao pairing intake must not forward senderless C2C callbacks."""
-    _clear_auth_env(monkeypatch)
-    from gateway.platforms.yuanbao import AccessPolicy
-
-    policy = AccessPolicy(
-        dm_policy="pairing",
-        dm_allow_from=[],
-        group_policy="pairing",
-        group_allow_from=[],
-    )
-    assert policy.is_dm_intake_allowed(blank_sender) is False
-    assert policy.is_dm_intake_allowed("user-1") is True
 
 
 @pytest.mark.parametrize("platform", _OWN_POLICY_PLATFORMS)
@@ -354,22 +325,22 @@ def test_env_allowlist_still_takes_precedence_for_own_policy_platform(monkeypatc
     """When an env allowlist IS set, it governs — adapter trust is a fallback.
 
     The adapter-trust branch only fires when no env allowlist exists, so an
-    operator who sets ``WECOM_ALLOWED_USERS`` still gets env-based gating and
-    a non-listed user is denied.
+    operator who sets ``WHATSAPP_ALLOWED_USERS`` still gets env-based gating
+    and a non-listed user is denied.
     """
     _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("WECOM_ALLOWED_USERS", "allowed-user")
+    monkeypatch.setenv("WHATSAPP_ALLOWED_USERS", "allowed-user")
     config = GatewayConfig(
-        platforms={Platform.WECOM: PlatformConfig(enabled=True, extra={"dm_policy": "open"})}
+        platforms={Platform.WHATSAPP: PlatformConfig(enabled=True, extra={"dm_policy": "open"})}
     )
-    runner, _adapter = _make_runner(Platform.WECOM, config, enforces=True)
+    runner, _adapter = _make_runner(Platform.WHATSAPP, config, enforces=True)
 
     listed = SessionSource(
-        platform=Platform.WECOM, user_id="allowed-user", chat_id="c",
+        platform=Platform.WHATSAPP, user_id="allowed-user", chat_id="c",
         user_name="t", chat_type="dm",
     )
     stranger = SessionSource(
-        platform=Platform.WECOM, user_id="stranger", chat_id="c",
+        platform=Platform.WHATSAPP, user_id="stranger", chat_id="c",
         user_name="t", chat_type="dm",
     )
     assert runner._is_user_authorized(listed) is True

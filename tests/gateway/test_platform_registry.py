@@ -18,23 +18,48 @@ class TestPlatformEnumDynamic:
         assert Platform.TELEGRAM.value == "telegram"
         assert Platform("telegram") is Platform.TELEGRAM
 
+    @staticmethod
+    def _register_fake(name):
+        from gateway.platform_registry import platform_registry as _reg
+
+        _reg.register(PlatformEntry(
+            name=name,
+            label=name.title(),
+            adapter_factory=lambda cfg: MagicMock(),
+            check_fn=lambda: True,
+            source="plugin",
+        ))
+        return _reg
+
     def test_dynamic_member_created(self):
-        p = Platform("irc")
-        assert p.value == "irc"
-        assert p.name == "IRC"
+        reg = self._register_fake("dynplat")
+        try:
+            p = Platform("dynplat")
+            assert p.value == "dynplat"
+            assert p.name == "DYNPLAT"
+        finally:
+            reg.unregister("dynplat")
 
     def test_dynamic_member_identity_stable(self):
         """Same value returns same object (cached)."""
-        a = Platform("irc")
-        b = Platform("irc")
-        assert a is b
+        reg = self._register_fake("dynplat2")
+        try:
+            a = Platform("dynplat2")
+            b = Platform("dynplat2")
+            assert a is b
+        finally:
+            reg.unregister("dynplat2")
 
     def test_dynamic_member_case_normalised(self):
         """Mixed case normalised to lowercase."""
-        a = Platform("IRC")
-        b = Platform("irc")
-        assert a is b
-        assert a.value == "irc"
+        reg = self._register_fake("dynplat3")
+        try:
+            a = Platform("DYNPLAT3")
+            b = Platform("dynplat3")
+            assert a is b
+            assert a.value == "dynplat3"
+        finally:
+            reg.unregister("dynplat3")
 
     def test_dynamic_member_with_hyphens(self):
         """Registered plugin platforms with hyphens work once registered."""
@@ -208,16 +233,28 @@ class TestGatewayConfigPluginPlatform:
     """Test that GatewayConfig parses and validates plugin platforms."""
 
     def test_from_dict_accepts_plugin_platform(self):
-        data = {
-            "platforms": {
-                "telegram": {"enabled": True, "token": "test-token"},
-                "irc": {"enabled": True, "extra": {"server": "irc.libera.chat"}},
+        from gateway.platform_registry import platform_registry as _reg
+
+        _reg.register(PlatformEntry(
+            name="fromdictplat",
+            label="FromDictPlat",
+            adapter_factory=lambda cfg: MagicMock(),
+            check_fn=lambda: True,
+            source="plugin",
+        ))
+        try:
+            data = {
+                "platforms": {
+                    "telegram": {"enabled": True, "token": "test-token"},
+                    "fromdictplat": {"enabled": True, "extra": {"server": "example.org"}},
+                }
             }
-        }
-        cfg = GatewayConfig.from_dict(data)
-        platform_values = {p.value for p in cfg.platforms}
-        assert "telegram" in platform_values
-        assert "irc" in platform_values
+            cfg = GatewayConfig.from_dict(data)
+            platform_values = {p.value for p in cfg.platforms}
+            assert "telegram" in platform_values
+            assert "fromdictplat" in platform_values
+        finally:
+            _reg.unregister("fromdictplat")
 
     def test_get_connected_platforms_includes_registered_plugin(self):
         """Plugin platform with registry entry passes get_connected_platforms."""
@@ -336,8 +373,20 @@ class TestCronPlatformResolution:
 
     def test_plugin_platform_resolves(self):
         """Plugin platform names create dynamic enum members."""
-        p = Platform("irc")
-        assert p.value == "irc"
+        from gateway.platform_registry import platform_registry as _reg
+
+        _reg.register(PlatformEntry(
+            name="cronplat",
+            label="CronPlat",
+            adapter_factory=lambda cfg: MagicMock(),
+            check_fn=lambda: True,
+            source="plugin",
+        ))
+        try:
+            p = Platform("cronplat")
+            assert p.value == "cronplat"
+        finally:
+            _reg.unregister("cronplat")
 
     def test_invalid_platform_type_rejected(self):
         """Non-string values are still rejected."""

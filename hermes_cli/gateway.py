@@ -5049,182 +5049,6 @@ _PLATFORMS = [
     # Matrix moved to plugins/platforms/matrix/ — setup metadata discovered
     # dynamically via the platform registry entry registered by
     # plugins/platforms/matrix/adapter.py::register(). #41112.
-    {
-        "key": "mattermost",
-        "label": "Mattermost",
-        "emoji": "💬",
-        "token_var": "MATTERMOST_TOKEN",
-        "setup_instructions": [
-            "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
-            "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. hermes) and copy the bot token",
-            "3. Works with any self-hosted Mattermost instance — enter your server URL",
-            "4. To find your user ID: click your avatar (top-left) → Profile",
-            "   Your user ID is displayed there — click it to copy.",
-            "   ⚠ This is NOT your username — it's a 26-character alphanumeric ID.",
-            "5. To get a channel ID: click the channel name → View Info → copy the ID",
-        ],
-        "vars": [
-            {
-                "name": "MATTERMOST_URL",
-                "prompt": "Server URL (e.g. https://mm.example.com)",
-                "password": False,
-                "help": "Your Mattermost server URL. Works with any self-hosted instance.",
-            },
-            {
-                "name": "MATTERMOST_TOKEN",
-                "prompt": "Bot token",
-                "password": True,
-                "help": "Paste the bot token from step 2 above.",
-            },
-            {
-                "name": "MATTERMOST_ALLOWED_USERS",
-                "prompt": "Allowed user IDs (comma-separated)",
-                "password": False,
-                "is_allowlist": True,
-                "help": "Your Mattermost user ID from step 4 above.",
-            },
-            {
-                "name": "MATTERMOST_HOME_CHANNEL",
-                "prompt": "Home channel ID (for cron/notification delivery, or empty to set later with /set-home)",
-                "password": False,
-                "help": "Channel ID where Hermes delivers cron results and notifications.",
-            },
-            {
-                "name": "MATTERMOST_REPLY_MODE",
-                "prompt": "Reply mode — 'off' for flat messages, 'thread' for threaded replies (default: off)",
-                "password": False,
-                "help": "off = flat channel messages, thread = replies nest under your message.",
-            },
-        ],
-    },
-    # WhatsApp moved to plugins/platforms/whatsapp/ — setup metadata discovered
-    # dynamically via the platform registry entry registered by
-    # plugins/platforms/whatsapp/adapter.py::register(). #41112.
-    {
-        "key": "signal",
-        "label": "Signal",
-        "emoji": "📡",
-        "token_var": "SIGNAL_HTTP_URL",
-    },
-    # Email and SMS moved to plugins/platforms/{email,sms}/ — setup metadata
-    # discovered dynamically via the platform registry entries registered by
-    # plugins/platforms/{email,sms}/adapter.py::register(). #41112.
-    {
-        "key": "weixin",
-        "label": "Weixin / WeChat",
-        "emoji": "💬",
-        "token_var": "WEIXIN_ACCOUNT_ID",
-    },
-    {
-        "key": "bluebubbles",
-        "label": "BlueBubbles (iMessage)",
-        "emoji": "💬",
-        "token_var": "BLUEBUBBLES_SERVER_URL",
-        "setup_instructions": [
-            "1. Install BlueBubbles on a Mac that will act as your iMessage server:",
-            "   https://bluebubbles.app/",
-            "2. Complete the BlueBubbles setup wizard — sign in with your Apple ID",
-            "3. In BlueBubbles Settings → API, note the Server URL and password",
-            "4. The server URL is typically http://<your-mac-ip>:1234",
-            "5. Hermes connects via the BlueBubbles REST API and receives",
-            "   incoming messages via a local webhook",
-            "6. To authorize users, use DM pairing: hermes pairing generate bluebubbles",
-            "   Share the code — the user sends it via iMessage to get approved",
-        ],
-        "vars": [
-            {
-                "name": "BLUEBUBBLES_SERVER_URL",
-                "prompt": "BlueBubbles server URL (e.g. http://192.168.1.10:1234)",
-                "password": False,
-                "help": "The URL shown in BlueBubbles Settings → API.",
-            },
-            {
-                "name": "BLUEBUBBLES_PASSWORD",
-                "prompt": "BlueBubbles server password",
-                "password": True,
-                "help": "The password shown in BlueBubbles Settings → API.",
-            },
-            {
-                "name": "BLUEBUBBLES_ALLOWED_USERS",
-                "prompt": "Pre-authorized phone numbers or iMessage IDs (comma-separated, or leave empty for DM pairing)",
-                "password": False,
-                "is_allowlist": True,
-                "help": "Optional — pre-authorize specific users. Leave empty to use DM pairing instead (recommended).",
-            },
-            {
-                "name": "BLUEBUBBLES_HOME_CHANNEL",
-                "prompt": "Home channel (phone number or iMessage ID for cron/notifications, or empty)",
-                "password": False,
-                "help": "Phone number or Apple ID to deliver cron results and notifications to.",
-            },
-        ],
-    },
-    {
-        "key": "qqbot",
-        "label": "QQ Bot",
-        "emoji": "🐧",
-        "token_var": "QQ_APP_ID",
-        "setup_instructions": [
-            "1. Register a QQ Bot application at q.qq.com",
-            "2. Note your App ID and App Secret from the application page",
-            "3. Enable the required intents (C2C, Group, Guild messages)",
-            "4. Configure sandbox or publish the bot",
-        ],
-        "vars": [
-            {
-                "name": "QQ_APP_ID",
-                "prompt": "QQ Bot App ID",
-                "password": False,
-                "help": "Your QQ Bot App ID from q.qq.com.",
-            },
-            {
-                "name": "QQ_CLIENT_SECRET",
-                "prompt": "QQ Bot App Secret",
-                "password": True,
-                "help": "Your QQ Bot App Secret from q.qq.com.",
-            },
-            {
-                "name": "QQ_ALLOWED_USERS",
-                "prompt": "Allowed user OpenIDs (comma-separated, leave empty for open access)",
-                "password": False,
-                "is_allowlist": True,
-                "help": "Optional — restrict DM access to specific user OpenIDs.",
-            },
-            {
-                "name": "QQBOT_HOME_CHANNEL",
-                "prompt": "Home channel (user/group OpenID for cron delivery, or empty)",
-                "password": False,
-                "help": "OpenID to deliver cron results and notifications to.",
-            },
-        ],
-    },
-    {
-        "key": "yuanbao",
-        "label": "Yuanbao",
-        "emoji": "💎",
-        "token_var": "YUANBAO_APP_ID",
-        "setup_instructions": [
-            "1. Download the Yuanbao app from https://yuanbao.tencent.com/",
-            "2. In the app, go to PAI → My Bot and create a new bot",
-            "3. After the bot is created, copy the App ID and App Secret",
-            "4. Enter them below and Hermes will connect automatically over WebSocket",
-        ],
-        "vars": [
-            {
-                "name": "YUANBAO_APP_ID",
-                "prompt": "App ID",
-                "password": False,
-                "help": "The App ID from your Yuanbao IM Bot credentials.",
-            },
-            {
-                "name": "YUANBAO_APP_SECRET",
-                "prompt": "App Secret",
-                "password": True,
-                "help": "The App Secret (used for HMAC signing) from your Yuanbao IM Bot.",
-            },
-        ],
-    },
 ]
 
 
@@ -5238,14 +5062,6 @@ def _all_platforms() -> list[dict]:
     Built-ins keep their dict shape; plugin entries are adapted to the same
     shape with ``_registry_entry`` holding the source.
 
-    Platform-specific gating: some platforms can't be configured on
-    every host. Currently:
-      - Matrix is hidden on Windows. The [matrix] extra pulls
-        ``mautrix[encryption]`` -> ``python-olm``, which has no Windows
-        wheel and needs ``make`` + libolm to build from sdist. There's
-        no native Windows path that works, so we don't offer it in the
-        picker. Users who want Matrix on Windows can run hermes under
-        WSL.
     """
     # Populate the registry so plugin platforms are visible. Idempotent.
     # Bundled platform plugins (``kind: platform``) auto-load unconditionally,
@@ -5261,10 +5077,6 @@ def _all_platforms() -> list[dict]:
 
     platforms = [dict(p) for p in _PLATFORMS]
 
-    # Drop platforms that can't function on this host. See docstring.
-    if sys.platform == "win32":
-        platforms = [p for p in platforms if p.get("key") != "matrix"]
-
     by_key = {p["key"]: p for p in platforms}
 
     try:
@@ -5275,11 +5087,6 @@ def _all_platforms() -> list[dict]:
     for entry in platform_registry.all_entries():
         if entry.name in by_key:
             continue  # built-in already covers it
-        # Drop platforms that can't function on this host. Matrix is hidden on
-        # Windows (python-olm has no Windows wheel) — applies whether matrix is
-        # a built-in or, post-#41112, a registry-discovered plugin.
-        if sys.platform == "win32" and entry.name == "matrix":
-            continue
         platforms.append(
             {
                 "key": entry.name,
@@ -5334,39 +5141,6 @@ def _platform_status(platform: dict) -> str:
             if session_file.exists():
                 return "configured + paired"
             return "enabled, not paired"
-        return "not configured"
-    if platform.get("key") == "signal":
-        account = get_env_value("SIGNAL_ACCOUNT")
-        if val and account:
-            return "configured"
-        if val or account:
-            return "partially configured"
-        return "not configured"
-    if platform.get("key") == "email":
-        pwd = get_env_value("EMAIL_PASSWORD")
-        imap = get_env_value("EMAIL_IMAP_HOST")
-        smtp = get_env_value("EMAIL_SMTP_HOST")
-        if all([val, pwd, imap, smtp]):
-            return "configured"
-        if any([val, pwd, imap, smtp]):
-            return "partially configured"
-        return "not configured"
-    if platform.get("key") == "matrix":
-        homeserver = get_env_value("MATRIX_HOMESERVER")
-        password = get_env_value("MATRIX_PASSWORD")
-        if (val or password) and homeserver:
-            e2ee = get_env_value("MATRIX_ENCRYPTION")
-            suffix = " + E2EE" if e2ee and e2ee.lower() in {"true", "1", "yes"} else ""
-            return f"configured{suffix}"
-        if val or password or homeserver:
-            return "partially configured"
-        return "not configured"
-    if platform.get("key") == "weixin":
-        token = get_env_value("WEIXIN_TOKEN")
-        if val and token:
-            return "configured"
-        if val or token:
-            return "partially configured"
         return "not configured"
     if val:
         return "configured"
@@ -5544,43 +5318,27 @@ def _setup_standard_platform(platform: dict):
             else:
                 # No allowlist — ask about open access vs DM pairing
                 print()
-                is_email = platform.get("key") == "email"
-                if is_email:
-                    access_choices = [
-                        "Enable open access (any email sender can message the bot)",
-                        "Use DM pairing (unknown email senders receive a pairing code)",
-                        "Keep unknown senders silent",
-                    ]
-                    default_access_idx = 2
-                else:
-                    access_choices = [
-                        "Enable open access (anyone can message the bot)",
-                        "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
-                        "Skip for now (bot will deny all users until configured)",
-                    ]
-                    default_access_idx = 1
+                access_choices = [
+                    "Enable open access (anyone can message the bot)",
+                    "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+                    "Skip for now (bot will deny all users until configured)",
+                ]
+                default_access_idx = 1
                 access_idx = prompt_choice(
                     "  How should unauthorized users be handled?",
                     access_choices,
                     default_access_idx,
                 )
                 if access_idx == 0:
-                    if is_email:
-                        save_env_value("EMAIL_ALLOW_ALL_USERS", "true")
-                    else:
-                        save_env_value("GATEWAY_ALLOW_ALL_USERS", "true")
+                    save_env_value("GATEWAY_ALLOW_ALL_USERS", "true")
                     print_warning("  Open access enabled — anyone can use your bot!")
                 elif access_idx == 1:
-                    if is_email:
-                        _set_platform_unauthorized_dm_behavior("email", "pair")
                     print_success(
                         "  DM pairing mode — users will receive a code to request access."
                     )
                     print_info(
                         "  Approve with: hermes pairing approve <platform> <code>"
                     )
-                elif is_email:
-                    print_success("  Unknown email senders will be ignored.")
                 else:
                     print_info(
                         "  Skipped — configure later with 'hermes gateway setup'"
@@ -5695,434 +5453,6 @@ def _is_service_running() -> bool:
     return len(find_gateway_pids()) > 0
 
 
-def _setup_weixin():
-    """Interactive setup for Weixin / WeChat personal accounts."""
-    print()
-    print(color("  ─── 💬 Weixin / WeChat Setup ───", Colors.CYAN))
-    print()
-    print_info("  1. Hermes will open Tencent iLink QR login in this terminal.")
-    print_info("  2. Use WeChat to scan and confirm the QR code.")
-    print_info(
-        "  3. Hermes will store the returned account_id/token in ~/.hermes/.env."
-    )
-    print_info(
-        "  4. This adapter supports native text, image, video, and document delivery."
-    )
-
-    existing_account = get_env_value("WEIXIN_ACCOUNT_ID")
-    existing_token = get_env_value("WEIXIN_TOKEN")
-    if existing_account and existing_token:
-        print()
-        print_success("Weixin is already configured.")
-        if not prompt_yes_no("  Reconfigure Weixin?", False):
-            return
-
-    try:
-        from gateway.platforms.weixin import check_weixin_requirements, qr_login
-    except Exception as exc:
-        print_error(f"  Weixin adapter import failed: {exc}")
-        print_info("  Install gateway dependencies first, then retry.")
-        return
-
-    if not check_weixin_requirements():
-        print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        print_info("  Install them, then rerun `hermes gateway setup`.")
-        return
-
-    print()
-    if not prompt_yes_no("  Start QR login now?", True):
-        print_info("  Cancelled.")
-        return
-
-    import asyncio
-
-    try:
-        credentials = asyncio.run(qr_login(str(get_hermes_home())))
-    except KeyboardInterrupt:
-        print()
-        print_warning("  Weixin setup cancelled.")
-        return
-    except Exception as exc:
-        print_error(f"  QR login failed: {exc}")
-        return
-
-    if not credentials:
-        print_warning("  QR login did not complete.")
-        return
-
-    account_id = credentials.get("account_id", "")
-    token = credentials.get("token", "")
-    base_url = credentials.get("base_url", "")
-    user_id = credentials.get("user_id", "")
-
-    save_env_value("WEIXIN_ACCOUNT_ID", account_id)
-    save_env_value("WEIXIN_TOKEN", token)
-    if base_url:
-        save_env_value("WEIXIN_BASE_URL", base_url)
-    save_env_value(
-        "WEIXIN_CDN_BASE_URL",
-        get_env_value("WEIXIN_CDN_BASE_URL") or "https://novac2c.cdn.weixin.qq.com/c2c",
-    )
-
-    print()
-    access_choices = [
-        "Use DM pairing approval (recommended)",
-        "Allow all direct messages",
-        "Only allow listed user IDs",
-        "Disable direct messages",
-    ]
-    access_idx = prompt_choice(
-        "  How should direct messages be authorized?", access_choices, 0
-    )
-    if access_idx == 0:
-        save_env_value("WEIXIN_DM_POLICY", "pairing")
-        save_env_value("WEIXIN_ALLOW_ALL_USERS", "false")
-        save_env_value("WEIXIN_ALLOWED_USERS", "")
-        print_success("  DM pairing enabled.")
-        print_info(
-            "  Unknown DM users can request access and you approve them with `hermes pairing approve`."
-        )
-    elif access_idx == 1:
-        save_env_value("WEIXIN_DM_POLICY", "open")
-        save_env_value("WEIXIN_ALLOW_ALL_USERS", "true")
-        save_env_value("WEIXIN_ALLOWED_USERS", "")
-        print_warning("  Open DM access enabled for Weixin.")
-    elif access_idx == 2:
-        default_allow = user_id or ""
-        allowlist = prompt(
-            "  Allowed Weixin user IDs (comma-separated)", default_allow, password=False
-        ).replace(" ", "")
-        save_env_value("WEIXIN_DM_POLICY", "allowlist")
-        save_env_value("WEIXIN_ALLOW_ALL_USERS", "false")
-        save_env_value("WEIXIN_ALLOWED_USERS", allowlist)
-        print_success("  Weixin allowlist saved.")
-    else:
-        save_env_value("WEIXIN_DM_POLICY", "disabled")
-        save_env_value("WEIXIN_ALLOW_ALL_USERS", "false")
-        save_env_value("WEIXIN_ALLOWED_USERS", "")
-        print_warning("  Direct messages disabled.")
-
-    print()
-    print_info(
-        "  Note: QR login connects an iLink bot identity (e.g. ...@im.bot), not a"
-    )
-    print_info(
-        "  scriptable personal WeChat account. Ordinary WeChat groups typically cannot"
-    )
-    print_info(
-        "  invite an @im.bot identity, and iLink does not deliver ordinary-group events"
-    )
-    print_info(
-        "  to most bot accounts. The settings below only apply when iLink actually"
-    )
-    print_info(
-        "  delivers group events for your account type — otherwise DM remains the only"
-    )
-    print_info("  working channel regardless of this choice.")
-    group_choices = [
-        "Disable group chats (recommended)",
-        "Allow all group chats",
-        "Only allow listed group chat IDs",
-    ]
-    group_idx = prompt_choice("  How should group chats be handled?", group_choices, 0)
-    if group_idx == 0:
-        save_env_value("WEIXIN_GROUP_POLICY", "disabled")
-        save_env_value("WEIXIN_GROUP_ALLOWED_USERS", "")
-        print_info("  Group chats disabled.")
-    elif group_idx == 1:
-        save_env_value("WEIXIN_GROUP_POLICY", "open")
-        save_env_value("WEIXIN_GROUP_ALLOWED_USERS", "")
-        print_warning(
-            "  All group chats enabled (only takes effect if iLink delivers group events)."
-        )
-    else:
-        allow_groups = prompt(
-            "  Allowed group chat IDs (comma-separated, not member user IDs)",
-            "",
-            password=False,
-        ).replace(" ", "")
-        save_env_value("WEIXIN_GROUP_POLICY", "allowlist")
-        save_env_value("WEIXIN_GROUP_ALLOWED_USERS", allow_groups)
-        print_success(
-            "  Group allowlist saved (only takes effect if iLink delivers group events)."
-        )
-
-    if user_id:
-        print()
-        if prompt_yes_no(
-            f"  Use your Weixin user ID ({user_id}) as the home channel?", True
-        ):
-            save_env_value("WEIXIN_HOME_CHANNEL", user_id)
-            print_success(f"  Home channel set to {user_id}")
-
-    print()
-    print_success("Weixin configured!")
-    print_info(f"  Account ID: {account_id}")
-    if user_id:
-        print_info(f"  User ID: {user_id}")
-
-
-# _setup_feishu moved to plugins/platforms/feishu/adapter.py::interactive_setup
-# (registered via setup_fn, dispatched through the plugin path). #41112.
-
-
-def _setup_qqbot():
-    """Interactive setup for QQ Bot — scan-to-configure or manual credentials."""
-    print()
-    print(color("  ─── 🐧 QQ Bot Setup ───", Colors.CYAN))
-
-    existing_app_id = get_env_value("QQ_APP_ID")
-    existing_secret = get_env_value("QQ_CLIENT_SECRET")
-    if existing_app_id and existing_secret:
-        print()
-        print_success("QQ Bot is already configured.")
-        if not prompt_yes_no("  Reconfigure QQ Bot?", False):
-            return
-
-    # ── Choose setup method ──
-    print()
-    method_choices = [
-        "Scan QR code to add bot automatically (recommended)",
-        "Enter existing App ID and App Secret manually",
-    ]
-    method_idx = prompt_choice(
-        "  How would you like to set up QQ Bot?", method_choices, 0
-    )
-
-    credentials = None
-
-    if method_idx == 0:
-        # ── QR scan-to-configure ──
-        try:
-            from gateway.platforms.qqbot import qr_register
-
-            credentials = qr_register()
-        except KeyboardInterrupt:
-            print()
-            print_warning("  QQ Bot setup cancelled.")
-            return
-        if not credentials:
-            print_info("  QR setup did not complete. Continuing with manual input.")
-
-    # ── Manual credential input ──
-    if not credentials:
-        print()
-        print_info("  Go to https://q.qq.com to register a QQ Bot application.")
-        print_info("  Note your App ID and App Secret from the application page.")
-        print()
-        app_id = prompt("  App ID", password=False)
-        if not app_id:
-            print_warning("  Skipped — QQ Bot won't work without an App ID.")
-            return
-        app_secret = prompt("  App Secret", password=True)
-        if not app_secret:
-            print_warning("  Skipped — QQ Bot won't work without an App Secret.")
-            return
-        credentials = {
-            "app_id": app_id.strip(),
-            "client_secret": app_secret.strip(),
-            "user_openid": "",
-        }
-
-    # ── Save core credentials ──
-    save_env_value("QQ_APP_ID", credentials["app_id"])
-    save_env_value("QQ_CLIENT_SECRET", credentials["client_secret"])
-
-    user_openid = credentials.get("user_openid", "")
-
-    # ── DM security policy ──
-    print()
-    access_choices = [
-        "Use DM pairing approval (recommended)",
-        "Allow all direct messages",
-        "Only allow listed user OpenIDs",
-    ]
-    access_idx = prompt_choice(
-        "  How should direct messages be authorized?", access_choices, 0
-    )
-    if access_idx == 0:
-        save_env_value("QQ_ALLOW_ALL_USERS", "false")
-        if user_openid:
-            print()
-            if prompt_yes_no(
-                f"  Add yourself ({user_openid}) to the allow list?", True
-            ):
-                save_env_value("QQ_ALLOWED_USERS", user_openid)
-                print_success(f"  Allow list set to {user_openid}")
-            else:
-                save_env_value("QQ_ALLOWED_USERS", "")
-        else:
-            save_env_value("QQ_ALLOWED_USERS", "")
-        print_success("  DM pairing enabled.")
-        print_info(
-            "  Unknown users can request access; approve with `hermes pairing approve`."
-        )
-    elif access_idx == 1:
-        save_env_value("QQ_ALLOW_ALL_USERS", "true")
-        save_env_value("QQ_ALLOWED_USERS", "")
-        print_warning("  Open DM access enabled for QQ Bot.")
-    else:
-        default_allow = user_openid or ""
-        allowlist = prompt(
-            "  Allowed user OpenIDs (comma-separated)", default_allow, password=False
-        ).replace(" ", "")
-        save_env_value("QQ_ALLOW_ALL_USERS", "false")
-        save_env_value("QQ_ALLOWED_USERS", allowlist)
-        print_success("  Allowlist saved.")
-
-    # ── Home channel ──
-    if user_openid:
-        print()
-        if prompt_yes_no(
-            f"  Use your QQ user ID ({user_openid}) as the home channel?", True
-        ):
-            save_env_value("QQBOT_HOME_CHANNEL", user_openid)
-            print_success(f"  Home channel set to {user_openid}")
-    else:
-        print()
-        home_channel = prompt(
-            "  Home channel OpenID (for cron/notifications, or empty)", password=False
-        )
-        if home_channel:
-            save_env_value("QQBOT_HOME_CHANNEL", home_channel.strip())
-            print_success(f"  Home channel set to {home_channel.strip()}")
-
-    print()
-    print_success("🐧 QQ Bot configured!")
-    print_info(f"  App ID: {credentials['app_id']}")
-
-
-def _setup_signal():
-    """Interactive setup for Signal messenger."""
-    import shutil
-
-    print()
-    print(color("  ─── 📡 Signal Setup ───", Colors.CYAN))
-
-    existing_url = get_env_value("SIGNAL_HTTP_URL")
-    existing_account = get_env_value("SIGNAL_ACCOUNT")
-    if existing_url and existing_account:
-        print()
-        print_success("Signal is already configured.")
-        if not prompt_yes_no("  Reconfigure Signal?", False):
-            return
-
-    # Check if signal-cli is available
-    print()
-    if shutil.which("signal-cli"):
-        print_success("signal-cli found on PATH.")
-    else:
-        print_warning("signal-cli not found on PATH.")
-        print_info("  Signal requires signal-cli running as an HTTP daemon.")
-        print_info("  Install options:")
-        print_info(
-            "    Linux:  download from https://github.com/AsamK/signal-cli/releases"
-        )
-        print_info("    macOS:  brew install signal-cli")
-        print_info("    Docker: bbernhard/signal-cli-rest-api")
-        print()
-        print_info("  After installing, link your account and start the daemon:")
-        print_info('    signal-cli link -n "HermesAgent"')
-        print_info("    signal-cli --account +YOURNUMBER daemon --http 127.0.0.1:8080")
-        print()
-
-    # HTTP URL
-    print()
-    print_info("  Enter the URL where signal-cli HTTP daemon is running.")
-    default_url = existing_url or "http://127.0.0.1:8080"
-    try:
-        url = input(f"  HTTP URL [{default_url}]: ").strip() or default_url
-    except (EOFError, KeyboardInterrupt):
-        print("\n  Setup cancelled.")
-        return
-
-    # Test connectivity
-    print_info("  Testing connection...")
-    try:
-        import httpx
-
-        resp = httpx.get(f"{url.rstrip('/')}/api/v1/check", timeout=10.0)
-        if resp.status_code == 200:
-            print_success("  signal-cli daemon is reachable!")
-        else:
-            print_warning(f"  signal-cli responded with status {resp.status_code}.")
-            if not prompt_yes_no("  Continue anyway?", False):
-                return
-    except Exception as e:
-        print_warning(f"  Could not reach signal-cli at {url}: {e}")
-        if not prompt_yes_no(
-            "  Save this URL anyway? (you can start signal-cli later)", True
-        ):
-            return
-
-    save_env_value("SIGNAL_HTTP_URL", url)
-
-    # Account phone number
-    print()
-    print_info("  Enter your Signal account phone number in E.164 format.")
-    print_info("  Example: +15551234567")
-    default_account = existing_account or ""
-    try:
-        account = input(
-            f"  Account number{f' [{default_account}]' if default_account else ''}: "
-        ).strip()
-        if not account:
-            account = default_account
-    except (EOFError, KeyboardInterrupt):
-        print("\n  Setup cancelled.")
-        return
-
-    if not account:
-        print_error("  Account number is required.")
-        return
-
-    save_env_value("SIGNAL_ACCOUNT", account)
-
-    # Allowed users
-    print()
-    print_info("  The gateway DENIES all users by default for security.")
-    print_info("  Enter phone numbers or UUIDs of allowed users (comma-separated).")
-    existing_allowed = get_env_value("SIGNAL_ALLOWED_USERS") or ""
-    default_allowed = existing_allowed or account
-    try:
-        allowed = (
-            input(f"  Allowed users [{default_allowed}]: ").strip() or default_allowed
-        )
-    except (EOFError, KeyboardInterrupt):
-        print("\n  Setup cancelled.")
-        return
-
-    save_env_value("SIGNAL_ALLOWED_USERS", allowed)
-
-    # Group messaging
-    print()
-    if prompt_yes_no(
-        "  Enable group messaging? (disabled by default for security)", False
-    ):
-        print()
-        print_info("  Enter group IDs to allow, or * for all groups.")
-        existing_groups = get_env_value("SIGNAL_GROUP_ALLOWED_USERS") or ""
-        try:
-            groups = (
-                input(f"  Group IDs [{existing_groups or '*'}]: ").strip()
-                or existing_groups
-                or "*"
-            )
-        except (EOFError, KeyboardInterrupt):
-            print("\n  Setup cancelled.")
-            return
-        save_env_value("SIGNAL_GROUP_ALLOWED_USERS", groups)
-
-    print()
-    print_success("Signal configured!")
-    print_info(f"  URL: {url}")
-    print_info(f"  Account: {account}")
-    print_info("  DM auth: via SIGNAL_ALLOWED_USERS + DM pairing")
-    print_info(
-        f"  Groups: {'enabled' if get_env_value('SIGNAL_GROUP_ALLOWED_USERS') else 'disabled'}"
-    )
-
-
 def _builtin_setup_fn(key: str):
     """Resolve the interactive setup function for a built-in platform key.
 
@@ -6140,24 +5470,7 @@ def _builtin_setup_fn(key: str):
         # slack moved into the plugin: setup_fn is registered by
         # plugins/platforms/slack/adapter.py::register() and dispatched
         # via the plugin path in _configure_platform(). #41112.
-        # matrix moved into the plugin: setup_fn registered by
-        # plugins/platforms/matrix/adapter.py::register() and dispatched via
-        # the plugin path in _configure_platform(). #41112.
-        # mattermost moved into the plugin: setup_fn is registered by
-        # plugins/platforms/mattermost/adapter.py::register() and dispatched
-        # via the plugin path in _configure_platform().
-        "bluebubbles": _s._setup_bluebubbles,
         "webhooks": _s._setup_webhooks,
-        "signal": _setup_signal,
-        # whatsapp + dingtalk moved into plugins: setup_fn registered by
-        # plugins/platforms/{whatsapp,dingtalk}/adapter.py::register() and
-        # dispatched via the plugin path in _configure_platform(). #41112.
-        "weixin": _setup_weixin,
-        # feishu moved into the plugin: setup_fn registered by
-        # plugins/platforms/feishu/adapter.py::register(). #41112.
-        # wecom moved into the plugin: setup_fn registered by
-        # plugins/platforms/wecom/adapter.py::register(). #41112.
-        "qqbot": _setup_qqbot,
     }.get(key)
 
 

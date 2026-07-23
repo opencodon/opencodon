@@ -68,19 +68,6 @@ _PLATFORM_ALLOWLIST_ENV = {
     "whatsapp": "WHATSAPP_ALLOWED_USERS",
     "whatsapp_cloud": "WHATSAPP_CLOUD_ALLOWED_USERS",
     "slack": "SLACK_ALLOWED_USERS",
-    "signal": "SIGNAL_ALLOWED_USERS",
-    "email": "EMAIL_ALLOWED_USERS",
-    "sms": "SMS_ALLOWED_USERS",
-    "mattermost": "MATTERMOST_ALLOWED_USERS",
-    "matrix": "MATRIX_ALLOWED_USERS",
-    "dingtalk": "DINGTALK_ALLOWED_USERS",
-    "feishu": "FEISHU_ALLOWED_USERS",
-    "wecom": "WECOM_ALLOWED_USERS",
-    "wecom_callback": "WECOM_CALLBACK_ALLOWED_USERS",
-    "weixin": "WEIXIN_ALLOWED_USERS",
-    "bluebubbles": "BLUEBUBBLES_ALLOWED_USERS",
-    "qqbot": "QQ_ALLOWED_USERS",
-    "yuanbao": "YUANBAO_ALLOWED_USERS",
 }
 
 

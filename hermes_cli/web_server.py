@@ -2855,13 +2855,7 @@ async def git_branch_switch_route(body: GitBranchSwitchBody):
 _PORT_BINDING_PLATFORM_PORTS: Dict[str, Tuple[str, int]] = {
     "webhook": ("port", 8644),
     "api_server": ("port", 8642),
-    "msgraph_webhook": ("port", 8646),
-    "feishu": ("webhook_port", 8765),
-    "wecom_callback": ("port", 8645),
-    "bluebubbles": ("webhook_port", 8645),
-    "sms": ("webhook_port", 8080),
     "whatsapp_cloud": ("webhook_port", 8090),
-    "line": ("port", 8646),
 }
 
 # Platform states that mean the adapter is NOT serving its port right now.
@@ -7871,32 +7865,6 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
         "env_vars": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_ALLOWED_USERS"),
         "required_env": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"),
     },
-    "mattermost": {
-        "name": "Mattermost",
-        "description": "Connect Hermes to Mattermost channels and direct messages.",
-        "docs_url": "https://mattermost.com/deploy/",
-        "env_vars": ("MATTERMOST_URL", "MATTERMOST_TOKEN", "MATTERMOST_ALLOWED_USERS"),
-        "required_env": ("MATTERMOST_URL", "MATTERMOST_TOKEN"),
-    },
-    "matrix": {
-        "name": "Matrix",
-        "description": "Use Hermes in Matrix rooms and direct messages.",
-        "docs_url": "https://matrix.org/ecosystem/servers/",
-        "env_vars": (
-            "MATRIX_HOMESERVER",
-            "MATRIX_ACCESS_TOKEN",
-            "MATRIX_USER_ID",
-            "MATRIX_ALLOWED_USERS",
-        ),
-        "required_env": ("MATRIX_HOMESERVER", "MATRIX_ACCESS_TOKEN", "MATRIX_USER_ID"),
-    },
-    "signal": {
-        "name": "Signal",
-        "description": "Connect through a signal-cli REST bridge.",
-        "docs_url": "https://github.com/bbernhard/signal-cli-rest-api",
-        "env_vars": ("SIGNAL_HTTP_URL", "SIGNAL_ACCOUNT", "SIGNAL_ALLOWED_USERS"),
-        "required_env": ("SIGNAL_HTTP_URL", "SIGNAL_ACCOUNT"),
-    },
     "whatsapp": {
         "name": "WhatsApp",
         "description": "Use Hermes through the bundled WhatsApp bridge with QR-based auth.",
@@ -7907,122 +7875,6 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
             "WHATSAPP_DM_POLICY",
             "WHATSAPP_ALLOWED_USERS",
         ),
-        "required_env": (),
-    },
-    "homeassistant": {
-        "name": "Home Assistant",
-        "description": "Control your smart home from Hermes via Home Assistant.",
-        "docs_url": "https://www.home-assistant.io/docs/authentication/",
-        "env_vars": ("HASS_URL", "HASS_TOKEN"),
-        "required_env": ("HASS_URL", "HASS_TOKEN"),
-    },
-    "email": {
-        "name": "Email",
-        "description": "Talk to Hermes through an IMAP/SMTP mailbox.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
-        "env_vars": (
-            "EMAIL_ADDRESS",
-            "EMAIL_PASSWORD",
-            "EMAIL_IMAP_HOST",
-            "EMAIL_SMTP_HOST",
-        ),
-        "required_env": (
-            "EMAIL_ADDRESS",
-            "EMAIL_PASSWORD",
-            "EMAIL_IMAP_HOST",
-            "EMAIL_SMTP_HOST",
-        ),
-    },
-    "sms": {
-        "name": "SMS (Twilio)",
-        "description": "Send and receive text messages via Twilio.",
-        "docs_url": "https://www.twilio.com/console",
-        "env_vars": ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"),
-        "required_env": ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"),
-    },
-    "dingtalk": {
-        "name": "DingTalk",
-        "description": "Connect Hermes to DingTalk groups (钉钉).",
-        "docs_url": "https://open.dingtalk.com/document/orgapp/the-robot-development-process",
-        "env_vars": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
-        "required_env": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
-    },
-    "feishu": {
-        "name": "Feishu / Lark",
-        "description": "Use Hermes inside Feishu / Lark.",
-        "docs_url": "https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/intro",
-        "env_vars": (
-            "FEISHU_APP_ID",
-            "FEISHU_APP_SECRET",
-            "FEISHU_ENCRYPT_KEY",
-            "FEISHU_VERIFICATION_TOKEN",
-        ),
-        "required_env": ("FEISHU_APP_ID", "FEISHU_APP_SECRET"),
-    },
-    "google_chat": {
-        "name": "Google Chat",
-        "description": "Connect Hermes to Google Chat via Cloud Pub/Sub.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat",
-    },
-    "wecom": {
-        "name": "WeCom (group bot)",
-        "description": "Send-only WeCom group bot via webhook.",
-        "docs_url": "https://developer.work.weixin.qq.com/document/path/91770",
-        "env_vars": ("WECOM_BOT_ID", "WECOM_SECRET"),
-        "required_env": ("WECOM_BOT_ID",),
-    },
-    "wecom_callback": {
-        "name": "WeCom (app)",
-        "description": "Two-way WeCom integration via callback app.",
-        "docs_url": "https://developer.work.weixin.qq.com/document/path/90930",
-        "env_vars": (
-            "WECOM_CALLBACK_CORP_ID",
-            "WECOM_CALLBACK_CORP_SECRET",
-            "WECOM_CALLBACK_AGENT_ID",
-            "WECOM_CALLBACK_TOKEN",
-            "WECOM_CALLBACK_ENCODING_AES_KEY",
-        ),
-        "required_env": (
-            "WECOM_CALLBACK_CORP_ID",
-            "WECOM_CALLBACK_CORP_SECRET",
-            "WECOM_CALLBACK_AGENT_ID",
-        ),
-    },
-    "weixin": {
-        "name": "Weixin / WeChat (Personal)",
-        "description": "Connect a personal WeChat account through Tencent's iLink Bot API.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/",
-        "env_vars": ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL"),
-        "required_env": ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN"),
-    },
-    "bluebubbles": {
-        "name": "BlueBubbles (iMessage)",
-        "description": "Use Hermes through iMessage via a BlueBubbles server.",
-        "docs_url": "https://bluebubbles.app/",
-        "env_vars": (
-            "BLUEBUBBLES_SERVER_URL",
-            "BLUEBUBBLES_PASSWORD",
-            "BLUEBUBBLES_ALLOWED_USERS",
-        ),
-        "required_env": ("BLUEBUBBLES_SERVER_URL", "BLUEBUBBLES_PASSWORD"),
-    },
-    "qqbot": {
-        "name": "QQ Bot",
-        "description": "Connect Hermes to a QQ Bot from the QQ Open Platform.",
-        "docs_url": "https://q.qq.com",
-        "env_vars": ("QQ_APP_ID", "QQ_CLIENT_SECRET", "QQ_ALLOWED_USERS"),
-        "required_env": ("QQ_APP_ID", "QQ_CLIENT_SECRET"),
-    },
-    # Teams ships as a platform plugin, so its name/env vars come from the
-    # plugin registry. Only the docs link needs an override here so the
-    # Channels page can point at the Microsoft Teams setup guide.
-    "teams": {
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams",
-    },
-    "yuanbao": {
-        "name": "Yuanbao (元宝)",
-        "description": "Connect Hermes to Tencent Yuanbao.",
-        "docs_url": "",
         "required_env": (),
     },
     "api_server": {
@@ -8053,22 +7905,7 @@ _PLATFORM_ORDER: tuple[str, ...] = (
     "telegram",
     "discord",
     "slack",
-    "mattermost",
-    "matrix",
     "whatsapp",
-    "signal",
-    "bluebubbles",
-    "homeassistant",
-    "email",
-    "sms",
-    "dingtalk",
-    "feishu",
-    "google_chat",
-    "wecom",
-    "wecom_callback",
-    "weixin",
-    "qqbot",
-    "yuanbao",
     "api_server",
     "webhook",
 )
@@ -8077,19 +7914,6 @@ _PLATFORM_ORDER: tuple[str, ...] = (
 # toggles, Twilio, HASS, Email, etc.). Anything missing from OPTIONAL_ENV_VARS
 # falls back here so the UI can still render a friendly label.
 _MESSAGING_ENV_FALLBACKS: dict[str, dict[str, Any]] = {
-    "SIGNAL_HTTP_URL": {
-        "description": "signal-cli REST API base URL, e.g. http://127.0.0.1:8080",
-        "prompt": "Signal bridge URL",
-        "url": "https://github.com/bbernhard/signal-cli-rest-api",
-    },
-    "SIGNAL_ACCOUNT": {
-        "description": "Signal account phone number registered with the bridge",
-        "prompt": "Signal account",
-    },
-    "SIGNAL_ALLOWED_USERS": {
-        "description": "Comma-separated Signal users allowed to use the bot",
-        "prompt": "Allowed Signal users",
-    },
     "WHATSAPP_ENABLED": {
         "description": "Enable the WhatsApp gateway adapter",
         "prompt": "Enable WhatsApp",
@@ -8108,108 +7932,6 @@ _MESSAGING_ENV_FALLBACKS: dict[str, dict[str, Any]] = {
     "WHATSAPP_ALLOWED_USERS": {
         "description": "Comma-separated WhatsApp users allowed to use the bot",
         "prompt": "Allowed WhatsApp users",
-    },
-    "HASS_URL": {
-        "description": "Home Assistant base URL, e.g. https://homeassistant.local:8123",
-        "prompt": "Home Assistant URL",
-    },
-    "HASS_TOKEN": {
-        "description": "Long-lived access token from Home Assistant (Profile → Security)",
-        "prompt": "Home Assistant access token",
-        "password": True,
-    },
-    "EMAIL_ADDRESS": {
-        "description": "Email address to send and receive from",
-        "prompt": "Email address",
-    },
-    "EMAIL_PASSWORD": {
-        "description": "Email account password or app password",
-        "prompt": "Email password",
-        "password": True,
-    },
-    "EMAIL_IMAP_HOST": {
-        "description": "IMAP server host (e.g. imap.gmail.com)",
-        "prompt": "IMAP host",
-    },
-    "EMAIL_SMTP_HOST": {
-        "description": "SMTP server host (e.g. smtp.gmail.com)",
-        "prompt": "SMTP host",
-    },
-    "TWILIO_ACCOUNT_SID": {
-        "description": "Twilio Account SID",
-        "prompt": "Twilio Account SID",
-        "url": "https://www.twilio.com/console",
-    },
-    "TWILIO_AUTH_TOKEN": {
-        "description": "Twilio Auth Token",
-        "prompt": "Twilio Auth Token",
-        "password": True,
-    },
-    "WECOM_BOT_ID": {"description": "WeCom group bot ID", "prompt": "WeCom Bot ID"},
-    "WECOM_SECRET": {
-        "description": "WeCom group bot secret",
-        "prompt": "WeCom Secret",
-        "password": True,
-    },
-    "WECOM_CALLBACK_CORP_ID": {
-        "description": "WeCom corp ID",
-        "prompt": "WeCom Corp ID",
-    },
-    "WECOM_CALLBACK_CORP_SECRET": {
-        "description": "WeCom app corp secret",
-        "prompt": "WeCom Corp Secret",
-        "password": True,
-    },
-    "WECOM_CALLBACK_AGENT_ID": {
-        "description": "WeCom app agent ID",
-        "prompt": "WeCom Agent ID",
-    },
-    "WECOM_CALLBACK_TOKEN": {
-        "description": "WeCom callback verification token",
-        "prompt": "WeCom Token",
-    },
-    "WECOM_CALLBACK_ENCODING_AES_KEY": {
-        "description": "WeCom callback AES encoding key",
-        "prompt": "WeCom AES Key",
-        "password": True,
-    },
-    "WEIXIN_ACCOUNT_ID": {
-        "description": "iLink Bot account ID obtained through QR login in hermes gateway setup",
-        "prompt": "iLink Bot account ID",
-    },
-    "WEIXIN_TOKEN": {
-        "description": "iLink Bot token obtained through QR login in hermes gateway setup",
-        "prompt": "iLink Bot token",
-        "password": True,
-    },
-    "WEIXIN_BASE_URL": {
-        "description": "iLink API base URL saved by QR login (default: https://ilinkai.weixin.qq.com)",
-        "prompt": "iLink API base URL",
-    },
-    "FEISHU_APP_ID": {"description": "Feishu / Lark app ID", "prompt": "App ID"},
-    "FEISHU_APP_SECRET": {
-        "description": "Feishu / Lark app secret",
-        "prompt": "App secret",
-        "password": True,
-    },
-    "FEISHU_ENCRYPT_KEY": {
-        "description": "Feishu / Lark encrypt key",
-        "prompt": "Encrypt key",
-        "password": True,
-    },
-    "FEISHU_VERIFICATION_TOKEN": {
-        "description": "Feishu / Lark verification token",
-        "prompt": "Verification token",
-        "password": True,
-    },
-    "DINGTALK_CLIENT_ID": {
-        "description": "DingTalk client ID (App key)",
-        "prompt": "Client ID",
-    },
-    "DINGTALK_CLIENT_SECRET": {
-        "description": "DingTalk client secret (App secret)",
-        "prompt": "Client secret",
-        "password": True,
     },
 }
 

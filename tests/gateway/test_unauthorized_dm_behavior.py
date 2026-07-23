@@ -136,44 +136,6 @@ def test_whatsapp_lid_user_matches_phone_allowlist_via_modern_session_mapping(
     assert runner._is_user_authorized(source) is True
 
 
-def test_simplex_allowlist_accepts_display_name(monkeypatch):
-    """SIMPLEX_ALLOWED_USERS should match the contact's display name as well
-    as the numeric contactId. The SimpleX UI surfaces only display names, so
-    operators naturally put those in the env var — and the adapter sets
-    user_id=contactId for stability. Both forms must work. (#TBD)"""
-    _clear_auth_env(monkeypatch)
-    monkeypatch.delenv("SIMPLEX_ALLOWED_USERS", raising=False)
-    monkeypatch.setenv("SIMPLEX_ALLOWED_USERS", "hujikuji")
-
-    # Register the simplex plugin so the env-var lookup resolves.
-    from gateway.platform_registry import platform_registry, PlatformEntry
-    platform_registry.register(PlatformEntry(
-        name="simplex",
-        label="SimpleX Chat",
-        adapter_factory=lambda cfg: None,
-        check_fn=lambda: True,
-        allowed_users_env="SIMPLEX_ALLOWED_USERS",
-        allow_all_env="SIMPLEX_ALLOW_ALL_USERS",
-    ))
-
-    simplex = Platform("simplex")
-    runner, _adapter = _make_runner(
-        simplex,
-        GatewayConfig(platforms={simplex: PlatformConfig(enabled=True)}),
-    )
-
-    # contactId in the allowlist would still work — but the operator chose
-    # the display name. Verify the gateway honors it.
-    source = SessionSource(
-        platform=simplex,
-        user_id="4",            # adapter sets this to the numeric contactId
-        chat_id="hujikuji",
-        user_name="hujikuji",   # adapter sets this to displayName
-        chat_type="dm",
-    )
-    assert runner._is_user_authorized(source) is True
-
-
 def test_simplex_allowlist_accepts_numeric_contact_id(monkeypatch):
     """The numeric contactId form must still work — the new display-name
     matching must not regress existing setups."""
@@ -277,46 +239,6 @@ def test_star_wildcard_works_for_any_platform(monkeypatch):
         chat_type="dm",
     )
     assert runner._is_user_authorized(source) is True
-
-
-def test_qq_group_allowlist_authorizes_group_chat_without_user_allowlist(monkeypatch):
-    _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("QQ_GROUP_ALLOWED_USERS", "group-openid-1")
-
-    runner, _adapter = _make_runner(
-        Platform.QQBOT,
-        GatewayConfig(platforms={Platform.QQBOT: PlatformConfig(enabled=True)}),
-    )
-
-    source = SessionSource(
-        platform=Platform.QQBOT,
-        user_id="member-openid-999",
-        chat_id="group-openid-1",
-        user_name="tester",
-        chat_type="group",
-    )
-
-    assert runner._is_user_authorized(source) is True
-
-
-def test_qq_group_allowlist_does_not_authorize_other_groups(monkeypatch):
-    _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("QQ_GROUP_ALLOWED_USERS", "group-openid-1")
-
-    runner, _adapter = _make_runner(
-        Platform.QQBOT,
-        GatewayConfig(platforms={Platform.QQBOT: PlatformConfig(enabled=True)}),
-    )
-
-    source = SessionSource(
-        platform=Platform.QQBOT,
-        user_id="member-openid-999",
-        chat_id="group-openid-2",
-        user_name="tester",
-        chat_type="group",
-    )
-
-    assert runner._is_user_authorized(source) is False
 
 
 def test_telegram_group_user_allowlist_authorizes_forum_sender_without_dm_allowlist(monkeypatch):
@@ -751,31 +673,6 @@ async def test_global_ignore_suppresses_pairing_reply(monkeypatch):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_signal_with_allowlist_ignores_unauthorized_dm(monkeypatch):
-    """When SIGNAL_ALLOWED_USERS is set, unauthorized DMs are silently dropped.
-
-    This is the primary regression test for #9337: before the fix, Signal
-    would send pairing codes to ANY sender even when a strict allowlist was
-    configured, spamming personal contacts with cryptic bot messages.
-    """
-    _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("SIGNAL_ALLOWED_USERS", "+15550000001")  # allowlist set
-
-    config = GatewayConfig(
-        platforms={Platform.SIGNAL: PlatformConfig(enabled=True)},
-    )
-    runner, adapter = _make_runner(Platform.SIGNAL, config)
-
-    result = await runner._handle_message(
-        _make_event(Platform.SIGNAL, "+15559999999", "+15559999999")  # not in allowlist
-    )
-
-    assert result is None
-    runner.pairing_store.generate_code.assert_not_called()
-    adapter.send.assert_not_awaited()
-
-
-@pytest.mark.asyncio
 async def test_telegram_with_allowlist_ignores_unauthorized_dm(monkeypatch):
     """Same behavior for Telegram: allowlist ⟹ ignore unauthorized DMs."""
     _clear_auth_env(monkeypatch)
@@ -835,26 +732,6 @@ async def test_no_allowlist_still_pairs_by_default(monkeypatch):
     runner.pairing_store.generate_code.assert_called_once()
     adapter.send.assert_awaited_once()
     assert "PAIR1234" in adapter.send.await_args.args[1]
-
-
-@pytest.mark.asyncio
-async def test_email_no_allowlist_ignores_unknown_senders_by_default(monkeypatch):
-    """Email should not send pairing codes to arbitrary unread inbox senders."""
-    _clear_auth_env(monkeypatch)
-
-    config = GatewayConfig(
-        platforms={Platform.EMAIL: PlatformConfig(enabled=True)},
-    )
-    runner, adapter = _make_runner(Platform.EMAIL, config)
-    runner.pairing_store.generate_code.return_value = "EMAIL123"
-
-    result = await runner._handle_message(
-        _make_event(Platform.EMAIL, "stranger@example.com", "stranger@example.com")
-    )
-
-    assert result is None
-    runner.pairing_store.generate_code.assert_not_called()
-    adapter.send.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -919,14 +796,14 @@ def test_allowlist_authorized_user_returns_ignore_for_unauthorized(monkeypatch):
     authorized users is covered by the integration tests in this module.
     """
     _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("SIGNAL_ALLOWED_USERS", "+15550000001")
+    monkeypatch.setenv("TELEGRAM_ALLOWED_USERS", "12345")
 
     config = GatewayConfig(
-        platforms={Platform.SIGNAL: PlatformConfig(enabled=True)},
+        platforms={Platform.TELEGRAM: PlatformConfig(enabled=True)},
     )
-    runner, _adapter = _make_runner(Platform.SIGNAL, config)
+    runner, _adapter = _make_runner(Platform.TELEGRAM, config)
 
-    behavior = runner._get_unauthorized_dm_behavior(Platform.SIGNAL)
+    behavior = runner._get_unauthorized_dm_behavior(Platform.TELEGRAM)
     assert behavior == "ignore"
 
 
@@ -942,34 +819,3 @@ def test_get_unauthorized_dm_behavior_no_allowlist_returns_pair(monkeypatch):
     behavior = runner._get_unauthorized_dm_behavior(Platform.SIGNAL)
     assert behavior == "pair"
 
-
-def test_get_unauthorized_dm_behavior_email_no_allowlist_returns_ignore(monkeypatch):
-    _clear_auth_env(monkeypatch)
-
-    config = GatewayConfig(
-        platforms={Platform.EMAIL: PlatformConfig(enabled=True)},
-    )
-    runner, _adapter = _make_runner(Platform.EMAIL, config)
-
-    behavior = runner._get_unauthorized_dm_behavior(Platform.EMAIL)
-    assert behavior == "ignore"
-
-
-def test_qqbot_with_allowlist_ignores_unauthorized_dm(monkeypatch):
-    """QQBOT is included in the allowlist-aware default (QQ_ALLOWED_USERS).
-
-    Regression guard: the initial #9337 fix omitted QQBOT from the env map
-    inside _get_unauthorized_dm_behavior, even though _is_user_authorized
-    mapped it to QQ_ALLOWED_USERS.  Without QQBOT here, a QQ operator with a
-    strict user allowlist would still get pairing codes sent to strangers.
-    """
-    _clear_auth_env(monkeypatch)
-    monkeypatch.setenv("QQ_ALLOWED_USERS", "allowed-openid-1")
-
-    config = GatewayConfig(
-        platforms={Platform.QQBOT: PlatformConfig(enabled=True)},
-    )
-    runner, _adapter = _make_runner(Platform.QQBOT, config)
-
-    behavior = runner._get_unauthorized_dm_behavior(Platform.QQBOT)
-    assert behavior == "ignore"

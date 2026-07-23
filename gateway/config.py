@@ -2,7 +2,7 @@
 Gateway configuration management.
 
 Handles loading and validating configuration for:
-- Connected platforms (Telegram, Discord, WhatsApp, Weixin, and more)
+- Connected platforms (Telegram, Discord, WhatsApp, Slack, and more)
 - Home channels for each platform
 - Session reset policies
 - Delivery preferences
@@ -283,24 +283,28 @@ class Platform(Enum):
     WHATSAPP = "whatsapp"
     WHATSAPP_CLOUD = "whatsapp_cloud"
     SLACK = "slack"
-    SIGNAL = "signal"
-    MATTERMOST = "mattermost"
-    MATRIX = "matrix"
-    HOMEASSISTANT = "homeassistant"
-    EMAIL = "email"
-    SMS = "sms"
-    DINGTALK = "dingtalk"
     API_SERVER = "api_server"
     WEBHOOK = "webhook"
-    MSGRAPH_WEBHOOK = "msgraph_webhook"
-    FEISHU = "feishu"
-    WECOM = "wecom"
-    WECOM_CALLBACK = "wecom_callback"
-    WEIXIN = "weixin"
-    BLUEBUBBLES = "bluebubbles"
-    QQBOT = "qqbot"
-    YUANBAO = "yuanbao"
     RELAY = "relay"  # generic relay adapter fronted by the connector (EXPERIMENTAL)
+    # ── Retired platforms (fork cut) ──────────────────────────────────────
+    # Adapters removed in the opencodon-hermes slimming pass. The enum
+    # members remain so stale configs/session stores parse and residual
+    # guarded branches keep compiling; no adapter wiring exists for them.
+    SIGNAL = "signal"  # retired platform (fork cut)
+    MATTERMOST = "mattermost"  # retired platform (fork cut)
+    MATRIX = "matrix"  # retired platform (fork cut)
+    HOMEASSISTANT = "homeassistant"  # retired platform (fork cut)
+    EMAIL = "email"  # retired platform (fork cut)
+    SMS = "sms"  # retired platform (fork cut)
+    DINGTALK = "dingtalk"  # retired platform (fork cut)
+    MSGRAPH_WEBHOOK = "msgraph_webhook"  # retired platform (fork cut)
+    FEISHU = "feishu"  # retired platform (fork cut)
+    WECOM = "wecom"  # retired platform (fork cut)
+    WECOM_CALLBACK = "wecom_callback"  # retired platform (fork cut)
+    WEIXIN = "weixin"  # retired platform (fork cut)
+    BLUEBUBBLES = "bluebubbles"  # retired platform (fork cut)
+    QQBOT = "qqbot"  # retired platform (fork cut)
+    YUANBAO = "yuanbao"  # retired platform (fork cut)
     @classmethod
     def _missing_(cls, value):
         """Accept unknown platform names only for known plugin adapters.
@@ -384,22 +388,14 @@ _BUILTIN_PLATFORM_VALUES = frozenset(m.value for m in Platform.__members__.value
 PORT_BINDING_PLATFORM_VALUES = frozenset({
     "webhook",
     "api_server",
-    "msgraph_webhook",
-    "feishu",
-    "wecom_callback",
-    "bluebubbles",
-    "sms",
     "whatsapp_cloud",
-    "line",
 })
 
-# Platforms whose port-binding status depends on connection mode. Feishu in
-# websocket mode (its default) uses an outbound long connection — no listener.
-# Only webhook/callback mode binds a port. Maps platform value → the mode
-# value that actually binds (#52563).
-PORT_BINDING_CONDITIONAL_MODES: dict[str, str] = {
-    "feishu": "webhook",
-}
+# Platforms whose port-binding status depends on connection mode: only the
+# listed mode binds a port. Maps platform value → the mode value that
+# actually binds (#52563). Empty since the fork cut removed the last
+# mode-conditional platform (Feishu).
+PORT_BINDING_CONDITIONAL_MODES: dict[str, str] = {}
 
 
 def platform_binds_port(platform_value: str, extra: Optional[dict] = None) -> bool:
@@ -554,9 +550,6 @@ PLATFORM_TOKEN_ENV_NAMES: dict["Platform", str] = {
     Platform.TELEGRAM: "TELEGRAM_BOT_TOKEN",
     Platform.DISCORD: "DISCORD_BOT_TOKEN",
     Platform.SLACK: "SLACK_BOT_TOKEN",
-    Platform.MATTERMOST: "MATTERMOST_TOKEN",
-    Platform.MATRIX: "MATRIX_ACCESS_TOKEN",
-    Platform.WEIXIN: "WEIXIN_TOKEN",
 }
 
 
@@ -788,29 +781,13 @@ class StreamingConfig:
 # Each callable receives a ``PlatformConfig`` and returns ``True`` when the
 # platform is sufficiently configured to be considered "connected".  Platforms
 # that rely on the generic ``token or api_key`` check (Telegram, Discord,
-# Slack, Matrix, Mattermost, HomeAssistant) do not need an entry here.
+# Slack) do not need an entry here.
 _PLATFORM_CONNECTED_CHECKERS: dict[Platform, Callable[[PlatformConfig], bool]] = {
-    Platform.WEIXIN: lambda cfg: bool(
-        cfg.extra.get("account_id") and (cfg.token or cfg.extra.get("token"))
-    ),
     Platform.WHATSAPP_CLOUD: lambda cfg: bool(
         cfg.extra.get("phone_number_id") and cfg.extra.get("access_token")
     ),
-    Platform.SIGNAL: lambda cfg: bool(cfg.extra.get("http_url")),
     Platform.API_SERVER: lambda cfg: True,
     Platform.WEBHOOK: lambda cfg: True,
-    Platform.MSGRAPH_WEBHOOK: lambda cfg: bool(
-        str(cfg.extra.get("client_state") or "").strip()
-    ),
-    Platform.BLUEBUBBLES: lambda cfg: bool(
-        cfg.extra.get("server_url") and cfg.extra.get("password")
-    ),
-    Platform.QQBOT: lambda cfg: bool(
-        cfg.extra.get("app_id") and cfg.extra.get("client_secret")
-    ),
-    Platform.YUANBAO: lambda cfg: bool(
-        cfg.extra.get("app_id") and cfg.extra.get("app_secret")
-    ),
     # Relay dials OUT to a connector; it is "connected" once an endpoint URL is
     # configured (extra["relay_url"] or extra["url"]). The capability descriptor
     # is negotiated at handshake time, so the URL is the only config-level
@@ -924,14 +901,6 @@ class GatewayConfig:
 
     def _is_platform_connected(self, platform: Platform, config: PlatformConfig) -> bool:
         """Check whether a single platform is sufficiently configured."""
-        # Weixin requires both a token and an account_id (checked first so
-        # the generic token branch doesn't let it through without account_id).
-        if platform == Platform.WEIXIN:
-            return bool(
-                config.extra.get("account_id")
-                and (config.token or config.extra.get("token"))
-            )
-
         # Generic token/api_key auth covers Telegram, Discord, Slack, etc.
         if config.token or config.api_key:
             return True
@@ -1155,12 +1124,7 @@ class GatewayConfig:
         )
 
     def get_unauthorized_dm_behavior(self, platform: Optional[Platform] = None) -> str:
-        """Return the effective unauthorized-DM behavior for a platform.
-
-        Email is inbox-shaped, not chat-shaped, so it defaults to ``"ignore"``
-        unless ``platforms.email.unauthorized_dm_behavior`` explicitly opts
-        into pairing. A global default does not opt email into pairing.
-        """
+        """Return the effective unauthorized-DM behavior for a platform."""
         if platform:
             platform_cfg = self.platforms.get(platform)
             if platform_cfg and "unauthorized_dm_behavior" in platform_cfg.extra:
@@ -1168,8 +1132,6 @@ class GatewayConfig:
                     platform_cfg.extra.get("unauthorized_dm_behavior"),
                     self.unauthorized_dm_behavior,
                 )
-            if platform == Platform.EMAIL:
-                return "ignore"
         return self.unauthorized_dm_behavior
 
     def get_notice_delivery(self, platform: Optional[Platform] = None) -> str:
@@ -1593,27 +1555,6 @@ def load_gateway_config() -> GatewayConfig:
             # apply_yaml_config_fn hook (plugins/platforms/whatsapp/adapter.py).
             # #41112 / #3823.
 
-            # Signal settings → env vars (env vars take precedence)
-            signal_cfg = yaml_cfg.get("signal", {})
-            if isinstance(signal_cfg, dict):
-                if "require_mention" in signal_cfg and not os.getenv("SIGNAL_REQUIRE_MENTION"):
-                    os.environ["SIGNAL_REQUIRE_MENTION"] = str(signal_cfg["require_mention"]).lower()
-
-            # DingTalk settings → env vars: migrated to the dingtalk plugin's
-            # apply_yaml_config_fn hook (plugins/platforms/dingtalk/adapter.py).
-            # #41112 / #3823.
-
-            # Mattermost config bridge moved into plugins/platforms/mattermost/
-            # adapter.py::_apply_yaml_config — see #25443 (apply_yaml_config_fn).
-
-            # Matrix settings → env vars: migrated to the matrix plugin's
-            # apply_yaml_config_fn hook (plugins/platforms/matrix/adapter.py).
-            # #41112 / #3823.
-
-            # Feishu settings → env vars: migrated to the feishu plugin's
-            # apply_yaml_config_fn hook (plugins/platforms/feishu/adapter.py).
-            # #41112 / #3823.
-
     except Exception as e:
         logger.warning(
             "Failed to process config.yaml — falling back to .env / gateway.json values. "
@@ -1879,129 +1820,6 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
             thread_id=getenv("SLACK_HOME_CHANNEL_THREAD_ID") or None,
         )
     
-    # Signal
-    signal_url = getenv("SIGNAL_HTTP_URL")
-    signal_account = getenv("SIGNAL_ACCOUNT")
-    if signal_url and signal_account:
-        signal_config = _enable_from_env(Platform.SIGNAL)
-        signal_config.extra.update({
-            "http_url": signal_url,
-            "account": signal_account,
-            "ignore_stories": is_truthy_value(getenv("SIGNAL_IGNORE_STORIES", "true")),
-        })
-    signal_home = getenv("SIGNAL_HOME_CHANNEL")
-    if signal_home and Platform.SIGNAL in config.platforms:
-        config.platforms[Platform.SIGNAL].home_channel = HomeChannel(
-            platform=Platform.SIGNAL,
-            chat_id=signal_home,
-            name=getenv("SIGNAL_HOME_CHANNEL_NAME", "Home"),
-            thread_id=getenv("SIGNAL_HOME_CHANNEL_THREAD_ID") or None,
-        )
-
-    # Mattermost
-    mattermost_token = getenv("MATTERMOST_TOKEN")
-    if mattermost_token:
-        mattermost_url = getenv("MATTERMOST_URL", "")
-        if not mattermost_url:
-            logger.warning("MATTERMOST_TOKEN set but MATTERMOST_URL is missing")
-        mattermost_config = _enable_from_env(Platform.MATTERMOST)
-        mattermost_config.token = mattermost_token
-        mattermost_config.extra["url"] = mattermost_url
-    mattermost_home = getenv("MATTERMOST_HOME_CHANNEL")
-    if mattermost_home and Platform.MATTERMOST in config.platforms:
-        config.platforms[Platform.MATTERMOST].home_channel = HomeChannel(
-            platform=Platform.MATTERMOST,
-            chat_id=mattermost_home,
-            name=getenv("MATTERMOST_HOME_CHANNEL_NAME", "Home"),
-            thread_id=getenv("MATTERMOST_HOME_CHANNEL_THREAD_ID") or None,
-        )
-
-    # Matrix
-    matrix_token = getenv("MATRIX_ACCESS_TOKEN")
-    matrix_homeserver = getenv("MATRIX_HOMESERVER", "")
-    if matrix_token or getenv("MATRIX_PASSWORD"):
-        if not matrix_homeserver:
-            logger.warning("MATRIX_ACCESS_TOKEN/MATRIX_PASSWORD set but MATRIX_HOMESERVER is missing")
-        matrix_config = _enable_from_env(Platform.MATRIX)
-        if matrix_token:
-            matrix_config.token = matrix_token
-        matrix_config.extra["homeserver"] = matrix_homeserver
-        matrix_user = getenv("MATRIX_USER_ID", "")
-        if matrix_user:
-            matrix_config.extra["user_id"] = matrix_user
-        matrix_password = getenv("MATRIX_PASSWORD", "")
-        if matrix_password:
-            matrix_config.extra["password"] = matrix_password
-        matrix_e2ee_mode = getenv("MATRIX_E2EE_MODE", "").strip().lower()
-        matrix_e2ee = (
-            matrix_e2ee_mode in ("required", "require", "optional", "prefer", "preferred")
-            or is_truthy_value(getenv("MATRIX_ENCRYPTION", ""))
-        )
-        matrix_config.extra["encryption"] = matrix_e2ee
-        if matrix_e2ee_mode:
-            matrix_config.extra["e2ee_mode"] = matrix_e2ee_mode
-        matrix_device_id = getenv("MATRIX_DEVICE_ID", "")
-        if matrix_device_id:
-            matrix_config.extra["device_id"] = matrix_device_id
-    matrix_home = getenv("MATRIX_HOME_ROOM")
-    if matrix_home and Platform.MATRIX in config.platforms:
-        config.platforms[Platform.MATRIX].home_channel = HomeChannel(
-            platform=Platform.MATRIX,
-            chat_id=matrix_home,
-            name=getenv("MATRIX_HOME_ROOM_NAME", "Home"),
-            thread_id=getenv("MATRIX_HOME_ROOM_THREAD_ID") or None,
-        )
-
-    # Home Assistant
-    hass_token = getenv("HASS_TOKEN")
-    if hass_token:
-        if Platform.HOMEASSISTANT not in config.platforms:
-            config.platforms[Platform.HOMEASSISTANT] = PlatformConfig()
-        config.platforms[Platform.HOMEASSISTANT].enabled = True
-        config.platforms[Platform.HOMEASSISTANT].token = hass_token
-        hass_url = getenv("HASS_URL")
-        if hass_url:
-            config.platforms[Platform.HOMEASSISTANT].extra["url"] = hass_url
-
-    # Email
-    email_addr = getenv("EMAIL_ADDRESS")
-    email_pwd = getenv("EMAIL_PASSWORD")
-    email_imap = getenv("EMAIL_IMAP_HOST")
-    email_smtp = getenv("EMAIL_SMTP_HOST")
-    if all([email_addr, email_pwd, email_imap, email_smtp]):
-        if Platform.EMAIL not in config.platforms:
-            config.platforms[Platform.EMAIL] = PlatformConfig()
-        config.platforms[Platform.EMAIL].enabled = True
-        config.platforms[Platform.EMAIL].extra.update({
-            "address": email_addr,
-            "imap_host": email_imap,
-            "smtp_host": email_smtp,
-        })
-    email_home = getenv("EMAIL_HOME_ADDRESS")
-    if email_home and Platform.EMAIL in config.platforms:
-        config.platforms[Platform.EMAIL].home_channel = HomeChannel(
-            platform=Platform.EMAIL,
-            chat_id=email_home,
-            name=getenv("EMAIL_HOME_ADDRESS_NAME", "Home"),
-            thread_id=getenv("EMAIL_HOME_ADDRESS_THREAD_ID") or None,
-        )
-
-    # SMS (Twilio)
-    twilio_sid = getenv("TWILIO_ACCOUNT_SID")
-    if twilio_sid:
-        if Platform.SMS not in config.platforms:
-            config.platforms[Platform.SMS] = PlatformConfig()
-        config.platforms[Platform.SMS].enabled = True
-        config.platforms[Platform.SMS].api_key = getenv("TWILIO_AUTH_TOKEN", "")
-    sms_home = getenv("SMS_HOME_CHANNEL")
-    if sms_home and Platform.SMS in config.platforms:
-        config.platforms[Platform.SMS].home_channel = HomeChannel(
-            platform=Platform.SMS,
-            chat_id=sms_home,
-            name=getenv("SMS_HOME_CHANNEL_NAME", "Home"),
-            thread_id=getenv("SMS_HOME_CHANNEL_THREAD_ID") or None,
-        )
-
     # API Server
     api_server_enabled = is_truthy_value(getenv("API_SERVER_ENABLED", ""))
     api_server_key = getenv("API_SERVER_KEY", "")
@@ -2044,313 +1862,6 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
                 pass
         if webhook_secret:
             config.platforms[Platform.WEBHOOK].extra["secret"] = webhook_secret
-
-    # Microsoft Graph webhook platform
-    msgraph_webhook_enabled = is_truthy_value(getenv("MSGRAPH_WEBHOOK_ENABLED", ""))
-    msgraph_webhook_port = getenv("MSGRAPH_WEBHOOK_PORT")
-    msgraph_webhook_client_state = getenv("MSGRAPH_WEBHOOK_CLIENT_STATE", "")
-    msgraph_webhook_resources = getenv("MSGRAPH_WEBHOOK_ACCEPTED_RESOURCES", "")
-    msgraph_webhook_allowed_cidrs = getenv(
-        "MSGRAPH_WEBHOOK_ALLOWED_SOURCE_CIDRS", ""
-    )
-    if (
-        msgraph_webhook_enabled
-        or Platform.MSGRAPH_WEBHOOK in config.platforms
-        or msgraph_webhook_port
-        or msgraph_webhook_client_state
-        or msgraph_webhook_resources
-        or msgraph_webhook_allowed_cidrs
-    ):
-        if Platform.MSGRAPH_WEBHOOK not in config.platforms:
-            config.platforms[Platform.MSGRAPH_WEBHOOK] = PlatformConfig()
-        if msgraph_webhook_enabled:
-            config.platforms[Platform.MSGRAPH_WEBHOOK].enabled = True
-        if msgraph_webhook_port:
-            try:
-                config.platforms[Platform.MSGRAPH_WEBHOOK].extra["port"] = int(
-                    msgraph_webhook_port
-                )
-            except ValueError:
-                pass
-        if msgraph_webhook_client_state:
-            config.platforms[Platform.MSGRAPH_WEBHOOK].extra["client_state"] = (
-                msgraph_webhook_client_state
-            )
-        if msgraph_webhook_resources:
-            resources = [
-                resource.strip()
-                for resource in msgraph_webhook_resources.split(",")
-                if resource.strip()
-            ]
-            if resources:
-                config.platforms[Platform.MSGRAPH_WEBHOOK].extra[
-                    "accepted_resources"
-                ] = resources
-        if msgraph_webhook_allowed_cidrs:
-            cidrs = [
-                cidr.strip()
-                for cidr in msgraph_webhook_allowed_cidrs.split(",")
-                if cidr.strip()
-            ]
-            if cidrs:
-                config.platforms[Platform.MSGRAPH_WEBHOOK].extra[
-                    "allowed_source_cidrs"
-                ] = cidrs
-
-    # DingTalk
-    dingtalk_client_id = getenv("DINGTALK_CLIENT_ID")
-    dingtalk_client_secret = getenv("DINGTALK_CLIENT_SECRET")
-    if dingtalk_client_id and dingtalk_client_secret:
-        if Platform.DINGTALK not in config.platforms:
-            config.platforms[Platform.DINGTALK] = PlatformConfig()
-        config.platforms[Platform.DINGTALK].enabled = True
-        config.platforms[Platform.DINGTALK].extra.update({
-            "client_id": dingtalk_client_id,
-            "client_secret": dingtalk_client_secret,
-        })
-        dingtalk_home = getenv("DINGTALK_HOME_CHANNEL")
-        if dingtalk_home:
-            config.platforms[Platform.DINGTALK].home_channel = HomeChannel(
-                platform=Platform.DINGTALK,
-                chat_id=dingtalk_home,
-                name=getenv("DINGTALK_HOME_CHANNEL_NAME", "Home"),
-                thread_id=getenv("DINGTALK_HOME_CHANNEL_THREAD_ID") or None,
-            )
-
-    # Feishu / Lark
-    feishu_app_id = getenv("FEISHU_APP_ID")
-    feishu_app_secret = getenv("FEISHU_APP_SECRET")
-    if feishu_app_id and feishu_app_secret:
-        if Platform.FEISHU not in config.platforms:
-            config.platforms[Platform.FEISHU] = PlatformConfig()
-        config.platforms[Platform.FEISHU].enabled = True
-        config.platforms[Platform.FEISHU].extra.update({
-            "app_id": feishu_app_id,
-            "app_secret": feishu_app_secret,
-            "domain": getenv("FEISHU_DOMAIN", "feishu"),
-            "connection_mode": getenv("FEISHU_CONNECTION_MODE", "websocket"),
-        })
-        feishu_encrypt_key = getenv("FEISHU_ENCRYPT_KEY", "")
-        if feishu_encrypt_key:
-            config.platforms[Platform.FEISHU].extra["encrypt_key"] = feishu_encrypt_key
-        feishu_verification_token = getenv("FEISHU_VERIFICATION_TOKEN", "")
-        if feishu_verification_token:
-            config.platforms[Platform.FEISHU].extra["verification_token"] = feishu_verification_token
-        feishu_home = getenv("FEISHU_HOME_CHANNEL")
-        if feishu_home:
-            config.platforms[Platform.FEISHU].home_channel = HomeChannel(
-                platform=Platform.FEISHU,
-                chat_id=feishu_home,
-                name=getenv("FEISHU_HOME_CHANNEL_NAME", "Home"),
-                thread_id=getenv("FEISHU_HOME_CHANNEL_THREAD_ID") or None,
-            )
-
-    # WeCom (Enterprise WeChat)
-    wecom_bot_id = getenv("WECOM_BOT_ID")
-    wecom_secret = getenv("WECOM_SECRET")
-    if wecom_bot_id and wecom_secret:
-        if Platform.WECOM not in config.platforms:
-            config.platforms[Platform.WECOM] = PlatformConfig()
-        config.platforms[Platform.WECOM].enabled = True
-        config.platforms[Platform.WECOM].extra.update({
-            "bot_id": wecom_bot_id,
-            "secret": wecom_secret,
-        })
-        wecom_ws_url = getenv("WECOM_WEBSOCKET_URL", "")
-        if wecom_ws_url:
-            config.platforms[Platform.WECOM].extra["websocket_url"] = wecom_ws_url
-        wecom_home = getenv("WECOM_HOME_CHANNEL")
-        if wecom_home:
-            config.platforms[Platform.WECOM].home_channel = HomeChannel(
-                platform=Platform.WECOM,
-                chat_id=wecom_home,
-                name=getenv("WECOM_HOME_CHANNEL_NAME", "Home"),
-                thread_id=getenv("WECOM_HOME_CHANNEL_THREAD_ID") or None,
-            )
-
-    # WeCom callback mode (self-built apps)
-    wecom_callback_corp_id = getenv("WECOM_CALLBACK_CORP_ID")
-    wecom_callback_corp_secret = getenv("WECOM_CALLBACK_CORP_SECRET")
-    if wecom_callback_corp_id and wecom_callback_corp_secret:
-        if Platform.WECOM_CALLBACK not in config.platforms:
-            config.platforms[Platform.WECOM_CALLBACK] = PlatformConfig()
-        config.platforms[Platform.WECOM_CALLBACK].enabled = True
-        config.platforms[Platform.WECOM_CALLBACK].extra.update({
-            "corp_id": wecom_callback_corp_id,
-            "corp_secret": wecom_callback_corp_secret,
-            "agent_id": getenv("WECOM_CALLBACK_AGENT_ID", ""),
-            "token": getenv("WECOM_CALLBACK_TOKEN", ""),
-            "encoding_aes_key": getenv("WECOM_CALLBACK_ENCODING_AES_KEY", ""),
-            "host": getenv("WECOM_CALLBACK_HOST", "0.0.0.0"),
-            "port": getenv_int("WECOM_CALLBACK_PORT", 8645),
-        })
-
-    # Weixin (personal WeChat via iLink Bot API)
-    weixin_token = getenv("WEIXIN_TOKEN")
-    weixin_account_id = getenv("WEIXIN_ACCOUNT_ID")
-    if weixin_token or weixin_account_id:
-        if Platform.WEIXIN not in config.platforms:
-            config.platforms[Platform.WEIXIN] = PlatformConfig()
-        config.platforms[Platform.WEIXIN].enabled = True
-        if weixin_token:
-            config.platforms[Platform.WEIXIN].token = weixin_token
-        extra = config.platforms[Platform.WEIXIN].extra
-        if weixin_account_id:
-            extra["account_id"] = weixin_account_id
-        weixin_base_url = getenv("WEIXIN_BASE_URL", "").strip()
-        if weixin_base_url:
-            extra["base_url"] = weixin_base_url.rstrip("/")
-        weixin_cdn_base_url = getenv("WEIXIN_CDN_BASE_URL", "").strip()
-        if weixin_cdn_base_url:
-            extra["cdn_base_url"] = weixin_cdn_base_url.rstrip("/")
-        weixin_dm_policy = getenv("WEIXIN_DM_POLICY", "").strip().lower()
-        if weixin_dm_policy:
-            extra["dm_policy"] = weixin_dm_policy
-        weixin_group_policy = getenv("WEIXIN_GROUP_POLICY", "").strip().lower()
-        if weixin_group_policy:
-            extra["group_policy"] = weixin_group_policy
-        weixin_allowed_users = getenv("WEIXIN_ALLOWED_USERS", "").strip()
-        if weixin_allowed_users:
-            extra["allow_from"] = weixin_allowed_users
-        weixin_group_allowed_users = getenv("WEIXIN_GROUP_ALLOWED_USERS", "").strip()
-        if weixin_group_allowed_users:
-            extra["group_allow_from"] = weixin_group_allowed_users
-        weixin_split_multiline = getenv("WEIXIN_SPLIT_MULTILINE_MESSAGES", "").strip()
-        if weixin_split_multiline:
-            extra["split_multiline_messages"] = weixin_split_multiline
-        weixin_home = getenv("WEIXIN_HOME_CHANNEL", "").strip()
-        if weixin_home:
-            config.platforms[Platform.WEIXIN].home_channel = HomeChannel(
-                platform=Platform.WEIXIN,
-                chat_id=weixin_home,
-                name=getenv("WEIXIN_HOME_CHANNEL_NAME", "Home"),
-                thread_id=getenv("WEIXIN_HOME_CHANNEL_THREAD_ID") or None,
-            )
-
-    # BlueBubbles (iMessage)
-    bluebubbles_server_url = getenv("BLUEBUBBLES_SERVER_URL")
-    bluebubbles_password = getenv("BLUEBUBBLES_PASSWORD")
-    if bluebubbles_server_url and bluebubbles_password:
-        if Platform.BLUEBUBBLES not in config.platforms:
-            config.platforms[Platform.BLUEBUBBLES] = PlatformConfig()
-        config.platforms[Platform.BLUEBUBBLES].enabled = True
-        config.platforms[Platform.BLUEBUBBLES].extra.update({
-            "server_url": bluebubbles_server_url.rstrip("/"),
-            "password": bluebubbles_password,
-            "webhook_host": getenv("BLUEBUBBLES_WEBHOOK_HOST", "127.0.0.1"),
-            "webhook_port": getenv_int("BLUEBUBBLES_WEBHOOK_PORT", 8645),
-            "webhook_path": getenv("BLUEBUBBLES_WEBHOOK_PATH", "/bluebubbles-webhook"),
-            "send_read_receipts": is_truthy_value(getenv("BLUEBUBBLES_SEND_READ_RECEIPTS", "true")),
-        })
-        bluebubbles_require_mention = getenv("BLUEBUBBLES_REQUIRE_MENTION")
-        if bluebubbles_require_mention is not None:
-            config.platforms[Platform.BLUEBUBBLES].extra["require_mention"] = (
-                bluebubbles_require_mention.lower() in {"true", "1", "yes", "on"}
-            )
-        bluebubbles_mention_patterns = getenv("BLUEBUBBLES_MENTION_PATTERNS")
-        if bluebubbles_mention_patterns:
-            try:
-                parsed_patterns = json.loads(bluebubbles_mention_patterns)
-            except Exception:
-                parsed_patterns = [
-                    part.strip()
-                    for part in bluebubbles_mention_patterns.replace("\n", ",").split(",")
-                    if part.strip()
-                ]
-            config.platforms[Platform.BLUEBUBBLES].extra["mention_patterns"] = parsed_patterns
-    bluebubbles_home = getenv("BLUEBUBBLES_HOME_CHANNEL")
-    if bluebubbles_home and Platform.BLUEBUBBLES in config.platforms:
-        config.platforms[Platform.BLUEBUBBLES].home_channel = HomeChannel(
-            platform=Platform.BLUEBUBBLES,
-            chat_id=bluebubbles_home,
-            name=getenv("BLUEBUBBLES_HOME_CHANNEL_NAME", "Home"),
-            thread_id=getenv("BLUEBUBBLES_HOME_CHANNEL_THREAD_ID") or None,
-        )
-
-    # QQ (Official Bot API v2)
-    qq_app_id = getenv("QQ_APP_ID")
-    qq_client_secret = getenv("QQ_CLIENT_SECRET")
-    if qq_app_id or qq_client_secret:
-        if Platform.QQBOT not in config.platforms:
-            config.platforms[Platform.QQBOT] = PlatformConfig()
-        config.platforms[Platform.QQBOT].enabled = True
-        extra = config.platforms[Platform.QQBOT].extra
-        if qq_app_id:
-            extra["app_id"] = qq_app_id
-        if qq_client_secret:
-            extra["client_secret"] = qq_client_secret
-        qq_allowed_users = getenv("QQ_ALLOWED_USERS", "").strip()
-        if qq_allowed_users:
-            extra["allow_from"] = qq_allowed_users
-        qq_group_allowed = getenv("QQ_GROUP_ALLOWED_USERS", "").strip()
-        if qq_group_allowed:
-            extra["group_allow_from"] = qq_group_allowed
-        qq_home = getenv("QQBOT_HOME_CHANNEL", "").strip()
-        qq_home_name_env = "QQBOT_HOME_CHANNEL_NAME"
-        if not qq_home:
-            # Back-compat: accept the pre-rename name and log a one-time warning.
-            legacy_home = getenv("QQ_HOME_CHANNEL", "").strip()
-            if legacy_home:
-                qq_home = legacy_home
-                qq_home_name_env = "QQ_HOME_CHANNEL_NAME"
-                logging.getLogger(__name__).warning(
-                    "QQ_HOME_CHANNEL is deprecated; rename to QQBOT_HOME_CHANNEL "
-                    "in your .env for consistency with the platform key."
-                )
-        if qq_home:
-            config.platforms[Platform.QQBOT].home_channel = HomeChannel(
-                platform=Platform.QQBOT,
-                chat_id=qq_home,
-                name=getenv("QQBOT_HOME_CHANNEL_NAME") or getenv(qq_home_name_env, "Home"),
-                thread_id=(
-                    getenv("QQBOT_HOME_CHANNEL_THREAD_ID")
-                    or getenv("QQ_HOME_CHANNEL_THREAD_ID")
-                    or None
-                ),
-            )
-
-    # Yuanbao — YUANBAO_APP_ID preferred
-    yuanbao_app_id = getenv("YUANBAO_APP_ID") or getenv("YUANBAO_APP_KEY")
-    yuanbao_app_secret = getenv("YUANBAO_APP_SECRET")
-    if yuanbao_app_id and yuanbao_app_secret:
-        if Platform.YUANBAO not in config.platforms:
-            config.platforms[Platform.YUANBAO] = PlatformConfig()
-        config.platforms[Platform.YUANBAO].enabled = True
-        extra = config.platforms[Platform.YUANBAO].extra
-        extra["app_id"] = yuanbao_app_id
-        extra["app_secret"] = yuanbao_app_secret
-        yuanbao_bot_id = getenv("YUANBAO_BOT_ID")
-        if yuanbao_bot_id:
-            extra["bot_id"] = yuanbao_bot_id
-        yuanbao_ws_url = getenv("YUANBAO_WS_URL")
-        if yuanbao_ws_url:
-            extra["ws_url"] = yuanbao_ws_url
-        yuanbao_api_domain = getenv("YUANBAO_API_DOMAIN")
-        if yuanbao_api_domain:
-            extra["api_domain"] = yuanbao_api_domain
-        yuanbao_route_env = getenv("YUANBAO_ROUTE_ENV")
-        if yuanbao_route_env:
-            extra["route_env"] = yuanbao_route_env
-        yuanbao_home = getenv("YUANBAO_HOME_CHANNEL")
-        if yuanbao_home:
-            config.platforms[Platform.YUANBAO].home_channel = HomeChannel(
-                platform=Platform.YUANBAO,
-                chat_id=yuanbao_home,
-                name=getenv("YUANBAO_HOME_CHANNEL_NAME", "Home"),
-                thread_id=getenv("YUANBAO_HOME_CHANNEL_THREAD_ID") or None,
-            )
-        yuanbao_dm_policy = getenv("YUANBAO_DM_POLICY")
-        if yuanbao_dm_policy:
-            extra["dm_policy"] = yuanbao_dm_policy.strip().lower()
-        yuanbao_dm_allow_from = getenv("YUANBAO_DM_ALLOW_FROM")
-        if yuanbao_dm_allow_from:
-            extra["dm_allow_from"] = yuanbao_dm_allow_from
-        yuanbao_group_policy = getenv("YUANBAO_GROUP_POLICY")
-        if yuanbao_group_policy:
-            extra["group_policy"] = yuanbao_group_policy.strip().lower()
-        yuanbao_group_allow_from = getenv("YUANBAO_GROUP_ALLOW_FROM")
-        if yuanbao_group_allow_from:
-            extra["group_allow_from"] = yuanbao_group_allow_from
 
     # Session settings
     idle_minutes = getenv("SESSION_IDLE_MINUTES")

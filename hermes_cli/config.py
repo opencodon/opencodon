@@ -266,31 +266,6 @@ _EXTRA_ENV_KEYS = frozenset({
     "DISCORD_HOME_CHANNEL", "DISCORD_HOME_CHANNEL_NAME",
     "TELEGRAM_HOME_CHANNEL", "TELEGRAM_HOME_CHANNEL_NAME",
     "SLACK_HOME_CHANNEL", "SLACK_HOME_CHANNEL_NAME",
-    "SIGNAL_ACCOUNT", "SIGNAL_HTTP_URL",
-    "SIGNAL_ALLOWED_USERS", "SIGNAL_GROUP_ALLOWED_USERS",
-    "SIGNAL_HOME_CHANNEL", "SIGNAL_HOME_CHANNEL_NAME",
-    "SMS_HOME_CHANNEL", "SMS_HOME_CHANNEL_NAME",
-    "DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET",
-    "DINGTALK_HOME_CHANNEL", "DINGTALK_HOME_CHANNEL_NAME",
-    "FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_ENCRYPT_KEY", "FEISHU_VERIFICATION_TOKEN",
-    "FEISHU_HOME_CHANNEL", "FEISHU_HOME_CHANNEL_NAME",
-    "YUANBAO_HOME_CHANNEL", "YUANBAO_HOME_CHANNEL_NAME",
-    "WECOM_BOT_ID", "WECOM_SECRET",
-    "WECOM_CALLBACK_CORP_ID", "WECOM_CALLBACK_CORP_SECRET", "WECOM_CALLBACK_AGENT_ID",
-    "WECOM_CALLBACK_TOKEN", "WECOM_CALLBACK_ENCODING_AES_KEY",
-    "WECOM_CALLBACK_HOST", "WECOM_CALLBACK_PORT",
-    "WECOM_HOME_CHANNEL", "WECOM_HOME_CHANNEL_NAME",
-    "WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL", "WEIXIN_CDN_BASE_URL",
-    "WEIXIN_HOME_CHANNEL", "WEIXIN_HOME_CHANNEL_NAME", "WEIXIN_DM_POLICY", "WEIXIN_GROUP_POLICY",
-    "WEIXIN_ALLOWED_USERS", "WEIXIN_GROUP_ALLOWED_USERS", "WEIXIN_ALLOW_ALL_USERS",
-    "BLUEBUBBLES_SERVER_URL", "BLUEBUBBLES_PASSWORD",
-    "BLUEBUBBLES_HOME_CHANNEL", "BLUEBUBBLES_HOME_CHANNEL_NAME",
-    "QQ_APP_ID", "QQ_CLIENT_SECRET", "QQBOT_HOME_CHANNEL", "QQBOT_HOME_CHANNEL_NAME",
-    "QQ_HOME_CHANNEL", "QQ_HOME_CHANNEL_NAME",  # legacy aliases (pre-rename, still read for back-compat)
-    "QQ_ALLOWED_USERS", "QQ_GROUP_ALLOWED_USERS", "QQ_ALLOW_ALL_USERS", "QQ_MARKDOWN_SUPPORT",
-    "QQ_STT_API_KEY", "QQ_STT_BASE_URL", "QQ_STT_MODEL",
-    "IRC_SERVER", "IRC_PORT", "IRC_NICKNAME", "IRC_CHANNEL",
-    "IRC_USE_TLS", "IRC_SERVER_PASSWORD", "IRC_NICKSERV_PASSWORD",
     "TERMINAL_ENV", "TERMINAL_SSH_KEY", "TERMINAL_SSH_PORT",
     # Deprecated tool-progress env vars — replaced by display.tool_progress in
     # config.yaml. Kept known here so .env sanitization/reload still handle
@@ -298,10 +273,6 @@ _EXTRA_ENV_KEYS = frozenset({
     # without surfacing them in user-facing OPTIONAL_ENV_VARS listings.
     "HERMES_TOOL_PROGRESS", "HERMES_TOOL_PROGRESS_MODE",
     "WHATSAPP_MODE", "WHATSAPP_ENABLED",
-    "MATTERMOST_HOME_CHANNEL", "MATTERMOST_HOME_CHANNEL_NAME", "MATTERMOST_REPLY_MODE",
-    "MATRIX_PASSWORD", "MATRIX_ENCRYPTION", "MATRIX_DEVICE_ID", "MATRIX_HOME_ROOM",
-    "MATRIX_REQUIRE_MENTION", "MATRIX_FREE_RESPONSE_ROOMS", "MATRIX_AUTO_THREAD", "MATRIX_DM_AUTO_THREAD",
-    "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
     # Activation is via plugins.enabled (opt-in through `hermes plugins enable
     # observability/langfuse` or `hermes tools → Langfuse`); credentials gate
@@ -2631,21 +2602,6 @@ DEFAULT_CONFIG = {
         },
     },
 
-    # Mattermost platform settings (gateway mode)
-    "mattermost": {
-        "require_mention": True,       # Require @mention to respond in channels
-        "free_response_channels": "",  # Comma-separated channel IDs where bot responds without mention
-        "allowed_channels": "",        # If set, bot ONLY responds in these channel IDs (whitelist)
-        "channel_prompts": {},         # Per-channel ephemeral system prompts
-    },
-
-    # Matrix platform settings (gateway mode)
-    "matrix": {
-        "require_mention": True,       # Require @mention to respond in rooms
-        "free_response_rooms": "",     # Comma-separated room IDs where bot responds without mention
-        "allowed_rooms": "",           # If set, bot ONLY responds in these room IDs (whitelist)
-    },
-
     # Approval mode for dangerous commands:
     #   manual — always prompt the user
     #   smart  — use auxiliary LLM to auto-approve low-risk commands (default)
@@ -4305,222 +4261,6 @@ OPTIONAL_ENV_VARS = {
         "url": "https://api.slack.com/apps",
         "password": False,
         "category": "messaging",
-    },
-    "MATTERMOST_URL": {
-        "description": "Mattermost server URL (e.g. https://mm.example.com)",
-        "prompt": "Mattermost server URL",
-        "url": "https://mattermost.com/deploy/",
-        "password": False,
-        "category": "messaging",
-    },
-    "MATTERMOST_TOKEN": {
-        "description": "Mattermost bot token or personal access token",
-        "prompt": "Mattermost bot token",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-    },
-    "MATTERMOST_ALLOWED_USERS": {
-        "description": "Comma-separated Mattermost user IDs allowed to use the bot",
-        "prompt": "Allowed Mattermost user IDs (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATTERMOST_REQUIRE_MENTION": {
-        "description": "Require @mention in Mattermost channels (default: true). Set to false to respond to all messages.",
-        "prompt": "Require @mention in channels",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATTERMOST_FREE_RESPONSE_CHANNELS": {
-        "description": "Comma-separated Mattermost channel IDs where bot responds without @mention",
-        "prompt": "Free-response channel IDs (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_HOMESERVER": {
-        "description": "Matrix homeserver URL (e.g. https://matrix.example.org)",
-        "prompt": "Matrix homeserver URL",
-        "url": "https://matrix.org/ecosystem/servers/",
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_ACCESS_TOKEN": {
-        "description": "Matrix access token (preferred over password login)",
-        "prompt": "Matrix access token",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-    },
-    "MATRIX_USER_ID": {
-        "description": "Matrix user ID (e.g. @hermes:example.org)",
-        "prompt": "Matrix user ID (@user:server)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_ALLOWED_USERS": {
-        "description": "Comma-separated Matrix user IDs allowed to use the bot (@user:server format)",
-        "prompt": "Allowed Matrix user IDs (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_REQUIRE_MENTION": {
-        "description": "Require @mention in Matrix rooms (default: true). Set to false to respond to all messages.",
-        "prompt": "Require @mention in rooms (true/false)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "MATRIX_FREE_RESPONSE_ROOMS": {
-        "description": "Comma-separated Matrix room IDs where bot responds without @mention",
-        "prompt": "Free-response room IDs (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "MATRIX_AUTO_THREAD": {
-        "description": "Auto-create threads for messages in Matrix rooms (default: true)",
-        "prompt": "Auto-create threads in rooms (true/false)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "MATRIX_DM_AUTO_THREAD": {
-        "description": "Auto-create threads for DM messages in Matrix (default: false)",
-        "prompt": "Auto-create threads in DMs (true/false)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "MATRIX_DEVICE_ID": {
-        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. HERMES_BOT)",
-        "prompt": "Matrix device ID (stable across restarts)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "MATRIX_RECOVERY_KEY": {
-        "description": "Matrix recovery key for cross-signing verification after device key rotation (from Element: Settings → Security → Recovery Key)",
-        "prompt": "Matrix recovery key",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "BLUEBUBBLES_SERVER_URL": {
-        "description": "BlueBubbles server URL for iMessage integration (e.g. http://192.168.1.10:1234)",
-        "prompt": "BlueBubbles server URL",
-        "url": "https://bluebubbles.app/",
-        "password": False,
-        "category": "messaging",
-    },
-    "BLUEBUBBLES_PASSWORD": {
-        "description": "BlueBubbles server password (from BlueBubbles Server → Settings → API)",
-        "prompt": "BlueBubbles server password",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-    },
-    "BLUEBUBBLES_ALLOWED_USERS": {
-        "description": "Comma-separated iMessage addresses (email or phone) allowed to use the bot",
-        "prompt": "Allowed iMessage addresses (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "BLUEBUBBLES_ALLOW_ALL_USERS": {
-        "description": "Allow all BlueBubbles users without allowlist",
-        "prompt": "Allow All BlueBubbles Users",
-        "category": "messaging",
-    },
-    "QQ_APP_ID": {
-        "description": "QQ Bot App ID from QQ Open Platform (q.qq.com)",
-        "prompt": "QQ App ID",
-        "url": "https://q.qq.com",
-        "category": "messaging",
-    },
-    "QQ_CLIENT_SECRET": {
-        "description": "QQ Bot Client Secret from QQ Open Platform",
-        "prompt": "QQ Client Secret",
-        "password": True,
-        "category": "messaging",
-    },
-    "QQ_ALLOWED_USERS": {
-        "description": "Comma-separated QQ user IDs allowed to use the bot",
-        "prompt": "QQ Allowed Users",
-        "category": "messaging",
-    },
-    "QQ_GROUP_ALLOWED_USERS": {
-        "description": "Comma-separated QQ group IDs allowed to interact with the bot",
-        "prompt": "QQ Group Allowed Users",
-        "category": "messaging",
-    },
-    "QQ_ALLOW_ALL_USERS": {
-        "description": "Allow all QQ users without an allowlist (true/false)",
-        "prompt": "Allow All QQ Users",
-        "category": "messaging",
-    },
-    "QQBOT_HOME_CHANNEL": {
-        "description": "Default QQ channel/group for cron delivery and notifications",
-        "prompt": "QQ Home Channel",
-        "category": "messaging",
-    },
-    "QQBOT_HOME_CHANNEL_NAME": {
-        "description": "Display name for the QQ home channel",
-        "prompt": "QQ Home Channel Name",
-        "category": "messaging",
-    },
-    "QQ_SANDBOX": {
-        "description": "Enable QQ sandbox mode for development testing (true/false)",
-        "prompt": "QQ Sandbox Mode",
-        "category": "messaging",
-    },
-    "IRC_SERVER": {
-        "description": "IRC server hostname (e.g. irc.libera.chat)",
-        "prompt": "IRC server",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "IRC_CHANNEL": {
-        "description": "IRC channel to join (e.g. #hermes)",
-        "prompt": "IRC channel",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "IRC_NICKNAME": {
-        "description": "Bot nickname on IRC (default: hermes-bot)",
-        "prompt": "IRC nickname",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "IRC_SERVER_PASSWORD": {
-        "description": "IRC server password (if required)",
-        "prompt": "IRC server password",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-        "advanced": True,
-    },
-    "IRC_NICKSERV_PASSWORD": {
-        "description": "NickServ password for nick identification",
-        "prompt": "NickServ password",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-        "advanced": True,
     },
     "GATEWAY_ALLOW_ALL_USERS": {
         "description": "Allow all users to interact with messaging bots (true/false). Default: false.",
@@ -8617,9 +8357,7 @@ _OPEN_DICT_TOP_LEVEL_KEYS = frozenset({
 # etc.). For these we validate the FIRST segment but accept anything below.
 _SCHEMA_DEFINED_DICT_KEYS = frozenset({
     # Platform configs — PlatformConfig dataclass + dynamic extras
-    "discord", "telegram", "slack", "whatsapp", "signal", "mattermost",
-    "matrix", "feishu", "wecom", "weixin", "bluebubbles", "qqbot", "yuanbao",
-    "email", "sms", "dingtalk",
+    "discord", "telegram", "slack", "whatsapp",
     # MCP server template / dynamic auth dicts
     "sessions", "checkpoints",
 })

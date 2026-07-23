@@ -661,22 +661,6 @@ class GatewaySlashCommandsMixin:
         ])
         if queue_depth:
             lines.append(t("gateway.status.queued", count=queue_depth))
-        if source.platform == Platform.MATRIX:
-            adapter = self.adapters.get(Platform.MATRIX)
-            scope = getattr(adapter, "_matrix_session_scope", os.getenv("MATRIX_SESSION_SCOPE", "auto"))
-            thread = source.thread_id or "none"
-            lines.extend([
-                "",
-                t("gateway.status.matrix_scope_header"),
-                t("gateway.status.matrix_scope_room", room=source.chat_name or source.chat_id),
-                t("gateway.status.matrix_scope_room_id", room_id=source.chat_id),
-                t("gateway.status.matrix_scope_thread", thread_id=thread),
-                t("gateway.status.matrix_scope_mode", scope=scope),
-                t(
-                    "gateway.status.matrix_scope_key",
-                    session_key=self._redact_matrix_session_key(session_key),
-                ),
-            ])
         lines.extend([
             "",
             t("gateway.status.platforms", platforms=', '.join(connected_platforms)),

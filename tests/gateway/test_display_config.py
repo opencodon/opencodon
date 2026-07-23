@@ -43,8 +43,8 @@ class TestResolveDisplaySetting:
         # Telegram is a mobile inbox by default — final-answer-first unless
         # explicitly configured otherwise.
         assert resolve_display_setting(config, "telegram", "tool_progress") == "off"
-        # Email defaults to tier_minimal → "off"
-        assert resolve_display_setting(config, "email", "tool_progress") == "off"
+        # Webhook defaults to tier_minimal → "off"
+        assert resolve_display_setting(config, "webhook", "tool_progress") == "off"
 
     def test_global_default_for_unknown_platform(self):
         """Unknown platforms get the global defaults."""
@@ -110,12 +110,12 @@ class TestBackwardCompat:
             "display": {
                 "tool_progress": "all",
                 "tool_progress_overrides": {
-                    "signal": "off",
+                    "slack": "off",
                     "telegram": "verbose",
                 },
             }
         }
-        assert resolve_display_setting(config, "signal", "tool_progress") == "off"
+        assert resolve_display_setting(config, "slack", "tool_progress") == "off"
         assert resolve_display_setting(config, "telegram", "tool_progress") == "verbose"
 
     def test_new_platforms_takes_precedence_over_legacy(self):
@@ -240,10 +240,10 @@ class TestPlatformDefaults:
         assert resolve_display_setting({}, "discord", "tool_progress") == "all"
 
     def test_medium_tier_platforms(self):
-        """Mattermost, Matrix, Feishu, WhatsApp default to 'new' tool progress."""
+        """WhatsApp defaults to 'new' tool progress."""
         from gateway.display_config import resolve_display_setting
 
-        for plat in ("mattermost", "matrix", "feishu", "whatsapp"):
+        for plat in ("whatsapp",):
             assert resolve_display_setting({}, plat, "tool_progress") == "new", plat
 
     def test_slack_defaults_tool_progress_off(self):
@@ -253,10 +253,10 @@ class TestPlatformDefaults:
         assert resolve_display_setting({}, "slack", "tool_progress") == "off"
 
     def test_low_tier_platforms(self):
-        """Signal, BlueBubbles, etc. default to 'off' tool progress."""
+        """WhatsApp Cloud defaults to 'off' tool progress."""
         from gateway.display_config import resolve_display_setting
 
-        for plat in ("signal", "bluebubbles", "weixin", "wecom", "dingtalk", "whatsapp_cloud"):
+        for plat in ("whatsapp_cloud",):
             assert resolve_display_setting({}, plat, "tool_progress") == "off", plat
 
     def test_whatsapp_cloud_locked_to_low_tier_until_edit_message_lands(self):
@@ -274,18 +274,18 @@ class TestPlatformDefaults:
         assert resolve_display_setting({}, "whatsapp_cloud", "streaming") is False
 
     def test_minimal_tier_platforms(self):
-        """Email, SMS, webhook default to 'off' tool progress."""
+        """Webhook defaults to 'off' tool progress."""
         from gateway.display_config import resolve_display_setting
 
-        for plat in ("email", "sms", "webhook", "homeassistant"):
+        for plat in ("webhook",):
             assert resolve_display_setting({}, plat, "tool_progress") == "off", plat
 
     def test_low_tier_streaming_defaults_to_false(self):
         """Low-tier platforms default streaming to False."""
         from gateway.display_config import resolve_display_setting
 
-        assert resolve_display_setting({}, "signal", "streaming") is False
-        assert resolve_display_setting({}, "email", "streaming") is False
+        assert resolve_display_setting({}, "whatsapp_cloud", "streaming") is False
+        assert resolve_display_setting({}, "webhook", "streaming") is False
 
     def test_high_tier_streaming_defaults_to_none(self):
         """High-tier platforms default streaming to None (follow global)."""

@@ -1111,7 +1111,7 @@ class TestPromptBuilderConstants:
         agent "do not use markdown", which made it strip bullets/bold the
         adapter would have rendered. The hint must affirm markdown, not
         forbid it."""
-        for key in ("whatsapp", "signal"):
+        for key in ("whatsapp",):
             hint = PLATFORM_HINTS[key]
             assert "do not use markdown" not in hint.lower()
             assert "markdown" in hint.lower()
@@ -1157,29 +1157,6 @@ class TestPromptBuilderConstants:
         assert "numbered" in rich_lowered
         # Local media delivery guidance must remain intact in the base hint.
         assert "include MEDIA:" in hint
-
-    def test_platform_hints_mattermost(self):
-        hint = PLATFORM_HINTS["mattermost"]
-        assert "Mattermost" in hint
-        assert "MEDIA:" in hint
-        assert "Markdown" in hint
-
-    def test_platform_hints_matrix(self):
-        hint = PLATFORM_HINTS["matrix"]
-        assert "Matrix" in hint
-        assert "MEDIA:" in hint
-        assert "Markdown" in hint
-        # Regression (#52552): the hint must steer models away from Markdown
-        # tables — popular Matrix clients don't render HTML tables and the
-        # cells collapse into one continuous line.
-        assert "table" in hint.lower()
-        assert "Do NOT use Markdown tables" in hint
-
-    def test_platform_hints_feishu(self):
-        hint = PLATFORM_HINTS["feishu"]
-        assert "Feishu" in hint
-        assert "MEDIA:" in hint
-        assert "Markdown" in hint
 
     def test_platform_hints_webui(self):
         hint = PLATFORM_HINTS["webui"]

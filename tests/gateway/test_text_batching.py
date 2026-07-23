@@ -235,68 +235,6 @@ def _make_matrix_adapter():
     return adapter
 
 
-class TestMatrixTextBatching:
-    @pytest.mark.asyncio
-    async def test_single_message_dispatched_after_delay(self):
-        adapter = _make_matrix_adapter()
-        event = _make_event("hello world", Platform.MATRIX)
-
-        adapter._enqueue_text_event(event)
-
-        adapter.handle_message.assert_not_called()
-        await asyncio.sleep(0.2)
-
-        adapter.handle_message.assert_called_once()
-        assert adapter.handle_message.call_args[0][0].text == "hello world"
-
-    @pytest.mark.asyncio
-    async def test_split_messages_aggregated(self):
-        adapter = _make_matrix_adapter()
-
-        adapter._enqueue_text_event(_make_event("first part", Platform.MATRIX))
-        await asyncio.sleep(0.02)
-        adapter._enqueue_text_event(_make_event("second part", Platform.MATRIX))
-
-        adapter.handle_message.assert_not_called()
-        await asyncio.sleep(0.2)
-
-        adapter.handle_message.assert_called_once()
-        text = adapter.handle_message.call_args[0][0].text
-        assert "first part" in text
-        assert "second part" in text
-
-    @pytest.mark.asyncio
-    async def test_different_rooms_not_merged(self):
-        adapter = _make_matrix_adapter()
-
-        adapter._enqueue_text_event(_make_event("room A", Platform.MATRIX, chat_id="!aaa:matrix.org"))
-        adapter._enqueue_text_event(_make_event("room B", Platform.MATRIX, chat_id="!bbb:matrix.org"))
-
-        await asyncio.sleep(0.2)
-
-        assert adapter.handle_message.call_count == 2
-
-    @pytest.mark.asyncio
-    async def test_adaptive_delay_for_near_limit_chunk(self):
-        """Chunks near the outbound limit should trigger longer delay."""
-        adapter = _make_matrix_adapter()
-        long_text = "x" * (adapter._split_threshold + 50)
-        adapter._enqueue_text_event(_make_event(long_text, Platform.MATRIX))
-
-        await asyncio.sleep(0.15)
-        adapter.handle_message.assert_not_called()
-
-        await asyncio.sleep(0.25)
-        adapter.handle_message.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_batch_cleans_up_after_flush(self):
-        adapter = _make_matrix_adapter()
-        adapter._enqueue_text_event(_make_event("test", Platform.MATRIX))
-        await asyncio.sleep(0.2)
-        assert len(adapter._pending_text_batches) == 0
-
-
 # =====================================================================
 # WeCom text batching
 # =====================================================================
@@ -318,68 +256,6 @@ def _make_wecom_adapter():
     adapter._message_handler = AsyncMock()
     adapter.handle_message = AsyncMock()
     return adapter
-
-
-class TestWeComTextBatching:
-    @pytest.mark.asyncio
-    async def test_single_message_dispatched_after_delay(self):
-        adapter = _make_wecom_adapter()
-        event = _make_event("hello world", Platform.WECOM)
-
-        adapter._enqueue_text_event(event)
-
-        adapter.handle_message.assert_not_called()
-        await asyncio.sleep(0.2)
-
-        adapter.handle_message.assert_called_once()
-        assert adapter.handle_message.call_args[0][0].text == "hello world"
-
-    @pytest.mark.asyncio
-    async def test_split_messages_aggregated(self):
-        adapter = _make_wecom_adapter()
-
-        adapter._enqueue_text_event(_make_event("first part", Platform.WECOM))
-        await asyncio.sleep(0.02)
-        adapter._enqueue_text_event(_make_event("second part", Platform.WECOM))
-
-        adapter.handle_message.assert_not_called()
-        await asyncio.sleep(0.2)
-
-        adapter.handle_message.assert_called_once()
-        text = adapter.handle_message.call_args[0][0].text
-        assert "first part" in text
-        assert "second part" in text
-
-    @pytest.mark.asyncio
-    async def test_different_chats_not_merged(self):
-        adapter = _make_wecom_adapter()
-
-        adapter._enqueue_text_event(_make_event("chat A", Platform.WECOM, chat_id="chat_a"))
-        adapter._enqueue_text_event(_make_event("chat B", Platform.WECOM, chat_id="chat_b"))
-
-        await asyncio.sleep(0.2)
-
-        assert adapter.handle_message.call_count == 2
-
-    @pytest.mark.asyncio
-    async def test_adaptive_delay_for_near_limit_chunk(self):
-        """Chunks near the 4000-char limit should trigger longer delay."""
-        adapter = _make_wecom_adapter()
-        long_text = "x" * 3950
-        adapter._enqueue_text_event(_make_event(long_text, Platform.WECOM))
-
-        await asyncio.sleep(0.15)
-        adapter.handle_message.assert_not_called()
-
-        await asyncio.sleep(0.25)
-        adapter.handle_message.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_batch_cleans_up_after_flush(self):
-        adapter = _make_wecom_adapter()
-        adapter._enqueue_text_event(_make_event("test", Platform.WECOM))
-        await asyncio.sleep(0.2)
-        assert len(adapter._pending_text_batches) == 0
 
 
 # =====================================================================
@@ -472,40 +348,3 @@ def _make_feishu_adapter():
     adapter._handle_message_with_guards = AsyncMock()
     return adapter
 
-
-class TestFeishuAdaptiveDelay:
-    @pytest.mark.asyncio
-    async def test_short_chunk_uses_normal_delay(self):
-        adapter = _make_feishu_adapter()
-        event = _make_event("short msg", Platform.FEISHU)
-        await adapter._enqueue_text_event(event)
-
-        await asyncio.sleep(0.15)
-        adapter._handle_message_with_guards.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_near_limit_chunk_uses_split_delay(self):
-        """A chunk near the 4096-char limit should trigger longer delay."""
-        adapter = _make_feishu_adapter()
-        long_text = "x" * 4050
-        event = _make_event(long_text, Platform.FEISHU)
-        await adapter._enqueue_text_event(event)
-
-        await asyncio.sleep(0.15)
-        adapter._handle_message_with_guards.assert_not_called()
-
-        await asyncio.sleep(0.25)
-        adapter._handle_message_with_guards.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_split_continuation_merged(self):
-        adapter = _make_feishu_adapter()
-
-        await adapter._enqueue_text_event(_make_event("x" * 4050, Platform.FEISHU))
-        await asyncio.sleep(0.05)
-        await adapter._enqueue_text_event(_make_event("continuation text", Platform.FEISHU))
-
-        await asyncio.sleep(0.15)
-        adapter._handle_message_with_guards.assert_called_once()
-        text = adapter._handle_message_with_guards.call_args[0][0].text
-        assert "continuation text" in text

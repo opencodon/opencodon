@@ -7,18 +7,18 @@ from gateway.run import GatewayRunner
 
 
 @pytest.mark.asyncio
-async def test_unrelated_allow_all_does_not_bypass_yuanbao_open_gate(
+async def test_unrelated_allow_all_does_not_bypass_whatsapp_open_gate(
     monkeypatch, tmp_path,
 ):
-    """TELEGRAM_ALLOW_ALL_USERS must not satisfy Yuanbao's open-policy opt-in."""
+    """TELEGRAM_ALLOW_ALL_USERS must not satisfy WhatsApp's open-policy opt-in."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
-    monkeypatch.delenv("YUANBAO_ALLOW_ALL_USERS", raising=False)
+    monkeypatch.delenv("WHATSAPP_ALLOW_ALL_USERS", raising=False)
     monkeypatch.setenv("TELEGRAM_ALLOW_ALL_USERS", "true")
 
     config = GatewayConfig(
         platforms={
-            Platform.YUANBAO: PlatformConfig(
+            Platform.WHATSAPP: PlatformConfig(
                 enabled=True,
                 extra={"dm_policy": "open"},
             ),
@@ -31,20 +31,20 @@ async def test_unrelated_allow_all_does_not_bypass_yuanbao_open_gate(
 
     assert ok is True
     assert runner.should_exit_cleanly is True
-    assert "yuanbao" in (runner.exit_reason or "").lower()
+    assert "whatsapp" in (runner.exit_reason or "").lower()
 
 
 @pytest.mark.asyncio
-async def test_gateway_allow_all_satisfies_yuanbao_open_gate(monkeypatch, tmp_path):
+async def test_gateway_allow_all_satisfies_whatsapp_open_gate(monkeypatch, tmp_path):
     """GATEWAY_ALLOW_ALL_USERS is the intended global open-policy opt-in."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     monkeypatch.setenv("GATEWAY_ALLOW_ALL_USERS", "true")
-    monkeypatch.delenv("YUANBAO_ALLOW_ALL_USERS", raising=False)
+    monkeypatch.delenv("WHATSAPP_ALLOW_ALL_USERS", raising=False)
     monkeypatch.delenv("TELEGRAM_ALLOW_ALL_USERS", raising=False)
 
     config = GatewayConfig(
         platforms={
-            Platform.YUANBAO: PlatformConfig(
+            Platform.WHATSAPP: PlatformConfig(
                 enabled=True,
                 extra={"dm_policy": "open"},
             ),

@@ -204,30 +204,6 @@ class TestGetConnectedPlatforms:
         config = GatewayConfig()
         assert config.get_connected_platforms() == []
 
-    def test_dingtalk_recognised_via_extras(self):
-        config = GatewayConfig(
-            platforms={
-                Platform.DINGTALK: PlatformConfig(
-                    enabled=True,
-                    extra={"client_id": "cid", "client_secret": "sec"},
-                ),
-            },
-        )
-        assert Platform.DINGTALK in config.get_connected_platforms()
-
-    def test_dingtalk_recognised_via_env_vars(self, monkeypatch):
-        """DingTalk configured via env vars (no extras) should still be
-        recognised as connected — covers the case where _apply_env_overrides
-        hasn't populated extras yet."""
-        monkeypatch.setenv("DINGTALK_CLIENT_ID", "env_cid")
-        monkeypatch.setenv("DINGTALK_CLIENT_SECRET", "env_sec")
-        config = GatewayConfig(
-            platforms={
-                Platform.DINGTALK: PlatformConfig(enabled=True, extra={}),
-            },
-        )
-        assert Platform.DINGTALK in config.get_connected_platforms()
-
     def test_dingtalk_missing_creds_not_connected(self, monkeypatch):
         monkeypatch.delenv("DINGTALK_CLIENT_ID", raising=False)
         monkeypatch.delenv("DINGTALK_CLIENT_SECRET", raising=False)
@@ -424,13 +400,6 @@ class TestGatewayConfigRoundtrip:
 
         assert restored.unauthorized_dm_behavior == "ignore"
         assert restored.platforms[Platform.WHATSAPP].extra["unauthorized_dm_behavior"] == "pair"
-
-    def test_email_defaults_to_ignore_for_unauthorized_dm_behavior(self):
-        config = GatewayConfig(
-            platforms={Platform.EMAIL: PlatformConfig(enabled=True)},
-        )
-
-        assert config.get_unauthorized_dm_behavior(Platform.EMAIL) == "ignore"
 
     def test_email_can_opt_into_pairing_for_unauthorized_dm_behavior(self):
         config = GatewayConfig(
@@ -1138,63 +1107,6 @@ class TestLoadGatewayConfig:
         ]
         assert os.environ.get("DISCORD_ALLOWED_USERS") == "123456789012345678"
 
-    def test_bridges_nested_gateway_platforms_dingtalk_allowed_users_to_env(self, tmp_path, monkeypatch):
-        """gateway.platforms.dingtalk.extra.allowed_users must reach
-        DINGTALK_ALLOWED_USERS — it's the documented config.yaml alternative
-        to the env var (website/docs/user-guide/messaging/dingtalk.md), the
-        adapter reads it from PlatformConfig.extra, but gateway auth
-        (_is_user_authorized) only consults the env var.
-        """
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
-        config_path.write_text(
-            "gateway:\n"
-            "  platforms:\n"
-            "    dingtalk:\n"
-            "      enabled: true\n"
-            "      extra:\n"
-            "        allowed_users:\n"
-            "          - user-id-1\n"
-            "          - user-id-2\n",
-            encoding="utf-8",
-        )
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("DINGTALK_ALLOWED_USERS", raising=False)
-
-        config = load_gateway_config()
-
-        assert config.platforms[Platform.DINGTALK].extra["allowed_users"] == [
-            "user-id-1",
-            "user-id-2",
-        ]
-        assert os.environ.get("DINGTALK_ALLOWED_USERS") == "user-id-1,user-id-2"
-
-    def test_bridges_platforms_dingtalk_extra_allowed_users_to_env(self, tmp_path, monkeypatch):
-        """platforms.dingtalk.extra.allowed_users should reach DINGTALK_ALLOWED_USERS too."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
-        config_path.write_text(
-            "platforms:\n"
-            "  dingtalk:\n"
-            "    extra:\n"
-            "      allowed_users:\n"
-            "        - manager1234\n",
-            encoding="utf-8",
-        )
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("DINGTALK_ALLOWED_USERS", raising=False)
-
-        config = load_gateway_config()
-
-        assert config.platforms[Platform.DINGTALK].extra["allowed_users"] == [
-            "manager1234",
-        ]
-        assert os.environ.get("DINGTALK_ALLOWED_USERS") == "manager1234"
-
     def test_dingtalk_allowed_users_env_takes_precedence_over_config_yaml(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
@@ -1215,86 +1127,6 @@ class TestLoadGatewayConfig:
         load_gateway_config()
 
         assert os.environ.get("DINGTALK_ALLOWED_USERS") == "env-user"
-
-    def test_top_level_dingtalk_allowed_users_wins_over_nested_extra(self, tmp_path, monkeypatch):
-        """The legacy top-level dingtalk: block keeps precedence over the
-        nested platform extra when both define an allowlist."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
-        config_path.write_text(
-            "dingtalk:\n"
-            "  allowed_users:\n"
-            "    - top-level-user\n"
-            "gateway:\n"
-            "  platforms:\n"
-            "    dingtalk:\n"
-            "      extra:\n"
-            "        allowed_users:\n"
-            "          - nested-user\n",
-            encoding="utf-8",
-        )
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("DINGTALK_ALLOWED_USERS", raising=False)
-
-        load_gateway_config()
-
-        assert os.environ.get("DINGTALK_ALLOWED_USERS") == "top-level-user"
-
-    def test_nested_dingtalk_allowlist_authorizes_listed_user_only(self, tmp_path, monkeypatch):
-        """E2E for the documented setup: a nested-only allowlist must
-        authorize the listed user at the gateway and still deny others.
-
-        Before the bridge existed, the listed user passed the adapter's
-        _is_user_allowed() but _is_user_authorized() fell through to
-        default-deny because DINGTALK_ALLOWED_USERS was never populated.
-        """
-        from types import SimpleNamespace
-
-        from gateway.run import GatewayRunner
-        from gateway.session import SessionSource
-
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
-        config_path.write_text(
-            "gateway:\n"
-            "  platforms:\n"
-            "    dingtalk:\n"
-            "      enabled: true\n"
-            "      extra:\n"
-            "        allowed_users:\n"
-            "          - user-id-1\n",
-            encoding="utf-8",
-        )
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        for var in (
-            "DINGTALK_ALLOWED_USERS",
-            "DINGTALK_ALLOW_ALL_USERS",
-            "GATEWAY_ALLOWED_USERS",
-            "GATEWAY_ALLOW_ALL_USERS",
-        ):
-            monkeypatch.delenv(var, raising=False)
-
-        config = load_gateway_config()
-
-        runner = object.__new__(GatewayRunner)
-        runner.pairing_store = SimpleNamespace(is_approved=lambda *_a, **_kw: False)
-        runner.config = config
-
-        def _dm_source(user_id):
-            return SessionSource(
-                platform=Platform.DINGTALK,
-                chat_id="dm-1",
-                chat_type="dm",
-                user_id=user_id,
-                user_name="someone",
-            )
-
-        assert runner._is_user_authorized(_dm_source("user-id-1")) is True
-        assert runner._is_user_authorized(_dm_source("intruder")) is False
 
     def test_bridges_quoted_false_platform_enabled_from_config_yaml(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / ".hermes"
@@ -1576,22 +1408,6 @@ class TestLoadGatewayConfig:
         assert config.platforms[Platform.SLACK].extra["channel_prompts"] == {
             "C01ABC": "Code review mode",
         }
-
-    def test_bridges_feishu_allow_bots_from_config_yaml_to_env(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
-        config_path.write_text(
-            "feishu:\n  allow_bots: mentions\n",
-            encoding="utf-8",
-        )
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("FEISHU_ALLOW_BOTS", raising=False)
-
-        load_gateway_config()
-
-        assert os.environ.get("FEISHU_ALLOW_BOTS") == "mentions"
 
     def test_feishu_allow_bots_env_takes_precedence_over_config_yaml(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / ".hermes"
@@ -1875,54 +1691,6 @@ class TestHomeChannelEnvOverrides:
                     "WHATSAPP_HOME_CHANNEL_NAME": "Owner DM",
                 },
                 ("1234567890@lid", "Owner DM"),
-            ),
-            (
-                Platform.SIGNAL,
-                PlatformConfig(
-                    enabled=True,
-                    extra={"http_url": "http://localhost:9090", "account": "+15551234567"},
-                ),
-                {"SIGNAL_HOME_CHANNEL": "+1555000", "SIGNAL_HOME_CHANNEL_NAME": "Phone"},
-                ("+1555000", "Phone"),
-            ),
-            (
-                Platform.MATTERMOST,
-                PlatformConfig(
-                    enabled=True,
-                    token="mm-token",
-                    extra={"url": "https://mm.example.com"},
-                ),
-                {"MATTERMOST_HOME_CHANNEL": "ch_abc123", "MATTERMOST_HOME_CHANNEL_NAME": "General"},
-                ("ch_abc123", "General"),
-            ),
-            (
-                Platform.MATRIX,
-                PlatformConfig(
-                    enabled=True,
-                    token="syt_abc123",
-                    extra={"homeserver": "https://matrix.example.org"},
-                ),
-                {"MATRIX_HOME_ROOM": "!room123:example.org", "MATRIX_HOME_ROOM_NAME": "Bot Room"},
-                ("!room123:example.org", "Bot Room"),
-            ),
-            (
-                Platform.EMAIL,
-                PlatformConfig(
-                    enabled=True,
-                    extra={
-                        "address": "hermes@test.com",
-                        "imap_host": "imap.test.com",
-                        "smtp_host": "smtp.test.com",
-                    },
-                ),
-                {"EMAIL_HOME_ADDRESS": "user@test.com", "EMAIL_HOME_ADDRESS_NAME": "Inbox"},
-                ("user@test.com", "Inbox"),
-            ),
-            (
-                Platform.SMS,
-                PlatformConfig(enabled=True, api_key="token_abc"),
-                {"SMS_HOME_CHANNEL": "+15559876543", "SMS_HOME_CHANNEL_NAME": "My Phone"},
-                ("+15559876543", "My Phone"),
             ),
         ]
 

@@ -1517,19 +1517,16 @@ class TestDoctorDeprecatedConfigAndEnv:
         env = {
             "HERMES_TOOL_PROGRESS": "true",
             "TERMINAL_CWD": "/tmp/proj",
-            "QQ_HOME_CHANNEL": "12345",
             "OPENAI_API_KEY": "sk-test",  # not deprecated
         }
         findings = doctor_mod.collect_deprecated_env_vars(env)
         names = {n for n, _ in findings}
         assert "HERMES_TOOL_PROGRESS" in names
         assert "TERMINAL_CWD" in names
-        assert "QQ_HOME_CHANNEL" in names
         assert "OPENAI_API_KEY" not in names
         by_name = dict(findings)
         assert "display.tool_progress" in by_name["HERMES_TOOL_PROGRESS"]
         assert "terminal.cwd" in by_name["TERMINAL_CWD"]
-        assert by_name["QQ_HOME_CHANNEL"] == "QQBOT_HOME_CHANNEL"
 
     def test_collect_deprecated_env_vars_ignores_empty(self):
         assert doctor_mod.collect_deprecated_env_vars({"TERMINAL_CWD": "  "}) == []
@@ -1601,7 +1598,6 @@ compression:
             "OPENAI_API_KEY=sk-test\n"
             "HERMES_TOOL_PROGRESS=true\n"
             "TERMINAL_CWD=/old/path\n"
-            "QQ_HOME_CHANNEL=999\n"
         )
         out, _ = self._run_doctor_with_config(
             monkeypatch, tmp_path, config_yaml=cfg, env_text=env
@@ -1612,8 +1608,6 @@ compression:
         assert "display.tool_progress" in out
         assert "Deprecated: TERMINAL_CWD" in out
         assert "terminal.cwd" in out
-        assert "Deprecated: QQ_HOME_CHANNEL" in out
-        assert "QQBOT_HOME_CHANNEL" in out
 
     def test_doctor_clean_config_has_no_deprecated_warning(self, monkeypatch, tmp_path):
         cfg = """\

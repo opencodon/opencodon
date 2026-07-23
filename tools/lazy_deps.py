@@ -2,7 +2,7 @@
 Lazy dependency installer for opt-in Hermes Agent backends.
 
 Many Hermes features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
-Slack, Matrix, etc.) require Python packages that not every user needs. The
+Slack, etc.) require Python packages that not every user needs. The
 historical approach was to bundle them all under ``pyproject.toml`` extras
 (``hermes-agent[all]``) and install them eagerly at setup time. That has
 two problems:
@@ -162,35 +162,6 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
         "slack-sdk==3.43.0",
         "aiohttp==3.14.1",  # CVE-2026-34513/34518/34519/34520/34525 + 34993(RCE)/47265
     ),
-    "platform.matrix": (
-        "mautrix[encryption]==0.21.0",
-        "aiosqlite==0.22.1",
-        "asyncpg==0.31.0",
-        "aiohttp-socks==0.11.0",
-        # mautrix (aiohttp>=3,<4) and aiohttp-socks (aiohttp>=3.10.0) only cap
-        # aiohttp transitively, so a vulnerable already-installed aiohttp still
-        # satisfies both — pin the patched floor here too, like platform.discord.
-        "aiohttp==3.14.1",  # CVE-2026-34513/34518/34519/34520/34525 + 34993(RCE)/47265
-    ),
-    "platform.dingtalk": (
-        "dingtalk-stream==0.24.3",
-        "alibabacloud-dingtalk==2.2.42",
-        "qrcode==7.4.2",
-    ),
-    "platform.feishu": (
-        "lark-oapi==1.6.8",
-        "qrcode==7.4.2",
-    ),
-    # WeCom callback-mode adapter — parses untrusted XML POST bodies. Pulls
-    # defusedxml only; aiohttp/httpx are core dependencies of every messaging
-    # adapter and ship via `platform.discord` / `platform.slack` / etc.
-    "platform.wecom_callback": ("defusedxml==0.7.1",),
-    # Microsoft Teams adapter — microsoft-teams-apps pulls a heavy tree
-    # (microsoft-teams-api/cards/common, dependency-injector, msal). Lazy-
-    # installed on demand like every other messaging platform; also exposed
-    # as the `teams` extra in pyproject for packagers / explicit installs.
-    "platform.teams": ("microsoft-teams-apps==2.0.13.4", "aiohttp==3.14.1"),  # aiohttp 3.14.1: CVE-2026-34993(RCE)/47265 + 34513/34518/34519/34520/34525
-
     # ─── Terminal backends ─────────────────────────────────────────────────
     "terminal.modal": ("modal==1.3.4",),
     "terminal.daytona": ("daytona==0.155.0",),
@@ -452,12 +423,6 @@ def _unsupported_feature_reason(feature: str) -> Optional[str]:
     known-impossible installs out of both first-use lazy installation and the
     ``hermes update`` lazy-refresh pass.
     """
-    if sys.platform == "win32" and feature == "platform.matrix":
-        return (
-            "unsupported on Windows: Matrix E2EE depends on python-olm, "
-            "which has no Windows wheel and requires make + libolm to build "
-            "from sdist. Run Hermes under WSL to use Matrix on Windows."
-        )
     return None
 
 
