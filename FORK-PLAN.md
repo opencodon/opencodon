@@ -108,3 +108,17 @@ test_api_server. All verified failing at the pre-slim baseline
 7. First tagged release; docs site.
 8. Then the build roadmap: lockfile env identity → verified reproductions;
    result-first redesign of TUI/dashboard/desktop; artifact-aware resume.
+
+### Rebrand status (2026-07-24)
+
+Phase 1 complete on main (website cut 0c1621d99, module rename
+29e95c515, distribution f5015b1c3, home/env/services 177ac4624, UI
+surfaces 4e5c92117, LICENSE/NOTICE/README 84993d594, fallout 004a976be):
+the project is now **opencodon** end to end. One-release compat shims:
+HERMES_* env fallback, `hermes` CLI alias, legacy toolset aliases,
+legacy gateway unit/kind names, legacy codex managed-block markers.
+Deliberately NOT renamed: Nous Hermes LLM model ids, the Nous Portal
+OAuth client id + client tag, the Honcho OAuth client id (all identify
+us to external services), upstream URLs in the triage path map.
+Remaining: folder move, GitHub org/repo (user), CI prune, first
+release. Full suite = documented pre-existing baseline exactly.
