@@ -206,9 +206,12 @@ jobs:
         # fails if the lock is out of sync with pyproject.toml), giving a
         # reproducible env. It also creates .venv itself, so no separate
         # `uv venv` step is needed.
+        # The e2e conftest imports the real platform adapters (telegram /
+        # discord / slack); their SDKs are mocked in-process but aiohttp is
+        # used for real, so the messaging extra must be installed here.
         uses: ./.github/actions/retry
         with:
-          command: uv sync --locked --python 3.11 --extra all --extra dev
+          command: uv sync --locked --python 3.11 --extra all --extra dev --extra messaging
 
       - name: Minimize uv cache
         # Optimized for CI: prunes pre-built wheels that are cheap to
