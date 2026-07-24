@@ -92,9 +92,14 @@ jobs:
         # fails if the lock is out of sync with pyproject.toml), giving a
         # reproducible env. It also creates .venv itself, so no separate
         # `uv venv` step is needed.
+        #
+        # The messaging extra is included because kept-platform tests
+        # (e.g. gateway/test_whatsapp_cloud.py) need aiohttp for real;
+        # without it they only pass when an earlier file in the slice
+        # happens to lazy-install it, making slices order-dependent.
         uses: ./.github/actions/retry
         with:
-          command: uv sync --locked --python 3.11 --extra all --extra dev
+          command: uv sync --locked --python 3.11 --extra all --extra dev --extra messaging
 
       - name: Minimize uv cache
         # Optimized for CI: prunes pre-built wheels that are cheap to
