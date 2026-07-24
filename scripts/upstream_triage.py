@@ -137,7 +137,10 @@ def main() -> int:
     log = _git(
         "log",
         "--reverse",
-        "--format=%H%x00%ad%x00%s",
+        # Committer date, not author date: rebased PRs keep author dates
+        # weeks older than when they actually landed on upstream/main,
+        # which misleadingly suggests the range predates our baseline.
+        "--format=%H%x00%cd%x00%s",
         "--date=short",
         f"{baseline}..{tip}",
     )
