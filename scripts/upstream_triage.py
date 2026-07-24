@@ -43,10 +43,10 @@ _SECURITY_SUBJECT = re.compile(
 _PIN_PATHS = ("uv.lock", "pyproject.toml")
 
 _PROVIDER_PATHS = (
-    "hermes_cli/auth.py",
-    "hermes_cli/models.py",
-    "hermes_cli/providers.py",
-    "hermes_cli/model_normalize.py",
+    "opencodon_cli/auth.py",
+    "opencodon_cli/models.py",
+    "opencodon_cli/providers.py",
+    "opencodon_cli/model_normalize.py",
     "agent/model_metadata.py",
     "agent/auxiliary_client.py",
     "plugins/model_providers/",
@@ -54,6 +54,27 @@ _PROVIDER_PATHS = (
 )
 
 _BUGFIX_SUBJECT = re.compile(r"^(fix|bugfix|hotfix)\b|\bfix(es|ed)?\b", re.IGNORECASE)
+
+# Upstream kept hermes module names; the fork renamed them. Translate upstream
+# paths into fork paths before matching against our tracked tree, otherwise
+# every upstream commit touching a renamed module misclassifies as N/A. Keep
+# in sync with future renames; git cherry-pick still resolves the rest via
+# rename detection.
+_UPSTREAM_RENAMES = (
+    ("hermes_cli", "opencodon_cli"),
+    ("hermes_state", "opencodon_state"),
+    ("hermes_bootstrap", "opencodon_bootstrap"),
+    ("hermes_constants", "opencodon_constants"),
+    ("hermes_logging", "opencodon_logging"),
+    ("hermes_time", "opencodon_time"),
+    ("hermes_tools_mcp_server", "opencodon_tools_mcp_server"),
+)
+
+
+def to_fork_path(path: str) -> str:
+    for old, new in _UPSTREAM_RENAMES:
+        path = path.replace(old, new)
+    return path
 
 
 def _git(*args: str) -> str:
@@ -72,7 +93,7 @@ def _tracked_files() -> set[str]:
 def classify(subject: str, files: list[str], tracked: set[str]) -> str:
     kept = [
         f
-        for f in files
+        for f in (to_fork_path(raw) for raw in files)
         if f in tracked or any(f.startswith(p) for p in _PROVIDER_PATHS if p.endswith("/"))
     ]
     if not kept:

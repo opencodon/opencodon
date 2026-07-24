@@ -34,13 +34,13 @@ independent open-source project. Companion to `implementation-design.md`
 | Subsystem | Notes |
 |---|---|
 | Agent core (`run_agent.py`, `agent/`) | the loop, compression, caching, memory |
-| State (`hermes_state.py`) | includes the science tables |
+| State (`opencodon_state.py`) | includes the science tables |
 | Tool framework + core tools | terminal, file, web/search, browser, todo, delegation, MCP client |
 | **Science layer** (`science/`, `tools/science_tools.py`) | the product |
 | Provider framework **+ all 33 model providers** | decided: keep all — maximum compatibility for adopters; accept the provider-churn triage load |
 | Skills system + skills | prune to relevant categories in optional-skills |
 | Cron/routines | scheduled science pipelines |
-| CLI (`cli.py`, `hermes_cli/`) | prune novelty subcommands (pets, journey, claw, achievements) |
+| CLI (`cli.py`, `opencodon_cli/`) | prune novelty subcommands (pets, journey, claw, achievements) |
 
 ### KEEP — UI surfaces (all, redesigned)
 Decided: keep **TUI + tui_gateway, web dashboard, desktop app** — and
@@ -78,7 +78,7 @@ first-class plumbing in core files that a plugin delete alone won't
 remove cleanly):
 - honcho memory provider (~20 refs of core wiring around the
   MemoryProvider ABC)
-- kanban (signal-handler + worker plumbing in hermes_cli)
+- kanban (signal-handler + worker plumbing in opencodon_cli)
 - moa toolset remnants
 
 Pre-existing test failures catalogued against clean-worktree baselines

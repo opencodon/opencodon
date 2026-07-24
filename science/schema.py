@@ -13,7 +13,7 @@ artifact/lineage store from ``architecture.md`` (frame_id → session_id):
 Design notes:
 
 - The schema is executed and column-reconciled by
-  ``hermes_state.SessionDB._init_schema()`` alongside the core schema, so the
+  ``opencodon_state.SessionDB._init_schema()`` alongside the core schema, so the
   same declarative pattern applies: adding a column here is all that's needed
   for it to appear on existing databases at next startup.
 - ``session_id`` / ``root_session_id`` columns are *soft* references (indexed
@@ -31,7 +31,7 @@ Indexes that only reference first-version columns could live inline, but all
 science indexes are kept in ``SCIENCE_INDEX_SQL`` (executed after column
 reconciliation) so that a future index over a reconciler-added column never
 breaks legacy databases — same ordering rule as ``DEFERRED_INDEX_SQL`` in
-``hermes_state``.
+``opencodon_state``.
 """
 
 SCIENCE_SCHEMA_SQL = """

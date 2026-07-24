@@ -28,7 +28,7 @@ def parse_node_kind(node_id: str) -> str:
 
 
 def _memories_dir() -> Path:
-    from hermes_constants import get_hermes_home
+    from opencodon_constants import get_hermes_home
 
     return get_hermes_home() / "memories"
 

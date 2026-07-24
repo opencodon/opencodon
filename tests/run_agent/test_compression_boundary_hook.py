@@ -41,7 +41,7 @@ class TestCompressionBoundaryHook:
             return agent
 
     def test_on_session_start_called_with_compression_boundary(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -99,7 +99,7 @@ class TestCompressionBoundaryHook:
             assert len(comp_calls) == 1
 
     def test_automatic_notification_follows_core_persistence(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         events = []
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -137,7 +137,7 @@ class TestCompressionBoundaryHook:
             assert events == ["persist", "compression"]
 
     def test_failure_before_persistence_does_not_notify(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -156,7 +156,7 @@ class TestCompressionBoundaryHook:
             compressor.on_session_start.assert_not_called()
 
     def test_failure_during_persistence_does_not_notify(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -191,7 +191,7 @@ class TestCompressionBoundaryHook:
             assert boundary_calls == []
 
     def test_no_progress_does_not_notify(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -213,7 +213,7 @@ class TestCompressionBoundaryHook:
 
     @pytest.mark.parametrize("committed", [True, False])
     def test_deferred_notification_finishes_exactly_once(self, committed):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         events = []
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -289,7 +289,7 @@ class TestCompressionBoundaryHook:
 
     def test_hook_failure_does_not_break_compression(self):
         """If the context engine raises from on_session_start, compression still completes."""
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -356,7 +356,7 @@ class TestSessionCompressEvent:
         return compressor
 
     def test_event_emitted_on_compression(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         events = []
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -382,7 +382,7 @@ class TestSessionCompressEvent:
 
     def test_no_callback_is_safe(self):
         """Compression must work when no event_callback is wired."""
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -394,7 +394,7 @@ class TestSessionCompressEvent:
             assert compressed
 
     def test_callback_exception_does_not_break_compression(self):
-        from hermes_state import SessionDB
+        from opencodon_state import SessionDB
 
         def _boom(event_type, ctx):
             raise RuntimeError("hook exploded")

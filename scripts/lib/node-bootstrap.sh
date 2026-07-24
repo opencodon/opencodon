@@ -261,7 +261,7 @@ _nb_managed_node_needs_heal() {
 
 # Redownload the pinned nodejs.org tarball when a managed tree exists but
 # node/npm/npx fail a --version probe. No-op when the tree is healthy or
-# absent. Used by hermes_constants.find_hermes_node_executable() and safe
+# absent. Used by opencodon_constants.find_hermes_node_executable() and safe
 # to call from install reruns.
 heal_managed_node() {
     [ -d "$HERMES_HOME/node" ] || return 1

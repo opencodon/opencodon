@@ -66,7 +66,7 @@ science/reproduce.py        re-run producing cell, checksum-verify
 The architecture's key invariant is atomicity: a tool-result append and its execution/provenance
 rows must commit together (opencodon ADR-0005 enforced exactly this). Messages live in
 `state.db`; a separate `science.db` would make that transaction impossible. So the science
-tables go into `state.db` through `hermes_state.py`'s existing migration machinery, keyed by
+tables go into `state.db` through `opencodon_state.py`'s existing migration machinery, keyed by
 `session_id` (+ message idx where relevant). Schemas are ported from opencodon
 `storage/migrations/0001–0003` with `frame_id → session_id` renames; drop the hash-chained
 `action_log`/`events` outbox (hermes's trajectory + ledger patterns cover the need — rebuild

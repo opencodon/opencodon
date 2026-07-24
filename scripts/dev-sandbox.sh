@@ -8,7 +8,7 @@
 # .hermes-sandbox/ in the worktree git root).
 #
 # Usage:
-#   scripts/dev-sandbox.sh python -m hermes_cli.main
+#   scripts/dev-sandbox.sh python -m opencodon_cli.main
 #   scripts/dev-sandbox.sh hermes desktop
 #   scripts/dev-sandbox.sh electron .
 #   scripts/dev-sandbox.sh -- npm run dev   # from apps/desktop/

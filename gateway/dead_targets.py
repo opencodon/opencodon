@@ -31,7 +31,7 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_cli.config import get_hermes_home
+from opencodon_cli.config import get_hermes_home
 
 logger = logging.getLogger(__name__)
 

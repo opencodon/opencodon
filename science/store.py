@@ -20,7 +20,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 if TYPE_CHECKING:  # pragma: no cover
-    from hermes_state import SessionDB
+    from opencodon_state import SessionDB
 
 # host.* call results larger than this are stored once in content_snapshots
 # (content-addressed) and referenced via data_ref, instead of being embedded

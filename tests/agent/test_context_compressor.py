@@ -13,7 +13,7 @@ from agent.context_compressor import (
     _summarize_tool_result,
     _is_summary_access_or_quota_error,
 )
-from hermes_state import SessionDB
+from opencodon_state import SessionDB
 
 
 class StubProviderError(Exception):
@@ -3323,7 +3323,7 @@ class TestThresholdTokensCap:
     def test_default_config_disabled_and_no_behavior_change(self):
         """DEFAULT_CONFIG ships threshold_tokens=None (disabled) and both
         None and 0 leave the ratio-based trigger byte-identical."""
-        from hermes_cli.config import DEFAULT_CONFIG
+        from opencodon_cli.config import DEFAULT_CONFIG
         assert DEFAULT_CONFIG["compression"]["threshold_tokens"] is None
 
         with patch("agent.context_compressor.get_model_context_length", return_value=1_000_000):

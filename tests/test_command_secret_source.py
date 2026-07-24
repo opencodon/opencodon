@@ -3,7 +3,7 @@
 These exercise the REAL resolution path: real helper shell scripts written
 to a temp dir (chmod +x), real ``/bin/sh -c`` subprocesses, and a real temp
 HERMES_HOME with a config.yaml routing ``secrets.provider: command`` through
-``hermes_cli.env_loader._apply_external_secret_sources``.
+``opencodon_cli.env_loader._apply_external_secret_sources``.
 
 Security invariants under test (ported from the desktop TS provider):
 
@@ -41,7 +41,7 @@ from agent.secret_sources.command import (  # noqa: E402
     parse_secret_output,
     unquote_dotenv_value,
 )
-from hermes_cli import env_loader  # noqa: E402
+from opencodon_cli import env_loader  # noqa: E402
 
 
 pytestmark = pytest.mark.skipif(

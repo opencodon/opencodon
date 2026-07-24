@@ -12,12 +12,12 @@ import json
 import sys
 from pathlib import Path
 
-# Add the repo root to sys.path so we can import hermes_state.
+# Add the repo root to sys.path so we can import opencodon_state.
 # The script is invoked from apps/desktop/e2e/ — repo root is ../../..
 repo_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(repo_root))
 
-from hermes_state import SessionDB  # noqa: E402
+from opencodon_state import SessionDB  # noqa: E402
 
 
 def main():

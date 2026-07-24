@@ -637,7 +637,7 @@ async fn run_bootstrap(
 
     // 4. Resolve install_root. install.ps1 doesn't (yet) report this back
     // explicitly; we infer it from $HermesHome which Stage-Repository clones
-    // the repo INTO at $HermesHome\hermes-agent. Mirrors hermes_constants.
+    // the repo INTO at $HermesHome\hermes-agent. Mirrors opencodon_constants.
     let hermes_home = args
         .hermes_home
         .clone()

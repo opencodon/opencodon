@@ -100,7 +100,7 @@ def get_blob_store() -> BlobStore:
     global _store
     with _store_lock:
         if _store is None:
-            from hermes_constants import get_hermes_home
+            from opencodon_constants import get_hermes_home
 
             _store = BlobStore(Path(get_hermes_home()) / "science" / "blobs")
         return _store

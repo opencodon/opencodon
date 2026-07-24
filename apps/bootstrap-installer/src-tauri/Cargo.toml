@@ -18,7 +18,7 @@ path = "src/main.rs"
 # tauri.conf.json's `app.windows[].label` references. We don't ship a separate
 # lib for now; everything is in src/.
 [lib]
-name = "hermes_bootstrap_lib"
+name = "opencodon_bootstrap_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

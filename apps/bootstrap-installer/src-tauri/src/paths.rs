@@ -1,6 +1,6 @@
 //! Filesystem paths + logging setup.
 //!
-//! Mirrors `hermes_constants.get_hermes_home()` from the Python CLI:
+//! Mirrors `opencodon_constants.get_hermes_home()` from the Python CLI:
 //!   Windows: %LOCALAPPDATA%\hermes
 //!   macOS:   ~/.hermes
 //!   Linux:   ~/.hermes  (override via $HERMES_HOME)

@@ -15,7 +15,7 @@ _SPEC.loader.exec_module(triage)
 TRACKED = {
     "uv.lock",
     "pyproject.toml",
-    "hermes_cli/auth.py",
+    "opencodon_cli/auth.py",
     "agent/agent.py",
     "tools/file_tools.py",
 }
@@ -41,7 +41,7 @@ class TestClassify:
 
     def test_provider_surface(self):
         assert (
-            triage.classify("feat: add new provider", ["hermes_cli/auth.py"], TRACKED)
+            triage.classify("feat: add new provider", ["opencodon_cli/auth.py"], TRACKED)
             == "PROVIDER"
         )
 
@@ -63,6 +63,17 @@ class TestClassify:
     def test_feature_never_auto_adopted_bucket(self):
         assert (
             triage.classify("feat: shiny new thing", ["agent/agent.py"], TRACKED) == "FEATURE"
+        )
+
+    def test_upstream_module_paths_translate_to_fork_names(self):
+        """Upstream still says hermes_cli/; our tree says opencodon_cli/.
+        Classification must not N/A commits touching renamed modules."""
+        assert (
+            triage.classify("fix: auth retry", ["hermes_cli/auth.py"], TRACKED)
+            == "PROVIDER"
+        )
+        assert triage.to_fork_path("tests/hermes_cli/test_auth.py") == (
+            "tests/opencodon_cli/test_auth.py"
         )
 
     def test_mixed_cut_and_kept_uses_kept_files(self):

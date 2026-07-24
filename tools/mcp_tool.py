@@ -157,7 +157,7 @@ def _get_mcp_stderr_log() -> Any:
         if _mcp_stderr_log_fh is not None:
             return _mcp_stderr_log_fh
         try:
-            from hermes_constants import get_hermes_home
+            from opencodon_constants import get_hermes_home
             log_dir = get_hermes_home() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_path = log_dir / "mcp-stderr.log"
@@ -451,7 +451,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     in every MCP server's ``env:`` block.
     """
     try:
-        from hermes_cli.env_loader import get_secret_source
+        from opencodon_cli.env_loader import get_secret_source
     except Exception:  # pragma: no cover — early bootstrap/import fallback
         get_secret_source = None
     env = {}
@@ -978,7 +978,7 @@ def _unwrap_exception_group(exc: BaseException) -> BaseException:
     unwrap to surface the real cause (e.g. ``BrokenPipeError`` on a dead
     stdio pipe, "401 Unauthorized" on an auth failure).
 
-    Adapted from :func:`hermes_cli.mcp_config._unwrap_exception_group` with
+    Adapted from :func:`opencodon_cli.mcp_config._unwrap_exception_group` with
     two extra behaviours needed on the runtime path:
 
     - **Fatal leaves re-raise.** A ``KeyboardInterrupt`` / ``SystemExit``
@@ -1998,7 +1998,7 @@ class MCPServerTask:
         """Build a ``logging_callback`` for ``ClientSession``.
 
         Routes MCP ``notifications/message`` log notifications from the
-        server into Hermes' logging (agent.log via hermes_logging), tagged
+        server into Hermes' logging (agent.log via opencodon_logging), tagged
         with the server name.  Without this, the SDK's default callback
         silently discards them, so server-side warnings/errors during a
         tool call were invisible.  Port of anomalyco/opencode#34529.
@@ -4235,7 +4235,7 @@ def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
     carrying different scopes don't interfere.
     """
     try:
-        from hermes_constants import (
+        from opencodon_constants import (
             get_hermes_home_override,
             reset_hermes_home_override,
             set_hermes_home_override,
@@ -4393,7 +4393,7 @@ def _interpolate_env_vars(value):
 def _filter_suspicious_mcp_servers(servers: Dict[str, dict]) -> Dict[str, dict]:
     """Drop exfiltration-shaped MCP configs before any stdio spawn path."""
     try:
-        from hermes_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+        from opencodon_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
     except Exception:
         _validate_mcp_server_entry: Callable[[str, dict[str, Any]], list[str]] | None = None
 
@@ -4429,7 +4429,7 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``os.environ`` (which includes ``~/.hermes/.env`` loaded at startup).
     """
     try:
-        from hermes_cli.config import load_config
+        from opencodon_cli.config import load_config
         from utils import env_var_enabled as _env_enabled
 
         if _env_enabled("HERMES_SAFE_MODE"):
@@ -4440,7 +4440,7 @@ def _load_mcp_config() -> Dict[str, dict]:
             return {}
         # Ensure .env vars are available for interpolation
         try:
-            from hermes_cli.env_loader import load_hermes_dotenv
+            from opencodon_cli.env_loader import load_hermes_dotenv
             load_hermes_dotenv()
         except Exception:
             pass

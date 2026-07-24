@@ -15,7 +15,7 @@ import sqlite3
 
 import pytest
 
-from hermes_state import SessionDB
+from opencodon_state import SessionDB
 from science.store import ScienceStore
 
 

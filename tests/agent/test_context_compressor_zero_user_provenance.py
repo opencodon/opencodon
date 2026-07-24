@@ -19,7 +19,7 @@ from agent.conversation_compression import (
     _ensure_compressed_has_user_turn,
     compress_context,
 )
-from hermes_state import SessionDB
+from opencodon_state import SessionDB
 from tools.todo_tool import TODO_INJECTION_HEADER
 
 

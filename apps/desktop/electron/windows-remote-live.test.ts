@@ -81,7 +81,7 @@ test.skipIf(!liveHost || !liveUser || !configuredHermes)(
         await ssh.cancelForward(second.localPort, second.remotePort)
       }
 
-      const runtimeScript = `& '${configuredHermes.replace('hermes.exe', 'python.exe')}' -m hermes_cli.windows_ssh_runtime read-lock '${ownershipId}'`
+      const runtimeScript = `& '${configuredHermes.replace('hermes.exe', 'python.exe')}' -m opencodon_cli.windows_ssh_runtime read-lock '${ownershipId}'`
 
       const lock: any = JSON.parse(
         await ssh.exec(`powershell.exe -NoProfile -NonInteractive -Command "${runtimeScript}"`)
@@ -89,13 +89,13 @@ test.skipIf(!liveHost || !liveUser || !configuredHermes)(
 
       if (lock) {
         const python = configuredHermes.replace('hermes.exe', 'python.exe')
-        const terminate = `& '${python}' -m hermes_cli.windows_ssh_runtime terminate '${lock.pid}' '${lock.creationTimeNs}' '${lock.hermesPath}' '${lock.spawnNonce}'`
+        const terminate = `& '${python}' -m opencodon_cli.windows_ssh_runtime terminate '${lock.pid}' '${lock.creationTimeNs}' '${lock.hermesPath}' '${lock.spawnNonce}'`
         await ssh.exec(`powershell.exe -NoProfile -NonInteractive -Command "${terminate}"`)
         await ssh.exec(
-          `powershell.exe -NoProfile -NonInteractive -Command "& '${python}' -m hermes_cli.windows_ssh_runtime remove-lock '${ownershipId}'"`
+          `powershell.exe -NoProfile -NonInteractive -Command "& '${python}' -m opencodon_cli.windows_ssh_runtime remove-lock '${ownershipId}'"`
         )
         await ssh.exec(
-          `powershell.exe -NoProfile -NonInteractive -Command "& '${python}' -m hermes_cli.windows_ssh_runtime remove-log '${ownershipId}' '${lock.spawnNonce}'"`
+          `powershell.exe -NoProfile -NonInteractive -Command "& '${python}' -m opencodon_cli.windows_ssh_runtime remove-log '${ownershipId}' '${lock.spawnNonce}'"`
         )
       }
 

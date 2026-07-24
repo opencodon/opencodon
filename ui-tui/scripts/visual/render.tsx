@@ -49,7 +49,7 @@ const SLATE = {
   status_bar_text: '#C9D1D9'
 }
 
-// The regenerated slate light_colors block from hermes_cli/skin_engine.py
+// The regenerated slate light_colors block from opencodon_cli/skin_engine.py
 // (relight recipe: vivid hue-preserved accents, airy capped-saturation text,
 // darker calm dims).
 

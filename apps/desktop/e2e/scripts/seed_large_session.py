@@ -7,7 +7,7 @@ from pathlib import Path
 repo_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(repo_root))
 
-from hermes_state import SessionDB  # noqa: E402
+from opencodon_state import SessionDB  # noqa: E402
 
 SESSION_ID = "e2e-large-session"
 SESSION_TITLE = "E2E large persisted session"

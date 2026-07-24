@@ -12,7 +12,7 @@ metadata:
 # Hermes Themes Skill
 
 Author a Hermes **skin** — one YAML file that themes the CLI, the TUI, and the
-desktop GUI at once. The skin engine (`hermes_cli/skin_engine.py`) resolves the
+desktop GUI at once. The skin engine (`opencodon_cli/skin_engine.py`) resolves the
 active skin and the gateway pushes it to every surface, so a file dropped in
 `~/.hermes/skins/` is the theme analogue of a plugin: no code, all surfaces. This
 skill covers writing a good skin and activating it; it does not build GUI theme
@@ -68,7 +68,7 @@ Note the sharing: `ui_accent` colors tool markers **and** headings/links/chevron
 so to recolor *only* tool calls (the classic "change the gold `●`") set `ui_tool`.
 `branding` (`agent_name`, `prompt_symbol`, `welcome`, `goodbye`, `help_header`),
 `spinner`, and `tool_prefix` are optional flavor; full schema in
-`hermes_cli/skin_engine.py`.
+`opencodon_cli/skin_engine.py`.
 
 ## Procedure
 
