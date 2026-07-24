@@ -394,7 +394,7 @@ def test_billing_rotation_marks_all_entries_sharing_failed_key(tmp_path, monkeyp
     exhausted so the pool reaches "no available entries" and the error
     propagates immediately.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     shared_key = "sk-deepseek-shared"
     _write_auth_store(
         tmp_path,
@@ -452,7 +452,7 @@ def test_unmatched_api_key_hint_rotates_without_benching_innocent_key(tmp_path, 
     NEXT healthy key and benched it for the full cooldown TTL, punishing an
     innocent credential.  Now it rotates without marking anything.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(
         tmp_path,
         {

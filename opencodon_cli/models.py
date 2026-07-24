@@ -564,7 +564,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     # endpoint has no /models listing route, so without this entry the
     # /model picker only ever shows the currently-configured model.
     # Model IDs use the "google/" publisher prefix Vertex's openapi
-    # endpoint expects (see hermes_cli/model_setup_flows.py).
+    # endpoint expects (see opencodon_cli/model_setup_flows.py).
     "vertex": [
         "google/gemini-3.1-pro-preview",
         "google/gemini-3-pro-preview",
@@ -3662,7 +3662,7 @@ def copilot_model_api_mode(
         return "codex_responses"
 
     # Copilot's Claude models are exposed through its OpenAI-compatible chat
-    # endpoint, not through Hermes' native Anthropic adapter. The live catalog may
+    # endpoint, not through our native Anthropic adapter. The live catalog may
     # advertise /v1/messages, but the Copilot token/header scheme is handled by
     # the OpenAI client path; selecting anthropic_messages would send the wrong
     # auth/wire shape. Keep non-GPT Copilot slots on chat_completions.

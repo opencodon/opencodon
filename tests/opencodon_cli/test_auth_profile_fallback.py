@@ -529,13 +529,13 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
 
 @pytest.fixture()
 def classic_env(tmp_path, monkeypatch):
-    """Classic single-root layout (HERMES_HOME != ~/.hermes, no profiles)."""
+    """Classic single-root layout (OPENCODON_HOME != ~/.hermes, no profiles)."""
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
     hermes_home = tmp_path / "classic"
     hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(hermes_home))
     return hermes_home
 
 
