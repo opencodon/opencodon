@@ -57,12 +57,12 @@ test('mode predicates classify what each mode removes', () => {
 
 test('resolveRemovableAppPath finds the .app bundle on macOS', () => {
   assert.equal(
-    resolveRemovableAppPath('/Applications/Hermes.app/Contents/MacOS/Hermes', 'darwin'),
-    '/Applications/Hermes.app'
+    resolveRemovableAppPath('/Applications/Opencodon.app/Contents/MacOS/Opencodon', 'darwin'),
+    '/Applications/Opencodon.app'
   )
   assert.equal(
-    resolveRemovableAppPath('/Users/x/Applications/Hermes.app/Contents/MacOS/Hermes', 'darwin'),
-    '/Users/x/Applications/Hermes.app'
+    resolveRemovableAppPath('/Users/x/Applications/Opencodon.app/Contents/MacOS/Opencodon', 'darwin'),
+    '/Users/x/Applications/Opencodon.app'
   )
 })
 
@@ -81,30 +81,30 @@ test('resolveRemovableAppPath: dev-run .app resolves (safety is shouldRemoveAppB
 
 test('resolveRemovableAppPath finds the install dir on Windows', () => {
   assert.equal(
-    resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\Programs\\Hermes\\Hermes.exe', 'win32'),
-    'C:\\Users\\x\\AppData\\Local\\Programs\\Hermes'
+    resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\Programs\\Opencodon\\Opencodon.exe', 'win32'),
+    'C:\\Users\\x\\AppData\\Local\\Programs\\Opencodon'
   )
   assert.equal(
-    resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\hermes-desktop\\Hermes.exe', 'win32'),
-    'C:\\Users\\x\\AppData\\Local\\hermes-desktop'
+    resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\opencodon-desktop\\Opencodon.exe', 'win32'),
+    'C:\\Users\\x\\AppData\\Local\\opencodon-desktop'
   )
 })
 
 test('resolveRemovableAppPath returns null for an unrecognized Windows dir', () => {
-  assert.equal(resolveRemovableAppPath('C:\\Temp\\foo\\Hermes.exe', 'win32'), null)
+  assert.equal(resolveRemovableAppPath('C:\\Temp\\foo\\Opencodon.exe', 'win32'), null)
 })
 
 test('resolveRemovableAppPath uses APPIMAGE on Linux when set', () => {
   assert.equal(
-    resolveRemovableAppPath('/tmp/.mount_HermesXXXX/hermes', 'linux', { APPIMAGE: '/home/x/Apps/Hermes.AppImage' }),
-    '/home/x/Apps/Hermes.AppImage'
+    resolveRemovableAppPath('/tmp/.mount_OpencodonXXXX/opencodon', 'linux', { APPIMAGE: '/home/x/Apps/Opencodon.AppImage' }),
+    '/home/x/Apps/Opencodon.AppImage'
   )
 })
 
 test('resolveRemovableAppPath finds the unpacked dir on Linux', () => {
-  assert.equal(resolveRemovableAppPath('/opt/hermes/linux-unpacked/hermes', 'linux', {}), '/opt/hermes/linux-unpacked')
+  assert.equal(resolveRemovableAppPath('/opt/opencodon/linux-unpacked/opencodon', 'linux', {}), '/opt/opencodon/linux-unpacked')
   // A system-package install (/usr/bin) → null, left to apt/dnf.
-  assert.equal(resolveRemovableAppPath('/usr/bin/hermes', 'linux', {}), null)
+  assert.equal(resolveRemovableAppPath('/usr/bin/opencodon', 'linux', {}), null)
 })
 
 test('resolveRemovableAppPath returns null for an empty exe path', () => {
@@ -115,8 +115,8 @@ test('resolveRemovableAppPath returns null for an empty exe path', () => {
 // --- shouldRemoveAppBundle ---
 
 test('shouldRemoveAppBundle requires packaged AND a resolved path', () => {
-  assert.equal(shouldRemoveAppBundle(true, '/Applications/Hermes.app'), true)
-  assert.equal(shouldRemoveAppBundle(false, '/Applications/Hermes.app'), false)
+  assert.equal(shouldRemoveAppBundle(true, '/Applications/Opencodon.app'), true)
+  assert.equal(shouldRemoveAppBundle(false, '/Applications/Opencodon.app'), false)
   assert.equal(shouldRemoveAppBundle(true, null), false)
   assert.equal(shouldRemoveAppBundle(false, null), false)
 })
@@ -130,8 +130,8 @@ test('buildPosixCleanupScript waits for the PID, runs the uninstall module, remo
     pythonPath: null,
     agentRoot: '/home/x/.opencodon/opencodon',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'gui'],
-    appPath: '/opt/hermes/linux-unpacked',
-    hermesHome: '/home/x/.opencodon'
+    appPath: '/opt/opencodon/linux-unpacked',
+    opencodonHome: '/home/x/.opencodon'
   })
 
   assert.match(script, /^#!\/bin\/bash/)
@@ -140,7 +140,7 @@ test('buildPosixCleanupScript waits for the PID, runs the uninstall module, remo
   // bounded wait (~30s), not unbounded
   assert.match(script, /seq 1 60/)
   assert.match(script, /'-m' 'opencodon_cli\.uninstall' '--mode' 'gui'/)
-  assert.match(script, /rm -rf '\/opt\/hermes\/linux-unpacked'/)
+  assert.match(script, /rm -rf '\/opt\/opencodon\/linux-unpacked'/)
   assert.match(script, /export OPENCODON_HOME='\/home\/x\/\.opencodon'/)
 })
 
@@ -152,12 +152,12 @@ test('buildPosixCleanupScript exports PYTHONPATH when pythonPath is set (lite/fu
     agentRoot: '/home/x/.opencodon/opencodon',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'full'],
     appPath: null,
-    hermesHome: '/home/x/.opencodon'
+    opencodonHome: '/home/x/.opencodon'
   })
 
   // System python + source on PYTHONPATH so import opencodon_cli works while the
   // venv is torn down.
-  assert.match(script, /export PYTHONPATH='\/home\/x\/\.opencodon\/hermes-agent'/)
+  assert.match(script, /export PYTHONPATH='\/home\/x\/\.opencodon\/opencodon'/)
   assert.match(script, /'\/usr\/bin\/python3' '-m' 'opencodon_cli\.uninstall' '--mode' 'full'/)
 })
 
@@ -169,7 +169,7 @@ test('buildPosixCleanupScript omits PYTHONPATH when pythonPath is null (gui)', (
     agentRoot: '/a',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: '/h'
+    opencodonHome: '/h'
   })
 
   assert.doesNotMatch(script, /export PYTHONPATH/)
@@ -183,7 +183,7 @@ test('buildPosixCleanupScript omits the bundle rm when appPath is null', () => {
     agentRoot: '/a',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'lite'],
     appPath: null,
-    hermesHome: '/h'
+    opencodonHome: '/h'
   })
 
   assert.doesNotMatch(script, /rm -rf '\//)
@@ -199,7 +199,7 @@ test('buildPosixCleanupScript single-quote-escapes paths with apostrophes', () =
     agentRoot: '/a',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: '/h'
+    opencodonHome: '/h'
   })
 
   // The apostrophe is closed-escaped-reopened so the shell sees the literal.
@@ -212,17 +212,17 @@ test('buildWindowsCleanupScript waits (bounded) for PID, runs uninstall, rmdir b
   const script = buildWindowsCleanupScript({
     desktopPid: 9988,
     pythonExe: 'C:\\Python313\\python.exe',
-    pythonPath: 'C:\\hermes',
-    agentRoot: 'C:\\hermes',
+    pythonPath: 'C:\\opencodon',
+    agentRoot: 'C:\\opencodon',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'full'],
-    appPath: 'C:\\Users\\x\\AppData\\Local\\Programs\\Hermes',
-    hermesHome: 'C:\\Users\\x\\AppData\\Local\\hermes'
+    appPath: 'C:\\Users\\x\\AppData\\Local\\Programs\\Opencodon',
+    opencodonHome: 'C:\\Users\\x\\AppData\\Local\\opencodon'
   })
 
   assert.match(script, /@echo off/)
   assert.match(script, /set "PID=9988"/)
   // PYTHONPATH set so a system python can import opencodon_cli from source.
-  assert.match(script, /set "PYTHONPATH=C:\\hermes;%PYTHONPATH%"/)
+  assert.match(script, /set "PYTHONPATH=C:\\opencodon;%PYTHONPATH%"/)
   assert.match(script, /"C:\\Python313\\python.exe" "-m" "opencodon_cli\.uninstall" "--mode" "full"/)
   // Bounded wait-loop (no infinite loop), whole-token PID match (no substring).
   assert.match(script, /if %waited% geq 60 goto waited_done/)
@@ -230,7 +230,7 @@ test('buildWindowsCleanupScript waits (bounded) for PID, runs uninstall, rmdir b
   assert.doesNotMatch(script, /find "%PID%"/) // the old substring-prone form is gone
   // Removal is a retry loop (Windows releases dir handles lazily).
   assert.match(script, /:rmloop/)
-  assert.match(script, /rmdir \/s \/q "C:\\Users\\x\\AppData\\Local\\Programs\\Hermes" >nul 2>&1/)
+  assert.match(script, /rmdir \/s \/q "C:\\Users\\x\\AppData\\Local\\Programs\\Opencodon" >nul 2>&1/)
   assert.match(script, /if %tries% geq 10 goto rmdone/)
   assert.match(script, /del "%~f0"/)
 })
@@ -243,7 +243,7 @@ test('buildWindowsCleanupScript omits PYTHONPATH + rmdir when not needed (gui, n
     agentRoot: 'C:\\h',
     uninstallArgs: ['-m', 'opencodon_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: 'C:\\h'
+    opencodonHome: 'C:\\h'
   })
 
   assert.doesNotMatch(script, /rmdir/)

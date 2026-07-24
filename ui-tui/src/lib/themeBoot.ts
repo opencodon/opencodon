@@ -1,6 +1,6 @@
 /**
  * Flash-free theme boot — the TUI port of the desktop app's
- * `hermes-boot-background` / `hermes-boot-color-scheme` localStorage keys.
+ * `opencodon-boot-background` / `opencodon-boot-color-scheme` localStorage keys.
  *
  * Theme resolution is asynchronous by nature (gateway skin arrives after
  * connect; the OSC-11 background probe answers after the first frame; the

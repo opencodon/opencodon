@@ -5,9 +5,9 @@ import { useI18n } from '@/i18n'
 import { modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
 import { currentPickerSelection } from '@/lib/model-status-label'
 import { normalize } from '@/lib/text'
-import type { ModelOptionProvider, ModelPricing } from '@/types/hermes'
+import type { ModelOptionProvider, ModelPricing } from '@/types/opencodon'
 
-import type { HermesGateway } from '../hermes'
+import type { OpencodonGateway } from '../opencodon'
 import { cn } from '../lib/utils'
 import { startManualOnboarding } from '../store/onboarding'
 
@@ -20,7 +20,7 @@ import { Skeleton } from './ui/skeleton'
 interface ModelPickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  gw?: HermesGateway
+  gw?: OpencodonGateway
   sessionId?: string | null
   currentModel: string
   currentProvider: string
@@ -52,7 +52,7 @@ export function ModelPickerDialog({
   // shouldFilter reorders items by its fuzzy-match score (≈alphabetical with
   // an empty query), which destroys the backend's curated order. We disable
   // it and do a plain substring filter that preserves array order — matching
-  // the `hermes model` CLI picker, which shows the curated list verbatim.
+  // the `opencodon model` CLI picker, which shows the curated list verbatim.
   const [search, setSearch] = useState('')
 
   const modelOptions = useQuery({

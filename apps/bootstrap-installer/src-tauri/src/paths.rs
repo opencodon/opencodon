@@ -1,12 +1,12 @@
 //! Filesystem paths + logging setup.
 //!
 //! Mirrors `opencodon_constants.get_opencodon_home()` from the Python CLI:
-//!   Windows: %LOCALAPPDATA%\hermes
+//!   Windows: %LOCALAPPDATA%\opencodon
 //!   macOS:   ~/.opencodon
 //!   Linux:   ~/.opencodon  (override via $OPENCODON_HOME)
 //!
 //! NOTE (macOS): Python's get_opencodon_home(), scripts/install.sh, and the
-//! Electron desktop's resolveHermesHome() ALL use ~/.opencodon on macOS — there
+//! Electron desktop's resolveOpencodonHome() ALL use ~/.opencodon on macOS — there
 //! is no ~/Library/Application Support branch anywhere else. An earlier
 //! version of this file used Application Support, which drifted from every
 //! other component: the installer wrote the install to one dir and the
@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tracing_appender::non_blocking::WorkerGuard;
 
-/// Returns the canonical Hermes home directory, respecting $OPENCODON_HOME if set.
+/// Returns the canonical Opencodon home directory, respecting $OPENCODON_HOME if set.
 pub fn opencodon_home() -> PathBuf {
     if let Ok(override_path) = std::env::var("OPENCODON_HOME") {
         if !override_path.trim().is_empty() {
@@ -31,14 +31,14 @@ pub fn opencodon_home() -> PathBuf {
 
     #[cfg(target_os = "windows")]
     {
-        // %LOCALAPPDATA%\hermes — matches scripts/install.ps1's $HermesHome.
+        // %LOCALAPPDATA%\opencodon — matches scripts/install.ps1's $OpencodonHome.
         if let Some(local_app_data) = dirs::data_local_dir() {
-            return local_app_data.join("hermes");
+            return local_app_data.join("opencodon");
         }
     }
 
     // macOS + Linux + fallback: ~/.opencodon (matches Python get_opencodon_home(),
-    // install.sh, and the Electron desktop's resolveHermesHome()).
+    // install.sh, and the Electron desktop's resolveOpencodonHome()).
     if let Some(home) = dirs::home_dir() {
         return home.join(".opencodon");
     }
@@ -64,15 +64,15 @@ pub fn bootstrap_cache_dir() -> PathBuf {
 /// The desktop app re-invokes this with `--update`, and the start-menu /
 /// desktop shortcuts can point users back to it. Lives directly under
 /// OPENCODON_HOME so it survives repo checkout deletion (unlike anything under
-/// hermes-agent/).
+/// opencodon-agent/).
 ///
-/// On Windows this is `%LOCALAPPDATA%\hermes\hermes-setup.exe`; on other
+/// On Windows this is `%LOCALAPPDATA%\opencodon\opencodon-setup.exe`; on other
 /// platforms the extension differs but the directory is the same.
 pub fn installer_dest() -> PathBuf {
     let name = if cfg!(target_os = "windows") {
-        "hermes-setup.exe"
+        "opencodon-setup.exe"
     } else {
-        "hermes-setup"
+        "opencodon-setup"
     };
     opencodon_home().join(name)
 }
@@ -80,7 +80,7 @@ pub fn installer_dest() -> PathBuf {
 /// Marker the updater writes for the duration of an in-app update and removes
 /// when it finishes (see update.rs `UpdateMarkerGuard`). A freshly-launched
 /// desktop checks this before spawning its own local backend: spawning one
-/// mid-update re-locks the venv shim and triggers `force_kill_other_hermes`,
+/// mid-update re-locks the venv shim and triggers `force_kill_other_opencodon`,
 /// which then kills that legitimate backend in a respawn loop (#50238).
 ///
 /// Lives directly under OPENCODON_HOME (same rationale as `installer_dest`) so the
@@ -166,7 +166,7 @@ pub fn init_logging() -> Option<WorkerGuard> {
     if let Err(err) = std::fs::create_dir_all(&dir) {
         // No log dir → log to stderr only. Don't panic; the installer
         // should still be usable on an exotic filesystem.
-        eprintln!("[hermes-setup] could not create log dir {dir:?}: {err}");
+        eprintln!("[opencodon-setup] could not create log dir {dir:?}: {err}");
         return None;
     }
 

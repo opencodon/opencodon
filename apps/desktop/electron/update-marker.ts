@@ -9,7 +9,7 @@
  * Why: if the user relaunches the desktop mid-update — the window vanished with
  * no progress and looks crashed — a fresh instance must NOT spawn its own local
  * backend. That backend re-locks the venv shim, the updater's straggler cleanup
- * (`force_kill_other_hermes`, taskkill /IM hermes.exe) kills it, the launch
+ * (`force_kill_other_opencodon`, taskkill /IM opencodon.exe) kills it, the launch
  * fails with the 45s "backend didn't come up" timeout, and the user relaunches
  * into the same trap — an infinite respawn/kill loop. The desktop gates local
  * backend startup on this marker and parks until the update finishes.
@@ -29,8 +29,8 @@ import path from 'path'
 // recycled the pid onto an unrelated process), so the gate self-heals.
 export const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
-export function markerPath(hermesHome) {
-  return path.join(hermesHome, '.opencodon-update-in-progress')
+export function markerPath(opencodonHome) {
+  return path.join(opencodonHome, '.opencodon-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does
@@ -64,7 +64,7 @@ export function isPidAlive(pid, kill: typeof process.kill = process.kill.bind(pr
  * clock for tests.
  */
 export function readLiveUpdateMarker(
-  hermesHome,
+  opencodonHome,
   {
     kill,
     now = Date.now,
@@ -75,7 +75,7 @@ export function readLiveUpdateMarker(
     kill?: typeof process.kill
   } = {}
 ) {
-  const file = markerPath(hermesHome)
+  const file = markerPath(opencodonHome)
   let raw
 
   try {
@@ -107,7 +107,7 @@ export function readLiveUpdateMarker(
  * Write the update-in-progress marker *from the desktop* before handing off
  * to the detached updater.
  *
- * The Tauri-based hermes-setup.exe takes several seconds to initialise its
+ * The Tauri-based opencodon-setup.exe takes several seconds to initialise its
  * window and reach the Rust `run_update` entry point where it writes the
  * marker itself. During that gap the desktop's `app.quit()` teardown kills
  * the backend child, the renderer's WebSocket drops, and the renderer
@@ -125,8 +125,8 @@ export function readLiveUpdateMarker(
  * If the updater never starts (spawn failure) the marker still contains a
  * real PID, so `readLiveUpdateMarker` will self-heal once that PID exits.
  */
-export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
-  const file = markerPath(hermesHome)
+export function writeUpdateMarker(opencodonHome, pid, { now = Date.now } = {}) {
+  const file = markerPath(opencodonHome)
   const startedAt = Math.floor(now() / 1000)
 
   try {

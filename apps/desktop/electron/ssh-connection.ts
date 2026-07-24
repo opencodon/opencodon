@@ -90,7 +90,7 @@ function validateKeyPath(keyPath) {
 
 const _REDACTIONS: Array<[RegExp, string]> = [
   [/(OPENCODON_DASHBOARD_SESSION_TOKEN=)(\S+)/g, '$1<redacted>'],
-  [/(X-Hermes-Session-Token["']?\s*[:=]\s*["']?)([^\s"'&]+)/gi, '$1<redacted>'],
+  [/(X-Opencodon-Session-Token["']?\s*[:=]\s*["']?)([^\s"'&]+)/gi, '$1<redacted>'],
   [/(Authorization["']?\s*:\s*Bearer\s+)(\S+)/gi, '$1<redacted>'],
   [/([?&](?:token|ticket)=)([^\s&"']+)/gi, '$1<redacted>']
 ]
@@ -140,7 +140,7 @@ function defaultControlDir() {
   // POSIX: a SHORT, PER-USER base stays under the socket limit AND avoids a
   // world-shared /tmp dir (no symlink-hijack surface). Created 0700 in open().
   if (process.platform === 'win32') {
-    return path.join(os.tmpdir(), 'hermes-desktop-ssh')
+    return path.join(os.tmpdir(), 'opencodon-desktop-ssh')
   }
 
   return path.join(os.homedir(), '.opencodon', 'desktop-ssh')

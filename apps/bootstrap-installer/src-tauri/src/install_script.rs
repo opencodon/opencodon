@@ -10,7 +10,7 @@
 //!
 //! Mirrors `apps/desktop/electron/bootstrap-runner.ts`'s `resolveInstallScript`,
 //! but the dev-checkout resolution is driven by an env var rather than the
-//! Electron app's APP_ROOT/../.. trick, because Hermes-Setup.exe is meant
+//! Electron app's APP_ROOT/../.. trick, because Opencodon-Setup.exe is meant
 //! to live OUTSIDE any repo checkout.
 
 use anyhow::{anyhow, Context, Result};
@@ -95,7 +95,7 @@ pub(crate) fn cache_plan(immutable: bool, cached_exists: bool) -> CachePlan {
 
 /// Resolves the install script to use for this run.
 ///
-/// `pin` is the commit-or-branch from either Hermes-Setup's build-time
+/// `pin` is the commit-or-branch from either Opencodon-Setup's build-time
 /// constant (compiled into the installer) or a runtime override.
 pub async fn resolve(
     kind: ScriptKind,
@@ -324,7 +324,7 @@ fn upgrade_cached_script(kind: ScriptKind, cached: &Path, emit_log: &impl Fn(&st
 /// falling back to the cached script.
 async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Result<()> {
     let url = format!(
-        "https://raw.githubusercontent.com/NousResearch/hermes-agent/{}/scripts/{}",
+        "https://raw.githubusercontent.com/opencodon/opencodon/{}/scripts/{}",
         commit_or_ref,
         kind.filename()
     );
@@ -349,7 +349,7 @@ async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Re
         .build()
         .context("building download client")?
         .get(&url)
-        .header("User-Agent", "hermes-setup/0.0.1")
+        .header("User-Agent", "opencodon-setup/0.0.1")
         .send()
         .await
         .with_context(|| format!("GET {url}"))?;
@@ -469,7 +469,7 @@ mod tests {
     fn upgrade_cached_script_adds_bom_to_legacy_ps1() {
         // A .ps1 cached by a pre-#67193 installer has no BOM; the Reuse path
         // must upgrade it in place instead of serving the broken bytes forever.
-        let dir = std::env::temp_dir().join(format!("hermes-bom-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("opencodon-bom-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let cached = dir.join("install-abc1234.ps1");
         std::fs::write(&cached, b"Write-Host legacy\n").unwrap();
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn upgrade_cached_script_leaves_sh_untouched() {
-        let dir = std::env::temp_dir().join(format!("hermes-bom-sh-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("opencodon-bom-sh-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let cached = dir.join("install-main.sh");
         std::fs::write(&cached, b"#!/bin/bash\n").unwrap();

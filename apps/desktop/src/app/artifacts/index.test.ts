@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { $connection } from '@/store/session'
-import type { SessionInfo, SessionMessage } from '@/types/hermes'
+import type { SessionInfo, SessionMessage } from '@/types/opencodon'
 
 import { artifactImageSrc, collectArtifactsForSession } from './artifact-utils'
 
@@ -76,7 +76,7 @@ describe('collectArtifactsForSession', () => {
       throw new Error(`unexpected path ${path}`)
     })
 
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { opencodonDesktop: { api } })
     $connection.set({ baseUrl: 'https://gw', mode: 'remote', token: 'secret' } as never)
 
     const path = '/Users/me/.opencodon/skills/work-esab/references/images/manual-step03.jpeg'

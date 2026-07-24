@@ -1,12 +1,12 @@
 /**
  * remote-lifecycle.ts
  *
- * Pure, electron-free remote Hermes dashboard lifecycle over SSH for Desktop
+ * Pure, electron-free remote Opencodon dashboard lifecycle over SSH for Desktop
  * SSH remote mode. Composes an SshConnection (injected) with HTTP probes
  * through the established tunnel (injected fetch) and the served-token adoption
  * step (injected). Knows how to:
  *
- *   - locate the Hermes install on the remote (login-shell probe),
+ *   - locate the Opencodon install on the remote (login-shell probe),
  *   - gate the remote platform to Linux/macOS via `uname`,
  *   - reuse an existing desktop-dedicated dashboard via a lockfile + an
  *     AUTHENTICATED /api/status probe (pid liveness alone is insufficient),
@@ -16,7 +16,7 @@
  *   - clean up a stale dashboard only when it is provably ours.
  *
  * No `import 'electron'` so it's unit-testable with `node --test`. main.ts wires
- * the real SshConnection, fetch, adoptServedDashboardToken, and waitForHermes in.
+ * the real SshConnection, fetch, adoptServedDashboardToken, and waitForOpencodon in.
  *
  * The minted OPENCODON_DASHBOARD_SESSION_TOKEN is the SPAWN credential. After
  * readiness the caller runs served-token adoption against the tunneled baseUrl
@@ -122,11 +122,11 @@ function expandRemotePath(p) {
   return shq(p)
 }
 
-// Resolve the remote hermes executable. An EXPLICIT path is honored strictly
+// Resolve the remote opencodon executable. An EXPLICIT path is honored strictly
 // (throws a path-naming error if not executable — never silently falls back to a
 // different install). A BLANK path auto-detects: login-shell `command -v` (a
 // non-login `ssh host cmd` PATH misses user installs), then known install paths.
-async function locateHermes(ssh, remoteHermesPath) {
+async function locateOpencodon(ssh, remoteOpencodonPath) {
   const resolveLauncher = async (candidate: string) => {
     const script =
       'import os,shlex,sys\n' +
@@ -159,25 +159,25 @@ async function locateHermes(ssh, remoteHermesPath) {
     }
   }
 
-  if (remoteHermesPath) {
-    if (await isExecutable(remoteHermesPath)) {
-      return resolveLauncher(remoteHermesPath)
+  if (remoteOpencodonPath) {
+    if (await isExecutable(remoteOpencodonPath)) {
+      return resolveLauncher(remoteOpencodonPath)
     }
 
     const err: any = new Error(
-      `The Hermes path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
-        'Check the path (it must be the full path to the `hermes` binary on the remote, e.g. ' +
-        '~/hermes-agent/.venv/bin/hermes), or clear it to auto-detect.'
+      `The Opencodon path you set is not an executable on the remote host: "${remoteOpencodonPath}". ` +
+        'Check the path (it must be the full path to the `opencodon` binary on the remote, e.g. ' +
+        '~/opencodon-agent/.venv/bin/opencodon), or clear it to auto-detect.'
     )
 
-    err.kind = 'hermes-not-found'
+    err.kind = 'opencodon-not-found'
     throw err
   }
 
   const candidates: string[] = []
 
   try {
-    const found = (await ssh.exec(`bash -lc ${shq('command -v hermes')}`)).trim()
+    const found = (await ssh.exec(`bash -lc ${shq('command -v opencodon')}`)).trim()
 
     if (found) {
       candidates.push(found.split('\n').pop().trim())
@@ -188,9 +188,9 @@ async function locateHermes(ssh, remoteHermesPath) {
 
   // Fallback candidates when the login-shell probe misses: the installer's
   // command locations (scripts/install.sh) — per-user, root/FHS, legacy venv.
-  candidates.push('~/.local/bin/hermes')
-  candidates.push('/usr/local/bin/hermes')
-  candidates.push('~/.opencodon/opencodon/venv/bin/hermes')
+  candidates.push('~/.local/bin/opencodon')
+  candidates.push('/usr/local/bin/opencodon')
+  candidates.push('~/.opencodon/opencodon/venv/bin/opencodon')
 
   for (const candidate of candidates) {
     if (!candidate) {
@@ -203,21 +203,21 @@ async function locateHermes(ssh, remoteHermesPath) {
   }
 
   const err: any = new Error(
-    'Hermes is not installed on the remote host (could not find a `hermes` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
-      '— or set the Hermes path explicitly in the SSH connection settings.'
+    'Opencodon is not installed on the remote host (could not find a `opencodon` executable). ' +
+      'Install it on the remote with:  curl -fsSL https://opencodon-agent.nousresearch.com/install.sh | sh  ' +
+      '— or set the Opencodon path explicitly in the SSH connection settings.'
   )
 
-  err.kind = 'hermes-not-found'
+  err.kind = 'opencodon-not-found'
   throw err
 }
 
-// Probe the resolved binary's version string (first line of `<hermes> --version`,
-// e.g. "Hermes Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH hermes a
+// Probe the resolved binary's version string (first line of `<opencodon> --version`,
+// e.g. "Opencodon Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH opencodon a
 // connection uses, so a stale/unexpected install is visible.
-async function probeHermesVersion(ssh, hermesPath) {
+async function probeOpencodonVersion(ssh, opencodonPath) {
   try {
-    const out = (await ssh.exec(`${expandRemotePath(hermesPath)} --version 2>&1`)).trim()
+    const out = (await ssh.exec(`${expandRemotePath(opencodonPath)} --version 2>&1`)).trim()
 
     return (out.split('\n')[0] || '').trim()
   } catch {
@@ -232,7 +232,7 @@ async function probeRemotePlatform(ssh) {
 
   if (!SUPPORTED_REMOTE_OS.has(osName)) {
     const err: any = new Error(
-      `Unsupported remote platform "${osName || 'unknown'}". Hermes Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
+      `Unsupported remote platform "${osName || 'unknown'}". Opencodon Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
     )
 
     err.kind = 'unsupported-platform'
@@ -245,13 +245,13 @@ async function probeRemotePlatform(ssh) {
 // The OPENCODON_HOME the remote dashboard will use (explicit env wins, else
 // ~/.opencodon). Recorded in the lockfile so a future reuse can tell it's the same
 // state store; best-effort.
-async function probeRemoteHermesHome(ssh) {
+async function probeRemoteOpencodonHome(ssh) {
   try {
     const out = (await ssh.exec('echo "${OPENCODON_HOME:-$HOME/.opencodon}"')).trim().split('\n').pop()
 
     return out || '~/.opencodon'
   } catch (cause) {
-    const error: any = new Error('Could not resolve the remote Hermes home.')
+    const error: any = new Error('Could not resolve the remote Opencodon home.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -318,7 +318,7 @@ async function readLockfile(ssh, ownershipId) {
     return null
   }
 
-  for (const field of ['profile', 'hermesPath', 'hermesHome', 'logPath', 'startedAt']) {
+  for (const field of ['profile', 'opencodonPath', 'opencodonHome', 'logPath', 'startedAt']) {
     if (typeof parsed[field] !== 'string' || parsed[field].length > 1024) {
       return null
     }
@@ -368,8 +368,8 @@ async function remotePidAlive(ssh, pid) {
 
 // A pid is "provably ours" only if its remote cmdline carries our dashboard
 // args — never kill a pid we can't positively identify as our dashboard.
-async function pidIsOurDashboard(ssh, pid, spawnNonce, hermesPath = '') {
-  if (!pid || !/^[0-9a-f]{16}$/.test(String(spawnNonce || '')) || !hermesPath) {
+async function pidIsOurDashboard(ssh, pid, spawnNonce, opencodonPath = '') {
+  if (!pid || !/^[0-9a-f]{16}$/.test(String(spawnNonce || '')) || !opencodonPath) {
     return false
   }
 
@@ -377,7 +377,7 @@ async function pidIsOurDashboard(ssh, pid, spawnNonce, hermesPath = '') {
     const script =
       'import os,shlex,subprocess,sys\n' +
       `pid=${Number(pid)}\n` +
-      `expected=os.path.expanduser(${shq(hermesPath)})\n` +
+      `expected=os.path.expanduser(${shq(opencodonPath)})\n` +
       `nonce=${shq(spawnNonce)}\n` +
       'try:\n' +
       ' raw=open(f"/proc/{pid}/cmdline","rb").read()\n' +
@@ -408,7 +408,7 @@ async function pidIsOurDashboard(ssh, pid, spawnNonce, hermesPath = '') {
 
 // Kill the stale dashboard ONLY if provably ours, then drop the lockfile.
 async function cleanupStale(ssh, ownershipId, lock, pidAlive = true) {
-  if (pidAlive && lock && (await pidIsOurDashboard(ssh, lock.pid, lock.spawnNonce, lock.hermesPath))) {
+  if (pidAlive && lock && (await pidIsOurDashboard(ssh, lock.pid, lock.spawnNonce, lock.opencodonPath))) {
     try {
       const result = (
         await ssh.exec(
@@ -443,15 +443,15 @@ async function cleanupStale(ssh, ownershipId, lock, pidAlive = true) {
 // Detach so the backend survives the SSH channel closing: setsid (Linux)
 // starts a new session; macOS has no setsid, so fall back to nohup (HUP-immune;
 // fd-detachment is already handled by </dev/null + redirect + &).
-function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
-  const hermes = expandRemotePath(hermesPath)
+function buildSpawnCommand(opencodonPath, profile, opts: any = {}) {
+  const opencodon = expandRemotePath(opencodonPath)
   const profileArgs = profile ? `--profile ${shq(profile)} ` : ''
   const logPath = expandRemotePath(opts.logPath)
   const tokenFilePath = opts.tokenFilePath
   const tokenArg = tokenFilePath ? ` --ssh-session-token-file ${expandRemotePath(tokenFilePath)}` : ''
   const ownerArg = opts.spawnNonce ? ` --ssh-owner-nonce ${validateSpawnNonce(opts.spawnNonce)}` : ''
   const subCmd = `serve --isolated --host 127.0.0.1 --port 0${tokenArg}${ownerArg}`
-  const dashCmd = `env OPENCODON_DESKTOP=1 ${hermes} ${profileArgs}${subCmd}`
+  const dashCmd = `env OPENCODON_DESKTOP=1 ${opencodon} ${profileArgs}${subCmd}`
 
   return (
     `mkdir -p "$(dirname ${logPath})" && ` +
@@ -459,11 +459,11 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
   )
 }
 
-async function remoteSupportsSshOwnership(ssh, hermesPath) {
-  const hermes = expandRemotePath(hermesPath)
+async function remoteSupportsSshOwnership(ssh, opencodonPath) {
+  const opencodon = expandRemotePath(opencodonPath)
 
   const out = await ssh.exec(
-    `help="$(${hermes} serve --help 2>&1)"; ` +
+    `help="$(${opencodon} serve --help 2>&1)"; ` +
       `printf '%s' "$help" | grep -q ssh-session-token-file && ` +
       `printf '%s' "$help" | grep -q ssh-owner-nonce && echo YES || echo NO`
   )
@@ -508,11 +508,11 @@ async function scrapeReadyPort(ssh, logPath, { timeoutMs = DEFAULT_READY_TIMEOUT
   throw err
 }
 
-async function spawnRemoteDashboard(ssh, { hermesPath, profile, token, ownershipId }) {
-  if (!(await remoteSupportsSshOwnership(ssh, hermesPath))) {
+async function spawnRemoteDashboard(ssh, { opencodonPath, profile, token, ownershipId }) {
+  if (!(await remoteSupportsSshOwnership(ssh, opencodonPath))) {
     const err: any = new Error(
-      'The remote Hermes install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
-        'Update Hermes on the remote host to continue using Desktop SSH mode.'
+      'The remote Opencodon install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
+        'Update Opencodon on the remote host to continue using Desktop SSH mode.'
     )
 
     err.kind = 'update-required'
@@ -569,7 +569,7 @@ async function spawnRemoteDashboard(ssh, { hermesPath, profile, token, ownership
   let out
 
   try {
-    out = await ssh.exec(buildSpawnCommand(hermesPath, profile, { spawnNonce, tokenFilePath, logPath }))
+    out = await ssh.exec(buildSpawnCommand(opencodonPath, profile, { spawnNonce, tokenFilePath, logPath }))
   } catch (error) {
     try {
       await ssh.exec(`rm -f ${expandRemotePath(tokenFilePath)}`)
@@ -653,7 +653,7 @@ async function openForward(deps, remotePort, attempts = 3) {
 
 /**
  * Establish (or reuse) a remote dashboard and a tunnel to it. `deps` injects the
- * opened SshConnection, forward/pickLocalPort/waitForHermes, a token-gated
+ * opened SshConnection, forward/pickLocalPort/waitForOpencodon, a token-gated
  * probeReuseProof, and adoptServedToken. Returns the connection descriptor
  * { baseUrl, token, tokenFingerprint, remotePort, localPort, pid, reused, platform }.
  */
@@ -676,11 +676,11 @@ async function connect(deps) {
   const {
     ssh,
     profile = '',
-    remoteHermesPath = '',
+    remoteOpencodonPath = '',
     ownershipId,
     forward,
     pickLocalPort,
-    waitForHermes,
+    waitForOpencodon,
     probeReuseProof,
     adoptServedToken,
     rememberLog = () => {},
@@ -693,21 +693,21 @@ async function connect(deps) {
   assertNotAborted(signal)
   const platform = await probeRemotePlatform(ssh)
   log(`remote platform ${platform.os}/${platform.arch}`)
-  const hermesPath = await locateHermes(ssh, remoteHermesPath)
-  log(`located hermes at ${hermesPath}`)
-  const hermesVersion = await probeHermesVersion(ssh, hermesPath)
+  const opencodonPath = await locateOpencodon(ssh, remoteOpencodonPath)
+  log(`located opencodon at ${opencodonPath}`)
+  const opencodonVersion = await probeOpencodonVersion(ssh, opencodonPath)
 
-  if (hermesVersion) {
-    log(`remote hermes version: ${hermesVersion}`)
+  if (opencodonVersion) {
+    log(`remote opencodon version: ${opencodonVersion}`)
   }
 
   const reuseToken = deps.reuseToken || ''
-  const hermesHome = await probeRemoteHermesHome(ssh)
+  const opencodonHome = await probeRemoteOpencodonHome(ssh)
   const lock = await readLockfile(ssh, ownershipId)
 
   if (lock) {
     const pidAlive = await remotePidAlive(ssh, lock.pid)
-    const owned = pidAlive && (await pidIsOurDashboard(ssh, lock.pid, lock.spawnNonce, lock.hermesPath))
+    const owned = pidAlive && (await pidIsOurDashboard(ssh, lock.pid, lock.spawnNonce, lock.opencodonPath))
 
     const reusable =
       pidAlive &&
@@ -715,8 +715,8 @@ async function connect(deps) {
       lock.port > 0 &&
       Boolean(reuseToken) &&
       lock.tokenFingerprint === fingerprintToken(reuseToken) &&
-      lock.hermesPath === hermesPath &&
-      lock.hermesHome === hermesHome
+      lock.opencodonPath === opencodonPath &&
+      lock.opencodonHome === opencodonHome
 
     if (reusable) {
       assertNotAborted(signal)
@@ -761,8 +761,8 @@ async function connect(deps) {
             pid: lock.pid,
             reused: true,
             platform,
-            hermesPath,
-            hermesVersion,
+            opencodonPath,
+            opencodonVersion,
             ownershipId,
             spawnNonce: lock.spawnNonce,
             logPath: lock.logPath
@@ -786,7 +786,7 @@ async function connect(deps) {
   const spawnToken = mintToken()
 
   const { pid, spawnNonce, logPath, tokenFilePath } = await spawnRemoteDashboard(ssh, {
-    hermesPath,
+    opencodonPath,
     profile,
     token: spawnToken,
     ownershipId
@@ -800,8 +800,8 @@ async function connect(deps) {
     pid,
     port: 0,
     profile,
-    hermesPath,
-    hermesHome,
+    opencodonPath,
+    opencodonHome,
     logPath,
     tokenFingerprint: fingerprintToken(spawnToken),
     protocolVersion: PROTOCOL_VERSION,
@@ -829,7 +829,7 @@ async function connect(deps) {
     localPort = await openForward(deps, remotePort)
     assertNotAborted(signal)
     const baseUrl = `http://127.0.0.1:${localPort}`
-    await waitForHermes(baseUrl, spawnToken)
+    await waitForOpencodon(baseUrl, spawnToken)
     assertNotAborted(signal)
 
     const token = await adoptOwnedServedToken(adoptServedToken, baseUrl, spawnToken, ssh, pid, 'remote dashboard')
@@ -848,8 +848,8 @@ async function connect(deps) {
       pid,
       reused: false,
       platform,
-      hermesPath,
-      hermesVersion,
+      opencodonPath,
+      opencodonVersion,
       ownershipId,
       spawnNonce,
       logPath
@@ -879,15 +879,15 @@ export {
   expandRemotePath,
   fingerprintToken,
   isForwardBindCollision,
-  locateHermes,
+  locateOpencodon,
   LOCKFILE_SCHEMA_VERSION,
   lockfilePath,
   mintToken,
   openForward,
   ownershipDirectory,
   pidIsOurDashboard,
-  probeHermesVersion,
-  probeRemoteHermesHome,
+  probeOpencodonVersion,
+  probeRemoteOpencodonHome,
   probeRemotePlatform,
   PROTOCOL_VERSION,
   readLockfile,

@@ -1,8 +1,8 @@
-import { buildHermesWebSocketUrl } from "@hermes/shared";
+import { buildOpencodonWebSocketUrl } from "@opencodon/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
-// (e.g. https://mission-control.tilos.com/hermes/). The Python backend
+// (e.g. https://mission-control.tilos.com/opencodon/). The Python backend
 // injects ``window.__OPENCODON_BASE_PATH__`` into index.html based on the
 // incoming ``X-Forwarded-Prefix`` header so the SPA can address its own
 // ``/api/...`` and ``/dashboard-plugins/...`` URLs correctly without a
@@ -34,7 +34,7 @@ declare global {
     __OPENCODON_AUTH_REQUIRED__?: boolean;
   }
 }
-const SESSION_HEADER = "X-Hermes-Session-Token";
+const SESSION_HEADER = "X-Opencodon-Session-Token";
 
 function setSessionHeader(headers: Headers, token: string): void {
   if (!headers.has(SESSION_HEADER)) {
@@ -136,7 +136,7 @@ export async function fetchJSON<T>(
       // fallback the post-login handler can read.
       try {
         sessionStorage.setItem(
-          "hermes.lastLocation",
+          "opencodon.lastLocation",
           window.location.pathname + window.location.search,
         );
       } catch {
@@ -147,7 +147,7 @@ export async function fetchJSON<T>(
       return new Promise<T>(() => {});
     }
     // Loopback mode: ``_SESSION_TOKEN`` rotates on every server restart
-    // (``hermes update``, ``hermes gateway restart``, etc.). A tab kept
+    // (``opencodon update``, ``opencodon gateway restart``, etc.). A tab kept
     // open across the restart holds the OLD token in
     // ``window.__OPENCODON_SESSION_TOKEN__`` from the previous HTML render,
     // so every fetch returns 401. The HTML is served ``Cache-Control:
@@ -159,13 +159,13 @@ export async function fetchJSON<T>(
       let alreadyReloaded = false;
       try {
         alreadyReloaded =
-          sessionStorage.getItem("hermes.tokenReloadAttempted") === "1";
+          sessionStorage.getItem("opencodon.tokenReloadAttempted") === "1";
       } catch {
         /* SSR / privacy mode — fall through to throw */
       }
       if (!alreadyReloaded) {
         try {
-          sessionStorage.setItem("hermes.tokenReloadAttempted", "1");
+          sessionStorage.setItem("opencodon.tokenReloadAttempted", "1");
         } catch {
           /* SSR / privacy mode — best effort */
         }
@@ -179,7 +179,7 @@ export async function fetchJSON<T>(
     // current ``window.__OPENCODON_SESSION_TOKEN__`` is valid, so the next
     // 401 — if any — should be allowed to trigger its own reload cycle.
     try {
-      sessionStorage.removeItem("hermes.tokenReloadAttempted");
+      sessionStorage.removeItem("opencodon.tokenReloadAttempted");
     } catch {
       /* SSR / privacy mode — ignore */
     }
@@ -240,9 +240,9 @@ export async function buildWsAuthParam(): Promise<[string, string]> {
  * the caller can read ``.blob()`` / ``.formData()`` / stream it.
  *
  * Auth, in both modes, exactly as ``fetchJSON`` does it:
- *  - loopback / ``--insecure``: attach the ``X-Hermes-Session-Token`` header.
+ *  - loopback / ``--insecure``: attach the ``X-Opencodon-Session-Token`` header.
  *  - gated OAuth: no token header (it's absent by design); the
- *    ``hermes_session_at`` cookie rides along via ``credentials: 'include'``.
+ *    ``opencodon_session_at`` cookie rides along via ``credentials: 'include'``.
  *
  * Unlike ``fetchJSON`` this does NOT parse the body, does NOT throw on
  * non-2xx (the caller decides — a 404 on a download is meaningful), and
@@ -283,7 +283,7 @@ export async function buildWsUrl(
   path: string,
   params?: Record<string, string>,
 ): Promise<string> {
-  return buildHermesWebSocketUrl({
+  return buildOpencodonWebSocketUrl({
     authParam: await buildWsAuthParam(),
     basePath: BASE,
     params,
@@ -902,11 +902,11 @@ export const api = {
   // Gateway / update actions
   restartGateway: () =>
     fetchJSON<ActionResponse>("/api/gateway/restart", { method: "POST" }),
-  updateHermes: () =>
-    fetchJSON<ActionResponse>("/api/hermes/update", { method: "POST" }),
-  checkHermesUpdate: (force = false) =>
+  updateOpencodon: () =>
+    fetchJSON<ActionResponse>("/api/opencodon/update", { method: "POST" }),
+  checkOpencodonUpdate: (force = false) =>
     fetchJSON<UpdateCheckResponse>(
-      `/api/hermes/update/check${force ? "?force=true" : ""}`,
+      `/api/opencodon/update/check${force ? "?force=true" : ""}`,
     ),
   getActionStatus: (name: string, lines = 200) =>
     fetchJSON<ActionStatusResponse>(
@@ -1358,7 +1358,7 @@ export interface SkillHubSource {
   label: string;
   /** GitHub only: whether the API is currently rate-limited. */
   rate_limited?: boolean;
-  /** hermes-index only: whether the centralized index loaded. */
+  /** opencodon-index only: whether the centralized index loaded. */
   available?: boolean;
 }
 
@@ -1723,7 +1723,7 @@ export interface SystemStats {
   hostname: string;
   python_version: string;
   python_impl: string;
-  hermes_version: string;
+  opencodon_version: string;
   cpu_count: number | null;
   psutil: boolean;
   cpu_percent?: number;
@@ -1811,8 +1811,8 @@ export interface StatusResponse {
    * older gateway ⇒ the desktop falls back to the embedded-webview flow. */
   auth_flows?: string[];
   /** False when the dashboard is running in a hosted/managed layout where
-   * updates are handled by the outer launcher instead of ``hermes update``. */
-  can_update_hermes?: boolean;
+   * updates are handled by the outer launcher instead of ``opencodon update``. */
+  can_update_opencodon?: boolean;
   config_path: string;
   config_version: number;
   env_path: string;

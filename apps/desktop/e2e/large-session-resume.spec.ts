@@ -40,10 +40,10 @@ interface PaintState {
 async function setupSeededDesktop(mockServer?: MockServerOptions): Promise<SeededFixture> {
   const mock = await startMockServer(mockServer)
   const sandbox = createSandbox('large-session')
-  writeMockProviderConfig(sandbox.hermesHome, mock.url)
-  writeEnvFile(sandbox.hermesHome)
+  writeMockProviderConfig(sandbox.opencodonHome, mock.url)
+  writeEnvFile(sandbox.opencodonHome)
 
-  const seeded = spawnSync('python3', [SEED_SCRIPT, path.join(sandbox.hermesHome, 'state.db')], {
+  const seeded = spawnSync('python3', [SEED_SCRIPT, path.join(sandbox.opencodonHome, 'state.db')], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env: { ...process.env, PYTHONPATH: REPO_ROOT },

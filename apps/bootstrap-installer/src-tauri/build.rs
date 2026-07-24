@@ -37,16 +37,16 @@ fn main() {
     if let Some(c) = &commit {
         println!("cargo:rustc-env=BUILD_PIN_COMMIT={c}");
         println!(
-            "cargo:warning=hermes-bootstrap: pinning to commit {}",
+            "cargo:warning=opencodon-bootstrap: pinning to commit {}",
             short(c)
         );
     }
     if let Some(b) = &branch {
         println!("cargo:rustc-env=BUILD_PIN_BRANCH={b}");
         match &commit {
-            Some(_) => println!("cargo:warning=hermes-bootstrap: pinning to branch {b}"),
+            Some(_) => println!("cargo:warning=opencodon-bootstrap: pinning to branch {b}"),
             None => println!(
-                "cargo:warning=hermes-bootstrap: following branch {b} HEAD (no commit pin; \
+                "cargo:warning=opencodon-bootstrap: following branch {b} HEAD (no commit pin; \
                  set OPENCODON_BUILD_PIN_COMMIT for an immutable pin)"
             ),
         }
@@ -57,7 +57,7 @@ fn main() {
         // can't resolve a pin almost certainly indicates a misconfigured
         // build environment.
         println!(
-            "cargo:warning=hermes-bootstrap: no pin resolved at build time; binary will fail at runtime without OPENCODON_SETUP_DEV_REPO_ROOT or runtime args"
+            "cargo:warning=opencodon-bootstrap: no pin resolved at build time; binary will fail at runtime without OPENCODON_SETUP_DEV_REPO_ROOT or runtime args"
         );
     }
 

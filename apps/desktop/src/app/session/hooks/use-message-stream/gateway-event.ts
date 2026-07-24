@@ -1,5 +1,5 @@
-import type { BillingBlock } from '@hermes/shared'
-import type { HermesSkin } from '@hermes/shared/skin'
+import type { BillingBlock } from '@opencodon/shared'
+import type { OpencodonSkin } from '@opencodon/shared/skin'
 import type { QueryClient } from '@tanstack/react-query'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
@@ -54,7 +54,7 @@ import { notifyWorkspaceChanged, toolChangedPath, toolMayMutateFiles } from '@/s
 // Leaf import (not the `@/themes` barrel) to avoid pulling the ThemeProvider
 // module graph into the gateway event hot path.
 import { ingestBackendSkin } from '@/themes/backend-sync'
-import type { RpcEvent } from '@/types/hermes'
+import type { RpcEvent } from '@/types/opencodon'
 
 import type { ClientSessionState } from '../../../types'
 
@@ -68,7 +68,7 @@ function firstBillingLine(text: string): string {
  * A turn failed on a billing wall (out of credits / payment required). The
  * gateway forwards the structured descriptor built by `agent/billing_links.py`;
  * we cache it per-session (drives the in-chat banner) AND raise one sticky,
- * billing-specific toast — never the generic "Hermes error" — with a smart CTA
+ * billing-specific toast — never the generic "Opencodon error" — with a smart CTA
  * (Nous → in-app Settings → Billing, other providers → their billing page).
  */
 function surfaceBillingBlock(sessionId: string, raw: unknown): void {
@@ -131,7 +131,7 @@ interface GatewayEventDeps {
   flushQueuedDeltas: (sessionId?: string) => void
   finalizeInterimAssistantMessage: (sessionId: string, text: string) => void
   queryClient: QueryClient
-  refreshHermesConfig: () => Promise<void>
+  refreshOpencodonConfig: () => Promise<void>
   sessionInterrupted: (sessionId: string) => boolean
   sessionStateByRuntimeIdRef: MutableRefObject<Map<string, ClientSessionState>>
   updateSessionState: (
@@ -162,7 +162,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     flushQueuedDeltas,
     finalizeInterimAssistantMessage,
     queryClient,
-    refreshHermesConfig,
+    refreshOpencodonConfig,
     sessionInterrupted,
     sessionStateByRuntimeIdRef,
     updateSessionState,
@@ -173,7 +173,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
   // session.info arrives in bursts (agent build ready + turn end + title /
   // MCP / compress edges within the same second). Each used to fire its own
-  // refreshHermesConfig — two REST calls (config + defaults) per event, per
+  // refreshOpencodonConfig — two REST calls (config + defaults) per event, per
   // turn, including for BACKGROUND sessions whose values the fetch can't even
   // apply. Coalesce to one trailing fetch per burst; the caller gates on
   // `apply` so background traffic doesn't schedule anything.
@@ -185,16 +185,16 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     }
 
     if (typeof window === 'undefined') {
-      void refreshHermesConfig()
+      void refreshOpencodonConfig()
 
       return
     }
 
     configRefreshTimerRef.current = window.setTimeout(() => {
       configRefreshTimerRef.current = null
-      void refreshHermesConfig()
+      void refreshOpencodonConfig()
     }, 300)
-  }, [refreshHermesConfig])
+  }, [refreshOpencodonConfig])
 
   useEffect(
     () => () => {
@@ -238,17 +238,17 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
       if (event.type === 'gateway.ready') {
         // Seed the active skin into the desktop theme registry without applying,
         // so a fresh connect never overrides the user's persisted desktop theme.
-        ingestBackendSkin((payload as { skin?: HermesSkin } | undefined)?.skin, { apply: false })
+        ingestBackendSkin((payload as { skin?: OpencodonSkin } | undefined)?.skin, { apply: false })
 
         return
       } else if (event.type === 'skin.changed') {
-        // A runtime skin switch (Hermes activating an authored skin, or `/skin`
+        // A runtime skin switch (Opencodon activating an authored skin, or `/skin`
         // on another surface). Only the active profile's change repaints.
         const fromActiveProfile =
           !event.profile || normalizeProfileKey(event.profile) === normalizeProfileKey($activeGatewayProfile.get())
 
         if (fromActiveProfile) {
-          ingestBackendSkin(payload as HermesSkin | undefined, { apply: true })
+          ingestBackendSkin(payload as OpencodonSkin | undefined, { apply: true })
         }
 
         return
@@ -413,7 +413,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         if (apply) {
           reportInstallMethodWarning(payload?.install_warning)
           // Config refetch is only meaningful for the foreground context —
-          // everything refreshHermesConfig applies is either active-session
+          // everything refreshOpencodonConfig applies is either active-session
           // guarded or a composer/global pref. Background sessions' heartbeats
           // used to trigger it too (two REST calls each, every turn).
           scheduleConfigRefresh()
@@ -878,7 +878,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         showAgentNotice(notice)
 
         // The urgent pair (access paused / restored) also breaks through as a
-        // native OS notification when Hermes is backgrounded; dispatch is gated
+        // native OS notification when Opencodon is backgrounded; dispatch is gated
         // by the user's notification prefs + backgrounded check.
         const native = nativeNoticeInput(notice, translateNow('notifications.native.creditsTitle'))
 
@@ -898,7 +898,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         // straight to dismissNotification(key).
         clearAgentNotice((event.payload as AgentNoticePayload | undefined)?.key)
       } else if (event.type === 'error') {
-        const errorMessage = payload?.message || 'Hermes reported an error'
+        const errorMessage = payload?.message || 'Opencodon reported an error'
         const looksLikeProviderSetup = isProviderSetupErrorMessage(errorMessage)
 
         // A turn that errors out has also ended — drop any open blocking prompt
@@ -934,7 +934,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           notify({
             id: `gateway-error:${errorMessage}`,
             kind: 'error',
-            title: 'Hermes error',
+            title: 'Opencodon error',
             message: errorMessage
           })
         }

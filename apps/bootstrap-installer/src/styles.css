@@ -29,7 +29,7 @@
 
 /* Installer-only additions: a fade-in animation and a warm radial glow
    for the welcome screen. Everything else inherits from the desktop. */
-@keyframes hermes-fade-in {
+@keyframes opencodon-fade-in {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -41,7 +41,7 @@
 }
 
 .opencodon-fade-in {
-  animation: hermes-fade-in 0.45s ease-out both;
+  animation: opencodon-fade-in 0.45s ease-out both;
 }
 
 .opencodon-glow {

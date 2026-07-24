@@ -1,4 +1,4 @@
-// Profile-delete routing logic for the `hermes:api` IPC handler.
+// Profile-delete routing logic for the `opencodon:api` IPC handler.
 //
 // When the renderer issues DELETE /api/profiles/<name>, the handler must
 // tear down that profile's backend (primary window backend or pool backend)
@@ -10,7 +10,7 @@
 // These helpers are pure so they can be unit-tested without Electron.
 
 /**
- * Parse a `hermes:api` request into the profile name a DELETE targets, or
+ * Parse a `opencodon:api` request into the profile name a DELETE targets, or
  * null when the request is not a profile-delete at all (wrong method, wrong
  * path, empty/invalid name).
  */
@@ -82,7 +82,7 @@ export function decideProfileDeleteAction(
 }
 
 /**
- * Route the next `hermes:api` request away from the primary/window backend
+ * Route the next `opencodon:api` request away from the primary/window backend
  * whenever a profile was just torn down -- otherwise ensureBackend would
  * spawn a fresh pool backend for the deleted profile, whose
  * ensure_opencodon_home() recreates the directory the delete just removed.

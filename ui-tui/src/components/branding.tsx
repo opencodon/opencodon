@@ -1,4 +1,4 @@
-import { Box, Text, useStdout } from '@hermes/ink'
+import { Box, Text, useStdout } from '@opencodon/ink'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
@@ -472,7 +472,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
             - run{' '}
           </Text>
           <Text bold color={t.color.warn}>
-            {info.update_command || 'hermes update'}
+            {info.update_command || 'opencodon update'}
           </Text>
           <Text bold={false} color={t.color.warn} dimColor>
             {' '}

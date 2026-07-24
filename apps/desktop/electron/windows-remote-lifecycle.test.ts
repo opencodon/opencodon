@@ -39,8 +39,8 @@ test('platform detection preserves POSIX and falls back to Windows PowerShell', 
       return JSON.stringify({
         os: 'Windows',
         arch: 'ARM64',
-        hermesHome: 'C:\\h',
-        hermesPath: 'C:\\h\\hermes.exe',
+        opencodonHome: 'C:\\h',
+        opencodonPath: 'C:\\h\\opencodon.exe',
         python: 'C:\\h\\python.exe'
       })
     })
@@ -72,23 +72,23 @@ test('platform detection surfaces transport failures as themselves, not unsuppor
           throw new Error('not recognized')
         }
 
-        throw new Error('Hermes is not installed on the remote Windows host.')
+        throw new Error('Opencodon is not installed on the remote Windows host.')
       })
     ),
-    (err: any) => err.kind === 'unsupported-platform' && /Hermes is not installed/.test(err.message)
+    (err: any) => err.kind === 'unsupported-platform' && /Opencodon is not installed/.test(err.message)
   )
 })
 
 test('helper command uses the fixed remote Python entry point and quotes path data', () => {
-  const command = helperCommand({ python: "C:\\Program Files\\Hermes's\\python.exe" }, 'inspect', [
-    'C:\\x y\\hermes.exe'
+  const command = helperCommand({ python: "C:\\Program Files\\Opencodon's\\python.exe" }, 'inspect', [
+    'C:\\x y\\opencodon.exe'
   ])
 
   const encoded = command.split(' ').pop()!
   const script = Buffer.from(encoded, 'base64').toString('utf16le')
   assert.match(script, /-m' 'opencodon_cli\.windows_ssh_runtime' 'inspect'/)
-  assert.match(script, /Hermes''s/)
-  assert.match(script, /C:\\x y\\hermes\.exe/)
+  assert.match(script, /Opencodon''s/)
+  assert.match(script, /C:\\x y\\opencodon\.exe/)
 })
 
 test('Windows lock validation is scoped and exact', () => {
@@ -101,8 +101,8 @@ test('Windows lock validation is scoped and exact', () => {
     creationTimeNs: '1784219690452757504',
     port: 1234,
     tokenFingerprint: 'a'.repeat(32),
-    hermesPath: 'C:\\h\\hermes.exe',
-    hermesHome: 'C:\\h'
+    opencodonPath: 'C:\\h\\opencodon.exe',
+    opencodonHome: 'C:\\h'
   }
 
   assert.equal(validLock(lock, ownershipId), true)

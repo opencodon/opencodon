@@ -20,7 +20,7 @@ describe('recordParentLifecycle', () => {
   let home: string
 
   beforeEach(() => {
-    home = mkdtempSync(join(tmpdir(), 'hermes-parentlog-'))
+    home = mkdtempSync(join(tmpdir(), 'opencodon-parentlog-'))
   })
 
   afterEach(() => {

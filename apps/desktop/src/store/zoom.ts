@@ -13,10 +13,10 @@ import { atom } from 'nanostores'
 export const $zoomPercent = atom<number>(100)
 
 export function setZoomPercent(percent: number): void {
-  window.hermesDesktop?.zoom?.setPercent(percent)
+  window.opencodonDesktop?.zoom?.setPercent(percent)
 }
 
-if (typeof window !== 'undefined' && window.hermesDesktop?.zoom) {
-  void window.hermesDesktop.zoom.get().then(({ percent }) => $zoomPercent.set(percent))
-  window.hermesDesktop.zoom.onChanged(({ percent }) => $zoomPercent.set(percent))
+if (typeof window !== 'undefined' && window.opencodonDesktop?.zoom) {
+  void window.opencodonDesktop.zoom.get().then(({ percent }) => $zoomPercent.set(percent))
+  window.opencodonDesktop.zoom.onChanged(({ percent }) => $zoomPercent.set(percent))
 }

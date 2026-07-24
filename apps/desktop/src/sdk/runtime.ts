@@ -1,6 +1,6 @@
 /**
  * Runtime SDK injection — the other half of the vscode-module model. Bundled
- * plugins resolve `@hermes/plugin-sdk` through the vite alias; RUNTIME-loaded
+ * plugins resolve `@opencodon/plugin-sdk` through the vite alias; RUNTIME-loaded
  * plugins (disk / fetched) import the same specifier and get the same object:
  * the loader rewrites bare specifiers to shim modules that re-export the
  * live namespaces installed here. React ships as the app's singletons —
@@ -44,7 +44,7 @@ let cached: Record<string, string> | null = null
 /** Specifier -> shim URL map for the runtime loader (longest keys first). */
 export function sdkImportMap(): Record<string, string> {
   cached ??= {
-    '@hermes/plugin-sdk': shimUrl('__OPENCODON_PLUGIN_SDK__'),
+    '@opencodon/plugin-sdk': shimUrl('__OPENCODON_PLUGIN_SDK__'),
     'react/jsx-dev-runtime': shimUrl('__OPENCODON_REACT_JSX_DEV__'),
     'react/jsx-runtime': shimUrl('__OPENCODON_REACT_JSX__'),
     react: shimUrl('__OPENCODON_REACT__')

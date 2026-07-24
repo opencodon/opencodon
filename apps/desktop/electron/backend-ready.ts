@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-// `hermes serve` announces OPENCODON_BACKEND_READY; the legacy `hermes dashboard`
+// `opencodon serve` announces OPENCODON_BACKEND_READY; the legacy `opencodon dashboard`
 // backend announces OPENCODON_DASHBOARD_READY. Accept either so the desktop spawn
 // works against both the headless backend and old/dashboard runtimes.
 const _READY_RE = /^OPENCODON_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
@@ -88,7 +88,7 @@ function waitForDashboardPort(child, timeoutMs = resolvePortAnnounceTimeoutMs())
 
     function onExit(code, signal) {
       cleanup()
-      reject(new Error(`Hermes backend: exited before port announcement (${signal || code})`))
+      reject(new Error(`Opencodon backend: exited before port announcement (${signal || code})`))
     }
 
     function onError(err) {
@@ -98,7 +98,7 @@ function waitForDashboardPort(child, timeoutMs = resolvePortAnnounceTimeoutMs())
 
     const timer = setTimeout(() => {
       cleanup()
-      reject(new Error(`Timed out waiting for Hermes backend port announcement (${timeoutMs}ms)`))
+      reject(new Error(`Timed out waiting for Opencodon backend port announcement (${timeoutMs}ms)`))
     }, timeoutMs)
 
     child.stdout.on('data', onData)
@@ -154,7 +154,7 @@ function waitForDashboardReadyFile(readyFile, child, timeoutMs = resolvePortAnno
 
     function onExit(code, signal) {
       cleanup()
-      reject(new Error(`Hermes backend: exited before port announcement (${signal || code})`))
+      reject(new Error(`Opencodon backend: exited before port announcement (${signal || code})`))
     }
 
     function onError(err) {
@@ -164,7 +164,7 @@ function waitForDashboardReadyFile(readyFile, child, timeoutMs = resolvePortAnno
 
     const timer = setTimeout(() => {
       cleanup()
-      reject(new Error(`Timed out waiting for Hermes backend port announcement (${timeoutMs}ms)`))
+      reject(new Error(`Timed out waiting for Opencodon backend port announcement (${timeoutMs}ms)`))
     }, timeoutMs)
 
     child.on('exit', onExit)

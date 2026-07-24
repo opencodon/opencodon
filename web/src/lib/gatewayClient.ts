@@ -15,11 +15,11 @@
 
 import {
   JsonRpcGatewayClient,
-  buildHermesWebSocketUrl,
+  buildOpencodonWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
-} from "@hermes/shared";
+} from "@opencodon/shared";
 
 import { OPENCODON_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 
@@ -46,12 +46,12 @@ export class GatewayClient extends JsonRpcGatewayClient {
     const authParam = token ? (["token", token] as const) : await buildWsAuthParam();
     if (!authParam[1]) {
       throw new Error(
-        "Session token not available — page must be served by the Hermes dashboard server",
+        "Session token not available — page must be served by the Opencodon dashboard server",
       );
     }
 
     await super.connect(
-      buildHermesWebSocketUrl({
+      buildOpencodonWebSocketUrl({
         authParam,
         basePath: OPENCODON_BASE_PATH,
         path: "/api/ws",

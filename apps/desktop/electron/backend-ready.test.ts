@@ -125,7 +125,7 @@ test('rejects with the timeout message after the deadline', async () => {
   const child = makeFakeChild()
   await assert.rejects(
     waitForDashboardPort(child, 20),
-    /Timed out waiting for Hermes backend port announcement \(20ms\)/
+    /Timed out waiting for Opencodon backend port announcement \(20ms\)/
   )
 })
 
@@ -144,7 +144,7 @@ test('a late announcement after timeout does not throw (listeners torn down)', a
 // ---------------------------------------------------------------------------
 
 function mkTmpReadyFile() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-ready-test-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opencodon-ready-test-'))
 
   return {
     dir,

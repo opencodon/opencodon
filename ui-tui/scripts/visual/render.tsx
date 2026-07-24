@@ -1,5 +1,5 @@
 /* Visual self-verification tool: `npm run visual` renders real TUI surfaces
- * across theme x background scenes to <tmpdir>/hermes-tui-visual/tui-visual.html,
+ * across theme x background scenes to <tmpdir>/opencodon-tui-visual/tui-visual.html,
  * then shot.mjs screenshots it to tui-visual.png for eyeball + agent review.
  *
  * Original note: : render real TUI surfaces with ANSI colors intact,
@@ -15,7 +15,7 @@ import { PassThrough } from 'stream'
 
 import { visualOutDir } from './paths.mjs'
 
-import { Box, renderSync, Text } from '@hermes/ink'
+import { Box, renderSync, Text } from '@opencodon/ink'
 import React, { type ReactElement } from 'react'
 
 import { GatewayProvider } from '../../src/app/gatewayContext.js'
@@ -54,7 +54,7 @@ const SLATE = {
 // darker calm dims).
 
 const info: SessionInfo = {
-  cwd: '/Users/brooklyn/www/hermes-agent',
+  cwd: '/Users/brooklyn/www/opencodon-agent',
   mcp_servers: [{ connected: true, name: 'figma', tools: 12, transport: 'sse' }],
   model: 'claude-opus-4.8-fast',
   skills: {

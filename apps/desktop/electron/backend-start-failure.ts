@@ -3,7 +3,7 @@
  *
  * Decides whether a failed primary-backend boot should *latch* into
  * `backendStartFailure`. A latched failure makes every subsequent
- * startHermes() re-throw the cached error without re-attempting the connect —
+ * startOpencodon() re-throw the cached error without re-attempting the connect —
  * the right behavior for a LOCAL backend so the renderer's retry loop can't
  * restart a broken install over and over.
  *
@@ -31,7 +31,7 @@ export interface BackendStartFailureContext {
 }
 
 /**
- * Whether a startHermes() failure should latch into `backendStartFailure`.
+ * Whether a startOpencodon() failure should latch into `backendStartFailure`.
  * Latch local failures (prevent install-restart loops); never latch remote
  * failures (they are transient and must stay retryable so recovery paths work
  * without an app restart).

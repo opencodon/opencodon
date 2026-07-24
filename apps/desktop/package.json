@@ -1,9 +1,9 @@
 {
-  "name": "hermes",
-  "productName": "Hermes",
+  "name": "opencodon",
+  "productName": "Opencodon",
   "private": true,
   "version": "0.17.0",
-  "description": "Native desktop shell for Hermes Agent.",
+  "description": "Native desktop shell for Opencodon Agent.",
   "author": "Nous Research",
   "type": "module",
   "main": "dist/electron-main.mjs",
@@ -72,7 +72,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@hermes/shared": "file:../shared",
+    "@opencodon/shared": "file:../shared",
     "@icons-pack/react-simple-icons": "=13.11.1",
     "@lezer/highlight": "^1.2.3",
     "@nanostores/react": "^1.1.0",
@@ -166,17 +166,17 @@
   "build": {
     "electronVersion": "40.10.2",
     "appId": "com.nousresearch.opencodon",
-    "productName": "Hermes",
-    "executableName": "Hermes",
+    "productName": "Opencodon",
+    "executableName": "Opencodon",
     "protocols": [
       {
-        "name": "Hermes Protocol",
+        "name": "Opencodon",
         "schemes": [
-          "hermes"
+          "opencodon"
         ]
       }
     ],
-    "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
+    "artifactName": "Opencodon-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
     "directories": {
       "output": "release"
@@ -212,11 +212,11 @@
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.inherit.plist",
       "extendInfo": {
-        "CFBundleDisplayName": "Hermes",
-        "CFBundleExecutable": "Hermes",
-        "CFBundleName": "Hermes",
-        "NSAudioCaptureUsageDescription": "Hermes uses audio capture for voice conversations.",
-        "NSMicrophoneUsageDescription": "Hermes uses the microphone for voice input and voice conversations."
+        "CFBundleDisplayName": "Opencodon",
+        "CFBundleExecutable": "Opencodon",
+        "CFBundleName": "Opencodon",
+        "NSAudioCaptureUsageDescription": "Opencodon uses audio capture for voice conversations.",
+        "NSMicrophoneUsageDescription": "Opencodon uses the microphone for voice input and voice conversations."
       },
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
@@ -226,7 +226,7 @@
       ]
     },
     "dmg": {
-      "title": "Install Hermes",
+      "title": "Install Opencodon",
       "backgroundColor": "#f5f5f7",
       "iconSize": 96,
       "window": {
@@ -248,7 +248,7 @@
       ]
     },
     "win": {
-      "legalTrademarks": "Hermes",
+      "legalTrademarks": "Opencodon",
       "target": [
         "nsis",
         "msi"
@@ -258,7 +258,7 @@
     "linux": {
       "category": "Development",
       "maintainer": "Nous Research <support@nousresearch.com>",
-      "synopsis": "Native desktop shell for Hermes Agent.",
+      "synopsis": "Native desktop shell for Opencodon Agent.",
       "target": [
         "AppImage",
         "deb",
@@ -269,8 +269,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
-      "shortcutName": "Hermes",
-      "uninstallDisplayName": "Hermes",
+      "shortcutName": "Opencodon",
+      "uninstallDisplayName": "Opencodon",
       "warningsAsErrors": false
     }
   }

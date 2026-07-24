@@ -71,15 +71,15 @@ export async function resolveMediaDisplaySrc(path: string): Promise<string> {
     return path
   }
 
-  if (window.hermesDesktop && isRemoteGateway()) {
+  if (window.opencodonDesktop && isRemoteGateway()) {
     return gatewayMediaDataUrl(path)
   }
 
-  if (!window.hermesDesktop?.readFileDataUrl) {
+  if (!window.opencodonDesktop?.readFileDataUrl) {
     return mediaExternalUrl(path)
   }
 
-  return window.hermesDesktop.readFileDataUrl(filePathFromMediaPath(path))
+  return window.opencodonDesktop.readFileDataUrl(filePathFromMediaPath(path))
 }
 
 // Resolve a media path to a URL the shell can open. Remote mode rewrites
@@ -107,7 +107,7 @@ export function mediaExternalUrl(path: string): string {
 // file with Range support. Used for audio/video so playback bypasses the data
 // URL size cap and supports seeking. `path` may be a plain path or `file://…`.
 export function mediaStreamUrl(path: string): string {
-  return `hermes-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
+  return `opencodon-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
 }
 
 export function mediaPathFromMarkdownHref(href?: string): string | null {

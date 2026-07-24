@@ -33,7 +33,7 @@ import { enrichSelectedSshHost, selectSshHost } from './ssh-host-selection'
 type Mode = 'local' | 'remote' | 'cloud' | 'ssh'
 type AuthMode = 'oauth' | 'token'
 type ProbeStatus = 'idle' | 'probing' | 'done' | 'error'
-// Hermes Cloud discovery lifecycle for the cloud-mode panel.
+// Opencodon Cloud discovery lifecycle for the cloud-mode panel.
 type CloudDiscoverStatus = 'idle' | 'loading' | 'done' | 'error'
 
 interface GatewaySettingsState {
@@ -49,7 +49,7 @@ interface GatewaySettingsState {
   sshUser: string
   sshPort: number | null
   sshKeyPath: string
-  sshRemoteHermesPath: string
+  sshRemoteOpencodonPath: string
 }
 
 const SSH_HOST_CUSTOM = '__custom__'
@@ -67,7 +67,7 @@ const EMPTY_STATE: GatewaySettingsState = {
   sshUser: '',
   sshPort: null,
   sshKeyPath: '',
-  sshRemoteHermesPath: ''
+  sshRemoteOpencodonPath: ''
 }
 
 export function savedCloudConnectionUrl(config: Pick<GatewaySettingsState, 'mode' | 'remoteUrl'>): string {
@@ -169,7 +169,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     setConnectedCloudUrl(savedCloudConnectionUrl(config))
   }
 
-  // --- Hermes Cloud (cloud mode) state ---
+  // --- Opencodon Cloud (cloud mode) state ---
   // One portal session powers discovery + the silent per-agent cascade. These
   // track the cloud panel: whether we're signed in, the discovered agent list,
   // and which agent is mid-connect.
@@ -214,7 +214,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
 
   useEffect(() => {
     let cancelled = false
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
 
     if (!desktop?.getConnectionConfig) {
       setLoading(false)
@@ -276,7 +276,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
       return
     }
 
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
 
     if (!desktop?.probeConnectionConfig) {
       return
@@ -383,12 +383,12 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   }, [state.sshHost, sshHostSuggestions])
 
   useEffect(() => {
-    if (state.mode !== 'ssh' || !window.hermesDesktop?.sshConfigHosts) {
+    if (state.mode !== 'ssh' || !window.opencodonDesktop?.sshConfigHosts) {
       return
     }
 
     let cancelled = false
-    void window.hermesDesktop
+    void window.opencodonDesktop
       .sshConfigHosts()
       .then(result => {
         if (!cancelled) {
@@ -411,7 +411,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     signingSeq.current += 1
     cloudConnectSeq.current += 1
     setLastTest(null)
-  }, [scope, state.mode, state.sshHost, state.sshUser, state.sshPort, state.sshKeyPath, state.sshRemoteHermesPath])
+  }, [scope, state.mode, state.sshHost, state.sshUser, state.sshPort, state.sshKeyPath, state.sshRemoteOpencodonPath])
 
   const oauthConnected = state.remoteOauthConnected
 
@@ -437,7 +437,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     sshUser: state.sshUser.trim() || undefined,
     sshPort: state.sshPort,
     sshKeyPath: state.sshKeyPath.trim() || undefined,
-    sshRemoteHermesPath: state.sshRemoteHermesPath.trim()
+    sshRemoteOpencodonPath: state.sshRemoteOpencodonPath.trim()
   })
 
   const save = async (apply: boolean) => {
@@ -457,8 +457,8 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
 
     try {
       const next = apply
-        ? await window.hermesDesktop.applyConnectionConfig(payload())
-        : await window.hermesDesktop.saveConnectionConfig(payload())
+        ? await window.opencodonDesktop.applyConnectionConfig(payload())
+        : await window.opencodonDesktop.saveConnectionConfig(payload())
 
       if (seq !== saveSeq.current) {
         return
@@ -480,7 +480,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
 
       const errors = {
         'auth-failed': g.sshErrAuth,
-        'hermes-not-found': g.sshErrNotInstalled,
+        'opencodon-not-found': g.sshErrNotInstalled,
         'host-key-changed': g.sshErrHostKey,
         timeout: g.sshErrTimeout,
         unreachable: g.sshErrUnreachable,
@@ -521,7 +521,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     try {
       // Save (don't apply/restart) so the login window has a URL to use and the
       // oauth mode is persisted, without yet flipping the live connection.
-      const saved = await window.hermesDesktop.saveConnectionConfig({
+      const saved = await window.opencodonDesktop.saveConnectionConfig({
         mode: state.mode,
         profile: scope ?? undefined,
         remoteAuthMode: 'oauth',
@@ -534,14 +534,14 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
 
       acceptSavedConfig(saved)
 
-      const result = await window.hermesDesktop.oauthLoginConnectionConfig(trimmedUrl)
+      const result = await window.opencodonDesktop.oauthLoginConnectionConfig(trimmedUrl)
 
       if (seq !== signingSeq.current) {
         return
       }
 
       if (result.connected) {
-        const refreshed = await window.hermesDesktop.getConnectionConfig(scope)
+        const refreshed = await window.opencodonDesktop.getConnectionConfig(scope)
         acceptSavedConfig(refreshed)
         notify({ kind: 'success', title: g.signedIn, message: g.connectedTo(providerLabel) })
       } else {
@@ -567,8 +567,8 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     setSigningIn(true)
 
     try {
-      await window.hermesDesktop.oauthLogoutConnectionConfig(trimmedUrl || undefined)
-      const refreshed = await window.hermesDesktop.getConnectionConfig(scope)
+      await window.opencodonDesktop.oauthLogoutConnectionConfig(trimmedUrl || undefined)
+      const refreshed = await window.opencodonDesktop.getConnectionConfig(scope)
 
       if (seq !== signingSeq.current) {
         return
@@ -587,14 +587,14 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     }
   }
 
-  // --- Hermes Cloud handlers ---
+  // --- Opencodon Cloud handlers ---
 
   // Pull the discovered agent list over the shared portal session. Tolerant of
   // a lapsed session: a needsCloudLogin error flips us back to signed-out.
   // `org` scopes discovery for multi-org users; when discovery comes back with
   // needsOrgSelection we surface the org list and show a picker instead.
   const discoverCloud = async (org?: string) => {
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
     const seq = contextSeq.current
 
     if (!desktop?.cloud) {
@@ -678,7 +678,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
       return
     }
 
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
 
     if (!desktop?.cloud) {
       return
@@ -724,7 +724,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   }, [state.mode, scope])
 
   const cloudSignIn = async () => {
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
     const seq = ++signingSeq.current
 
     if (!desktop?.cloud) {
@@ -757,7 +757,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   }
 
   const cloudSignOut = async () => {
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
     const seq = ++signingSeq.current
 
     if (!desktop?.cloud) {
@@ -800,7 +800,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
       return
     }
 
-    const desktop = window.hermesDesktop
+    const desktop = window.opencodonDesktop
 
     if (!desktop?.cloud) {
       return
@@ -861,14 +861,14 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   }
 
   const resolveSshHost = async (host: string) => {
-    if (!host || !window.hermesDesktop?.sshResolveHost) {
+    if (!host || !window.opencodonDesktop?.sshResolveHost) {
       return
     }
 
     const seq = ++sshResolveSeq.current
 
     try {
-      const resolved = await window.hermesDesktop.sshResolveHost(host)
+      const resolved = await window.opencodonDesktop.sshResolveHost(host)
 
       if (seq !== sshResolveSeq.current) {
         return
@@ -906,7 +906,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     setLastTest(null)
 
     try {
-      const result = await window.hermesDesktop.testConnectionConfig(payload())
+      const result = await window.opencodonDesktop.testConnectionConfig(payload())
 
       if (seq !== sshTestSeq.current) {
         return
@@ -915,7 +915,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
       if (!result.reachable) {
         const errors = {
           'auth-failed': g.sshErrAuth,
-          'hermes-not-found': g.sshErrNotInstalled,
+          'opencodon-not-found': g.sshErrNotInstalled,
           'host-key-changed': g.sshErrHostKey,
           timeout: g.sshErrTimeout,
           unreachable: g.sshErrUnreachable,
@@ -958,7 +958,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     setLastTest(null)
 
     try {
-      const result = await window.hermesDesktop.testConnectionConfig({
+      const result = await window.opencodonDesktop.testConnectionConfig({
         mode: 'remote',
         profile: scope ?? undefined,
         remoteAuthMode: authMode,
@@ -995,7 +995,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     )
   }
 
-  if (!window.hermesDesktop?.getConnectionConfig) {
+  if (!window.opencodonDesktop?.getConnectionConfig) {
     return <EmptyState description={g.unavailableDesc} title={g.unavailableTitle} />
   }
 
@@ -1088,7 +1088,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
         </div>
       </div>
 
-      {/* Hermes Cloud panel: one portal sign-in, then a discovered-agent picker
+      {/* Opencodon Cloud panel: one portal sign-in, then a discovered-agent picker
           whose selection drives the silent per-agent cascade + a cloud
           connection. Replaces the URL/token form while in cloud mode. */}
       {state.mode === 'cloud' && !state.envOverride ? (
@@ -1241,7 +1241,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
                 className={cn('h-8', CONTROL_TEXT)}
                 disabled={state.envOverride}
                 onChange={event => setState(current => ({ ...current, remoteUrl: event.target.value }))}
-                placeholder="https://gateway.example.com/hermes"
+                placeholder="https://gateway.example.com/opencodon"
                 value={state.remoteUrl}
               />
             }
@@ -1414,13 +1414,13 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
             action={
               <Input
                 className={cn('h-8 font-mono', CONTROL_TEXT)}
-                onChange={event => setState(current => ({ ...current, sshRemoteHermesPath: event.target.value }))}
-                placeholder={g.sshHermesPathPlaceholder}
-                value={state.sshRemoteHermesPath}
+                onChange={event => setState(current => ({ ...current, sshRemoteOpencodonPath: event.target.value }))}
+                placeholder={g.sshOpencodonPathPlaceholder}
+                value={state.sshRemoteOpencodonPath}
               />
             }
-            description={g.sshHermesPathDesc}
-            title={g.sshHermesPathTitle}
+            description={g.sshOpencodonPathDesc}
+            title={g.sshOpencodonPathTitle}
           />
         </div>
       ) : null}
@@ -1476,7 +1476,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
         <div className="mt-6 grid gap-1">
           <ListRow
             action={
-              <Button onClick={() => void window.hermesDesktop?.revealLogs()} size="sm" variant="textStrong">
+              <Button onClick={() => void window.opencodonDesktop?.revealLogs()} size="sm" variant="textStrong">
                 <FileText />
                 {g.openLogs}
               </Button>

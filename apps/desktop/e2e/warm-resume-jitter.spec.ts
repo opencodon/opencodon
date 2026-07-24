@@ -137,13 +137,13 @@ async function setupSeededMockBackend(): Promise<MockBackendFixture> {
 
   // 2. Create sandbox + write config
   const sandbox = createSandbox('warm-seed')
-  writeMockProviderConfig(sandbox.hermesHome, mock.url)
-  writeEnvFile(sandbox.hermesHome)
+  writeMockProviderConfig(sandbox.opencodonHome, mock.url)
+  writeEnvFile(sandbox.opencodonHome)
 
   // 3. Pre-seed state.db: generate a fixture JSON to a temp file, then
   //    run the seed script to import it into state.db BEFORE launching.
-  const stateDbPath = path.join(sandbox.hermesHome, 'state.db')
-  const fixturePath = path.join(os.tmpdir(), `hermes-e2e-warm-resume-${Date.now()}.json`)
+  const stateDbPath = path.join(sandbox.opencodonHome, 'state.db')
+  const fixturePath = path.join(os.tmpdir(), `opencodon-e2e-warm-resume-${Date.now()}.json`)
   generateSessionFixture(fixturePath)
   const python = findPython()
   const seedResult = spawnSync(

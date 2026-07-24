@@ -11,25 +11,25 @@ import {
   setApiRequestProfile,
   triggerCronJob,
   updateCronJob
-} from './hermes'
+} from './opencodon'
 
 // Contract: every cron helper must carry the active gateway profile, so a
 // multi-profile / remote user's cron list, runs, and mutations hit the backend
 // they're actually on — not the primary/default. Without it, selecting a remote
 // profile still showed the local primary's jobs (the "remote cron jobs don't
 // show up" bug), the counterpart to the backend-action-helper fix in
-// hermes-profile-scope.test.ts.
+// opencodon-profile-scope.test.ts.
 describe('cron helpers are profile-scoped', () => {
   const api = vi.fn(async (_req: { path: string; profile?: string }) => ({}) as never)
 
   beforeEach(() => {
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = { api }
+    ;(window as { opencodonDesktop?: unknown }).opencodonDesktop = { api }
     api.mockClear()
   })
 
   afterEach(() => {
     setApiRequestProfile(null)
-    delete (window as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as { opencodonDesktop?: unknown }).opencodonDesktop
   })
 
   const lastProfile = () => api.mock.calls.at(-1)?.[0].profile

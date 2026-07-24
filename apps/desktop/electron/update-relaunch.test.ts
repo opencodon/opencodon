@@ -50,7 +50,7 @@ test('unpackedDirName maps platform to the electron-builder dir', () => {
 })
 
 test('resolveUnpackedRelease returns the dir for a binary UNDER release/<plat>-unpacked', () => {
-  const exec = path.join(UNPACKED, 'hermes')
+  const exec = path.join(UNPACKED, 'opencodon')
   assert.equal(resolveUnpackedRelease(exec, ROOT, 'linux'), UNPACKED)
   // The unpacked dir itself also counts.
   assert.equal(resolveUnpackedRelease(UNPACKED, ROOT, 'linux'), UNPACKED)
@@ -58,10 +58,10 @@ test('resolveUnpackedRelease returns the dir for a binary UNDER release/<plat>-u
 
 test('resolveUnpackedRelease is null for AppImage / .deb / .rpm / dev / unresolved paths', () => {
   // AppImage mount
-  assert.equal(resolveUnpackedRelease('/tmp/.mount_Hermes12345/AppRun', ROOT, 'linux'), null)
+  assert.equal(resolveUnpackedRelease('/tmp/.mount_Opencodon12345/AppRun', ROOT, 'linux'), null)
   // .deb / .rpm system install
-  assert.equal(resolveUnpackedRelease('/usr/lib/hermes/hermes', ROOT, 'linux'), null)
-  assert.equal(resolveUnpackedRelease('/opt/Hermes/hermes', ROOT, 'linux'), null)
+  assert.equal(resolveUnpackedRelease('/usr/lib/opencodon/opencodon', ROOT, 'linux'), null)
+  assert.equal(resolveUnpackedRelease('/opt/Opencodon/opencodon', ROOT, 'linux'), null)
   // dev electron
   assert.equal(
     resolveUnpackedRelease('/home/u/.opencodon/opencodon/node_modules/electron/dist/electron', ROOT, 'linux'),
@@ -69,12 +69,12 @@ test('resolveUnpackedRelease is null for AppImage / .deb / .rpm / dev / unresolv
   )
   // empty / missing
   assert.equal(resolveUnpackedRelease('', ROOT, 'linux'), null)
-  assert.equal(resolveUnpackedRelease(path.join(UNPACKED, 'hermes'), '', 'linux'), null)
+  assert.equal(resolveUnpackedRelease(path.join(UNPACKED, 'opencodon'), '', 'linux'), null)
 })
 
 test('resolveUnpackedRelease is not fooled by a sibling prefix dir', () => {
   // `.../release/linux-unpacked-evil` must NOT match `.../release/linux-unpacked`.
-  const sneaky = path.join(ROOT, 'apps', 'desktop', 'release', 'linux-unpacked-evil', 'hermes')
+  const sneaky = path.join(ROOT, 'apps', 'desktop', 'release', 'linux-unpacked-evil', 'opencodon')
   assert.equal(resolveUnpackedRelease(sneaky, ROOT, 'linux'), null)
 })
 
@@ -148,12 +148,12 @@ test('collectRelaunchArgs drops Electron internals, keeps user/launcher args', (
     '--field-trial-handle=123',
     '--no-sandbox', // sandbox opt-out — KEEP (user/env intent + relaunch fallback)
     '--lang=en-US',
-    'hermes://open/agent/42', // deep link — keep
+    'opencodon://open/agent/42', // deep link — keep
     '--profile=work', // app flag — keep
     '--remote-debugging-port=9222' // internal — drop
   ]
 
-  assert.deepEqual(collectRelaunchArgs(argv), ['--no-sandbox', 'hermes://open/agent/42', '--profile=work'])
+  assert.deepEqual(collectRelaunchArgs(argv), ['--no-sandbox', 'opencodon://open/agent/42', '--profile=work'])
   assert.deepEqual(collectRelaunchArgs(undefined), [])
 })
 
@@ -162,8 +162,8 @@ test('collectRelaunchEnv preserves OPENCODON_HOME + OPENCODON_DESKTOP_* + sandbo
     OPENCODON_HOME: '/home/u/.opencodon',
     OPENCODON_DESKTOP_REMOTE_URL: 'http://box:9119',
     OPENCODON_DESKTOP_REMOTE_TOKEN: 'secret',
-    OPENCODON_DESKTOP_OPENCODON_ROOT: '/home/u/dev/hermes',
-    OPENCODON_DESKTOP_APP_NAME: 'HermesSandbox',
+    OPENCODON_DESKTOP_OPENCODON_ROOT: '/home/u/dev/opencodon',
+    OPENCODON_DESKTOP_APP_NAME: 'OpencodonSandbox',
     ELECTRON_DISABLE_SANDBOX: '1', // sandbox opt-out — preserved
     PATH: '/usr/bin', // not preserved
     HOME: '/home/u', // not preserved
@@ -174,8 +174,8 @@ test('collectRelaunchEnv preserves OPENCODON_HOME + OPENCODON_DESKTOP_* + sandbo
     OPENCODON_HOME: '/home/u/.opencodon',
     OPENCODON_DESKTOP_REMOTE_URL: 'http://box:9119',
     OPENCODON_DESKTOP_REMOTE_TOKEN: 'secret',
-    OPENCODON_DESKTOP_OPENCODON_ROOT: '/home/u/dev/hermes',
-    OPENCODON_DESKTOP_APP_NAME: 'HermesSandbox',
+    OPENCODON_DESKTOP_OPENCODON_ROOT: '/home/u/dev/opencodon',
+    OPENCODON_DESKTOP_APP_NAME: 'OpencodonSandbox',
     ELECTRON_DISABLE_SANDBOX: '1'
   })
   assert.deepEqual(collectRelaunchEnv(null), {})
@@ -193,8 +193,8 @@ test('shellQuote neutralizes single quotes and metacharacters', () => {
 test('buildRelaunchScript embeds pid/exec/args/env/cwd and is valid bash', () => {
   const script = buildRelaunchScript({
     pid: 4242,
-    execPath: '/home/u/.opencodon/opencodon/apps/desktop/release/linux-unpacked/Hermes',
-    args: ['hermes://open/agent/42', "--note=it's fine"],
+    execPath: '/home/u/.opencodon/opencodon/apps/desktop/release/linux-unpacked/Opencodon',
+    args: ['opencodon://open/agent/42', "--note=it's fine"],
     env: { OPENCODON_HOME: '/home/u/.opencodon', OPENCODON_DESKTOP_REMOTE_URL: 'http://box:9119' },
     cwd: '/home/u/work dir'
   })
@@ -208,10 +208,10 @@ test('buildRelaunchScript embeds pid/exec/args/env/cwd and is valid bash', () =>
   assert.match(script, /export OPENCODON_HOME='\/home\/u\/\.opencodon'/)
   assert.match(script, /export OPENCODON_DESKTOP_REMOTE_URL='http:\/\/box:9119'/)
   assert.match(script, /cd '\/home\/u\/work dir'/)
-  assert.match(script, /exec '.*\/linux-unpacked\/Hermes' 'hermes:\/\/open\/agent\/42' '--note=it'\\''s fine'/)
+  assert.match(script, /exec '.*\/linux-unpacked\/Opencodon' 'opencodon:\/\/open\/agent\/42' '--note=it'\\''s fine'/)
 
   // It must be syntactically valid bash (`bash -n`). Write to a temp file and lint.
-  const tmp = path.join(os.tmpdir(), `hermes-relaunch-test-${Date.now()}.sh`)
+  const tmp = path.join(os.tmpdir(), `opencodon-relaunch-test-${Date.now()}.sh`)
   fs.writeFileSync(tmp, script)
 
   try {
@@ -224,13 +224,13 @@ test('buildRelaunchScript embeds pid/exec/args/env/cwd and is valid bash', () =>
 test('buildRelaunchScript with no args/env still lints clean', () => {
   const script = buildRelaunchScript({
     pid: 1,
-    execPath: '/opt/Hermes/Hermes',
+    execPath: '/opt/Opencodon/Opencodon',
     args: [],
     env: {},
     cwd: ''
   })
 
-  const tmp = path.join(os.tmpdir(), `hermes-relaunch-test2-${Date.now()}.sh`)
+  const tmp = path.join(os.tmpdir(), `opencodon-relaunch-test2-${Date.now()}.sh`)
   fs.writeFileSync(tmp, script)
 
   try {
@@ -240,5 +240,5 @@ test('buildRelaunchScript with no args/env still lints clean', () => {
   }
 
   // exec line has no trailing args.
-  assert.match(script, /exec '\/opt\/Hermes\/Hermes'\n/)
+  assert.match(script, /exec '\/opt\/Opencodon\/Opencodon'\n/)
 })

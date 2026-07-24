@@ -1,6 +1,6 @@
 import { type MutableRefObject, useCallback, useRef, useState } from 'react'
 
-import { getHermesConfig, getHermesConfigDefaults } from '@/hermes'
+import { getOpencodonConfig, getOpencodonConfigDefaults } from '@/opencodon'
 import { BUILTIN_PERSONALITIES, normalizePersonalityValue, personalityNamesFromConfig } from '@/lib/chat-runtime'
 import { normalize } from '@/lib/text'
 import {
@@ -39,16 +39,16 @@ function normalizeConfigEffort(value: unknown): string {
   return effort === 'false' || effort === 'disabled' ? 'none' : effort
 }
 
-interface HermesConfigOptions {
+interface OpencodonConfigOptions {
   activeSessionIdRef: MutableRefObject<string | null>
 }
 
-export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
+export function useOpencodonConfig({ activeSessionIdRef }: OpencodonConfigOptions) {
   const [voiceMaxRecordingSeconds, setVoiceMaxRecordingSeconds] = useState(DEFAULT_VOICE_SECONDS)
   const [sttEnabled, setSttEnabled] = useState(true)
   const profileRefreshEpochRef = useRef(0)
 
-  const refreshHermesConfig = useCallback(
+  const refreshOpencodonConfig = useCallback(
     async (force = false) => {
       if (force) {
         profileRefreshEpochRef.current += 1
@@ -58,7 +58,7 @@ export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
       const selectionGeneration = getComposerSelectionGeneration()
 
       try {
-        const [config, defaults] = await Promise.all([getHermesConfig(), getHermesConfigDefaults().catch(() => ({}))])
+        const [config, defaults] = await Promise.all([getOpencodonConfig(), getOpencodonConfigDefaults().catch(() => ({}))])
 
         if (profileRefreshEpochRef.current !== profileRefreshEpoch) {
           return
@@ -105,5 +105,5 @@ export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
     [activeSessionIdRef]
   )
 
-  return { refreshHermesConfig, sttEnabled, voiceMaxRecordingSeconds }
+  return { refreshOpencodonConfig, sttEnabled, voiceMaxRecordingSeconds }
 }

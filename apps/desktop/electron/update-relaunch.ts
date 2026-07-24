@@ -9,7 +9,7 @@
  *
  * Background
  * ----------
- * After `hermes update` + `hermes desktop --build-only`, the freshly-rebuilt
+ * After `opencodon update` + `opencodon desktop --build-only`, the freshly-rebuilt
  * GUI lives under `apps/desktop/release/<plat>-unpacked`. We can only honestly
  * relaunch into the new GUI when the *running* binary is that rebuilt one —
  * i.e. its execPath is under the rebuilt `release/<plat>-unpacked` dir.

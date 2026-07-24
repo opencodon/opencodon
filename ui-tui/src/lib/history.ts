@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 const MAX = 1000
 const dir = process.env.OPENCODON_HOME ?? join(homedir(), '.opencodon')
-const file = join(dir, '.hermes_history')
+const file = join(dir, '.opencodon_history')
 
 let cache: string[] | null = null
 

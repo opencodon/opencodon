@@ -31,13 +31,13 @@ import {
   getLogs,
   getMcpCatalog,
   getMcpOAuthFlow,
-  type HermesGateway,
+  type OpencodonGateway,
   installMcpCatalogEntry,
   type McpCatalogEntry,
   type McpTestResult,
   saveMcpServers,
   testMcpServer
-} from '@/hermes'
+} from '@/opencodon'
 import { type Translations, useI18n } from '@/i18n'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import { countEnabledTools, isToolEnabled, toggleToolInServer } from '@/lib/mcp-tool-filter'
@@ -45,9 +45,9 @@ import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { $activeSessionId } from '@/store/session'
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { OpencodonConfigRecord } from '@/types/opencodon'
 
-import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config-record'
+import { setOpencodonConfigCache, useOpencodonConfigRecord } from '../hooks/use-config-record'
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { DetailPane, ICON_BUTTON, MASTER_DETAIL_WIDE_COLS } from '../master-detail'
 import { PanelAddButton, PanelEmpty } from '../overlays/panel'
@@ -68,7 +68,7 @@ const wrapDoc = (entries: McpServers) => pretty({ mcpServers: entries })
 const isServerShape = (value: Record<string, unknown>) =>
   typeof value.command === 'string' || typeof value.url === 'string'
 
-// Cursor/Claude write `type`; Hermes reads `transport`. Normalize on the way
+// Cursor/Claude write `type`; Opencodon reads `transport`. Normalize on the way
 // in so pasted configs behave identically under the CLI/TUI loader.
 function normalizeEntry(entry: Record<string, unknown>): Record<string, unknown> {
   if (typeof entry.type === 'string' && entry.transport === undefined) {
@@ -102,13 +102,13 @@ function parseServersDoc(raw: string): McpServers {
   return Object.fromEntries(Object.entries(map).map(([name, entry]) => [name, normalizeEntry(entry)]))
 }
 
-function getServers(config: HermesConfigRecord | null): McpServers {
+function getServers(config: OpencodonConfigRecord | null): McpServers {
   const raw = config?.mcp_servers
 
   return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as McpServers) : {}
 }
 
-// The runtime gate is `enabled: false` — the same flag `hermes mcp` and the
+// The runtime gate is `enabled: false` — the same flag `opencodon mcp` and the
 // agent's MCP loader read.
 const serverEnabled = (server: Record<string, unknown>) => server.enabled !== false
 
@@ -341,7 +341,7 @@ function scanServerBlocks(text: string): ServerBlock[] {
   return blocks
 }
 
-export function McpTab({ gateway }: { gateway: HermesGateway | null }) {
+export function McpTab({ gateway }: { gateway: OpencodonGateway | null }) {
   const { t } = useI18n()
   const m = t.settings.mcp
   const activeSessionId = useStore($activeSessionId)
@@ -357,9 +357,9 @@ export function McpTab({ gateway }: { gateway: HermesGateway | null }) {
     refetch: refetchConfig,
     dataUpdatedAt: configUpdatedAt,
     errorUpdatedAt: configErroredAt
-  } = useHermesConfigRecord()
+  } = useOpencodonConfigRecord()
 
-  const setConfig = setHermesConfigCache
+  const setConfig = setOpencodonConfigCache
 
   // True from a profile switch until the config query resettles for the new
   // profile. Until then `config` (and thus `servers`) still holds profile A's
@@ -584,7 +584,7 @@ export function McpTab({ gateway }: { gateway: HermesGateway | null }) {
         serverName,
         start: authMcpServer,
         status: getMcpOAuthFlow,
-        openExternal: url => window.hermesDesktop.openExternal(url)
+        openExternal: url => window.opencodonDesktop.openExternal(url)
       })
 
       const result: McpTestResult = { ok: true, tools: flow.tools ?? [] }
@@ -675,7 +675,7 @@ export function McpTab({ gateway }: { gateway: HermesGateway | null }) {
     }
   }
 
-  // Whole-map replace (NOT saveHermesConfig, which deep-merges and so can never
+  // Whole-map replace (NOT saveOpencodonConfig, which deep-merges and so can never
   // delete a server, drop `enabled: false`, or remove a nested field). Only
   // after the replace lands do we write the cache through + reload live sessions.
   // Returns false when the profile switched mid-save: the write hit profile A's

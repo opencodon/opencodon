@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getHermesConfig } from '@/hermes'
+import { getOpencodonConfig } from '@/opencodon'
 import { persistString } from '@/lib/storage'
 import {
   $currentCwd,
@@ -15,14 +15,14 @@ import {
   setCurrentReasoningEffort
 } from '@/store/session'
 
-import { useHermesConfig } from './use-hermes-config'
+import { useOpencodonConfig } from './use-opencodon-config'
 
-vi.mock('@/hermes', () => ({
-  getHermesConfig: vi.fn(),
-  getHermesConfigDefaults: vi.fn().mockResolvedValue({})
+vi.mock('@/opencodon', () => ({
+  getOpencodonConfig: vi.fn(),
+  getOpencodonConfigDefaults: vi.fn().mockResolvedValue({})
 }))
 
-const WORKSPACE_CWD_KEY = 'hermes.desktop.workspace-cwd'
+const WORKSPACE_CWD_KEY = 'opencodon.desktop.workspace-cwd'
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
@@ -35,9 +35,9 @@ function deferred<T>() {
 }
 
 const mockConfig = (config: Record<string, unknown>) =>
-  vi.mocked(getHermesConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getHermesConfig>>)
+  vi.mocked(getOpencodonConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getOpencodonConfig>>)
 
-describe('useHermesConfig refreshHermesConfig', () => {
+describe('useOpencodonConfig refreshOpencodonConfig', () => {
   beforeEach(() => {
     // Reset atoms and localStorage between tests
     setCurrentCwd('')
@@ -51,10 +51,10 @@ describe('useHermesConfig refreshHermesConfig', () => {
     setCurrentCwd('/Users/example/repo/.worktrees/feature')
 
     mockConfig({ terminal: { cwd: '/Users/example/new-workspace' } })
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: null } }))
+    const { result } = renderHook(() => useOpencodonConfig({ activeSessionIdRef: { current: null } }))
 
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshOpencodonConfig()
     })
 
     expect($currentCwd.get()).toBe('/Users/example/repo/.worktrees/feature')
@@ -64,26 +64,26 @@ describe('useHermesConfig refreshHermesConfig', () => {
     setCurrentCwd('/Users/example/repo/.worktrees/attached')
 
     mockConfig({ terminal: { cwd: '/Users/example/new-workspace' } })
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: 'session-1' } }))
+    const { result } = renderHook(() => useOpencodonConfig({ activeSessionIdRef: { current: 'session-1' } }))
 
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshOpencodonConfig()
     })
 
     expect($currentCwd.get()).toBe('/Users/example/repo/.worktrees/attached')
   })
 
   it('does not let a stale forced config refresh overwrite newer draft selector intent', async () => {
-    const profileConfig = deferred<Awaited<ReturnType<typeof getHermesConfig>>>()
-    vi.mocked(getHermesConfig).mockReturnValueOnce(profileConfig.promise)
+    const profileConfig = deferred<Awaited<ReturnType<typeof getOpencodonConfig>>>()
+    vi.mocked(getOpencodonConfig).mockReturnValueOnce(profileConfig.promise)
 
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: null } }))
+    const { result } = renderHook(() => useOpencodonConfig({ activeSessionIdRef: { current: null } }))
 
     let pendingRefresh!: Promise<void>
     act(() => {
-      pendingRefresh = result.current.refreshHermesConfig(true)
+      pendingRefresh = result.current.refreshOpencodonConfig(true)
     })
-    expect(getHermesConfig).toHaveBeenCalled()
+    expect(getOpencodonConfig).toHaveBeenCalled()
 
     // The user turns Fast off and chooses a different effort while the profile
     // defaults are still loading. That newer picker intent owns the composer.
@@ -92,7 +92,7 @@ describe('useHermesConfig refreshHermesConfig', () => {
     setCurrentFastMode(false)
     profileConfig.resolve({
       agent: { reasoning_effort: 'low', service_tier: 'priority' }
-    } as Awaited<ReturnType<typeof getHermesConfig>>)
+    } as Awaited<ReturnType<typeof getOpencodonConfig>>)
 
     await act(async () => {
       await pendingRefresh
@@ -103,17 +103,17 @@ describe('useHermesConfig refreshHermesConfig', () => {
   })
 
   it('does not let an older profile config overwrite a newer profile', async () => {
-    const profileB = deferred<Awaited<ReturnType<typeof getHermesConfig>>>()
-    const profileC = deferred<Awaited<ReturnType<typeof getHermesConfig>>>()
-    vi.mocked(getHermesConfig).mockReturnValueOnce(profileB.promise).mockReturnValueOnce(profileC.promise)
+    const profileB = deferred<Awaited<ReturnType<typeof getOpencodonConfig>>>()
+    const profileC = deferred<Awaited<ReturnType<typeof getOpencodonConfig>>>()
+    vi.mocked(getOpencodonConfig).mockReturnValueOnce(profileB.promise).mockReturnValueOnce(profileC.promise)
 
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: null } }))
+    const { result } = renderHook(() => useOpencodonConfig({ activeSessionIdRef: { current: null } }))
 
     let refreshB!: Promise<void>
     let refreshC!: Promise<void>
     act(() => {
-      refreshB = result.current.refreshHermesConfig(true)
-      refreshC = result.current.refreshHermesConfig(true)
+      refreshB = result.current.refreshOpencodonConfig(true)
+      refreshC = result.current.refreshOpencodonConfig(true)
     })
 
     profileC.resolve({ agent: { reasoning_effort: 'low', service_tier: 'normal' } })

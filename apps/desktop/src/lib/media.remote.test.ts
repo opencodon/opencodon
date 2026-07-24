@@ -102,7 +102,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('leaves web, data, and relative markdown image sources unchanged', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { opencodonDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('https://example.com/a.png')).resolves.toBe('https://example.com/a.png')
@@ -116,7 +116,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('reads remote gateway-local file paths through the desktop fs bridge', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { opencodonDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('/Users/me/project/a b.png')).resolves.toBe('data:image/png;base64,ZHVtbXk=')
@@ -129,7 +129,7 @@ describe('resolveMediaDisplaySrc', () => {
   it('reads local desktop file paths from the local desktop shell', async () => {
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,bG9jYWw=')
 
-    vi.stubGlobal('window', { hermesDesktop: { readFileDataUrl } })
+    vi.stubGlobal('window', { opencodonDesktop: { readFileDataUrl } })
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaDisplaySrc('file:///Users/me/project/a%20b.png')).resolves.toBe(
@@ -150,7 +150,7 @@ describe('gatewayMediaDataUrl', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { opencodonDesktop: { api } })
     $connection.set({ mode: 'remote' } as never)
   })
 
@@ -182,7 +182,7 @@ describe('downloadGatewayMediaFile', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api }, setTimeout: vi.fn() })
+    vi.stubGlobal('window', { opencodonDesktop: { api }, setTimeout: vi.fn() })
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({ blob: async () => new Blob(['# report'], { type: 'text/markdown' }) }))

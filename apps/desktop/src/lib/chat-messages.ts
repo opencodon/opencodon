@@ -1,11 +1,11 @@
 import type { ThreadMessageLike } from '@assistant-ui/react'
-import type { BillingBlock } from '@hermes/shared'
+import type { BillingBlock } from '@opencodon/shared'
 
 import { dedupeGeneratedImageEchoesInParts } from '@/lib/generated-images'
 import { mediaDisplayLabel, mediaMarkdownHref } from '@/lib/media'
 import { normalize } from '@/lib/text'
 import { parseTodos } from '@/lib/todos'
-import type { SessionMessage, UsageStats } from '@/types/hermes'
+import type { SessionMessage, UsageStats } from '@/types/opencodon'
 
 export type ChatMessagePart = Exclude<ThreadMessageLike['content'], string>[number]
 
@@ -98,7 +98,7 @@ export type GatewayEventPayload = {
   // interim_assistant_callback, so the UI can settle instead of duplicating.
   response_previewed?: boolean
   // Structured billing wall forwarded on message.complete when a turn fails
-  // with FailoverReason.billing (shape mirrors @hermes/shared BillingBlock).
+  // with FailoverReason.billing (shape mirrors @opencodon/shared BillingBlock).
   billing?: BillingBlock
   failure_reason?: string
 }

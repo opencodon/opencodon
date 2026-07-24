@@ -2,7 +2,7 @@
  * native-oauth.ts
  *
  * Pure, electron-free helpers for the desktop's RFC 8252 (OAuth 2.0 for Native
- * Apps) login to a gated Hermes gateway: system-browser + loopback redirect +
+ * Apps) login to a gated Opencodon gateway: system-browser + loopback redirect +
  * PKCE, with tokens returned to the app (never browser session cookies).
  *
  * Kept standalone (no `import 'electron'`) so it unit-tests with `node --test`

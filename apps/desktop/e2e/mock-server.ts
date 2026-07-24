@@ -1,7 +1,7 @@
 /**
  * Minimal OpenAI-compatible mock inference server for E2E tests.
  *
- * Implements just enough of the /v1/* surface for `hermes serve` to resolve a
+ * Implements just enough of the /v1/* surface for `opencodon serve` to resolve a
  * provider, list models, and stream a canned chat completion back to the
  * desktop app — without any real LLM.
  *

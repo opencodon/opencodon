@@ -20,7 +20,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
       delete process.env[k]
     }
 
-    dir = mkdtempSync(join(tmpdir(), 'hermes-heapdump-test-'))
+    dir = mkdtempSync(join(tmpdir(), 'opencodon-heapdump-test-'))
     process.env.OPENCODON_HEAPDUMP_DIR = dir
   })
 
@@ -116,7 +116,7 @@ describe('heapdump retention guard (#21767)', () => {
     savedDir = process.env.OPENCODON_HEAPDUMP_DIR
     savedMax = process.env.OPENCODON_HEAPDUMP_MAX_BYTES
     delete process.env.OPENCODON_AUTO_HEAPDUMP
-    dir = mkdtempSync(join(tmpdir(), 'hermes-heapdump-prune-'))
+    dir = mkdtempSync(join(tmpdir(), 'opencodon-heapdump-prune-'))
     process.env.OPENCODON_HEAPDUMP_DIR = dir
   })
 

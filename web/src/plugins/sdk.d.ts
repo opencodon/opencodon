@@ -1,5 +1,5 @@
 /**
- * Hermes Dashboard Plugin SDK — typed contract (SPIKE)
+ * Opencodon Dashboard Plugin SDK — typed contract (SPIKE)
  * ====================================================
  *
  * This is the public type surface for ``window.__OPENCODON_PLUGIN_SDK__`` and
@@ -19,13 +19,13 @@
  *      it is a deliberate act, visible in review, not an accidental
  *      consequence of refactoring an internal helper.
  *
- * Versioning: bump ``HermesPluginSDK["sdkVersion"]`` (and the
+ * Versioning: bump ``OpencodonPluginSDK["sdkVersion"]`` (and the
  * ``SDK_CONTRACT_VERSION`` const the host exposes) on any
  * backwards-incompatible change to this surface. Additive changes
  * (new optional fields, new helpers) don't require a major bump.
  *
  * OPEN QUESTIONS for productionising this spike (do not block the auth fix):
- *   - Ship as a published ``@hermes/dashboard-plugin-sdk`` types package, or
+ *   - Ship as a published ``@opencodon/dashboard-plugin-sdk`` types package, or
  *     keep in-repo and copy into external plugin repos?
  *   - Should the host assert at runtime that a plugin's declared
  *     ``manifest.sdk_version`` is compatible before executing it?
@@ -91,7 +91,7 @@ export interface PluginRegistry {
 // SDK surface (window.__OPENCODON_PLUGIN_SDK__)
 // ---------------------------------------------------------------------------
 
-export interface HermesPluginSDK {
+export interface OpencodonPluginSDK {
   /** Contract version of this SDK surface (see SDK_CONTRACT_VERSION). */
   readonly sdkVersion: string;
 
@@ -152,7 +152,7 @@ export interface HermesPluginSDK {
 
 declare global {
   interface Window {
-    __OPENCODON_PLUGIN_SDK__?: HermesPluginSDK;
+    __OPENCODON_PLUGIN_SDK__?: OpencodonPluginSDK;
     __OPENCODON_PLUGINS__?: PluginRegistry;
   }
 }

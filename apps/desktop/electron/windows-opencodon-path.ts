@@ -1,23 +1,23 @@
 /**
- * windows-hermes-path.ts
+ * windows-opencodon-path.ts
  *
- * Pure, dependency-injected pieces of Windows `hermes` resolution pulled out
+ * Pure, dependency-injected pieces of Windows `opencodon` resolution pulled out
  * of main.ts's findOnPath(), handOffWindowsBootstrapRecovery(), and
- * unwrapWindowsVenvHermesCommand(). Each of the three functions here pins one
+ * unwrapWindowsVenvOpencodonCommand(). Each of the three functions here pins one
  * of the Windows resolution bugs that caused desktop reinstall loops:
  *
  *   1. buildPathExtCandidates() — findOnPath() tried the empty extension
- *      FIRST, so an extensionless Git-Bash `hermes` shim shadowed the real
- *      hermes.cmd/hermes.exe; the shim then failed the --version probe and
+ *      FIRST, so an extensionless Git-Bash `opencodon` shim shadowed the real
+ *      opencodon.cmd/opencodon.exe; the shim then failed the --version probe and
  *      the desktop fell through to a spurious bootstrap/repair. The fix:
  *      PATHEXT extensions first, empty extension LAST.
  *   2. chooseUpdaterArgs() — handOffWindowsBootstrapRecovery() chose
  *      --update vs the destructive --repair by checking ONLY
- *      venv\Scripts\hermes.exe (the console-script shim, written at the END
+ *      venv\Scripts\opencodon.exe (the console-script shim, written at the END
  *      of venv setup and absent in interrupted states), so it escalated to a
  *      full venv recreate even on healthy installs. The fix: gate on ANY
  *      real-install signal, not just the shim.
- *   3. resolveVenvHermesCommand() — unwrapWindowsVenvHermesCommand() returned
+ *   3. resolveVenvOpencodonCommand() — unwrapWindowsVenvOpencodonCommand() returned
  *      the venv python with NO runtime probe (bypassing the caller's
  *      --version check too), so a venv broken mid-update (e.g. missing
  *      python-dotenv) was re-selected forever: Retry / "Repair install"
@@ -40,8 +40,8 @@ import path from 'node:path'
  * On Windows this MUST try PATHEXT extensions (.COM;.EXE;.BAT;.CMD by
  * default) BEFORE the bare/empty-extension name: a real command resolves via
  * its .exe/.cmd per Windows command-resolution semantics, and an
- * extensionless file (e.g. a Git-Bash shell-script shim named `hermes`) must
- * not shadow `hermes.cmd`/`hermes.exe`. The empty entry is kept LAST so
+ * extensionless file (e.g. a Git-Bash shell-script shim named `opencodon`) must
+ * not shadow `opencodon.cmd`/`opencodon.exe`. The empty entry is kept LAST so
  * callers that already include the extension (py.exe, pwsh.exe,
  * powershell.exe) still resolve.
  *
@@ -66,8 +66,8 @@ export function buildPathExtCandidates(pathext: string | undefined, isWindows: b
  * destructive --repair (full venv recreate) otherwise.
  *
  * haveRealInstall must be computed by the caller from ALL real-install
- * signals (venv python interpreter, venv hermes shim, bootstrap-complete
- * marker) — gating on just the hermes.exe console-script shim alone is the
+ * signals (venv python interpreter, venv opencodon shim, bootstrap-complete
+ * marker) — gating on just the opencodon.exe console-script shim alone is the
  * regression this function's callers must avoid: that shim is written at
  * the END of venv setup and is absent in exactly the interrupted/quarantined
  * states this recovery exists to heal.
@@ -164,20 +164,20 @@ export function getVenvSitePackagesEntries(
   return entries
 }
 
-export interface ResolveVenvHermesCommandDeps {
+export interface ResolveVenvOpencodonCommandDeps {
   isWindows: boolean
   isCommandScript: (command: string) => boolean
   fileExists: (filePath: string) => boolean
   directoryExists: (filePath: string) => boolean
-  canImportHermesCli: (python: string, opts?: { env?: Record<string, string> }) => boolean
+  canImportOpencodonCli: (python: string, opts?: { env?: Record<string, string> }) => boolean
   getVenvPython: (venvRoot: string) => string
   getVenvSitePackagesEntries: (venvRoot: string) => string[]
   buildDesktopBackendEnv: (opts: {
-    hermesHome: string
+    opencodonHome: string
     pythonPathEntries: string[]
     venvRoot: string
   }) => Record<string, string>
-  hermesHome: string
+  opencodonHome: string
   resolvePath: (...segments: string[]) => string
   dirname: (p: string) => string
   basename: (p: string) => string
@@ -185,11 +185,11 @@ export interface ResolveVenvHermesCommandDeps {
 }
 
 /**
- * If `command` is a Windows venv `hermes`/`hermes.exe` console-script shim
- * (i.e. `<venvRoot>/Scripts/hermes(.exe)`), resolve it to the underlying
+ * If `command` is a Windows venv `opencodon`/`opencodon.exe` console-script shim
+ * (i.e. `<venvRoot>/Scripts/opencodon(.exe)`), resolve it to the underlying
  * venv python invoked as `python -m opencodon_cli.main <backendArgs>` — but
- * ONLY after smoke-testing that interpreter with canImportHermesCli(). A
- * venv whose update died mid-`pip install` still has python.exe + hermes.exe
+ * ONLY after smoke-testing that interpreter with canImportOpencodonCli(). A
+ * venv whose update died mid-`pip install` still has python.exe + opencodon.exe
  * on disk, but the backend dies on its first import (e.g.
  * ModuleNotFoundError: dotenv) before the gateway ever binds. Returning it
  * unprobed also bypasses the caller's `--version` probe, so Retry/"Repair
@@ -199,14 +199,14 @@ export interface ResolveVenvHermesCommandDeps {
  * Mirrors isActiveRuntimeUsable(): probes with the checkout on PYTHONPATH so
  * a healthy source-tree venv passes.
  *
- * Returns null when `command` is not a venv hermes shim, the underlying
+ * Returns null when `command` is not a venv opencodon shim, the underlying
  * python doesn't exist, or the import probe fails. Otherwise returns the
  * resolved backend descriptor.
  */
-export function resolveVenvHermesCommand(
+export function resolveVenvOpencodonCommand(
   command: string,
   backendArgs: string[],
-  deps: ResolveVenvHermesCommandDeps
+  deps: ResolveVenvOpencodonCommandDeps
 ): {
   label: string
   command: string
@@ -222,11 +222,11 @@ export function resolveVenvHermesCommand(
     isCommandScript,
     fileExists,
     directoryExists,
-    canImportHermesCli,
+    canImportOpencodonCli,
     getVenvPython,
     getVenvSitePackagesEntries,
     buildDesktopBackendEnv,
-    hermesHome,
+    opencodonHome,
     resolvePath,
     dirname,
     basename,
@@ -239,7 +239,7 @@ export function resolveVenvHermesCommand(
 
   const resolved = resolvePath(String(command))
 
-  if (!/^hermes(?:\.exe)?$/i.test(basename(resolved))) {
+  if (!/^opencodon(?:\.exe)?$/i.test(basename(resolved))) {
     return null
   }
 
@@ -259,7 +259,7 @@ export function resolveVenvHermesCommand(
   const root = dirname(venvRoot)
 
   if (
-    !canImportHermesCli(python, {
+    !canImportOpencodonCli(python, {
       env: {
         PYTHONPATH: [...(directoryExists(root) ? [root] : []), process.env.PYTHONPATH]
           .filter((entry): entry is string => Boolean(entry))
@@ -268,19 +268,19 @@ export function resolveVenvHermesCommand(
     })
   ) {
     rememberLog?.(
-      `Ignoring venv Hermes at ${python}: runtime import probe failed (broken/partial venv); falling through to bootstrap.`
+      `Ignoring venv Opencodon at ${python}: runtime import probe failed (broken/partial venv); falling through to bootstrap.`
     )
 
     return null
   }
 
   return {
-    label: `existing Hermes Python at ${python}`,
+    label: `existing Opencodon Python at ${python}`,
     command: python,
     args: ['-m', 'opencodon_cli.main', ...backendArgs],
     bootstrap: false,
     env: buildDesktopBackendEnv({
-      hermesHome,
+      opencodonHome,
       pythonPathEntries: [...(directoryExists(root) ? [root] : []), ...getVenvSitePackagesEntries(venvRoot)],
       venvRoot
     }),
