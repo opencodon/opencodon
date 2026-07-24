@@ -708,7 +708,10 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Hermes Agent" in result
+        # The seeded identity: assert on wording shared by the default and any
+        # user-customized SOUL.md seeded from it (a real ~/.opencodon/SOUL.md can
+        # leak into local runs via OPENCODON_HOME, which Path.home doesn't cover).
+        assert "helpful, knowledgeable, and direct" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
