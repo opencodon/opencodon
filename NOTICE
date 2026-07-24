@@ -1,0 +1,11 @@
+opencodon
+Copyright (c) 2026 opencodon contributors
+
+This project is a hard fork of hermes-agent by Nous Research
+(https://github.com/NousResearch/hermes-agent), used under the MIT
+License. The full shared git history is retained; inherited code
+remains Copyright (c) 2025 Nous Research.
+
+The "Hermes" model names that appear in provider catalogs (e.g.
+hermes-4) refer to Nous Research's language models and are not part of
+this project's branding.
