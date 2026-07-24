@@ -167,7 +167,7 @@ async function locateOpencodon(ssh, remoteOpencodonPath) {
     const err: any = new Error(
       `The Opencodon path you set is not an executable on the remote host: "${remoteOpencodonPath}". ` +
         'Check the path (it must be the full path to the `opencodon` binary on the remote, e.g. ' +
-        '~/opencodon-agent/.venv/bin/opencodon), or clear it to auto-detect.'
+        '~/.opencodon/opencodon/venv/bin/opencodon), or clear it to auto-detect.'
     )
 
     err.kind = 'opencodon-not-found'
@@ -204,7 +204,7 @@ async function locateOpencodon(ssh, remoteOpencodonPath) {
 
   const err: any = new Error(
     'Opencodon is not installed on the remote host (could not find a `opencodon` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://opencodon-agent.nousresearch.com/install.sh | sh  ' +
+      'Install it on the remote with:  curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash  ' +
       '— or set the Opencodon path explicitly in the SSH connection settings.'
   )
 

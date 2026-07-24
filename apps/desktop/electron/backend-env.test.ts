@@ -53,7 +53,7 @@ test('desktop backend PATH preserves first occurrence and avoids duplicates', ()
 test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () => {
   const env = buildDesktopBackendEnv({
     opencodonHome: '/Users/test/.opencodon',
-    pythonPathEntries: ['/repo/opencodon-agent'],
+    pythonPathEntries: ['/repo/opencodon'],
     venvRoot: '/Users/test/.opencodon/opencodon/venv',
     currentEnv: {
       PATH: '/usr/bin:/bin',
@@ -63,7 +63,7 @@ test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () =
     pathModule: path.posix
   })
 
-  assert.equal(env.PYTHONPATH, '/repo/opencodon-agent:/existing/pythonpath')
+  assert.equal(env.PYTHONPATH, '/repo/opencodon:/existing/pythonpath')
   assert.ok(env.PATH.startsWith('/Users/test/.opencodon/node/bin:/Users/test/.opencodon/opencodon/venv/bin:'))
   assert.ok(env.PATH.includes('/opt/homebrew/bin'))
 })
@@ -83,8 +83,8 @@ test('normalizeOpencodonHomeRoot maps profile homes back to the global Opencodon
 test('Windows PATH casing and delimiter are preserved without POSIX sane entries', () => {
   const env = buildDesktopBackendEnv({
     opencodonHome: 'C:\\Users\\test\\AppData\\Local\\opencodon',
-    pythonPathEntries: ['C:\\repo\\opencodon-agent'],
-    venvRoot: 'C:\\Users\\test\\AppData\\Local\\opencodon\\opencodon-agent\\venv',
+    pythonPathEntries: ['C:\\repo\\opencodon'],
+    venvRoot: 'C:\\Users\\test\\AppData\\Local\\opencodon\\opencodon\\venv',
     currentEnv: {
       Path: 'C:\\Windows\\System32;C:\\Windows',
       PYTHONPATH: 'C:\\existing\\pythonpath'

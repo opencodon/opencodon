@@ -200,7 +200,7 @@ function installedAgentInstallScript(opencodonHome) {
     return null
   }
 
-  const candidate = path.join(opencodonHome, 'opencodon-agent', 'scripts', installScriptName())
+  const candidate = path.join(opencodonHome, 'opencodon', 'scripts', installScriptName())
 
   try {
     fs.accessSync(candidate, fs.constants.R_OK)

@@ -522,7 +522,7 @@ function pathWithOpencodonManagedNode(...entries) {
 // ACTIVE_OPENCODON_ROOT — the canonical mutable Opencodon install. Same path
 // install.ps1 / install.sh use, so a desktop-only user and a CLI-only user end
 // up with identical layouts and can share one install.
-const ACTIVE_OPENCODON_ROOT = path.join(OPENCODON_HOME, 'opencodon-agent')
+const ACTIVE_OPENCODON_ROOT = path.join(OPENCODON_HOME, 'opencodon')
 // VENV_ROOT — venv lives inside the repo, exactly like install.ps1 does it.
 const VENV_ROOT = path.join(ACTIVE_OPENCODON_ROOT, 'venv')
 // BOOTSTRAP_COMPLETE_MARKER — written by the first-launch bootstrap runner
@@ -3509,7 +3509,7 @@ function resolveOpencodonBackend(backendArgs) {
   }
 
   // 3. Bootstrap-complete ACTIVE_OPENCODON_ROOT -- the canonical install at
-  //    %LOCALAPPDATA%\opencodon\opencodon-agent (Windows) or ~/.opencodon/opencodon.
+  //    %LOCALAPPDATA%\opencodon\opencodon (Windows) or ~/.opencodon/opencodon.
   //    The bootstrap marker means install.ps1 stages finished and the user
   //    completed initial configuration; we trust the install and go straight
   //    to spawning opencodon. Updates flow through the in-app update path
@@ -3601,7 +3601,7 @@ function resolveOpencodonBackend(backendArgs) {
     // backend hands the spawn step a guaranteed ModuleNotFoundError.
     // Verify the import works before trusting the candidate; on
     // failure, fall through to step 6 so the bootstrap runner pulls
-    // a uv-managed 3.11 into %LOCALAPPDATA%\opencodon\opencodon-agent\venv.
+    // a uv-managed 3.11 into %LOCALAPPDATA%\opencodon\opencodon\venv.
     if (canImportOpencodonCli(python)) {
       return {
         kind: 'python',

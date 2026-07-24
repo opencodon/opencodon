@@ -64,7 +64,7 @@ pub fn bootstrap_cache_dir() -> PathBuf {
 /// The desktop app re-invokes this with `--update`, and the start-menu /
 /// desktop shortcuts can point users back to it. Lives directly under
 /// OPENCODON_HOME so it survives repo checkout deletion (unlike anything under
-/// opencodon-agent/).
+/// opencodon/).
 ///
 /// On Windows this is `%LOCALAPPDATA%\opencodon\opencodon-setup.exe`; on other
 /// platforms the extension differs but the directory is the same.

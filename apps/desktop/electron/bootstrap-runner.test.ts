@@ -55,7 +55,7 @@ test('installedAgentInstallScript resolves the installer in the agent checkout',
   try {
     assert.equal(installedAgentInstallScript(home), null, 'absent before the checkout exists')
 
-    const scriptsDir = path.join(home, 'opencodon-agent', 'scripts')
+    const scriptsDir = path.join(home, 'opencodon', 'scripts')
     fs.mkdirSync(scriptsDir, { recursive: true })
     const scriptPath = path.join(scriptsDir, SCRIPT_NAME)
     fs.writeFileSync(scriptPath, '#!/bin/sh\necho hi\n')
@@ -71,7 +71,7 @@ test('existing checkout detection requires git metadata', () => {
   const home = mkTmpHome()
 
   try {
-    const activeRoot = path.join(home, 'opencodon-agent')
+    const activeRoot = path.join(home, 'opencodon')
     assert.equal(hasExistingGitCheckout(activeRoot), false)
 
     fs.mkdirSync(path.join(activeRoot, '.git'), { recursive: true })
@@ -88,10 +88,10 @@ test('fresh bootstrap args include the packaged commit pin', () => {
   assert.deepEqual(
     buildPosixPinArgs({
       installStamp,
-      activeRoot: '/tmp/opencodon-agent',
+      activeRoot: '/tmp/opencodon',
       opencodonHome: '/tmp/opencodon'
     }),
-    ['--dir', '/tmp/opencodon-agent', '--opencodon-home', '/tmp/opencodon', '--branch', 'main', '--commit', installStamp.commit]
+    ['--dir', '/tmp/opencodon', '--opencodon-home', '/tmp/opencodon', '--branch', 'main', '--commit', installStamp.commit]
   )
 })
 
@@ -102,11 +102,11 @@ test('existing-checkout bootstrap args keep branch but skip the packaged commit 
   assert.deepEqual(
     buildPosixPinArgs({
       installStamp,
-      activeRoot: '/tmp/opencodon-agent',
+      activeRoot: '/tmp/opencodon',
       opencodonHome: '/tmp/opencodon',
       pinCommit: false
     }),
-    ['--dir', '/tmp/opencodon-agent', '--opencodon-home', '/tmp/opencodon', '--branch', 'main']
+    ['--dir', '/tmp/opencodon', '--opencodon-home', '/tmp/opencodon', '--branch', 'main']
   )
 })
 
@@ -219,7 +219,7 @@ test('resolveInstallScript falls back to the installed agent checkout on a 404',
   try {
     const commit = 'a'.repeat(40)
     // Seed the installed agent checkout so the fallback has something to resolve.
-    const scriptsDir = path.join(home, 'opencodon-agent', 'scripts')
+    const scriptsDir = path.join(home, 'opencodon', 'scripts')
     fs.mkdirSync(scriptsDir, { recursive: true })
     const installed = path.join(scriptsDir, SCRIPT_NAME)
     fs.writeFileSync(installed, '#!/bin/sh\necho fallback\n')

@@ -59,7 +59,7 @@ const DEFAULT_OPENCODON_HOME = (() => {
   }
   return path.join(os.homedir(), '.opencodon')
 })()
-const VENV_ROOT = path.join(DEFAULT_OPENCODON_HOME, 'opencodon-agent', 'venv')
+const VENV_ROOT = path.join(DEFAULT_OPENCODON_HOME, 'opencodon', 'venv')
 const FRESH_SANDBOX_ROOT = path.join(os.tmpdir(), 'opencodon-desktop-fresh-install')
 
 function die(message) {
@@ -278,7 +278,7 @@ function launchFresh() {
   console.log(`  OPENCODON_HOME: ${opencodonHome}`)
   console.log(`  cwd: ${cwd}`)
 
-  return { runtimeRoot: path.join(opencodonHome, 'opencodon-agent', 'venv') }
+  return { runtimeRoot: path.join(opencodonHome, 'opencodon', 'venv') }
 }
 
 // Validate the packaged bundle matches the thin-installer architecture:
@@ -298,7 +298,7 @@ function validateBundle() {
   // Negative assertion: the OLD fat-installer factory payload must NOT be
   // present anymore. If a stray ship of opencodon_cli sneaks back in we want
   // to fail loudly rather than re-introduce the 400MB delta we just removed.
-  const staleFactoryMarker = path.join(APP.resourcesPath, 'opencodon-agent', 'opencodon_cli', 'main.py')
+  const staleFactoryMarker = path.join(APP.resourcesPath, 'opencodon', 'opencodon_cli', 'main.py')
   if (exists(staleFactoryMarker)) {
     die(
       `Thin-installer regression: factory-payload file should NOT be in the package: ${staleFactoryMarker}`
