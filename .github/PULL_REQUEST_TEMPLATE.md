@@ -67,7 +67,7 @@ Fixes #
 - [ ] This skill is **broadly useful** to most users (if bundled) — see [Contributing Guide](https://github.com/opencodon/opencodon/blob/main/CONTRIBUTING.md#should-the-skill-be-bundled)
 - [ ] SKILL.md follows the [standard format](https://github.com/opencodon/opencodon/blob/main/CONTRIBUTING.md#skillmd-format) (frontmatter, trigger conditions, steps, pitfalls)
 - [ ] No external dependencies that aren't already available (prefer stdlib, curl, existing Hermes tools)
-- [ ] I've tested the skill end-to-end: `hermes --toolsets skills -q "Use the X skill to do Y"`
+- [ ] I've tested the skill end-to-end: `opencodon --toolsets skills -q "Use the X skill to do Y"`
 
 ## Screenshots / Logs
 

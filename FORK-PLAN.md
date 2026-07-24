@@ -122,3 +122,17 @@ OAuth client id + client tag, the Honcho OAuth client id (all identify
 us to external services), upstream URLs in the triage path map.
 Remaining: folder move, GitHub org/repo (user), CI prune, first
 release. Full suite = documented pre-existing baseline exactly.
+
+## Publish status (2026-07-24)
+
+Live at github.com/opencodon/opencodon (private until v0.1.0):
+`origin` = git@github.com:opencodon/opencodon.git, `upstream` =
+NousResearch/hermes-agent with push URL DISABLED. CI pruned to the
+ci.yml orchestrator calling tests / lint / js-tests / uv-lockfile-check
+/ osv-scanner, plus Dependabot (github-actions only). Cut: docker
+build+lint, desktop E2E + evidence publishing, supply-chain diff
+scanner, review-label gates, js-autofix, history/contributor checks,
+lockfile-diff, label-rerun, live PR comment + CI timing report (and
+their scripts/ci helpers + tests; classify_changes.py kept for the
+detect-changes action). Issue/PR templates rebranded. Remaining: tag
+v0.1.0 + CHANGELOG, flip public, PyPI.

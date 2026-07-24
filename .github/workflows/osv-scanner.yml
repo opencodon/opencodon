@@ -10,9 +10,8 @@ name: OSV-Scanner
 # (full SHA / exact version) is preserved; only the notification signal
 # is added.
 #
-# Complements the supply-chain-audit.yml workflow (which scans for malicious
-# code patterns in PR diffs) by covering the orthogonal "currently-pinned
-# dep became known-vulnerable" case.
+# Detection-only lockfile scanning (no diff-pattern scanner in this fork;
+# this covers the "currently-pinned dep became known-vulnerable" case).
 #
 # Uses Google's officially-recommended reusable workflow, pinned by SHA.
 # Findings land in the repo's Security tab (Code Scanning > OSV-Scanner).
