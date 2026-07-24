@@ -26,7 +26,7 @@ export default [
         {
           patterns: [
             {
-              group: ['@/*', '../*', '@hermes/shared'],
+              group: ['@/*', '../*', '@opencodon/shared'],
               message: 'Plugins import only @hermes/plugin-sdk (and react). Missing something? Add it to the SDK.'
             }
           ]
