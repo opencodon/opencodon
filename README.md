@@ -2,7 +2,7 @@
 
 **The open-science AI agent.** opencodon runs research sessions the way a lab notebook should work: every analysis is a *frame* — a first-class record of what was asked, what code ran, what data went in, and what artifacts came out. Results are reproducible by construction and exportable as [RO-Crate](https://www.researchobject.org/ro-crate/) research objects.
 
-> Status: pre-release (`0.1.0.dev0`). APIs, commands, and storage layout may still change before the first tagged release.
+> Status: `v0.1.0` (first tagged release). APIs, commands, and storage layout may still change before 1.0.
 
 ## Why opencodon
 
@@ -27,16 +27,59 @@ opencodon is a hard fork of [hermes-agent](https://github.com/NousResearch/herme
 
 ## Install
 
+**Linux, macOS, Android/Termux** — one line:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash
+```
+
+The installer sets up everything under `~/.opencodon` (its own `uv`, a Python venv, the repo checkout, browser-tool dependencies) and links the `opencodon` command onto your PATH. It ends by walking you through API-key setup interactively.
+
+**Native Windows** — in PowerShell:
+
+```powershell
+iex (irm https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.ps1)
+```
+
+(Installs uv, Python, Node.js, and a portable Git Bash — no admin required.)
+
+**From a source checkout** (development):
+
 ```bash
 git clone https://github.com/opencodon/opencodon.git
 cd opencodon
-uv sync --extra science
-opencodon
+uv sync --extra all --extra dev --extra science
+uv run opencodon
 ```
 
-On native Windows, run the PowerShell installer instead: [scripts/install.ps1](scripts/install.ps1) (installs uv, Python, Node.js, and a portable Git Bash — no admin required).
+## First run
 
-`opencodon` stores its state in `~/.opencodon` (`OPENCODON_HOME` to override; `%LOCALAPPDATA%\opencodon` on native Windows). Upgrading from a hermes-agent install? Your `HERMES_*` environment variables are honored for one release, and pointing `OPENCODON_HOME` at your old `~/.hermes` adopts it in place.
+1. **Configure a model provider** — if you skipped the installer's wizard, run:
+
+   ```bash
+   opencodon setup
+   ```
+
+   Any of the 33 providers works; the quickest start is a single OpenRouter or Anthropic API key. Keys live in `~/.opencodon/.env`, never in the repo.
+
+2. **Start chatting:**
+
+   ```bash
+   opencodon          # classic CLI
+   opencodon --tui    # full-screen terminal UI
+   ```
+
+3. **Useful next commands:**
+
+   | Command | What it does |
+   |---|---|
+   | `opencodon model` | Pick or switch the model interactively |
+   | `opencodon config` | View or edit configuration |
+   | `opencodon gateway install` | Run the messaging gateway (Slack/WhatsApp/Telegram/Discord) as a service |
+   | `opencodon dashboard` | Launch the local web dashboard |
+   | `opencodon update` | Update to the latest version |
+
+`opencodon` stores its state in `~/.opencodon` (`OPENCODON_HOME` to override; `%LOCALAPPDATA%\opencodon` on native Windows). Upgrading from a hermes-agent install? Your `HERMES_*` environment variables are honored for one release, the `hermes` command remains as an alias, and pointing `OPENCODON_HOME` at your old `~/.hermes` adopts it in place.
 
 ## Science quickstart
 

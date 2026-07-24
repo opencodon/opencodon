@@ -156,9 +156,10 @@ locally from the Dependabot PR diffs). Known deferral: PyNaCl 1.6.2
 v0.1.0 released: CHANGELOG.md added, version 0.1.0, repo flipped
 PUBLIC, osv upload-sarif re-enabled.
 
-PyPI: deliberately deferred. `uv build` works with OPENCODON_NIX_BUILD=1
-and a pip-installed CLI runs, but the wheel ships without skills/,
-web_dist, tui_dist, and plugin manifests (upstream never supported pip
-distribution) — bundling those as package data is the roadmap item
-before publishing. The `opencodon` name on PyPI already carries a
-0.0.1 "name reservation" stub (verify it's ours).
+PyPI: OUT OF SCOPE (user decision 2026-07-24). Distribution follows
+the upstream model: shell installer (scripts/install.sh /
+install.ps1), source checkout, Docker/Nix. The setup.py build guard
+stays. Context if this is ever revisited: the wheel builds under
+OPENCODON_NIX_BUILD=1 and the CLI runs, but it ships without skills/,
+web_dist, tui_dist, and plugin manifests; the `opencodon` PyPI name
+carries a 0.0.1 reservation stub.
