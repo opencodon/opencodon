@@ -134,5 +134,14 @@ build+lint, desktop E2E + evidence publishing, supply-chain diff
 scanner, review-label gates, js-autofix, history/contributor checks,
 lockfile-diff, label-rerun, live PR comment + CI timing report (and
 their scripts/ci helpers + tests; classify_changes.py kept for the
-detect-changes action). Issue/PR templates rebranded. Remaining: tag
-v0.1.0 + CHANGELOG, flip public, PyPI.
+detect-changes action). Issue/PR templates rebranded. CI green on main
+(run 4) after three fixes: messaging extra installed in e2e AND slice
+jobs (aiohttp is needed for real by whatsapp/e2e tests — slices were
+order-dependent on a lazy install before), osv-scanner upload-sarif
+off while private (needs Advanced Security), desktop packaging scripts
+rebranded (test-desktop.mjs expected Hermes.app/Hermes.exe binaries).
+Note: full Python suite passes on ubuntu runners — the 26-failure
+local baseline is macOS-environment-specific. Dependabot alerts +
+security fixes enabled; 46 alerts (1 critical/27 high) on inherited
+pins pending triage alongside .fork/triage SECURITY commits.
+Remaining: tag v0.1.0 + CHANGELOG, flip public, PyPI.
