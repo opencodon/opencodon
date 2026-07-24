@@ -13,7 +13,7 @@ Usage:
     # CI (set GITHUB_TOKEN as secret)
     GITHUB_TOKEN=ghp_... python scripts/build_skills_index.py
 
-Output: website/static/api/skills-index.json
+Output: build/skills-index.json (formerly the docs-site static API)
 """
 
 import json
@@ -45,7 +45,7 @@ from tools.skills_hub import (
 )
 import httpx
 
-OUTPUT_PATH = os.path.join(REPO_ROOT, "website", "static", "api", "skills-index.json")
+OUTPUT_PATH = os.path.join(REPO_ROOT, "build", "skills-index.json")
 INDEX_VERSION = 1
 
 

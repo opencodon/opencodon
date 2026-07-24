@@ -47,7 +47,6 @@ jobs:
       scan-args: |-
         --lockfile=uv.lock
         --lockfile=package-lock.json
-        --lockfile=website/package-lock.json
       # The upstream reusable workflow uploads this exact file under its
       # fixed artifact name, which the wrapper downloads below.
       results-file-name: osv-results.sarif
