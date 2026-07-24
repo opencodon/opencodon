@@ -11,12 +11,12 @@ import type { HermesConfigRecord } from '@/types/hermes'
 //
 // Distinct from session/hooks/use-hermes-config.ts, which is side-effecting —
 // it pushes personality/cwd/voice/… into the session stores for live chat.
-export const HERMES_CONFIG_KEY = ['hermes-config-record'] as const
+export const OPENCODON_CONFIG_KEY = ['hermes-config-record'] as const
 
 // staleTime 0 → serve cache instantly, background-revalidate on every mount.
 export const useHermesConfigRecord = () =>
-  useQuery({ queryKey: HERMES_CONFIG_KEY, queryFn: getHermesConfigRecord, staleTime: 0 })
+  useQuery({ queryKey: OPENCODON_CONFIG_KEY, queryFn: getHermesConfigRecord, staleTime: 0 })
 
-export const setHermesConfigCache = writeCache<HermesConfigRecord>(HERMES_CONFIG_KEY)
+export const setHermesConfigCache = writeCache<HermesConfigRecord>(OPENCODON_CONFIG_KEY)
 
-export const invalidateHermesConfig = () => queryClient.invalidateQueries({ queryKey: HERMES_CONFIG_KEY })
+export const invalidateHermesConfig = () => queryClient.invalidateQueries({ queryKey: OPENCODON_CONFIG_KEY })

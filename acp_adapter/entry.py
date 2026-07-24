@@ -1,6 +1,6 @@
 """CLI entry point for the hermes-agent ACP adapter.
 
-Loads environment variables from ``~/.hermes/.env``, configures logging
+Loads environment variables from ``~/.opencodon/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),
 and starts the ACP agent server.
 
@@ -10,7 +10,7 @@ Usage::
     # or
     hermes acp
     # or
-    hermes-acp
+    opencodon-acp
 """
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
@@ -34,7 +34,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 
 # Methods clients send as periodic liveness probes. They are not part of the
@@ -99,23 +99,23 @@ def _setup_logging() -> None:
 
 
 def _load_env() -> None:
-    """Load .env from HERMES_HOME (default ``~/.hermes``)."""
+    """Load .env from OPENCODON_HOME (default ``~/.opencodon``)."""
     from opencodon_cli.env_loader import load_hermes_dotenv
 
-    hermes_home = get_hermes_home()
-    loaded = load_hermes_dotenv(hermes_home=hermes_home)
+    opencodon_home = get_opencodon_home()
+    loaded = load_hermes_dotenv(opencodon_home=opencodon_home)
     if loaded:
         for env_file in loaded:
             logging.getLogger(__name__).info("Loaded env from %s", env_file)
     else:
         logging.getLogger(__name__).info(
-            "No .env found at %s, using system env", hermes_home / ".env"
+            "No .env found at %s, using system env", opencodon_home / ".env"
         )
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="hermes-acp",
+        prog="opencodon-acp",
         description="Run Hermes Agent as an ACP stdio server.",
     )
     parser.add_argument("--version", action="store_true", help="Print Hermes version and exit")
@@ -132,7 +132,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--setup-browser",
         action="store_true",
-        help="Install agent-browser + Playwright Chromium into ~/.hermes/node/ "
+        help="Install agent-browser + Playwright Chromium into ~/.opencodon/node/ "
              "for browser tool support. Idempotent.",
     )
     parser.add_argument(

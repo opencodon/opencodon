@@ -6,7 +6,7 @@ from opencodon_cli.active_sessions import (
 
 
 def test_cli_claim_active_session_respects_global_limit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     cfg = {"max_concurrent_sessions": 1}
     held, message = try_acquire_active_session(
         session_id="held-session",

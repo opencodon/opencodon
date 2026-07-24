@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 
 _DB_LOCK = threading.Lock()
@@ -56,7 +56,7 @@ def _retention_cutoff() -> str:
 
 
 def _db_path() -> Path:
-    return get_hermes_home() / "verification_evidence.db"
+    return get_opencodon_home() / "verification_evidence.db"
 
 
 def _connect() -> sqlite3.Connection:

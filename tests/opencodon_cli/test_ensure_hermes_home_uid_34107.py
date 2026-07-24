@@ -1,8 +1,8 @@
-"""Regression tests for #34107 — Docker UID/GID handling in ensure_hermes_home.
+"""Regression tests for #34107 — Docker UID/GID handling in ensure_opencodon_home.
 
-When Hermes runs in Docker with ``HERMES_UID=1000`` / ``HERMES_GID=911``,
-the entrypoint chowns the top-level ``HERMES_HOME`` once at startup. But
-subdirectories created at runtime by ``ensure_hermes_home()`` — especially
+When Hermes runs in Docker with ``OPENCODON_UID=1000`` / ``OPENCODON_GID=911``,
+the entrypoint chowns the top-level ``OPENCODON_HOME`` once at startup. But
+subdirectories created at runtime by ``ensure_opencodon_home()`` — especially
 for profile namespaces under ``profiles/<name>/`` spawned by kanban
 workers — were landing as ``root:root`` and blocking subsequent
 uid-mapped worker invocations with ``PermissionError [Errno 13]``.
@@ -28,48 +28,48 @@ import pytest
 
 class TestResolveHermesUidGid:
     def test_returns_parsed_values_when_both_set(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid == 1000
         assert gid == 911
 
     def test_returns_none_when_unset(self, monkeypatch):
-        monkeypatch.delenv("HERMES_UID", raising=False)
-        monkeypatch.delenv("HERMES_GID", raising=False)
+        monkeypatch.delenv("OPENCODON_UID", raising=False)
+        monkeypatch.delenv("OPENCODON_GID", raising=False)
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid is None
         assert gid is None
 
     def test_uid_only_returns_gid_none(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.delenv("HERMES_GID", raising=False)
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.delenv("OPENCODON_GID", raising=False)
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid == 1000
         assert gid is None
 
     def test_invalid_uid_returns_none_for_that_field(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "not-a-number")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "not-a-number")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid is None
         assert gid == 911
 
     def test_empty_string_treated_as_unset(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "")
-        monkeypatch.setenv("HERMES_GID", "")
+        monkeypatch.setenv("OPENCODON_UID", "")
+        monkeypatch.setenv("OPENCODON_GID", "")
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid is None
         assert gid is None
 
     def test_whitespace_padded_values(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", " 1000 ")
-        monkeypatch.setenv("HERMES_GID", "  911")
+        monkeypatch.setenv("OPENCODON_UID", " 1000 ")
+        monkeypatch.setenv("OPENCODON_GID", "  911")
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid == 1000
@@ -77,8 +77,8 @@ class TestResolveHermesUidGid:
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific")
     def test_windows_returns_none_none(self, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli.config import _resolve_hermes_uid_gid
         uid, gid = _resolve_hermes_uid_gid()
         assert uid is None
@@ -92,8 +92,8 @@ class TestResolveHermesUidGid:
 
 class TestChownToHermesUid:
     def test_calls_os_chown_when_both_set(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -106,8 +106,8 @@ class TestChownToHermesUid:
     def test_uses_minus_one_for_missing_field(self, tmp_path, monkeypatch):
         """When only one env var is set, the other field passes -1 to
         os.chown which means 'do not change' on POSIX."""
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.delenv("HERMES_GID", raising=False)
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.delenv("OPENCODON_GID", raising=False)
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -118,8 +118,8 @@ class TestChownToHermesUid:
         mock_chown.assert_called_once_with(d, 1000, -1)
 
     def test_no_op_when_neither_set(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("HERMES_UID", raising=False)
-        monkeypatch.delenv("HERMES_GID", raising=False)
+        monkeypatch.delenv("OPENCODON_UID", raising=False)
+        monkeypatch.delenv("OPENCODON_GID", raising=False)
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -134,8 +134,8 @@ class TestChownToHermesUid:
         the entrypoint's startup chown -R will pick it up on restart, and
         in most cases the dir was already correctly-owned by the calling
         user anyway."""
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -151,8 +151,8 @@ class TestChownToHermesUid:
     def test_attributeerror_swallowed_for_windows_compat(self, tmp_path, monkeypatch):
         """os.chown doesn't exist on Windows. Catching AttributeError keeps
         the helper portable."""
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -170,8 +170,8 @@ class TestChownToHermesUid:
 class TestSecureDirChown:
     @pytest.mark.skipif(sys.platform == "win32", reason="chown is no-op on Windows")
     def test_secure_dir_invokes_chown_when_env_set(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("OPENCODON_UID", "1000")
+        monkeypatch.setenv("OPENCODON_GID", "911")
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"
@@ -183,8 +183,8 @@ class TestSecureDirChown:
 
     @pytest.mark.skipif(sys.platform == "win32", reason="chown is no-op on Windows")
     def test_secure_dir_no_chown_when_env_unset(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("HERMES_UID", raising=False)
-        monkeypatch.delenv("HERMES_GID", raising=False)
+        monkeypatch.delenv("OPENCODON_UID", raising=False)
+        monkeypatch.delenv("OPENCODON_GID", raising=False)
         from opencodon_cli import config as cfg
 
         d = tmp_path / "subdir"

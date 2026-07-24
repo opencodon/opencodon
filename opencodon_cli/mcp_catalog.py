@@ -17,7 +17,7 @@ Catalog policy:
   pin time. MCPs are never
   auto-updated; users explicitly re-run ``hermes mcp install <name>`` to
   pull a new manifest version after a repo update.
-- Secrets prompted at install time go to ``~/.hermes/.env`` (the
+- Secrets prompted at install time go to ``~/.opencodon/.env`` (the
   .env-is-for-secrets rule). Non-secret env vars also go to .env to keep
   one credential store.
 
@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from opencodon_constants import get_hermes_home, get_optional_mcps_dir
+from opencodon_constants import get_opencodon_home, get_optional_mcps_dir
 from opencodon_cli.colors import Colors, color
 from opencodon_cli.config import (
     load_config,
@@ -83,7 +83,7 @@ class TransportSpec:
     version: Optional[str] = None  # informational, pinned
     # Static environment variables for the stdio subprocess (e.g. telemetry
     # opt-outs, mode flags). NOT for secrets — credentials go through
-    # auth.env so they are prompted for and land in ~/.hermes/.env.
+    # auth.env so they are prompted for and land in ~/.opencodon/.env.
     env: Dict[str, str] = field(default_factory=dict)
 
 
@@ -367,7 +367,7 @@ def is_enabled(name: str) -> bool:
 
 def _install_root() -> Path:
     """Where git-bootstrapped MCPs are cloned. Per-user, profile-aware."""
-    root = get_hermes_home() / "mcp-installs"
+    root = get_opencodon_home() / "mcp-installs"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -388,7 +388,7 @@ def _run_bootstrap(cwd: Path, commands: List[str]) -> None:
 
 
 def _do_git_install(entry: CatalogEntry) -> Path:
-    """Clone the entry's repo into ``~/.hermes/mcp-installs/<name>`` and run
+    """Clone the entry's repo into ``~/.opencodon/mcp-installs/<name>`` and run
     bootstrap commands. Returns the install directory."""
     assert entry.install is not None and entry.install.type == "git"
     install = entry.install
@@ -451,7 +451,7 @@ def _expand_install_dir(value: str, install_dir: Optional[Path]) -> str:
 
 def _prompt_env_vars(specs: List[EnvVarSpec]) -> Dict[str, str]:
     """Walk the env spec list, prompting the user for each. Writes secrets and
-    non-secrets alike to ~/.hermes/.env via save_env_value()."""
+    non-secrets alike to ~/.opencodon/.env via save_env_value()."""
     collected: Dict[str, str] = {}
     for spec in specs:
         existing = get_env_value(spec.name)

@@ -63,8 +63,8 @@ from opencodon_cli.config import (
     clear_model_endpoint_credentials,
     get_config_path,
     get_env_path,
-    get_hermes_home,
-    get_process_hermes_home,
+    get_opencodon_home,
+    get_process_opencodon_home,
     load_config,
     load_env,
     read_raw_config,
@@ -129,7 +129,7 @@ except ImportError:
             f"Install with: {sys.executable} -m pip install 'fastapi' 'uvicorn[standard]'"
         )
 
-WEB_DIST = Path(os.environ["HERMES_WEB_DIST"]) if "HERMES_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
+WEB_DIST = Path(os.environ["OPENCODON_WEB_DIST"]) if "OPENCODON_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
 _log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ def _start_desktop_cron_ticker(stop_event: "threading.Event", interval: int = 60
 
     Cross-process safe: the built-in provider's ``cron.scheduler.tick`` takes
     the ``cron/.tick.lock`` file lock, so this never double-fires alongside a
-    real gateway on the same HERMES_HOME — whichever process grabs the lock
+    real gateway on the same OPENCODON_HOME — whichever process grabs the lock
     first wins the tick.
     """
     from cron.scheduler_provider import resolve_cron_scheduler
@@ -193,19 +193,19 @@ async def _lifespan(app: "FastAPI"):
     app.state.chat_argv_lock = asyncio.Lock()
 
     # Fire opencodon_cli.gateway import into a background thread so the event
-    # loop is not blocked and HERMES_DASHBOARD_READY fires without delay.
+    # loop is not blocked and OPENCODON_DASHBOARD_READY fires without delay.
     # On a cold Windows install the module chain triggers .pyc compilation
     # and Defender real-time scans that can stall the event loop for 15-30s.
     # Running in an executor means the cost is paid in a worker thread while
     # the server socket is already open and accepting probes.
     asyncio.get_event_loop().run_in_executor(None, _warm_gateway_module)
 
-    # Desktop-spawned backends (HERMES_DESKTOP=1) fire cron jobs themselves,
+    # Desktop-spawned backends (OPENCODON_DESKTOP=1) fire cron jobs themselves,
     # since the app has no gateway running the scheduler. Server `hermes
     # dashboard` is unaffected — it relies on its own gateway.
     cron_stop: "threading.Event | None" = None
     cron_thread: "threading.Thread | None" = None
-    if os.getenv("HERMES_DESKTOP") == "1":
+    if os.getenv("OPENCODON_DESKTOP") == "1":
         cron_stop = threading.Event()
         cron_thread = threading.Thread(
             target=_start_desktop_cron_ticker,
@@ -282,12 +282,12 @@ app.include_router(_memory_oauth_router)
 # ---------------------------------------------------------------------------
 # Session token for protecting sensitive endpoints (reveal).
 # The desktop shell mints the token and injects it via
-# HERMES_DASHBOARD_SESSION_TOKEN so its main process can authenticate the
+# OPENCODON_DASHBOARD_SESSION_TOKEN so its main process can authenticate the
 # /api calls it makes on the user's behalf; otherwise we generate one fresh
 # on every server start. Either way it dies when the process exits and is
 # injected into the SPA HTML so only the legitimate web UI can use it.
 # ---------------------------------------------------------------------------
-_SESSION_TOKEN = os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
+_SESSION_TOKEN = os.environ.get("OPENCODON_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
 _SESSION_HEADER_NAME = "X-Hermes-Session-Token"
 _SSH_OWNER_NONCE: Optional[str] = None
 
@@ -1681,7 +1681,7 @@ _MEDIA_CONTENT_TYPES = {
     ".ico": "image/x-icon",
 }
 _MEDIA_MAX_BYTES = 25 * 1024 * 1024
-_MANAGED_FILES_ROOT_ENV = "HERMES_DASHBOARD_FILES_ROOT"
+_MANAGED_FILES_ROOT_ENV = "OPENCODON_DASHBOARD_FILES_ROOT"
 _MANAGED_FILE_MAX_BYTES = 100 * 1024 * 1024
 _HOSTED_MANAGED_FILES_ROOT = Path("/opt/data")
 
@@ -1717,7 +1717,7 @@ _FS_READDIR_HIDDEN = {
 # (agent.file_safety.get_read_block_error and
 # gateway.platforms.base._ROOT_CREDENTIAL_FILES) so the dashboard Files tab
 # doesn't lag behind them — an operator can point the managed root at
-# HERMES_HOME itself, at which point every one of these basenames is a live
+# OPENCODON_HOME itself, at which point every one of these basenames is a live
 # secret store sitting in the browsable tree.
 _SENSITIVE_MANAGED_FILE_BASENAMES = frozenset({
     "auth.json",
@@ -1743,7 +1743,7 @@ _SENSITIVE_MANAGED_FILE_BASENAMES = frozenset({
 # basename-only guard would still expose e.g. ``mcp-tokens/<server>.json``
 # (live MCP OAuth tokens) and ``pairing/<x>``. We match on ANY path component
 # so these trees are blocked wherever they appear under the browsable root,
-# without needing to resolve them relative to HERMES_HOME.
+# without needing to resolve them relative to OPENCODON_HOME.
 _SENSITIVE_MANAGED_DIR_NAMES = frozenset({
     "mcp-tokens",
     "pairing",
@@ -1778,7 +1778,7 @@ def _is_sensitive_path(path: Path) -> bool:
     credential-directory-tree check: a path is sensitive if its own basename
     is sensitive OR any of its path components is a credential directory
     (``mcp-tokens`` / ``pairing``). The component match is case-insensitive
-    and needs no HERMES_HOME resolution, so it blocks these trees wherever
+    and needs no OPENCODON_HOME resolution, so it blocks these trees wherever
     they sit under the operator-configured managed root — closing the gap
     the canonical guards cover as directory trees but a basename-only check
     would miss.
@@ -1968,7 +1968,7 @@ def _media_serve_roots() -> list[Path]:
     key or a screenshot outside the cache) merely because the suffix passes the
     allowlist.
     """
-    home = get_hermes_home()
+    home = get_opencodon_home()
     roots = [home / "images", home / "screenshots", home / "cache"]
     out: list[Path] = []
     for root in roots:
@@ -2056,7 +2056,7 @@ def _local_dashboard_request(request: Request) -> bool:
 
 
 def _default_hermes_root_is_opt_data() -> bool:
-    raw = os.environ.get("HERMES_HOME", "").strip()
+    raw = os.environ.get("OPENCODON_HOME", "").strip()
     if not raw:
         return False
     try:
@@ -2116,7 +2116,7 @@ def _managed_files_policy(request: Request, *, create_root: bool = True) -> Mana
     # local dashboard through the auth gate (for example a macOS launchd install)
     # and still expect the Files page to browse their local home directory. Lock
     # to /opt/data only when the installation's Hermes root is actually /opt/data
-    # (the container/hosted layout) or when HERMES_DASHBOARD_FILES_ROOT is set.
+    # (the container/hosted layout) or when OPENCODON_DASHBOARD_FILES_ROOT is set.
     if _default_hermes_root_is_opt_data():
         root = _ensure_managed_root(_HOSTED_MANAGED_FILES_ROOT) if create_root else _HOSTED_MANAGED_FILES_ROOT
         return ManagedFilesPolicy(default_path=root, locked_root=root, can_change_path=False)
@@ -2264,12 +2264,12 @@ async def upload_chat_image(payload: ChatImageUpload, profile: Optional[str] = N
     clipboard image bytes are not visible to the server-side clipboard, so the
     page uploads them here, then drives the TUI's ``/image <path>`` command
     with the returned gateway-visible path. Files land under
-    ``HERMES_HOME/images/`` — the same directory ``clipboard.paste`` /
+    ``OPENCODON_HOME/images/`` — the same directory ``clipboard.paste`` /
     ``image.attach`` already use.
     """
     data, mime_type, ext = _decode_chat_image_upload(payload)
     with _profile_scope(profile) as scoped_home:
-        home = scoped_home or get_hermes_home()
+        home = scoped_home or get_opencodon_home()
         img_dir = Path(home) / "images"
         try:
             img_dir.mkdir(parents=True, exist_ok=True)
@@ -2635,7 +2635,7 @@ async def fs_write_text(payload: FsWriteText):
     if not target.parent.is_dir():
         raise HTTPException(status_code=400, detail="Parent directory does not exist")
 
-    tmp = target.with_name(f".{target.name}.hermes-tmp-{os.getpid()}")
+    tmp = target.with_name(f".{target.name}.opencodon-tmp-{os.getpid()}")
     try:
         tmp.write_text(text, encoding="utf-8")
         os.replace(tmp, target)
@@ -2990,7 +2990,7 @@ async def get_status(profile: Optional[str] = None):
     # Use the config-only (contextvar) scope, NOT _profile_scope: this handler
     # awaits the remote-health probe, and _profile_scope swaps process-global
     # skills-module attributes that a concurrent request would cross-restore
-    # across that await. Status only resolves get_hermes_home() at call time
+    # across that await. Status only resolves get_opencodon_home() at call time
     # (config/env/gateway state), which the task-local contextvar covers.
     if requested_profile and requested_profile.lower() != "current":
         status_scope = _config_profile_scope(requested_profile)
@@ -3206,7 +3206,7 @@ async def get_status(profile: Optional[str] = None):
             from gateway.readiness import _probe_state_db
 
             storage_check = await asyncio.get_running_loop().run_in_executor(
-                None, functools.partial(_probe_state_db, get_hermes_home())
+                None, functools.partial(_probe_state_db, get_opencodon_home())
             )
             components["storage"] = {"status": storage_check.get("status", "degraded")}
         except Exception:
@@ -3240,7 +3240,7 @@ async def get_status(profile: Optional[str] = None):
         # Read-only probe, never blocks startup, never raises.
         try:
             from opencodon_state import SessionDB as _SDB
-            from opencodon_constants import get_hermes_home as _ghh
+            from opencodon_constants import get_opencodon_home as _ghh
 
             _db_path = _ghh() / "state.db"
             if _db_path.exists():
@@ -3285,7 +3285,7 @@ async def get_status(profile: Optional[str] = None):
         # split ``should_require_auth`` draws.
         if not auth_required:
             status.update({
-                "hermes_home": str(get_hermes_home()),
+                "opencodon_home": str(get_opencodon_home()),
                 "config_path": str(get_config_path()),
                 "env_path": str(get_env_path()),
                 "gateway_pid": gateway_pid,
@@ -3379,7 +3379,7 @@ async def get_system_stats():
             "percent": vm.percent,
         }
         try:
-            du = psutil.disk_usage(str(get_hermes_home()))
+            du = psutil.disk_usage(str(get_opencodon_home()))
             info["disk"] = {
                 "total": du.total,
                 "used": du.used,
@@ -3678,11 +3678,11 @@ async def run_debug_share_endpoint(body: DebugShareRequest | None = None):
 # Both commands are spawned as detached subprocesses so the HTTP request
 # returns immediately.  stdin is closed (``DEVNULL``) so any stray ``input()``
 # calls fail fast with EOF rather than hanging forever.  stdout/stderr are
-# streamed to a per-action log file under ``~/.hermes/logs/<action>.log`` so
+# streamed to a per-action log file under ``~/.opencodon/logs/<action>.log`` so
 # the dashboard can tail them back to the user.
 # ---------------------------------------------------------------------------
 
-_ACTION_LOG_DIR: Path = get_hermes_home() / "logs"
+_ACTION_LOG_DIR: Path = get_opencodon_home() / "logs"
 _ACTION_LOG_TAIL_MAX_BYTES = 256 * 1024
 _ACTION_LOG_TAIL_INITIAL_CHUNK_BYTES = 8 * 1024
 _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
@@ -3764,12 +3764,12 @@ def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
     cmd = [_dashboard_spawn_executable(), "-m", "opencodon_cli.main", *subcommand]
 
     # The dashboard runs *inside* the gateway process, so os.environ carries
-    # _HERMES_GATEWAY=1. Inheriting it makes a spawned `hermes gateway restart`
+    # _OPENCODON_GATEWAY=1. Inheriting it makes a spawned `hermes gateway restart`
     # trip the in-process restart-loop guard and exit 1 — silently failing the
     # dashboard's auto-restart paths. The gateway's own restart watcher already
     # drops it (gateway/run.py); mirror that here (#52470).
-    action_env = {**os.environ, "HERMES_NONINTERACTIVE": "1"}
-    action_env.pop("_HERMES_GATEWAY", None)
+    action_env = {**os.environ, "OPENCODON_NONINTERACTIVE": "1"}
+    action_env.pop("_OPENCODON_GATEWAY", None)
 
     popen_kwargs: Dict[str, Any] = {
         "cwd": str(PROJECT_ROOT),
@@ -3972,7 +3972,7 @@ async def gateway_drain(request: Request):
     Authenticated by the non-interactive token-auth seam: the
     ``dashboard_auth/drain`` plugin registers this exact path as a token route
     and verifies the ``Authorization`` bearer secret. If that plugin isn't
-    active (no ``HERMES_DASHBOARD_DRAIN_SECRET``), the route is NOT a token
+    active (no ``OPENCODON_DASHBOARD_DRAIN_SECRET``), the route is NOT a token
     route, so on a gated bind the cookie gate handles it (a browser session can
     still drive it from the dashboard) and on a loopback bind the legacy
     session-token gate applies — either way it is never unauthenticated on a
@@ -4207,7 +4207,7 @@ async def check_hermes_update(force: bool = False):
 
         if force:
             try:
-                (get_hermes_home() / ".update_check").unlink()
+                (get_opencodon_home() / ".update_check").unlink()
             except OSError:
                 pass
 
@@ -4418,7 +4418,7 @@ async def speak_text(payload: TTSSpeakRequest):
     Used by the desktop voice-conversation mode to play back assistant
     responses without exposing the on-disk file path. Reuses the
     existing TTS provider chain (Edge / OpenAI / ElevenLabs / etc.)
-    configured in ``~/.hermes/config.yaml`` under ``tts.``.
+    configured in ``~/.opencodon/config.yaml`` under ``tts.``.
     """
     text = (payload.text or "").strip()
     if not text:
@@ -5345,7 +5345,7 @@ def _serialize_field_value(field: ProviderField, value: Any) -> str:
 
 
 def _flat_json_path(provider: ProviderConfigSchema) -> Path:
-    return get_hermes_home() / provider.name / "config.json"
+    return get_opencodon_home() / provider.name / "config.json"
 
 
 def _read_flat_json(provider: ProviderConfigSchema) -> Dict[str, Any]:
@@ -6020,13 +6020,13 @@ def _read_json_file(path: Path) -> Dict[str, Any]:
 def _read_memory_provider_existing_values(name: str) -> Dict[str, Any]:
     """Best-effort read of existing provider config across legacy/native stores."""
 
-    hermes_home = get_hermes_home()
+    opencodon_home = get_opencodon_home()
     values: Dict[str, Any] = {}
 
     # Common native provider stores.
     for path in (
-        hermes_home / f"{name}.json",
-        hermes_home / name / "config.json",
+        opencodon_home / f"{name}.json",
+        opencodon_home / name / "config.json",
     ):
         values.update(_read_json_file(path))
 
@@ -6175,10 +6175,10 @@ def _save_memory_provider_native_config(name: str, provider: Any, values: Dict[s
         try:
             from agent.memory_provider import MemoryProvider as _BaseMemoryProvider
         except Exception:
-            provider.save_config(values, str(get_hermes_home()))
+            provider.save_config(values, str(get_opencodon_home()))
             return
         if type(provider).save_config is not _BaseMemoryProvider.save_config:
-            provider.save_config(values, str(get_hermes_home()))
+            provider.save_config(values, str(get_opencodon_home()))
             return
 
     cfg = load_config()
@@ -6822,7 +6822,7 @@ def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
 async def set_model_assignment(body: ModelAssignment, profile: Optional[str] = None):
     """Assign a model to the main slot or an auxiliary task slot.
 
-    Writes to ``~/.hermes/config.yaml`` — applies to **new** sessions only.
+    Writes to ``~/.opencodon/config.yaml`` — applies to **new** sessions only.
     The currently running chat PTY (if any) is not affected; use the
     ``/model`` slash command inside a chat to hot-swap that specific session.
     """
@@ -8757,7 +8757,7 @@ async def cancel_whatsapp_onboarding(pairing_id: str):
     return {"ok": True}
 
 
-_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.hermes-agent.nousresearch.com"
+_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.opencodon-agent.nousresearch.com"
 _TELEGRAM_ONBOARDING_USER_AGENT = f"HermesDashboard/{__version__}"
 @dataclass
 class _TelegramOnboardingPairing:
@@ -9128,7 +9128,7 @@ async def get_messaging_platforms(profile: Optional[str] = None):
     # Profile-scoped so the dashboard's global profile switcher shows the
     # TARGET profile's channel credentials/state, not the root install's.
     # Inside _profile_scope, load_env()/read_runtime_status()/get_running_pid()
-    # all resolve against the requested profile's HERMES_HOME.
+    # all resolve against the requested profile's OPENCODON_HOME.
     with _profile_scope(profile) as scoped_dir:
         env_on_disk = load_env()
         runtime = read_runtime_status()
@@ -9169,7 +9169,7 @@ def _multiplex_port_binding_conflict(
     if not requested or requested.lower() == "current":
         from opencodon_cli.profiles import get_active_profile_name
 
-        # The dashboard's own profile. "custom" (an unrecognized HERMES_HOME)
+        # The dashboard's own profile. "custom" (an unrecognized OPENCODON_HOME)
         # is outside the profiles tree, so a multiplexed gateway never serves
         # it — nothing to guard.
         target = get_active_profile_name()
@@ -9356,7 +9356,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     """Status for the "Anthropic API Key" catalog entry.
 
     Two sources, in priority order:
-    1. ``~/.hermes/.anthropic_oauth.json`` — Hermes-managed PKCE flow (what
+    1. ``~/.opencodon/.anthropic_oauth.json`` — Hermes-managed PKCE flow (what
        this entry's Connect button writes)
     2. ``ANTHROPIC_API_KEY`` → ``ANTHROPIC_TOKEN`` → ``CLAUDE_CODE_OAUTH_TOKEN``
        env vars (registry order) — from ``.env``, the shell, or an external
@@ -9866,7 +9866,7 @@ async def disconnect_oauth_provider(
 #     2. UI opens auth_url in a new tab. User authorizes, copies code.
 #     3. POST /api/providers/oauth/anthropic/submit { session_id, code }
 #          → server exchanges (code + verifier) → tokens at console.anthropic.com
-#          → persists to ~/.hermes/.anthropic_oauth.json AND credential pool
+#          → persists to ~/.opencodon/.anthropic_oauth.json AND credential pool
 #          → returns { ok: true, status: "approved" }
 #
 #   Device code (Nous, OpenAI Codex):
@@ -10147,7 +10147,7 @@ async def _start_device_code_flow(
         import httpx
         pconfig = PROVIDER_REGISTRY["nous"]
         portal_base_url = (
-            os.getenv("HERMES_PORTAL_BASE_URL")
+            os.getenv("OPENCODON_PORTAL_BASE_URL")
             or os.getenv("NOUS_PORTAL_BASE_URL")
             or pconfig.portal_base_url
         ).rstrip("/")
@@ -11336,7 +11336,7 @@ def _prune_sessions(body: SessionPrune):
     _effective_older_than = body.older_than_days
     if has_window or (_attr_filters_set and not _older_than_explicit):
         _effective_older_than = None
-    profile_home = _cron_profile_home(body.profile)[1] if body.profile else get_hermes_home()
+    profile_home = _cron_profile_home(body.profile)[1] if body.profile else get_opencodon_home()
     db = _open_session_db_for_profile(body.profile)
     try:
         filters = dict(
@@ -11418,7 +11418,7 @@ async def get_logs(
     log_name = LOG_FILES.get(file)
     if not log_name:
         raise HTTPException(status_code=400, detail=f"Unknown log file: {file}")
-    log_path = get_hermes_home() / "logs" / log_name
+    log_path = get_opencodon_home() / "logs" / log_name
     if not log_path.exists():
         return {"file": file, "lines": []}
 
@@ -11612,12 +11612,12 @@ def _cron_profile_dicts() -> List[Dict[str, Any]]:
 def _cron_default_profile() -> str:
     """Profile to target when a cron request carries no explicit ``profile``.
 
-    A desktop pool backend runs one process per profile (HERMES_HOME already
+    A desktop pool backend runs one process per profile (OPENCODON_HOME already
     scoped), but these cron endpoints deliberately route storage through the
     profiles tree via ``_cron_profile_home`` — so a hardcoded ``"default"``
-    fallback would write a non-default profile's job into ``~/.hermes``.
+    fallback would write a non-default profile's job into ``~/.opencodon``.
     Resolve the process's own profile instead. ``custom`` (an unrecognized
-    HERMES_HOME outside the profiles tree) has no profile-dir equivalent, so
+    OPENCODON_HOME outside the profiles tree) has no profile-dir equivalent, so
     it keeps the legacy ``default`` fallback.
     """
     try:
@@ -11630,7 +11630,7 @@ def _cron_default_profile() -> str:
 
 
 def _cron_profile_home(profile: Optional[str]) -> Tuple[str, Path]:
-    """Resolve a profile query value to (profile_name, HERMES_HOME)."""
+    """Resolve a profile query value to (profile_name, OPENCODON_HOME)."""
     from opencodon_cli import profiles as profiles_mod
 
     raw = (profile or _cron_default_profile()).strip() or "default"
@@ -11648,7 +11648,7 @@ def _annotate_cron_job(job: Dict[str, Any], profile: str, home: Path) -> Dict[st
     annotated = dict(job)
     annotated["profile"] = profile
     annotated["profile_name"] = profile
-    annotated["hermes_home"] = str(home)
+    annotated["opencodon_home"] = str(home)
     annotated["is_default_profile"] = profile == "default"
     return annotated
 
@@ -11663,16 +11663,16 @@ def _call_cron_for_profile(target_profile: Optional[str], func_name: str, *args,
     profile_name, home = _cron_profile_home(target_profile)
     from cron import jobs as cron_jobs
     from opencodon_constants import (
-        reset_hermes_home_override,
-        set_hermes_home_override,
+        reset_opencodon_home_override,
+        set_opencodon_home_override,
     )
 
-    token = set_hermes_home_override(str(home))
+    token = set_opencodon_home_override(str(home))
     try:
         with cron_jobs.use_cron_store(home):
             result = getattr(cron_jobs, func_name)(*args, **kwargs)
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
 
     if isinstance(result, list):
         return [_annotate_cron_job(j, profile_name, home) for j in result]
@@ -11975,17 +11975,17 @@ def _fire_cron_job_for_profile(profile: str, job_id: str) -> bool:
     from cron import jobs as cron_jobs
     from cron.scheduler_provider import resolve_cron_scheduler
     from opencodon_constants import (
-        reset_hermes_home_override,
-        set_hermes_home_override,
+        reset_opencodon_home_override,
+        set_opencodon_home_override,
     )
 
-    token = set_hermes_home_override(str(home))
+    token = set_opencodon_home_override(str(home))
     try:
         with cron_jobs.use_cron_store(home):
             provider = resolve_cron_scheduler()
             return bool(provider.fire_due(job_id, adapters=None, loop=None))
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
 
 
 @app.post("/api/cron/fire")
@@ -12360,7 +12360,7 @@ async def test_mcp_server(name: str, profile: Optional[str] = None):
         # skills lock for its ENTIRE body. Holding that across the probe
         # serialized every other endpoint (config/skills/toolsets all take the
         # same lock), so a slow server made unrelated requests time out at 15s.
-        # The probe touches no skills globals; it only needs the HERMES_HOME
+        # The probe touches no skills globals; it only needs the OPENCODON_HOME
         # override for .env interpolation + OAuth token resolution, which the
         # contextvar provides (copied into this to_thread worker; and
         # _run_on_mcp_loop re-wraps it onto the MCP event-loop thread).
@@ -12437,7 +12437,7 @@ def _mcp_oauth_callback_url(request: Request, server_name: str) -> str:
 
 
 def _mcp_oauth_transaction(flow) -> threading.Lock:
-    key = (flow.hermes_home, flow.server_name)
+    key = (flow.opencodon_home, flow.server_name)
     with _mcp_oauth_transactions_lock:
         return _mcp_oauth_transactions.setdefault(key, threading.Lock())
 
@@ -12455,13 +12455,13 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
             reset_secret_scope,
             set_secret_scope,
         )
-        from opencodon_constants import reset_hermes_home_override, set_hermes_home_override
+        from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
         from tools.mcp_dashboard_oauth import dashboard_oauth_flow
         from tools.mcp_oauth import HermesTokenStorage, force_interactive_oauth
         from tools.mcp_oauth_manager import get_manager
 
-        home_token = set_hermes_home_override(flow.hermes_home)
-        secret_token = set_secret_scope(build_profile_secret_scope(Path(flow.hermes_home)))
+        home_token = set_opencodon_home_override(flow.opencodon_home)
+        secret_token = set_secret_scope(build_profile_secret_scope(Path(flow.opencodon_home)))
         try:
             transaction = _mcp_oauth_transaction(flow)
             with transaction, force_interactive_oauth(), dashboard_oauth_flow(flow):
@@ -12472,7 +12472,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
                 try:
                     previous_entry = manager.remove(
                         flow.server_name,
-                        hermes_home=flow.hermes_home,
+                        opencodon_home=flow.opencodon_home,
                     )
                     tools = _probe_single_server(
                         flow.server_name,
@@ -12496,12 +12496,12 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
                     manager.restore_entry(
                         flow.server_name,
                         previous_entry,
-                        hermes_home=flow.hermes_home,
+                        opencodon_home=flow.opencodon_home,
                     )
                     raise
         finally:
             reset_secret_scope(secret_token)
-            reset_hermes_home_override(home_token)
+            reset_opencodon_home_override(home_token)
     except Exception as exc:
         msg = str(exc)
         # Providers that gate RFC 7591 registration to pre-approved clients
@@ -12530,12 +12530,12 @@ async def auth_mcp_server(name: str, request: Request, profile: Optional[str] = 
 
     _require_token(request)
     _gc_mcp_oauth_flows()
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
-    process_home = str(get_hermes_home().expanduser().resolve(strict=False))
+    process_home = str(get_opencodon_home().expanduser().resolve(strict=False))
     with _profile_scope(profile):
         servers = _get_mcp_servers()
-        flow_home = str(get_hermes_home().expanduser().resolve(strict=False))
+        flow_home = str(get_opencodon_home().expanduser().resolve(strict=False))
     if name not in servers:
         raise HTTPException(status_code=404, detail=f"Server '{name}' not found")
     cfg = dict(servers[name])
@@ -12550,7 +12550,7 @@ async def auth_mcp_server(name: str, request: Request, profile: Optional[str] = 
         flow_id=flow_id,
         server_name=name,
         profile=profile,
-        hermes_home=flow_home,
+        opencodon_home=flow_home,
         redirect_uri=(cfg.get("oauth") or {}).get("redirect_uri")
         or _mcp_oauth_callback_url(request, name),
         reconnect_live=flow_home == process_home,
@@ -12567,7 +12567,7 @@ async def auth_mcp_server(name: str, request: Request, profile: Optional[str] = 
             )
         if any(
             flow.server_name == name
-            and flow.hermes_home == flow_home
+            and flow.opencodon_home == flow_home
             and not flow.worker_done
             for flow in _mcp_oauth_flows.values()
         ):
@@ -12782,7 +12782,7 @@ async def install_mcp_catalog_entry(body: MCPCatalogInstall, profile: Optional[s
 
     # Git-bootstrap entries can take a while to clone — run via the background
     # action path so the request returns immediately and the UI can tail logs.
-    # The -p subprocess rebinds HERMES_HOME-derived paths in the child.
+    # The -p subprocess rebinds OPENCODON_HOME-derived paths in the child.
     if entry.install is not None:
         # Unique per-entry action name: a shared "mcp-install" would let a
         # re-click (or a second entry) overwrite the tracked process/log while
@@ -13315,7 +13315,7 @@ async def get_memory_status():
         active = _normalize_memory_provider_name(mem.get("provider"))
 
     # Built-in memory file sizes (so the UI can show what a reset would erase).
-    mem_dir = get_hermes_home() / "memories"
+    mem_dir = get_opencodon_home() / "memories"
     files = {}
     for fname, key in (("MEMORY.md", "memory"), ("USER.md", "user")):
         path = mem_dir / fname
@@ -13348,7 +13348,7 @@ async def reset_memory(body: MemoryReset):
     if target not in {"all", "memory", "user"}:
         raise HTTPException(status_code=400, detail="target must be all, memory, or user")
 
-    mem_dir = get_hermes_home() / "memories"
+    mem_dir = get_opencodon_home() / "memories"
     deleted = []
     targets = []
     if target in {"all", "memory"}:
@@ -13405,7 +13405,7 @@ class BackupRequest(BaseModel):
 
 
 def _dashboard_backup_dir() -> Path:
-    return get_hermes_home() / "backups"
+    return get_opencodon_home() / "backups"
 
 
 def _new_dashboard_backup_path() -> Path:
@@ -13743,11 +13743,11 @@ async def delete_hook(body: HookDelete):
 @app.get("/api/ops/checkpoints")
 async def list_checkpoints():
     """List the /rollback shadow store checkpoints (read-only)."""
-    # Checkpoints live under <hermes_home>/checkpoints/.  Surface a count +
+    # Checkpoints live under <opencodon_home>/checkpoints/.  Surface a count +
     # total size so the dashboard can show what a prune would reclaim; the
     # actual prune is a spawned action so confirmation/pruning logic stays
     # in one place (the CLI).
-    cp_dir = get_hermes_home() / "checkpoints"
+    cp_dir = get_opencodon_home() / "checkpoints"
     sessions = []
     total_bytes = 0
     if cp_dir.is_dir():
@@ -14265,7 +14265,7 @@ class ProfileCreate(BaseModel):
     keep_skills: List[str] = []
     # Skills-hub identifiers to install into the new profile. Installed async
     # via a subprocess scoped to the profile (`hermes -p <name> skills install`)
-    # because skills_hub.SKILLS_DIR is import-time-bound and the HERMES_HOME
+    # because skills_hub.SKILLS_DIR is import-time-bound and the OPENCODON_HOME
     # override can't redirect it. Returns spawned PIDs for the UI to poll.
     hub_skills: List[str] = []
 
@@ -14329,7 +14329,7 @@ def _fallback_profile_dicts(profiles_mod) -> List[Dict[str, Any]]:
             return default
 
     profiles: List[Dict[str, Any]] = []
-    default_home = profiles_mod._get_default_hermes_home()
+    default_home = profiles_mod._get_default_opencodon_home()
     if default_home.is_dir():
         model, provider = _safe(lambda: profiles_mod._read_config_model(default_home), (None, None))
         profiles.append({
@@ -14397,28 +14397,28 @@ def _write_profile_model(profile_dir: Path, provider: str, model: str) -> None:
     """Write the main model assignment into a specific profile's config.yaml.
 
     Scopes ``load_config``/``save_config`` to ``profile_dir`` via the
-    context-local HERMES_HOME override so the write lands in the target
+    context-local OPENCODON_HOME override so the write lands in the target
     profile's config rather than the dashboard process's active profile.
     Clears any stale ``base_url`` / ``context_length`` the same way
     ``POST /api/model/set`` does, since the new model may differ.
     """
-    from opencodon_constants import set_hermes_home_override, reset_hermes_home_override
+    from opencodon_constants import set_opencodon_home_override, reset_opencodon_home_override
 
-    token = set_hermes_home_override(str(profile_dir))
+    token = set_opencodon_home_override(str(profile_dir))
     try:
         provider, model = _normalize_main_model_assignment(provider, model)
         cfg = load_config()
         cfg["model"] = _apply_main_model_assignment(cfg.get("model", {}), provider, model)
         save_config(cfg)
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
 
 
 def _write_profile_mcp_servers(profile_dir: Path, servers: List["MCPServerCreate"]) -> int:
     """Write MCP server entries into a specific profile's config.yaml.
 
     Scopes ``load_config``/``save_config`` to ``profile_dir`` via the
-    context-local HERMES_HOME override (same mechanism as
+    context-local OPENCODON_HOME override (same mechanism as
     ``_write_profile_model``) so the entries land in the target profile's
     config rather than the dashboard process's active profile.
 
@@ -14426,11 +14426,11 @@ def _write_profile_mcp_servers(profile_dir: Path, servers: List["MCPServerCreate
     but batched so the whole profile-create write is a single config save.
     Returns the number of servers written.
     """
-    from opencodon_constants import set_hermes_home_override, reset_hermes_home_override
+    from opencodon_constants import set_opencodon_home_override, reset_opencodon_home_override
     from opencodon_cli.mcp_config import _save_bearer_auth_token
 
     written = 0
-    token = set_hermes_home_override(str(profile_dir))
+    token = set_opencodon_home_override(str(profile_dir))
     try:
         cfg = load_config()
         mcp = cfg.setdefault("mcp_servers", {})
@@ -14457,7 +14457,7 @@ def _write_profile_mcp_servers(profile_dir: Path, servers: List["MCPServerCreate
             cfg.pop("mcp_servers", None)
             save_config(cfg)
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
     return written
 
 
@@ -14469,15 +14469,15 @@ def _disable_unselected_skills(profile_dir: Path, keep: List[str]) -> int:
     uses "replace" semantics: the user picks exactly which seeded built-in /
     optional skills stay active, and everything else gets added to the disabled
     list. (Hub skills are installed separately via subprocess and are active on
-    install.) Scoped to the profile via the HERMES_HOME override. Returns the
+    install.) Scoped to the profile via the OPENCODON_HOME override. Returns the
     number of skills newly disabled.
     """
-    from opencodon_constants import set_hermes_home_override, reset_hermes_home_override
+    from opencodon_constants import set_opencodon_home_override, reset_opencodon_home_override
     from opencodon_cli.skills_config import get_disabled_skills, save_disabled_skills
 
     keep_set = {s.strip() for s in keep if s and s.strip()}
     disabled_count = 0
-    token = set_hermes_home_override(str(profile_dir))
+    token = set_opencodon_home_override(str(profile_dir))
     try:
         installed: List[str] = []
         skills_root = profile_dir / "skills"
@@ -14493,7 +14493,7 @@ def _disable_unselected_skills(profile_dir: Path, keep: List[str]) -> int:
         if disabled_count:
             save_disabled_skills(cfg, disabled)
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
     return disabled_count
 
 
@@ -14591,7 +14591,7 @@ async def create_profile_endpoint(body: ProfileCreate):
 
     # Optional skills-hub installs. Spawned async, scoped to the new profile
     # via `-p <name>` (a fresh subprocess re-binds skills_hub.SKILLS_DIR to the
-    # profile's HERMES_HOME at import). Returns PIDs for the UI to poll.
+    # profile's OPENCODON_HOME at import). Returns PIDs for the UI to poll.
     hub_installs: List[Dict[str, Any]] = []
     for identifier in body.hub_skills:
         ident = (identifier or "").strip()
@@ -14629,7 +14629,7 @@ async def get_active_profile_endpoint():
 
     ``active`` is the sticky default written by ``hermes profile use`` —
     the profile new CLI invocations pick up. ``current`` is the profile
-    the running dashboard/gateway is scoped to (derived from HERMES_HOME).
+    the running dashboard/gateway is scoped to (derived from OPENCODON_HOME).
     """
     from opencodon_cli import profiles as profiles_mod
     try:
@@ -14805,7 +14805,7 @@ async def update_profile_model_endpoint(name: str, body: ProfileModelUpdate):
     """Set the main model (``model.default`` + ``model.provider``) for a
     specific profile's config.yaml, without touching the dashboard's own
     active profile. Mirrors ``POST /api/model/set`` (main scope) but scoped
-    to the named profile via the HERMES_HOME override.
+    to the named profile via the OPENCODON_HOME override.
     """
     profile_dir = _resolve_profile_dir(name)
     provider = (body.provider or "").strip()
@@ -14870,8 +14870,8 @@ def _profile_scope(profile: Optional[str]):
 
     Two seams must be redirected for skills/toolsets endpoints:
 
-    1. ``load_config``/``save_config`` resolve ``get_hermes_home()`` at call
-       time — the context-local override from ``set_hermes_home_override``
+    1. ``load_config``/``save_config`` resolve ``get_opencodon_home()`` at call
+       time — the context-local override from ``set_opencodon_home_override``
        reaches them (same pattern as ``_write_profile_model``).
     2. ``tools.skills_tool`` and ``tools.skill_manager_tool`` bind
        ``SKILLS_DIR`` at import time, so the override CANNOT reach them.
@@ -14881,46 +14881,46 @@ def _profile_scope(profile: Optional[str]):
 
     ``profile`` of None/""/"current" means "the dashboard's own profile" —
     config resolution is untouched, but the skill-module globals are still
-    retargeted to the *current* ``get_hermes_home()`` so writes land in the
+    retargeted to the *current* ``get_opencodon_home()`` so writes land in the
     live home even when the import-time binding is stale (e.g. the process
-    imported the modules before a HERMES_HOME override, or under test
+    imported the modules before a OPENCODON_HOME override, or under test
     isolation).
     """
     requested = (profile or "").strip()
 
     from opencodon_constants import (
-        get_hermes_home,
-        set_hermes_home_override,
-        reset_hermes_home_override,
+        get_opencodon_home,
+        set_opencodon_home_override,
+        reset_opencodon_home_override,
     )
     from tools import skills_tool as _skills_tool
     from tools import skill_manager_tool as _skill_mgr
 
     token = None
     if not requested or requested.lower() == "current":
-        profile_dir = get_hermes_home()
+        profile_dir = get_opencodon_home()
     else:
         profile_dir = _resolve_profile_dir(requested)
-        token = set_hermes_home_override(str(profile_dir))
+        token = set_opencodon_home_override(str(profile_dir))
 
     with _SKILLS_PROFILE_LOCK:
-        old_home = _skills_tool.HERMES_HOME
+        old_home = _skills_tool.OPENCODON_HOME
         old_skills_dir = _skills_tool.SKILLS_DIR
-        old_mgr_home = _skill_mgr.HERMES_HOME
+        old_mgr_home = _skill_mgr.OPENCODON_HOME
         old_mgr_skills_dir = _skill_mgr.SKILLS_DIR
-        _skills_tool.HERMES_HOME = profile_dir
+        _skills_tool.OPENCODON_HOME = profile_dir
         _skills_tool.SKILLS_DIR = profile_dir / "skills"
-        _skill_mgr.HERMES_HOME = profile_dir
+        _skill_mgr.OPENCODON_HOME = profile_dir
         _skill_mgr.SKILLS_DIR = profile_dir / "skills"
         try:
             yield profile_dir if token is not None else None
         finally:
-            _skills_tool.HERMES_HOME = old_home
+            _skills_tool.OPENCODON_HOME = old_home
             _skills_tool.SKILLS_DIR = old_skills_dir
-            _skill_mgr.HERMES_HOME = old_mgr_home
+            _skill_mgr.OPENCODON_HOME = old_mgr_home
             _skill_mgr.SKILLS_DIR = old_mgr_skills_dir
             if token is not None:
-                reset_hermes_home_override(token)
+                reset_opencodon_home_override(token)
 
 
 @contextmanager
@@ -14928,13 +14928,13 @@ def _config_profile_scope(profile: Optional[str]):
     """Await-safe, config-only profile scope for handlers that ``await``.
 
     Unlike ``_profile_scope`` this touches ONLY the context-local
-    ``set_hermes_home_override`` contextvar — it does NOT swap the
+    ``set_opencodon_home_override`` contextvar — it does NOT swap the
     process-global ``skills_tool``/``skill_manager`` module attributes.
     Those globals are shared across all event-loop tasks, so holding them
     across an ``await`` lets a concurrent skills request restore THIS
     request's profile dir on its ``finally`` (cross-contamination). The
     contextvar override is task-local and survives an ``await`` cleanly,
-    which is all endpoints that resolve ``get_hermes_home()`` at call time
+    which is all endpoints that resolve ``get_opencodon_home()`` at call time
     (config, env, gateway status) actually need.
 
     None/""/"current" means the dashboard's own profile — no override.
@@ -14945,16 +14945,16 @@ def _config_profile_scope(profile: Optional[str]):
         return
 
     from opencodon_constants import (
-        set_hermes_home_override,
-        reset_hermes_home_override,
+        set_opencodon_home_override,
+        reset_opencodon_home_override,
     )
 
     profile_dir = _resolve_profile_dir(requested)
-    token = set_hermes_home_override(str(profile_dir))
+    token = set_opencodon_home_override(str(profile_dir))
     try:
         yield profile_dir
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
 
 
 class SkillToggle(BaseModel):
@@ -15609,7 +15609,7 @@ class ToolsetEnvUpdate(BaseModel):
 async def save_toolset_env(name: str, body: ToolsetEnvUpdate, profile: Optional[str] = None):
     """Persist API keys for a toolset's provider env vars.
 
-    Writes each ``key: value`` to ``~/.hermes/.env`` via ``save_env_value`` —
+    Writes each ``key: value`` to ``~/.opencodon/.env`` via ``save_env_value`` —
     the same store ``hermes tools`` writes when it prompts for keys. Keys are
     validated against the env-var allowlist for the toolset's category (the
     union of every visible provider's ``env_vars``), so the GUI can't write an
@@ -15682,7 +15682,7 @@ async def run_toolset_post_setup(
     ``profile`` spawns the hook as ``hermes -p <profile> tools post-setup``.
     Most hooks install machine-level artifacts (repo node_modules, shared
     pip packages) where the scope is inert, but hooks that read config or
-    write per-profile state must see the same HERMES_HOME the rest of the
+    write per-profile state must see the same OPENCODON_HOME the rest of the
     drawer's writes targeted — so the scope is threaded for consistency.
     """
     from opencodon_cli.tools_config import (
@@ -16817,32 +16817,32 @@ def _resolve_chat_argv(
     function to inject a tiny fake command (``cat``, ``sh -c 'printf …'``)
     so nothing has to build Node or the TUI bundle.
 
-    Session resume is propagated via the ``HERMES_TUI_RESUME`` env var —
+    Session resume is propagated via the ``OPENCODON_TUI_RESUME`` env var —
     matching what ``opencodon_cli.main._launch_tui`` does for the CLI path.
     Appending ``--resume <id>`` to argv doesn't work because ``ui-tui`` does
     not parse its argv.
 
-    ``HERMES_TUI_GATEWAY_URL`` is injected so the PTY child can attach to
+    ``OPENCODON_TUI_GATEWAY_URL`` is injected so the PTY child can attach to
     this process's in-memory ``tui_gateway`` instance instead of spawning
     its own Python gateway subprocess.
 
-    `sidecar_url` (when set) is forwarded as ``HERMES_TUI_SIDECAR_URL`` so
+    `sidecar_url` (when set) is forwarded as ``OPENCODON_TUI_SIDECAR_URL`` so
     the spawned ``tui_gateway.entry`` can mirror dispatcher emits to the
     dashboard's ``/api/pub`` endpoint (see :func:`pub_ws`).
 
     `active_session_file` (when set) is forwarded as
-    ``HERMES_TUI_ACTIVE_SESSION_FILE``. The TUI writes the current session id
+    ``OPENCODON_TUI_ACTIVE_SESSION_FILE``. The TUI writes the current session id
     there whenever it creates/resumes/switches sessions, giving the dashboard a
     small cross-process breadcrumb for reconnecting after an unexpected browser
     WebSocket close.
 
     `profile` (when set) scopes the ENTIRE chat to that profile by pointing
-    ``HERMES_HOME`` at the profile dir in the child env. Every spawned
+    ``OPENCODON_HOME`` at the profile dir in the child env. Every spawned
     process (the TUI and the ``tui_gateway.entry`` it launches) resolves
-    ``get_hermes_home()`` from that env var at its own import, so the child
+    ``get_opencodon_home()`` from that env var at its own import, so the child
     binds the profile's config, skills, memory, and state.db from the start
     — the same propagation ``hermes -p <name>`` performs. The in-process
-    ``HERMES_TUI_GATEWAY_URL`` attach is SKIPPED for scoped chats: the
+    ``OPENCODON_TUI_GATEWAY_URL`` attach is SKIPPED for scoped chats: the
     dashboard's in-memory gateway runs under the dashboard's own profile,
     so a profile-scoped chat must spawn its own gateway subprocess.
     """
@@ -16868,8 +16868,8 @@ def _resolve_chat_argv(
     # makes browser-side transcript scrolling feel broken. Keep the terminal
     # build unchanged for native CLI usage; only disable mouse tracking for
     # the dashboard PTY path.
-    env.setdefault("HERMES_TUI_DISABLE_MOUSE", "1")
-    env.setdefault("HERMES_TUI_INLINE", "1")
+    env.setdefault("OPENCODON_TUI_DISABLE_MOUSE", "1")
+    env.setdefault("OPENCODON_TUI_INLINE", "1")
     # The dashboard terminal is xterm.js, which always renders 24-bit RGB.
     # But chalk inside the TUI child decides its color depth from the
     # SERVER process env — and hosted/cloud deploys run the dashboard under
@@ -16881,10 +16881,10 @@ def _resolve_chat_argv(
     # COLORTERM=truecolor into os.environ. Backfill it for the PTY child;
     # setdefault so an explicit operator value still wins.
     env.setdefault("COLORTERM", "truecolor")
-    env["HERMES_TUI_DASHBOARD"] = "1"
+    env["OPENCODON_TUI_DASHBOARD"] = "1"
 
     if profile_dir is not None:
-        env["HERMES_HOME"] = str(profile_dir)
+        env["OPENCODON_HOME"] = str(profile_dir)
 
     if resume:
         _resume_db = _open_session_db_for_profile(
@@ -16896,21 +16896,21 @@ def _resolve_chat_argv(
             _resume_db.close()
         if latest_resume:
             resume = latest_resume
-        env["HERMES_TUI_RESUME"] = resume
+        env["OPENCODON_TUI_RESUME"] = resume
 
     if sidecar_url:
-        env["HERMES_TUI_SIDECAR_URL"] = sidecar_url
+        env["OPENCODON_TUI_SIDECAR_URL"] = sidecar_url
 
     if active_session_file:
-        env["HERMES_TUI_ACTIVE_SESSION_FILE"] = active_session_file
+        env["OPENCODON_TUI_ACTIVE_SESSION_FILE"] = active_session_file
 
     # Profile-scoped chats must NOT attach to the dashboard's in-memory
     # gateway — it runs under the dashboard's own profile. Without the
     # attach URL, gatewayClient spawns its own `tui_gateway.entry`, which
-    # inherits the profile HERMES_HOME set above.
+    # inherits the profile OPENCODON_HOME set above.
     if profile_dir is None:
         if gateway_ws_url := _build_gateway_ws_url():
-            env["HERMES_TUI_GATEWAY_URL"] = gateway_ws_url
+            env["OPENCODON_TUI_GATEWAY_URL"] = gateway_ws_url
 
     return list(argv), str(cwd) if cwd else None, env
 
@@ -16930,7 +16930,7 @@ def _resolve_client_ws_host() -> Optional[str]:
 
     Resolution order:
 
-    1. Explicit ``HERMES_DASHBOARD_WS_HOST`` env var — wins always. Operators
+    1. Explicit ``OPENCODON_DASHBOARD_WS_HOST`` env var — wins always. Operators
        running the dashboard behind a forward proxy can pin a routable host
        (e.g. ``127.0.0.1``, the container's internal IP, or a sidecar DNS
        name) and bypass auto-detection entirely.
@@ -16939,7 +16939,7 @@ def _resolve_client_ws_host() -> Optional[str]:
        run in the same container.
     3. Any other bind host (loopback or LAN IP) — preserved verbatim.
     """
-    explicit = os.environ.get("HERMES_DASHBOARD_WS_HOST", "").strip()
+    explicit = os.environ.get("OPENCODON_DASHBOARD_WS_HOST", "").strip()
     if explicit:
         return explicit
 
@@ -17783,7 +17783,7 @@ async def pty_ws(ws: WebSocket) -> None:
     attach_token = ws.query_params.get("attach") or None
     registry_resume = raw_resume
     if raw_resume and env:
-        registry_resume = env.get("HERMES_TUI_RESUME") or raw_resume
+        registry_resume = env.get("OPENCODON_TUI_RESUME") or raw_resume
     if attach_token is not None and (registry_resume or profile):
         # Key explicit resumes on their canonical target, never the active-session fallback.
         attach_token = f"{attach_token}\0{profile or ''}\0{registry_resume or ''}"
@@ -17894,7 +17894,7 @@ async def gateway_ws(ws: WebSocket) -> None:
 # /api/pub + /api/events — chat-tab event broadcast.
 #
 # The PTY-side ``tui_gateway.entry`` opens /api/pub at startup (driven by
-# HERMES_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
+# OPENCODON_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
 # dispatcher emit through it.  The dashboard fans those frames out to any
 # subscriber that opened /api/events on the same channel id.  This is what
 # gives the React sidebar its tool-call feed without breaking the PTY
@@ -18068,13 +18068,13 @@ def mount_spa(application: FastAPI):
     ``mission-control.tilos.com/hermes/*`` -> local Caddy -> :9119), the
     proxy injects ``X-Forwarded-Prefix: /hermes`` on every request. We
     rewrite the served ``index.html`` so absolute asset URLs (``/assets/...``)
-    and the SPA's runtime ``__HERMES_BASE_PATH__`` honour that prefix
+    and the SPA's runtime ``__OPENCODON_BASE_PATH__`` honour that prefix
     without rebuilding the bundle.
     """
     # `hermes serve` is the headless backend: it must NEVER serve the browser
     # SPA, even if a dist is lying around from a prior `dashboard`/build. Take
     # the no-frontend path so only the JSON-RPC/WS/API surface is reachable.
-    _headless = os.environ.get("HERMES_SERVE_HEADLESS") == "1"
+    _headless = os.environ.get("OPENCODON_SERVE_HEADLESS") == "1"
     if _headless or not WEB_DIST.exists():
         _msg = (
             "Headless backend (hermes serve): web UI disabled — use "
@@ -18099,7 +18099,7 @@ def mount_spa(application: FastAPI):
         When the OAuth auth gate is active (``app.state.auth_required``),
         the legacy ``_SESSION_TOKEN`` is NOT injected — the SPA reads
         identity from ``/api/auth/me`` over cookie auth instead.  The
-        ``__HERMES_AUTH_REQUIRED__`` flag lets the SPA pick the right
+        ``__OPENCODON_AUTH_REQUIRED__`` flag lets the SPA pick the right
         auth scheme for /api/pty and /api/ws (ticket vs token).
         """
         try:
@@ -18120,17 +18120,17 @@ def mount_spa(application: FastAPI):
         if gated:
             bootstrap_script = (
                 f"<script>"
-                f"window.__HERMES_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-                f'window.__HERMES_BASE_PATH__="{prefix}";'
-                f"window.__HERMES_AUTH_REQUIRED__={gated_js};"
+                f"window.__OPENCODON_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
+                f'window.__OPENCODON_BASE_PATH__="{prefix}";'
+                f"window.__OPENCODON_AUTH_REQUIRED__={gated_js};"
                 f"</script>"
             )
         else:
             bootstrap_script = (
-                f'<script>window.__HERMES_SESSION_TOKEN__="{_SESSION_TOKEN}";'
-                f"window.__HERMES_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-                f'window.__HERMES_BASE_PATH__="{prefix}";'
-                f"window.__HERMES_AUTH_REQUIRED__={gated_js};"
+                f'<script>window.__OPENCODON_SESSION_TOKEN__="{_SESSION_TOKEN}";'
+                f"window.__OPENCODON_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
+                f'window.__OPENCODON_BASE_PATH__="{prefix}";'
+                f"window.__OPENCODON_AUTH_REQUIRED__={gated_js};"
                 f"</script>"
             )
         if prefix:
@@ -18143,7 +18143,7 @@ def mount_spa(application: FastAPI):
             html = html.replace('href="/ds-assets/', f'href="{prefix}/ds-assets/')
             html = html.replace('src="/ds-assets/', f'src="{prefix}/ds-assets/')
         # Theme flash mitigation: when the active theme is a user theme
-        # (``HERMES_HOME/dashboard-themes/<name>.yaml``), inject a minimal
+        # (``OPENCODON_HOME/dashboard-themes/<name>.yaml``), inject a minimal
         # critical-CSS block so the first paint uses the target palette.
         # Without this the SPA paints the default Hermes Teal canvas, then
         # ``ThemeProvider`` flips the CSS variables once
@@ -18387,7 +18387,7 @@ def _normalise_theme_definition(data: Dict[str, Any]) -> Optional[Dict[str, Any]
     # tag on theme apply.  Clipped to _THEME_CUSTOM_CSS_MAX to keep the
     # payload bounded.  We intentionally do NOT parse/sanitise the CSS
     # here — the dashboard is localhost-only and themes are user-authored
-    # YAML in ~/.hermes/, same trust level as the config file itself.
+    # YAML in ~/.opencodon/, same trust level as the config file itself.
     custom_css_val = data.get("customCSS")
     custom_css: Optional[str] = None
     if isinstance(custom_css_val, str) and custom_css_val.strip():
@@ -18442,17 +18442,17 @@ def _normalise_theme_definition(data: Dict[str, Any]) -> Optional[Dict[str, Any]
 
 
 def _discover_user_themes() -> list:
-    """Scan ~/.hermes/dashboard-themes/*.yaml for user-created themes.
+    """Scan ~/.opencodon/dashboard-themes/*.yaml for user-created themes.
 
     Returns a list of fully-normalised theme definitions ready to ship
     to the frontend, so the client can apply them without a secondary
     round-trip or a built-in stub.
 
-    Uses the dashboard process launch home, not ``get_hermes_home()``, so a
+    Uses the dashboard process launch home, not ``get_opencodon_home()``, so a
     transient profile override from embedded chat does not hide themes that
-    live under the server's own ``HERMES_HOME``.
+    live under the server's own ``OPENCODON_HOME``.
     """
-    themes_dir = get_process_hermes_home() / "dashboard-themes"
+    themes_dir = get_process_opencodon_home() / "dashboard-themes"
     if not themes_dir.is_dir():
         return []
     result = []
@@ -18473,7 +18473,7 @@ async def get_dashboard_themes():
 
     Built-in entries ship name/label/description only (the frontend owns
     their full definitions in `web/src/themes/presets.ts`).  User themes
-    from `~/.hermes/dashboard-themes/*.yaml` ship with their full
+    from `~/.opencodon/dashboard-themes/*.yaml` ship with their full
     normalised definition under `definition`, so the client can apply
     them without a stub.
     """
@@ -18604,9 +18604,9 @@ def _discover_dashboard_plugins() -> list:
     """Scan plugins/*/dashboard/manifest.json for dashboard extensions.
 
     Checks three plugin sources (same as opencodon_cli.plugins):
-    1. User plugins:    ~/.hermes/plugins/<name>/dashboard/manifest.json
+    1. User plugins:    ~/.opencodon/plugins/<name>/dashboard/manifest.json
     2. Bundled plugins: <repo>/plugins/<name>/dashboard/manifest.json  (memory/, etc.)
-    3. Project plugins: ./.hermes/plugins/  (only if HERMES_ENABLE_PROJECT_PLUGINS)
+    3. Project plugins: ./.opencodon/plugins/  (only if OPENCODON_ENABLE_PROJECT_PLUGINS)
     """
     plugins = []
     seen_names: set = set()
@@ -18616,9 +18616,9 @@ def _discover_dashboard_plugins() -> list:
     # User dashboard plugins are a dashboard-owned asset (same category as
     # theme YAML): resolve them from the process launch home so they don't
     # vanish when a request is scoped to another profile via a context-local
-    # HERMES_HOME override (e.g. embedded /chat under --open-profile).
+    # OPENCODON_HOME override (e.g. embedded /chat under --open-profile).
     search_dirs = [
-        (get_process_hermes_home() / "plugins", "user"),
+        (get_process_opencodon_home() / "plugins", "user"),
         (bundled_root / "memory", "bundled"),
         (bundled_root, "bundled"),
     ]
@@ -18631,8 +18631,8 @@ def _discover_dashboard_plugins() -> list:
     # opt-in into a sticky always-on switch.  Use the shared truthy
     # semantics (``1`` / ``true`` / ``yes`` / ``on``) so the gate matches
     # ``opencodon_cli/plugins.py`` and the documented user contract.
-    if env_var_enabled("HERMES_ENABLE_PROJECT_PLUGINS"):
-        search_dirs.append((Path.cwd() / ".hermes" / "plugins", "project"))
+    if env_var_enabled("OPENCODON_ENABLE_PROJECT_PLUGINS"):
+        search_dirs.append((Path.cwd() / ".opencodon" / "plugins", "project"))
 
     for plugins_root, source in search_dirs:
         if not plugins_root.is_dir():
@@ -18801,7 +18801,7 @@ def _merged_plugins_hub() -> Dict[str, Any]:
     config = load_config()
     hidden_plugins: list = cfg_get(config, "dashboard", "hidden_plugins", default=[]) or []
 
-    plugins_root_resolved = (get_hermes_home() / "plugins").resolve()
+    plugins_root_resolved = (get_opencodon_home() / "plugins").resolve()
     rows: List[Dict[str, Any]] = []
 
     for name, version, description, source, dir_str, key in _discover_all_plugins():
@@ -19130,7 +19130,7 @@ def _mount_plugin_api_routes():
     ``/api/plugins/<name>/``.
 
     Backend import is restricted to ``bundled`` and ``user`` sources.
-    Project plugins (``./.hermes/plugins/``) ship with the CWD and are
+    Project plugins (``./.opencodon/plugins/``) ship with the CWD and are
     therefore attacker-controlled in any threat model where the user
     opens a malicious repo; they can extend the dashboard UI via
     static JS/CSS but their Python ``api`` file is never auto-imported
@@ -19185,7 +19185,7 @@ def _mount_plugin_api_routes():
             _log.warning(
                 "Plugin %s: ignoring backend api=%s (project plugins may "
                 "not auto-import Python code; move the plugin to "
-                "~/.hermes/plugins/ if you trust it)",
+                "~/.opencodon/plugins/ if you trust it)",
                 plugin["name"], api_file_name,
             )
             continue
@@ -19267,10 +19267,10 @@ def _write_dashboard_ready_file(actual_port: int) -> None:
 
     Windows Desktop can launch dashboard backends with ``pythonw.exe`` to avoid
     console flashes. That path cannot rely on stdout for the port announcement,
-    so Electron passes ``HERMES_DESKTOP_READY_FILE`` and waits for this JSON.
+    so Electron passes ``OPENCODON_DESKTOP_READY_FILE`` and waits for this JSON.
     Normal CLI/dashboard launches still use the stdout READY line below.
     """
-    target = os.environ.get("HERMES_DESKTOP_READY_FILE")
+    target = os.environ.get("OPENCODON_DESKTOP_READY_FILE")
     if not target:
         return
 
@@ -19362,7 +19362,7 @@ def start_server(
     machine dashboard.
 
     ``headless`` is the ``serve`` path: the JSON-RPC/WS backend with no UI
-    build and no SPA mount (mount_spa() honours ``HERMES_SERVE_HEADLESS``), so
+    build and no SPA mount (mount_spa() honours ``OPENCODON_SERVE_HEADLESS``), so
     the banner announces the bind rather than a browser URL.
 
     ``ssh_session_token`` and ``ssh_owner_nonce`` are process-local Desktop SSH
@@ -19406,7 +19406,7 @@ def start_server(
         from opencodon_cli.dashboard_auth import list_providers
         if not list_providers():
             # Surface the *specific* reason any bundled provider declined
-            # to register (e.g. missing HERMES_DASHBOARD_OAUTH_CLIENT_ID).
+            # to register (e.g. missing OPENCODON_DASHBOARD_OAUTH_CLIENT_ID).
             # Each provider plugin that ships with Hermes Agent exposes a
             # module-level ``LAST_SKIP_REASON`` string for this purpose;
             # without it the operator would only see "no providers" which
@@ -19489,7 +19489,7 @@ def start_server(
     # We use uvicorn.Server directly (not uvicorn.run) so we can split
     # startup from the main loop.  After startup() the socket is actually
     # bound — we read the OS-assigned port from the live socket, print
-    # HERMES_DASHBOARD_READY, open the browser, *then* serve.
+    # OPENCODON_DASHBOARD_READY, open the browser, *then* serve.
     #
     # This eliminates the TOCTOU of the old pre-bind-then-close approach
     # (bind port 0 → close → uvicorn rebind): the socket is held by
@@ -19555,7 +19555,7 @@ def start_server(
             # Port-discovery sentinel parsed by the desktop spawn. `serve` is a
             # plain backend, not a dashboard, so it announces a neutral token;
             # `dashboard` keeps the legacy one. The desktop matches either.
-            ready_token = "HERMES_BACKEND_READY" if headless else "HERMES_DASHBOARD_READY"
+            ready_token = "OPENCODON_BACKEND_READY" if headless else "OPENCODON_DASHBOARD_READY"
             print(f"{ready_token} port={actual_port}", flush=True)
             if headless:
                 # No SPA, and the JSON-RPC/WS endpoints are auth-gated — don't

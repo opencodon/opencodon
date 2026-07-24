@@ -119,16 +119,16 @@ class TestTelegramAllowedChats:
         """slack-style config.yaml → env var bridge works."""
         from gateway.config import load_gateway_config
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
             "telegram:\n"
             "  allowed_chats:\n"
             "    - -100\n"
             "    - -200\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setenv("TELEGRAM_ALLOWED_CHATS", "__sentinel__")
         monkeypatch.delenv("TELEGRAM_ALLOWED_CHATS")
 
@@ -140,14 +140,14 @@ class TestTelegramAllowedChats:
     def test_config_bridge_env_takes_precedence(self, monkeypatch, tmp_path):
         from gateway.config import load_gateway_config
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
             "telegram:\n"
             "  allowed_chats: -100\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setenv("TELEGRAM_ALLOWED_CHATS", "-999")
 
         load_gateway_config()

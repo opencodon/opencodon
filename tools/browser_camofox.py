@@ -17,7 +17,7 @@ Setup::
     # Option 2: Docker
     docker run -p 9377:9377 -e CAMOFOX_PORT=9377 jo-inc/camofox-browser
 
-Then set ``CAMOFOX_URL=http://localhost:9377`` in ``~/.hermes/.env``.
+Then set ``CAMOFOX_URL=http://localhost:9377`` in ``~/.opencodon/.env``.
 For Docker Camofox, optionally set ``CAMOFOX_REWRITE_LOOPBACK_URLS=true``
 so page URLs like ``http://127.0.0.1:3000`` are opened inside the
 container as ``http://host.docker.internal:3000``.
@@ -851,8 +851,8 @@ def camofox_vision(question: str, annotate: bool = False,
         )
 
         # Save screenshot to cache
-        from opencodon_constants import get_hermes_home
-        screenshots_dir = get_hermes_home() / "browser_screenshots"
+        from opencodon_constants import get_opencodon_home
+        screenshots_dir = get_opencodon_home() / "browser_screenshots"
         screenshots_dir.mkdir(parents=True, exist_ok=True)
         screenshot_path = str(screenshots_dir / f"browser_screenshot_{uuid.uuid4().hex[:8]}.png")
 

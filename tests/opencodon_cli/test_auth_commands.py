@@ -13,9 +13,9 @@ import yaml
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps(payload, indent=2))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    (opencodon_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
 
 def _jwt_with_email(email: str) -> str:
@@ -70,7 +70,7 @@ def _clear_provider_env(monkeypatch):
 
 
 def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
@@ -95,7 +95,7 @@ def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_anthropic_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
@@ -136,7 +136,7 @@ def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
     resolve_qwen_runtime_credentials(). The auth.json entry must record
     active_provider — without storing tokens that would become stale.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     _fake_creds = {
         "provider": "qwen-oauth",
@@ -179,7 +179,7 @@ def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
 
 
 def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
@@ -187,7 +187,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "opencodon-cli",
             "scope": "inference:invoke",
             "token_type": "Bearer",
             "access_token": token,
@@ -252,7 +252,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("minimax@example.com")
     monkeypatch.setattr(
@@ -300,7 +300,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
     custom label end-to-end — it was silently dropped in the first cut of the
     persist_nous_credentials helper because `--label` wasn't threaded through.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
@@ -308,7 +308,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "opencodon-cli",
             "scope": "inference:invoke",
             "token_type": "Bearer",
             "access_token": token,
@@ -357,7 +357,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
 
 
 def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("codex@example.com")
     monkeypatch.setattr(
@@ -408,7 +408,7 @@ def test_auth_add_codex_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch
     second independent one. ``hermes auth list`` showed two labels sharing
     one token pair, and rotation silently always used the latest account.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     first_token = _jwt_with_email("first-codex@example.com")
     second_token = _jwt_with_email("second-codex@example.com")
@@ -471,7 +471,7 @@ def test_auth_add_codex_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch
 
 
 def test_codex_auth_status_reports_pool_only_credential(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, _codex_pool_only_store())
 
     from opencodon_cli.auth import get_codex_auth_status
@@ -483,7 +483,7 @@ def test_codex_auth_status_reports_pool_only_credential(tmp_path, monkeypatch):
 
 
 def test_codex_auth_status_reports_pool_only_rate_limit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, _codex_pool_only_store(exhausted=True))
 
     from opencodon_cli.auth import get_codex_auth_status
@@ -496,7 +496,7 @@ def test_codex_auth_status_reports_pool_only_rate_limit(tmp_path, monkeypatch):
 
 
 def test_codex_runtime_pool_only_rate_limit_is_not_missing_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, _codex_pool_only_store(exhausted=True))
 
     from opencodon_cli.auth import AuthError, CODEX_RATE_LIMITED_CODE, resolve_codex_runtime_credentials
@@ -519,7 +519,7 @@ def test_auth_add_xai_oauth_sets_active_provider(tmp_path, monkeypatch):
     - Current path mirrors openai-codex: pool-only ``manual:device_code`` entry
       plus ``mark_provider_active_if_unset`` on first add.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     access_token = "xai-test-access-token"
     monkeypatch.setattr(
@@ -571,7 +571,7 @@ def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
     save, so the second login overwrote the first account's singleton-mirrored
     ``device_code`` entry instead of adding a second independent one.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     first_token = "xai-access-token-account-a"
     second_token = "xai-access-token-account-b"
@@ -653,7 +653,7 @@ def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
 
 
 def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     # Prevent pool auto-seeding from host env vars and file-backed sources
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
@@ -705,7 +705,7 @@ def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
 
 
 def test_auth_remove_accepts_label_target(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -752,7 +752,7 @@ def test_auth_remove_accepts_label_target(tmp_path, monkeypatch):
 
 
 def test_auth_remove_prefers_exact_numeric_label_over_index(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
@@ -806,7 +806,7 @@ def test_auth_remove_prefers_exact_numeric_label_over_index(tmp_path, monkeypatc
 
 
 def test_auth_reset_clears_provider_statuses(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(
         tmp_path,
         {
@@ -847,7 +847,7 @@ def test_auth_reset_clears_provider_statuses(tmp_path, monkeypatch, capsys):
 
 
 def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(
         tmp_path,
         {
@@ -899,10 +899,10 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
     openai-codex.  Previously logout reported no auth state and left the agent
     pinned to the Codex provider.
     """
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}, "credential_pool": {}})
-    (hermes_home / "config.yaml").write_text(
+    (opencodon_home / "config.yaml").write_text(
         "model:\n"
         "  default: gpt-5.3-codex\n"
         "  provider: openai-codex\n"
@@ -916,17 +916,17 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
 
     out = capsys.readouterr().out
     assert "Logged out of OpenAI Codex." in out
-    config_text = (hermes_home / "config.yaml").read_text()
+    config_text = (opencodon_home / "config.yaml").read_text()
     assert "provider: auto" in config_text
     assert "base_url: https://openrouter.ai/api/v1" in config_text
 
 
 def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, monkeypatch, capsys):
     """Bare `hermes logout` should target configured Codex if auth has no active provider."""
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}, "credential_pool": {}})
-    (hermes_home / "config.yaml").write_text(
+    (opencodon_home / "config.yaml").write_text(
         "model:\n"
         "  default: gpt-5.3-codex\n"
         "  provider: openai-codex\n"
@@ -940,14 +940,14 @@ def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, m
 
     out = capsys.readouterr().out
     assert "Logged out of OpenAI Codex." in out
-    config_text = (hermes_home / "config.yaml").read_text()
+    config_text = (opencodon_home / "config.yaml").read_text()
     assert "provider: auto" in config_text
 
 
 def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path, monkeypatch, capsys):
     """Logout must clear active_provider even when provider credential payloads are gone."""
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     _write_auth_store(
         tmp_path,
         {
@@ -957,7 +957,7 @@ def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path,
             "credential_pool": {},
         },
     )
-    (hermes_home / "config.yaml").write_text(
+    (opencodon_home / "config.yaml").write_text(
         "model:\n"
         "  default: gpt-5.3-codex\n"
         "  provider: openai-codex\n"
@@ -971,18 +971,18 @@ def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path,
 
     out = capsys.readouterr().out
     assert "Logged out of OpenAI Codex." in out
-    auth_payload = json.loads((hermes_home / "auth.json").read_text())
+    auth_payload = json.loads((opencodon_home / "auth.json").read_text())
     assert auth_payload.get("active_provider") is None
-    config_text = (hermes_home / "config.yaml").read_text()
+    config_text = (opencodon_home / "config.yaml").read_text()
     assert "provider: auto" in config_text
 
 
 def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
     """Logout config reset should delegate the YAML write atomically."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    config_path = hermes_home / "config.yaml"
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    config_path = opencodon_home / "config.yaml"
     original = {
         "model": {
             "default": "gpt-5.3-codex",
@@ -1155,12 +1155,12 @@ def test_auth_list_prefers_explicit_reset_time(monkeypatch, capsys):
 def test_auth_remove_env_seeded_clears_env_var(tmp_path, monkeypatch):
     """Removing an env-seeded credential should also clear the env var from .env
     so the entry doesn't get re-seeded on the next load_pool() call."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # Write a .env with an OpenRouter key
-    env_path = hermes_home / ".env"
+    env_path = opencodon_home / ".env"
     env_path.write_text("OPENROUTER_API_KEY=sk-or-test-key-12345\nOTHER_KEY=keep-me\n")
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-key-12345")
 
@@ -1205,12 +1205,12 @@ def test_auth_remove_env_seeded_clears_env_var(tmp_path, monkeypatch):
 
 def test_auth_remove_env_seeded_does_not_resurrect(tmp_path, monkeypatch):
     """After removing an env-seeded credential, load_pool should NOT re-create it."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # Write .env with an OpenRouter key
-    env_path = hermes_home / ".env"
+    env_path = opencodon_home / ".env"
     env_path.write_text("OPENROUTER_API_KEY=sk-or-test-key-12345\n")
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-key-12345")
 
@@ -1249,12 +1249,12 @@ def test_auth_remove_env_seeded_does_not_resurrect(tmp_path, monkeypatch):
 
 def test_auth_remove_manual_entry_does_not_touch_env(tmp_path, monkeypatch):
     """Removing a manually-added credential should NOT touch .env."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
-    env_path = hermes_home / ".env"
+    env_path = opencodon_home / ".env"
     env_path.write_text("SOME_KEY=some-value\n")
 
     _write_auth_store(
@@ -1290,7 +1290,7 @@ def test_auth_remove_manual_entry_does_not_touch_env(tmp_path, monkeypatch):
 
 def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
     """Removing a claude_code credential must prevent it from being re-seeded."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
@@ -1298,8 +1298,8 @@ def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, {"claude_code"}),
     )
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
 
     auth_store = {
         "version": 1,
@@ -1314,13 +1314,13 @@ def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
             }]
         },
     }
-    (hermes_home / "auth.json").write_text(json.dumps(auth_store))
+    (opencodon_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
     from opencodon_cli.auth_commands import auth_remove_command
     auth_remove_command(SimpleNamespace(provider="anthropic", target="1"))
 
-    updated = json.loads((hermes_home / "auth.json").read_text())
+    updated = json.loads((opencodon_home / "auth.json").read_text())
     suppressed = updated.get("suppressed_sources", {})
     assert "anthropic" in suppressed
     assert "claude_code" in suppressed["anthropic"]
@@ -1328,7 +1328,7 @@ def test_auth_remove_claude_code_suppresses_reseed(tmp_path, monkeypatch):
 
 def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
     """unsuppress_credential_source() removes a previously-set marker."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
     from opencodon_cli.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
@@ -1347,7 +1347,7 @@ def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
 
 def test_unsuppress_credential_source_returns_false_when_absent(tmp_path, monkeypatch):
     """unsuppress_credential_source() returns False if no marker exists."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
     from opencodon_cli.auth import unsuppress_credential_source
@@ -1358,7 +1358,7 @@ def test_unsuppress_credential_source_returns_false_when_absent(tmp_path, monkey
 
 def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypatch):
     """Clearing one marker must not affect unrelated markers."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     _write_auth_store(tmp_path, {"version": 1})
 
     from opencodon_cli.auth import (
@@ -1376,13 +1376,13 @@ def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypa
 
 def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
     """Removing an auto-seeded openai-codex credential must mark the source as suppressed."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, {"device_code"}),
     )
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
 
     auth_store = {
         "version": 1,
@@ -1406,14 +1406,14 @@ def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
             }]
         },
     }
-    (hermes_home / "auth.json").write_text(json.dumps(auth_store))
+    (opencodon_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
     from opencodon_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))
 
-    updated = json.loads((hermes_home / "auth.json").read_text())
+    updated = json.loads((opencodon_home / "auth.json").read_text())
     suppressed = updated.get("suppressed_sources", {})
     assert "openai-codex" in suppressed
     assert "device_code" in suppressed["openai-codex"]
@@ -1423,13 +1423,13 @@ def test_auth_remove_codex_device_code_suppresses_reseed(tmp_path, monkeypatch):
 
 def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch):
     """Removing a manually-added (`manual:device_code`) openai-codex credential must also suppress."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     monkeypatch.setattr(
         "agent.credential_pool._seed_from_singletons",
         lambda provider, entries: (False, set()),
     )
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
 
     auth_store = {
         "version": 1,
@@ -1453,14 +1453,14 @@ def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch
             }]
         },
     }
-    (hermes_home / "auth.json").write_text(json.dumps(auth_store))
+    (opencodon_home / "auth.json").write_text(json.dumps(auth_store))
 
     from types import SimpleNamespace
     from opencodon_cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))
 
-    updated = json.loads((hermes_home / "auth.json").read_text())
+    updated = json.loads((opencodon_home / "auth.json").read_text())
     suppressed = updated.get("suppressed_sources", {})
     # Critical: manual:device_code source must also trigger the suppression path
     assert "openai-codex" in suppressed
@@ -1470,12 +1470,12 @@ def test_auth_remove_codex_manual_source_suppresses_reseed(tmp_path, monkeypatch
 
 def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
     """Re-linking codex via `hermes auth add openai-codex` must clear any suppression marker."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
 
     # Pre-existing suppression (simulating a prior `hermes auth remove`)
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"openai-codex": ["device_code"]},
@@ -1504,7 +1504,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
 
     auth_add_command(_Args())
 
-    payload = json.loads((hermes_home / "auth.json").read_text())
+    payload = json.loads((opencodon_home / "auth.json").read_text())
     # Suppression marker must be cleared
     assert "openai-codex" not in payload.get("suppressed_sources", {})
     # New pool entry must be present (distinct manual:device_code entry — #39236)
@@ -1515,12 +1515,12 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
 
 def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
     """_seed_from_singletons() for openai-codex must skip auto-import when suppressed."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
 
     # Suppression marker in place
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"openai-codex": ["device_code"]},
@@ -1547,23 +1547,23 @@ def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
     assert active_sources == set()
 
     # Verify the auth store was NOT modified (no auto-import happened)
-    after = json.loads((hermes_home / "auth.json").read_text())
+    after = json.loads((opencodon_home / "auth.json").read_text())
     assert "openai-codex" not in after.get("providers", {})
 
 
 def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypatch, capsys):
     """`hermes auth remove xai 1` must stick even when the env var is exported
-    by the shell (not written into ~/.hermes/.env).  Before PR for #13371 the
+    by the shell (not written into ~/.opencodon/.env).  Before PR for #13371 the
     removal silently restored on next load_pool() because _seed_from_env()
     re-read os.environ.  Now env:<VAR> is suppressed in auth.json.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # Simulate shell export (NOT written to .env)
     monkeypatch.setenv("XAI_API_KEY", "sk-xai-shell-export")
-    (hermes_home / ".env").write_text("")
+    (opencodon_home / ".env").write_text("")
 
     _write_auth_store(
         tmp_path,
@@ -1588,7 +1588,7 @@ def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypa
     auth_remove_command(SimpleNamespace(provider="xai", target="1"))
 
     # Suppression marker written
-    after = json.loads((hermes_home / "auth.json").read_text())
+    after = json.loads((opencodon_home / "auth.json").read_text())
     assert "env:XAI_API_KEY" in after.get("suppressed_sources", {}).get("xai", [])
 
     # Diagnostic printed pointing at the shell
@@ -1604,17 +1604,17 @@ def test_auth_remove_env_seeded_suppresses_shell_exported_var(tmp_path, monkeypa
 
 
 def test_auth_remove_env_seeded_dotenv_only_no_shell_hint(tmp_path, monkeypatch, capsys):
-    """When the env var lives only in ~/.hermes/.env (not the shell), the
+    """When the env var lives only in ~/.opencodon/.env (not the shell), the
     shell-hint should NOT be printed — avoid scaring the user about a
     non-existent shell export.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # Key ONLY in .env, shell must not have it
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
-    (hermes_home / ".env").write_text("DEEPSEEK_API_KEY=sk-ds-only\n")
+    (opencodon_home / ".env").write_text("DEEPSEEK_API_KEY=sk-ds-only\n")
     # Mimic load_env() populating os.environ
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-ds-only")
 
@@ -1642,7 +1642,7 @@ def test_auth_remove_env_seeded_dotenv_only_no_shell_hint(tmp_path, monkeypatch,
     out = capsys.readouterr().out
     assert "Cleared DEEPSEEK_API_KEY from .env" in out
     assert "still set in your shell environment" not in out
-    assert (hermes_home / ".env").read_text().strip() == ""
+    assert (opencodon_home / ".env").read_text().strip() == ""
 
 
 def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
@@ -1650,9 +1650,9 @@ def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
     env:<VAR> suppression marker — strong signal the user wants auth back.
     Matches the Codex device_code re-link behaviour.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.delenv("XAI_API_KEY", raising=False)
 
     _write_auth_store(
@@ -1681,12 +1681,12 @@ def test_seed_from_env_respects_env_suppression(tmp_path, monkeypatch):
     via `hermes auth remove`.  This is the gate that prevents shell-exported
     keys from resurrecting removed credentials.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("XAI_API_KEY", "sk-xai-shell-export")
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"xai": ["env:XAI_API_KEY"]},
@@ -1705,12 +1705,12 @@ def test_seed_from_env_respects_openrouter_suppression(tmp_path, monkeypatch):
     """OpenRouter is the special-case branch in _seed_from_env; verify it
     honours suppression too.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-shell-export")
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"openrouter": ["env:OPENROUTER_API_KEY"]},
@@ -1735,11 +1735,11 @@ def test_seed_from_env_respects_openrouter_suppression(tmp_path, monkeypatch):
 
 def test_seed_from_singletons_respects_nous_suppression(tmp_path, monkeypatch):
     """nous device_code must not re-seed from auth.json when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {"nous": {"access_token": "tok", "refresh_token": "r", "expires_at": 9999999999}},
         "suppressed_sources": {"nous": ["device_code"]},
@@ -1755,11 +1755,11 @@ def test_seed_from_singletons_respects_nous_suppression(tmp_path, monkeypatch):
 
 def test_seed_from_singletons_respects_copilot_suppression(tmp_path, monkeypatch):
     """copilot gh_cli must not re-seed when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"copilot": ["gh_cli"]},
@@ -1779,11 +1779,11 @@ def test_seed_from_singletons_respects_copilot_suppression(tmp_path, monkeypatch
 
 def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
     """qwen-oauth qwen-cli must not re-seed from ~/.qwen/oauth_creds.json when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"qwen-oauth": ["qwen-cli"]},
@@ -1803,14 +1803,14 @@ def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
 
 
 def test_seed_from_singletons_respects_hermes_pkce_suppression(tmp_path, monkeypatch):
-    """anthropic hermes_pkce must not re-seed from ~/.hermes/.anthropic_oauth.json when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    """anthropic hermes_pkce must not re-seed from ~/.opencodon/.anthropic_oauth.json when suppressed."""
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     import yaml
-    (hermes_home / "config.yaml").write_text(yaml.dump({"model": {"provider": "anthropic", "model": "claude"}}))
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "config.yaml").write_text(yaml.dump({"model": {"provider": "anthropic", "model": "claude"}}))
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"anthropic": ["hermes_pkce"]},
@@ -1833,12 +1833,12 @@ def test_seed_from_singletons_respects_hermes_pkce_suppression(tmp_path, monkeyp
 
 def test_seed_custom_pool_respects_config_suppression(tmp_path, monkeypatch):
     """Custom provider config:<name> source must not re-seed when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     import yaml
-    (hermes_home / "config.yaml").write_text(yaml.dump({
+    (opencodon_home / "config.yaml").write_text(yaml.dump({
         "model": {},
         "custom_providers": [
             {"name": "my", "base_url": "https://c.example.com", "api_key": "sk-custom"},
@@ -1848,7 +1848,7 @@ def test_seed_custom_pool_respects_config_suppression(tmp_path, monkeypatch):
     from agent.credential_pool import _seed_custom_pool, get_custom_provider_pool_key
     pool_key = get_custom_provider_pool_key("https://c.example.com")
 
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (opencodon_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {pool_key: ["config:my"]},
@@ -1885,7 +1885,7 @@ def test_credential_sources_registry_has_expected_steps():
         "gh auth token / COPILOT_GITHUB_TOKEN / GH_TOKEN",
         "Any env-seeded credential (XAI_API_KEY, DEEPSEEK_API_KEY, etc.)",
         "~/.claude/.credentials.json",
-        "~/.hermes/.anthropic_oauth.json",
+        "~/.opencodon/.anthropic_oauth.json",
         "auth.json providers.nous",
         "auth.json providers.openai-codex + ~/.codex/auth.json",
         "auth.json providers.minimax-oauth",
@@ -1925,9 +1925,9 @@ def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
     """Removing any copilot source must suppress gh_cli + all env:* variants
     so the duplicate-seed paths don't resurrect the credential.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # The copilot pool entry is no longer persisted directly in auth.json —
     # `(copilot, gh_cli)` is borrowed and stripped by
@@ -1966,9 +1966,9 @@ def test_auth_add_clears_all_suppressions_including_non_env(tmp_path, monkeypatc
     suppression markers for the provider, not just env:*.  This matches
     the single "re-engage" semantic — the user wants auth back, period.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     _write_auth_store(
         tmp_path,
@@ -2000,9 +2000,9 @@ def test_auth_remove_codex_manual_device_code_suppresses_canonical(tmp_path, mon
     must suppress the canonical ``device_code`` key, not ``manual:device_code``.
     The re-seed gate in _seed_from_singletons checks ``device_code``.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    opencodon_home = tmp_path / "hermes"
+    opencodon_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     _write_auth_store(
         tmp_path,

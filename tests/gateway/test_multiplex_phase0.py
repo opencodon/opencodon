@@ -13,7 +13,7 @@ from datetime import datetime
 from unittest.mock import patch
 import yaml
 
-from opencodon_constants import reset_hermes_home_override, set_hermes_home_override
+from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionSource, SessionStore, build_session_key
 
@@ -154,15 +154,15 @@ class TestMultiplexConfigFlag:
             encoding="utf-8",
         )
 
-        monkeypatch.setattr(gateway_run, "_hermes_home", root_home)
+        monkeypatch.setattr(gateway_run, "_opencodon_home", root_home)
 
         assert gateway_run._load_gateway_config()["display"]["tool_progress"] == "all"
 
-        token = set_hermes_home_override(profile_home)
+        token = set_opencodon_home_override(profile_home)
         try:
             scoped_config = gateway_run._load_gateway_config()
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
 
         assert scoped_config["display"]["tool_progress"] is False
         assert scoped_config["display"]["interim_assistant_messages"] is False

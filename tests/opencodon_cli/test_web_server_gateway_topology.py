@@ -175,18 +175,18 @@ class TestCollectProfileGatewayTopology:
 
 class TestStatusEndpointTopology:
     @pytest.fixture(autouse=True)
-    def _setup_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_client(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(
-            opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db"
+            opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db"
         )
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
@@ -228,9 +228,9 @@ class TestStatusEndpointTopology:
             assert data["profiles"] == ["default", "coder"]
             assert data["gateway_mode"] == "multiplex"
             # But the per-gateway detail (host ports = recon) stays gated,
-            # alongside hermes_home / gateway_pid.
+            # alongside opencodon_home / gateway_pid.
             assert "gateways" not in data
-            assert "hermes_home" not in data
+            assert "opencodon_home" not in data
             assert "gateway_pid" not in data
         finally:
             monkeypatch.setattr(

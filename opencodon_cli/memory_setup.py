@@ -12,7 +12,7 @@ import sys
 import shlex
 from pathlib import Path
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from opencodon_cli.secret_prompt import masked_secret_prompt
 
 _CANCELLED = -1
@@ -220,8 +220,8 @@ def cmd_setup_provider(provider_name: str) -> None:
         config["memory"] = {}
 
     if hasattr(provider, "post_setup"):
-        hermes_home = str(get_hermes_home())
-        provider.post_setup(hermes_home, config)
+        opencodon_home = str(get_opencodon_home())
+        provider.post_setup(opencodon_home, config)
         return
 
     # Fallback: generic schema-based setup (same as cmd_setup)
@@ -239,7 +239,7 @@ def cmd_setup(args) -> None:
 
     if not providers:
         print("\n  No memory provider plugins detected.")
-        print("  Install a plugin to ~/.hermes/plugins/ and try again.\n")
+        print("  Install a plugin to ~/.opencodon/plugins/ and try again.\n")
         return
 
     # Build picker items
@@ -276,8 +276,8 @@ def cmd_setup(args) -> None:
     # If the provider has a post_setup hook, delegate entirely to it.
     # The hook handles its own config, connection test, and activation.
     if hasattr(provider, "post_setup"):
-        hermes_home = str(get_hermes_home())
-        provider.post_setup(hermes_home, config)
+        opencodon_home = str(get_opencodon_home())
+        provider.post_setup(opencodon_home, config)
         return
 
     schema = provider.get_config_schema() if hasattr(provider, "get_config_schema") else []
@@ -286,7 +286,7 @@ def cmd_setup(args) -> None:
     if not isinstance(provider_config, dict):
         provider_config = {}
 
-    env_path = get_hermes_home() / ".env"
+    env_path = get_opencodon_home() / ".env"
     env_writes = {}
 
     if schema:
@@ -356,10 +356,10 @@ def cmd_setup(args) -> None:
     save_config(config)
 
     # Write non-secret config to provider's native location
-    hermes_home = str(get_hermes_home())
+    opencodon_home = str(get_opencodon_home())
     if provider_config and hasattr(provider, "save_config"):
         try:
-            provider.save_config(provider_config, hermes_home)
+            provider.save_config(provider_config, opencodon_home)
         except Exception as e:
             print(f"  Failed to write provider config: {e}")
 
@@ -468,7 +468,7 @@ def cmd_status(args) -> None:
                         print(line)
         else:
             print("\n  Plugin:    NOT installed ✗")
-            print(f"  Install the '{provider_name}' memory plugin to ~/.hermes/plugins/")
+            print(f"  Install the '{provider_name}' memory plugin to ~/.opencodon/plugins/")
 
     if providers:
         print("\n  Installed plugins:")

@@ -228,7 +228,7 @@ MUTATING_CONFIRMATION_SMOKE_COMMANDS = [
 ]
 
 
-def test_console_parses_bare_and_hermes_prefixed_commands(_isolate_hermes_home):
+def test_console_parses_bare_and_hermes_prefixed_commands(_isolate_opencodon_home):
     engine = HermesConsoleEngine()
 
     bare = engine.execute("config path")
@@ -242,7 +242,7 @@ def test_console_parses_bare_and_hermes_prefixed_commands(_isolate_hermes_home):
 
 def test_console_status_hides_cli_next_step_footer(
     monkeypatch: pytest.MonkeyPatch,
-    _isolate_hermes_home,
+    _isolate_opencodon_home,
 ):
     import opencodon_cli.status as status_mod
 
@@ -270,7 +270,7 @@ def test_console_status_hides_cli_next_step_footer(
 
 def test_console_status_hides_osc_linked_cli_next_step_footer(
     monkeypatch: pytest.MonkeyPatch,
-    _isolate_hermes_home,
+    _isolate_opencodon_home,
 ):
     import opencodon_cli.status as status_mod
 
@@ -398,7 +398,7 @@ def test_help_lists_supported_commands_and_not_full_cli():
     assert "gateway restart" not in result.output
 
 
-def test_config_set_requires_confirmation_then_writes(_isolate_hermes_home):
+def test_config_set_requires_confirmation_then_writes(_isolate_opencodon_home):
     engine = HermesConsoleEngine()
 
     # Use a schema-known key path. Since #34067, `config set` refuses unknown
@@ -418,7 +418,7 @@ def test_config_set_requires_confirmation_then_writes(_isolate_hermes_home):
     assert read_raw_config()["telegram"]["test"] is True
 
 
-def test_sessions_list_and_stats_use_isolated_session_store(_isolate_hermes_home):
+def test_sessions_list_and_stats_use_isolated_session_store(_isolate_opencodon_home):
     from opencodon_state import SessionDB
 
     db = SessionDB()
@@ -439,7 +439,7 @@ def test_sessions_list_and_stats_use_isolated_session_store(_isolate_hermes_home
     assert "Listable sessions: 1" in stats.output
 
 
-def test_cron_pause_resume_and_run_require_confirmation(_isolate_hermes_home):
+def test_cron_pause_resume_and_run_require_confirmation(_isolate_opencodon_home):
     from cron.jobs import create_job, get_job
 
     job = create_job(prompt="say hello", schedule="every 1h", name="alpha")
@@ -468,7 +468,7 @@ def test_cron_pause_resume_and_run_require_confirmation(_isolate_hermes_home):
     assert "Triggered job" in triggered.output
 
 
-def test_repl_runs_non_interactive_lines_without_prompts(_isolate_hermes_home):
+def test_repl_runs_non_interactive_lines_without_prompts(_isolate_opencodon_home):
     stdin = io.StringIO("help\nexit\n")
     stdout = io.StringIO()
     stderr = io.StringIO()
@@ -486,7 +486,7 @@ def test_repl_runs_non_interactive_lines_without_prompts(_isolate_hermes_home):
     assert stderr.getvalue() == ""
 
 
-def test_repl_refuses_non_interactive_confirmation(_isolate_hermes_home):
+def test_repl_refuses_non_interactive_confirmation(_isolate_opencodon_home):
     stdin = io.StringIO("config set console.test true\n")
     stdout = io.StringIO()
     stderr = io.StringIO()
@@ -502,7 +502,7 @@ def test_repl_refuses_non_interactive_confirmation(_isolate_hermes_home):
     assert "Confirmation required" in stderr.getvalue()
 
 
-def test_main_console_subcommand_smoke(_isolate_hermes_home):
+def test_main_console_subcommand_smoke(_isolate_opencodon_home):
     import subprocess
 
     result = subprocess.run(

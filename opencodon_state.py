@@ -28,7 +28,7 @@ from pathlib import Path
 
 from agent.memory_manager import sanitize_context
 from agent.message_sanitization import _sanitize_surrogates
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ def _delete_delegate_children(conn, parent_ids: List[str]) -> List[str]:
 
 T = TypeVar("T")
 
-DEFAULT_DB_PATH = get_hermes_home() / "state.db"
+DEFAULT_DB_PATH = get_opencodon_home() / "state.db"
 
 SCHEMA_VERSION = 23
 
@@ -1226,7 +1226,7 @@ END;
 # complete ``messages_fts`` index's triggers.
 #
 # The table exists ONLY when the loadable tokenizer is available
-# (``~/.hermes/lib/libfts5_cjk.so``, built by ``native/fts5_cjk/build.sh``).
+# (``~/.opencodon/lib/libfts5_cjk.so``, built by ``native/fts5_cjk/build.sh``).
 # A process that cannot load it self-heals by dropping the cjk triggers
 # (message writes keep working; the index goes stale and is rebuilt by the
 # next ``hermes sessions optimize-storage`` on a capable host).
@@ -1310,15 +1310,15 @@ FTS_CJK_STALE_KEY = "fts_cjk_stale"
 
 def fts5_cjk_so_path() -> Path:
     """Location of the cjk_unicode61 loadable extension."""
-    env = os.getenv("HERMES_FTS5_CJK_SO")
+    env = os.getenv("OPENCODON_FTS5_CJK_SO")
     if env:
         return Path(env).expanduser()
-    return get_hermes_home() / "lib" / "libfts5_cjk.so"
+    return get_opencodon_home() / "lib" / "libfts5_cjk.so"
 
 
 def _cjk_fts_config_enabled() -> bool:
     """config.yaml ``sessions.cjk_fts`` (default on), via its env bridge."""
-    return os.getenv("HERMES_CJK_FTS", "1").strip().lower() not in (
+    return os.getenv("OPENCODON_CJK_FTS", "1").strip().lower() not in (
         "0", "false", "off", "no",
     )
 
@@ -3642,7 +3642,7 @@ class SessionDB:
         can switch to state.db without losing pre-migration sessions.
         Only fills NULL columns — never overwrites data written by newer code.
         """
-        sessions_file = get_hermes_home() / "sessions" / "sessions.json"
+        sessions_file = get_opencodon_home() / "sessions" / "sessions.json"
         if not sessions_file.exists():
             return
         with open(sessions_file, "r", encoding="utf-8") as f:
@@ -6978,7 +6978,7 @@ class SessionDB:
         production latency stays attributable per query shape (the 2026-07
         session_search investigation needed trace archaeology to discover
         the LIKE full scans; this makes the next regression a grep).
-        Threshold: HERMES_SEARCH_SLOW_MS (default 1000; 0 logs every call).
+        Threshold: OPENCODON_SEARCH_SLOW_MS (default 1000; 0 logs every call).
         """
         started = time.time()
         rows = None
@@ -6996,7 +6996,7 @@ class SessionDB:
             return rows
         finally:
             try:
-                threshold = float(os.getenv("HERMES_SEARCH_SLOW_MS", "1000"))
+                threshold = float(os.getenv("OPENCODON_SEARCH_SLOW_MS", "1000"))
             except (TypeError, ValueError):
                 threshold = 1000.0
             elapsed_ms = (time.time() - started) * 1000.0
@@ -9459,7 +9459,7 @@ class SessionDB:
         index internally, then VACUUM returns the freed pages to the OS.
 
         Skips any FTS table that does not exist (e.g. the trigram index when
-        disabled via ``HERMES_DISABLE_FTS_TRIGRAM`` or not yet created), so
+        disabled via ``OPENCODON_DISABLE_FTS_TRIGRAM`` or not yet created), so
         it is safe to call unconditionally.
 
         Returns the number of FTS indexes that were optimized.

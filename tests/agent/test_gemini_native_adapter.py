@@ -483,31 +483,31 @@ def test_x_goog_api_client_header_is_set():
 
 def test_x_goog_api_client_header_format():
     """Header value should be 'hermes-agent/<version>' matching the package version."""
-    from agent.gemini_native_adapter import GeminiNativeClient, _HERMES_VERSION
+    from agent.gemini_native_adapter import GeminiNativeClient, _OPENCODON_VERSION
 
     client = GeminiNativeClient(api_key="fake-key", model="gemini-2.0-flash")
     headers = client._headers()
 
-    expected = f"hermes-agent/{_HERMES_VERSION}"
+    expected = f"hermes-agent/{_OPENCODON_VERSION}"
     assert headers["X-Goog-Api-Client"] == expected
 
 
 def test_user_agent_contains_version():
     """User-Agent should include the hermes-agent version."""
-    from agent.gemini_native_adapter import GeminiNativeClient, _HERMES_VERSION
+    from agent.gemini_native_adapter import GeminiNativeClient, _OPENCODON_VERSION
 
     client = GeminiNativeClient(api_key="fake-key", model="gemini-2.0-flash")
     headers = client._headers()
 
-    assert f"hermes-agent/{_HERMES_VERSION}" in headers["User-Agent"]
+    assert f"hermes-agent/{_OPENCODON_VERSION}" in headers["User-Agent"]
 
 
 def test_hermes_version_is_valid():
-    """_HERMES_VERSION should be a non-empty string."""
-    from agent.gemini_native_adapter import _HERMES_VERSION
+    """_OPENCODON_VERSION should be a non-empty string."""
+    from agent.gemini_native_adapter import _OPENCODON_VERSION
 
-    assert isinstance(_HERMES_VERSION, str)
-    assert len(_HERMES_VERSION) > 0
-    assert _HERMES_VERSION != "0.0.0", (
+    assert isinstance(_OPENCODON_VERSION, str)
+    assert len(_OPENCODON_VERSION) > 0
+    assert _OPENCODON_VERSION != "0.0.0", (
         "Version should resolve from opencodon_cli.__version__, not the fallback"
     )

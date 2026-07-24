@@ -10,11 +10,11 @@ import pytest
 @pytest.fixture
 def rate_guard_env(tmp_path, monkeypatch):
     """Isolate rate guard state to a temp directory."""
-    hermes_home = str(tmp_path / ".hermes")
-    os.makedirs(hermes_home, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", hermes_home)
+    opencodon_home = str(tmp_path / ".opencodon")
+    os.makedirs(opencodon_home, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", opencodon_home)
     # Clear any cached module-level imports
-    return hermes_home
+    return opencodon_home
 
 
 class TestRecordNousRateLimit:

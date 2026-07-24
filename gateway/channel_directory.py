@@ -2,7 +2,7 @@
 Channel directory -- cached map of reachable channels/contacts per platform.
 
 Built on gateway startup, refreshed periodically (every 5 min), and saved to
-~/.hermes/channel_directory.json.  The send_message tool reads this file for
+~/.opencodon/channel_directory.json.  The send_message tool reads this file for
 action="list" and for resolving human-friendly channel names to numeric IDs.
 """
 
@@ -12,19 +12,19 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from opencodon_cli.config import get_hermes_home
+from opencodon_cli.config import get_opencodon_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
 
-DIRECTORY_PATH = get_hermes_home() / "channel_directory.json"
+DIRECTORY_PATH = get_opencodon_home() / "channel_directory.json"
 # User-maintained friendly-name overlay. The directory is fully regenerated
 # from live adapters + session data on a timer, so hand-edits to
 # channel_directory.json don't survive. Aliases declared here are re-applied
 # on every build AND every load, giving durable human-friendly names (and
 # letting you pre-name a chat before it has produced any traffic).
 # Format: {"<platform>": {"<chat_id>": "<friendly name>", ...}, ...}
-CHANNEL_ALIASES_PATH = get_hermes_home() / "channel_aliases.json"
+CHANNEL_ALIASES_PATH = get_opencodon_home() / "channel_aliases.json"
 
 
 def _load_channel_aliases() -> Dict[str, Dict[str, str]]:
@@ -338,7 +338,7 @@ def _build_from_sessions_db(platform_name: str) -> List[Dict[str, str]]:
 
 def _build_from_sessions_json(platform_name: str) -> List[Dict[str, str]]:
     """Legacy fallback: pull channels/contacts from sessions.json origin data."""
-    sessions_path = get_hermes_home() / "sessions" / "sessions.json"
+    sessions_path = get_opencodon_home() / "sessions" / "sessions.json"
     if not sessions_path.exists():
         return []
 

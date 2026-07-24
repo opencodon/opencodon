@@ -193,7 +193,7 @@ def test_format_docker_update_message_contents():
     assert "restart" in msg.lower(), "must explain that a restart is required"
     assert "--version" in msg, "must show how to verify the new version"
     assert ":latest" in msg, "must mention tag pinning caveat"
-    assert "HERMES_HOME" in msg or "/opt/data" in msg, (
+    assert "OPENCODON_HOME" in msg or "/opt/data" in msg, (
         "must address config persistence across upgrades"
     )
 

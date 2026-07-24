@@ -23,13 +23,13 @@ class _Stub(CLICommandsMixin):
 
 
 def _seed(tmp_path, monkeypatch, value=False):
-    hh = tmp_path / ".hermes"
+    hh = tmp_path / ".opencodon"
     hh.mkdir()
     (hh / "config.yaml").write_text(f"display:\n  timestamps: {str(value).lower()}\n")
-    monkeypatch.setenv("HERMES_HOME", str(hh))
+    monkeypatch.setenv("OPENCODON_HOME", str(hh))
     import cli
 
-    monkeypatch.setattr(cli, "_hermes_home", hh, raising=False)
+    monkeypatch.setattr(cli, "_opencodon_home", hh, raising=False)
     return hh
 
 

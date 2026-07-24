@@ -39,9 +39,9 @@ class TestRegistration:
     def test_science_not_in_core_tools(self):
         # The footprint rule: science is opt-in, never part of the default
         # bundle shipped on every API call.
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _OPENCODON_CORE_TOOLS
 
-        assert "run_code" not in _HERMES_CORE_TOOLS
+        assert "run_code" not in _OPENCODON_CORE_TOOLS
 
 
 class TestHandlers:

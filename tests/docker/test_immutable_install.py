@@ -3,10 +3,10 @@
 Build the real image and verify at runtime:
 
   1. /opt/hermes is not writable by the hermes user (immutable install tree)
-  2. PYTHONDONTWRITEBYTECODE and HERMES_DISABLE_LAZY_INSTALLS are set
+  2. PYTHONDONTWRITEBYTECODE and OPENCODON_DISABLE_LAZY_INSTALLS are set
   3. /opt/hermes/.install_method contains "docker" (code-scoped stamp)
-  4. $HERMES_HOME/.install_method is NOT stamped as "docker" by stage2
-  5. A stale "docker" stamp in $HERMES_HOME is healed (removed) on boot
+  4. $OPENCODON_HOME/.install_method is NOT stamped as "docker" by stage2
+  5. A stale "docker" stamp in $OPENCODON_HOME is healed (removed) on boot
 """
 from __future__ import annotations
 
@@ -57,20 +57,20 @@ def test_hermes_disable_lazy_installs_and_dont_write_bytecode(
     built_image: str, container_name: str,
 ) -> None:
     """The container must set PYTHONDONTWRITEBYTECODE and
-    HERMES_DISABLE_LAZY_INSTALLS=1 so no .pyc files are written to the
+    OPENCODON_DISABLE_LAZY_INSTALLS=1 so no .pyc files are written to the
     immutable install tree and no lazy installs attempt to modify it."""
     start_container(built_image, container_name)
 
     r = docker_exec_sh(
         container_name,
         'test "$PYTHONDONTWRITEBYTECODE" = "1" && '
-        'test "$HERMES_DISABLE_LAZY_INSTALLS" = "1" && '
+        'test "$OPENCODON_DISABLE_LAZY_INSTALLS" = "1" && '
         'echo ENV_OK || echo ENV_MISSING',
         timeout=10,
     )
     assert "ENV_OK" in r.stdout, (
         f"expected PYTHONDONTWRITEBYTECODE=1 and "
-        f"HERMES_DISABLE_LAZY_INSTALLS=1, got: {r.stdout} stderr={r.stderr}"
+        f"OPENCODON_DISABLE_LAZY_INSTALLS=1, got: {r.stdout} stderr={r.stderr}"
     )
 
 
@@ -78,7 +78,7 @@ def test_install_method_stamp_is_code_scoped(
     built_image: str, container_name: str,
 ) -> None:
     """The 'docker' install-method stamp must be baked at
-    /opt/hermes/.install_method (code-scoped), NOT in $HERMES_HOME."""
+    /opt/hermes/.install_method (code-scoped), NOT in $OPENCODON_HOME."""
     start_container(built_image, container_name)
 
     # Code-scoped stamp must exist and say "docker"
@@ -94,14 +94,14 @@ def test_install_method_stamp_is_code_scoped(
         f"expected 'docker' stamp, got: {r.stdout.strip()!r}"
     )
 
-    # $HERMES_HOME must NOT have a 'docker' stamp
+    # $OPENCODON_HOME must NOT have a 'docker' stamp
     r = docker_exec_sh(
         container_name,
         "cat /opt/data/.install_method 2>/dev/null || echo NONE",
         timeout=10,
     )
     assert r.stdout.strip() != "docker", (
-        "$HERMES_HOME/.install_method is stamped 'docker' - stage2 must "
+        "$OPENCODON_HOME/.install_method is stamped 'docker' - stage2 must "
         "not stamp the data volume (shared with host installs)"
     )
 
@@ -109,7 +109,7 @@ def test_install_method_stamp_is_code_scoped(
 def test_stale_docker_stamp_in_home_is_healed_on_boot(
     built_image: str, container_name: str,
 ) -> None:
-    """A stale 'docker' stamp left in $HERMES_HOME by an older image
+    """A stale 'docker' stamp left in $OPENCODON_HOME by an older image
     must be removed on boot so shared homes self-heal."""
     # Start container, write a stale stamp
     start_container(built_image, container_name)
@@ -135,6 +135,6 @@ def test_stale_docker_stamp_in_home_is_healed_on_boot(
         timeout=10,
     )
     assert "HEALED" in r.stdout or r.stdout.strip() != "docker", (
-        f"stale 'docker' stamp in $HERMES_HOME was not healed on boot: "
+        f"stale 'docker' stamp in $OPENCODON_HOME was not healed on boot: "
         f"{r.stdout}"
     )

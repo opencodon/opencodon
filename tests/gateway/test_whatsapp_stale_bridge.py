@@ -97,7 +97,7 @@ def _fresh_node_modules(bridge_dir: Path) -> None:
 
     nm = bridge_dir / "node_modules"
     nm.mkdir()
-    (nm / ".hermes-pkg-hash").write_text(
+    (nm / ".opencodon-pkg-hash").write_text(
         _file_content_hash(bridge_dir / "package.json")
     )
 
@@ -276,7 +276,7 @@ class TestDepRefreshStamp:
         assert "install" in mock_run.call_args[0][0]
         # Stamp updated to the new package.json hash
         from plugins.platforms.whatsapp.adapter import _file_content_hash
-        stamp = (bridge_dir / "node_modules" / ".hermes-pkg-hash").read_text().strip()
+        stamp = (bridge_dir / "node_modules" / ".opencodon-pkg-hash").read_text().strip()
         assert stamp == _file_content_hash(bridge_dir / "package.json")
 
     @pytest.mark.asyncio
@@ -336,6 +336,6 @@ class TestCacheDirEnvPassthrough:
             get_document_cache_dir,
             get_image_cache_dir,
         )
-        assert env["HERMES_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
-        assert env["HERMES_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
-        assert env["HERMES_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
+        assert env["OPENCODON_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
+        assert env["OPENCODON_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
+        assert env["OPENCODON_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())

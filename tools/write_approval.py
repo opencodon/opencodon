@@ -35,7 +35,7 @@ channel — review happens via ``/memory pending``). Foreground CLI memory
 writes prompt inline via the dangerous-command approval callback; skill
 writes always stage (too big to eyeball mid-loop).
 
-Pending records live under ``<HERMES_HOME>/pending/{memory,skills}/<id>.json``
+Pending records live under ``<OPENCODON_HOME>/pending/{memory,skills}/<id>.json``
 so they survive process restarts and can be reviewed from CLI, gateway, or the
 web dashboard.
 """
@@ -50,7 +50,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ def _normalize_enabled(value: Any) -> bool:
 # ---------------------------------------------------------------------------
 
 def _pending_dir(subsystem: str) -> Path:
-    return get_hermes_home() / "pending" / subsystem
+    return get_opencodon_home() / "pending" / subsystem
 
 
 def stage_write(subsystem: str, payload: Dict[str, Any],

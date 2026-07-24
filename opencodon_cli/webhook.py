@@ -6,7 +6,7 @@ Usage:
     hermes webhook remove <name>
     hermes webhook test <name> [--payload '{"key": "value"}']
 
-Subscriptions persist to ~/.hermes/webhook_subscriptions.json and are
+Subscriptions persist to ~/.opencodon/webhook_subscriptions.json and are
 hot-reloaded by the webhook adapter without a gateway restart.
 """
 
@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 from typing import Dict
 
-from opencodon_constants import display_hermes_home
+from opencodon_constants import display_opencodon_home
 from utils import atomic_replace
 from opencodon_cli.config import cfg_get
 
@@ -28,13 +28,13 @@ _SUBSCRIPTIONS_FILENAME = "webhook_subscriptions.json"
 _SUBSCRIPTIONS_FILE_MODE = 0o600
 
 
-def _hermes_home() -> Path:
-    from opencodon_constants import get_hermes_home
-    return get_hermes_home()
+def _opencodon_home() -> Path:
+    from opencodon_constants import get_opencodon_home
+    return get_opencodon_home()
 
 
 def _subscriptions_path() -> Path:
-    return _hermes_home() / _SUBSCRIPTIONS_FILENAME
+    return _opencodon_home() / _SUBSCRIPTIONS_FILENAME
 
 
 def _load_subscriptions() -> Dict[str, dict]:
@@ -105,7 +105,7 @@ def _get_webhook_base_url() -> str:
 
 
 def _setup_hint() -> str:
-    _dhh = display_hermes_home()
+    _dhh = display_opencodon_home()
     return f"""
   Webhook platform is not enabled. To set it up:
 

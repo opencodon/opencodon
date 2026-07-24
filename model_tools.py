@@ -145,7 +145,7 @@ def _run_async(coro):
 
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         # Carry the active profile + approval/sudo callbacks into the worker so
-        # async tools resolve get_hermes_home() under the active profile.
+        # async tools resolve get_opencodon_home() under the active profile.
         from tools.thread_context import propagate_context_to_thread
 
         future = pool.submit(propagate_context_to_thread(_run_in_worker))
@@ -321,7 +321,7 @@ def get_tool_definitions(
             frozenset(disabled_toolsets) if disabled_toolsets else None,
             registry._generation,
             cfg_fp,
-            bool(os.environ.get("HERMES_KANBAN_TASK")),
+            bool(os.environ.get("OPENCODON_KANBAN_TASK")),
             bool(skip_tool_search_assembly),
         )
         cached = _tool_defs_cache.get(cache_key)
@@ -366,8 +366,8 @@ def _compute_tool_definitions(
 
     if enabled_toolsets is not None:
         effective_enabled_toolsets = list(enabled_toolsets)
-        if os.environ.get("HERMES_KANBAN_TASK") and "kanban" not in effective_enabled_toolsets:
-            # Dispatcher-spawned workers are scoped by HERMES_KANBAN_TASK and
+        if os.environ.get("OPENCODON_KANBAN_TASK") and "kanban" not in effective_enabled_toolsets:
+            # Dispatcher-spawned workers are scoped by OPENCODON_KANBAN_TASK and
             # must always receive the lifecycle handoff tools. Assignee
             # profiles may intentionally restrict their normal chat toolsets
             # (for token/cost reasons), but that should not strip the kanban
@@ -393,15 +393,15 @@ def _compute_tool_definitions(
             tools_to_include.update(resolve_toolset(ts_name))
 
     # Always apply disabled toolsets as a subtraction step at the end.
-    # This ensures that even if a composite toolset (like hermes-cli)
+    # This ensures that even if a composite toolset (like opencodon-cli)
     # is enabled, any tools belonging to a disabled toolset are strictly
     # stripped out. See issue #17309.
     if disabled_toolsets:
         for toolset_name in disabled_toolsets:
             if validate_toolset(toolset_name):
                 from toolsets import bundle_non_core_tools, get_toolset
-                if toolset_name.startswith("hermes-") or (get_toolset(toolset_name) or {}).get("posture"):
-                    # Platform bundles (hermes-*) include _HERMES_CORE_TOOLS, and
+                if toolset_name.startswith(("opencodon-", "hermes-")) or (get_toolset(toolset_name) or {}).get("posture"):
+                    # Platform bundles (hermes-*) include _OPENCODON_CORE_TOOLS, and
                     # posture toolsets (`posture: True`, e.g. `coding`) re-list
                     # those same core tools without owning them, so subtracting
                     # the whole toolset would strip core tools shared by other
@@ -410,7 +410,7 @@ def _compute_tool_definitions(
                     to_remove = bundle_non_core_tools(toolset_name)
                     tools_to_include.difference_update(to_remove)
                     resolved = sorted(to_remove)
-                    if (not quiet_mode and toolset_name.startswith("hermes-")
+                    if (not quiet_mode and toolset_name.startswith(("opencodon-", "hermes-"))
                             and toolset_name not in _WARNED_DISABLED_BUNDLES):
                         _WARNED_DISABLED_BUNDLES.add(toolset_name)
                         logger.info(
@@ -538,7 +538,7 @@ def _compute_tool_definitions(
     # Conditionally replace MCP + plugin (non-core) tools with three bridge
     # tools (tool_search / tool_describe / tool_call) when the deferrable
     # surface exceeds the configured threshold (default 10% of context
-    # window). Core Hermes tools (toolsets._HERMES_CORE_TOOLS) are NEVER
+    # window). Core Hermes tools (toolsets._OPENCODON_CORE_TOOLS) are NEVER
     # deferred. See tools/tool_search.py for full design notes.
     #
     # This is deliberately the last step before returning — sanitization

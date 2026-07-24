@@ -131,17 +131,17 @@ _USER_SKIPPED_SENTINEL = "__hermes_user_skipped__"
 # ---------------------------------------------------------------------------
 
 
-def _get_token_dir(hermes_home: str | Path | None = None) -> Path:
+def _get_token_dir(opencodon_home: str | Path | None = None) -> Path:
     """Return the directory for MCP OAuth token files.
 
-    Uses HERMES_HOME so each profile gets its own OAuth tokens.
-    Layout: ``HERMES_HOME/mcp-tokens/``
+    Uses OPENCODON_HOME so each profile gets its own OAuth tokens.
+    Layout: ``OPENCODON_HOME/mcp-tokens/``
     """
     try:
-        from opencodon_constants import get_hermes_home
-        base = Path(hermes_home) if hermes_home is not None else Path(get_hermes_home())
+        from opencodon_constants import get_opencodon_home
+        base = Path(opencodon_home) if opencodon_home is not None else Path(get_opencodon_home())
     except ImportError:
-        base = Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes")))
+        base = Path(os.environ.get("OPENCODON_HOME", str(Path.home() / ".opencodon")))
     return base / "mcp-tokens"
 
 
@@ -383,23 +383,23 @@ class HermesTokenStorage:
 
     File layout::
 
-        HERMES_HOME/mcp-tokens/<server_name>.json         -- tokens
-        HERMES_HOME/mcp-tokens/<server_name>.client.json   -- client info
-        HERMES_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
+        OPENCODON_HOME/mcp-tokens/<server_name>.json         -- tokens
+        OPENCODON_HOME/mcp-tokens/<server_name>.client.json   -- client info
+        OPENCODON_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
     """
 
-    def __init__(self, server_name: str, *, hermes_home: str | Path | None = None):
+    def __init__(self, server_name: str, *, opencodon_home: str | Path | None = None):
         self._server_name = _safe_filename(server_name)
-        self._hermes_home = Path(hermes_home) if hermes_home is not None else None
+        self._opencodon_home = Path(opencodon_home) if opencodon_home is not None else None
 
     def _tokens_path(self) -> Path:
-        return _get_token_dir(self._hermes_home) / f"{self._server_name}.json"
+        return _get_token_dir(self._opencodon_home) / f"{self._server_name}.json"
 
     def _client_info_path(self) -> Path:
-        return _get_token_dir(self._hermes_home) / f"{self._server_name}.client.json"
+        return _get_token_dir(self._opencodon_home) / f"{self._server_name}.client.json"
 
     def _meta_path(self) -> Path:
-        return _get_token_dir(self._hermes_home) / f"{self._server_name}.meta.json"
+        return _get_token_dir(self._opencodon_home) / f"{self._server_name}.meta.json"
 
     # -- tokens ------------------------------------------------------------
 
@@ -536,7 +536,7 @@ class HermesTokenStorage:
         self.remove()
         if not snapshot:
             return
-        token_dir = _get_token_dir(self._hermes_home)
+        token_dir = _get_token_dir(self._opencodon_home)
         token_dir.mkdir(parents=True, exist_ok=True)
         for fname, data in snapshot.items():
             path = token_dir / fname
@@ -978,10 +978,10 @@ def _paste_callback_reader(result: dict) -> None:
 def remove_oauth_tokens(
     server_name: str,
     *,
-    hermes_home: str | Path | None = None,
+    opencodon_home: str | Path | None = None,
 ) -> None:
     """Delete stored OAuth tokens and client info for a server."""
-    storage = HermesTokenStorage(server_name, hermes_home=hermes_home)
+    storage = HermesTokenStorage(server_name, opencodon_home=opencodon_home)
     storage.remove()
     logger.info("OAuth tokens removed for '%s'", server_name)
 

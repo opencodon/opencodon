@@ -7,17 +7,17 @@ The whole point is that changing one token never disturbs the rest of the look
 import yaml
 
 from opencodon_cli import skin_cmd
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 
 def _skins():
-    d = get_hermes_home() / "skins"
+    d = get_opencodon_home() / "skins"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def _activate(name: str) -> None:
-    (get_hermes_home() / "config.yaml").write_text(f"display:\n  skin: {name}\n", encoding="utf-8")
+    (get_opencodon_home() / "config.yaml").write_text(f"display:\n  skin: {name}\n", encoding="utf-8")
 
 
 def test_set_edits_active_user_skin_in_place_preserving_everything_else():
@@ -49,7 +49,7 @@ def test_set_forks_a_builtin_without_inventing_a_background():
     assert "background" not in data["colors"]
     # full palette carried over, and it became active.
     assert data["colors"].get("banner_title")
-    assert (get_hermes_home() / "config.yaml").read_text().find("default-custom") != -1
+    assert (get_opencodon_home() / "config.yaml").read_text().find("default-custom") != -1
 
 
 def test_set_rejects_non_hex():

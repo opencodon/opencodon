@@ -2,7 +2,7 @@
 
 Service directories under /run/service/ live on **tmpfs** and are wiped
 on every container restart. Profile directories under
-``$HERMES_HOME/profiles/<name>/`` live on the persistent VOLUME, and
+``$OPENCODON_HOME/profiles/<name>/`` live on the persistent VOLUME, and
 each one records its gateway's last state in ``gateway_state.json``.
 This module bridges the two: on every container boot, walk the
 persistent profiles, recreate the s6 service slots, and auto-start
@@ -10,7 +10,7 @@ only those whose last recorded state was ``running``.
 
 Wired into the image as /etc/cont-init.d/02-reconcile-profiles by the
 Dockerfile (Phase 4 Task 4.0). Runs as root after 01-hermes-setup
-(the stage2 hook) has chowned the volume and seeded $HERMES_HOME, but
+(the stage2 hook) has chowned the volume and seeded $OPENCODON_HOME, but
 before s6-rc starts user services.
 
 Without this module, every ``docker restart`` would silently wipe
@@ -87,7 +87,7 @@ class ReconcileAction:
 
 def reconcile_profile_gateways(
     *,
-    hermes_home: Path,
+    opencodon_home: Path,
     scandir: Path,
     dry_run: bool = False,
     container_argv: Sequence[str] | None = None,
@@ -95,7 +95,7 @@ def reconcile_profile_gateways(
     """Recreate s6 service registrations for every persistent profile.
 
     Always registers a ``gateway-default`` slot for the root profile
-    (the implicit profile that lives at the top of ``$HERMES_HOME``,
+    (the implicit profile that lives at the top of ``$OPENCODON_HOME``,
     not under ``profiles/``). The dispatcher in ``opencodon_cli.gateway``
     maps an empty profile suffix to ``gateway-default``, so this slot
     is what ``hermes gateway start`` (no ``-p``) targets. Without it,
@@ -104,14 +104,14 @@ def reconcile_profile_gateways(
     ``CalledProcessError`` → traceback to the user (PR #30136 review).
 
     The default slot's prior state is read from
-    ``$HERMES_HOME/gateway_state.json`` (sibling to the profile root,
+    ``$OPENCODON_HOME/gateway_state.json`` (sibling to the profile root,
     not under ``profiles/``); stale runtime files there are swept the
     same way as for named profiles.
 
     Args:
-        hermes_home: The container's HERMES_HOME (typically /opt/data).
-            Profiles live under ``<hermes_home>/profiles/<name>/``;
-            the default profile lives at ``<hermes_home>`` itself.
+        opencodon_home: The container's OPENCODON_HOME (typically /opt/data).
+            Profiles live under ``<opencodon_home>/profiles/<name>/``;
+            the default profile lives at ``<opencodon_home>`` itself.
         scandir: The s6 dynamic scandir (typically /run/service). Service
             directories are created at ``<scandir>/gateway-<profile>/``.
         dry_run: When True, walk and return the action list without
@@ -143,14 +143,14 @@ def reconcile_profile_gateways(
     # `gateway run` command and no state exists yet, seed that intent
     # as `running` so the s6 reconciler preserves the pre-s6 behavior.
     legacy_default_state = _maybe_migrate_legacy_gateway_run_state(
-        hermes_home,
+        opencodon_home,
         container_argv=container_argv,
         dry_run=dry_run,
     )
-    default_prior_state = legacy_default_state or _read_desired_state(hermes_home)
+    default_prior_state = legacy_default_state or _read_desired_state(opencodon_home)
     default_should_start = default_prior_state in _AUTOSTART_STATES
     if not dry_run:
-        _cleanup_stale_runtime_files(hermes_home)
+        _cleanup_stale_runtime_files(opencodon_home)
         _register_service(scandir, "default", start=default_should_start)
     actions.append(ReconcileAction(
         profile="default",
@@ -158,7 +158,7 @@ def reconcile_profile_gateways(
         action="started" if default_should_start else "registered",
     ))
 
-    profiles_root = hermes_home / "profiles"
+    profiles_root = opencodon_home / "profiles"
     if profiles_root.is_dir():
         for entry in sorted(profiles_root.iterdir()):
             if not entry.is_dir():
@@ -198,12 +198,12 @@ def reconcile_profile_gateways(
             ))
 
     if not dry_run:
-        _write_reconcile_log(hermes_home, actions)
+        _write_reconcile_log(opencodon_home, actions)
     return actions
 
 
 def _maybe_migrate_legacy_gateway_run_state(
-    hermes_home: Path,
+    opencodon_home: Path,
     *,
     container_argv: Sequence[str] | None,
     dry_run: bool,
@@ -218,11 +218,11 @@ def _maybe_migrate_legacy_gateway_run_state(
     root gateway_state.json exists so explicit stopped/failed states keep
     winning across restarts.
     """
-    state_file = hermes_home / "gateway_state.json"
+    state_file = opencodon_home / "gateway_state.json"
     if state_file.exists():
         return None
 
-    if os.environ.get("HERMES_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
+    if os.environ.get("OPENCODON_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
         return None
 
     argv = tuple(container_argv) if container_argv is not None else _read_container_argv()
@@ -343,7 +343,7 @@ def _is_dashboard_container(argv: Sequence[str]) -> bool:
     A dashboard-only container (``hermes dashboard ...``) never spawns or
     supervises per-profile gateways — that is the gateway container's job.
     Reconciling profile gateway s6 slots there is not just wasted work: when
-    the gateway and dashboard containers share a bind-mounted HERMES_HOME,
+    the gateway and dashboard containers share a bind-mounted OPENCODON_HOME,
     both race to ``flock()`` the same ``logs/gateways/<profile>/lock`` files,
     producing "Resource busy" failures and an s6-log restart storm. So the
     dashboard container skips reconciliation entirely.
@@ -504,9 +504,9 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
 
 
 def _write_reconcile_log(
-    hermes_home: Path, actions: list[ReconcileAction],
+    opencodon_home: Path, actions: list[ReconcileAction],
 ) -> None:
-    """Append one line per profile to $HERMES_HOME/logs/container-boot.log.
+    """Append one line per profile to $OPENCODON_HOME/logs/container-boot.log.
 
     Operators inspect this to debug "why didn't my profile come back
     up". Keeping a separate log file (vs. mixing into agent.log) lets
@@ -522,7 +522,7 @@ def _write_reconcile_log(
     one append-only file (PR #30136 review item O3).
     """
     import time
-    log_dir = hermes_home / "logs"
+    log_dir = opencodon_home / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "container-boot.log"
 
@@ -558,7 +558,7 @@ def main() -> int:
     # A dashboard-only container never spawns or supervises per-profile
     # gateways, so reconciling their s6 slots here is pure waste — and
     # actively harmful: when the gateway and dashboard containers share a
-    # bind-mounted HERMES_HOME, both race to flock() the same s6-log lock
+    # bind-mounted OPENCODON_HOME, both race to flock() the same s6-log lock
     # files under logs/gateways/<profile>/lock, producing "Resource busy"
     # failures and a restart storm. Detect the role from PID 1 argv and
     # skip reconciliation in the dashboard container. No operator flag:
@@ -571,10 +571,10 @@ def main() -> int:
         )
         return 0
 
-    hermes_home = Path(os.environ.get("HERMES_HOME", "/opt/data"))
+    opencodon_home = Path(os.environ.get("OPENCODON_HOME", "/opt/data"))
     scandir = Path(os.environ.get("S6_PROFILE_GATEWAY_SCANDIR", "/run/service"))
     actions = reconcile_profile_gateways(
-        hermes_home=hermes_home, scandir=scandir,
+        opencodon_home=opencodon_home, scandir=scandir,
     )
     for a in actions:
         print(

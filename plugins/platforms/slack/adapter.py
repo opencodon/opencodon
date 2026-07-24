@@ -1545,13 +1545,13 @@ class SlackAdapter(BasePlatformAdapter):
             logger.error(
                 "[Slack] SLACK_BOT_TOKEN not set — this is a permanent config "
                 "error; set SLACK_BOT_TOKEN via `hermes gateway setup` "
-                "or in the active profile's ~/.hermes/.env file, then restart "
+                "or in the active profile's ~/.opencodon/.env file, then restart "
                 "the gateway.",
             )
             self._set_fatal_error(
                 "missing_slack_bot_token",
                 "SLACK_BOT_TOKEN not configured. Use `hermes gateway setup` "
-                "or add it to your active profile's ~/.hermes/.env file, "
+                "or add it to your active profile's ~/.opencodon/.env file, "
                 "then restart the gateway.",
                 retryable=False,
             )
@@ -1560,13 +1560,13 @@ class SlackAdapter(BasePlatformAdapter):
             logger.error(
                 "[Slack] SLACK_APP_TOKEN not set — this is a permanent config "
                 "error; set SLACK_APP_TOKEN via `hermes gateway setup` "
-                "or in the active profile's ~/.hermes/.env file, then restart "
+                "or in the active profile's ~/.opencodon/.env file, then restart "
                 "the gateway.",
             )
             self._set_fatal_error(
                 "missing_slack_app_token",
                 "SLACK_APP_TOKEN not configured. Use `hermes gateway setup` "
-                "or add it to your active profile's ~/.hermes/.env file, "
+                "or add it to your active profile's ~/.opencodon/.env file, "
                 "then restart the gateway.",
                 retryable=False,
             )
@@ -1583,9 +1583,9 @@ class SlackAdapter(BasePlatformAdapter):
         bot_tokens = [t.strip() for t in raw_token.split(",") if t.strip()]
 
         # Also load tokens from OAuth token file
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        tokens_file = get_hermes_home() / "slack_tokens.json"
+        tokens_file = get_opencodon_home() / "slack_tokens.json"
         if tokens_file.exists():
             try:
                 saved = json.loads(tokens_file.read_text(encoding="utf-8"))
@@ -7433,18 +7433,18 @@ def interactive_setup() -> None:
     )
 
     def _write_slack_manifest_and_instruct() -> None:
-        """Generate the Slack manifest, write it under HERMES_HOME, and print
+        """Generate the Slack manifest, write it under OPENCODON_HOME, and print
         paste-into-Slack instructions. Failures are non-fatal."""
         try:
             from opencodon_cli.slack_cli import _build_full_manifest
-            from opencodon_constants import get_hermes_home
+            from opencodon_constants import get_opencodon_home
             import json as _json
 
             manifest = _build_full_manifest(
                 bot_name="Hermes",
                 bot_description="Your Hermes agent on Slack",
             )
-            target = Path(get_hermes_home()) / "slack-manifest.json"
+            target = Path(get_opencodon_home()) / "slack-manifest.json"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(
                 _json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",

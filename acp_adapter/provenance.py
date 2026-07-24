@@ -1,6 +1,6 @@
 """Derive ACP session-provenance metadata from the existing compression chain.
 
-This is an additive Hermes extension surfaced under ACP ``_meta.hermes`` so
+This is an additive Hermes extension surfaced under ACP ``_meta.opencodon`` so
 existing ACP clients ignore it. It carries no new persisted state: everything
 is derived on demand from the ``sessions`` table (``parent_session_id`` /
 ``end_reason``), which already models compression-continuation chains.
@@ -26,7 +26,7 @@ def build_session_provenance(
     *,
     previous_hermes_session_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Build ``_meta.hermes.sessionProvenance`` for an ACP session.
+    """Build ``_meta.opencodon.sessionProvenance`` for an ACP session.
 
     Args:
         db: A ``SessionDB`` (must expose ``get_session``).

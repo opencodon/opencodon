@@ -9,7 +9,7 @@ describe('isProviderSetupErrorMessage', () => {
     )
     expect(isProviderSetupErrorMessage('No inference provider is configured.')).toBe(true)
     expect(isProviderSetupErrorMessage('No Hermes provider is configured.')).toBe(true)
-    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.hermes/.env')).toBe(true)
+    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.opencodon/.env')).toBe(true)
   })
 
   it('matches the exact empty-key warning emitted in session.info', () => {

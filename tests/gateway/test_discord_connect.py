@@ -418,7 +418,7 @@ async def test_disconnect_cancels_running_bot_task(monkeypatch):
 async def test_connect_ready_wait_uses_gateway_platform_connect_timeout(monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
 
-    monkeypatch.setenv("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "90")
+    monkeypatch.setenv("OPENCODON_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "90")
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
     monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
 
@@ -720,7 +720,7 @@ async def test_post_connect_initialization_skips_sync_when_policy_off(monkeypatc
 @pytest.mark.asyncio
 async def test_post_connect_initialization_skips_same_fingerprint_after_success(tmp_path, monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
-    monkeypatch.setattr("opencodon_constants.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: tmp_path)
 
     class _DesiredCommand:
         def to_dict(self, tree):
@@ -757,7 +757,7 @@ async def test_post_connect_initialization_skips_same_fingerprint_after_success(
 @pytest.mark.asyncio
 async def test_post_connect_initialization_respects_discord_retry_after(tmp_path, monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
-    monkeypatch.setattr("opencodon_constants.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: tmp_path)
 
     class _DesiredCommand:
         def to_dict(self, tree):
@@ -798,7 +798,7 @@ async def test_post_connect_initialization_respects_discord_retry_after(tmp_path
 async def test_post_connect_initialization_reraises_non_rate_limit_exceptions(tmp_path, monkeypatch):
     """Arbitrary failures during sync must surface, not be swallowed as rate-limits."""
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
-    monkeypatch.setattr("opencodon_constants.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: tmp_path)
 
     class _DesiredCommand:
         def to_dict(self, tree):

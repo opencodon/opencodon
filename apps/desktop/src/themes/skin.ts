@@ -1,7 +1,7 @@
 /**
  * Hermes skin → DesktopTheme converter.
  *
- * A "skin" is the CLI/TUI theme unit: a YAML file in `$HERMES_HOME/skins/` (or a
+ * A "skin" is the CLI/TUI theme unit: a YAML file in `$OPENCODON_HOME/skins/` (or a
  * built-in) resolved by `opencodon_cli/skin_engine.py` and pushed to every surface
  * over JSON-RPC (`gateway.ready`, `skin.changed`, `config.get skin`). This is the
  * one place the desktop turns that CLI-shaped palette into a `DesktopTheme`, so a

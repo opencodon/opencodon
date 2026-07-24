@@ -25,7 +25,7 @@ def _clean_inference_env(monkeypatch):
         "ANTHROPIC_TOKEN",
         "CLAUDE_CODE_OAUTH_TOKEN",
         "NOUS_API_KEY",
-        "HERMES_INFERENCE_PROVIDER",
+        "OPENCODON_INFERENCE_PROVIDER",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -56,7 +56,7 @@ def _seed_openrouter_pool(token: str = "sk-or-FAKEKEY123") -> None:
 
 def test_auto_detects_openrouter_from_pool(tmp_path, monkeypatch):
     """With only a pool credential (no env var), auto-detection finds it."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
     _seed_openrouter_pool()
 
@@ -67,7 +67,7 @@ def test_auto_detects_openrouter_from_pool(tmp_path, monkeypatch):
 
 def test_no_credentials_still_raises(tmp_path, monkeypatch):
     """Empty pool + no env var must still fail to resolve — no false positive."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
     (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
 
     from opencodon_cli.auth import AuthError, resolve_provider

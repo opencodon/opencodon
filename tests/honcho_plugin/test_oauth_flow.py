@@ -158,8 +158,8 @@ def test_state_mismatch_is_rejected(fake_as, tmp_path):
 
 def test_source_tags_the_authorize_link(fake_as):
     endpoints = oauth_flow.resolve_endpoints()
-    url, _ = oauth_flow.begin_authorization(endpoints, source="hermes-cli")
-    assert "source=hermes-cli" in url
+    url, _ = oauth_flow.begin_authorization(endpoints, source="opencodon-cli")
+    assert "source=opencodon-cli" in url
     untagged, _ = oauth_flow.begin_authorization(endpoints)
     assert "source=" not in untagged
 
@@ -168,7 +168,7 @@ def test_client_id_defaults_to_hermes_agent(monkeypatch):
     # One client for every surface; the env var overrides for unusual deployments.
     monkeypatch.delenv("HONCHO_OAUTH_CLIENT_ID", raising=False)
     common = {"environment": "production", "base_url": "https://api.honcho.dev"}
-    assert oauth_flow.resolve_endpoints(**common).client_id == "hermes-agent"
+    assert oauth_flow.resolve_endpoints(**common).client_id == "opencodon"
     monkeypatch.setenv("HONCHO_OAUTH_CLIENT_ID", "custom-id")
     assert oauth_flow.resolve_endpoints(**common).client_id == "custom-id"
 
@@ -183,20 +183,20 @@ def test_grant_persists_default_client_id(tmp_path, fake_as, monkeypatch):
     oauth_flow.authorize_via_loopback(
         config_path=config_path,
         host="hermes",
-        source="hermes-cli",
+        source="opencodon-cli",
         apply_config=False,
         open_url=lambda url: _browser_driver(url),
         timeout=10,
     )
     saved = json.loads(config_path.read_text())
-    assert saved["hosts"]["hermes"]["oauth"]["clientId"] == "hermes-agent"
+    assert saved["hosts"]["hermes"]["oauth"]["clientId"] == "opencodon"
 
 
 def test_config_path_rides_the_authorize_link(fake_as):
     endpoints = oauth_flow.resolve_endpoints()
-    url, _ = oauth_flow.begin_authorization(endpoints, config_path="~/.hermes/honcho.json")
+    url, _ = oauth_flow.begin_authorization(endpoints, config_path="~/.opencodon/honcho.json")
     q = parse_qs(urlparse(url).query)
-    assert q["config_path"][0] == "~/.hermes/honcho.json"
+    assert q["config_path"][0] == "~/.opencodon/honcho.json"
     bare, _ = oauth_flow.begin_authorization(endpoints)
     assert "config_path=" not in bare
 
@@ -205,8 +205,8 @@ def test_display_config_path_never_leaks_absolute_path():
     from pathlib import Path
 
     # Under home → collapsed to ~/…; outside home → bare filename only.
-    under_home = Path.home() / ".hermes" / "profiles" / "work" / "honcho.json"
-    assert oauth_flow._display_config_path(under_home) == "~/.hermes/profiles/work/honcho.json"
+    under_home = Path.home() / ".opencodon" / "profiles" / "work" / "honcho.json"
+    assert oauth_flow._display_config_path(under_home) == "~/.opencodon/profiles/work/honcho.json"
     assert oauth_flow._display_config_path("/var/folders/tmp/honcho.json") == "honcho.json"
 
 
@@ -218,7 +218,7 @@ def test_cli_flow_stores_tokens_without_applying_config(tmp_path, fake_as):
     cred = oauth_flow.authorize_via_loopback(
         config_path=config_path,
         host="hermes",
-        source="hermes-cli",
+        source="opencodon-cli",
         apply_config=False,
         open_url=lambda url: _browser_driver(url),
         timeout=10,

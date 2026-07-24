@@ -35,7 +35,7 @@ HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
 
 
 def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     profile_home = tmp_path / "profiles" / profile
     profile_home.mkdir(parents=True)
     return profile_home
@@ -117,7 +117,7 @@ def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
         requested_scopes.append(kwargs["scope"])
         return _fake_nous_device_data()
 
-    monkeypatch.setenv("HERMES_AGENT_USE_LEGACY_SESSION_KEYS", "true")
+    monkeypatch.setenv("OPENCODON_AGENT_USE_LEGACY_SESSION_KEYS", "true")
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
     monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
@@ -136,13 +136,13 @@ def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
 
 def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
     from opencodon_cli import web_server as ws
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
     profile_home = _make_profile_home(tmp_path, monkeypatch)
     observed_homes = []
 
     def fake_status():
-        observed_homes.append(get_hermes_home())
+        observed_homes.append(get_opencodon_home())
         return {"logged_in": False, "source": None}
 
     fake_catalog = ({
@@ -205,7 +205,7 @@ def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusa
         requested_scopes.append(kwargs["scope"])
         raise _invoke_scope_refusal()
 
-    monkeypatch.delenv("HERMES_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
+    monkeypatch.delenv("OPENCODON_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
     monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
@@ -256,7 +256,7 @@ def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch)
                 "refresh_token": "codex-refresh",
             })
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setattr(httpx, "Client", _Client)
     monkeypatch.setattr(ws.time, "sleep", lambda _: None)
 
@@ -278,7 +278,7 @@ def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch)
 def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkeypatch):
     from opencodon_cli import auth as auth_mod
     from opencodon_cli import web_server as ws
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
     profile_home = _make_profile_home(tmp_path, monkeypatch)
 
@@ -323,7 +323,7 @@ def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkey
     monkeypatch.setattr(
         auth_mod,
         "_save_codex_tokens",
-        lambda tokens: saved_homes.append(get_hermes_home()),
+        lambda tokens: saved_homes.append(get_opencodon_home()),
     )
 
     sid, _ = ws._new_oauth_session(
@@ -403,7 +403,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
         "status": "pending",
         "error_message": None,
         "portal_base_url": "https://portal.nousresearch.com",
-        "client_id": "hermes-cli",
+        "client_id": "opencodon-cli",
         "device_code": "device-code",
         "interval": 5,
         "expires_at": time.time() + 600,
@@ -661,8 +661,8 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     from opencodon_cli import web_server as ws
     from agent.credential_pool import load_pool
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_XAI_BASE_URL", raising=False)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
+    monkeypatch.delenv("OPENCODON_XAI_BASE_URL", raising=False)
     monkeypatch.delenv("XAI_BASE_URL", raising=False)
 
     # Prior `hermes auth remove xai-oauth` left the source suppressed.

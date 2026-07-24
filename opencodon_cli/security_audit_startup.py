@@ -13,7 +13,7 @@ and simply yields no finding):
 1. Running as root (POSIX uid 0).
 2. SSH daemon present with password authentication enabled.
 3. Running inside a container with no persistent volume mount over the
-   HERMES_HOME data dir (state is ephemeral — lost on container restart).
+   OPENCODON_HOME data dir (state is ephemeral — lost on container restart).
 4. A network-accessible gateway listener (dashboard / API server) with no
    authentication configured.
 
@@ -116,7 +116,7 @@ def _in_container() -> bool:
     """Best-effort container detection (Docker / Podman / generic OCI)."""
     if os.path.exists("/.dockerenv"):
         return True
-    if os.environ.get("HERMES_DESKTOP_CHILD_PID"):
+    if os.environ.get("OPENCODON_DESKTOP_CHILD_PID"):
         return False  # desktop child, not a server container
     try:
         cgroup = Path("/proc/1/cgroup").read_text(encoding="utf-8", errors="replace")
@@ -165,11 +165,11 @@ def _path_is_mounted(path: Path) -> bool:
     return best_fstype not in ("overlay", "tmpfs", "aufs")
 
 
-def _container_no_volume_mount(hermes_home: Optional[Path]) -> Optional[str]:
+def _container_no_volume_mount(opencodon_home: Optional[Path]) -> Optional[str]:
     if not _in_container():
         return None
-    home = hermes_home or Path(
-        os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+    home = opencodon_home or Path(
+        os.environ.get("OPENCODON_HOME", os.path.expanduser("~/.opencodon"))
     )
     try:
         if _path_is_mounted(home):
@@ -180,7 +180,7 @@ def _container_no_volume_mount(hermes_home: Optional[Path]) -> Optional[str]:
         f"Running in a container but the data dir ({home}) is NOT on a "
         "persistent volume mount — sessions, memory, skills, and API keys are "
         "ephemeral and lost on container restart. Mount a host volume over the "
-        "HERMES_HOME data directory."
+        "OPENCODON_HOME data directory."
     )
 
 
@@ -221,7 +221,7 @@ def _network_listener_without_auth(config: Optional[dict]) -> list[str]:
 
 
 def run_security_audit(
-    *, hermes_home: Optional[Path] = None, config: Optional[dict] = None
+    *, opencodon_home: Optional[Path] = None, config: Optional[dict] = None
 ) -> list[str]:
     """Run all checks and return a list of human-readable warning strings.
 
@@ -241,7 +241,7 @@ def run_security_audit(
         except Exception:
             continue
     try:
-        r = _container_no_volume_mount(hermes_home)
+        r = _container_no_volume_mount(opencodon_home)
         if r:
             findings.append(r)
     except Exception:
@@ -255,7 +255,7 @@ def run_security_audit(
 
 def log_startup_security_warnings(
     *,
-    hermes_home: Optional[Path] = None,
+    opencodon_home: Optional[Path] = None,
     config: Optional[dict] = None,
     force: bool = False,
 ) -> list[str]:
@@ -269,7 +269,7 @@ def log_startup_security_warnings(
         return []
     _AUDIT_RAN = True
     try:
-        findings = run_security_audit(hermes_home=hermes_home, config=config)
+        findings = run_security_audit(opencodon_home=opencodon_home, config=config)
     except Exception:
         return []
     if findings:

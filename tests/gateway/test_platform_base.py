@@ -25,11 +25,11 @@ def test_media_delivery_denies_encrypted_bitwarden_cache(tmp_path, monkeypatch):
     """Encrypted Bitwarden cache is covered by the media credential guard."""
     import gateway.platforms.base as base
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setattr(base, "_HERMES_HOME", hermes_home)
-    monkeypatch.setattr(base, "_HERMES_ROOT", hermes_home)
-    path = hermes_home / "cache" / "bws_cache.enc.json"
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setattr(base, "_OPENCODON_HOME", opencodon_home)
+    monkeypatch.setattr(base, "_OPENCODON_ROOT", opencodon_home)
+    path = opencodon_home / "cache" / "bws_cache.enc.json"
     path.parent.mkdir()
     path.write_text("encrypted-secret-cache")
 
@@ -92,7 +92,7 @@ class TestSecretCaptureGuidance:
     def test_gateway_secret_capture_message_points_to_local_setup(self):
         message = GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
         assert "local cli" in message.lower()
-        assert "~/.hermes/.env" in message
+        assert "~/.opencodon/.env" in message
 
 
 class TestSafeUrlForLog:
@@ -560,7 +560,7 @@ class TestMediaInsideSerializedJson:
     def test_media_in_embedded_serialized_reply_not_extracted(self):
         """A serialized tool result that embeds a prior reply's MEDIA: tag."""
         content = (
-            '{"content":"previous reply MEDIA:/Users/ex/.hermes/media/'
+            '{"content":"previous reply MEDIA:/Users/ex/.opencodon/media/'
             'generated/stale.png and more text"}'
         )
         media, _ = BasePlatformAdapter.extract_media(content)
@@ -676,7 +676,7 @@ class TestExtensionlessMediaDelivery:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("OPENCODON_MEDIA_DELIVERY_STRICT", raising=False)
 
     def test_extensionless_media_extracted_when_file_validates(self, tmp_path, monkeypatch):
         root = tmp_path / "output"
@@ -745,7 +745,7 @@ class TestUniversalMediaEgress:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("OPENCODON_MEDIA_DELIVERY_STRICT", raising=False)
 
     @pytest.mark.parametrize("name", [
         "script.py", "server.log", "notes.weirdext", "app.ts", "run.sh",
@@ -794,7 +794,7 @@ class TestUniversalMediaEgress:
             "gateway.platforms.base._MEDIA_DELIVERY_DENIED_PREFIXES",
             (str(secret_dir),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("OPENCODON_MEDIA_DELIVERY_STRICT", raising=False)
 
         content = f"MEDIA:{f}"
         media, cleaned = BasePlatformAdapter.extract_media(content)
@@ -839,11 +839,11 @@ class TestMediaDeliveryPathValidation:
         # recency window + denylist). Force strict on so they keep
         # exercising the legacy path even though the public default
         # flipped to off in 2026-05.
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", "1")
         # Disable recency-based trust by default so the original allowlist
         # tests continue to exercise the strict-allowlist path. Tests that
         # specifically cover recency trust re-enable it themselves.
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "0")
 
     def test_allows_existing_file_inside_safe_root(self, tmp_path, monkeypatch):
         root = tmp_path / "media-cache"
@@ -899,7 +899,7 @@ class TestMediaDeliveryPathValidation:
         media_file.parent.mkdir(parents=True)
         media_file.write_bytes(b"%PDF-1.4")
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_ALLOW_DIRS", str(extra_root))
+        monkeypatch.setenv("OPENCODON_MEDIA_ALLOW_DIRS", str(extra_root))
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(media_file)) == str(media_file.resolve())
 
@@ -908,8 +908,8 @@ class TestMediaDeliveryPathValidation:
     ):
         """Strict mode trusts durable attachments without trusting scratch."""
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_KANBAN_HOME", str(tmp_path / "hermes"))
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("OPENCODON_KANBAN_HOME", str(tmp_path / "hermes"))
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "0")
         board_root = tmp_path / "hermes" / "kanban" / "boards" / "research"
         board_root.mkdir(parents=True)
         (board_root / "kanban.db").touch()
@@ -934,9 +934,9 @@ class TestMediaDeliveryPathValidation:
         allowlist are accepted because the file's mtime is within the window.
         """
         self._patch_roots(monkeypatch)  # zero cache allowlist
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fresh = tmp_path / "scratch" / "report.pdf"
         fresh.parent.mkdir(parents=True)
@@ -952,9 +952,9 @@ class TestMediaDeliveryPathValidation:
         the trust window.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "60")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "60")
 
         stale = tmp_path / "stale.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -966,8 +966,8 @@ class TestMediaDeliveryPathValidation:
     def test_recency_trust_disabled_falls_back_to_pure_allowlist(self, tmp_path, monkeypatch):
         """Setting trust_recent_files=false reverts to pre-existing strict behavior."""
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "0")
 
         fresh = tmp_path / "report.pdf"
         fresh.write_bytes(b"%PDF-1.4")  # mtime = now
@@ -983,9 +983,9 @@ class TestMediaDeliveryPathValidation:
         ~/.ssh, ~/.aws, etc.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         # Simulate $HOME so ~/.ssh resolves into our tmp dir.
         fake_home = tmp_path / "home"
@@ -1001,13 +1001,13 @@ class TestMediaDeliveryPathValidation:
         """The motivating case: agent produces a PDF in a project directory.
 
         Reproduces the Discord-PDF-not-delivered bug. Before recency trust,
-        files outside ~/.hermes/cache/* were silently dropped, leaving the
+        files outside ~/.opencodon/cache/* were silently dropped, leaving the
         user with a raw filepath in chat instead of an attachment.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         project = tmp_path / "my-project"
         report = project / "build" / "weekly-report.pdf"
@@ -1019,9 +1019,9 @@ class TestMediaDeliveryPathValidation:
     def test_filter_keeps_recently_produced_files(self, tmp_path, monkeypatch):
         """End-to-end: filter_local_delivery_paths routes a fresh PDF through."""
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fresh = tmp_path / "report.pdf"
         fresh.write_bytes(b"%PDF-1.4")
@@ -1049,8 +1049,8 @@ class TestMediaDeliveryDefaultMode:
         )
         # Pin strict OFF — the public default. Tests that exercise the
         # strict path live in TestMediaDeliveryPathValidation.
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.delenv("OPENCODON_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("OPENCODON_MEDIA_ALLOW_DIRS", raising=False)
 
     def test_accepts_stale_file_outside_allowlist(self, tmp_path, monkeypatch):
         """The motivating case — agent says ``MEDIA:/home/user/notes.md``
@@ -1111,20 +1111,20 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(secret)) is None
 
     def test_denylist_blocks_hermes_credentials(self, tmp_path, monkeypatch):
-        """~/.hermes/.env and ~/.hermes/auth.json stay blocked even in
+        """~/.opencodon/.env and ~/.opencodon/auth.json stay blocked even in
         default mode. They live under $HOME (not the system prefix list)
         so this exercises the home-relative denied paths.
         """
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         env_file = hermes_dir / ".env"
         env_file.write_text("OPENAI_API_KEY=sk-...")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._OPENCODON_HOME",
             hermes_dir,
         )
 
@@ -1139,24 +1139,24 @@ class TestMediaDeliveryDefaultMode:
         ],
     )
     def test_denylist_blocks_mcp_oauth_tokens(self, tmp_path, monkeypatch, rel):
-        """Live MCP OAuth tokens/client creds under ~/.hermes/mcp-tokens/ must
+        """Live MCP OAuth tokens/client creds under ~/.opencodon/mcp-tokens/ must
         never deliver as native media — same exfil class as auth.json/.env.
         Sibling to the pairing/ directory denylist entry.
         """
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         (hermes_dir / "mcp-tokens").mkdir(parents=True)
         secret = hermes_dir / rel
         secret.write_text('{"access_token": "live-bearer-abc123"}')
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._OPENCODON_HOME",
             hermes_dir,
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT",
+            "gateway.platforms.base._OPENCODON_ROOT",
             hermes_dir,
         )
 
@@ -1167,13 +1167,13 @@ class TestMediaDeliveryDefaultMode:
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         config_file = hermes_dir / "config.yaml"
         config_file.write_text("model:\n  provider: openai\n")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._OPENCODON_HOME",
             hermes_dir,
         )
 
@@ -1184,25 +1184,25 @@ class TestMediaDeliveryDefaultMode:
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        profile_home = fake_home / ".hermes" / "profiles" / "work"
+        profile_home = fake_home / ".opencodon" / "profiles" / "work"
         profile_home.mkdir(parents=True)
-        hermes_root = fake_home / ".hermes"
+        hermes_root = fake_home / ".opencodon"
         config_file = hermes_root / "config.yaml"
         config_file.write_text("profiles:\n  active: work\n")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._OPENCODON_HOME",
             profile_home,
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT",
+            "gateway.platforms.base._OPENCODON_ROOT",
             hermes_root,
         )
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(config_file)) is None
 
     def test_denylist_blocks_google_token_default_mode(self, tmp_path, monkeypatch):
-        """Integration credentials at the HERMES_HOME root (google_token.json)
+        """Integration credentials at the OPENCODON_HOME root (google_token.json)
         must never be deliverable, even though they aren't the historically
         enumerated .env/auth.json/config.yaml files. Regression for a
         refreshed google_token.json being auto-attached to a Slack reply
@@ -1211,13 +1211,13 @@ class TestMediaDeliveryDefaultMode:
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         token = hermes_dir / "google_token.json"
         token.write_text('{"access_token": "***", "refresh_token": "***"}')
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(token)) is None
 
@@ -1229,35 +1229,35 @@ class TestMediaDeliveryDefaultMode:
         over recency trust.
         """
         self._patch_roots(monkeypatch)  # zero cache allowlist, strict mode on
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         token = hermes_dir / "google_token.json"
         token.write_text('{"access_token": "***"}')  # mtime = now → "recent"
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(token)) is None
 
     def test_denylist_blocks_pairing_directory_contents(self, tmp_path, monkeypatch):
-        """Files under ~/.hermes/pairing/ (platform pairing tokens) are
+        """Files under ~/.opencodon/pairing/ (platform pairing tokens) are
         credential material and must not be deliverable.
         """
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         pairing = hermes_dir / "pairing"
         pairing.mkdir(parents=True)
         token = pairing / "telegram-approved.json"
         token.write_text('{"approved": ["123"]}')
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(token)) is None
 
@@ -1267,47 +1267,47 @@ class TestMediaDeliveryDefaultMode:
         matched before the denylist and still delivers.
         """
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         cache_dir = hermes_dir / "cache" / "documents"
         cache_dir.mkdir(parents=True)
         artifact = cache_dir / "report.pdf"
         artifact.write_bytes(b"%PDF-1.4")
         self._patch_roots(monkeypatch, cache_dir)
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(artifact)) == str(artifact.resolve())
 
-    def test_denylist_blocks_non_cache_file_under_hermes_home(self, tmp_path, monkeypatch):
-        """A non-credential file the agent wrote directly under ~/.hermes
+    def test_denylist_blocks_non_cache_file_under_opencodon_home(self, tmp_path, monkeypatch):
+        """A non-credential file the agent wrote directly under ~/.opencodon
         (not in a cache subdir) is still deliverable via recency trust — we
         did NOT blanket-deny the tree (per #32090/#34425). This guards against
         accidentally re-introducing the rejected whole-tree deny.
         """
         self._patch_roots(monkeypatch)  # strict mode on
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         artifact = hermes_dir / "adhoc_report.pdf"
         artifact.write_bytes(b"%PDF-1.4")  # fresh mtime
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(artifact)) == str(artifact.resolve())
 
     def test_strict_mode_envvar_restores_legacy_behavior(self, tmp_path, monkeypatch):
-        """Setting HERMES_MEDIA_DELIVERY_STRICT=1 reactivates the older
+        """Setting OPENCODON_MEDIA_DELIVERY_STRICT=1 reactivates the older
         allowlist+recency logic. A stale file outside the allowlist is
         rejected.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "0")
 
         stale = tmp_path / "old.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -1317,16 +1317,16 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(stale)) is None
 
     def test_strict_mode_truthy_aliases(self, monkeypatch, tmp_path):
-        """``HERMES_MEDIA_DELIVERY_STRICT=true|yes|on|1`` all enable strict mode."""
+        """``OPENCODON_MEDIA_DELIVERY_STRICT=true|yes|on|1`` all enable strict mode."""
         self._patch_roots(monkeypatch)
         from gateway.platforms.base import _media_delivery_strict_mode
 
         for raw in ("1", "true", "TRUE", "yes", "on"):
-            monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", raw)
+            monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", raw)
             assert _media_delivery_strict_mode() is True
 
         for raw in ("0", "false", "no", "off", ""):
-            monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", raw)
+            monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", raw)
             assert _media_delivery_strict_mode() is False
 
     def test_filter_passes_default_files_through(self, tmp_path, monkeypatch):
@@ -1389,13 +1389,13 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(key)) is None
 
     def test_root_home_hermes_env_still_blocked(self, tmp_path, monkeypatch):
-        """``~/.hermes/.env`` stays blocked under the $HOME exception — it is a
+        """``~/.opencodon/.env`` stays blocked under the $HOME exception — it is a
         more-specific denied path, not reachable just because home is allowed.
         """
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "root"
-        hermes_dir = fake_home / ".hermes"
+        hermes_dir = fake_home / ".opencodon"
         hermes_dir.mkdir(parents=True)
         env_file = hermes_dir / ".env"
         env_file.write_text("OPENROUTER_API_KEY=sk-...")
@@ -1404,13 +1404,13 @@ class TestMediaDeliveryDefaultMode:
             "gateway.platforms.base._MEDIA_DELIVERY_DENIED_PREFIXES",
             (str(fake_home),),
         )
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._OPENCODON_HOME", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(env_file)) is None
 
     def test_profile_scoped_cache_delivers_under_symlinked_root(self, tmp_path, monkeypatch):
-        """Reopened #31733: a profile gateway whose HERMES_HOME is symlinked
-        under a denied prefix (e.g. /opt/data -> /root/.hermes) emits
+        """Reopened #31733: a profile gateway whose OPENCODON_HOME is symlinked
+        under a denied prefix (e.g. /opt/data -> /root/.opencodon) emits
         profile-scoped paths (``<root>/profiles/<name>/cache/images/x.png``)
         that resolve under ``/root``. ``$HOME`` is NOT that prefix, so the
         root-home exception doesn't fire, and the top-level cache allowlist
@@ -1421,7 +1421,7 @@ class TestMediaDeliveryDefaultMode:
 
         # Stand-in for the literal /root deny prefix in the deployment.
         denied_root = tmp_path / "root"
-        hermes_root = denied_root / ".hermes"
+        hermes_root = denied_root / ".opencodon"
         prof_cache = hermes_root / "profiles" / "myprof" / "cache" / "images"
         prof_cache.mkdir(parents=True)
         image = prof_cache / "gen.png"
@@ -1436,7 +1436,7 @@ class TestMediaDeliveryDefaultMode:
             (str(denied_root),),
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT", hermes_root
+            "gateway.platforms.base._OPENCODON_ROOT", hermes_root
         )
 
         assert (
@@ -1452,7 +1452,7 @@ class TestMediaDeliveryDefaultMode:
         self._patch_roots(monkeypatch)
 
         denied_root = tmp_path / "root"
-        hermes_root = denied_root / ".hermes"
+        hermes_root = denied_root / ".opencodon"
         prof_dir = hermes_root / "profiles" / "myprof"
         prof_dir.mkdir(parents=True)
         cred = prof_dir / "auth.json"
@@ -1466,7 +1466,7 @@ class TestMediaDeliveryDefaultMode:
             (str(denied_root),),
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT", hermes_root
+            "gateway.platforms.base._OPENCODON_ROOT", hermes_root
         )
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(cred)) is None
@@ -1739,24 +1739,24 @@ class TestTruncateMessage:
 
 class TestGetHumanDelay:
     def test_off_mode(self):
-        with patch.dict(os.environ, {"HERMES_HUMAN_DELAY_MODE": "off"}):
+        with patch.dict(os.environ, {"OPENCODON_HUMAN_DELAY_MODE": "off"}):
             assert BasePlatformAdapter._get_human_delay() == 0.0
 
     def test_default_is_off(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HUMAN_DELAY_MODE", None)
+            os.environ.pop("OPENCODON_HUMAN_DELAY_MODE", None)
             assert BasePlatformAdapter._get_human_delay() == 0.0
 
     def test_natural_mode_range(self):
-        with patch.dict(os.environ, {"HERMES_HUMAN_DELAY_MODE": "natural"}):
+        with patch.dict(os.environ, {"OPENCODON_HUMAN_DELAY_MODE": "natural"}):
             delay = BasePlatformAdapter._get_human_delay()
             assert 0.8 <= delay <= 2.5
 
     def test_natural_mode_ignores_malformed_custom_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "natural",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "OPENCODON_HUMAN_DELAY_MODE": "natural",
+            "OPENCODON_HUMAN_DELAY_MIN_MS": "oops",
+            "OPENCODON_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1764,9 +1764,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_uses_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "100",
-            "HERMES_HUMAN_DELAY_MAX_MS": "200",
+            "OPENCODON_HUMAN_DELAY_MODE": "custom",
+            "OPENCODON_HUMAN_DELAY_MIN_MS": "100",
+            "OPENCODON_HUMAN_DELAY_MAX_MS": "200",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1774,9 +1774,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_tolerates_malformed_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "OPENCODON_HUMAN_DELAY_MODE": "custom",
+            "OPENCODON_HUMAN_DELAY_MIN_MS": "oops",
+            "OPENCODON_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             # falls back to the custom-mode defaults instead of crashing
@@ -1965,8 +1965,8 @@ class TestMediaDeliveryDiagnosability:
     def test_rejected_path_appears_in_log(self, tmp_path, caplog):
         outside = tmp_path / "outside.ogg"
         outside.write_bytes(b"OggS")
-        with patch.dict(os.environ, {"HERMES_MEDIA_DELIVERY_STRICT": "1",
-                                     "HERMES_MEDIA_TRUST_RECENT_FILES": "0"}), \
+        with patch.dict(os.environ, {"OPENCODON_MEDIA_DELIVERY_STRICT": "1",
+                                     "OPENCODON_MEDIA_TRUST_RECENT_FILES": "0"}), \
                 patch("gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS", ()):
             with caplog.at_level("WARNING"):
                 out = BasePlatformAdapter.filter_media_delivery_paths([(str(outside), False)])
@@ -1978,7 +1978,7 @@ class TestMediaDeliveryDiagnosability:
         """One crafted ~\\x00 path must not drop every other attachment."""
         good = tmp_path / "good.png"
         good.write_bytes(b"\x89PNG")
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "0")
+        monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", "0")
         out = BasePlatformAdapter.filter_media_delivery_paths([
             ("~\x00evil.png", False),
             (str(good), False),
@@ -2058,7 +2058,7 @@ class TestMediaFallbackDoesNotLeakHostPath:
     — a host filesystem path with no actionable information.
     """
 
-    SENSITIVE_PATH = "/home/jayne/.hermes/cache/media/sensitive_host_path_abc123.bin"
+    SENSITIVE_PATH = "/home/jayne/.opencodon/cache/media/sensitive_host_path_abc123.bin"
 
     @pytest.mark.asyncio
     async def test_send_voice_fallback_omits_audio_path(self):

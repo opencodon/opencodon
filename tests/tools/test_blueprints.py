@@ -1,6 +1,6 @@
 """Tests for the blueprints layer (skill frontmatter <-> cron automation bridge).
 
-A blueprint is a skill with a metadata.hermes.blueprint block. These verify parsing,
+A blueprint is a skill with a metadata.opencodon.blueprint block. These verify parsing,
 the create-job bridge, and the export round-trip without touching the real
 cron store.
 """

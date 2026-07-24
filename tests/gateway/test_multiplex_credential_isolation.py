@@ -57,10 +57,10 @@ class TestRuntimeProviderUsesScope:
 
     def test_getenv_global_var_still_reads_environ(self, monkeypatch):
         from opencodon_cli.runtime_provider import _getenv
-        monkeypatch.setenv("HERMES_MAX_ITERATIONS", "42")
+        monkeypatch.setenv("OPENCODON_MAX_ITERATIONS", "42")
         ss.set_multiplex_active(True)
         # global var: no scope needed, no raise
-        assert _getenv("HERMES_MAX_ITERATIONS") == "42"
+        assert _getenv("OPENCODON_MAX_ITERATIONS") == "42"
 
 
 class TestMcpInterpolationUsesScope:
@@ -141,14 +141,14 @@ class TestProfilePathResolutionUnderMultiplexScope:
         import threading
 
         from gateway.run import _profile_runtime_scope
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from tools.thread_context import propagate_context_to_thread
 
         _prof_a, prof_b = self._profiles(tmp_path)
         seen = {}
 
         def worker():
-            seen["home"] = str(get_hermes_home())
+            seen["home"] = str(get_opencodon_home())
 
         with _profile_runtime_scope(prof_b):
             t = threading.Thread(target=propagate_context_to_thread(worker))

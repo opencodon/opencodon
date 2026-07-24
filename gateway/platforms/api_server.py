@@ -486,8 +486,8 @@ class ResponseStore:
         self._max_size = max_size
         if db_path is None:
             try:
-                from opencodon_cli.config import get_hermes_home
-                db_path = str(get_hermes_home() / "response_store.db")
+                from opencodon_cli.config import get_opencodon_home
+                db_path = str(get_opencodon_home() / "response_store.db")
             except Exception:
                 db_path = ":memory:"
         self._db_path: Optional[str] = db_path if db_path != ":memory:" else None
@@ -497,7 +497,7 @@ class ResponseStore:
             self._conn = sqlite3.connect(":memory:", check_same_thread=False)
             self._db_path = None
         # Use shared WAL-fallback helper so response_store.db degrades
-        # gracefully on NFS/SMB/FUSE-mounted HERMES_HOME (same filesystem
+        # gracefully on NFS/SMB/FUSE-mounted OPENCODON_HOME (same filesystem
         # issue addressed for state.db/kanban.db — see
         # opencodon_state._WAL_INCOMPAT_MARKERS).
         from opencodon_state import apply_wal_with_fallback
@@ -1208,7 +1208,7 @@ class APIServerAdapter(BasePlatformAdapter):
         Priority:
         1. Explicit override (config extra or API_SERVER_MODEL_NAME env var)
         2. Active profile name (so each profile advertises a distinct model)
-        3. Fallback: "hermes-agent"
+        3. Fallback: "opencodon"
         """
         if explicit and explicit.strip():
             return explicit.strip()
@@ -1219,7 +1219,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 return profile
         except Exception:
             pass
-        return "hermes-agent"
+        return "opencodon"
 
     def _cors_headers_for_origin(self, origin: str) -> Optional[Dict[str, str]]:
         """Return CORS headers for an allowed browser origin."""
@@ -1516,9 +1516,9 @@ class APIServerAdapter(BasePlatformAdapter):
 
                 if is_multiplex_active():
                     from gateway.run import _profile_runtime_scope
-                    from opencodon_constants import get_hermes_home
+                    from opencodon_constants import get_opencodon_home
 
-                    return _profile_runtime_scope(get_hermes_home())
+                    return _profile_runtime_scope(get_opencodon_home())
             except Exception:
                 pass
             return nullcontext()
@@ -1696,7 +1696,7 @@ class APIServerAdapter(BasePlatformAdapter):
         shows API-server conversations alongside CLI and gateway ones.
 
         Under multiplex ``/p/<profile>/`` requests the profile runtime scope
-        redirects ``get_hermes_home()``, so each profile gets its own DB —
+        redirects ``get_opencodon_home()``, so each profile gets its own DB —
         never the default profile's file. Synchronous: used by ``_create_agent``
         (itself sync, and run in both loop and worker contexts). Request
         handlers use ``_ensure_session_db_async`` to keep the SQLite open off
@@ -1706,9 +1706,9 @@ class APIServerAdapter(BasePlatformAdapter):
         if self._session_db is not None:
             return self._session_db
         try:
-            from opencodon_constants import get_hermes_home
+            from opencodon_constants import get_opencodon_home
 
-            return self._open_and_cache_session_db(get_hermes_home())
+            return self._open_and_cache_session_db(get_opencodon_home())
         except Exception as e:
             logger.debug("SessionDB unavailable for API server: %s", e)
             return None
@@ -1725,9 +1725,9 @@ class APIServerAdapter(BasePlatformAdapter):
         if self._session_db is not None:
             return self._session_db
         try:
-            from opencodon_constants import get_hermes_home
+            from opencodon_constants import get_opencodon_home
 
-            home = get_hermes_home()
+            home = get_opencodon_home()
             key = str(home)
             cache = getattr(self, "_session_dbs", None)
             if cache is not None and cache.get(key) is not None:
@@ -1836,7 +1836,7 @@ class APIServerAdapter(BasePlatformAdapter):
         Uses _resolve_runtime_agent_kwargs() to pick up model, api_key,
         base_url, etc. from config.yaml / env vars.  Toolsets are resolved
         from config.yaml platform_toolsets.api_server (same as all other
-        gateway platforms), falling back to the hermes-api-server default.
+        gateway platforms), falling back to the opencodon-api-server default.
 
         ``gateway_session_key`` is a stable per-channel identifier supplied
         by the client (via ``X-Hermes-Session-Key``).  Unlike ``session_id``
@@ -1960,7 +1960,7 @@ class APIServerAdapter(BasePlatformAdapter):
     async def _handle_health(self, request: "web.Request") -> "web.Response":
         """GET /health — simple health check."""
         return web.json_response(
-            {"status": "ok", "platform": "hermes-agent", "version": _hermes_version()}
+            {"status": "ok", "platform": "opencodon", "version": _hermes_version()}
         )
 
     async def _handle_health_detailed(self, request: "web.Request") -> "web.Response":
@@ -2001,7 +2001,7 @@ class APIServerAdapter(BasePlatformAdapter):
         return web.json_response({
             "status": readiness["status"],
             "readiness": readiness,
-            "platform": "hermes-agent",
+            "platform": "opencodon",
             "version": _hermes_version(),
             "gateway_state": gw_state,
             "platforms": runtime.get("platforms", {}),
@@ -2083,7 +2083,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
         return web.json_response({
             "object": "hermes.api_server.capabilities",
-            "platform": "hermes-agent",
+            "platform": "opencodon",
             "model": self._model_name,
             "auth": {
                 "type": "bearer",
@@ -5555,7 +5555,7 @@ class APIServerAdapter(BasePlatformAdapter):
             # unsandboxed local terminal backend. The API server can drive the
             # agent's terminal/file tools as the host user; on a public bind
             # that is the exact surface the hermes-0day campaign abused to write
-            # ~/.hermes/config.yaml and plant persistence. Sandboxing (Docker /
+            # ~/.opencodon/config.yaml and plant persistence. Sandboxing (Docker /
             # remote backend) contains the blast radius. Warn, don't refuse —
             # the operator may have an external firewall / strong key.
             if is_network_accessible(self._host):

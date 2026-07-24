@@ -6,7 +6,7 @@ Currently supports:
                           By default, log content is run through
                           ``agent.redact.redact_sensitive_text`` with
                           ``force=True`` before upload so credentials in
-                          ``~/.hermes/logs/*.log`` are not leaked into
+                          ``~/.opencodon/logs/*.log`` are not leaked into
                           the public paste service. Pass ``--no-redact``
                           to disable.
                           Pass ``--nous`` to upload instead to Nous-internal
@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ _AUTO_DELETE_SECONDS = 21600
 # ---------------------------------------------------------------------------
 
 def _pending_file() -> Path:
-    """Path to ``~/.hermes/pastes/pending.json``.
+    """Path to ``~/.opencodon/pastes/pending.json``.
 
     Each entry: ``{"url": "...", "expire_at": <unix_ts>}``.  Scheduled
     DELETEs used to be handled by spawning a detached Python process per
@@ -83,7 +83,7 @@ def _pending_file() -> Path:
     runs an opportunistic sweep on entry as a fallback for CLI-only users
     who never start the gateway.
     """
-    return get_hermes_home() / "pastes" / "pending.json"
+    return get_opencodon_home() / "pastes" / "pending.json"
 
 
 def _load_pending() -> list[dict]:
@@ -261,7 +261,7 @@ def _schedule_auto_delete(urls: list[str], delay_seconds: int = _AUTO_DELETE_SEC
     every ``hermes debug share`` invocation added ~20 MB of resident Python
     interpreters that never exited until the sleep completed.
 
-    The replacement is stateless: we append to ``~/.hermes/pastes/pending.json``
+    The replacement is stateless: we append to ``~/.opencodon/pastes/pending.json``
     and the gateway's cron ticker sweeps expired entries once per hour.
     ``hermes debug share`` also runs an opportunistic sweep as a fallback
     for CLI-only users.  If neither runs again, paste.rs's own retention
@@ -369,7 +369,7 @@ def _primary_log_path(log_name: str) -> Optional[Path]:
     from opencodon_cli.logs import LOG_FILES
 
     filename = LOG_FILES.get(log_name)
-    return (get_hermes_home() / "logs" / filename) if filename else None
+    return (get_opencodon_home() / "logs" / filename) if filename else None
 
 
 def _resolve_log_path(log_name: str) -> Optional[Path]:

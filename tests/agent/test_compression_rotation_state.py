@@ -101,8 +101,8 @@ class TestGoalMigratesOnRotation:
         agent = _build_agent_with_db(db, parent)
 
         # Set a persistent goal on the parent via the real persistence path.
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}):
-            (tmp_path / ".hermes").mkdir(exist_ok=True)
+        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path / ".opencodon")}):
+            (tmp_path / ".opencodon").mkdir(exist_ok=True)
             import opencodon_cli.goals as goals
             goals._DB_CACHE.clear()
             # Point the goal DB at the same state.db the agent uses.

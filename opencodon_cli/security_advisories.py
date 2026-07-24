@@ -114,7 +114,7 @@ ADVISORIES: tuple[Advisory, ...] = (
         ),
         remediation=(
             "Run: pip uninstall -y mistralai  (or: uv pip uninstall mistralai)",
-            "Rotate API keys in ~/.hermes/.env (OpenRouter, Anthropic, OpenAI, "
+            "Rotate API keys in ~/.opencodon/.env (OpenRouter, Anthropic, OpenAI, "
             "Nous, GitHub, AWS, Google, Mistral, etc.).",
             "Audit ~/.npmrc, ~/.pypirc, ~/.aws/credentials, ~/.config/gh/hosts.yml, "
             "and any other credential files for tokens that may have been read.",
@@ -312,7 +312,7 @@ def full_remediation_text(hit: AdvisoryHit) -> list[str]:
 #
 # We do NOT want to hammer the user with the banner on every command. Once
 # they've seen it inside a 24h window we cache that fact in
-# ``~/.hermes/cache/advisory_banner_seen`` (a single line per advisory ID:
+# ``~/.opencodon/cache/advisory_banner_seen`` (a single line per advisory ID:
 # ``<id> <iso8601_timestamp>``).
 #
 # Acked advisories never re-banner. Cached-but-not-acked advisories
@@ -326,8 +326,8 @@ _BANNER_REPEAT_HOURS = 24
 
 def _banner_cache_path() -> Optional[Path]:
     try:
-        from opencodon_constants import get_hermes_home
-        cache_dir = Path(get_hermes_home()) / "cache"
+        from opencodon_constants import get_opencodon_home
+        cache_dir = Path(get_opencodon_home()) / "cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         return cache_dir / _BANNER_CACHE_FILE
     except Exception:

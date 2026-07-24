@@ -487,7 +487,7 @@ class TestMigrate:
 
     def test_expose_hermes_tools_writes_callback_mcp_entry(self, tmp_path):
         """When expose_hermes_tools=True (production default), an
-        [mcp_servers.hermes-tools] entry is written so codex calls back
+        [mcp_servers.opencodon-tools] entry is written so codex calls back
         into Hermes for browser/web/delegate_task/vision/memory tools.
 
         This is the fix for 'all other tools that codex doesn't provide
@@ -497,13 +497,13 @@ class TestMigrate:
                          default_permission_profile=None,
                          expose_hermes_tools=True)
         text = (tmp_path / "config.toml").read_text()
-        assert "[mcp_servers.hermes-tools]" in text
+        assert "[mcp_servers.opencodon-tools]" in text
         assert "opencodon_tools_mcp_server" in text
         # Must include startup + tool timeouts so codex doesn't give up
         assert "startup_timeout_sec" in text
         assert "tool_timeout_sec" in text
         # And the entry is reported
-        assert "hermes-tools" in report.migrated
+        assert "opencodon-tools" in report.migrated
 
     def test_expose_hermes_tools_disabled_skips_entry(self, tmp_path):
         """expose_hermes_tools=False suppresses the callback registration."""
@@ -512,7 +512,7 @@ class TestMigrate:
                 default_permission_profile=None,
                 expose_hermes_tools=False)
         text = (tmp_path / "config.toml").read_text()
-        assert "[mcp_servers.hermes-tools]" not in text
+        assert "[mcp_servers.opencodon-tools]" not in text
         assert "opencodon_tools_mcp_server" not in text
 
     def test_dry_run_doesnt_write(self, tmp_path):
@@ -606,7 +606,7 @@ class TestMigrate:
             'args = ["--above"]\n'
         )
         # First migrate — adds managed block below user content
-        migrate({"mcp_servers": {"hermes-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"opencodon-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
                 expose_hermes_tools=False)
         text = target.read_text()
@@ -618,14 +618,14 @@ class TestMigrate:
             text + "\n[mcp_servers.user-below]\ncommand = \"below-server\"\n"
         )
         # Re-migrate — both should survive
-        migrate({"mcp_servers": {"hermes-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"opencodon-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
                 expose_hermes_tools=False)
         final = target.read_text()
         assert "user-above" in final
         assert "user-below" in final
         # And our managed block is still there with the new content
-        assert "[mcp_servers.hermes-mcp]" in final
+        assert "[mcp_servers.opencodon-mcp]" in final
 
     def test_skipped_keys_reported(self, tmp_path):
         report = migrate({
@@ -792,13 +792,13 @@ class TestStripUnmanagedPluginTables:
         assert '[plugins."tasks@openai-curated"]' in new_text
 
 
-# ---- Bug C: HERMES_HOME tempdir leak into ~/.codex/config.toml ----
+# ---- Bug C: OPENCODON_HOME tempdir leak into ~/.codex/config.toml ----
 
 
 class TestHermesHomeLeakGuard:
     """Regression tests for issue #26250 Bug C.
 
-    Previously ``_build_hermes_tools_mcp_entry()`` read ``HERMES_HOME``
+    Previously ``_build_hermes_tools_mcp_entry()`` read ``OPENCODON_HOME``
     directly from ``os.environ``, so a pytest ``monkeypatch.setenv`` would
     leak a transient tempdir path into the user's real ``~/.codex/config.toml``
     once codex spawned the hermes-tools MCP subprocess.
@@ -815,49 +815,49 @@ class TestHermesHomeLeakGuard:
             "/private/var/folders/zz/T/pytest-of-bob/pytest-1"
         )
 
-    def test_tempdir_detector_accepts_real_hermes_home(self):
-        assert not _looks_like_test_tempdir("/Users/alice/.hermes")
-        assert not _looks_like_test_tempdir("/home/bob/.hermes")
+    def test_tempdir_detector_accepts_real_opencodon_home(self):
+        assert not _looks_like_test_tempdir("/Users/alice/.opencodon")
+        assert not _looks_like_test_tempdir("/home/bob/.opencodon")
         assert not _looks_like_test_tempdir("/opt/hermes")
         assert not _looks_like_test_tempdir("")
 
     def test_pytest_tempdir_not_burned_into_mcp_env(self, monkeypatch):
-        """The headline regression: even when HERMES_HOME points at a pytest
+        """The headline regression: even when OPENCODON_HOME points at a pytest
         tempdir, _build_hermes_tools_mcp_entry() must NOT propagate it."""
         monkeypatch.setenv(
-            "HERMES_HOME",
+            "OPENCODON_HOME",
             "/private/var/folders/xx/pytest-of-user/pytest-99/test_x/hermes_test",
         )
         entry = _build_hermes_tools_mcp_entry()
         env = entry.get("env", {})
-        assert "HERMES_HOME" not in env, (
-            f"pytest-tempdir HERMES_HOME leaked into codex MCP entry: "
-            f"{env.get('HERMES_HOME')!r}"
+        assert "OPENCODON_HOME" not in env, (
+            f"pytest-tempdir OPENCODON_HOME leaked into codex MCP entry: "
+            f"{env.get('OPENCODON_HOME')!r}"
         )
 
-    def test_real_hermes_home_propagates(self, monkeypatch, tmp_path):
-        """A legitimate HERMES_HOME (not a tempdir path) DOES propagate so the
+    def test_real_opencodon_home_propagates(self, monkeypatch, tmp_path):
+        """A legitimate OPENCODON_HOME (not a tempdir path) DOES propagate so the
         MCP subprocess sees the same config as the parent CLI."""
         # Use a path that looks real — under /Users or /home, not /var/folders.
         # We can't easily create one in the test, so just use a stable path
         # outside any tempdir-detector needle. The detector checks for tempdir
         # markers, not for path existence.
-        real_path = "/Users/alice/.hermes"
-        monkeypatch.setenv("HERMES_HOME", real_path)
+        real_path = "/Users/alice/.opencodon"
+        monkeypatch.setenv("OPENCODON_HOME", real_path)
         entry = _build_hermes_tools_mcp_entry()
         env = entry.get("env", {})
-        assert env.get("HERMES_HOME") == real_path
+        assert env.get("OPENCODON_HOME") == real_path
 
-    def test_unset_hermes_home_omits_env_key(self, monkeypatch):
-        """When HERMES_HOME is unset in the environment, the MCP entry MUST
+    def test_unset_opencodon_home_omits_env_key(self, monkeypatch):
+        """When OPENCODON_HOME is unset in the environment, the MCP entry MUST
         NOT bake in a resolved-default path. The codex subprocess should
-        inherit whatever HERMES_HOME its launcher (systemd, gateway, shell)
+        inherit whatever OPENCODON_HOME its launcher (systemd, gateway, shell)
         sets at runtime, rather than being pinned to migrate-time defaults.
         Regression guard for issue #26250 follow-up review."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         entry = _build_hermes_tools_mcp_entry()
         env = entry.get("env", {})
-        assert "HERMES_HOME" not in env, (
-            f"HERMES_HOME should not be set when env var is unset, got: "
-            f"{env.get('HERMES_HOME')!r}"
+        assert "OPENCODON_HOME" not in env, (
+            f"OPENCODON_HOME should not be set when env var is unset, got: "
+            f"{env.get('OPENCODON_HOME')!r}"
         )

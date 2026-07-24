@@ -44,10 +44,10 @@ def _load_plugin_router():
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
-    home = tmp_path / ".hermes"
+    """Isolated OPENCODON_HOME with an empty kanban DB."""
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -883,12 +883,12 @@ def test_board_progress_rollup(client):
 
 def test_board_auto_initializes_missing_db(tmp_path, monkeypatch):
     """If kanban.db doesn't exist yet, GET /board must create it, not 500."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_KANBAN_BOARD", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
+    monkeypatch.delenv("OPENCODON_KANBAN_BOARD", raising=False)
+    monkeypatch.delenv("OPENCODON_KANBAN_DB", raising=False)
+    monkeypatch.delenv("OPENCODON_KANBAN_HOME", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Deliberately DO NOT call kb.init_db().
 
@@ -911,9 +911,9 @@ def test_ws_events_rejects_when_token_required(tmp_path, monkeypatch):
     delegates to web_server._ws_auth_ok, so we stub that with the real
     loopback-token semantics (auth_required False → constant-time token
     compare)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -962,9 +962,9 @@ def test_ws_events_accepts_gated_ticket(tmp_path, monkeypatch):
     for the hosted-dashboard bug where the kanban live-events WS 1008'd on
     every gated deployment because its bespoke check only knew _SESSION_TOKEN.
     We stub _ws_auth_ok with the real gated semantics (ticket-only)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -1009,9 +1009,9 @@ def test_ws_events_board_query_param_default_overrides_current_board_pointer(tmp
     selects Default, the websocket must not subscribe to the CLI's current
     non-default board.
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -1066,9 +1066,9 @@ def test_ws_events_swallows_cancellation_on_shutdown(tmp_path, monkeypatch):
     """
     import asyncio
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
@@ -1340,7 +1340,7 @@ def test_config_returns_defaults_when_section_missing(client):
 
 
 def test_config_reads_dashboard_kanban_section(tmp_path, monkeypatch, client):
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["OPENCODON_HOME"])
     (home / "config.yaml").write_text(
         "dashboard:\n"
         "  kanban:\n"

@@ -79,7 +79,7 @@ def build_gateway_parser(
             "Inside the s6-overlay Docker image, normally `gateway run` is "
             "automatically redirected to the supervised s6 service (so the "
             "gateway gets auto-restart on crash, plus a supervised dashboard "
-            "if HERMES_DASHBOARD is set). Pass --no-supervise to opt out and "
+            "if OPENCODON_DASHBOARD is set). Pass --no-supervise to opt out and "
             "get the historical pre-s6 foreground behavior: the gateway is "
             "the container's main process and the container exits with the "
             "gateway's exit code. No effect outside an s6 container."
@@ -230,7 +230,7 @@ def build_gateway_parser(
         description=(
             "Stop, disable, and remove legacy Hermes gateway unit files "
             "(e.g. hermes.service) left over from older installs. Profile "
-            "units (hermes-gateway-<profile>.service) and unrelated "
+            "units (opencodon-gateway-<profile>.service) and unrelated "
             "third-party services are never touched."
         ),
     )
@@ -261,7 +261,7 @@ def build_gateway_parser(
             "Authenticates as your Nous Portal account (the connector derives the "
             "authoritative tenant from it), mints this gateway's per-gateway secret "
             "and per-tenant delivery key, and writes GATEWAY_RELAY_ID / "
-            "GATEWAY_RELAY_SECRET / GATEWAY_RELAY_DELIVERY_KEY into ~/.hermes/.env. "
+            "GATEWAY_RELAY_SECRET / GATEWAY_RELAY_DELIVERY_KEY into ~/.opencodon/.env. "
             "Requires being logged in (hermes setup). Not available in managed installs."
         ),
     )
@@ -300,7 +300,7 @@ def build_gateway_parser(
             "Phase 5 §5.2 wake URL: a reachable URL the connector pokes "
             "(payload-free GET) to wake this gateway when buffered work arrives "
             "while it's idle/suspended, so it reconnects and drains. Persisted as "
-            "GATEWAY_RELAY_WAKE_URL in ~/.hermes/.env and forwarded at provision. "
+            "GATEWAY_RELAY_WAKE_URL in ~/.opencodon/.env and forwarded at provision. "
             "Optional — without it the gateway still drains whenever it next "
             "reconnects on its own."
         ),

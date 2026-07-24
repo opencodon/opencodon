@@ -4,9 +4,9 @@ Gateway runtime status helpers.
 Provides PID-file based detection of whether the gateway daemon is running,
 used by send_message's check_fn to gate availability in the CLI.
 
-The PID file lives at ``{HERMES_HOME}/gateway.pid``.  HERMES_HOME defaults to
-``~/.hermes`` but can be overridden via the environment variable.  This means
-separate HERMES_HOME directories naturally get separate PID files — a property
+The PID file lives at ``{OPENCODON_HOME}/gateway.pid``.  OPENCODON_HOME defaults to
+``~/.opencodon`` but can be overridden via the environment variable.  This means
+separate OPENCODON_HOME directories naturally get separate PID files — a property
 that will be useful when we add named profiles (multiple agents running
 concurrently under distinct configurations).
 """
@@ -23,7 +23,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from opencodon_constants import get_hermes_home, _get_platform_default_hermes_home
+from opencodon_constants import get_opencodon_home, _get_platform_default_opencodon_home
 from typing import Any, NamedTuple, Optional
 from utils import atomic_json_write
 
@@ -32,7 +32,9 @@ if sys.platform == "win32":
 else:
     import fcntl
 
-_GATEWAY_KIND = "hermes-gateway"
+_GATEWAY_KIND = "opencodon-gateway"
+# State files written before the rename carry the old kind tag.
+_LEGACY_GATEWAY_KINDS = (_GATEWAY_KIND, "opencodon-gateway")
 _RUNTIME_STATUS_FILE = "gateway_state.json"
 _LOCKS_DIRNAME = "gateway-locks"
 _IS_WINDOWS = sys.platform == "win32"
@@ -63,7 +65,7 @@ def _get_starts_log_path() -> Path:
     """Path to the append-only gateway-start ledger used by the respawn-storm
     breaker. Distinct from ``restart_loop.json`` (the auto-resume guard) — no
     collision."""
-    return get_hermes_home() / "gateway-starts.log"
+    return get_opencodon_home() / "gateway-starts.log"
 
 
 def record_start_and_check_storm(
@@ -126,37 +128,37 @@ def record_start_and_check_storm(
         return None
 
 
-def _get_process_hermes_home() -> Path:
-    """Return the process-level HERMES_HOME, skipping context-local overrides.
+def _get_process_opencodon_home() -> Path:
+    """Return the process-level OPENCODON_HOME, skipping context-local overrides.
 
     Gateway identity files (PID, lock, runtime status, takeover/stop markers)
     must always live in the directory the gateway process was launched with.
-    ``get_hermes_home()`` honors ``_HERMES_HOME_OVERRIDE`` contextvar used for
+    ``get_opencodon_home()`` honors ``_OPENCODON_HOME_OVERRIDE`` contextvar used for
     per-session profile dispatch, which would route these files into the wrong
     profile directory when a profile-context task happens to be active at write
     time.  See issue #56986.
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
+    val = os.environ.get("OPENCODON_HOME", "").strip()
     if val:
         return Path(val)
-    return _get_platform_default_hermes_home()
+    return _get_platform_default_opencodon_home()
 
 
-def _canonical_hermes_home(path: Path | str) -> Path:
-    """Return a stable absolute HERMES_HOME path for persisted identity data."""
+def _canonical_opencodon_home(path: Path | str) -> Path:
+    """Return a stable absolute OPENCODON_HOME path for persisted identity data."""
     return Path(path).expanduser().resolve(strict=False)
 
 
-def _same_hermes_home(left: Path | str, right: Path | str) -> bool:
-    """Compare HERMES_HOME paths with the host platform's case semantics."""
-    return os.path.normcase(str(_canonical_hermes_home(left))) == os.path.normcase(
-        str(_canonical_hermes_home(right))
+def _same_opencodon_home(left: Path | str, right: Path | str) -> bool:
+    """Compare OPENCODON_HOME paths with the host platform's case semantics."""
+    return os.path.normcase(str(_canonical_opencodon_home(left))) == os.path.normcase(
+        str(_canonical_opencodon_home(right))
     )
 
 
 def _get_pid_path() -> Path:
-    """Return the path to the gateway PID file, respecting HERMES_HOME."""
-    home = _get_process_hermes_home()
+    """Return the path to the gateway PID file, respecting OPENCODON_HOME."""
+    home = _get_process_opencodon_home()
     return home / "gateway.pid"
 
 
@@ -164,7 +166,7 @@ def _get_gateway_lock_path(pid_path: Optional[Path] = None) -> Path:
     """Return the path to the runtime gateway lock file."""
     if pid_path is not None:
         return pid_path.with_name(_GATEWAY_LOCK_FILENAME)
-    home = _get_process_hermes_home()
+    home = _get_process_opencodon_home()
     return home / _GATEWAY_LOCK_FILENAME
 
 
@@ -175,7 +177,7 @@ def _get_runtime_status_path() -> Path:
 
 def _get_lock_dir() -> Path:
     """Return the machine-local directory for token-scoped gateway locks."""
-    override = os.getenv("HERMES_GATEWAY_LOCK_DIR")
+    override = os.getenv("OPENCODON_GATEWAY_LOCK_DIR")
     if override:
         return Path(override)
     state_home = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
@@ -379,7 +381,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
     word "gateway".
 
     Tokenizes quote-aware (``shlex``) so quoted Windows paths with spaces
-    (``"C:\\Program Files\\...\\hermes-gateway.exe"``) survive, and strips
+    (``"C:\\Program Files\\...\\opencodon-gateway.exe"``) survive, and strips
     ``--profile``/``-p`` selectors from anywhere in argv -- Hermes's
     ``_apply_profile_override`` removes them before argparse, so the profile
     flag (and a profile literally named ``gateway``) can legally appear on
@@ -402,7 +404,8 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
         if token == "gateway/run.py" or token.endswith("/gateway/run.py"):
             return "run"
         basename = token.rsplit("/", 1)[-1]
-        if basename in ("hermes-gateway", "hermes-gateway.exe"):
+        if basename in ("opencodon-gateway", "opencodon-gateway.exe",
+                "opencodon-gateway", "opencodon-gateway.exe"):
             return "run"
 
     joined = " ".join(tokens)
@@ -468,7 +471,7 @@ def _looks_like_gateway_process(pid: int) -> bool:
 
 def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
     """Validate gateway identity from PID-file metadata when cmdline is unavailable."""
-    if record.get("kind") != _GATEWAY_KIND:
+    if record.get("kind") not in _LEGACY_GATEWAY_KINDS:
         return False
 
     argv = record.get("argv")
@@ -480,10 +483,10 @@ def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
 
 
 def _profile_name_for_home(profile_home: Path) -> Optional[str]:
-    """Return the profile id a HERMES_HOME directory represents, or None.
+    """Return the profile id a OPENCODON_HOME directory represents, or None.
 
     A named profile's home is ``<root>/profiles/<name>`` (immediate parent is
-    ``profiles``).  The root/default home (``~/.hermes`` or ``$HERMES_HOME``)
+    ``profiles``).  The root/default home (``~/.opencodon`` or ``$OPENCODON_HOME``)
     has no such parent, so it maps to the default profile (``None`` here, which
     callers treat as "the bare, flag-less gateway").
     """
@@ -502,7 +505,7 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     gateway.  That recycled PID's command line still ``looks_like_gateway`` —
     so without a profile check the dead profile is reported running.  A named
     profile gateway carries ``-p <name>``/``--profile <name>`` (or, rarely, an
-    explicit ``HERMES_HOME=<path>``) on its argv; the default/root gateway runs
+    explicit ``OPENCODON_HOME=<path>``) on its argv; the default/root gateway runs
     bare with no profile flag.
     """
     command_lc = command.lower()
@@ -514,17 +517,17 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
         return (
             f"--profile {profile_lc}" in command_lc
             or f"-p {profile_lc}" in command_lc
-            or f"hermes_home={home_lc}" in command_lc
+            or f"opencodon_home={home_lc}" in command_lc
         )
 
     # Default/root profile: the gateway runs with no profile flag. Accept unless
     # the command advertises *some other* profile (an explicit -p/--profile) or
-    # a non-matching explicit HERMES_HOME= on the argv. HERMES_HOME is usually
+    # a non-matching explicit OPENCODON_HOME= on the argv. OPENCODON_HOME is usually
     # passed via the environment (not visible on the command line), so its mere
     # absence is not disqualifying — only a conflicting explicit value is.
     if "--profile " in command_lc or " -p " in command_lc:
         return False
-    if "hermes_home=" in command_lc and f"hermes_home={home_lc}" not in command_lc:
+    if "opencodon_home=" in command_lc and f"opencodon_home={home_lc}" not in command_lc:
         return False
     return True
 
@@ -568,10 +571,10 @@ def _build_pid_record() -> dict:
         "argv": list(sys.argv),
         "start_time": _get_process_start_time(os.getpid()),
         # Scoped credential locks are machine-global rather than
-        # HERMES_HOME-local.  Persist the owning gateway's process home so an
+        # OPENCODON_HOME-local.  Persist the owning gateway's process home so an
         # explicit cross-profile --replace can place its planned-takeover
         # marker where the target process will actually read it.
-        "hermes_home": str(_canonical_hermes_home(_get_process_hermes_home())),
+        "opencodon_home": str(_canonical_opencodon_home(_get_process_opencodon_home())),
     }
 
 
@@ -1028,7 +1031,7 @@ def read_runtime_status(path: Optional[Path] = None) -> Optional[dict[str, Any]]
 
     ``path`` is optional so callers that need to inspect a *different*
     profile's state file (e.g. the dashboard enumerating every profile)
-    can do so without mutating ``HERMES_HOME`` in-process.  Defaults to
+    can do so without mutating ``OPENCODON_HOME`` in-process.  Defaults to
     the active profile's ``gateway_state.json``.
     """
     return _read_json_file(path or _get_runtime_status_path())
@@ -1152,7 +1155,7 @@ def get_runtime_status_running_pid(
     OS process identity.
 
     ``expected_home`` scopes the OS-identity check to a specific profile's
-    HERMES_HOME.  Pass it when validating *another* profile's state file (the
+    OPENCODON_HOME.  Pass it when validating *another* profile's state file (the
     dashboard enumerating every profile): a stale record whose PID the OS has
     recycled onto a different profile's live gateway must not be reported
     running for the dead profile.  Omit it (the default) for the active
@@ -1211,7 +1214,7 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
     """Acquire a machine-local lock keyed by scope + identity.
 
     Used to prevent multiple local gateways from using the same external identity
-    at once (e.g. the same Telegram bot token across different HERMES_HOME dirs).
+    at once (e.g. the same Telegram bot token across different OPENCODON_HOME dirs).
     """
     lock_path = _get_scope_lock_path(scope, identity)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1429,19 +1432,19 @@ _PLANNED_STOP_MARKER_FILENAME = ".gateway-planned-stop.json"
 _PLANNED_STOP_MARKER_TTL_S = 60
 
 
-def _get_takeover_marker_path(hermes_home: Optional[Path] = None) -> Path:
+def _get_takeover_marker_path(opencodon_home: Optional[Path] = None) -> Path:
     """Return the path to the --replace takeover marker file.
 
-    ``hermes_home`` is supplied only for a verified cross-home handoff.  The
+    ``opencodon_home`` is supplied only for a verified cross-home handoff.  The
     target process always consumes the marker from its own process-level home.
     """
-    home = hermes_home or _get_process_hermes_home()
-    return _canonical_hermes_home(home) / _TAKEOVER_MARKER_FILENAME
+    home = opencodon_home or _get_process_opencodon_home()
+    return _canonical_opencodon_home(home) / _TAKEOVER_MARKER_FILENAME
 
 
 def _get_planned_stop_marker_path() -> Path:
     """Return the path to the intentional gateway stop marker file."""
-    home = _get_process_hermes_home()
+    home = _get_process_opencodon_home()
     return home / _PLANNED_STOP_MARKER_FILENAME
 
 
@@ -1484,20 +1487,20 @@ def _consume_pid_marker_for_self(
         return False
 
     # Cross-profile guard (#29092): new markers explicitly name the verified
-    # TARGET home.  That permits a deliberate cross-HERMES_HOME --replace while
+    # TARGET home.  That permits a deliberate cross-OPENCODON_HOME --replace while
     # ensuring a marker accidentally written into another profile's directory
     # is ignored.  Legacy markers have no target field, so retain the original
     # same-replacer-home rule for backwards compatibility.
-    our_home = _get_process_hermes_home()
-    target_home = record.get("target_hermes_home")
+    our_home = _get_process_opencodon_home()
+    target_home = record.get("target_opencodon_home")
     if target_home is not None:
-        if not isinstance(target_home, str) or not _same_hermes_home(
+        if not isinstance(target_home, str) or not _same_opencodon_home(
             target_home, our_home
         ):
             return False
     else:
-        replacer_home = record.get("replacer_hermes_home")
-        if replacer_home is not None and not _same_hermes_home(
+        replacer_home = record.get("replacer_opencodon_home")
+        if replacer_home is not None and not _same_opencodon_home(
             replacer_home, our_home
         ):
             return False
@@ -1545,7 +1548,7 @@ def write_takeover_marker(
 
     A verified scoped-lock handoff supplies ``target_home`` and the already
     validated ``target_start_time`` so the marker is written into the target
-    gateway's HERMES_HOME rather than the replacer's.  Same-home callers omit
+    gateway's OPENCODON_HOME rather than the replacer's.  Same-home callers omit
     both arguments and preserve the historical behavior.
 
     Returns True on successful write, False on any failure. Historical
@@ -1554,18 +1557,18 @@ def write_takeover_marker(
     without recognizing the handoff.
     """
     try:
-        marker_home = _canonical_hermes_home(
-            target_home or _get_process_hermes_home()
+        marker_home = _canonical_opencodon_home(
+            target_home or _get_process_opencodon_home()
         )
         if target_start_time is _UNSET:
             target_start_time = _get_process_start_time(target_pid)
         record = {
             "target_pid": target_pid,
             "target_start_time": target_start_time,
-            "target_hermes_home": str(marker_home),
+            "target_opencodon_home": str(marker_home),
             "replacer_pid": os.getpid(),
-            "replacer_hermes_home": str(
-                _canonical_hermes_home(_get_process_hermes_home())
+            "replacer_opencodon_home": str(
+                _canonical_opencodon_home(_get_process_opencodon_home())
             ),
             "written_at": _utc_now_iso(),
         }
@@ -1609,7 +1612,7 @@ def _validated_scoped_lock_gateway_owner(
 
     A machine-global scoped-lock file is only a claim; it is not sufficient
     authority to terminate a process or choose a marker destination.  Require
-    the lock record, the target HERMES_HOME's gateway PID record, and the live
+    the lock record, the target OPENCODON_HOME's gateway PID record, and the live
     OS process to agree on PID, start-time fingerprint, gateway identity, and
     process home.  Missing legacy metadata fails closed and leaves the normal
     retryable lock-conflict path in charge.
@@ -1628,12 +1631,12 @@ def _validated_scoped_lock_gateway_owner(
     if not isinstance(owner_start_time, int) or isinstance(owner_start_time, bool):
         return None
 
-    raw_home = record.get("hermes_home")
+    raw_home = record.get("opencodon_home")
     if not isinstance(raw_home, str) or not raw_home.strip():
         return None
     if not Path(raw_home).expanduser().is_absolute():
         return None
-    target_home = _canonical_hermes_home(raw_home)
+    target_home = _canonical_opencodon_home(raw_home)
 
     if not _pid_exists(owner_pid):
         return None
@@ -1657,8 +1660,8 @@ def _validated_scoped_lock_gateway_owner(
     if pid_record_pid != owner_pid or pid_record.get("start_time") != owner_start_time:
         return None
 
-    pid_record_home = pid_record.get("hermes_home")
-    if not isinstance(pid_record_home, str) or not _same_hermes_home(
+    pid_record_home = pid_record.get("opencodon_home")
+    if not isinstance(pid_record_home, str) or not _same_opencodon_home(
         pid_record_home, target_home
     ):
         return None

@@ -7,18 +7,18 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path, monkeypatch):
-    """Redirect HERMES_HOME and clear module caches."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    """Redirect OPENCODON_HOME and clear module caches."""
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     # Write a minimal config so load_config doesn't fail
-    (hermes_home / "config.yaml").write_text("model:\n  default: test-model\n")
+    (opencodon_home / "config.yaml").write_text("model:\n  default: test-model\n")
 
 
 def _write_config(tmp_path, config_dict):
-    """Write a config.yaml to the test HERMES_HOME."""
+    """Write a config.yaml to the test OPENCODON_HOME."""
     import yaml
-    config_path = tmp_path / ".hermes" / "config.yaml"
+    config_path = tmp_path / ".opencodon" / "config.yaml"
     config_path.write_text(yaml.dump(config_dict))
 
 

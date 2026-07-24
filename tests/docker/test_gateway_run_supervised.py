@@ -5,15 +5,15 @@ run`` was the standard pattern — the gateway ran as the container's
 main process, container exit code matched gateway exit code, no
 supervision. With s6 as PID 1, the same invocation now auto-redirects
 to the supervised path (`gateway start`) so users get auto-restart on
-crash and a supervised dashboard alongside (when ``HERMES_DASHBOARD=1``).
+crash and a supervised dashboard alongside (when ``OPENCODON_DASHBOARD=1``).
 
 These tests verify the three load-bearing properties of that redirect:
 
   1. The default invocation **does** redirect (container stays up via
      ``sleep infinity`` while s6 supervises ``gateway-default``).
-  2. ``--no-supervise`` / ``HERMES_GATEWAY_NO_SUPERVISE=1`` opts out.
+  2. ``--no-supervise`` / ``OPENCODON_GATEWAY_NO_SUPERVISE=1`` opts out.
   3. The supervised process itself does NOT recurse — the
-     ``HERMES_S6_SUPERVISED_CHILD`` sentinel breaks the loop.
+     ``OPENCODON_S6_SUPERVISED_CHILD`` sentinel breaks the loop.
 
 Every ``docker exec`` runs as ``hermes`` per the conftest module
 docstring; see ``tests/docker/conftest.py`` for rationale.
@@ -147,8 +147,8 @@ def test_gateway_run_redirects_to_supervised(
     # The CMD process (PID under /init that the wrapper exec'd into)
     # should be sleeping, not the gateway. We count `sleep infinity`
     # processes parented to the CMD wrapper (main-wrapper.sh / rc.init
-    # top), NOT the static main-hermes service's sleep — a bare grep
-    # for `sleep infinity` would false-positive on the main-hermes
+    # top), NOT the static main-opencodon service's sleep — a bare grep
+    # for `sleep infinity` would false-positive on the main-opencodon
     # sleep and pass even before the redirect fires.
     r = docker_exec_sh(
         container_name,
@@ -248,7 +248,7 @@ def test_gateway_run_no_supervise_env_var(
     """
     start_container(
         built_image, container_name,
-        "HERMES_GATEWAY_NO_SUPERVISE=1",
+        "OPENCODON_GATEWAY_NO_SUPERVISE=1",
         cmd="gateway run",
     )
 
@@ -270,7 +270,7 @@ def test_gateway_run_no_supervise_env_var(
     # it) but should not have want-state up.
     if status == "running":
         assert not _svstat_wants_up(container_name, "gateway-default"), (
-            "HERMES_GATEWAY_NO_SUPERVISE=1: gateway-default has "
+            "OPENCODON_GATEWAY_NO_SUPERVISE=1: gateway-default has "
             "want-state up, implying the redirect dispatched `start` "
             f"despite the env-var opt-out. svstat:\n{_svstat(container_name)!r}"
         )
@@ -279,7 +279,7 @@ def test_gateway_run_no_supervise_env_var(
 def test_supervised_gateway_does_not_recurse(
     built_image: str, container_name: str,
 ) -> None:
-    """The HERMES_S6_SUPERVISED_CHILD sentinel must prevent the
+    """The OPENCODON_S6_SUPERVISED_CHILD sentinel must prevent the
     supervised ``hermes gateway run`` from re-entering the redirect.
 
     If recursion happened, every supervised gateway start would itself
@@ -324,7 +324,7 @@ def test_supervised_gateway_does_not_recurse(
 
     # Stronger positive assertion: there should be exactly one
     # `sleep infinity` process whose parent is the main-wrapper.sh
-    # CMD process (PID 17 typically). The static `main-hermes`
+    # CMD process (PID 17 typically). The static `main-opencodon`
     # service has its own `sleep infinity` child; THAT one is fine
     # and unrelated to our redirect.
     r = docker_exec_sh(
@@ -346,7 +346,7 @@ def test_supervised_gateway_does_not_recurse(
 def test_dashboard_supervised_when_env_set(
     built_image: str, container_name: str,
 ) -> None:
-    """When ``HERMES_DASHBOARD=1`` is set, ``docker run <image> gateway
+    """When ``OPENCODON_DASHBOARD=1`` is set, ``docker run <image> gateway
     run`` should result in BOTH the gateway and the dashboard being
     supervised by s6 — the dashboard slot was always there but only
     activates with the env var. This is the headline benefit of the
@@ -355,7 +355,7 @@ def test_dashboard_supervised_when_env_set(
     """
     start_container(
         built_image, container_name,
-        "HERMES_DASHBOARD=1",
+        "OPENCODON_DASHBOARD=1",
         cmd="gateway run",
     )
 
@@ -402,7 +402,7 @@ def test_supervised_gateway_stdout_reaches_docker_logs(
 ) -> None:
     """The supervised gateway's stdout — including the rich-console
     startup banner — must reach ``docker logs``, not just the rotated
-    log file under ``${HERMES_HOME}/logs/gateways/<profile>/current``.
+    log file under ``${OPENCODON_HOME}/logs/gateways/<profile>/current``.
 
     Without the ``1`` action directive in ``_render_log_run``, s6-log
     swallows the gateway's stdout into the file and ``docker logs``

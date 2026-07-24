@@ -104,9 +104,9 @@ def _session_is_messaging_surface() -> bool:
     """Return whether this turn is delivered over a human messaging channel.
 
     The gateway binds the platform value (e.g. ``telegram``) to
-    ``HERMES_SESSION_PLATFORM``; the CLI and TUI set ``HERMES_SESSION_SOURCE``
+    ``OPENCODON_SESSION_PLATFORM``; the CLI and TUI set ``OPENCODON_SESSION_SOURCE``
     (e.g. ``cli``, ``tui``) instead. Both are consulted via the session-context
-    helper (with an ``os.environ`` fallback), alongside the ``HERMES_PLATFORM``
+    helper (with an ``os.environ`` fallback), alongside the ``OPENCODON_PLATFORM``
     override, matching the sibling platform resolution in
     ``agent/skill_commands.py`` and ``agent/prompt_builder.py``. A turn is a
     messaging surface when a resolved identity is present and is not a known
@@ -116,15 +116,15 @@ def _session_is_messaging_surface() -> bool:
         from gateway.session_context import get_session_env
 
         platform = (
-            os.getenv("HERMES_PLATFORM")
-            or get_session_env("HERMES_SESSION_PLATFORM", "")
+            os.getenv("OPENCODON_PLATFORM")
+            or get_session_env("OPENCODON_SESSION_PLATFORM", "")
         )
-        source = get_session_env("HERMES_SESSION_SOURCE", "")
+        source = get_session_env("OPENCODON_SESSION_SOURCE", "")
     except Exception:
-        platform = os.getenv("HERMES_PLATFORM", "") or os.environ.get(
-            "HERMES_SESSION_PLATFORM", ""
+        platform = os.getenv("OPENCODON_PLATFORM", "") or os.environ.get(
+            "OPENCODON_SESSION_PLATFORM", ""
         )
-        source = os.environ.get("HERMES_SESSION_SOURCE", "")
+        source = os.environ.get("OPENCODON_SESSION_SOURCE", "")
     for identity in (platform, source):
         identity = str(identity or "").strip().lower()
         if identity and identity not in _NON_MESSAGING_SESSION_SURFACES:
@@ -135,7 +135,7 @@ def _session_is_messaging_surface() -> bool:
 def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     """Return whether edit -> verify-before-finish behavior is enabled.
 
-    Precedence: an explicit ``HERMES_VERIFY_ON_STOP`` env var wins, then an
+    Precedence: an explicit ``OPENCODON_VERIFY_ON_STOP`` env var wins, then an
     explicit ``agent.verify_on_stop`` config value. The config default is
     ``"auto"`` (see ``DEFAULT_CONFIG``) — surface-aware: ON for interactive
     coding surfaces (CLI, TUI, desktop) and programmatic callers, OFF for
@@ -144,7 +144,7 @@ def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     bool forces the behavior in either direction. A missing or unrecognized
     value falls back to the surface-aware ``"auto"`` default.
     """
-    env = os.environ.get("HERMES_VERIFY_ON_STOP")
+    env = os.environ.get("OPENCODON_VERIFY_ON_STOP")
     if env is not None:
         return env.strip().lower() not in {"0", "false", "no", "off"}
     if config is None:

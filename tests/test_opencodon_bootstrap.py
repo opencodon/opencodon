@@ -1,7 +1,7 @@
 """Tests for opencodon_bootstrap — Windows UTF-8 stdio shim.
 
 The bootstrap module is imported at the top of every Hermes entry point
-(hermes, hermes-agent, hermes-acp, gateway, batch_runner, cli.py).  It
+(hermes, hermes-agent, opencodon-acp, gateway, batch_runner, cli.py).  It
 fixes Python's Windows UTF-8 defaults so print("café") doesn't crash and
 subprocess children inherit UTF-8 mode.
 
@@ -242,7 +242,7 @@ class TestEntryPointsImportBootstrap:
     ENTRY_POINTS = [
         "opencodon_cli/main.py",   # hermes CLI (console_script)
         "run_agent.py",          # hermes-agent (console_script)
-        "acp_adapter/entry.py",  # hermes-acp (console_script)
+        "acp_adapter/entry.py",  # opencodon-acp (console_script)
         "gateway/run.py",        # gateway
         "cli.py",                # legacy direct-launch CLI
     ]
@@ -320,21 +320,21 @@ class TestHardenImportPath:
 
     def _run(self, hb, path_seed, env=None):
         original = sys.path[:]
-        original_env = os.environ.get("HERMES_PYTHON_SRC_ROOT")
+        original_env = os.environ.get("OPENCODON_PYTHON_SRC_ROOT")
         try:
             sys.path[:] = path_seed
             if env is not None:
-                os.environ["HERMES_PYTHON_SRC_ROOT"] = env
-            elif "HERMES_PYTHON_SRC_ROOT" in os.environ:
-                del os.environ["HERMES_PYTHON_SRC_ROOT"]
+                os.environ["OPENCODON_PYTHON_SRC_ROOT"] = env
+            elif "OPENCODON_PYTHON_SRC_ROOT" in os.environ:
+                del os.environ["OPENCODON_PYTHON_SRC_ROOT"]
             hb.harden_import_path(src_root="/opt/hermes")
             return sys.path[:]
         finally:
             sys.path[:] = original
             if original_env is None:
-                os.environ.pop("HERMES_PYTHON_SRC_ROOT", None)
+                os.environ.pop("OPENCODON_PYTHON_SRC_ROOT", None)
             else:
-                os.environ["HERMES_PYTHON_SRC_ROOT"] = original_env
+                os.environ["OPENCODON_PYTHON_SRC_ROOT"] = original_env
 
     def test_relative_cwd_forms_removed(self):
         hb = _fresh_import()
@@ -366,32 +366,64 @@ class TestHardenImportPath:
     def test_env_var_used_when_no_arg(self):
         hb = _fresh_import()
         original = sys.path[:]
-        original_env = os.environ.get("HERMES_PYTHON_SRC_ROOT")
+        original_env = os.environ.get("OPENCODON_PYTHON_SRC_ROOT")
         try:
             sys.path[:] = ["", "/cwd/proj", "/usr/lib"]
-            os.environ["HERMES_PYTHON_SRC_ROOT"] = "/env/hermes"
+            os.environ["OPENCODON_PYTHON_SRC_ROOT"] = "/env/hermes"
             hb.harden_import_path()
             assert sys.path[0] == "/env/hermes"
         finally:
             sys.path[:] = original
             if original_env is None:
-                os.environ.pop("HERMES_PYTHON_SRC_ROOT", None)
+                os.environ.pop("OPENCODON_PYTHON_SRC_ROOT", None)
             else:
-                os.environ["HERMES_PYTHON_SRC_ROOT"] = original_env
+                os.environ["OPENCODON_PYTHON_SRC_ROOT"] = original_env
 
     def test_defaults_to_module_dir(self):
         # With neither arg nor env var, the helper anchors on the bootstrap
         # module's own directory — the repo root for shipped entry points.
         hb = _fresh_import()
         original = sys.path[:]
-        original_env = os.environ.get("HERMES_PYTHON_SRC_ROOT")
+        original_env = os.environ.get("OPENCODON_PYTHON_SRC_ROOT")
         try:
             sys.path[:] = ["", "/somewhere/else"]
-            os.environ.pop("HERMES_PYTHON_SRC_ROOT", None)
+            os.environ.pop("OPENCODON_PYTHON_SRC_ROOT", None)
             hb.harden_import_path()
             expected = os.path.dirname(os.path.abspath(hb.__file__))
             assert sys.path[0] == expected
         finally:
             sys.path[:] = original
             if original_env is not None:
-                os.environ["HERMES_PYTHON_SRC_ROOT"] = original_env
+                os.environ["OPENCODON_PYTHON_SRC_ROOT"] = original_env
+
+
+class TestLegacyHermesEnvCompat:
+    """The HERMES_* -> OPENCODON_* env fallback shim (one-release compat)."""
+
+    def _module(self):
+        import opencodon_bootstrap
+        return opencodon_bootstrap
+
+    def test_legacy_var_copied_when_new_unset(self, monkeypatch):
+        hb = self._module()
+        monkeypatch.delenv("OPENCODON_FAKE_COMPAT_VAR", raising=False)
+        monkeypatch.setenv("HERMES_FAKE_COMPAT_VAR", "legacy-value")
+        copied = hb.apply_legacy_hermes_env_compat()
+        assert "HERMES_FAKE_COMPAT_VAR" in copied
+        assert os.environ["OPENCODON_FAKE_COMPAT_VAR"] == "legacy-value"
+        monkeypatch.delenv("OPENCODON_FAKE_COMPAT_VAR", raising=False)
+
+    def test_new_var_always_wins(self, monkeypatch):
+        hb = self._module()
+        monkeypatch.setenv("HERMES_FAKE_COMPAT_VAR", "legacy-value")
+        monkeypatch.setenv("OPENCODON_FAKE_COMPAT_VAR", "new-value")
+        copied = hb.apply_legacy_hermes_env_compat()
+        assert "HERMES_FAKE_COMPAT_VAR" not in copied
+        assert os.environ["OPENCODON_FAKE_COMPAT_VAR"] == "new-value"
+
+    def test_no_legacy_vars_is_noop(self, monkeypatch):
+        hb = self._module()
+        for key in list(os.environ):
+            if key.startswith("HERMES_"):
+                monkeypatch.delenv(key, raising=False)
+        assert hb.apply_legacy_hermes_env_compat() == []

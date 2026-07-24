@@ -52,13 +52,13 @@ def test_positive_watchdog_config_generates_notify_system_unit(monkeypatch, tmp_
 
 
 def test_user_unit_reads_watchdog_from_config_yaml(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "home"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / "home"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "gateway:\n  systemd_watchdog_seconds: 45\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     unit = gateway_cli.generate_systemd_unit(system=False)
 
@@ -80,7 +80,7 @@ def test_system_unit_reads_watchdog_from_target_home(tmp_path, monkeypatch):
         "gateway:\n  systemd_watchdog_seconds: 75\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(caller_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(caller_home))
     monkeypatch.setattr(
         gateway_cli,
         "_system_service_identity",
@@ -88,7 +88,7 @@ def test_system_unit_reads_watchdog_from_target_home(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         gateway_cli,
-        "_hermes_home_for_target_user",
+        "_opencodon_home_for_target_user",
         lambda _home: str(target_home),
     )
 
@@ -99,11 +99,11 @@ def test_system_unit_reads_watchdog_from_target_home(tmp_path, monkeypatch):
 
 
 def test_managed_watchdog_override_controls_generated_unit(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "home"
+    opencodon_home = tmp_path / "home"
     managed_home = tmp_path / "managed"
-    hermes_home.mkdir()
+    opencodon_home.mkdir()
     managed_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    (opencodon_home / "config.yaml").write_text(
         "gateway:\n  systemd_watchdog_seconds: 120\n",
         encoding="utf-8",
     )
@@ -111,8 +111,8 @@ def test_managed_watchdog_override_controls_generated_unit(tmp_path, monkeypatch
         "gateway:\n  systemd_watchdog_seconds: 0\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed_home))
 
     from opencodon_cli import managed_scope
 

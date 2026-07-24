@@ -23,21 +23,21 @@ from opencodon_cli.config import (
 
 @pytest.fixture
 def container_env(tmp_path, monkeypatch):
-    """Set up a fake HERMES_HOME with .container-mode file."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.delenv("HERMES_DEV", raising=False)
+    """Set up a fake OPENCODON_HOME with .container-mode file."""
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    monkeypatch.delenv("OPENCODON_DEV", raising=False)
 
-    container_mode = hermes_home / ".container-mode"
+    container_mode = opencodon_home / ".container-mode"
     container_mode.write_text(
         "# Written by NixOS activation script. Do not edit manually.\n"
         "backend=podman\n"
-        "container_name=hermes-agent\n"
+        "container_name=opencodon\n"
         "exec_user=hermes\n"
         "hermes_bin=/data/current-package/bin/hermes\n"
     )
-    return hermes_home
+    return opencodon_home
 
 
 def test_get_container_exec_info_returns_metadata(container_env):
@@ -47,7 +47,7 @@ def test_get_container_exec_info_returns_metadata(container_env):
 
     assert info is not None
     assert info["backend"] == "podman"
-    assert info["container_name"] == "hermes-agent"
+    assert info["container_name"] == "opencodon"
     assert info["exec_user"] == "hermes"
     assert info["hermes_bin"] == "/data/current-package/bin/hermes"
 
@@ -62,10 +62,10 @@ def test_get_container_exec_info_none_inside_container(container_env):
 
 def test_get_container_exec_info_none_without_file(tmp_path, monkeypatch):
     """Returns None when .container-mode doesn't exist (native mode)."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.delenv("HERMES_DEV", raising=False)
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    monkeypatch.delenv("OPENCODON_DEV", raising=False)
 
     with patch("opencodon_constants.is_container", return_value=False):
         info = get_container_exec_info()
@@ -74,8 +74,8 @@ def test_get_container_exec_info_none_without_file(tmp_path, monkeypatch):
 
 
 def test_get_container_exec_info_skipped_when_hermes_dev(container_env, monkeypatch):
-    """Returns None when HERMES_DEV=1 is set (dev mode bypass)."""
-    monkeypatch.setenv("HERMES_DEV", "1")
+    """Returns None when OPENCODON_DEV=1 is set (dev mode bypass)."""
+    monkeypatch.setenv("OPENCODON_DEV", "1")
 
     with patch("opencodon_constants.is_container", return_value=False):
         info = get_container_exec_info()
@@ -84,8 +84,8 @@ def test_get_container_exec_info_skipped_when_hermes_dev(container_env, monkeypa
 
 
 def test_get_container_exec_info_not_skipped_when_hermes_dev_zero(container_env, monkeypatch):
-    """HERMES_DEV=0 does NOT trigger bypass — only '1' does."""
-    monkeypatch.setenv("HERMES_DEV", "0")
+    """OPENCODON_DEV=0 does NOT trigger bypass — only '1' does."""
+    monkeypatch.setenv("OPENCODON_DEV", "0")
 
     with patch("opencodon_constants.is_container", return_value=False):
         info = get_container_exec_info()
@@ -98,21 +98,21 @@ def test_get_container_exec_info_defaults():
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        hermes_home = Path(tmpdir) / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / ".container-mode").write_text(
+        opencodon_home = Path(tmpdir) / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / ".container-mode").write_text(
             "# minimal file with no keys\n"
         )
 
         with patch("opencodon_constants.is_container", return_value=False), \
-             patch.dict(get_container_exec_info.__globals__, {"get_hermes_home": lambda: hermes_home}), \
+             patch.dict(get_container_exec_info.__globals__, {"get_opencodon_home": lambda: opencodon_home}), \
              patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_DEV", None)
+            os.environ.pop("OPENCODON_DEV", None)
             info = get_container_exec_info()
 
         assert info is not None
         assert info["backend"] == "docker"
-        assert info["container_name"] == "hermes-agent"
+        assert info["container_name"] == "opencodon"
         assert info["exec_user"] == "hermes"
         assert info["hermes_bin"] == "/data/current-package/bin/hermes"
 
@@ -152,7 +152,7 @@ def test_get_container_exec_info_crashes_on_permission_error(container_env):
 def docker_container_info():
     return {
         "backend": "docker",
-        "container_name": "hermes-agent",
+        "container_name": "opencodon",
         "exec_user": "hermes",
         "hermes_bin": "/data/current-package/bin/hermes",
     }
@@ -162,7 +162,7 @@ def docker_container_info():
 def podman_container_info():
     return {
         "backend": "podman",
-        "container_name": "hermes-agent",
+        "container_name": "opencodon",
         "exec_user": "hermes",
         "hermes_bin": "/data/current-package/bin/hermes",
     }
@@ -195,7 +195,7 @@ def test_exec_in_container_calls_execvp(docker_container_info):
     e_values = [cmd[i + 1] for i in e_indices]
     assert "TERM=xterm-256color" in e_values
     assert "LANG=en_US.UTF-8" in e_values
-    assert "hermes-agent" in cmd
+    assert "opencodon" in cmd
     assert "/data/current-package/bin/hermes" in cmd
     assert "chat" in cmd
 

@@ -67,7 +67,7 @@ def test_get_git_banner_state_falls_back_to_build_sha_when_no_repo():
     """Docker image case: no .git checkout — baked build SHA fills the gap.
 
     ``_resolve_repo_dir`` returns None when neither the running code's
-    parent nor ``$HERMES_HOME/hermes-agent/`` is a git repo (the canonical
+    parent nor ``$OPENCODON_HOME/opencodon/`` is a git repo (the canonical
     case inside the published container, where .git is dockerignored).
     The banner should still report the build SHA so support bug reports
     can identify the running commit.

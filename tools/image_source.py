@@ -208,15 +208,15 @@ def _is_local_terminal_backend() -> bool:
 
 
 def _media_cache_roots() -> list:
-    """Agent-managed media cache directories under HERMES_HOME (host side).
+    """Agent-managed media cache directories under OPENCODON_HOME (host side).
 
     The only host paths vision may read under a non-local backend: gateway-
     downloaded inbound media and the tools' own URL-download temp dirs. Covers
     the consolidated ``cache/`` layout and the legacy flat directories.
     """
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
-    home = get_hermes_home()
+    home = get_opencodon_home()
     return [
         home / "cache",  # cache/images, cache/vision, cache/video(s), cache/audio
         home / "image_cache",
@@ -232,7 +232,7 @@ def _permitted_host_read_target(p: Path, ctx: ResolveContext) -> Optional[Path]:
 
     - Local backend: any path is permitted (chosen posture). Returns ``p``.
     - Non-local backend: permitted only if the path resolves inside a media
-      cache root. A container-visible cache path (e.g. ``/root/.hermes/cache/
+      cache root. A container-visible cache path (e.g. ``/root/.opencodon/cache/
       images/x.png``) is first translated back to its host mount; anything that
       is not under a cache returns ``None`` so the caller routes it to the
       in-sandbox exec-read instead of reading the host filesystem.

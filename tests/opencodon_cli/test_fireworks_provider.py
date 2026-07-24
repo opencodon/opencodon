@@ -71,10 +71,10 @@ class TestFireworksConfigRegistry:
 
 class TestFireworksOverlay:
     def test_overlay_exists(self):
-        from opencodon_cli.providers import HERMES_OVERLAYS
+        from opencodon_cli.providers import OPENCODON_OVERLAYS
 
-        assert "fireworks" in HERMES_OVERLAYS
-        overlay = HERMES_OVERLAYS["fireworks"]
+        assert "fireworks" in OPENCODON_OVERLAYS
+        overlay = OPENCODON_OVERLAYS["fireworks"]
         assert overlay.transport == "openai_chat"
         assert overlay.base_url_override == "https://api.fireworks.ai/inference/v1"
         assert not overlay.base_url_env_var
@@ -93,7 +93,7 @@ class TestFireworksDoctor:
         dropped — that heuristic is for aggregator vendor slugs only."""
         from opencodon_cli import doctor as doctor_mod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".opencodon"
         home.mkdir(parents=True)
         (home / "config.yaml").write_text(
             "model:\n"
@@ -106,7 +106,7 @@ class TestFireworksDoctor:
         project = tmp_path / "project"
         project.mkdir()
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "OPENCODON_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setenv("FIREWORKS_API_KEY", "fw_test")

@@ -22,14 +22,14 @@ def test_check_for_updates_uses_cache(tmp_path, monkeypatch):
     from opencodon_cli import __version__
 
     # Create a fake git repo and fresh cache
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
     cache_file = tmp_path / ".update_check"
     cache_file.write_text(json.dumps({"ts": time.time(), "behind": 3, "ver": __version__}))
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         result = check_for_updates()
 
@@ -58,8 +58,8 @@ def test_check_for_updates_invalidates_on_version_change(tmp_path, monkeypatch):
         json.dumps({"ts": time.time(), "behind": 1, "rev": None, "ver": "0.0.1-old"})
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_REVISION", raising=False)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
+    monkeypatch.delenv("OPENCODON_REVISION", raising=False)
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         result = banner.check_for_updates()
 
@@ -77,7 +77,7 @@ def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
     """When cache is expired, check_for_updates should call git fetch."""
     from opencodon_cli.banner import check_for_updates
 
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -87,7 +87,7 @@ def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
 
     mock_result = MagicMock(returncode=0, stdout="5\n")
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run", return_value=mock_result) as mock_run:
         result = check_for_updates()
 
@@ -100,7 +100,7 @@ def test_check_for_updates_official_ssh_origin_uses_https_probe(tmp_path):
     """Passive update checks must not trigger SSH auth for official installs."""
     import opencodon_cli.banner as banner
 
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -139,7 +139,7 @@ def test_check_via_local_git_shallow_clone_behind_reports_no_count(tmp_path):
     """
     import opencodon_cli.banner as banner
 
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -173,7 +173,7 @@ def test_check_via_local_git_shallow_clone_up_to_date(tmp_path):
     """Shallow clone whose tip matches upstream reports up-to-date (0)."""
     import opencodon_cli.banner as banner
 
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -200,7 +200,7 @@ def test_check_via_local_git_full_clone_keeps_exact_count(tmp_path):
     """Full (non-shallow) clones keep the exact rev-list count path."""
     import opencodon_cli.banner as banner
 
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "opencodon"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -231,7 +231,7 @@ def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
     fake_banner.touch()
 
     monkeypatch.setattr(banner, "__file__", str(fake_banner))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         result = banner.check_for_updates()
     assert result is None
@@ -239,15 +239,15 @@ def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
 
 
 def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
-    """Dev install: falls back to Path(__file__).parent.parent when HERMES_HOME has no git repo."""
+    """Dev install: falls back to Path(__file__).parent.parent when OPENCODON_HOME has no git repo."""
     import opencodon_cli.banner as banner
 
     project_root = Path(banner.__file__).parent.parent.resolve()
     if not (project_root / ".git").exists():
         pytest.skip("Not running from a git checkout")
 
-    # Point HERMES_HOME at a temp dir with no hermes-agent/.git
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # Point OPENCODON_HOME at a temp dir with no hermes-agent/.git
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="0\n")
         result = banner.check_for_updates()
@@ -259,14 +259,14 @@ def test_check_for_updates_docker_returns_none(tmp_path, monkeypatch):
     """Inside the Docker image, check_for_updates() must short-circuit to None.
 
     Regression: the published image excludes .git (.dockerignore) and sets no
-    HERMES_REVISION (nix-only), so without a docker guard check_for_updates()
+    OPENCODON_REVISION (nix-only), so without a docker guard check_for_updates()
     would fall through and try to probe a non-existent git checkout. The guard
     must return None (so the > 0 render guards stay false) AND not reach the
     git probe or write a cache entry.
     """
     import opencodon_cli.banner as banner
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     cache_file = tmp_path / ".update_check"
 
     with patch("opencodon_cli.config.detect_install_method", return_value="docker"), \
@@ -305,8 +305,8 @@ def test_invalidate_update_cache_clears_all_profiles(tmp_path):
     """_invalidate_update_cache() should delete .update_check from ALL profiles."""
     from opencodon_cli.main import _invalidate_update_cache
 
-    # Build a fake ~/.hermes with default + two named profiles
-    default_home = tmp_path / ".hermes"
+    # Build a fake ~/.opencodon with default + two named profiles
+    default_home = tmp_path / ".opencodon"
     default_home.mkdir()
     (default_home / ".update_check").write_text('{"ts":1,"behind":50}')
 
@@ -317,7 +317,7 @@ def test_invalidate_update_cache_clears_all_profiles(tmp_path):
         (p / ".update_check").write_text('{"ts":1,"behind":50}')
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(default_home)}):
+         patch.dict(os.environ, {"OPENCODON_HOME": str(default_home)}):
         _invalidate_update_cache()
 
     # All three caches should be gone
@@ -330,12 +330,12 @@ def test_invalidate_update_cache_no_profiles_dir(tmp_path):
     """Works fine when no profiles directory exists (single-profile setup)."""
     from opencodon_cli.main import _invalidate_update_cache
 
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".opencodon"
     default_home.mkdir()
     (default_home / ".update_check").write_text('{"ts":1,"behind":5}')
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(default_home)}):
+         patch.dict(os.environ, {"OPENCODON_HOME": str(default_home)}):
         _invalidate_update_cache()
 
     assert not (default_home / ".update_check").exists()

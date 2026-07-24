@@ -265,7 +265,7 @@ class TestCmdStatus:
                         "apiKey": "hch-at-deadbeef",
                         "oauth": {
                             "refreshToken": "hch-rt-x",
-                            "clientId": "hermes-agent",
+                            "clientId": "opencodon",
                             "tokenEndpoint": "https://api.honcho.dev/oauth/token",
                             "expiresAt": 9999999999,
                         },

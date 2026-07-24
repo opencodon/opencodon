@@ -320,15 +320,15 @@ class TestOneTurnNeverPersisted:
         from gateway.run import GatewayRunner
         from opencodon_cli.model_switch import ModelSwitchResult
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
             _yaml.safe_dump(
                 {"model": {"default": "old-model", "provider": "openrouter"}}
             ),
             encoding="utf-8",
         )
-        monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+        monkeypatch.setattr(gateway_run, "_opencodon_home", opencodon_home)
         monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.model_switch.switch_model",
@@ -343,8 +343,8 @@ class TestOneTurnNeverPersisted:
                 provider_label="OpenRouter",
             ),
         )
-        monkeypatch.setattr("opencodon_constants.get_hermes_home", lambda: hermes_home)
-        monkeypatch.setattr("opencodon_cli.config.get_hermes_home", lambda: hermes_home)
+        monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: opencodon_home)
 
         runner = object.__new__(GatewayRunner)
         runner.adapters = {}

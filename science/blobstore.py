@@ -1,7 +1,7 @@
 """Content-addressed blob store for artifact bytes.
 
 Layout: ``<root>/<sha256[:2]>/<sha256>`` under the profile's hermes home
-(``~/.hermes/science/blobs`` by default), so each profile gets its own store.
+(``~/.opencodon/science/blobs`` by default), so each profile gets its own store.
 Blobs are immutable and deduplicated by content; artifact_versions rows point
 at them via ``storage_path`` + ``checksum``.
 """
@@ -100,9 +100,9 @@ def get_blob_store() -> BlobStore:
     global _store
     with _store_lock:
         if _store is None:
-            from opencodon_constants import get_hermes_home
+            from opencodon_constants import get_opencodon_home
 
-            _store = BlobStore(Path(get_hermes_home()) / "science" / "blobs")
+            _store = BlobStore(Path(get_opencodon_home()) / "science" / "blobs")
         return _store
 
 

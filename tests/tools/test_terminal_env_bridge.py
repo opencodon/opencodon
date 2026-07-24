@@ -18,7 +18,7 @@ import os
 import pytest
 
 import tools.terminal_tool as terminal_tool
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +34,7 @@ def _reset_bridge_state(monkeypatch):
 
 
 def _write_config(text: str) -> None:
-    home = get_hermes_home()
+    home = get_opencodon_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(text)
 

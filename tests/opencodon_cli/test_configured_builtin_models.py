@@ -19,7 +19,7 @@ def _provider_row(configured_models, *, max_models=None):
             "opencodon_cli.models.cached_provider_model_ids",
             return_value=["live-a", "shared"],
         ),
-        patch("opencodon_cli.providers.HERMES_OVERLAYS", {}),
+        patch("opencodon_cli.providers.OPENCODON_OVERLAYS", {}),
         patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test-key"}),
     ):
         rows = list_authenticated_providers(

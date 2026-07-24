@@ -461,9 +461,9 @@ def test_bot_uid_none_processes_channel_message():
 def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  require_mention: false\n"
         "  free_response_channels:\n"
@@ -472,7 +472,7 @@ def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
     monkeypatch.delenv("SLACK_FREE_RESPONSE_CHANNELS", raising=False)
 
@@ -493,15 +493,15 @@ def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
 def test_top_level_slack_settings_do_not_disable_env_token_setup(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  require_mention: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
 
@@ -517,16 +517,16 @@ def test_top_level_slack_settings_do_not_disable_env_token_setup(monkeypatch, tm
 def test_explicit_top_level_slack_enabled_false_wins_over_env_token(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  enabled: false\n"
         "  require_mention: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
 
@@ -542,9 +542,9 @@ def test_explicit_top_level_slack_enabled_false_wins_over_env_token(monkeypatch,
 def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "platforms:\n"
         "  slack:\n"
         "    enabled: false\n"
@@ -553,7 +553,7 @@ def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch,
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -568,15 +568,15 @@ def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch,
 def test_config_bridges_slack_reply_in_thread(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  reply_in_thread: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -610,16 +610,16 @@ def test_config_bridges_slack_cron_continuable_surface_toplevel(monkeypatch, tmp
     into slack.extra, mirroring reply_in_thread (specs D1/D6)."""
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  cron_continuable_surface: in_channel\n"
         "  reply_in_thread: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -635,9 +635,9 @@ def test_config_bridges_slack_cron_continuable_surface_nested(monkeypatch, tmp_p
     """The key also bridges from the nested ``platforms.slack.extra`` path."""
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "platforms:\n"
         "  slack:\n"
         "    enabled: false\n"
@@ -646,7 +646,7 @@ def test_config_bridges_slack_cron_continuable_surface_nested(monkeypatch, tmp_p
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -658,15 +658,15 @@ def test_config_bridges_slack_cron_continuable_surface_nested(monkeypatch, tmp_p
 def test_config_bridges_slack_strict_mention(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  strict_mention: true\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.delenv("SLACK_STRICT_MENTION", raising=False)
 
     config = load_gateway_config()
@@ -809,9 +809,9 @@ def test_allowed_channels_env_var_blocks_channel(monkeypatch):
 def test_config_bridges_slack_allowed_channels(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         "  allowed_channels:\n"
         f"    - {CHANNEL_ID}\n"
@@ -819,7 +819,7 @@ def test_config_bridges_slack_allowed_channels(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.delenv("SLACK_ALLOWED_CHANNELS", raising=False)
 
     load_gateway_config()
@@ -833,15 +833,15 @@ def test_config_bridges_slack_allowed_channels_env_takes_precedence(monkeypatch,
     """Env var set before load_gateway_config() should not be overwritten."""
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    (opencodon_home / "config.yaml").write_text(
         "slack:\n"
         f"  allowed_channels: {CHANNEL_ID}\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("SLACK_ALLOWED_CHANNELS", OTHER_CHANNEL_ID)  # already set
 
     load_gateway_config()

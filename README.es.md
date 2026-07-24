@@ -56,7 +56,7 @@ Si ya tienes Git instalado, el instalador lo detecta y lo usa en su lugar. De lo
 
 > **Android / Termux:** La ruta manual probada está documentada en la [guía de Termux](https://hermes-agent.nousresearch.com/docs/getting-started/termux). En Termux, Hermes instala el extra `.[termux]` curado porque el extra completo `.[all]` actualmente incluye dependencias de voz incompatibles con Android.
 >
-> **Windows:** Windows nativo es totalmente compatible — el comando de PowerShell de arriba instala todo. Si prefieres usar WSL2, el comando de Linux también funciona allí. La instalación nativa de Windows se encuentra en `%LOCALAPPDATA%\hermes`; WSL2 instala en `~/.hermes` como en Linux.
+> **Windows:** Windows nativo es totalmente compatible — el comando de PowerShell de arriba instala todo. Si prefieres usar WSL2, el comando de Linux también funciona allí. La instalación nativa de Windows se encuentra en `%LOCALAPPDATA%\hermes`; WSL2 instala en `~/.opencodon` como en Linux.
 
 Después de la instalación:
 
@@ -167,7 +167,7 @@ Qué se importa:
 
 - **SOUL.md** — archivo de personalidad
 - **Memorias** — entradas de MEMORY.md y USER.md
-- **Habilidades** — habilidades creadas por el usuario → `~/.hermes/skills/openclaw-imports/`
+- **Habilidades** — habilidades creadas por el usuario → `~/.opencodon/skills/openclaw-imports/`
 - **Lista de comandos permitidos** — patrones de aprobación
 - **Configuración de mensajería** — configuración de plataformas, usuarios permitidos, directorio de trabajo
 - **Claves API** — secretos en lista de permitidos (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
@@ -182,12 +182,12 @@ Consulta `hermes claw migrate --help` para todas las opciones, o usa la habilida
 
 ¡Las contribuciones son bienvenidas! Consulta la [Guía de Contribución](CONTRIBUTING.es.md) para la configuración del desarrollo, el estilo de código y el proceso de PR.
 
-Inicio rápido para colaboradores — clona y comienza con `setup-hermes.sh`:
+Inicio rápido para colaboradores — clona y comienza con `setup-opencodon.sh`:
 
 ```bash
 git clone https://github.com/NousResearch/hermes-agent.git
 cd hermes-agent
-./setup-hermes.sh     # instala uv, crea venv, instala .[all], enlaza ~/.local/bin/hermes
+./setup-opencodon.sh     # instala uv, crea venv, instala .[all], enlaza ~/.local/bin/hermes
 ./hermes              # detecta automáticamente el venv, no necesitas hacer `source` primero
 ```
 

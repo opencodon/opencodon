@@ -1,4 +1,4 @@
-"""Windows UTF-8 bootstrap for Hermes entry points.
+"""Windows UTF-8 bootstrap for opencodon entry points.
 
 Python on Windows has two long-standing text-encoding footguns:
 
@@ -13,9 +13,9 @@ Python on Windows has two long-standing text-encoding footguns:
    cp1252 defaults and hits the same UnicodeEncodeError.
 
 This module fixes both on Windows *only* — POSIX is untouched.  It
-should be imported at the very top of every Hermes entry point
-(``hermes``, ``hermes-agent``, ``hermes-acp``, ``python -m gateway.run``,
-``batch_runner.py``, ``cron/scheduler.py``) before any other imports
+should be imported at the very top of every opencodon entry point
+(``opencodon``, ``opencodon-agent``, ``opencodon-acp``,
+``python -m gateway.run``, ``cron/scheduler.py``) before any other imports
 that might do file I/O or print to stdout.
 
 What this module does on Windows:
@@ -147,7 +147,7 @@ def harden_import_path(src_root: str | None = None) -> None:
     repository root for every shipped entry point, so the guard is
     self-sufficient and does not depend on the spawner exporting an env var.
     """
-    root = src_root or os.environ.get("HERMES_PYTHON_SRC_ROOT") or os.path.dirname(
+    root = src_root or os.environ.get("OPENCODON_PYTHON_SRC_ROOT") or os.path.dirname(
         os.path.abspath(__file__)
     )
 
@@ -158,12 +158,59 @@ def harden_import_path(src_root: str | None = None) -> None:
     sys.path.insert(0, root)
 
 
+_LEGACY_ENV_PREFIX = "HERMES_"
+_legacy_env_warned = False
+
+
+def apply_legacy_hermes_env_compat() -> list[str]:
+    """Honor legacy ``HERMES_*`` env vars from the hermes-agent lineage.
+
+    opencodon renamed every ``HERMES_*`` environment variable to
+    ``OPENCODON_*``. Users upgrading from hermes-agent (or pointing
+    ``HERMES_HOME`` at an existing home) shouldn't silently lose their
+    configuration, so for every ``HERMES_X`` present in the environment we
+    set ``OPENCODON_X`` to the same value — unless ``OPENCODON_X`` is
+    already set, which always wins. Emits one aggregate stderr warning
+    naming the copied vars; silence it with
+    ``OPENCODON_SILENCE_HERMES_COMPAT=1``. Removed after one release.
+
+    Returns the list of legacy names that were honored (for tests).
+    """
+    global _legacy_env_warned
+    copied: list[str] = []
+    for key, value in list(os.environ.items()):
+        if not key.startswith(_LEGACY_ENV_PREFIX):
+            continue
+        new_key = "OPENCODON_" + key[len(_LEGACY_ENV_PREFIX):]
+        if new_key in os.environ:
+            continue
+        os.environ[new_key] = value
+        copied.append(key)
+    if (
+        copied
+        and not _legacy_env_warned
+        and os.environ.get("OPENCODON_SILENCE_HERMES_COMPAT", "") != "1"
+    ):
+        _legacy_env_warned = True
+        try:
+            sys.stderr.write(
+                "warning: legacy environment variable(s) honored: "
+                + ", ".join(sorted(copied))
+                + " — rename to OPENCODON_* (deprecated alias, removed after "
+                "one release; silence with OPENCODON_SILENCE_HERMES_COMPAT=1)\n"
+            )
+            sys.stderr.flush()
+        except Exception:
+            pass
+    return copied
+
+
 def activate_durable_lazy_target() -> None:
     """Put the durable lazy-install dir on ``sys.path`` if one is configured.
 
     On immutable Docker images the agent venv is sealed and lazy installs
     are redirected to a writable dir on the data volume
-    (``HERMES_LAZY_INSTALL_TARGET``, e.g. ``/opt/data/lazy-packages``).
+    (``OPENCODON_LAZY_INSTALL_TARGET``, e.g. ``/opt/data/lazy-packages``).
     Packages installed there on a previous run must be importable on this
     run, so we activate the dir here — at the very first import, before any
     backend module imports its SDK.
@@ -172,7 +219,7 @@ def activate_durable_lazy_target() -> None:
     always wins name collisions (see ``tools.lazy_deps`` for the full
     security rationale). Never raises; a missing/empty target is a no-op.
     """
-    if not os.environ.get("HERMES_LAZY_INSTALL_TARGET", "").strip():
+    if not os.environ.get("OPENCODON_LAZY_INSTALL_TARGET", "").strip():
         return
     try:
         from tools import lazy_deps
@@ -188,6 +235,10 @@ def activate_durable_lazy_target() -> None:
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()
+
+# Honor legacy HERMES_* env vars (hermes-agent lineage) before anything
+# reads OPENCODON_* configuration.
+apply_legacy_hermes_env_compat()
 
 # Activate the durable lazy-install target (immutable Docker images) so
 # packages installed into the data volume on a previous run are importable

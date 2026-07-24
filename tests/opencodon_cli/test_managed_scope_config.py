@@ -10,8 +10,8 @@ def homes(tmp_path, monkeypatch):
     home.mkdir()
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed))
     import opencodon_cli.config as cfg
     from opencodon_cli import managed_scope
 

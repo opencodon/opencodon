@@ -6,13 +6,13 @@ remove the artifacts of both, on Linux, macOS, and Windows, WITHOUT touching
 the Python agent or the user's config/data:
 
   1. Source-built GUI (``hermes desktop`` / ``hermes gui``)
-     Built inside the agent checkout under ``$HERMES_HOME/hermes-agent/``:
+     Built inside the agent checkout under ``$OPENCODON_HOME/opencodon/``:
        - ``apps/desktop/dist``      (compiled renderer)
        - ``apps/desktop/release``   (electron-builder unpacked app + installers)
        - ``apps/desktop/node_modules`` and the workspace-root ``node_modules``
          (Electron itself, ~200MB) — only removed on a GUI uninstall because
          the agent does not need them.
-       - ``$HERMES_HOME/desktop-build-stamp.json`` (the build freshness stamp)
+       - ``$OPENCODON_HOME/desktop-build-stamp.json`` (the build freshness stamp)
 
   2. Packaged distributable (DMG / NSIS / AppImage / deb / rpm)
      Installed by the OS to a standard application location and carrying its
@@ -22,7 +22,7 @@ the Python agent or the user's config/data:
        - Linux:   ``~/.local/share/applications`` .desktop entry + AppImage
 
 In both shapes the Electron runtime keeps a ``userData`` directory keyed on
-the app name ("Hermes"), separate from ``$HERMES_HOME``:
+the app name ("Hermes"), separate from ``$OPENCODON_HOME``:
   - macOS:   ``~/Library/Application Support/Hermes``
   - Windows: ``%APPDATA%\\Hermes``
   - Linux:   ``$XDG_CONFIG_HOME/Hermes`` (default ``~/.config/Hermes``)
@@ -40,7 +40,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 from opencodon_cli.colors import Colors, color
 
@@ -62,9 +62,9 @@ def log_warn(msg: str):
 # ---------------------------------------------------------------------------
 
 
-def _agent_root(hermes_home: Path) -> Path:
+def _agent_root(opencodon_home: Path) -> Path:
     """The agent checkout root — same layout install.sh / install.ps1 use."""
-    return hermes_home / "hermes-agent"
+    return opencodon_home / "opencodon"
 
 
 def desktop_userdata_dir() -> Path:
@@ -87,14 +87,14 @@ def desktop_userdata_dir() -> Path:
     return base / "Hermes"
 
 
-def source_built_gui_artifacts(hermes_home: Path) -> "list[Path]":
+def source_built_gui_artifacts(opencodon_home: Path) -> "list[Path]":
     """GUI build artifacts produced by ``hermes desktop`` inside the checkout.
 
     These are removable on a GUI uninstall without harming the agent: the
     Python agent runs from ``hermes-agent/`` source + ``venv/`` and never
     needs the Electron build output or node_modules.
     """
-    agent_root = _agent_root(hermes_home)
+    agent_root = _agent_root(opencodon_home)
     desktop_dir = agent_root / "apps" / "desktop"
     return [
         desktop_dir / "dist",
@@ -104,7 +104,7 @@ def source_built_gui_artifacts(hermes_home: Path) -> "list[Path]":
         # desktop workspace, ~200MB). The agent does not use any npm package,
         # so this is GUI tooling — safe to drop on a GUI uninstall.
         agent_root / "node_modules",
-        hermes_home / "desktop-build-stamp.json",
+        opencodon_home / "desktop-build-stamp.json",
     ]
 
 
@@ -151,14 +151,14 @@ def packaged_gui_app_paths() -> "list[Path]":
     return paths
 
 
-def agent_is_installed(hermes_home: Path) -> bool:
-    """Return True when a usable Python agent install exists under HERMES_HOME.
+def agent_is_installed(opencodon_home: Path) -> bool:
+    """Return True when a usable Python agent install exists under OPENCODON_HOME.
 
     Used by the desktop UI to decide which uninstall options to offer: if the
     agent isn't present (a future "lite" GUI-only client), the "remove agent"
     options are hidden.
     """
-    agent_root = _agent_root(hermes_home)
+    agent_root = _agent_root(opencodon_home)
     # A real install has the package source + a venv. Either signal alone is
     # enough — a source checkout without a venv is still "the agent is here".
     if (agent_root / "opencodon_cli").is_dir():
@@ -168,9 +168,9 @@ def agent_is_installed(hermes_home: Path) -> bool:
     return False
 
 
-def gui_is_installed(hermes_home: Path) -> bool:
+def gui_is_installed(opencodon_home: Path) -> bool:
     """Return True when any desktop GUI artifact exists (built or packaged)."""
-    for p in source_built_gui_artifacts(hermes_home):
+    for p in source_built_gui_artifacts(opencodon_home):
         if p.exists():
             return True
     for p in packaged_gui_app_paths():
@@ -181,21 +181,21 @@ def gui_is_installed(hermes_home: Path) -> bool:
     return False
 
 
-def gui_install_summary(hermes_home: "Path | None" = None) -> dict:
+def gui_install_summary(opencodon_home: "Path | None" = None) -> dict:
     """Structured snapshot of what's installed, for the desktop UI to render.
 
     Returns JSON-serializable primitives so the Electron main process can
     forward it to the renderer via IPC (paths as strings, booleans for the
     high-level questions the UI gates options on).
     """
-    home: Path = hermes_home if hermes_home is not None else get_hermes_home()
+    home: Path = opencodon_home if opencodon_home is not None else get_opencodon_home()
 
     source_artifacts = [p for p in source_built_gui_artifacts(home) if p.exists()]
     packaged = [p for p in packaged_gui_app_paths() if p.exists()]
     userdata = desktop_userdata_dir()
 
     return {
-        "hermes_home": str(home),
+        "opencodon_home": str(home),
         "agent_installed": agent_is_installed(home),
         "gui_installed": gui_is_installed(home),
         "source_built_artifacts": [str(p) for p in source_artifacts],
@@ -225,7 +225,7 @@ def _remove_path(path: Path) -> bool:
     return False
 
 
-def uninstall_gui(hermes_home: "Path | None" = None, *, remove_userdata: bool = True) -> "list[Path]":
+def uninstall_gui(opencodon_home: "Path | None" = None, *, remove_userdata: bool = True) -> "list[Path]":
     """Remove the desktop GUI's artifacts, leaving the agent + user data intact.
 
     Removes:
@@ -235,11 +235,11 @@ def uninstall_gui(hermes_home: "Path | None" = None, *, remove_userdata: bool = 
       - the Electron ``userData`` directory (unless ``remove_userdata=False``)
 
     Never touches ``hermes-agent/opencodon_cli`` (agent source), ``venv/``, or any
-    config / sessions / .env under ``$HERMES_HOME``.
+    config / sessions / .env under ``$OPENCODON_HOME``.
 
     Returns the list of paths actually removed.
     """
-    home: Path = hermes_home if hermes_home is not None else get_hermes_home()
+    home: Path = opencodon_home if opencodon_home is not None else get_opencodon_home()
 
     removed: list[Path] = []
 

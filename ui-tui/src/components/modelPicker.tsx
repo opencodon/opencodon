@@ -471,7 +471,7 @@ export function ModelPicker({
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Paste your API key below (saved to ~/.hermes/.env)
+          Paste your API key below (saved to ~/.opencodon/.env)
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">

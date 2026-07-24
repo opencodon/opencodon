@@ -4,7 +4,7 @@ import { redactSecrets, SSH_ERROR } from './ssh-connection'
 
 const LOCKFILE_SCHEMA_VERSION = 2
 const PROTOCOL_VERSION = 1
-const READY_RE = /^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)/gm
+const READY_RE = /^OPENCODON_(?:BACKEND|DASHBOARD)_READY port=(\d+)/gm
 const READY_POLL_INTERVAL_MS = 750
 
 function psLiteral(value) {
@@ -25,7 +25,7 @@ async function probeWindowsRemote(ssh, explicitHermesPath = '') {
   const script = [
     '$ErrorActionPreference="Stop"',
     `$explicit=${explicit}`,
-    '$hermesHome=$env:HERMES_HOME',
+    '$hermesHome=$env:OPENCODON_HOME',
     'if(-not $hermesHome){$hermesHome=Join-Path $env:LOCALAPPDATA "hermes"}',
     '$candidates=@()',
     'if($explicit){$candidates+=$explicit}',

@@ -17,13 +17,13 @@ act/
 .env.production.local
 .env.development
 .env.test
-.hermes-docker/
+.opencodon-docker/
 .notebooklm-home/
 .notebooklm-cli-venv/
 .notebooklm-playwright/
 .pip-cache/
 .uv-cache/
-compose.hermes.local.yml
+compose.opencodon.local.yml
 export*
 __pycache__/model_tools.cpython-310.pyc
 __pycache__/web_tools.cpython-310.pyc
@@ -67,7 +67,7 @@ test-results/
 # CLI config (may contain sensitive SSH paths)
 cli-config.yaml
 
-# Skills Hub state (lives in ~/.hermes/skills/.hub/ at runtime, but just in case)
+# Skills Hub state (lives in ~/.opencodon/skills/.hub/ at runtime, but just in case)
 skills/.hub/
 ignored/
 .worktrees/
@@ -130,19 +130,19 @@ config/mcporter.json
 opencodon_cli/tui_dist/*
 opencodon_cli/scripts/
 docs/superpowers/*
-# Working directory for the Hermes Agent's session state (~/.hermes/ at runtime;
+# Working directory for the Hermes Agent's session state (~/.opencodon/ at runtime;
 # also created in-repo when an agent operates in this checkout). Plans, audit
 # logs, and per-session caches are never artifacts of the codebase.
-.hermes/
+.opencodon/
 
 # Desktop/bootstrap install marker written into the managed checkout root by the
 # bootstrap installer. It is Hermes-managed runtime state, never a code change —
 # ignore it so `hermes update`'s `git stash push --include-untracked` does not
 # treat it as a local edit and autostash it on every run (#38529).
-.hermes-bootstrap-complete
+.opencodon-bootstrap-complete
 
 # Persistent dev sandbox dir (scripts/dev-sandbox.sh --persistent)
-.hermes-sandbox/
+.opencodon-sandbox/
 
 # Interrupted-update breadcrumb + recovery lock written next to the shared venv
 # by `hermes update` / launch-time self-heal. Runtime state, never a code change

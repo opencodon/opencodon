@@ -37,8 +37,8 @@ _EXAMPLE_PLUGIN_FIXTURE = (
 
 
 @pytest.fixture
-def _install_example_plugin(_isolate_hermes_home):
-    """Drop the example-dashboard fixture into the per-test HERMES_HOME
+def _install_example_plugin(_isolate_opencodon_home):
+    """Drop the example-dashboard fixture into the per-test OPENCODON_HOME
     user-plugins directory and force the web_server's dashboard plugin
     cache + API mount to rediscover it.
 
@@ -47,20 +47,20 @@ def _install_example_plugin(_isolate_hermes_home):
     user's sidebar. It is now a tests-only fixture: any test that needs
     ``/api/plugins/example/hello`` or ``/dashboard-plugins/example/...``
     requests this fixture so the plugin appears only for that test's
-    isolated ``HERMES_HOME``.
+    isolated ``OPENCODON_HOME``.
 
     The user-plugin source is preferred over a transient
-    ``HERMES_BUNDLED_PLUGINS`` override because the bundled dir is
+    ``OPENCODON_BUNDLED_PLUGINS`` override because the bundled dir is
     resolved per-call (other tests in the suite implicitly rely on the
     real bundled plugins — kanban, hermes-achievements, model providers
     — being available, and globally swapping that root would yank them
     all). User plugins are first in the discovery search order, so
     laying down the fixture here is enough.
     """
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
     from opencodon_cli import web_server
 
-    user_plugins_dir = get_hermes_home() / "plugins"
+    user_plugins_dir = get_opencodon_home() / "plugins"
     user_plugins_dir.mkdir(parents=True, exist_ok=True)
     dst = user_plugins_dir / "example-dashboard"
     if dst.exists():
@@ -89,7 +89,7 @@ def _install_example_plugin(_isolate_hermes_home):
     #   1. Identify the routes the mount call appends.
     #   2. Restore the original list on teardown — otherwise leftover
     #      ``/api/plugins/example/*`` routes leak into subsequent tests
-    #      and start serving requests against a torn-down HERMES_HOME.
+    #      and start serving requests against a torn-down OPENCODON_HOME.
     app = web_server.app
     original_routes = list(app.router.routes)
 
@@ -206,7 +206,7 @@ class TestRedactKey:
 
 
 class TestSessionTokenInjection:
-    """The desktop shell mints HERMES_DASHBOARD_SESSION_TOKEN and signs its
+    """The desktop shell mints OPENCODON_DASHBOARD_SESSION_TOKEN and signs its
     /api + /api/ws calls with it. The backend must adopt that token, else every
     desktop request 401s ("gateway is offline"). A main-merge once silently
     dropped this read — this guards the contract, not a literal value.
@@ -216,19 +216,19 @@ class TestSessionTokenInjection:
         import importlib
         import opencodon_cli.web_server as ws
 
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-seeded-token")
+        monkeypatch.setenv("OPENCODON_DASHBOARD_SESSION_TOKEN", "desktop-seeded-token")
         try:
             importlib.reload(ws)
             assert ws._SESSION_TOKEN == "desktop-seeded-token"
         finally:
-            monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+            monkeypatch.delenv("OPENCODON_DASHBOARD_SESSION_TOKEN", raising=False)
             importlib.reload(ws)
 
     def test_falls_back_to_random_token(self, monkeypatch):
         import importlib
         import opencodon_cli.web_server as ws
 
-        monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+        monkeypatch.delenv("OPENCODON_DASHBOARD_SESSION_TOKEN", raising=False)
         importlib.reload(ws)
 
         assert ws._SESSION_TOKEN and len(ws._SESSION_TOKEN) >= 32
@@ -243,18 +243,18 @@ class TestWebServerEndpoints:
     """Test the FastAPI REST endpoints using Starlette TestClient."""
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
-        """Create a TestClient and isolate the state DB under the test HERMES_HOME."""
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home):
+        """Create a TestClient and isolate the state DB under the test OPENCODON_HOME."""
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
@@ -264,7 +264,7 @@ class TestWebServerEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert "version" in data
-        assert "hermes_home" in data
+        assert "opencodon_home" in data
         assert "active_sessions" in data
         assert data["can_update_hermes"] is True
 
@@ -727,11 +727,11 @@ class TestWebServerEndpoints:
 
     @pytest.fixture(autouse=True)
     def _isolate_honcho_config(self):
-        # Honcho tests write the suite-wide HERMES_HOME honcho.json; snapshot and
+        # Honcho tests write the suite-wide OPENCODON_HOME honcho.json; snapshot and
         # restore it so provider status/config state never leaks across tests.
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        path = get_hermes_home() / "honcho.json"
+        path = get_opencodon_home() / "honcho.json"
         before = path.read_bytes() if path.exists() else None
         yield
         if before is None:
@@ -741,9 +741,9 @@ class TestWebServerEndpoints:
 
     @staticmethod
     def _seed_local_honcho(cfg=None):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        path = get_hermes_home() / "honcho.json"
+        path = get_opencodon_home() / "honcho.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(cfg if cfg is not None else {}), encoding="utf-8")
         return path
@@ -780,7 +780,7 @@ class TestWebServerEndpoints:
         monkeypatch.setenv("HONCHO_API_KEY", "guard")
         monkeypatch.delenv("HONCHO_API_KEY")
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.config import load_config, load_env
 
         resp = self.client.put(
@@ -803,7 +803,7 @@ class TestWebServerEndpoints:
         assert load_config()["memory"]["provider"] == "honcho"
         assert load_env()["HONCHO_API_KEY"] == "hch-test-key"
 
-        cfg = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))
+        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
         # baseUrl is root-scoped; the rest live in the active host block.
         assert cfg["baseUrl"] == "https://honcho.example.dev"
         assert cfg["hosts"]["hermes"]["workspace"] == "myws"
@@ -816,7 +816,7 @@ class TestWebServerEndpoints:
     def test_put_honcho_blank_text_clears_key(self, monkeypatch, tmp_path):
         monkeypatch.setenv("HOME", str(tmp_path))
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         self.client.put(
             "/api/memory/providers/honcho/config?surface=declared",
@@ -827,13 +827,13 @@ class TestWebServerEndpoints:
             json={"values": {"workspace": ""}},
         )
 
-        cfg = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))
+        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
         assert "workspace" not in cfg.get("hosts", {}).get("hermes", {})
 
     def test_put_honcho_partial_save_preserves_other_keys(self, monkeypatch, tmp_path):
         monkeypatch.setenv("HOME", str(tmp_path))
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         self.client.put(
             "/api/memory/providers/honcho/config?surface=declared",
@@ -844,7 +844,7 @@ class TestWebServerEndpoints:
             json={"values": {"peerName": "eri"}},
         )
 
-        host = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
+        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
         assert host["workspace"] == "myws"
         assert host["peerName"] == "eri"
 
@@ -881,14 +881,14 @@ class TestWebServerEndpoints:
     def test_put_honcho_bool_stored_natively_and_false_survives(self, monkeypatch, tmp_path):
         monkeypatch.setenv("HOME", str(tmp_path))
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         self.client.put(
             "/api/memory/providers/honcho/config?surface=declared",
             json={"values": {"saveMessages": "false", "dialecticDynamic": "true"}},
         )
 
-        host = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
+        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
         # Native JSON bools, not the strings "false"/"true" (which read truthy).
         assert host["saveMessages"] is False
         assert host["dialecticDynamic"] is True
@@ -900,14 +900,14 @@ class TestWebServerEndpoints:
     def test_put_honcho_number_stored_as_native_number(self, monkeypatch, tmp_path):
         monkeypatch.setenv("HOME", str(tmp_path))
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         self.client.put(
             "/api/memory/providers/honcho/config?surface=declared",
             json={"values": {"dialecticMaxChars": "1200", "timeout": "2.5"}},
         )
 
-        cfg = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))
+        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
         assert cfg["hosts"]["hermes"]["dialecticMaxChars"] == 1200
         assert isinstance(cfg["hosts"]["hermes"]["dialecticMaxChars"], int)
         # timeout is root-scoped and keeps its fractional part.
@@ -919,14 +919,14 @@ class TestWebServerEndpoints:
     def test_put_honcho_json_round_trips_object(self, monkeypatch, tmp_path):
         monkeypatch.setenv("HOME", str(tmp_path))
         self._seed_local_honcho()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         self.client.put(
             "/api/memory/providers/honcho/config?surface=declared",
             json={"values": {"userPeerAliases": '{"telegram_1": "eri"}'}},
         )
 
-        host = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
+        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
         assert host["userPeerAliases"] == {"telegram_1": "eri"}
 
         fields = self._provider_field_map(self.client.get("/api/memory/providers/honcho/config?surface=declared").json())
@@ -935,7 +935,7 @@ class TestWebServerEndpoints:
     def test_put_honcho_first_save_merges_into_resolved_config(self, monkeypatch, tmp_path):
         # With no profile-local file, a save merges into the resolved global config.
         monkeypatch.setenv("HOME", str(tmp_path))
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         global_path = tmp_path / ".honcho" / "config.json"
         global_path.parent.mkdir(parents=True)
@@ -950,7 +950,7 @@ class TestWebServerEndpoints:
         )
 
         assert resp.status_code == 200
-        assert not (get_hermes_home() / "honcho.json").exists()
+        assert not (get_opencodon_home() / "honcho.json").exists()
         cfg = json.loads(global_path.read_text(encoding="utf-8"))
         assert cfg["baseUrl"] == "https://kept.example"
         assert cfg["hosts"]["hermes"] == {"workspace": "kept", "peerName": "eri"}
@@ -958,7 +958,7 @@ class TestWebServerEndpoints:
     def test_put_honcho_updates_legacy_dot_form_host_block(self, monkeypatch, tmp_path):
         # The legacy dot-form block reads resolve is updated in place, not shadowed.
         monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("HERMES_HONCHO_HOST", "hermes_work")
+        monkeypatch.setenv("OPENCODON_HONCHO_HOST", "hermes_work")
 
         path = self._seed_local_honcho({"hosts": {"hermes.work": {"workspace": "w", "peerName": "eri"}}})
 
@@ -1008,10 +1008,10 @@ class TestWebServerEndpoints:
         # A ?profile= save must land in that profile's config, not the serving
         # process's — same contract as the skills/toolsets endpoints.
         monkeypatch.setenv("HOME", str(tmp_path))
-        # The suite pins HERMES_HONCHO_HOST=hermes; this test exercises
+        # The suite pins OPENCODON_HONCHO_HOST=hermes; this test exercises
         # profile-driven host resolution, so drop the override explicitly.
-        monkeypatch.delenv("HERMES_HONCHO_HOST", raising=False)
-        from opencodon_constants import get_hermes_home
+        monkeypatch.delenv("OPENCODON_HONCHO_HOST", raising=False)
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.profiles import get_profile_dir
 
         self._seed_local_honcho()
@@ -1031,7 +1031,7 @@ class TestWebServerEndpoints:
         host_block = next(iter(worker_hosts.values()))
         assert host_block["peerName"] == "eri"
         # The serving process's own config is untouched.
-        own = json.loads((get_hermes_home() / "honcho.json").read_text(encoding="utf-8"))
+        own = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
         assert "peerName" not in json.dumps(own)
 
         fields = self._provider_field_map(
@@ -1055,9 +1055,9 @@ class TestWebServerEndpoints:
 
     def test_get_media_serves_image_in_root(self):
         """An image under the gateway's images dir is returned as a data URL."""
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        img_dir = get_hermes_home() / "images"
+        img_dir = get_opencodon_home() / "images"
         img_dir.mkdir(parents=True, exist_ok=True)
         img = img_dir / "shot.png"
         img.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 16)
@@ -1075,9 +1075,9 @@ class TestWebServerEndpoints:
         assert resp.status_code == 403
 
     def test_get_media_rejects_non_image_extension(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        img_dir = get_hermes_home() / "images"
+        img_dir = get_opencodon_home() / "images"
         img_dir.mkdir(parents=True, exist_ok=True)
         env = img_dir / "leak.env"
         env.write_text("SECRET=1")
@@ -1086,9 +1086,9 @@ class TestWebServerEndpoints:
         assert resp.status_code == 415
 
     def test_get_media_404_for_missing_file(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        missing = get_hermes_home() / "images" / "nope.png"
+        missing = get_opencodon_home() / "images" / "nope.png"
         resp = self.client.get("/api/media", params={"path": str(missing)})
         assert resp.status_code == 404
 
@@ -1105,7 +1105,7 @@ class TestWebServerEndpoints:
     # ── POST /api/chat/image-upload (browser clipboard/drop images) ─────
 
     def test_chat_image_upload_writes_to_default_profile_images(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         data_url = (
             "data:image/png;base64,"
@@ -1123,7 +1123,7 @@ class TestWebServerEndpoints:
         target = Path(data["path"])
         assert data["ok"] is True
         assert data["mime_type"] == "image/png"
-        assert target.parent == get_hermes_home() / "images"
+        assert target.parent == get_opencodon_home() / "images"
         assert target.name.startswith("dashboard_")
         assert target.name.endswith("_clip.png")
         assert target.is_file()
@@ -2766,7 +2766,7 @@ class TestWebServerEndpoints:
         from pathlib import Path
 
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import get_hermes_home
+        from opencodon_cli.config import get_opencodon_home
 
         captured = {}
 
@@ -2786,17 +2786,17 @@ class TestWebServerEndpoints:
         assert data["name"] == "backup"
         assert captured["name"] == "backup"
         assert captured["args"] == ["backup", "-o", str(archive)]
-        assert archive.parent == get_hermes_home() / "backups"
+        assert archive.parent == get_opencodon_home() / "backups"
         assert archive.name.startswith("hermes-backup-")
         assert archive.suffix == ".zip"
 
-    def test_ops_backup_uses_hosted_hermes_home(self, tmp_path, monkeypatch):
+    def test_ops_backup_uses_hosted_opencodon_home(self, tmp_path, monkeypatch):
         from pathlib import Path
 
         import opencodon_cli.web_server as ws
 
         hosted_home = tmp_path / "opt-data"
-        monkeypatch.setenv("HERMES_HOME", str(hosted_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(hosted_home))
         captured = {}
 
         def fake_spawn(subcommand, name):
@@ -3614,7 +3614,7 @@ class TestWebServerEndpoints:
         assert seen_encodings == {"index": "utf-8", "css": "utf-8"}
 
     def test_headless_serve_disables_spa_even_with_a_dist(self, monkeypatch, tmp_path):
-        """`hermes serve` (HERMES_SERVE_HEADLESS) must NOT serve the SPA even
+        """`hermes serve` (OPENCODON_SERVE_HEADLESS) must NOT serve the SPA even
         when a built dist is present — only the API/WS surface is reachable."""
         from fastapi import FastAPI
         from starlette.testclient import TestClient
@@ -3625,7 +3625,7 @@ class TestWebServerEndpoints:
         (dist / "index.html").write_text("<html><body>UI</body></html>", encoding="utf-8")
 
         monkeypatch.setattr(ws, "WEB_DIST", dist)
-        monkeypatch.setenv("HERMES_SERVE_HEADLESS", "1")
+        monkeypatch.setenv("OPENCODON_SERVE_HEADLESS", "1")
         app_ = FastAPI()
         ws.mount_spa(app_)
 
@@ -4710,17 +4710,17 @@ class TestNewEndpoints:
     """Tests for session detail, logs, cron, skills, tools, raw config, analytics."""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, monkeypatch, _isolate_hermes_home):
+    def _setup(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db")
 
         self.client = TestClient(app)
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
@@ -4785,8 +4785,8 @@ class TestNewEndpoints:
     # --- Profiles ---
 
     def test_profiles_list_includes_default(self):
-        from opencodon_constants import get_hermes_home
-        get_hermes_home().mkdir(parents=True, exist_ok=True)
+        from opencodon_constants import get_opencodon_home
+        get_opencodon_home().mkdir(parents=True, exist_ok=True)
 
         resp = self.client.get("/api/profiles")
         assert resp.status_code == 200
@@ -4794,16 +4794,16 @@ class TestNewEndpoints:
         assert "default" in names
 
     def test_profiles_list_falls_back_when_profile_listing_fails(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
-        hermes_home = get_hermes_home()
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "config.yaml").write_text(
+        opencodon_home = get_opencodon_home()
+        opencodon_home.mkdir(parents=True, exist_ok=True)
+        (opencodon_home / "config.yaml").write_text(
             "model:\n  provider: openrouter\n  name: anthropic/claude-sonnet-4.6\n",
             encoding="utf-8",
         )
-        named = hermes_home / "profiles" / "multi-agent"
+        named = opencodon_home / "profiles" / "multi-agent"
         named.mkdir(parents=True)
         (named / ".env").write_text("EXAMPLE=1\n", encoding="utf-8")
         (named / "skills" / "demo").mkdir(parents=True)
@@ -4849,9 +4849,9 @@ class TestNewEndpoints:
         assert "test-prof-2" not in names
 
     def test_profile_setup_command_uses_named_profile_wrapper(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        (get_hermes_home() / "profiles" / "coder").mkdir(parents=True)
+        (get_opencodon_home() / "profiles" / "coder").mkdir(parents=True)
 
         resp = self.client.get("/api/profiles/coder/setup-command")
 
@@ -4859,9 +4859,9 @@ class TestNewEndpoints:
         assert resp.json()["command"] == "coder setup"
 
     def test_profile_setup_command_uses_hermes_for_default_profile(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        get_hermes_home().mkdir(parents=True, exist_ok=True)
+        get_opencodon_home().mkdir(parents=True, exist_ok=True)
 
         resp = self.client.get("/api/profiles/default/setup-command")
 
@@ -4892,15 +4892,15 @@ class TestNewEndpoints:
             assert lines == ["#!/bin/sh", 'exec /opt/hermes/bin/hermes -p writer "$@"']
 
     def test_profiles_create_with_clone_from_copies_source_skills(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
-        (get_hermes_home() / "config.yaml").write_text(
+        (get_opencodon_home() / "config.yaml").write_text(
             "model:\n  provider: openrouter\n",
             encoding="utf-8",
         )
-        default_skill = get_hermes_home() / "skills" / "custom" / "new-skill"
+        default_skill = get_opencodon_home() / "skills" / "custom" / "new-skill"
         default_skill.mkdir(parents=True)
         (default_skill / "SKILL.md").write_text("---\nname: new-skill\n---\n", encoding="utf-8")
 
@@ -4910,7 +4910,7 @@ class TestNewEndpoints:
         )
 
         assert resp.status_code == 200
-        cloned_root = get_hermes_home() / "profiles" / "cloned"
+        cloned_root = get_opencodon_home() / "profiles" / "cloned"
         cloned_skill = cloned_root / "skills" / "custom" / "new-skill" / "SKILL.md"
         assert cloned_skill.exists()
         cloned_config = yaml.safe_load((cloned_root / "config.yaml").read_text(encoding="utf-8"))
@@ -4919,14 +4919,14 @@ class TestNewEndpoints:
         assert profiles["cloned"]["skill_count"] == 1
 
     def test_profiles_create_with_clone_from_duplicates_source(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         # Create a source profile and give it a distinctive skill.
         assert self.client.post("/api/profiles", json={"name": "source-prof"}).status_code == 200
-        source_skill = get_hermes_home() / "profiles" / "source-prof" / "skills" / "custom" / "src-skill"
+        source_skill = get_opencodon_home() / "profiles" / "source-prof" / "skills" / "custom" / "src-skill"
         source_skill.mkdir(parents=True)
         (source_skill / "SKILL.md").write_text("---\nname: src-skill\n---\n", encoding="utf-8")
 
@@ -4938,18 +4938,18 @@ class TestNewEndpoints:
 
         assert resp.status_code == 200
         cloned_skill = (
-            get_hermes_home() / "profiles" / "source-prof-copy" / "skills" / "custom" / "src-skill" / "SKILL.md"
+            get_opencodon_home() / "profiles" / "source-prof-copy" / "skills" / "custom" / "src-skill" / "SKILL.md"
         )
         assert cloned_skill.exists()
 
     def test_profiles_create_clone_all_from_named_source(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         assert self.client.post("/api/profiles", json={"name": "full-src"}).status_code == 200
-        source_dir = get_hermes_home() / "profiles" / "full-src"
+        source_dir = get_opencodon_home() / "profiles" / "full-src"
         (source_dir / "config.yaml").write_text("model:\n  provider: source-only\n", encoding="utf-8")
         (source_dir / "workspace" / "artifact.txt").parent.mkdir(parents=True, exist_ok=True)
         (source_dir / "workspace" / "artifact.txt").write_text("copied", encoding="utf-8")
@@ -4960,12 +4960,12 @@ class TestNewEndpoints:
         )
 
         assert resp.status_code == 200
-        target_dir = get_hermes_home() / "profiles" / "full-copy"
+        target_dir = get_opencodon_home() / "profiles" / "full-copy"
         assert (target_dir / "config.yaml").read_text(encoding="utf-8") == "model:\n  provider: source-only\n"
         assert (target_dir / "workspace" / "artifact.txt").read_text(encoding="utf-8") == "copied"
 
     def test_profiles_create_without_clone_seeds_bundled_skills(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
@@ -4984,7 +4984,7 @@ class TestNewEndpoints:
         )
 
         assert resp.status_code == 200
-        seeded_skill = get_hermes_home() / "profiles" / "fresh" / "skills" / "software-development" / "plan" / "SKILL.md"
+        seeded_skill = get_opencodon_home() / "profiles" / "fresh" / "skills" / "software-development" / "plan" / "SKILL.md"
         assert seeded_skill.exists()
         profiles = {p["name"]: p for p in self.client.get("/api/profiles").json()["profiles"]}
         assert profiles["fresh"]["skill_count"] == 1
@@ -4994,9 +4994,9 @@ class TestNewEndpoints:
         all land in the NEW profile's config, and hub installs are spawned
         scoped to that profile via ``-p <name>``."""
         from opencodon_constants import (
-            get_hermes_home,
-            set_hermes_home_override,
-            reset_hermes_home_override,
+            get_opencodon_home,
+            set_opencodon_home_override,
+            reset_opencodon_home_override,
         )
         from opencodon_cli.config import load_config
         from opencodon_cli.skills_config import get_disabled_skills
@@ -5058,8 +5058,8 @@ class TestNewEndpoints:
         ]
 
         # Verify the writes landed in the NEW profile's config, not the root.
-        prof_dir = get_hermes_home() / "profiles" / "builder"
-        token = set_hermes_home_override(str(prof_dir))
+        prof_dir = get_opencodon_home() / "profiles" / "builder"
+        token = set_opencodon_home_override(str(prof_dir))
         try:
             cfg = load_config()
             assert cfg["model"]["default"] == "anthropic/claude-sonnet-4.6"
@@ -5069,12 +5069,12 @@ class TestNewEndpoints:
             assert "drop-me" in disabled
             assert "keep-me" not in disabled
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
 
     def test_profiles_create_builder_mcp_auth_is_profile_scoped(
         self, monkeypatch
     ):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
@@ -5119,7 +5119,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         assert resp.json()["mcp_written"] == 3
 
-        root = get_hermes_home()
+        root = get_opencodon_home()
         profile_dir = root / "profiles" / "builder-auth"
         config_text = (profile_dir / "config.yaml").read_text(encoding="utf-8")
         config = yaml.safe_load(config_text)
@@ -5153,10 +5153,10 @@ class TestNewEndpoints:
         assert not (root / ".env").exists()
 
     def test_profile_open_terminal_uses_macos_terminal(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.web_server as web_server
 
-        (get_hermes_home() / "profiles" / "coder").mkdir(parents=True)
+        (get_opencodon_home() / "profiles" / "coder").mkdir(parents=True)
         calls = []
         monkeypatch.setattr(web_server.sys, "platform", "darwin")
         monkeypatch.setattr(web_server.subprocess, "Popen", lambda args, **kwargs: calls.append(args))
@@ -5169,10 +5169,10 @@ class TestNewEndpoints:
         assert "coder setup" in " ".join(calls[0])
 
     def test_profile_open_terminal_uses_windows_cmd(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.web_server as web_server
 
-        (get_hermes_home() / "profiles" / "coder").mkdir(parents=True)
+        (get_opencodon_home() / "profiles" / "coder").mkdir(parents=True)
         calls = []
         monkeypatch.setattr(web_server.sys, "platform", "win32")
         monkeypatch.setattr(web_server.subprocess, "Popen", lambda args, **kwargs: calls.append(args))
@@ -5223,8 +5223,8 @@ class TestNewEndpoints:
     # --- New profiles endpoints: active / description / model / describe-auto ---
 
     def test_profiles_active_defaults(self):
-        from opencodon_constants import get_hermes_home
-        get_hermes_home().mkdir(parents=True, exist_ok=True)
+        from opencodon_constants import get_opencodon_home
+        get_opencodon_home().mkdir(parents=True, exist_ok=True)
 
         resp = self.client.get("/api/profiles/active")
         assert resp.status_code == 200
@@ -5273,7 +5273,7 @@ class TestNewEndpoints:
         assert resp.status_code == 404
 
     def test_profile_model_round_trip(self, monkeypatch):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
@@ -5287,7 +5287,7 @@ class TestNewEndpoints:
         assert resp.json()["provider"] == "openrouter"
 
         import yaml
-        cfg_path = get_hermes_home() / "profiles" / "model-prof" / "config.yaml"
+        cfg_path = get_opencodon_home() / "profiles" / "model-prof" / "config.yaml"
         cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
         assert cfg["model"]["provider"] == "openrouter"
         assert cfg["model"]["default"] == "anthropic/claude-sonnet-4.6"
@@ -7004,7 +7004,7 @@ class TestGatewayBusyReadout:
             "platforms": {},
             "active_agents": 0,
         })
-        monkeypatch.setenv("HERMES_RESTART_DRAIN_TIMEOUT", "90")
+        monkeypatch.setenv("OPENCODON_RESTART_DRAIN_TIMEOUT", "90")
 
         data = self.client.get("/api/status").json()
         assert "restart_drain_timeout" in data
@@ -7315,15 +7315,15 @@ class TestNormaliseThemeDefinition:
 
 
 class TestDiscoverUserThemes:
-    """Tests for _discover_user_themes() — scans ~/.hermes/dashboard-themes/."""
+    """Tests for _discover_user_themes() — scans ~/.opencodon/dashboard-themes/."""
 
     def test_returns_empty_when_dir_missing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         from opencodon_cli import web_server
         assert web_server._discover_user_themes() == []
 
     def test_loads_and_normalises_yaml(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         themes_dir = tmp_path / "dashboard-themes"
         themes_dir.mkdir()
         (themes_dir / "ocean.yaml").write_text(
@@ -7347,7 +7347,7 @@ class TestDiscoverUserThemes:
         assert "fontSans" in results[0]["typography"]
 
     def test_malformed_yaml_skipped(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         themes_dir = tmp_path / "dashboard-themes"
         themes_dir.mkdir()
         (themes_dir / "bad.yaml").write_text("::: not valid yaml :::\n\tindent wrong")
@@ -7361,7 +7361,7 @@ class TestDiscoverUserThemes:
         assert len(results) == 1  # only the valid one
 
     def test_ignores_transient_profile_override(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         themes_dir = tmp_path / "dashboard-themes"
         themes_dir.mkdir()
         (themes_dir / "mine.yaml").write_text("name: mine\n")
@@ -7370,16 +7370,16 @@ class TestDiscoverUserThemes:
         other.mkdir()
 
         from opencodon_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+            reset_opencodon_home_override,
+            set_opencodon_home_override,
         )
         from opencodon_cli import web_server
 
-        token = set_hermes_home_override(str(other))
+        token = set_opencodon_home_override(str(other))
         try:
             results = web_server._discover_user_themes()
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
 
         assert [r["name"] for r in results] == ["mine"]
 
@@ -7390,8 +7390,8 @@ class TestThemeBootstrapCSS:
     the default-teal first-paint flash for user YAML themes."""
 
     @staticmethod
-    def _write_theme(hermes_home, name="ocean"):
-        themes_dir = hermes_home / "dashboard-themes"
+    def _write_theme(opencodon_home, name="ocean"):
+        themes_dir = opencodon_home / "dashboard-themes"
         themes_dir.mkdir(exist_ok=True)
         (themes_dir / f"{name}.yaml").write_text(
             f"name: {name}\n"
@@ -7410,7 +7410,7 @@ class TestThemeBootstrapCSS:
     def test_user_theme_renders_bundle_vars(self, tmp_path, monkeypatch):
         """Active user theme → style block with ONLY variable names the
         bundle actually consumes (layerVars/typographyVars tokens)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_theme(tmp_path)
         from opencodon_cli import web_server
         monkeypatch.setattr(
@@ -7437,7 +7437,7 @@ class TestThemeBootstrapCSS:
         assert "#0a1628" not in css.split("html,body")[1]
 
     def test_builtin_theme_renders_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         from opencodon_cli import web_server
         for builtin in ("default", "midnight", "cyberpunk"):
             monkeypatch.setattr(
@@ -7448,7 +7448,7 @@ class TestThemeBootstrapCSS:
 
     def test_unknown_theme_renders_nothing(self, tmp_path, monkeypatch):
         """Configured theme has no YAML on disk → empty string, no crash."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         from opencodon_cli import web_server
         monkeypatch.setattr(
             web_server, "load_config", lambda: {"dashboard": {"theme": "ghost"}}
@@ -7456,7 +7456,7 @@ class TestThemeBootstrapCSS:
         assert web_server._render_active_theme_bootstrap_css() == ""
 
     def test_non_string_theme_renders_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         from opencodon_cli import web_server
         monkeypatch.setattr(
             web_server, "load_config", lambda: {"dashboard": {"theme": 42}}
@@ -7466,7 +7466,7 @@ class TestThemeBootstrapCSS:
     def test_malformed_theme_yaml_no_crash(self, tmp_path, monkeypatch):
         """A garbage YAML for the active theme name must not crash — the
         discover helper skips it, so no style block is emitted."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         themes_dir = tmp_path / "dashboard-themes"
         themes_dir.mkdir()
         (themes_dir / "broken.yaml").write_text(
@@ -7489,7 +7489,7 @@ class TestThemeBootstrapCSS:
 
     def test_style_escape_defends_style_breakout(self, tmp_path, monkeypatch):
         """`</style>` in a theme value cannot break out of the block."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         themes_dir = tmp_path / "dashboard-themes"
         themes_dir.mkdir()
         (themes_dir / "sneaky.yaml").write_text(
@@ -7524,7 +7524,7 @@ class TestThemeBootstrapCSS:
         return TestClient(spa_app)
 
     def test_serve_index_injects_bootstrap_for_user_theme(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_theme(tmp_path)
         import opencodon_cli.web_server as ws
         monkeypatch.setattr(
@@ -7540,7 +7540,7 @@ class TestThemeBootstrapCSS:
         assert "hermes-theme-bootstrap" in head
 
     def test_serve_index_no_bootstrap_for_builtin_theme(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         import opencodon_cli.web_server as ws
         monkeypatch.setattr(
             ws, "load_config", lambda: {"dashboard": {"theme": "default"}}
@@ -7553,7 +7553,7 @@ class TestThemeBootstrapCSS:
     def test_serve_index_survives_render_failure(self, tmp_path, monkeypatch):
         """Even if theme rendering blows up internally, index serving
         must not crash (the helper swallows and returns '')."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         import opencodon_cli.web_server as ws
 
         def boom():
@@ -7709,18 +7709,18 @@ class TestDeleteSessionEndpoint:
     """
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(
-            opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db"
+            opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db"
         )
 
         self.auth_client = TestClient(app)
@@ -7786,18 +7786,18 @@ class TestBulkDeleteSessionsEndpoint:
     """
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(
-            opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db"
+            opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db"
         )
 
         self.client = TestClient(app)
@@ -7910,20 +7910,20 @@ class TestDeleteEmptySessionsEndpoint:
     """
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        # Pin the SessionDB to the isolated HERMES_HOME so each test
+        # Pin the SessionDB to the isolated OPENCODON_HOME so each test
         # starts with a clean state.db.
         monkeypatch.setattr(
-            opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db"
+            opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db"
         )
 
         self.client = TestClient(app)
@@ -8039,13 +8039,13 @@ class TestPluginAPIAuth:
     """Tests that plugin API routes require the session token (issue #19533)."""
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home, _install_example_plugin):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home, _install_example_plugin):
         """Create a TestClient without the session token header.
 
         Pulls in ``_install_example_plugin`` so ``test_plugin_route_allows_auth``
         has the ``/api/plugins/example/hello`` endpoint available — the
         example plugin is no longer a bundled plugin, so the fixture
-        installs it into the per-test ``HERMES_HOME``.
+        installs it into the per-test ``OPENCODON_HOME``.
         """
         try:
             from starlette.testclient import TestClient
@@ -8053,10 +8053,10 @@ class TestPluginAPIAuth:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db")
 
         self.client = TestClient(app)
         self.auth_client = TestClient(app)
@@ -8072,7 +8072,7 @@ class TestPluginAPIAuth:
         """Plugin API routes should work with a valid session token.
 
         Uses ``/api/plugins/example/hello`` from the example-dashboard
-        test fixture (installed into HERMES_HOME by the class-level
+        test fixture (installed into OPENCODON_HOME by the class-level
         ``_install_example_plugin`` fixture) — a stable, side-effect-free
         GET that's only loaded for tests. With a valid token the handler
         should run (200); without one the middleware should 401 before
@@ -8165,7 +8165,7 @@ class TestDashboardPluginManifestExtensions:
         return plug_dir
 
     def test_override_and_hidden_carried_through(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "skin-home", {
             "name": "skin-home",
             "label": "Skin Home",
@@ -8185,10 +8185,10 @@ class TestDashboardPluginManifestExtensions:
     def test_user_plugins_ignore_profile_home_override(self, tmp_path, monkeypatch):
         """Regression: user dashboard extensions are a dashboard-owned asset
         (like theme YAML), so they must stay visible after a context-local
-        HERMES_HOME override scopes a request to another profile."""
+        OPENCODON_HOME override scopes a request to another profile."""
         from opencodon_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+            reset_opencodon_home_override,
+            set_opencodon_home_override,
         )
         launch_home = tmp_path / "launch"
         launch_home.mkdir()
@@ -8201,17 +8201,17 @@ class TestDashboardPluginManifestExtensions:
         other = tmp_path / "other-profile"
         other.mkdir()
 
-        monkeypatch.setenv("HERMES_HOME", str(launch_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(launch_home))
         from opencodon_cli import web_server
-        token = set_hermes_home_override(str(other))
+        token = set_opencodon_home_override(str(other))
         try:
             plugins = web_server._discover_dashboard_plugins()
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
         assert any(p["name"] == "skin-home" for p in plugins)
 
     def test_override_requires_leading_slash(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "bad-override", {
             "name": "bad-override",
             "label": "Bad",
@@ -8225,7 +8225,7 @@ class TestDashboardPluginManifestExtensions:
         assert "override" not in entry["tab"]
 
     def test_slots_default_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "no-slots", {
             "name": "no-slots",
             "label": "No Slots",
@@ -8241,7 +8241,7 @@ class TestDashboardPluginManifestExtensions:
         assert "override" not in entry["tab"]
 
     def test_slots_filters_non_string_entries(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "mixed-slots", {
             "name": "mixed-slots",
             "label": "Mixed",
@@ -8260,7 +8260,7 @@ class TestDashboardPluginManifestExtensions:
         the manifest loader untouched.  The backend has no allowlist — the
         frontend ``<PluginSlot name="...">`` placements decide what actually
         renders — but the loader must not mangle colons in slot names."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "page-slots", {
             "name": "page-slots",
             "label": "Page Slots",
@@ -8315,7 +8315,7 @@ skip_on_windows = pytest.mark.skipif(
 @skip_on_windows
 class TestPtyWebSocket:
     @pytest.fixture(autouse=True)
-    def _setup(self, monkeypatch, _isolate_hermes_home):
+    def _setup(self, monkeypatch, _isolate_opencodon_home):
         from starlette.testclient import TestClient
 
         import opencodon_cli.web_server as ws
@@ -8349,9 +8349,9 @@ class TestPtyWebSocket:
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
-        assert env["HERMES_TUI_DASHBOARD"] == "1"
-        assert env["HERMES_TUI_INLINE"] == "1"
-        assert env["HERMES_TUI_DISABLE_MOUSE"] == "1"
+        assert env["OPENCODON_TUI_DASHBOARD"] == "1"
+        assert env["OPENCODON_TUI_INLINE"] == "1"
+        assert env["OPENCODON_TUI_DISABLE_MOUSE"] == "1"
 
     def test_resolve_chat_argv_backfills_colorterm_truecolor(self, monkeypatch):
         """Headless servers (cloud/systemd) have no COLORTERM, which made
@@ -8390,9 +8390,9 @@ class TestPtyWebSocket:
         """Dashboard chat gives the Node TUI the same Python env as CLI launches."""
         import opencodon_cli.main as main_mod
 
-        monkeypatch.delenv("HERMES_PYTHON_SRC_ROOT", raising=False)
-        monkeypatch.delenv("HERMES_PYTHON", raising=False)
-        monkeypatch.delenv("HERMES_CWD", raising=False)
+        monkeypatch.delenv("OPENCODON_PYTHON_SRC_ROOT", raising=False)
+        monkeypatch.delenv("OPENCODON_PYTHON", raising=False)
+        monkeypatch.delenv("OPENCODON_CWD", raising=False)
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
@@ -8402,17 +8402,17 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env is not None
-        assert env["HERMES_PYTHON_SRC_ROOT"] == str(main_mod.PROJECT_ROOT)
-        assert env["HERMES_PYTHON"] == sys.executable
-        assert env["HERMES_CWD"] == os.getcwd()
+        assert env["OPENCODON_PYTHON_SRC_ROOT"] == str(main_mod.PROJECT_ROOT)
+        assert env["OPENCODON_PYTHON"] == sys.executable
+        assert env["OPENCODON_CWD"] == os.getcwd()
 
     def test_resolve_chat_argv_replaces_invalid_tui_python_environment(self, monkeypatch):
         """Dashboard chat does not preserve unusable inherited TUI Python env."""
         import opencodon_cli.main as main_mod
 
-        monkeypatch.setenv("HERMES_PYTHON_SRC_ROOT", "/definitely/missing/hermes-src")
-        monkeypatch.setenv("HERMES_PYTHON", "/definitely/missing/python")
-        monkeypatch.setenv("HERMES_CWD", "/definitely/missing/cwd")
+        monkeypatch.setenv("OPENCODON_PYTHON_SRC_ROOT", "/definitely/missing/hermes-src")
+        monkeypatch.setenv("OPENCODON_PYTHON", "/definitely/missing/python")
+        monkeypatch.setenv("OPENCODON_CWD", "/definitely/missing/cwd")
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
@@ -8422,9 +8422,9 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env is not None
-        assert env["HERMES_PYTHON_SRC_ROOT"] == str(main_mod.PROJECT_ROOT)
-        assert env["HERMES_PYTHON"] == sys.executable
-        assert env["HERMES_CWD"] == os.getcwd()
+        assert env["OPENCODON_PYTHON_SRC_ROOT"] == str(main_mod.PROJECT_ROOT)
+        assert env["OPENCODON_PYTHON"] == sys.executable
+        assert env["OPENCODON_CWD"] == os.getcwd()
 
     def test_resolve_chat_argv_keeps_relative_python_under_tui_cwd(
         self, monkeypatch, tmp_path
@@ -8438,8 +8438,8 @@ class TestPtyWebSocket:
         # copy2, not os.link: tmp_path may sit on a different filesystem than
         # the venv (tmpfs /tmp vs disk home) where hard links raise EXDEV.
         shutil.copy2(sys.executable, python_path)
-        monkeypatch.setenv("HERMES_CWD", str(tmp_path))
-        monkeypatch.setenv("HERMES_PYTHON", str(relative_python))
+        monkeypatch.setenv("OPENCODON_CWD", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_PYTHON", str(relative_python))
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
@@ -8449,7 +8449,7 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env is not None
-        assert env["HERMES_PYTHON"] == str(relative_python)
+        assert env["OPENCODON_PYTHON"] == str(relative_python)
 
     def test_tui_python_command_uses_child_path(self, tmp_path):
         """Bare Python commands are resolved from the TUI child's PATH."""
@@ -8463,20 +8463,20 @@ class TestPtyWebSocket:
         # the venv (tmpfs /tmp vs disk home) where hard links raise EXDEV.
         shutil.copy2(sys.executable, executable)
         env = {
-            "HERMES_CWD": str(tmp_path),
-            "HERMES_PYTHON": command,
+            "OPENCODON_CWD": str(tmp_path),
+            "OPENCODON_PYTHON": command,
             "PATH": str(bin_dir),
         }
 
         main_mod._apply_tui_python_env(env)
 
-        assert env["HERMES_PYTHON"] == command
+        assert env["OPENCODON_PYTHON"] == command
 
     def test_resolve_chat_argv_falls_back_when_getcwd_is_missing(self, monkeypatch, tmp_path):
         """Dashboard chat still starts if the service cwd was deleted."""
         import opencodon_cli.main as main_mod
 
-        monkeypatch.delenv("HERMES_CWD", raising=False)
+        monkeypatch.delenv("OPENCODON_CWD", raising=False)
         monkeypatch.setenv("PWD", str(tmp_path))
         monkeypatch.setattr(main_mod.os, "getcwd", lambda: (_ for _ in ()).throw(FileNotFoundError()))
         monkeypatch.setattr(
@@ -8488,14 +8488,14 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env is not None
-        assert env["HERMES_CWD"] == str(tmp_path)
+        assert env["OPENCODON_CWD"] == str(tmp_path)
 
     def test_resolve_chat_argv_applies_terminal_backend_config(
-        self, monkeypatch, _isolate_hermes_home
+        self, monkeypatch, _isolate_opencodon_home
     ):
         import opencodon_cli.main as main_mod
 
-        config_path = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+        config_path = Path(os.environ["OPENCODON_HOME"]) / "config.yaml"
         config_path.write_text(
             "\n".join(
                 [
@@ -8793,7 +8793,7 @@ class TestPtyWebSocket:
 
     def test_channel_param_propagates_sidecar_url(self, monkeypatch):
         """When /api/pty is opened with ?channel=, the PTY child gets a
-        HERMES_TUI_SIDECAR_URL env var pointing back at /api/pub on the
+        OPENCODON_TUI_SIDECAR_URL env var pointing back at /api/pub on the
         same channel — which is how tool events reach the dashboard sidebar."""
         captured: dict = {}
 
@@ -8908,7 +8908,7 @@ def test_resolve_chat_argv_injects_gateway_ws_url(monkeypatch):
     _argv, _cwd, env = ws._resolve_chat_argv()
 
     assert env is not None
-    gateway_url = env.get("HERMES_TUI_GATEWAY_URL", "")
+    gateway_url = env.get("OPENCODON_TUI_GATEWAY_URL", "")
     assert gateway_url.startswith("ws://127.0.0.1:9119/api/ws?")
     assert "token=" in gateway_url
 
@@ -8927,7 +8927,7 @@ class TestDashboardPluginStaticAssetAllowlist:
     """
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home, _install_example_plugin):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home, _install_example_plugin):
         """Create a TestClient and install the example-dashboard fixture.
 
         The static-asset allowlist tests need a plugin to point at —
@@ -8935,7 +8935,7 @@ class TestDashboardPluginStaticAssetAllowlist:
         is served while ``plugin_api.py`` and ``__pycache__/*.pyc``
         from the same directory are not. Since the example plugin is
         no longer bundled, ``_install_example_plugin`` lays it down in
-        the per-test ``HERMES_HOME`` user-plugins dir.
+        the per-test ``OPENCODON_HOME`` user-plugins dir.
         """
         try:
             from starlette.testclient import TestClient
@@ -9030,7 +9030,7 @@ class TestValidateProviderCredential:
     """Live-probe credential validation (/api/providers/validate)."""
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_test_client(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
@@ -9163,24 +9163,24 @@ class TestDesktopCronTicker:
 
         return TestClient(app)
 
-    def test_ticker_runs_when_desktop(self, monkeypatch, _isolate_hermes_home):
+    def test_ticker_runs_when_desktop(self, monkeypatch, _isolate_opencodon_home):
         import threading
         import cron.scheduler as sched
 
         called = threading.Event()
         monkeypatch.setattr(sched, "tick", lambda *a, **k: called.set())
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
+        monkeypatch.setenv("OPENCODON_DESKTOP", "1")
 
         with self._client():
-            assert called.wait(3.0), "expected cron tick under HERMES_DESKTOP=1"
+            assert called.wait(3.0), "expected cron tick under OPENCODON_DESKTOP=1"
 
-    def test_ticker_skipped_without_desktop(self, monkeypatch, _isolate_hermes_home):
+    def test_ticker_skipped_without_desktop(self, monkeypatch, _isolate_opencodon_home):
         import threading
         import cron.scheduler as sched
 
         called = threading.Event()
         monkeypatch.setattr(sched, "tick", lambda *a, **k: called.set())
-        monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+        monkeypatch.delenv("OPENCODON_DESKTOP", raising=False)
 
         with self._client():
             assert not called.wait(0.5), "ticker must not run outside the desktop app"
@@ -9205,7 +9205,7 @@ class TestServeIndexMissingIndex:
                 "<html><head></head><body>SPA</body></html>", encoding="utf-8"
             )
         monkeypatch.setattr(ws, "WEB_DIST", dist)
-        monkeypatch.delenv("HERMES_SERVE_HEADLESS", raising=False)
+        monkeypatch.delenv("OPENCODON_SERVE_HEADLESS", raising=False)
         spa_app = FastAPI()
         ws.mount_spa(spa_app)
         return TestClient(spa_app), dist
@@ -9243,17 +9243,17 @@ class TestDashboardComponentHealth:
     """Component-health rollup: error middleware, /api/status components, self-test."""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, monkeypatch, _isolate_hermes_home):
+    def _setup(self, monkeypatch, _isolate_opencodon_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
         import opencodon_state
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         import opencodon_cli.web_server as ws
 
-        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+        monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", get_opencodon_home() / "state.db")
         # Fresh state holder per test so counters don't leak across tests.
         monkeypatch.setattr(ws, "DASHBOARD_HEALTH", ws.DashboardHealth())
         self.ws = ws

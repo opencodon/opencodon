@@ -8,7 +8,7 @@ Modular wizard with independently-runnable sections:
   4. Messaging Platforms — connect Telegram, Discord, etc.
   5. Tools — configure TTS, web search, image generation, etc.
 
-Config files are stored in ~/.hermes/ for easy access.
+Config files are stored in ~/.opencodon/ for easy access.
 """
 
 import importlib.util
@@ -138,7 +138,7 @@ def _set_reasoning_effort(config: Dict[str, Any], effort: str) -> None:
 from opencodon_cli.config import (
     cfg_get,
     DEFAULT_CONFIG,
-    get_hermes_home,
+    get_opencodon_home,
     get_config_path,
     get_env_path,
     load_config,
@@ -146,9 +146,9 @@ from opencodon_cli.config import (
     save_env_value,
     remove_env_value,
     get_env_value,
-    ensure_hermes_home,
+    ensure_opencodon_home,
 )
-# display_hermes_home imported lazily at call sites (stale-module safety during hermes update)
+# display_opencodon_home imported lazily at call sites (stale-module safety during hermes update)
 
 from opencodon_cli.colors import Colors, color
 
@@ -282,14 +282,14 @@ def is_noninteractive() -> bool:
     """True when no human is available to answer a prompt.
 
     The dashboard/desktop spawn CLI actions with ``stdin=DEVNULL`` and
-    ``HERMES_NONINTERACTIVE=1`` (see ``opencodon_cli/web_server.py``). In that
+    ``OPENCODON_NONINTERACTIVE=1`` (see ``opencodon_cli/web_server.py``). In that
     context an ``input()`` raises ``EOFError`` immediately, so a prompt that
     aborts on EOF kills the spawned action — this is what made the desktop
     "restart gateway" fail when the Windows gateway service was not yet
     installed (the start path asks "Install it now?" with no one to answer).
     Honour the explicit env flag here so callers fall back to their default.
     """
-    return os.environ.get("HERMES_NONINTERACTIVE", "").strip().lower() in {
+    return os.environ.get("OPENCODON_NONINTERACTIVE", "").strip().lower() in {
         "1",
         "true",
         "yes",
@@ -300,7 +300,7 @@ def is_noninteractive() -> bool:
 def prompt_yes_no(question: str, default: bool = True) -> bool:
     """Prompt for yes/no. Ctrl+C exits, empty input returns default.
 
-    Non-interactive callers (``HERMES_NONINTERACTIVE=1`` or a closed/redirected
+    Non-interactive callers (``OPENCODON_NONINTERACTIVE=1`` or a closed/redirected
     stdin) have no one to answer, so fall back to ``default`` instead of
     aborting the whole process.
     """
@@ -392,7 +392,7 @@ def _prompt_api_key(var: dict):
         print_warning("  Skipped (configure later with 'hermes setup')")
 
 
-def _print_setup_summary(config: dict, hermes_home):
+def _print_setup_summary(config: dict, opencodon_home):
     """Print the setup completion summary."""
     # Tool availability summary
     print()
@@ -571,7 +571,7 @@ def _print_setup_summary(config: dict, hermes_home):
         print_warning(
             "Some tools are disabled. Run 'hermes setup tools' to configure them,"
         )
-        from opencodon_constants import display_hermes_home as _dhh
+        from opencodon_constants import display_opencodon_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
 
@@ -595,13 +595,13 @@ def _print_setup_summary(config: dict, hermes_home):
     print()
 
     # Show file locations prominently
-    from opencodon_constants import display_hermes_home as _dhh
+    from opencodon_constants import display_opencodon_home as _dhh
     print(color(f"📁 All your files are in {_dhh()}/:", Colors.CYAN, Colors.BOLD))
     print()
     print(f"   {color('Settings:', Colors.YELLOW)}  {get_config_path()}")
     print(f"   {color('API Keys:', Colors.YELLOW)}  {get_env_path()}")
     print(
-        f"   {color('Data:', Colors.YELLOW)}      {hermes_home}/cron/, sessions/, logs/"
+        f"   {color('Data:', Colors.YELLOW)}      {opencodon_home}/cron/, sessions/, logs/"
     )
     print()
 
@@ -953,7 +953,7 @@ def _setup_tts_provider(config: dict):
         print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.hermes/.env."
+                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.opencodon/.env."
             )
 
     if selected == "neutts":
@@ -1046,7 +1046,7 @@ def _setup_tts_provider(config: dict):
                     save_env_value("XAI_API_KEY", api_key)
                     print_success("xAI TTS API key saved")
                 else:
-                    from opencodon_constants import display_hermes_home as _dhh
+                    from opencodon_constants import display_opencodon_home as _dhh
                     print_warning(
                         "No xAI API key provided for TTS. Configure XAI_API_KEY "
                         f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
@@ -1418,10 +1418,10 @@ def _apply_default_agent_settings(config: dict):
     """Apply recommended defaults for all agent settings without prompting."""
     config.setdefault("agent", {})["max_turns"] = 150
     # config.yaml is the authoritative source for max_turns; the gateway
-    # bridges it into HERMES_MAX_ITERATIONS at startup. We no longer write
+    # bridges it into OPENCODON_MAX_ITERATIONS at startup. We no longer write
     # to .env to avoid the dual-source inconsistency that caused the
     # 60-vs-500 bug (stale .env entry silently shadowing config.yaml).
-    remove_env_value("HERMES_MAX_ITERATIONS")
+    remove_env_value("OPENCODON_MAX_ITERATIONS")
 
     config.setdefault("display", {})["tool_progress"] = "all"
 
@@ -1467,10 +1467,10 @@ def setup_agent_settings(config: dict):
             # Write to config.yaml (authoritative) only. Also clean up any
             # stale .env entry from earlier setup runs — the gateway's
             # bridge in gateway/run.py now unconditionally derives
-            # HERMES_MAX_ITERATIONS from agent.max_turns at startup.
+            # OPENCODON_MAX_ITERATIONS from agent.max_turns at startup.
             config.setdefault("agent", {})["max_turns"] = max_iter
             config.pop("max_turns", None)
-            remove_env_value("HERMES_MAX_ITERATIONS")
+            remove_env_value("OPENCODON_MAX_ITERATIONS")
             print_success(f"Max iterations set to {max_iter}")
     except ValueError:
         print_warning("Invalid number, keeping current value")
@@ -1483,7 +1483,7 @@ def setup_agent_settings(config: dict):
     print_info("  new     — Show tool name only when it changes (less noise)")
     print_info("  all     — Show every tool call with a short preview")
     print_info("  verbose — Full args, results, and debug logs")
-    print_info("  log     — Silent in chat; write every tool call to ~/.hermes/logs/tool_calls.log (gateway only)")
+    print_info("  log     — Silent in chat; write every tool call to ~/.opencodon/logs/tool_calls.log (gateway only)")
 
     current_mode = cfg_get(config, "display", "tool_progress", default="all")
     mode = prompt("Tool progress mode", current_mode)
@@ -1636,17 +1636,17 @@ def _setup_telegram_auto_result():
 
     profile_name: str | None = None
     try:
-        profile_name = _profile_name_from_hermes_home(Path(get_hermes_home()))
+        profile_name = _profile_name_from_opencodon_home(Path(get_opencodon_home()))
     except Exception:
         pass
 
     return auto_setup_telegram_bot_result(profile_name=profile_name)
 
 
-def _profile_name_from_hermes_home(hermes_home) -> str | None:
-    """Return the active profile name when HERMES_HOME is a profile dir."""
-    if hermes_home.parent.name == "profiles":
-        return hermes_home.name
+def _profile_name_from_opencodon_home(opencodon_home) -> str | None:
+    """Return the active profile name when OPENCODON_HOME is a profile dir."""
+    if opencodon_home.parent.name == "profiles":
+        return opencodon_home.name
     return None
 
 
@@ -1825,7 +1825,7 @@ def _setup_webhooks():
     save_env_value("WEBHOOK_ENABLED", "true")
     print()
     print_success("Webhooks enabled! Next steps:")
-    from opencodon_constants import display_hermes_home as _dhh
+    from opencodon_constants import display_opencodon_home as _dhh
     print_info(f"   1. Define webhook routes in {_dhh()}/config.yaml")
     print_info("   2. Point your service (GitHub, GitLab, etc.) at:")
     print_info("      http://your-server:8644/webhooks/<route-name>")
@@ -2351,7 +2351,7 @@ def _print_migration_preview(report: dict):
         print()
 
 
-def _offer_openclaw_migration(hermes_home: Path) -> bool:
+def _offer_openclaw_migration(opencodon_home: Path) -> bool:
     """Detect ~/.openclaw and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
@@ -2399,7 +2399,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=opencodon_home.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
             overwrite=True,  # show everything including conflicts
@@ -2444,7 +2444,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     try:
         migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=opencodon_home.resolve(),
             execute=True,
             workspace_target=None,
             overwrite=False,  # preserve existing Hermes config
@@ -2598,7 +2598,7 @@ def run_setup_wizard(args):
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_hermes_home()
+    ensure_opencodon_home()
 
     reset_requested = bool(getattr(args, "reset", False))
     if reset_requested:
@@ -2609,7 +2609,7 @@ def run_setup_wizard(args):
     quick_requested = bool(getattr(args, "quick", False))
 
     config = load_config()
-    hermes_home = get_hermes_home()
+    opencodon_home = get_opencodon_home()
 
     # Back up existing config before setup modifies it (#3522)
     config_path = get_config_path()
@@ -2725,7 +2725,7 @@ def run_setup_wizard(args):
         # missing items" flow (useful after a partial OpenClaw migration
         # or when a required API key got cleared).
         if quick_requested:
-            _run_quick_setup(config, hermes_home)
+            _run_quick_setup(config, opencodon_home)
             return
 
         print()
@@ -2750,7 +2750,7 @@ def run_setup_wizard(args):
             print()
 
         # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(hermes_home)
+        migration_ran = _offer_openclaw_migration(opencodon_home)
         if migration_ran:
             config = load_config()
 
@@ -2765,17 +2765,17 @@ def run_setup_wizard(args):
         )
 
         if setup_mode == 0:
-            _run_first_time_quick_setup(config, hermes_home, is_existing)
+            _run_first_time_quick_setup(config, opencodon_home, is_existing)
             return
         if setup_mode == 2:
-            _run_blank_slate_setup(config, hermes_home, is_existing)
+            _run_blank_slate_setup(config, opencodon_home, is_existing)
             return
 
     # ── Full Setup — run all sections ──
     print_header("Configuration Location")
     print_info(f"Config file:  {get_config_path()}")
     print_info(f"Secrets file: {get_env_path()}")
-    print_info(f"Data folder:  {hermes_home}")
+    print_info(f"Data folder:  {opencodon_home}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
     print_info("You can edit these files directly or use 'hermes config edit'")
@@ -2814,10 +2814,10 @@ def run_setup_wizard(args):
         print_info(f"Previous config backed up to: {_backup_path}")
         print_info("If setup changed a value you customized, restore it with:")
         print_info(f"  cp {_backup_path} {config_path}")
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, opencodon_home)
 
 
-def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
+def _run_first_time_quick_setup(config: dict, opencodon_home, is_existing: bool):
     """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
 
     Routes straight to the Nous Portal provider — runs the device-code OAuth
@@ -2887,7 +2887,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
         print_info("  Connect Telegram/Discord:  hermes setup gateway")
     print()
 
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, opencodon_home)
 
 
 def _blank_slate_minimal_toolsets(config: dict):
@@ -2919,7 +2919,7 @@ def _blank_slate_minimal_toolsets(config: dict):
         # Plain (non-composite) TOOLSETS entries — catches recovered toolsets
         # like ``kanban`` that aren't in CONFIGURABLE_TOOLSETS but get re-added.
         for k, tdef in TOOLSETS.items():
-            if k.startswith("hermes-"):
+            if k.startswith(("opencodon-", "hermes-")):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
@@ -2963,7 +2963,7 @@ def _blank_slate_minimize_config(config: dict):
     config.setdefault("display", {})["tool_progress"] = "all"
 
 
-def _run_blank_slate_setup(config: dict, hermes_home, is_existing: bool):
+def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
     """Blank Slate setup — start with everything off except the bare minimum.
 
     Forces only the essentials to run an agent (provider + model, the file and
@@ -3037,14 +3037,14 @@ def _run_blank_slate_setup(config: dict, hermes_home, is_existing: bool):
         print_info("  Enable plugins:      hermes plugins")
         print_info("  Tune agent settings: hermes setup agent")
         print()
-        _print_setup_summary(config, hermes_home)
+        _print_setup_summary(config, opencodon_home)
         return
 
     # ── Walkthrough path — opt in to each capability ──
-    _blank_slate_walkthrough(config, hermes_home)
+    _blank_slate_walkthrough(config, opencodon_home)
 
 
-def _blank_slate_walkthrough(config: dict, hermes_home):
+def _blank_slate_walkthrough(config: dict, opencodon_home):
     """Opt-in walkthrough for Blank Slate: skills, tools, plugins, MCP, gateway."""
     from opencodon_cli.config import load_config
 
@@ -3124,10 +3124,10 @@ def _blank_slate_walkthrough(config: dict, hermes_home):
     print_info("  Tune agent settings: hermes setup agent")
     print()
 
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, opencodon_home)
 
 
-def _run_quick_setup(config: dict, hermes_home):
+def _run_quick_setup(config: dict, opencodon_home):
     """Quick setup — only configure items that are missing."""
     from opencodon_cli.config import (
         get_missing_env_vars,
@@ -3290,4 +3290,4 @@ def _run_quick_setup(config: dict, hermes_home):
         save_config(config)
 
     # Jump to summary
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, opencodon_home)

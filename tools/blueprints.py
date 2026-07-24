@@ -56,7 +56,7 @@ class BlueprintError(ValueError):
 
 @dataclass
 class BlueprintSpec:
-    """Parsed ``metadata.hermes.blueprint`` automation spec for a skill."""
+    """Parsed ``metadata.opencodon.blueprint`` automation spec for a skill."""
 
     skill_name: str
     schedule: str
@@ -95,7 +95,7 @@ def _split_frontmatter(text: str) -> Optional[Dict[str, Any]]:
 def parse_blueprint(skill_md_text: str) -> Optional[BlueprintSpec]:
     """Extract a BlueprintSpec from a SKILL.md string, or None if not a blueprint.
 
-    A skill is a blueprint iff ``metadata.hermes.blueprint`` is a mapping containing
+    A skill is a blueprint iff ``metadata.opencodon.blueprint`` is a mapping containing
     a non-empty ``schedule``. Raises BlueprintError if the block exists but is
     structurally invalid (so a typo surfaces instead of silently no-op'ing).
     """
@@ -111,7 +111,7 @@ def parse_blueprint(skill_md_text: str) -> Optional[BlueprintSpec]:
     if blueprint is None:
         return None
     if not isinstance(blueprint, dict):
-        raise BlueprintError("metadata.hermes.blueprint must be a mapping")
+        raise BlueprintError("metadata.opencodon.blueprint must be a mapping")
 
     schedule = str(blueprint.get("schedule", "")).strip()
     if not schedule:
@@ -247,7 +247,7 @@ def export_blueprint(job: Dict[str, Any], body: str, *, blueprint_name: Optional
     """Render a shareable blueprint SKILL.md from an existing cron job dict.
 
     The inverse of ``create_blueprint_job``: take a cron job a user already built
-    and emit a SKILL.md (with a ``metadata.hermes.blueprint`` block) they can hand
+    and emit a SKILL.md (with a ``metadata.opencodon.blueprint`` block) they can hand
     to ``hermes skills publish`` to share. ``body`` is the plain-language
     description / instructions that become the SKILL.md body.
     """

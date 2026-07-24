@@ -14,7 +14,7 @@ from opencodon_cli import web_server
 
 
 @pytest.fixture
-def stream_client(monkeypatch, _isolate_hermes_home):
+def stream_client(monkeypatch, _isolate_opencodon_home):
     previous_auth_required = getattr(web_server.app.state, "auth_required", None)
     web_server.app.state.auth_required = False
 

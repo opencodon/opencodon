@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # Freeze YOLO mode at module import time. Reading os.environ on every call
 # would allow any skill running inside the process to set this variable and
 # instantly bypass all approval checks — a prompt-injection escalation path.
-_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("HERMES_YOLO_MODE", ""))
+_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("OPENCODON_YOLO_MODE", ""))
 
 # Per-thread/per-task gateway session identity.
 # Gateway runs agent turns concurrently in executor threads, so reading a
@@ -53,13 +53,13 @@ _approval_tool_call_id: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 # Interactive-CLI flag. Concurrent ACP sessions run on a shared
 # ThreadPoolExecutor (acp_adapter/server.py), so mutating the process-global
-# os.environ["HERMES_INTERACTIVE"] races: one session's restore in `finally`
+# os.environ["OPENCODON_INTERACTIVE"] races: one session's restore in `finally`
 # can clobber another session's set mid-run, dropping it onto the
 # non-interactive auto-approve path so a dangerous command executes without
 # the approval callback firing (GHSA-96vc-wcxf-jjff). A contextvar is
 # thread/task-local, so each executor worker (or asyncio task) sees only its
 # own value. None = unset → fall back to the env var for legacy
-# single-threaded CLI callers that still export HERMES_INTERACTIVE.
+# single-threaded CLI callers that still export OPENCODON_INTERACTIVE.
 _hermes_interactive_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "hermes_interactive",
     default=None,
@@ -69,9 +69,9 @@ _hermes_interactive_ctx: contextvars.ContextVar[Optional[str]] = contextvars.Con
 def set_hermes_interactive_context(interactive: bool) -> contextvars.Token:
     """Bind interactive mode for the current context (thread or asyncio task).
 
-    Use this instead of mutating ``os.environ["HERMES_INTERACTIVE"]`` from
+    Use this instead of mutating ``os.environ["OPENCODON_INTERACTIVE"]`` from
     concurrent executor threads. When unset (default), interactive detection
-    falls back to the ``HERMES_INTERACTIVE`` env var for legacy callers.
+    falls back to the ``OPENCODON_INTERACTIVE`` env var for legacy callers.
     """
     return _hermes_interactive_ctx.set("1" if interactive else "")
 
@@ -85,12 +85,12 @@ def _is_interactive_cli() -> bool:
     """True when running an interactive CLI/ACP session.
 
     Prefers the context-local flag (set by concurrent ACP sessions) and falls
-    back to the ``HERMES_INTERACTIVE`` env var for single-threaded callers.
+    back to the ``OPENCODON_INTERACTIVE`` env var for single-threaded callers.
     """
     ctx_val = _hermes_interactive_ctx.get()
     if ctx_val is not None:
         return is_truthy_value(ctx_val)
-    return env_var_enabled("HERMES_INTERACTIVE")
+    return env_var_enabled("OPENCODON_INTERACTIVE")
 
 
 def _fire_approval_hook(hook_name: str, **kwargs) -> None:
@@ -211,7 +211,7 @@ def get_current_session_key(default: str = "default") -> str:
     if session_key:
         return session_key
     from gateway.session_context import get_session_env
-    return get_session_env("HERMES_SESSION_KEY", default)
+    return get_session_env("OPENCODON_SESSION_KEY", default)
 
 
 def _get_session_platform() -> str:
@@ -219,58 +219,58 @@ def _get_session_platform() -> str:
     try:
         from gateway.session_context import get_session_env
 
-        return get_session_env("HERMES_SESSION_PLATFORM", "") or ""
+        return get_session_env("OPENCODON_SESSION_PLATFORM", "") or ""
     except Exception:
-        return os.getenv("HERMES_SESSION_PLATFORM", "") or ""
+        return os.getenv("OPENCODON_SESSION_PLATFORM", "") or ""
 
 
 def _is_gateway_approval_context() -> bool:
     """True when this call is inside a gateway/API session.
 
-    Legacy gateway integrations set HERMES_GATEWAY_SESSION in process env.
-    Newer concurrent gateway paths bind HERMES_SESSION_PLATFORM via
+    Legacy gateway integrations set OPENCODON_GATEWAY_SESSION in process env.
+    Newer concurrent gateway paths bind OPENCODON_SESSION_PLATFORM via
     contextvars so approval mode does not depend on process-global flags.
 
     Cron jobs are NEVER gateway-approval contexts even when they originate
-    from a gateway platform (cron binds HERMES_SESSION_PLATFORM via
+    from a gateway platform (cron binds OPENCODON_SESSION_PLATFORM via
     contextvars for delivery routing). Cron approvals are governed by
     ``approvals.cron_mode`` config, not interactive resolve — letting cron
     fall through to the gateway branch would submit a pending approval
     with no listener and block the job indefinitely.
     """
-    if env_var_enabled("HERMES_CRON_SESSION"):
+    if env_var_enabled("OPENCODON_CRON_SESSION"):
         return False
-    if env_var_enabled("HERMES_GATEWAY_SESSION"):
+    if env_var_enabled("OPENCODON_GATEWAY_SESSION"):
         return True
     return bool(_get_session_platform())
 
 # Sensitive write targets that should trigger approval even when referenced
-# via shell expansions like $HOME or $HERMES_HOME, or by the resolved absolute
-# active profile home path such as /home/hermes/.hermes/config.yaml. The
-# resolved-absolute form is folded into the ~/.hermes/ patterns at detection
+# via shell expansions like $HOME or $OPENCODON_HOME, or by the resolved absolute
+# active profile home path such as /home/hermes/.opencodon/config.yaml. The
+# resolved-absolute form is folded into the ~/.opencodon/ patterns at detection
 # time by _normalize_command_for_detection() — see the rewrite step there — so
 # these static patterns stay free of any import-time path snapshot (which would
-# go stale when HERMES_HOME is set after this module is imported, e.g. under the
+# go stale when OPENCODON_HOME is set after this module is imported, e.g. under the
 # hermetic test conftest or any deferred-profile-resolution path).
 _SSH_SENSITIVE_PATH = r'(?:~|\$home|\$\{home\})/\.ssh(?:/|$)'
-_HERMES_ENV_PATH = (
-    r'(?:~\/\.hermes/|'
-    r'(?:\$home|\$\{home\})/\.hermes/|'
-    r'(?:\$hermes_home|\$\{hermes_home\})/)'
+_OPENCODON_ENV_PATH = (
+    r'(?:~\/\.opencodon/|'
+    r'(?:\$home|\$\{home\})/\.opencodon/|'
+    r'(?:\$opencodon_home|\$\{opencodon_home\})/)'
     r'\.env\b'
 )
-# ~/.hermes/config.yaml IS the security policy: approvals.mode, yolo, and the
+# ~/.opencodon/config.yaml IS the security policy: approvals.mode, yolo, and the
 # permanent-approval allowlist live here, and the config cache is mtime-keyed
 # so a write takes effect mid-session (the agent could flip approvals.mode=off
 # and immediately bypass the gate). Pair the write_file/patch deny (file_tools
 # _check_sensitive_path) with terminal-side coverage so `sed -i`, `tee`, `>`,
 # `cp`, etc. targeting it are gated too — otherwise the deny is unpaired
-# theater. Mirrors _HERMES_ENV_PATH; matches the HERMES_HOME override form as
-# well as ~/.hermes/.
-_HERMES_CONFIG_PATH = (
-    r'(?:~\/\.hermes/|'
-    r'(?:\$home|\$\{home\})/\.hermes/|'
-    r'(?:\$hermes_home|\$\{hermes_home\})/)'
+# theater. Mirrors _OPENCODON_ENV_PATH; matches the OPENCODON_HOME override form as
+# well as ~/.opencodon/.
+_OPENCODON_CONFIG_PATH = (
+    r'(?:~\/\.opencodon/|'
+    r'(?:\$home|\$\{home\})/\.opencodon/|'
+    r'(?:\$opencodon_home|\$\{opencodon_home\})/)'
     r'config\.yaml\b'
 )
 _PROJECT_ENV_PATH = r'(?:(?:/|\.{1,2}/)?(?:[^\s/"\'`]+/)*\.env(?:\.[^/\s"\'`]+)*)'
@@ -297,8 +297,8 @@ _SYSTEM_CONFIG_PATH = (
 _SENSITIVE_WRITE_TARGET = (
     rf'(?:{_SYSTEM_CONFIG_PATH}|/dev/sd|'
     rf'{_SSH_SENSITIVE_PATH}|'
-    rf'{_HERMES_ENV_PATH}|'
-    rf'{_HERMES_CONFIG_PATH}|'
+    rf'{_OPENCODON_ENV_PATH}|'
+    rf'{_OPENCODON_CONFIG_PATH}|'
     rf'{_SHELL_RC_FILES}|'
     rf'{_CREDENTIAL_FILES})'
 )
@@ -693,8 +693,8 @@ DANGEROUS_PATTERNS = [
     (r'\bdocker\s+compose\s+(restart|stop|kill|down)\b', "docker compose restart/stop/kill/down (container lifecycle)"),
     (r'\bdocker\s+(restart|stop|kill)\b', "docker restart/stop/kill (container lifecycle)"),
     # Gateway protection: never start gateway outside systemd management
-    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
-    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
+    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart opencodon-gateway')"),
+    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart opencodon-gateway')"),
     # Self-termination protection: prevent agent from killing its own process
     (r'\b(pkill|killall)\b.*\b(hermes|gateway|cli\.py)\b', "kill hermes/gateway process (self-termination)"),
     # Self-termination via kill + command substitution (pgrep/pidof).
@@ -707,9 +707,9 @@ DANGEROUS_PATTERNS = [
     (r'\bkill\b.*`\s*(pgrep|pidof)\b', "kill process via backtick pgrep/pidof expansion (self-termination)"),
     # launchctl-driven gateway stop/restart on macOS. The agent can bypass
     # the `hermes gateway stop|restart` pattern above by driving launchd
-    # directly against the service label (commonly `ai.hermes.gateway`).
+    # directly against the service label (commonly `ai.opencodon.gateway`).
     # Catch the operations that stop, restart, or unload it.
-    (r'\blaunchctl\s+(stop|kickstart|bootout|unload|kill|disable|remove)\b.*\b(hermes|ai\.hermes)\b', "stop/restart hermes launchd service (kills running agents)"),
+    (r'\blaunchctl\s+(stop|kickstart|bootout|unload|kill|disable|remove)\b.*\b(hermes|ai\.opencodon)\b', "stop/restart hermes launchd service (kills running agents)"),
     # File copy/move/edit into sensitive system paths (/etc/ and macOS
     # /private/etc/ mirror).
     (rf'\b(cp|mv|install)\b.*\s{_SYSTEM_CONFIG_PATH}', "copy/move file into system config path"),
@@ -717,7 +717,7 @@ DANGEROUS_PATTERNS = [
     # cp/mv/install OVERWRITING a sensitive credential/SSH/shell-rc/Hermes file.
     # The tee/redirection patterns above already gate _SENSITIVE_WRITE_TARGET
     # (~/.ssh/*, ~/.netrc/.pgpass/.npmrc/.pypirc, shell rc files,
-    # ~/.hermes/config.yaml/.env), but cp/mv/install was only paired for /etc and
+    # ~/.opencodon/config.yaml/.env), but cp/mv/install was only paired for /etc and
     # project-relative env/config — so `cp evil ~/.ssh/authorized_keys` (key
     # implant), `cp creds ~/.netrc`, and `cp evil ~/.bashrc` (login-time command
     # injection) slipped through with auto-approve. Same unpaired-door rationale
@@ -737,12 +737,12 @@ DANGEROUS_PATTERNS = [
     (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_USER_SENSITIVE_WRITE_TARGET})[^\s"\']*', "in-place edit of sensitive credential/SSH/shell-rc path (perl/ruby)"),
     (rf'\bsed\s+-[^\s]*i.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config"),
     (rf'\bsed\s+--in-place\b.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config (long flag)"),
-    # In-place edit of a Hermes-managed security file (~/.hermes/config.yaml or
+    # In-place edit of a Hermes-managed security file (~/.opencodon/config.yaml or
     # .env). sed -i bypasses the redirection/tee patterns above because it
     # mutates the file directly. Pairs the file_tools write_file/patch deny so
     # the terminal side is not an open door. See #14639.
-    (rf'\bsed\s+-[^\s]*i.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env"),
-    (rf'\bsed\s+--in-place\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (long flag)"),
+    (rf'\bsed\s+-[^\s]*i.*(?:{_OPENCODON_CONFIG_PATH}|{_OPENCODON_ENV_PATH})', "in-place edit of Hermes config/env"),
+    (rf'\bsed\s+--in-place\b.*(?:{_OPENCODON_CONFIG_PATH}|{_OPENCODON_ENV_PATH})', "in-place edit of Hermes config/env (long flag)"),
     # perl -i and ruby -i perform the same in-place mutation as sed -i but are
     # not caught by the -e/-c script-execution pattern above (which targets code
     # evaluation, not file mutation). Pairs the sed -i coverage from #14639.
@@ -751,7 +751,7 @@ DANGEROUS_PATTERNS = [
     # backup suffix (`perl -i.bak`). Match any flag token containing `i`
     # anywhere in the args, not just the first token — `perl -e '...'` (code
     # eval, no -i) does not trip because it has no `-...i` flag token.
-    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (perl/ruby)"),
+    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_OPENCODON_CONFIG_PATH}|{_OPENCODON_ENV_PATH})', "in-place edit of Hermes config/env (perl/ruby)"),
     # Interpreter heredocs are handled by _execution_flag_findings() alongside
     # inline-exec flags; keep only shell heredocs regex-based here.
     # Shell execution via heredoc — `bash <<'EOF' ... EOF` runs arbitrary
@@ -889,10 +889,10 @@ def _normalize_command_for_detection(command: str) -> str:
     # home-prefix folds below (which match C:\Users\alice\... — no newline).
     command = re.sub(r'\\\r?\n', '', command)
     # Fold absolute home / active-profile-home prefixes into their canonical
-    # ~/ and ~/.hermes/ forms so static user-sensitive patterns catch
+    # ~/ and ~/.opencodon/ forms so static user-sensitive patterns catch
     # /home/alice/.bashrc and C:\Users\alice\.bashrc the same way they catch
     # ~/.bashrc. Resolve at detection time (not via an import-time snapshot) so
-    # it tracks HOME / HERMES_HOME even when those are set after this module is
+    # it tracks HOME / OPENCODON_HOME even when those are set after this module is
     # imported — as the hermetic test conftest and profile/session launchers do.
     #
     # This MUST run before the backslash-escape strip below: on Windows the home
@@ -903,7 +903,7 @@ def _normalize_command_for_detection(command: str) -> str:
     # Fold the (more specific) Hermes home first: on Windows it nests under the
     # user home (C:\Users\alice\AppData\...\hermes), so folding the user home
     # first would eat the prefix the Hermes-home fold needs.
-    command = _rewrite_resolved_hermes_home(command)
+    command = _rewrite_resolved_opencodon_home(command)
     command = _rewrite_resolved_user_home(command)
     # Strip shell backslash-escapes: r\m → rm. Prevents \-injection bypass.
     command = re.sub(r'\\([^\n])', r'\1', command)
@@ -944,7 +944,7 @@ def _home_prefix_fold_regex(path: str):
     required (``+``), so a bare home with no path under it is not folded.
 
     Returns ``None`` for an unset or degenerate path — one with fewer than two
-    components below the root — so a stray HOME / HERMES_HOME such as ``/``,
+    components below the root — so a stray HOME / OPENCODON_HOME such as ``/``,
     ``C:\\`` or ``""`` cannot rewrite unrelated filesystem prefixes. Cached
     because the resolved home is stable across calls on this hot path.
     """
@@ -966,7 +966,7 @@ def _home_prefix_fold_regex(path: str):
 def _fold_home_prefixes(command: str, paths, replacement: str) -> str:
     """Fold each resolved home *path* prefix in *command* to *replacement*.
 
-    *replacement* has no trailing separator (``~`` / ``~/.hermes``); the matched
+    *replacement* has no trailing separator (``~`` / ``~/.opencodon``); the matched
     path tail (with its backslashes normalized to ``/``) supplies it. Longest
     candidate first so a deeper home (e.g. an explicit HOME under USERPROFILE)
     folds before a shorter overlapping one that would otherwise clobber it.
@@ -1008,28 +1008,28 @@ def _rewrite_resolved_user_home(command: str) -> str:
     return _fold_home_prefixes(command, candidates, "~")
 
 
-def _rewrite_resolved_hermes_home(command: str) -> str:
-    """Rewrite the resolved absolute Hermes home prefix to ``~/.hermes/``.
+def _rewrite_resolved_opencodon_home(command: str) -> str:
+    """Rewrite the resolved absolute Hermes home prefix to ``~/.opencodon/``.
 
-    Resolves the active ``HERMES_HOME`` at call time (and its symlink-resolved
+    Resolves the active ``OPENCODON_HOME`` at call time (and its symlink-resolved
     form) and folds an occurrence of ``<home>/`` in *command* into
-    ``~/.hermes/`` so the static ``_HERMES_CONFIG_PATH`` / ``_HERMES_ENV_PATH``
+    ``~/.opencodon/`` so the static ``_OPENCODON_CONFIG_PATH`` / ``_OPENCODON_ENV_PATH``
     patterns match. In Docker and gateway deployments the agent often references
     the resolved absolute path directly (e.g. ``sed -i ...
-    /home/hermes/.hermes/config.yaml``) rather than ``~``, ``$HOME``, or
-    ``$HERMES_HOME``. Matches both POSIX and Windows separators. No-op when the
+    /home/hermes/.opencodon/config.yaml``) rather than ``~``, ``$HOME``, or
+    ``$OPENCODON_HOME``. Matches both POSIX and Windows separators. No-op when the
     path can't be resolved or doesn't appear.
     """
     try:
-        from opencodon_constants import get_hermes_home
-        home = get_hermes_home().expanduser()
+        from opencodon_constants import get_opencodon_home
+        home = get_opencodon_home().expanduser()
         candidates = [
             str(home),
             str(home.resolve(strict=False)),
         ]
     except Exception:
         return command
-    return _fold_home_prefixes(command, candidates, "~/.hermes")
+    return _fold_home_prefixes(command, candidates, "~/.opencodon")
 
 
 _PARAM_REPLACEMENT_RE = re.compile(r"\$\{[^}/\s]+/[^}/]*/(?P<replacement>[^}]*)\}")
@@ -2341,7 +2341,7 @@ def prompt_dangerous_approval(command: str, description: str,
         # tests, sshd, etc.).
         pass
 
-    os.environ["HERMES_SPINNER_PAUSE"] = "1"
+    os.environ["OPENCODON_SPINNER_PAUSE"] = "1"
     try:
         # Resolve the active UI language once per prompt so we don't re-read
         # config/YAML inside the retry loop below.
@@ -2416,8 +2416,8 @@ def prompt_dangerous_approval(command: str, description: str,
         print("\n" + t("approval.cancelled"))
         return "deny"
     finally:
-        if "HERMES_SPINNER_PAUSE" in os.environ:
-            del os.environ["HERMES_SPINNER_PAUSE"]
+        if "OPENCODON_SPINNER_PAUSE" in os.environ:
+            del os.environ["OPENCODON_SPINNER_PAUSE"]
         print()
         sys.stdout.flush()
 
@@ -2474,7 +2474,7 @@ def is_approval_bypass_active() -> bool:
 
     Collapses the canonical three-source bypass check used across the codebase
     into one place:
-      - process-scoped ``--yolo`` / ``HERMES_YOLO_MODE`` (frozen at import time
+      - process-scoped ``--yolo`` / ``OPENCODON_YOLO_MODE`` (frozen at import time
         so a mid-process skill can't flip it — a prompt-injection escalation
         path; see ``_YOLO_MODE_FROZEN`` above),
       - the session-scoped gateway ``/yolo`` toggle,
@@ -2681,7 +2681,7 @@ def _run_approval_gate(
             auto-approve warning (identifies command vs plugin origin).
         fail_closed_when_no_human: When True, a non-interactive non-gateway
             context that is NOT a cron session (e.g. a bare script with
-            HERMES_INTERACTIVE unset) BLOCKS instead of auto-approving. The
+            OPENCODON_INTERACTIVE unset) BLOCKS instead of auto-approving. The
             dangerous-command path keeps its historical fail-open default
             (False); the plugin-escalation path opts in to fail-closed so a
             plugin-flagged action never runs ungated without a human.
@@ -2714,7 +2714,7 @@ def _run_approval_gate(
 
     if not is_cli and not is_gateway:
         # Cron sessions: respect cron_mode config
-        if env_var_enabled("HERMES_CRON_SESSION"):
+        if env_var_enabled("OPENCODON_CRON_SESSION"):
             if _get_cron_approval_mode() == "deny":
                 return {
                     "approved": False,
@@ -2730,8 +2730,8 @@ def _run_approval_gate(
             # command path keeps the historical fail-open default.)
             logger.warning(
                 "%s (pattern: %s): %s — no interactive user/gateway present; "
-                "BLOCKED (fail-closed). Set HERMES_INTERACTIVE or "
-                "HERMES_GATEWAY_SESSION to answer the prompt.",
+                "BLOCKED (fail-closed). Set OPENCODON_INTERACTIVE or "
+                "OPENCODON_GATEWAY_SESSION to answer the prompt.",
                 autoapprove_log_prefix, pattern_key, description,
             )
             return {
@@ -2744,13 +2744,13 @@ def _run_approval_gate(
                 "description": description,
             }
         logger.warning(
-            "%s (pattern: %s): %s — set HERMES_INTERACTIVE or "
-            "HERMES_GATEWAY_SESSION to require approval.",
+            "%s (pattern: %s): %s — set OPENCODON_INTERACTIVE or "
+            "OPENCODON_GATEWAY_SESSION to require approval.",
             autoapprove_log_prefix, pattern_key, description,
         )
         return {"approved": True, "message": None}
 
-    if is_gateway or env_var_enabled("HERMES_EXEC_ASK"):
+    if is_gateway or env_var_enabled("OPENCODON_EXEC_ASK"):
         # Interactive gateway round-trip when a notify callback is
         # registered for this session (Discord/Telegram/Slack embed +
         # buttons, same mechanism as check_dangerous_command). Blocks the
@@ -2986,7 +2986,7 @@ def request_tool_approval(
 
     Non-interactive contexts: cron jobs honor ``approvals.cron_mode`` (parity
     with dangerous commands); any OTHER non-interactive non-gateway context
-    (a bare script with no ``HERMES_INTERACTIVE``) fails CLOSED — a plugin-
+    (a bare script with no ``OPENCODON_INTERACTIVE``) fails CLOSED — a plugin-
     flagged action never runs ungated without a human.
     """
     description = reason or f"Plugin requires approval for {tool_name}"
@@ -3236,13 +3236,13 @@ def check_all_command_guards(command: str, env_type: str,
 
     is_cli = _is_interactive_cli()
     is_gateway = _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("OPENCODON_EXEC_ASK")
 
     # Preserve the existing non-interactive behavior: outside CLI/gateway/ask
     # flows, we do not block on approvals and we skip external guard work.
     if not is_cli and not is_gateway and not is_ask:
         # Cron sessions: respect cron_mode config
-        if env_var_enabled("HERMES_CRON_SESSION"):
+        if env_var_enabled("OPENCODON_CRON_SESSION"):
             if _get_cron_approval_mode() == "deny":
                 # Run detection to get a description for the block message
                 is_dangerous, _pk, description = detect_dangerous_command(command)
@@ -3675,10 +3675,10 @@ def check_execute_code_guard(code: str, env_type: str,
         return {"approved": True, "message": None}
 
     is_gateway = _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("OPENCODON_EXEC_ASK")
 
     # Cron: no user is present to approve arbitrary code.
-    if env_var_enabled("HERMES_CRON_SESSION"):
+    if env_var_enabled("OPENCODON_CRON_SESSION"):
         if _get_cron_approval_mode() == "deny":
             return {
                 "approved": False,

@@ -38,7 +38,7 @@ def _scope_to_profile(profile: Optional[str]):
         return
 
     from opencodon_cli import profiles as profiles_mod
-    from opencodon_constants import reset_hermes_home_override, set_hermes_home_override
+    from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
 
     try:
         profiles_mod.validate_profile_name(requested)
@@ -47,11 +47,11 @@ def _scope_to_profile(profile: Optional[str]):
     if not profiles_mod.profile_exists(requested):
         raise HTTPException(status_code=404, detail=f"Profile '{requested}' does not exist.")
 
-    token = set_hermes_home_override(str(profiles_mod.get_profile_dir(requested)))
+    token = set_opencodon_home_override(str(profiles_mod.get_profile_dir(requested)))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_opencodon_home_override(token)
 
 
 @router.post("/{provider}/oauth/start")

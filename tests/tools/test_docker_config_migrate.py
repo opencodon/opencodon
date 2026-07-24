@@ -23,12 +23,12 @@ def _load_script_module():
     return module
 
 
-def _run_migration(hermes_home: Path, **env_overrides: str) -> subprocess.CompletedProcess[str]:
+def _run_migration(opencodon_home: Path, **env_overrides: str) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env.update(
         {
-            "HERMES_HOME": str(hermes_home),
-            "HERMES_SKIP_CHMOD": "1",
+            "OPENCODON_HOME": str(opencodon_home),
+            "OPENCODON_SKIP_CHMOD": "1",
             "PYTHONPATH": str(REPO_ROOT),
         }
     )
@@ -136,7 +136,7 @@ def test_docker_config_migrate_skip_env_leaves_config_unchanged(tmp_path: Path) 
     original = yaml.safe_dump({"_config_version": 11})
     config_path.write_text(original, encoding="utf-8")
 
-    proc = _run_migration(tmp_path, HERMES_SKIP_CONFIG_MIGRATION="1")
+    proc = _run_migration(tmp_path, OPENCODON_SKIP_CONFIG_MIGRATION="1")
 
     assert proc.returncode == 0, proc.stderr
     assert "skipping config migration" in proc.stdout
@@ -207,7 +207,7 @@ def test_docker_config_migrate_restores_backups_when_version_does_not_advance(
 def test_docker_config_migrate_second_boot_preserves_env_byte_for_byte(tmp_path: Path) -> None:
     """Regression for #51579: booting ``gateway run`` twice (i.e. a host
     reboot under ``--restart unless-stopped``) must not strip or rewrite
-    ``$HERMES_HOME/.env``. The first boot migrates the stale config and bumps
+    ``$OPENCODON_HOME/.env``. The first boot migrates the stale config and bumps
     ``_config_version``; the second boot must be a no-op that leaves ``.env``
     byte-identical to what the user supplied.
 

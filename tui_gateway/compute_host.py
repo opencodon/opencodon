@@ -146,7 +146,7 @@ class ComputeHost:
         self._heartbeat_secs = (
             float(heartbeat_secs)
             if heartbeat_secs is not None
-            else float(os.environ.get("HERMES_COMPUTE_HOST_HEARTBEAT_SECS") or "15")
+            else float(os.environ.get("OPENCODON_COMPUTE_HOST_HEARTBEAT_SECS") or "15")
         )
         if self._heartbeat_secs > 0:
             threading.Thread(target=self._heartbeat_loop, name="compute-host-heartbeat", daemon=True).start()
@@ -436,10 +436,10 @@ class ComputeHost:
         home_token = None
         try:
             if profile_home:
-                from opencodon_constants import set_hermes_home_override
+                from opencodon_constants import set_opencodon_home_override
                 from opencodon_state import SessionDB
 
-                home_token = set_hermes_home_override(profile_home)
+                home_token = set_opencodon_home_override(profile_home)
                 session_db = SessionDB(db_path=Path(profile_home) / "state.db")
             agent = server._make_agent(
                 sid,
@@ -454,9 +454,9 @@ class ComputeHost:
         finally:
             if home_token is not None:
                 try:
-                    from opencodon_constants import reset_hermes_home_override
+                    from opencodon_constants import reset_opencodon_home_override
 
-                    reset_hermes_home_override(home_token)
+                    reset_opencodon_home_override(home_token)
                 except Exception:
                     pass
         try:
@@ -694,13 +694,13 @@ def _rss_mb(pid: int) -> float:
 
 def _default_workers() -> int:
     try:
-        return max(2, int(os.environ.get("HERMES_TUI_RPC_POOL_WORKERS") or "8"))
+        return max(2, int(os.environ.get("OPENCODON_TUI_RPC_POOL_WORKERS") or "8"))
     except (TypeError, ValueError):
         return 8
 
 
 def run_host(stdin: Any = None, stdout: Any = None) -> None:
-    os.environ["HERMES_COMPUTE_HOST_CHILD"] = "1"
+    os.environ["OPENCODON_COMPUTE_HOST_CHILD"] = "1"
     stdin = stdin or sys.stdin
     host = ComputeHost(stdout=stdout or sys.stdout)
     shutting_down = threading.Event()
@@ -725,7 +725,7 @@ def run_host(stdin: Any = None, stdout: Any = None) -> None:
             "boot_id": host._boot_id,
             "build_sha": _build_sha(),
             "cwd": os.getcwd(),
-            "hermes_home": os.environ.get("HERMES_HOME", ""),
+            "opencodon_home": os.environ.get("OPENCODON_HOME", ""),
         }
     )
 

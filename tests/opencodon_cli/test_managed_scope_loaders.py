@@ -16,8 +16,8 @@ def homes(tmp_path, monkeypatch):
     home.mkdir()
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed))
     import opencodon_cli.config as cfg
     from opencodon_cli import managed_scope
 
@@ -43,7 +43,7 @@ def test_gateway_run_loader_honors_managed(homes, monkeypatch):
     _seed(home, managed, user="model:\n  default: user/m\n", mgd="model:\n  default: org/m\n")
     import gateway.run as gr
 
-    monkeypatch.setattr(gr, "_hermes_home", home, raising=False)
+    monkeypatch.setattr(gr, "_opencodon_home", home, raising=False)
     cfg = gr._load_gateway_config()
     assert (cfg.get("model") or {}).get("default") == "org/m"
 
@@ -58,7 +58,7 @@ def test_gateway_config_loader_honors_managed(homes, monkeypatch):
     )
     import gateway.config as gc
 
-    # load_gateway_config resolves home via get_hermes_home() (HERMES_HOME env).
+    # load_gateway_config resolves home via get_opencodon_home() (OPENCODON_HOME env).
     cfg = gc.load_gateway_config()
     # Managed value should have flowed into the GatewayConfig.
     assert cfg.group_sessions_per_user is True
@@ -69,10 +69,10 @@ def test_tui_loader_honors_managed(homes, monkeypatch):
     _seed(home, managed, user="display:\n  skin: user\n", mgd="display:\n  skin: charizard\n")
     import tui_gateway.server as ts
 
-    monkeypatch.setattr(ts, "_hermes_home", home, raising=False)
+    monkeypatch.setattr(ts, "_opencodon_home", home, raising=False)
     monkeypatch.setattr(ts, "_cfg_cache", None, raising=False)
     monkeypatch.setattr(ts, "_cfg_mtime", None, raising=False)
-    monkeypatch.setattr(ts, "get_hermes_home_override", lambda: None, raising=False)
+    monkeypatch.setattr(ts, "get_opencodon_home_override", lambda: None, raising=False)
     cfg = ts._load_cfg()
     assert (cfg.get("display") or {}).get("skin") == "charizard"
 
@@ -83,10 +83,10 @@ def test_tui_loader_does_not_persist_managed_back(homes, monkeypatch):
     _seed(home, managed, user="display:\n  skin: user\n", mgd="display:\n  skin: charizard\n")
     import tui_gateway.server as ts
 
-    monkeypatch.setattr(ts, "_hermes_home", home, raising=False)
+    monkeypatch.setattr(ts, "_opencodon_home", home, raising=False)
     monkeypatch.setattr(ts, "_cfg_cache", None, raising=False)
     monkeypatch.setattr(ts, "_cfg_mtime", None, raising=False)
-    monkeypatch.setattr(ts, "get_hermes_home_override", lambda: None, raising=False)
+    monkeypatch.setattr(ts, "get_opencodon_home_override", lambda: None, raising=False)
     ts._load_cfg()  # populates the cache
     # The cache must hold the RAW user value, not the managed overlay, so a
     # subsequent _save_cfg can't bake the managed skin into the user file.
@@ -105,7 +105,7 @@ def test_logging_config_honors_managed(homes, monkeypatch):
 def test_timezone_honors_managed(homes, monkeypatch):
     home, managed = homes
     # opencodon_time checks an env override first; ensure it's unset so config wins.
-    monkeypatch.delenv("HERMES_TIMEZONE", raising=False)
+    monkeypatch.delenv("OPENCODON_TIMEZONE", raising=False)
     monkeypatch.delenv("TZ", raising=False)
     _seed(home, managed, user="timezone: America/New_York\n", mgd="timezone: Asia/Tokyo\n")
     import opencodon_time
@@ -117,7 +117,7 @@ def test_gateway_env_bridge_honors_managed(homes, monkeypatch):
     """The gateway config→env bridge must bridge MANAGED values, not user ones.
 
     gateway/run.py bridges config.yaml settings into os.environ at startup and on
-    every turn (HERMES_TIMEZONE, HERMES_REDACT_SECRETS, HERMES_MAX_ITERATIONS,
+    every turn (OPENCODON_TIMEZONE, OPENCODON_REDACT_SECRETS, OPENCODON_MAX_ITERATIONS,
     ...). A managed value must win at that env layer too — otherwise the bridge
     writes the user's value into the env that the whole process then reads. This
     is the regression that manual verification caught (managed timezone was
@@ -134,7 +134,7 @@ def test_gateway_env_bridge_honors_managed(homes, monkeypatch):
 
     managed_scope.invalidate_managed_cache()
     # The bridge loads config.yaml, expands env, then applies this overlay before
-    # writing HERMES_TIMEZONE = cfg["timezone"]. Prove the overlay flips the value.
+    # writing OPENCODON_TIMEZONE = cfg["timezone"]. Prove the overlay flips the value.
     import yaml
 
     raw = yaml.safe_load((home / "config.yaml").read_text())

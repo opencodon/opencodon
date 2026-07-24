@@ -265,7 +265,7 @@ def test_aiagent_reuses_existing_errors_log_handler():
     """Repeated AIAgent init should not accumulate duplicate errors.log handlers."""
     root_logger = logging.getLogger()
     original_handlers = list(root_logger.handlers)
-    error_log_path = (run_agent._hermes_home / "logs" / "errors.log").resolve()
+    error_log_path = (run_agent._opencodon_home / "logs" / "errors.log").resolve()
 
     try:
         for handler in list(root_logger.handlers):
@@ -833,11 +833,11 @@ class TestSaveSessionLogRedactsSecrets:
 
     @pytest.fixture(autouse=True)
     def _ensure_redaction_enabled(self, monkeypatch):
-        """Force redaction on regardless of host HERMES_REDACT_SECRETS state.
+        """Force redaction on regardless of host OPENCODON_REDACT_SECRETS state.
         The hermetic conftest blanks the env var; the module-level
         ``_REDACT_ENABLED`` constant is captured at import time, so we
         flip it directly for the duration of these tests."""
-        monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+        monkeypatch.delenv("OPENCODON_REDACT_SECRETS", raising=False)
         monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
     def test_redacts_api_key_in_tool_content(self, agent, tmp_path):
@@ -2512,8 +2512,8 @@ class TestExecuteToolCalls:
         assert "tool was not executed" in messages[0]["content"].lower()
 
     def test_result_truncation_over_100k(self, agent, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes").mkdir()
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
+        (tmp_path / ".opencodon").mkdir()
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc])
         messages = []
@@ -2959,7 +2959,7 @@ class TestConcurrentToolExecution:
         import threading
         import time as _time
 
-        monkeypatch.setenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", "0.1")
+        monkeypatch.setenv("OPENCODON_CONCURRENT_TOOL_TIMEOUT_S", "0.1")
         blocker = threading.Event()
         tc1 = _mock_tool_call(name="web_search", arguments='{"q": "fast"}', call_id="c1")
         tc2 = _mock_tool_call(name="web_search", arguments='{"q": "slow"}', call_id="c2")
@@ -3002,7 +3002,7 @@ class TestConcurrentToolExecution:
         a fabricated 'timed out' message (late-completion race)."""
         import concurrent.futures as _cf
 
-        monkeypatch.setenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", "0.1")
+        monkeypatch.setenv("OPENCODON_CONCURRENT_TOOL_TIMEOUT_S", "0.1")
         tc1 = _mock_tool_call(name="web_search", arguments='{"q": "a"}', call_id="c1")
         tc2 = _mock_tool_call(name="web_search", arguments='{"q": "b"}', call_id="c2")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc1, tc2])
@@ -3052,8 +3052,8 @@ class TestConcurrentToolExecution:
 
     def test_concurrent_truncates_large_results(self, agent, tmp_path, monkeypatch):
         """Concurrent path should save oversized results to file."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes").mkdir()
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
+        (tmp_path / ".opencodon").mkdir()
         tc1 = _mock_tool_call(name="web_search", arguments='{}', call_id="c1")
         tc2 = _mock_tool_call(name="web_search", arguments='{}', call_id="c2")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc1, tc2])
@@ -5704,7 +5704,7 @@ class TestRunConversation:
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_test_task_123")
+        monkeypatch.setenv("OPENCODON_KANBAN_TASK", "t_test_task_123")
 
         # Return a tool call for every iteration to exhaust the budget.
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
@@ -5752,12 +5752,12 @@ class TestRunConversation:
         assert "Iteration budget exhausted" in call.kwargs.get("error", "")
 
     def test_no_kanban_block_when_not_in_kanban_mode(self, agent, monkeypatch):
-        """The exhaustion bridge must NOT fire when HERMES_KANBAN_TASK
+        """The exhaustion bridge must NOT fire when OPENCODON_KANBAN_TASK
         is unset (non-kanban runs are unaffected by #29747 gap 2)."""
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         tool_resp = _mock_response(

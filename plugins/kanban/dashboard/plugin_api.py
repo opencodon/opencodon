@@ -18,7 +18,7 @@ Plugin HTTP routes go through the dashboard's session-token auth middleware
 ``/api/plugins/...`` request must present the session bearer token (or the
 session cookie set when you load the dashboard HTML). The token is the
 random per-process ``_SESSION_TOKEN`` printed at startup; the dashboard's
-own pages inject it via ``window.__HERMES_SESSION_TOKEN__`` so logged-in
+own pages inject it via ``window.__OPENCODON_SESSION_TOKEN__`` so logged-in
 browsers don't have to handle it manually.
 
 For the ``/events`` WebSocket we still require the session token as a
@@ -393,7 +393,7 @@ def get_board(
     install doesn't surface a "failed to load" error on the plugin tab.
 
     ``board`` selects which board to read from. Omitting it falls
-    through to the active board (``HERMES_KANBAN_BOARD`` env → on-disk
+    through to the active board (``OPENCODON_KANBAN_BOARD`` env → on-disk
     ``current`` pointer → ``default``).
     """
     board = _resolve_board(board)
@@ -1665,7 +1665,7 @@ def specify_task_endpoint(
     # Pin the board for the duration of this call so the specifier module
     # (which calls ``kb.connect()`` with no args) hits the right DB. Use a
     # context-local override rather than mutating the process-global
-    # HERMES_KANBAN_BOARD env var — this endpoint runs in FastAPI's
+    # OPENCODON_KANBAN_BOARD env var — this endpoint runs in FastAPI's
     # threadpool, so two concurrent requests for different boards would
     # otherwise race on the shared env var and cross-write (issue #38323).
     with kanban_db.scoped_current_board(board or kanban_db.DEFAULT_BOARD):
@@ -1733,7 +1733,7 @@ def reassign_task_endpoint(
 
 @router.get("/config")
 def get_config():
-    """Return kanban dashboard preferences from ~/.hermes/config.yaml.
+    """Return kanban dashboard preferences from ~/.opencodon/config.yaml.
 
     Reads the ``dashboard.kanban`` section if present; defaults otherwise.
     Used by the UI to pre-select tenant filters, toggle markdown rendering,
@@ -1938,7 +1938,7 @@ def get_stats(board: Optional[str] = Query(None)):
 def get_assignees(board: Optional[str] = Query(None)):
     """Known profiles + per-profile task counts.
 
-    Returns the union of ``~/.hermes/profiles/*`` on disk and every
+    Returns the union of ``~/.opencodon/profiles/*`` on disk and every
     distinct assignee currently used on the board. The dashboard uses
     this to populate its assignee dropdown so a freshly-created profile
     appears in the picker before it's been given any task.
@@ -2291,9 +2291,9 @@ def update_profile_description(profile_name: str, payload: DescribeBody):
         from opencodon_cli import profiles as profiles_mod
         canon = profiles_mod.normalize_profile_name(profile_name)
         if canon == "default":
-            from opencodon_constants import get_hermes_home  # type: ignore
+            from opencodon_constants import get_opencodon_home  # type: ignore
             from pathlib import Path as _Path
-            profile_dir = _Path(get_hermes_home())
+            profile_dir = _Path(get_opencodon_home())
         else:
             profile_dir = profiles_mod.get_profile_dir(canon)
         if not profile_dir.is_dir():
@@ -2367,7 +2367,7 @@ def decompose_task_endpoint(
     board = _resolve_board(board)
     # Context-local board pin (see specify endpoint above): this sync
     # endpoint runs in FastAPI's threadpool, so mutating the process-global
-    # HERMES_KANBAN_BOARD env var would let concurrent requests for
+    # OPENCODON_KANBAN_BOARD env var would let concurrent requests for
     # different boards race and cross-write (issue #38323).
     with kanban_db.scoped_current_board(board or kanban_db.DEFAULT_BOARD):
         from opencodon_cli import kanban_decompose  # noqa: WPS433 (intentional)
@@ -2443,7 +2443,7 @@ def get_orchestration_settings():
 
 @router.put("/orchestration")
 def set_orchestration_settings(payload: OrchestrationSettingsBody):
-    """Update the kanban orchestration knobs in ~/.hermes/config.yaml.
+    """Update the kanban orchestration knobs in ~/.opencodon/config.yaml.
 
     Each field is optional — only fields explicitly passed are
     written. ``orchestrator_profile`` / ``default_assignee`` accept

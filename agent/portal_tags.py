@@ -108,7 +108,7 @@ def conversation_tag(session_id: str) -> str:
 
     Format: ``conversation=<session_id>``. ``session_id`` is the canonical
     Hermes conversation identifier (``AIAgent.session_id``) — the same value
-    used for ``~/.hermes/sessions/`` storage, session logs, and lineage.
+    used for ``~/.opencodon/sessions/`` storage, session logs, and lineage.
 
     Unlike the product/client tags this is high-cardinality (one value per
     conversation), so it is only appended when a session id is actually

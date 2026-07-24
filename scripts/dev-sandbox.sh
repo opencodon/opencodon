@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Run a Hermes instance in an isolated sandbox — separate HERMES_HOME,
+# Run a Hermes instance in an isolated sandbox — separate OPENCODON_HOME,
 # separate Electron userData, and a distinct Desktop app name so it doesn't compete
 # with your main desktop instance's single-instance lock.
 #
 # By default the sandbox is throwaway: a temp dir is created and removed on
 # exit. Use --persistent to keep the sandbox across restarts (stored under
-# .hermes-sandbox/ in the worktree git root).
+# .opencodon-sandbox/ in the worktree git root).
 #
 # Usage:
 #   scripts/dev-sandbox.sh python -m opencodon_cli.main
@@ -15,15 +15,15 @@
 #   scripts/dev-sandbox.sh --persistent hermes desktop
 #   scripts/dev-sandbox.sh --persistent -- npm run dev
 #
-# Seed the sandbox HERMES_HOME from an existing directory (e.g. your main
-# ~/.hermes) so config, sessions, skills, etc. are pre-populated:
-#   scripts/dev-sandbox.sh --from ~/.hermes hermes desktop
+# Seed the sandbox OPENCODON_HOME from an existing directory (e.g. your main
+# ~/.opencodon) so config, sessions, skills, etc. are pre-populated:
+#   scripts/dev-sandbox.sh --from ~/.opencodon hermes desktop
 #
 # Override the app name (default: HermesSandbox):
-#   HERMES_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh hermes desktop
+#   OPENCODON_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh hermes desktop
 #
-# Override the persistent sandbox dir name (default: .hermes-sandbox):
-#   HERMES_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent hermes desktop
+# Override the persistent sandbox dir name (default: .opencodon-sandbox):
+#   OPENCODON_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent hermes desktop
 
 set -euo pipefail
 
@@ -37,23 +37,23 @@ Run a Hermes instance in an isolated sandbox.
 
 Options:
   --persistent    Keep the sandbox dir across restarts (under the worktree
-                  git root, in .hermes-sandbox/). Without this flag the
+                  git root, in .opencodon-sandbox/). Without this flag the
                   sandbox is a temp dir that is removed on exit.
-  --from DIR      Copy DIR into the sandbox HERMES_HOME as the starting
+  --from DIR      Copy DIR into the sandbox OPENCODON_HOME as the starting
                   point (config, sessions, skills, etc.).
-                  Ignored if the sandbox HERMES_HOME already has content
+                  Ignored if the sandbox OPENCODON_HOME already has content
                   (e.g. reusing a --persistent sandbox) to avoid clobbering.
-  --delete        Delete the existing persistent sandbox in .hermes-sandbox.
+  --delete        Delete the existing persistent sandbox in .opencodon-sandbox.
   -h, --help      Show this help message.
 
 Environment:
-  HERMES_DEV_SANDBOX_NAME  Override the app name (default: HermesSandbox)
-  HERMES_DEV_SANDBOX_DIR   Override the persistent dir name (default: .hermes-sandbox)
+  OPENCODON_DEV_SANDBOX_NAME  Override the app name (default: HermesSandbox)
+  OPENCODON_DEV_SANDBOX_DIR   Override the persistent dir name (default: .opencodon-sandbox)
 
 Examples:
   dev-sandbox.sh hermes desktop
   dev-sandbox.sh --persistent hermes desktop
-  dev-sandbox.sh --from ~/.hermes hermes desktop
+  dev-sandbox.sh --from ~/.opencodon hermes desktop
   dev-sandbox.sh -- npm run dev
 EOF
 }
@@ -117,7 +117,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-SANDBOX_DIR_NAME="${HERMES_DEV_SANDBOX_DIR:-.hermes-sandbox}"
+SANDBOX_DIR_NAME="${OPENCODON_DEV_SANDBOX_DIR:-.opencodon-sandbox}"
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 PERSISTENT_SANDBOX_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"
@@ -150,7 +150,7 @@ WORKTREE_HASH="$(printf '%s' "$WORKTREE_ROOT" | cksum | cut -d' ' -f1)"
 WORKTREE_NAME="$(basename "$WORKTREE_ROOT")"
 DEFAULT_SANDBOX_NAME="HermesSandbox-${WORKTREE_NAME}-${WORKTREE_HASH}"
 
-SANDBOX_NAME="${HERMES_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
+SANDBOX_NAME="${OPENCODON_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
 
 if [ "$PERSISTENT" = true ]; then
   SANDBOX_ROOT="$PERSISTENT_SANDBOX_ROOT"
@@ -158,26 +158,26 @@ else
   SANDBOX_ROOT="$(mktemp -d -t hermes-sandbox.XXXXXX)"
 fi
 
-export HERMES_HOME="$SANDBOX_ROOT/hermes-home"
-export HERMES_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
-export HERMES_DESKTOP_APP_NAME="$SANDBOX_NAME"
+export OPENCODON_HOME="$SANDBOX_ROOT/hermes-home"
+export OPENCODON_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
+export OPENCODON_DESKTOP_APP_NAME="$SANDBOX_NAME"
 
-mkdir -p "$HERMES_HOME" "$HERMES_DESKTOP_USER_DATA_DIR"
+mkdir -p "$OPENCODON_HOME" "$OPENCODON_DESKTOP_USER_DATA_DIR"
 
 if [ -n "$SEED_DIR" ]; then
-  # Only seed when the sandbox HERMES_HOME is empty — avoids clobbering an
+  # Only seed when the sandbox OPENCODON_HOME is empty — avoids clobbering an
   # existing persistent sandbox on re-run.
-  if [ -z "$(ls -A "$HERMES_HOME" 2>/dev/null)" ]; then
-    echo "[sandbox] seeding HERMES_HOME from $SEED_DIR" >&2
-    cp -a "$SEED_DIR/." "$HERMES_HOME/"
+  if [ -z "$(ls -A "$OPENCODON_HOME" 2>/dev/null)" ]; then
+    echo "[sandbox] seeding OPENCODON_HOME from $SEED_DIR" >&2
+    cp -a "$SEED_DIR/." "$OPENCODON_HOME/"
   else
-    echo "[sandbox] --from ignored: $HERMES_HOME already has content" >&2
+    echo "[sandbox] --from ignored: $OPENCODON_HOME already has content" >&2
   fi
 fi
 
-echo "[sandbox] HERMES_HOME=$HERMES_HOME" >&2
-echo "[sandbox] userData=$HERMES_DESKTOP_USER_DATA_DIR" >&2
-echo "[sandbox] appName=$HERMES_DESKTOP_APP_NAME" >&2
+echo "[sandbox] OPENCODON_HOME=$OPENCODON_HOME" >&2
+echo "[sandbox] userData=$OPENCODON_DESKTOP_USER_DATA_DIR" >&2
+echo "[sandbox] appName=$OPENCODON_DESKTOP_APP_NAME" >&2
 if [ "$PERSISTENT" = true ]; then
   echo "[sandbox] persistent: $SANDBOX_ROOT" >&2
 else

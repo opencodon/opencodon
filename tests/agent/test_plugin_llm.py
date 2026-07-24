@@ -723,9 +723,9 @@ class TestConfigDrivenPolicy:
     def test_policy_loaded_from_yaml(self, tmp_path, monkeypatch):
         from agent.plugin_llm import _resolve_trust_policy
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
             """
 plugins:
   entries:
@@ -741,7 +741,7 @@ plugins:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         from opencodon_cli import config as _config_mod
         _config_mod._config_cache = None  # type: ignore[attr-defined]
 
@@ -757,10 +757,10 @@ plugins:
     def test_missing_plugin_entry_yields_default_deny(self, tmp_path, monkeypatch):
         from agent.plugin_llm import _resolve_trust_policy
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("plugins: {}\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text("plugins: {}\n", encoding="utf-8")
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         from opencodon_cli import config as _config_mod
         _config_mod._config_cache = None  # type: ignore[attr-defined]
 

@@ -246,8 +246,8 @@ async function scanDiskPlugins(): Promise<void> {
   scanning = true
 
   try {
-    const { hermes_home } = await getStatus()
-    const { entries } = await desktop.readDir(`${hermes_home}/desktop-plugins`)
+    const { opencodon_home } = await getStatus()
+    const { entries } = await desktop.readDir(`${opencodon_home}/desktop-plugins`)
     const seen = new Set<string>()
 
     for (const dir of entries.filter(e => e.isDirectory)) {

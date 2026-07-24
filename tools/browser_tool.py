@@ -66,7 +66,7 @@ from typing import Dict, Any, Optional, List, Tuple, Union
 from pathlib import Path
 from agent.auxiliary_client import call_llm
 from agent.redact import redact_cdp_url
-from opencodon_constants import agent_browser_runnable, get_hermes_home
+from opencodon_constants import agent_browser_runnable, get_opencodon_home
 from utils import env_int, is_truthy_value
 from opencodon_cli.config import DEFAULT_CONFIG, cfg_get
 from opencodon_cli._subprocess_compat import windows_hide_flags
@@ -193,10 +193,10 @@ def _discover_homebrew_node_dirs() -> tuple[str, ...]:
 
 def _browser_candidate_path_dirs() -> list[str]:
     """Return ordered browser CLI PATH candidates shared by discovery and execution."""
-    hermes_home = get_hermes_home()
-    hermes_node_bin = str(hermes_home / "node" / "bin")
-    hermes_node_root = str(hermes_home / "node")
-    hermes_nm_bin = str(hermes_home / "node_modules" / ".bin")
+    opencodon_home = get_opencodon_home()
+    hermes_node_bin = str(opencodon_home / "node" / "bin")
+    hermes_node_root = str(opencodon_home / "node")
+    hermes_nm_bin = str(opencodon_home / "node_modules" / ".bin")
     return [hermes_node_bin, hermes_node_root, hermes_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
 
 
@@ -594,7 +594,7 @@ def _stop_cdp_supervisor(task_id: str) -> None:
 # When the test patches ``_PROVIDER_REGISTRY``, we honour it (so the cache
 # unit tests still drive the function); otherwise the registry-backed path
 # wins. This keeps the test surface stable while letting third-party
-# plugins drop in under ``~/.hermes/plugins/browser/<vendor>/``.
+# plugins drop in under ``~/.opencodon/plugins/browser/<vendor>/``.
 
 _PROVIDER_REGISTRY: Dict[str, type] = {
     "browserbase": BrowserbaseProvider,
@@ -673,7 +673,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
     :data:`agent.browser_registry._LEGACY_PREFERENCE` walk.
 
     Selection routes through :mod:`agent.browser_registry` so third-party
-    browser plugins (``~/.hermes/plugins/browser/<vendor>/``) participate
+    browser plugins (``~/.opencodon/plugins/browser/<vendor>/``) participate
     in explicit-config resolution. Test fixtures that override
     ``_PROVIDER_REGISTRY`` or ``BrowserUseProvider`` / ``BrowserbaseProvider``
     on this module still drive the function — see
@@ -2255,9 +2255,9 @@ def _find_agent_browser(*, validate: bool = True) -> str:
             candidates = [
                 shutil.which("agent-browser"),
                 shutil.which("agent-browser", path=extended_path) if extended_path else None,
-                shutil.which("agent-browser", path=str(get_hermes_home() / "node_modules" / ".bin")),
-                shutil.which("agent-browser", path=str(get_hermes_home() / "node" / "bin")),
-                shutil.which("agent-browser", path=str(get_hermes_home() / "node")),
+                shutil.which("agent-browser", path=str(get_opencodon_home() / "node_modules" / ".bin")),
+                shutil.which("agent-browser", path=str(get_opencodon_home() / "node" / "bin")),
+                shutil.which("agent-browser", path=str(get_opencodon_home() / "node")),
             ]
             for recheck in candidates:
                 if recheck and agent_browser_runnable(recheck):
@@ -3911,14 +3911,14 @@ def _maybe_start_recording(task_id: str):
             return
     try:
         from opencodon_cli.config import read_raw_config
-        hermes_home = get_hermes_home()
+        opencodon_home = get_opencodon_home()
         cfg = read_raw_config()
         record_enabled = cfg_get(cfg, "browser", "record_sessions", default=False)
 
         if not record_enabled:
             return
 
-        recordings_dir = hermes_home / "browser_recordings"
+        recordings_dir = opencodon_home / "browser_recordings"
         recordings_dir.mkdir(parents=True, exist_ok=True)
         _cleanup_old_recordings(max_age_hours=72)
 
@@ -4359,8 +4359,8 @@ def _cleanup_old_screenshots(screenshots_dir, max_age_hours=24):
 def _cleanup_old_recordings(max_age_hours=72):
     """Remove browser recordings older than max_age_hours to prevent disk bloat."""
     try:
-        hermes_home = get_hermes_home()
-        recordings_dir = hermes_home / "browser_recordings"
+        opencodon_home = get_opencodon_home()
+        recordings_dir = opencodon_home / "browser_recordings"
         if not recordings_dir.exists():
             return
         cutoff = time.time() - (max_age_hours * 3600)

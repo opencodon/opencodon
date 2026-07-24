@@ -43,7 +43,7 @@ def _make_proc(pid: int, exe: str, name: str = "hermes.exe"):
 def test_detect_concurrent_returns_empty_when_no_other_processes(_winp, tmp_path):
     scripts_dir = tmp_path
     (scripts_dir / "hermes.exe").write_bytes(b"")
-    (scripts_dir / "hermes-gateway.exe").write_bytes(b"")
+    (scripts_dir / "opencodon-gateway.exe").write_bytes(b"")
 
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter([]))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):

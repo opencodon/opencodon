@@ -17,8 +17,8 @@ def homes(tmp_path, monkeypatch):
     home.mkdir()
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed))
     import opencodon_cli.config as cfg
     from opencodon_cli import managed_scope
 
@@ -31,15 +31,15 @@ def homes(tmp_path, monkeypatch):
 def _load_cli_config(home):
     """Call cli.py's standalone loader fresh.
 
-    cli.py binds ``_hermes_home = get_hermes_home()`` at import time (module
-    singleton), so monkeypatching HERMES_HOME after import doesn't move it.
+    cli.py binds ``_opencodon_home = get_opencodon_home()`` at import time (module
+    singleton), so monkeypatching OPENCODON_HOME after import doesn't move it.
     Point the module's cached home at the test's home for the duration of the
     call. (In real use cli is imported once per process with the real home, so
-    this only matters for tests that swap HERMES_HOME.)
+    this only matters for tests that swap OPENCODON_HOME.)
     """
     import cli
 
-    cli._hermes_home = home
+    cli._opencodon_home = home
     return cli.load_cli_config()
 
 

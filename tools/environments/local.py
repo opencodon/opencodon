@@ -55,7 +55,7 @@ def _resolve_local_initial_cwd(cwd: str) -> str:
     ``TERMINAL_CWD`` can be populated from config.yaml before the terminal
     backend is created.  If that value is relative and happens to match the
     directory Hermes was already launched from (for example ``hermes-agent``
-    while the process cwd is ``~/.hermes/hermes-agent``), passing it through
+    while the process cwd is ``~/.opencodon/opencodon``), passing it through
     unchanged makes the wrapper run ``cd hermes-agent`` *inside* the project
     and fail with a confusing nested-path error.  Anchor relative local cwd
     values once, up front, so both ``subprocess.Popen(cwd=...)`` and the
@@ -197,7 +197,7 @@ def _resolve_safe_cwd(cwd: str) -> str:
 
 
 # Hermes-internal env vars that should NOT leak into terminal subprocesses.
-_HERMES_PROVIDER_ENV_FORCE_PREFIX = "_HERMES_FORCE_"
+_OPENCODON_PROVIDER_ENV_FORCE_PREFIX = "_OPENCODON_FORCE_"
 
 # Hermes-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
 # providers (Bedrock).  Scoped DELIBERATELY NARROW: this lists only the
@@ -303,7 +303,7 @@ def _build_provider_env_blocklist() -> frozenset:
         "EMAIL_SMTP_HOST",
         "EMAIL_HOME_ADDRESS",
         "EMAIL_HOME_ADDRESS_NAME",
-        "HERMES_DASHBOARD_SESSION_TOKEN",
+        "OPENCODON_DASHBOARD_SESSION_TOKEN",
         "GATEWAY_ALLOWED_USERS",
         "GH_TOKEN",
         "GITHUB_APP_ID",
@@ -329,7 +329,7 @@ def _build_provider_env_blocklist() -> frozenset:
     return frozenset(blocked)
 
 
-_HERMES_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
+_OPENCODON_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 
 # Active-virtualenv markers that must NOT leak into terminal subprocesses.
 # The gateway runs inside its own venv, so its process environment carries
@@ -347,7 +347,7 @@ _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX")
 def _is_hermes_internal_secret(key: str) -> bool:
     """Return True for Hermes-internal secrets injected under *dynamic* names.
 
-    ``_HERMES_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
+    ``_OPENCODON_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
     provider/tool registries, but the gateway and CLI also inject secrets into
     ``os.environ`` at runtime under names no static registry knows about:
 
@@ -389,14 +389,14 @@ def _is_hermes_internal_secret(key: str) -> bool:
     return False
 
 
-def _inject_context_hermes_home(env: dict) -> None:
+def _inject_context_opencodon_home(env: dict) -> None:
     """Bridge the context-local Hermes home override into subprocess env."""
     try:
-        from opencodon_constants import get_hermes_home_override
+        from opencodon_constants import get_opencodon_home_override
 
-        value = get_hermes_home_override()
+        value = get_opencodon_home_override()
         if value:
-            env["HERMES_HOME"] = value
+            env["OPENCODON_HOME"] = value
     except Exception:
         pass
 
@@ -405,7 +405,7 @@ def _inject_session_context_env(env: dict) -> None:
     """Bridge gateway session ContextVars into a subprocess environment dict.
 
     ContextVars don't propagate to child processes, so the live session vars
-    (HERMES_SESSION_*) are bridged onto the child env here.
+    (OPENCODON_SESSION_*) are bridged onto the child env here.
 
     🔴 Cross-session leak guard. The session vars also have a process-global
     os.environ mirror (written last-writer-wins as a CLI/cron fallback, never
@@ -458,25 +458,25 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
     sanitized: dict[str, str] = {}
 
     for key, value in (base_env or {}).items():
-        if key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX):
+        if key.startswith(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):
             continue
         if _is_hermes_internal_secret(key):
             continue
-        if key not in _HERMES_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
+        if key not in _OPENCODON_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
             sanitized[key] = value
 
     for key, value in (extra_env or {}).items():
-        if key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX):
-            real_key = key[len(_HERMES_PROVIDER_ENV_FORCE_PREFIX):]
+        if key.startswith(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):
+            real_key = key[len(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):]
             if _is_hermes_internal_secret(real_key):
                 continue
             sanitized[real_key] = value
         elif _is_hermes_internal_secret(key):
             continue
-        elif key not in _HERMES_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
+        elif key not in _OPENCODON_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
             sanitized[key] = value
 
-    _inject_context_hermes_home(sanitized)
+    _inject_context_opencodon_home(sanitized)
 
     from opencodon_constants import apply_subprocess_home_env
     apply_subprocess_home_env(sanitized)
@@ -499,7 +499,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
 # legitimate child Hermes spawns needs them, and they are the highest-value
 # secrets to keep out of a compromised dependency's reach (gateway bot tokens,
 # GitHub auth, remote-compute tokens, dashboard session secret).  The set is a
-# narrow subset of _HERMES_PROVIDER_ENV_BLOCKLIST; provider keys are handled by
+# narrow subset of _OPENCODON_PROVIDER_ENV_BLOCKLIST; provider keys are handled by
 # the conditional Tier-2 strip in hermes_subprocess_env().
 _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     # GitHub auth
@@ -528,7 +528,7 @@ _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     "GATEWAY_RELAY_DELIVERY_KEY",
     "HASS_TOKEN",
     "EMAIL_PASSWORD",
-    "HERMES_DASHBOARD_SESSION_TOKEN",
+    "OPENCODON_DASHBOARD_SESSION_TOKEN",
     # Remote-compute / infrastructure secrets
     "MODAL_TOKEN_ID",
     "MODAL_TOKEN_SECRET",
@@ -543,7 +543,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     ACP/CLI executors, computer-use driver, dep-ensure, TUI Node host,
     detached gateway).  Use this instead of copying ``os.environ`` directly
     so strip-by-default is the uniform policy across every spawn site, with a
-    single source of truth (``_HERMES_PROVIDER_ENV_BLOCKLIST``).  The terminal
+    single source of truth (``_OPENCODON_PROVIDER_ENV_BLOCKLIST``).  The terminal
     / execute_code path keeps using :func:`_sanitize_subprocess_env`, which is
     skill-aware (``env_passthrough``); this helper is for spawns that have no
     skill-passthrough concept.
@@ -553,7 +553,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     * **Tier 1 (always):** ``_ALWAYS_STRIP_KEYS`` — gateway bot tokens, GitHub
       auth, and remote-compute secrets are removed regardless of
       ``inherit_credentials``.  No child Hermes spawns legitimately needs them.
-    * **Tier 2 (conditional):** the rest of ``_HERMES_PROVIDER_ENV_BLOCKLIST``
+    * **Tier 2 (conditional):** the rest of ``_OPENCODON_PROVIDER_ENV_BLOCKLIST``
       (LLM provider API keys, tool secrets) is removed unless the caller passes
       ``inherit_credentials=True``.
 
@@ -579,20 +579,20 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     # regardless of ``inherit_credentials`` — a model-driving CLI has no
     # legitimate use for them. See :func:`_is_hermes_internal_secret`.
     for key in list(env):
-        if key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX):
+        if key.startswith(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):
             env.pop(key, None)
         elif _is_hermes_internal_secret(key):
             env.pop(key, None)
 
     if not inherit_credentials:
         # Tier 2 — strip provider/tool credentials unless explicitly inherited.
-        for key in _HERMES_PROVIDER_ENV_BLOCKLIST:
+        for key in _OPENCODON_PROVIDER_ENV_BLOCKLIST:
             env.pop(key, None)
 
     # Windows UTF-8 safety for spawned processes (#31420).
     env.setdefault("PYTHONUTF8", "1")
 
-    _inject_context_hermes_home(env)
+    _inject_context_opencodon_home(env)
     from opencodon_constants import apply_subprocess_home_env
     apply_subprocess_home_env(env)
 
@@ -603,7 +603,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     _apply_windows_msys_bash_env_defaults(env)
 
     # Cross-session leak guard, same as the terminal spawn paths: this helper
-    # copies os.environ, whose HERMES_SESSION_* mirror is a last-writer-wins
+    # copies os.environ, whose OPENCODON_SESSION_* mirror is a last-writer-wins
     # global under a concurrent multi-session host. A caller that re-binds the
     # session identity explicitly (slash_worker/ACP via --session-key argv) is
     # unaffected — bound ContextVars win here — but a caller that spawns without
@@ -628,12 +628,12 @@ def _find_bash() -> str:
 
     candidates: list[str] = []
 
-    custom = os.environ.get("HERMES_GIT_BASH_PATH")
+    custom = os.environ.get("OPENCODON_GIT_BASH_PATH")
     if custom and os.path.isfile(custom):
         candidates.append(custom)
 
     # Prefer our own portable Git install — a broken or partially-uninstalled
-    # system Git (or a stale HERMES_GIT_BASH_PATH pointing at one) must not
+    # system Git (or a stale OPENCODON_GIT_BASH_PATH pointing at one) must not
     # brick the terminal.  install.ps1 drops PortableGit here when needed.
     #
     # Layouts (both checked so upgrades between MinGit and PortableGit
@@ -667,14 +667,14 @@ def _find_bash() -> str:
         candidates.append(found)
 
     # Prefer the first candidate that can actually start.  A stale
-    # HERMES_GIT_BASH_PATH pointing at a broken Git-for-Windows install
+    # OPENCODON_GIT_BASH_PATH pointing at a broken Git-for-Windows install
     # (``Directory \\drivers\\etc does not exist``) must not win over a
     # healthy portable Git under %LOCALAPPDATA%\\hermes\\git.
     for candidate in candidates:
         if _bash_starts(candidate):
             if candidate != custom and custom and os.path.isfile(custom):
                 logger.warning(
-                    "HERMES_GIT_BASH_PATH=%s fails to start; using %s instead",
+                    "OPENCODON_GIT_BASH_PATH=%s fails to start; using %s instead",
                     custom,
                     candidate,
                 )
@@ -699,7 +699,7 @@ def _find_bash() -> str:
     raise RuntimeError(
         "Git Bash not found. Hermes Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
-        "Or set HERMES_GIT_BASH_PATH to your bash.exe location."
+        "Or set OPENCODON_GIT_BASH_PATH to your bash.exe location."
     )
 
 
@@ -959,7 +959,7 @@ _SANE_PATH = (
 # Cached directory containing the ``hermes`` console-script.
 # ``_SENTINEL`` distinguishes "not resolved yet" from a resolved ``None``.
 _SENTINEL = object()
-_HERMES_BIN_DIR: "str | None | object" = _SENTINEL
+_OPENCODON_BIN_DIR: "str | None | object" = _SENTINEL
 
 
 def _resolve_hermes_bin_dir() -> str | None:
@@ -985,9 +985,9 @@ def _resolve_hermes_bin_dir() -> str | None:
       3. The directory of ``sys.executable`` — the running interpreter's
          venv ``bin``/``Scripts`` is where its console-scripts live.
     """
-    global _HERMES_BIN_DIR
-    if _HERMES_BIN_DIR is not _SENTINEL:
-        return _HERMES_BIN_DIR  # type: ignore[return-value]
+    global _OPENCODON_BIN_DIR
+    if _OPENCODON_BIN_DIR is not _SENTINEL:
+        return _OPENCODON_BIN_DIR  # type: ignore[return-value]
 
     candidate: str | None = None
 
@@ -1015,7 +1015,7 @@ def _resolve_hermes_bin_dir() -> str | None:
     if candidate and not os.path.isdir(candidate):
         candidate = None
 
-    _HERMES_BIN_DIR = candidate
+    _OPENCODON_BIN_DIR = candidate
     return candidate
 
 
@@ -1135,14 +1135,14 @@ def _make_run_env(env: dict) -> dict:
     merged = dict(os.environ | env)
     run_env = {}
     for k, v in merged.items():
-        if k.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX):
-            real_key = k[len(_HERMES_PROVIDER_ENV_FORCE_PREFIX):]
+        if k.startswith(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):
+            real_key = k[len(_OPENCODON_PROVIDER_ENV_FORCE_PREFIX):]
             if _is_hermes_internal_secret(real_key):
                 continue
             run_env[real_key] = v
         elif _is_hermes_internal_secret(k):
             continue
-        elif k not in _HERMES_PROVIDER_ENV_BLOCKLIST or _is_passthrough(k):
+        elif k not in _OPENCODON_PROVIDER_ENV_BLOCKLIST or _is_passthrough(k):
             run_env[k] = v
     path_key = _path_env_key(run_env)
     if path_key is not None:
@@ -1159,7 +1159,7 @@ def _make_run_env(env: dict) -> dict:
         # launched without it on PATH (systemd, service managers, cron, etc.).
         run_env[path_key] = _prepend_hermes_bin_dir(new_path)
 
-    _inject_context_hermes_home(run_env)
+    _inject_context_opencodon_home(run_env)
 
     from opencodon_constants import apply_subprocess_home_env
     apply_subprocess_home_env(run_env)
@@ -1289,18 +1289,18 @@ class LocalEnvironment(BaseEnvironment):
         can't open the path, and the Windows default temp (``%TEMP%``) often
         contains spaces (``C:\\Users\\Some Name\\AppData\\Local\\Temp``) that
         break unquoted bash interpolations.  Use a dedicated cache dir under
-        ``HERMES_HOME`` instead — single-word path, guaranteed to exist, same
+        ``OPENCODON_HOME`` instead — single-word path, guaranteed to exist, same
         string resolves in both Git Bash and native Python.
         """
         if _IS_WINDOWS:
-            # Derive a Windows-safe temp dir under HERMES_HOME.  Using
+            # Derive a Windows-safe temp dir under OPENCODON_HOME.  Using
             # forward slashes makes the same string work unchanged in bash
             # command interpolations AND in Python ``open()`` — Windows
             # accepts forward slashes in filesystem paths, and we control
             # the path so we can guarantee no spaces.
             try:
-                from opencodon_constants import get_hermes_home
-                cache_dir = get_hermes_home() / "cache" / "terminal"
+                from opencodon_constants import get_opencodon_home
+                cache_dir = get_opencodon_home() / "cache" / "terminal"
             except Exception:
                 cache_dir = Path(tempfile.gettempdir()) / "hermes_terminal"
             cache_dir.mkdir(parents=True, exist_ok=True)

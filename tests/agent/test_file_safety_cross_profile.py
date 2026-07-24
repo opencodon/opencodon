@@ -6,8 +6,8 @@ depth, NOT a security boundary — but it prevents the agent from silently
 corrupting a profile that belongs to a different session.
 
 Reference: May 2026 incident — a hermes-security profile session
-accidentally edited skills under both ~/.hermes/profiles/hermes-security/skills/
-AND ~/.hermes/skills/ (the default profile's skills), realizing only
+accidentally edited skills under both ~/.opencodon/profiles/hermes-security/skills/
+AND ~/.opencodon/skills/ (the default profile's skills), realizing only
 afterwards that the second path belonged to a different profile.
 """
 from __future__ import annotations
@@ -72,10 +72,10 @@ def fake_hermes(tmp_path, monkeypatch):
     }
 
 
-def _set_active_home(monkeypatch, hermes_home: Path):
-    """Point file_safety._hermes_home_path at a specific profile dir."""
+def _set_active_home(monkeypatch, opencodon_home: Path):
+    """Point file_safety._opencodon_home_path at a specific profile dir."""
     import agent.file_safety as fs
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: hermes_home)
+    monkeypatch.setattr(fs, "_opencodon_home_path", lambda: opencodon_home)
 
 
 # ---------------------------------------------------------------------------
@@ -95,13 +95,13 @@ class TestResolveActiveProfileName:
         assert _resolve_active_profile_name() == "hermes-security"
 
     def test_falls_back_to_default_on_resolution_failure(self, fake_hermes, monkeypatch):
-        """If HERMES_HOME resolution raises, return 'default' rather than crashing the tool."""
+        """If OPENCODON_HOME resolution raises, return 'default' rather than crashing the tool."""
         import agent.file_safety as fs
 
         def _boom():
             raise RuntimeError("simulated")
 
-        monkeypatch.setattr(fs, "_hermes_home_path", _boom)
+        monkeypatch.setattr(fs, "_opencodon_home_path", _boom)
         # Should not raise — falls back to "default"
         assert fs._resolve_active_profile_name() == "default"
 

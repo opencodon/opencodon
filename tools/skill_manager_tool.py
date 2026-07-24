@@ -4,7 +4,7 @@ Skill Manager Tool -- Agent-Managed Skill Creation & Editing
 
 Allows the agent to create, update, and delete skills, turning successful
 approaches into reusable procedural knowledge. New skills are created in
-~/.hermes/skills/. Existing skills (bundled, hub-installed, or user-created)
+~/.opencodon/skills/. Existing skills (bundled, hub-installed, or user-created)
 can be modified or deleted wherever they live.
 
 Skills are the agent's procedural memory: they capture *how to do a specific
@@ -20,7 +20,7 @@ Actions:
   remove_file-- Remove a supporting file from a user skill
 
 Directory layout for user skills:
-    ~/.hermes/skills/
+    ~/.opencodon/skills/
     ├── my-skill/
     │   ├── SKILL.md
     │   ├── references/
@@ -42,7 +42,7 @@ import contextvars as _ctxvars
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from opencodon_constants import get_hermes_home, display_hermes_home
+from opencodon_constants import get_opencodon_home, display_opencodon_home
 from utils import atomic_replace, is_truthy_value
 from opencodon_cli.config import cfg_get
 
@@ -147,9 +147,9 @@ def _security_scan_skill(skill_dir: Path) -> Optional[str]:
 import yaml
 
 
-# All skills live in ~/.hermes/skills/ (single source of truth)
-HERMES_HOME = get_hermes_home()
-SKILLS_DIR = HERMES_HOME / "skills"
+# All skills live in ~/.opencodon/skills/ (single source of truth)
+OPENCODON_HOME = get_opencodon_home()
+SKILLS_DIR = OPENCODON_HOME / "skills"
 _SKILLS_DIR_AT_IMPORT = SKILLS_DIR
 
 
@@ -157,15 +157,15 @@ def _skills_dir() -> Path:
     """Return the active profile's skills directory at call time.
 
     Long-lived multi-profile runtimes (Dashboard/TUI/Desktop backend, cron,
-    kanban workers) import this module once under the launch HERMES_HOME and
+    kanban workers) import this module once under the launch OPENCODON_HOME and
     later bind a different profile per session (#40677). Honor an explicitly
     patched module-level ``SKILLS_DIR`` (tests), otherwise resolve from the
-    live profile-scoped HERMES_HOME on every call.
+    live profile-scoped OPENCODON_HOME on every call.
     """
     configured = Path(SKILLS_DIR)
     if configured != _SKILLS_DIR_AT_IMPORT:
         return configured
-    return get_hermes_home() / "skills"
+    return get_opencodon_home() / "skills"
 
 MAX_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
@@ -606,7 +606,7 @@ def _find_skill(name: str) -> Optional[Dict[str, Any]]:
     """
     Find a skill by name across all skill directories.
 
-    Searches the local skills dir (~/.hermes/skills/) first, then any
+    Searches the local skills dir (~/.opencodon/skills/) first, then any
     external dirs configured via skills.external_dirs.  Returns
     {"path": Path} or None.
     """
@@ -649,7 +649,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     active_dir = _active.resolve() if _active.exists() else _active
     candidates: List[Tuple[str, Path]] = []
 
-    # Default profile (~/.hermes/skills) — only consider when active is non-default.
+    # Default profile (~/.opencodon/skills) — only consider when active is non-default.
     default_skills = root / "skills"
     try:
         if default_skills.resolve() != active_dir:
@@ -657,7 +657,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     except (OSError, RuntimeError):
         pass
 
-    # All named profiles (~/.hermes/profiles/*/skills)
+    # All named profiles (~/.opencodon/profiles/*/skills)
     profiles_root = root / "profiles"
     if profiles_root.is_dir():
         try:
@@ -1107,7 +1107,7 @@ def _delete_skill(name: str, absorbed_into: Optional[str] = None) -> Dict[str, A
         return {"success": False, "error": unsafe}
 
     # During the curator consolidation pass, a verified consolidation must be
-    # RECOVERABLE: archival into ~/.hermes/skills/.archive/ is documented as
+    # RECOVERABLE: archival into ~/.opencodon/skills/.archive/ is documented as
     # the maximum destructive action the curator may take, and
     # `hermes curator restore` promises the skill can be brought back. Route
     # through the recoverable archive primitive instead of permanent rmtree so
@@ -1447,7 +1447,7 @@ SKILL_MANAGE_SCHEMA = {
     "description": (
         "Manage skills (create, update, delete). Skills are your procedural "
         "memory — reusable approaches for recurring task types. "
-        f"New skills go to {display_hermes_home()}/skills/; existing skills can be modified wherever they live.\n\n"
+        f"New skills go to {display_opencodon_home()}/skills/; existing skills can be modified wherever they live.\n\n"
         "Actions: create (full SKILL.md + optional category), "
         "patch (old_string/new_string — preferred for fixes), "
         "edit (full SKILL.md rewrite — major overhauls only), "

@@ -90,7 +90,7 @@ def configure_windows_stdio() -> bool:
     Returns ``True`` if anything was actually changed, ``False`` on
     non-Windows or on a repeat call.
 
-    Set ``HERMES_DISABLE_WINDOWS_UTF8=1`` in the environment to opt out
+    Set ``OPENCODON_DISABLE_WINDOWS_UTF8=1`` in the environment to opt out
     (for diagnosing encoding-related bugs by forcing the old cp1252 path).
 
     Also sets a sensible default ``EDITOR`` on Windows if none is already
@@ -105,7 +105,7 @@ def configure_windows_stdio() -> bool:
         _CONFIGURED = True
         return False
 
-    if os.environ.get("HERMES_DISABLE_WINDOWS_UTF8") in {"1", "true", "True", "yes"}:
+    if os.environ.get("OPENCODON_DISABLE_WINDOWS_UTF8") in {"1", "true", "True", "yes"}:
         _CONFIGURED = True
         return False
 
@@ -232,7 +232,7 @@ def _augment_path_with_known_tools() -> None:
         # Hermes venv Scripts directory — host of the hermes.exe shim itself,
         # also where any pip-installed console scripts land.  Usually already
         # on PATH when the user invokes hermes, but harmless to include.
-        os.path.join(local_appdata, "hermes", "hermes-agent", "venv", "Scripts"),
+        os.path.join(local_appdata, "hermes", "opencodon", "venv", "Scripts"),
         # WinGet packages directory — where ``winget install`` drops CLI
         # shims by default (ripgrep lands here as rg.exe).  Covers the case
         # of a system-Git install + ripgrep-via-winget that isn't yet on

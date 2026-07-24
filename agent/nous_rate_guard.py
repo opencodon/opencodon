@@ -29,10 +29,10 @@ _STATE_FILENAME = "nous.json"
 def _state_path() -> str:
     """Return the path to the Nous rate limit state file."""
     try:
-        from opencodon_constants import get_hermes_home
-        base = get_hermes_home()
+        from opencodon_constants import get_opencodon_home
+        base = get_opencodon_home()
     except ImportError:
-        base = os.path.join(os.path.expanduser("~"), ".hermes")
+        base = os.path.join(os.path.expanduser("~"), ".opencodon")
     return os.path.join(base, _STATE_SUBDIR, _STATE_FILENAME)
 
 

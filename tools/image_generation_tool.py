@@ -758,11 +758,11 @@ def _agent_cache_base_for_env(env: Any) -> str | None:
 
         remote_home = getattr(env, "_remote_home", None)
         if remote_home:
-            return f"{str(remote_home).rstrip('/')}/.hermes"
+            return f"{str(remote_home).rstrip('/')}/.opencodon"
 
         env_name = env.__class__.__name__
         if env_name in {"DockerEnvironment", "SingularityEnvironment", "ModalEnvironment"}:
-            return "/root/.hermes"
+            return "/root/.opencodon"
 
     # If no environment has been created yet, only backends with deterministic
     # Hermes cache roots can be translated without side effects. SSH can still
@@ -770,9 +770,9 @@ def _agent_cache_base_for_env(env: Any) -> str | None:
     # the cache file before the first command runs.
     backend = (os.getenv("TERMINAL_ENV") or "local").strip().lower()
     if backend in {"docker", "singularity", "modal"}:
-        return "/root/.hermes"
+        return "/root/.opencodon"
     if backend == "ssh":
-        return "~/.hermes"
+        return "~/.opencodon"
     return None
 
 

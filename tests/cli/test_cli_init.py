@@ -25,7 +25,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
     }
     if config_overrides:
         _clean_config.update(config_overrides)
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "OPENCODON_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     prompt_toolkit_stubs = {
@@ -73,12 +73,12 @@ class TestMaxTurnsResolution:
 
     def test_env_var_max_turns(self):
         """Env var is used when config file doesn't set max_turns."""
-        cli_obj = _make_cli(env_overrides={"HERMES_MAX_ITERATIONS": "42"})
+        cli_obj = _make_cli(env_overrides={"OPENCODON_MAX_ITERATIONS": "42"})
         assert cli_obj.max_turns == 42
 
     def test_invalid_env_var_max_turns_falls_back_to_default(self):
         """Invalid env values should not crash CLI init."""
-        cli_obj = _make_cli(env_overrides={"HERMES_MAX_ITERATIONS": "not-a-number"})
+        cli_obj = _make_cli(env_overrides={"OPENCODON_MAX_ITERATIONS": "not-a-number"})
         assert cli_obj.max_turns == 90
 
     def test_legacy_root_max_turns_is_used_when_agent_key_exists_without_value(self):
@@ -423,19 +423,19 @@ class TestHistoryDisplay:
         cli._session_db.create_session("target_session", "cli")
         cli._session_db.append_message("target_session", "user", "hello from resumed session")
 
-        os.environ["HERMES_SESSION_ID"] = "current_session"
-        _VAR_MAP["HERMES_SESSION_ID"].set("current_session")
+        os.environ["OPENCODON_SESSION_ID"] = "current_session"
+        _VAR_MAP["OPENCODON_SESSION_ID"].set("current_session")
 
         try:
             cli._handle_resume_command("/resume target_session")
 
             assert cli.session_id == "target_session"
-            assert os.environ["HERMES_SESSION_ID"] == "target_session"
-            assert get_session_env("HERMES_SESSION_ID") == "target_session"
+            assert os.environ["OPENCODON_SESSION_ID"] == "target_session"
+            assert get_session_env("OPENCODON_SESSION_ID") == "target_session"
         finally:
             cli._session_db.close()
-            os.environ.pop("HERMES_SESSION_ID", None)
-            _VAR_MAP["HERMES_SESSION_ID"].set(_UNSET)
+            os.environ.pop("OPENCODON_SESSION_ID", None)
+            _VAR_MAP["OPENCODON_SESSION_ID"].set(_UNSET)
 
     def test_resume_list_shows_full_long_titles(self, capsys):
         """Long session titles render in full in the /resume table — not
@@ -556,11 +556,11 @@ class TestRootLevelProviderOverride:
         """model.provider takes priority — root-level provider is only a fallback."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root-level key
             "model": {
@@ -570,7 +570,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_opencodon_home", opencodon_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "openrouter"
@@ -579,11 +579,11 @@ class TestRootLevelProviderOverride:
         """Legacy root-level provider still populates model.provider in the CLI loader."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root key
             "model": {
@@ -593,7 +593,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_opencodon_home", opencodon_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "opencode-go"
@@ -602,11 +602,11 @@ class TestRootLevelProviderOverride:
         """Legacy root-level base_url still populates model.base_url in the CLI loader."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "base_url": "https://example.com/v1",
             "model": {
@@ -615,7 +615,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_opencodon_home", opencodon_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["base_url"] == "https://example.com/v1"
@@ -791,9 +791,9 @@ class TestRootLevelProviderOverride:
         """A model.name config is permanently migrated to model.default on save."""
         import opencodon_cli.config as cfgmod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".opencodon"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
         cfg_path = home / "config.yaml"
         cfg_path.write_text("model:\n  name: claude-sonnet-4\n  provider: my-litellm\n")
         # bust the mtime cache

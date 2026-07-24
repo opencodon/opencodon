@@ -18,7 +18,7 @@ class TestOfferOpenclawMigration:
     def test_skips_when_no_openclaw_dir(self, tmp_path):
         """Should return False immediately when ~/.openclaw does not exist."""
         with patch("opencodon_cli.setup.Path.home", return_value=tmp_path):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".hermes") is False
+            assert setup_mod._offer_openclaw_migration(tmp_path / ".opencodon") is False
 
     def test_skips_when_migration_script_missing(self, tmp_path):
         """Should return False when the migration script file is absent."""
@@ -28,7 +28,7 @@ class TestOfferOpenclawMigration:
             patch("opencodon_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", tmp_path / "nonexistent.py"),
         ):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".hermes") is False
+            assert setup_mod._offer_openclaw_migration(tmp_path / ".opencodon") is False
 
     def test_skips_when_user_declines(self, tmp_path):
         """Should return False when user declines the migration prompt."""
@@ -41,7 +41,7 @@ class TestOfferOpenclawMigration:
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", return_value=False),
         ):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".hermes") is False
+            assert setup_mod._offer_openclaw_migration(tmp_path / ".opencodon") is False
 
     def test_runs_migration_when_user_accepts(self, tmp_path):
         """Should run dry-run preview first, then execute after confirmation."""
@@ -49,9 +49,9 @@ class TestOfferOpenclawMigration:
         openclaw_dir.mkdir()
 
         # Create a fake hermes home with config
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
         # Build a fake migration module
@@ -61,7 +61,7 @@ class TestOfferOpenclawMigration:
         fake_migrator.migrate.return_value = {
             "summary": {"migrated": 3, "skipped": 1, "conflict": 0, "error": 0},
             "items": [{"kind": "config", "status": "migrated", "destination": "/tmp/x"}],
-            "output_dir": str(hermes_home / "migration"),
+            "output_dir": str(opencodon_home / "migration"),
         }
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
@@ -87,7 +87,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_openclaw_migration(hermes_home)
+            result = setup_mod._offer_openclaw_migration(opencodon_home)
 
         assert result is True
         fake_mod.resolve_selected_options.assert_called_once_with(
@@ -118,9 +118,9 @@ class TestOfferOpenclawMigration:
         openclaw_dir = tmp_path / ".openclaw"
         openclaw_dir.mkdir()
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
         fake_mod = ModuleType("openclaw_to_hermes")
@@ -155,7 +155,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_openclaw_migration(hermes_home)
+            result = setup_mod._offer_openclaw_migration(opencodon_home)
 
         assert result is False
         # Only dry-run Migrator was created, not the execute one
@@ -167,9 +167,9 @@ class TestOfferOpenclawMigration:
         """Should catch exceptions and return False."""
         openclaw_dir = tmp_path / ".openclaw"
         openclaw_dir.mkdir()
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_path = opencodon_home / "config.yaml"
         config_path.write_text("")
 
         script = tmp_path / "openclaw_to_hermes.py"
@@ -185,7 +185,7 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("boom"),
             ),
         ):
-            result = setup_mod._offer_openclaw_migration(hermes_home)
+            result = setup_mod._offer_openclaw_migration(opencodon_home)
 
         assert result is False
 
@@ -193,9 +193,9 @@ class TestOfferOpenclawMigration:
         """Should bootstrap config.yaml before running migration."""
         openclaw_dir = tmp_path / ".openclaw"
         openclaw_dir.mkdir()
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_path = opencodon_home / "config.yaml"
         # config does NOT exist yet
 
         script = tmp_path / "openclaw_to_hermes.py"
@@ -213,7 +213,7 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("stop early"),
             ),
         ):
-            setup_mod._offer_openclaw_migration(hermes_home)
+            setup_mod._offer_openclaw_migration(opencodon_home)
 
         # save_config should have been called to bootstrap the file
         mock_save.assert_called_once_with({"agent": {}})
@@ -240,9 +240,9 @@ class TestSetupWizardOpenclawIntegration:
         args = _first_time_args()
 
         with (
-            patch.object(setup_mod, "ensure_hermes_home"),
+            patch.object(setup_mod, "ensure_opencodon_home"),
             patch.object(setup_mod, "load_config", return_value={}),
-            patch.object(setup_mod, "get_hermes_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_opencodon_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
             patch("opencodon_cli.auth.get_active_provider", return_value=None),
@@ -277,9 +277,9 @@ class TestSetupWizardOpenclawIntegration:
             return {}
 
         with (
-            patch.object(setup_mod, "ensure_hermes_home"),
+            patch.object(setup_mod, "ensure_opencodon_home"),
             patch.object(setup_mod, "load_config", side_effect=tracking_load_config),
-            patch.object(setup_mod, "get_hermes_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_opencodon_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
             patch("opencodon_cli.auth.get_active_provider", return_value=None),
@@ -305,13 +305,13 @@ class TestSetupWizardOpenclawIntegration:
         reloaded_config = {"model": {"provider": "openrouter"}}
 
         with (
-            patch.object(setup_mod, "ensure_hermes_home"),
+            patch.object(setup_mod, "ensure_opencodon_home"),
             patch.object(
                 setup_mod,
                 "load_config",
                 side_effect=[initial_config, reloaded_config],
             ),
-            patch.object(setup_mod, "get_hermes_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_opencodon_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
             patch("opencodon_cli.auth.get_active_provider", return_value=None),
@@ -335,9 +335,9 @@ class TestSetupWizardOpenclawIntegration:
         args = _first_time_args()
 
         with (
-            patch.object(setup_mod, "ensure_hermes_home"),
+            patch.object(setup_mod, "ensure_opencodon_home"),
             patch.object(setup_mod, "load_config", return_value={}),
-            patch.object(setup_mod, "get_hermes_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_opencodon_home", return_value=tmp_path),
             patch.object(
                 setup_mod,
                 "get_env_value",
@@ -614,7 +614,7 @@ class TestSetupWizardSkipsConfiguredSections:
                 return "sk-xxx"
             return ""
 
-        def fake_migration(hermes_home):
+        def fake_migration(opencodon_home):
             migration_done["value"] = True
             return True
 
@@ -628,12 +628,12 @@ class TestSetupWizardSkipsConfiguredSections:
         import opencodon_cli.gateway as gateway_mod
 
         with (
-            patch.object(setup_mod, "ensure_hermes_home"),
+            patch.object(setup_mod, "ensure_opencodon_home"),
             patch.object(
                 setup_mod, "load_config",
                 side_effect=[{}, reloaded_config],
             ),
-            patch.object(setup_mod, "get_hermes_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_opencodon_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", side_effect=env_side),
             patch.object(gateway_mod, "get_env_value", side_effect=env_side),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),

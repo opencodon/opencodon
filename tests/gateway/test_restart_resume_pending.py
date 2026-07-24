@@ -906,20 +906,20 @@ class TestFreshnessHelpers:
         assert _last_transcript_timestamp(history) is None
 
     def test_auto_continue_freshness_window_reads_env(self, monkeypatch):
-        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "7200")
+        monkeypatch.setenv("OPENCODON_AUTO_CONTINUE_FRESHNESS", "7200")
         assert _auto_continue_freshness_window() == 7200.0
 
     def test_auto_continue_freshness_window_default_when_unset(self, monkeypatch):
-        monkeypatch.delenv("HERMES_AUTO_CONTINUE_FRESHNESS", raising=False)
+        monkeypatch.delenv("OPENCODON_AUTO_CONTINUE_FRESHNESS", raising=False)
         # Default is 1 hour
         assert _auto_continue_freshness_window() == 3600.0
 
     def test_auto_continue_freshness_window_malformed_falls_back(self, monkeypatch):
-        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "not-a-number")
+        monkeypatch.setenv("OPENCODON_AUTO_CONTINUE_FRESHNESS", "not-a-number")
         assert _auto_continue_freshness_window() == 3600.0
 
     def test_auto_continue_freshness_window_empty_falls_back(self, monkeypatch):
-        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "")
+        monkeypatch.setenv("OPENCODON_AUTO_CONTINUE_FRESHNESS", "")
         assert _auto_continue_freshness_window() == 3600.0
 
 
@@ -1645,7 +1645,7 @@ class TestStuckLoopEscalation:
         counts_file = tmp_path / ".restart_failure_counts"
         counts_file.write_text(json.dumps({entry.session_key: 3}))
 
-        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+        monkeypatch.setattr("gateway.run._opencodon_home", tmp_path)
         runner = object.__new__(GatewayRunner)
         runner.session_store = store
 
@@ -1675,7 +1675,7 @@ class TestStuckLoopEscalation:
         counts_file = tmp_path / ".restart_failure_counts"
         counts_file.write_text(json.dumps({entry.session_key: 2}))
 
-        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+        monkeypatch.setattr("gateway.run._opencodon_home", tmp_path)
         runner = object.__new__(GatewayRunner)
         runner.session_store = store
 
@@ -1693,7 +1693,7 @@ class TestStuckLoopEscalation:
         source = _make_source()
         session_key = _make_store(tmp_path).get_or_create_session(source).session_key
 
-        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+        monkeypatch.setattr("gateway.run._opencodon_home", tmp_path)
         calls = []
 
         def _fake_atomic_json_write(path, payload, **kwargs):
@@ -1728,7 +1728,7 @@ class TestStuckLoopEscalation:
             encoding="utf-8",
         )
 
-        monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+        monkeypatch.setattr("gateway.run._opencodon_home", tmp_path)
         calls = []
 
         def _fake_atomic_json_write(path, payload, **kwargs):

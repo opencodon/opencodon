@@ -24,13 +24,13 @@ from unittest.mock import patch
 import pytest
 
 from opencodon_cli import models as M
-from opencodon_cli.providers import HERMES_OVERLAYS
+from opencodon_cli.providers import OPENCODON_OVERLAYS
 
 
 # --- Bug 2: overlay no longer lists OPENAI_API_KEY --------------------------
 
 def test_openrouter_overlay_does_not_list_openai_api_key():
-    overlay = HERMES_OVERLAYS["openrouter"]
+    overlay = OPENCODON_OVERLAYS["openrouter"]
     assert "OPENAI_API_KEY" not in overlay.extra_env_vars
 
 

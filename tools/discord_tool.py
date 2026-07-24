@@ -4,7 +4,7 @@ Provides the agent with the ability to interact with Discord servers
 when running on the Discord gateway. Uses Discord REST API directly
 with the bot token — no dependency on the gateway adapter's client.
 
-Only included in the hermes-discord toolset, so it has zero cost
+Only included in the opencodon-discord toolset, so it has zero cost
 for users on other platforms.
 
 The schema exposed to the model is filtered by two gates:
@@ -174,9 +174,9 @@ _capability_bg_lock = threading.Lock()
 def _capability_disk_cache_path() -> "Path":
     from pathlib import Path
 
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
-    return get_hermes_home() / "cache" / "discord_capabilities.json"
+    return get_opencodon_home() / "cache" / "discord_capabilities.json"
 
 
 def _token_cache_key(token: str) -> str:

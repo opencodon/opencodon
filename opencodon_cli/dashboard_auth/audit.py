@@ -1,6 +1,6 @@
 """Audit log for dashboard-auth events.
 
-Profile-aware location: ``$HERMES_HOME/logs/dashboard-auth.log``.
+Profile-aware location: ``$OPENCODON_HOME/logs/dashboard-auth.log``.
 Format: one JSON object per line. Token-like fields are stripped before
 serialisation to avoid leaking refresh tokens or JWTs to disk.
 
@@ -57,13 +57,13 @@ class AuditEvent(enum.Enum):
 
 
 def _resolve_log_path() -> Path:
-    """``$HERMES_HOME/logs/dashboard-auth.log`` with the standard fallback.
+    """``$OPENCODON_HOME/logs/dashboard-auth.log`` with the standard fallback.
 
-    Mirrors ``opencodon_constants.get_hermes_home`` semantics: env var wins,
-    else ``~/.hermes``. A local copy avoids an import cycle with the
+    Mirrors ``opencodon_constants.get_opencodon_home`` semantics: env var wins,
+    else ``~/.opencodon``. A local copy avoids an import cycle with the
     middleware which lives below ``opencodon_cli``.
     """
-    home = os.environ.get("HERMES_HOME") or str(Path.home() / ".hermes")
+    home = os.environ.get("OPENCODON_HOME") or str(Path.home() / ".opencodon")
     return Path(home) / "logs" / "dashboard-auth.log"
 
 

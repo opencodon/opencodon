@@ -14,16 +14,16 @@ import {
 
 test('desktop backend PATH adds Hermes-managed bins and missing POSIX sane entries', () => {
   const result = buildDesktopBackendPath({
-    hermesHome: '/Users/test/.hermes',
-    venvRoot: '/Users/test/.hermes/hermes-agent/venv',
+    hermesHome: '/Users/test/.opencodon',
+    venvRoot: '/Users/test/.opencodon/opencodon/venv',
     currentPath: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin',
     platform: 'darwin',
     pathModule: path.posix
   })
 
   const entries = result.split(':')
-  assert.equal(entries[0], '/Users/test/.hermes/node/bin')
-  assert.equal(entries[1], '/Users/test/.hermes/hermes-agent/venv/bin')
+  assert.equal(entries[0], '/Users/test/.opencodon/node/bin')
+  assert.equal(entries[1], '/Users/test/.opencodon/opencodon/venv/bin')
   assert.ok(entries.includes('/opt/homebrew/bin'), 'Apple Silicon Homebrew bin is added')
   assert.ok(entries.includes('/opt/homebrew/sbin'), 'Apple Silicon Homebrew sbin is added')
   assert.ok(entries.includes('/usr/local/sbin'), 'missing standard sbin is added')
@@ -35,8 +35,8 @@ test('desktop backend PATH adds Hermes-managed bins and missing POSIX sane entri
 
 test('desktop backend PATH preserves first occurrence and avoids duplicates', () => {
   const result = buildDesktopBackendPath({
-    hermesHome: '/Users/test/.hermes',
-    venvRoot: '/Users/test/.hermes/hermes-agent/venv',
+    hermesHome: '/Users/test/.opencodon',
+    venvRoot: '/Users/test/.opencodon/opencodon/venv',
     currentPath: '/opt/homebrew/bin:/usr/bin:/opt/homebrew/bin:/bin',
     platform: 'darwin',
     pathModule: path.posix
@@ -52,9 +52,9 @@ test('desktop backend PATH preserves first occurrence and avoids duplicates', ()
 
 test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () => {
   const env = buildDesktopBackendEnv({
-    hermesHome: '/Users/test/.hermes',
+    hermesHome: '/Users/test/.opencodon',
     pythonPathEntries: ['/repo/hermes-agent'],
-    venvRoot: '/Users/test/.hermes/hermes-agent/venv',
+    venvRoot: '/Users/test/.opencodon/opencodon/venv',
     currentEnv: {
       PATH: '/usr/bin:/bin',
       PYTHONPATH: '/existing/pythonpath'
@@ -64,20 +64,20 @@ test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () =
   })
 
   assert.equal(env.PYTHONPATH, '/repo/hermes-agent:/existing/pythonpath')
-  assert.ok(env.PATH.startsWith('/Users/test/.hermes/node/bin:/Users/test/.hermes/hermes-agent/venv/bin:'))
+  assert.ok(env.PATH.startsWith('/Users/test/.opencodon/node/bin:/Users/test/.opencodon/opencodon/venv/bin:'))
   assert.ok(env.PATH.includes('/opt/homebrew/bin'))
 })
 
 test('normalizeHermesHomeRoot maps profile homes back to the global Hermes root', () => {
   assert.equal(
-    normalizeHermesHomeRoot('/Users/test/.hermes/profiles/oracle', { pathModule: path.posix }),
-    '/Users/test/.hermes'
+    normalizeHermesHomeRoot('/Users/test/.opencodon/profiles/oracle', { pathModule: path.posix }),
+    '/Users/test/.opencodon'
   )
   assert.equal(
     normalizeHermesHomeRoot('C:\\Users\\test\\AppData\\Local\\hermes\\profiles\\oracle', { pathModule: path.win32 }),
     'C:\\Users\\test\\AppData\\Local\\hermes'
   )
-  assert.equal(normalizeHermesHomeRoot('/Users/test/.hermes', { pathModule: path.posix }), '/Users/test/.hermes')
+  assert.equal(normalizeHermesHomeRoot('/Users/test/.opencodon', { pathModule: path.posix }), '/Users/test/.opencodon')
 })
 
 test('Windows PATH casing and delimiter are preserved without POSIX sane entries', () => {

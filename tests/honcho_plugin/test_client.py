@@ -8,7 +8,7 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from opencodon_cli.profiles import _get_default_hermes_home
+from opencodon_cli.profiles import _get_default_opencodon_home
 
 import pytest
 
@@ -119,8 +119,8 @@ class TestFromGlobalConfig:
                 }
             }
         }))
-        # Isolate from real ~/.hermes/honcho.json
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "isolated"))
+        # Isolate from real ~/.opencodon/honcho.json
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.api_key == "***"
@@ -310,10 +310,10 @@ class TestResolveSessionName:
     def test_per_repo_uses_git_root(self):
         config = HonchoClientConfig(session_strategy="per-repo")
         with patch.object(
-            HonchoClientConfig, "_git_repo_name", return_value="hermes-agent"
+            HonchoClientConfig, "_git_repo_name", return_value="opencodon"
         ):
             result = config.resolve_session_name("/home/user/hermes-agent/subdir")
-        assert result == "hermes-agent"
+        assert result == "opencodon"
 
     def test_per_repo_with_peer_prefix(self):
         config = HonchoClientConfig(
@@ -343,63 +343,63 @@ class TestResolveSessionName:
 
 
 class TestResolveConfigPath:
-    def test_prefers_hermes_home_when_exists(self, tmp_path):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
-        local_cfg = hermes_home / "honcho.json"
+    def test_prefers_opencodon_home_when_exists(self, tmp_path):
+        opencodon_home = tmp_path / "hermes"
+        opencodon_home.mkdir()
+        local_cfg = opencodon_home / "honcho.json"
         local_cfg.write_text('{"apiKey": "local"}')
 
-        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}):
+        with patch.dict(os.environ, {"OPENCODON_HOME": str(opencodon_home)}):
             result = resolve_config_path()
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: HERMES_HOME points at ~/.hermes/profiles/<name>, so
-        # _get_default_hermes_home() must resolve back to ~/.hermes — that's
+        # Profile mode: OPENCODON_HOME points at ~/.opencodon/profiles/<name>, so
+        # _get_default_opencodon_home() must resolve back to ~/.opencodon — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        default_home = fake_home / ".hermes"
+        default_home = fake_home / ".opencodon"
         profile_home = default_home / "profiles" / "work"
         profile_home.mkdir(parents=True)
         default_cfg = default_home / "honcho.json"
         default_cfg.write_text('{"apiKey": "default-key"}')
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
 
         result = resolve_config_path()
 
-        assert _get_default_hermes_home() == default_home
+        assert _get_default_opencodon_home() == default_home
         assert result == default_cfg
 
-    def test_falls_back_to_global_without_hermes_home_env(self, tmp_path):
+    def test_falls_back_to_global_without_opencodon_home_env(self, tmp_path):
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
 
         with patch.dict(os.environ, {}, clear=False), \
              patch.object(Path, "home", return_value=fake_home):
-            os.environ.pop("HERMES_HOME", None)
+            os.environ.pop("OPENCODON_HOME", None)
             result = resolve_config_path()
         assert result == fake_home / ".honcho" / "config.json"
 
     def test_global_fallback_uses_home_at_call_time(self, tmp_path):
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
+        opencodon_home = tmp_path / "hermes"
+        opencodon_home.mkdir()
 
-        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}), \
+        with patch.dict(os.environ, {"OPENCODON_HOME": str(opencodon_home)}), \
              patch.object(Path, "home", return_value=fake_home):
             assert resolve_global_config_path() == fake_home / ".honcho" / "config.json"
             assert resolve_config_path() == fake_home / ".honcho" / "config.json"
 
     def test_from_global_config_uses_default_profile_fallback(self, tmp_path, monkeypatch):
         # Profile mode: from_global_config() reads the default-profile honcho.json
-        # via the HOME-anchored helper, not Path.home() / ".hermes".
+        # via the HOME-anchored helper, not Path.home() / ".opencodon".
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
-        default_home = fake_home / ".hermes"
+        default_home = fake_home / ".opencodon"
         profile_home = default_home / "profiles" / "work"
         profile_home.mkdir(parents=True)
         default_cfg = default_home / "honcho.json"
@@ -409,7 +409,7 @@ class TestResolveConfigPath:
         }))
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
 
         config = HonchoClientConfig.from_global_config()
 
@@ -417,15 +417,15 @@ class TestResolveConfigPath:
         assert config.workspace_id == "default-ws"
 
     def test_from_global_config_uses_local_path(self, tmp_path):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
-        local_cfg = hermes_home / "honcho.json"
+        opencodon_home = tmp_path / "hermes"
+        opencodon_home.mkdir()
+        local_cfg = opencodon_home / "honcho.json"
         local_cfg.write_text(json.dumps({
             "apiKey": "***",
             "workspace": "local-ws",
         }))
 
-        with patch.dict(os.environ, {"HERMES_HOME": str(hermes_home)}), \
+        with patch.dict(os.environ, {"OPENCODON_HOME": str(opencodon_home)}), \
              patch.object(Path, "home", return_value=tmp_path):
             config = HonchoClientConfig.from_global_config()
         assert config.api_key == "***"
@@ -439,8 +439,8 @@ class TestResolveActiveHost:
 
     def test_default_returns_hermes(self):
         with patch.dict(os.environ, {}, clear=True):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
-            os.environ.pop("HERMES_HOME", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HOME", None)
             with patch(
                 "plugins.memory.honcho.client.resolve_config_path",
                 return_value=Path("/nonexistent/honcho.json"),
@@ -448,12 +448,12 @@ class TestResolveActiveHost:
                 assert resolve_active_host() == "hermes"
 
     def test_explicit_env_var_wins(self):
-        with patch.dict(os.environ, {"HERMES_HONCHO_HOST": "hermes.coder"}):
+        with patch.dict(os.environ, {"OPENCODON_HONCHO_HOST": "hermes.coder"}):
             assert resolve_active_host() == "hermes.coder"
 
     def test_profile_name_derives_host(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             with patch("opencodon_cli.profiles.get_active_profile_name", return_value="coder"):
                 assert resolve_active_host() == "hermes_coder"
 
@@ -466,7 +466,7 @@ class TestResolveActiveHost:
         }))
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             with patch("opencodon_cli.profiles.get_active_profile_name", return_value="coder"), \
                  patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
                 assert resolve_active_host() == "hermes_coder"
@@ -480,14 +480,14 @@ class TestResolveActiveHost:
         }))
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             with patch("opencodon_cli.profiles.get_active_profile_name", return_value="default"), \
                  patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
                 assert resolve_active_host() == "local"
 
     def test_default_profile_returns_hermes(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             with patch("opencodon_cli.profiles.get_active_profile_name", return_value="default"), \
                  patch(
                      "plugins.memory.honcho.client.resolve_config_path",
@@ -497,7 +497,7 @@ class TestResolveActiveHost:
 
     def test_custom_profile_returns_hermes(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             with patch("opencodon_cli.profiles.get_active_profile_name", return_value="custom"), \
                  patch(
                      "plugins.memory.honcho.client.resolve_config_path",
@@ -511,7 +511,7 @@ class TestResolveActiveHost:
             "plugins.memory.honcho.client.resolve_config_path",
             return_value=Path("/nonexistent/test-honcho-config.json"),
         ):
-            os.environ.pop("HERMES_HONCHO_HOST", None)
+            os.environ.pop("OPENCODON_HONCHO_HOST", None)
             # Temporarily remove opencodon_cli.profiles to simulate import failure
             saved = sys.modules.get("opencodon_cli.profiles")
             sys.modules["opencodon_cli.profiles"] = None  # type: ignore
@@ -744,9 +744,9 @@ class TestGetHonchoClient:
     )
     def test_timeout_change_triggers_client_rebuild(self):
         """Changing timeout config must rebuild the cached client."""
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        cfg_yaml = get_hermes_home() / "config.yaml"
+        cfg_yaml = get_opencodon_home() / "config.yaml"
         cfg_yaml.write_text("honcho:\n  timeout: 30\n")
 
         fake_honcho_1 = MagicMock(name="Honcho_v1")
@@ -794,7 +794,7 @@ class TestGetHonchoClient:
         managed_dir.mkdir()
         managed_cfg = managed_dir / "config.yaml"
         managed_cfg.write_text("honcho:\n  timeout: 88\n")
-        monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed_dir))
+        monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed_dir))
 
         fake_honcho_1 = MagicMock(name="Honcho_v1")
         fake_honcho_2 = MagicMock(name="Honcho_v2")

@@ -31,7 +31,7 @@ Concept mapping used throughout: **frame = hermes `sessions` row; frame_messages
 | Skills | Preloaded index + `skill_view` | **KEEP** — with one fix: deterministic loading in science sessions (§6) |
 | MCP connectors | Full OAuth 2.1 client, per-tool include/exclude | **KEEP** |
 | Memory | MEMORY.md/USER.md | **KEEP** — orthogonal to the science core |
-| Credentials / zones | env-var per profile; `HERMES_HOME` profile isolation | **KEEP** — sensitivity zones stay "enforcement by absence" per profile |
+| Credentials / zones | env-var per profile; `OPENCODON_HOME` profile isolation | **KEEP** — sensitivity zones stay "enforcement by absence" per profile |
 | Persistent kernels | none (fresh subprocess per `execute_code`) | **BUILD** (port opencodon `execution/`) |
 | `execution_log` / `host_call_log` | none | **BUILD** (port opencodon migrations + store invariants) |
 | Artifacts / versions / dependency edges | none (`file_state.py` is concurrency-only) | **BUILD** (port opencodon `storage/` blob+artifact modules) |
@@ -56,7 +56,7 @@ tools/kernel_tool.py        run_code(code, language) / load_artifact(version_id)
 science/kernels.py          lazy KernelManager per (session, language) via jupyter_client
 science/store.py            execution_log, host_call_log, artifacts, artifact_versions,
                             artifact_dependencies, content_snapshots  (tables in state.db)
-science/blobstore.py        ~/.hermes/artifacts/<sha256>  (per profile)
+science/blobstore.py        ~/.opencodon/artifacts/<sha256>  (per profile)
 science/host_bridge.py      host.* RPC inside the kernel (llm, artifacts, mcp) — parent-side
 science/reproduce.py        re-run producing cell, checksum-verify
 ```

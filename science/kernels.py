@@ -592,12 +592,12 @@ def get_kernel_manager() -> SessionKernelManager:
     global _manager
     with _manager_lock:
         if _manager is None:
-            from opencodon_constants import get_hermes_home
+            from opencodon_constants import get_opencodon_home
 
             from science.bridge import bootstrap_kernel
 
             _manager = SessionKernelManager(
-                workspaces_root=Path(get_hermes_home()) / "science" / "workspaces",
+                workspaces_root=Path(get_opencodon_home()) / "science" / "workspaces",
                 bootstrap_fn=bootstrap_kernel,
             )
             atexit.register(_manager.shutdown)

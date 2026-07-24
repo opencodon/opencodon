@@ -10,25 +10,25 @@ import yaml
 
 
 # ---------------------------------------------------------------------------
-# Shared fixture — isolate HERMES_HOME so save_config writes to tmp_path
+# Shared fixture — isolate OPENCODON_HOME so save_config writes to tmp_path
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def isolated_home(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     return tmp_path
 
 
 def _write_config(home: Path, data: dict) -> None:
-    config_path = home / ".hermes" / "config.yaml"
+    config_path = home / ".opencodon" / "config.yaml"
     config_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
 
 def _read_config(home: Path) -> dict:
-    config_path = home / ".hermes" / "config.yaml"
+    config_path = home / ".opencodon" / "config.yaml"
     return yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
 

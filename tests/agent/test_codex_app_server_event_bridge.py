@@ -83,7 +83,7 @@ class TestCodexItemToToolName:
         """The hermes-tools MCP server wraps Hermes' own tools for codex;
         the inner dispatch subprocess can't fire native progress events,
         so the codex-level event IS the display event — shown without the
-        mcp.hermes-tools.* namespacing (from #26541 by @simpolism)."""
+        mcp.opencodon-tools.* namespacing (from #26541 by @simpolism)."""
         assert _codex_item_to_tool_name(
             {"type": "mcpToolCall", "server": "hermes-tools", "tool": "web_search"}
         ) == "web_search"

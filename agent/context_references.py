@@ -20,7 +20,7 @@ REFERENCE_PATTERN = re.compile(
 )
 TRAILING_PUNCTUATION = ",.;!?"
 _SENSITIVE_HOME_DIRS = (".ssh", ".aws", ".gnupg", ".kube", ".docker", ".azure", ".config/gh")
-_SENSITIVE_HERMES_DIRS = (Path("skills") / ".hub",)
+_SENSITIVE_OPENCODON_DIRS = (Path("skills") / ".hub",)
 _SENSITIVE_HOME_FILES = (
     Path(".ssh") / "authorized_keys",
     Path(".ssh") / "id_rsa",
@@ -362,14 +362,14 @@ def _resolve_path(cwd: Path, target: str, *, allowed_root: Path | None = None) -
 
 
 def _ensure_reference_path_allowed(path: Path) -> None:
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
     home = Path(os.path.expanduser("~")).resolve()
-    hermes_home = get_hermes_home().resolve()
+    opencodon_home = get_opencodon_home().resolve()
 
     blocked_exact = {home / rel for rel in _SENSITIVE_HOME_FILES}
-    blocked_exact.add(hermes_home / ".env")
+    blocked_exact.add(opencodon_home / ".env")
     blocked_dirs = [home / rel for rel in _SENSITIVE_HOME_DIRS]
-    blocked_dirs.extend(hermes_home / rel for rel in _SENSITIVE_HERMES_DIRS)
+    blocked_dirs.extend(opencodon_home / rel for rel in _SENSITIVE_OPENCODON_DIRS)
 
     if path in blocked_exact:
         raise ValueError("path is a sensitive credential file and cannot be attached")
@@ -387,7 +387,7 @@ def _ensure_reference_path_allowed(path: Path) -> None:
     # provider keys (auth.json), Anthropic OAuth tokens (.anthropic_oauth.json),
     # MCP OAuth material (mcp-tokens/), webhook HMAC secrets, and project-local
     # .env files. That gap matters because the gateway feeds UNTRUSTED remote
-    # message text into reference expansion, so `@file:~/.hermes/auth.json` from a
+    # message text into reference expansion, so `@file:~/.opencodon/auth.json` from a
     # chat peer would otherwise read the operator's keys straight into context.
     # Routing through the canonical guard closes the gap today and keeps this path
     # protected automatically whenever that deny-list grows.

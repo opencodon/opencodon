@@ -57,7 +57,7 @@ Frontmatter:
   cross-platform first (tempfile.gettempdir(), pathlib.Path, psutil); gate only
   when the dependency is genuinely platform-bound. Omit the field for portable
   skills.
-- metadata.hermes.tags: a few Capitalized, Relevant, Tags.
+- metadata.opencodon.tags: a few Capitalized, Relevant, Tags.
 
 Body section order (omit a section only if it genuinely has no content):
 1. "# <Human Title>" then a 2-3 sentence intro: what it does, what it does NOT

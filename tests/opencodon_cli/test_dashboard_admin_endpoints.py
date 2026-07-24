@@ -16,20 +16,20 @@ def _client():
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
     import opencodon_state
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
     from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
     client = TestClient(app)
     client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
-    # Keep the state DB under the isolated HERMES_HOME for any handler that
+    # Keep the state DB under the isolated OPENCODON_HOME for any handler that
     # touches it.
-    opencodon_state.DEFAULT_DB_PATH = get_hermes_home() / "state.db"
+    opencodon_state.DEFAULT_DB_PATH = get_opencodon_home() / "state.db"
     return client, _SESSION_HEADER_NAME
 
 
 class TestMcpEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, self.header = _client()
 
     def test_list_add_remove_roundtrip(self):
@@ -66,9 +66,9 @@ class TestMcpEndpoints:
         assert srv["env"]["API_KEY"] != "sk-secret-1234567890"
 
     def test_http_bearer_auth_separates_secret_from_config(
-        self, _isolate_hermes_home
+        self, _isolate_opencodon_home
     ):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
         secret = "dashboard-secret-value"
         response = self.client.post(
@@ -85,9 +85,9 @@ class TestMcpEndpoints:
         assert response.json()["auth"] == "header"
         assert "bearer_token" not in response.json()
 
-        hermes_home = get_hermes_home()
-        config_text = (hermes_home / "config.yaml").read_text()
-        env_text = (hermes_home / ".env").read_text()
+        opencodon_home = get_opencodon_home()
+        config_text = (opencodon_home / "config.yaml").read_text()
+        env_text = (opencodon_home / ".env").read_text()
         assert secret not in config_text
         assert "Bearer ${MCP_BEARER_SERVER_API_KEY}" in config_text
         assert f"MCP_BEARER_SERVER_API_KEY={secret}" in env_text
@@ -220,7 +220,7 @@ class TestMcpEndpoints:
 
 class TestCredentialPoolEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_add_list_remove_and_cli_parity(self):
@@ -256,7 +256,7 @@ class TestCredentialPoolEndpoints:
     def test_env_seeded_delete_stays_deleted(self):
         """#55217: DELETE must suppress the source or load_pool() resurrects it.
 
-        load_pool() re-seeds from ~/.hermes/.env on every call, so removing
+        load_pool() re-seeds from ~/.opencodon/.env on every call, so removing
         just the pool row silently reverts on the next dashboard refresh.
         The endpoint must mirror `hermes auth remove`: clean up the backing
         source and suppress (provider, source).
@@ -354,11 +354,11 @@ class TestCredentialPoolEndpoints:
 
 class TestMemoryEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        (get_hermes_home() / "memories").mkdir(parents=True, exist_ok=True)
+        (get_opencodon_home() / "memories").mkdir(parents=True, exist_ok=True)
 
     def test_status_and_select(self):
         data = self.client.get("/api/memory").json()
@@ -373,9 +373,9 @@ class TestMemoryEndpoints:
         assert r.status_code == 400
 
     def test_reset_targets(self):
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        mem = get_hermes_home() / "memories"
+        mem = get_opencodon_home() / "memories"
         (mem / "MEMORY.md").write_text("notes")
         (mem / "USER.md").write_text("user")
 
@@ -390,7 +390,7 @@ class TestMemoryEndpoints:
 
 class TestPairingEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_list_and_bad_approve(self):
@@ -404,7 +404,7 @@ class TestPairingEndpoints:
 
 class TestWebhookEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_list_disabled_and_create_blocked(self):
@@ -525,7 +525,7 @@ class TestWebhookEndpoints:
 
 class TestOpsEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_backup_output_uses_output_flag(self, monkeypatch):
@@ -558,7 +558,7 @@ class TestOpsEndpoints:
         from pathlib import Path
 
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import get_hermes_home
+        from opencodon_cli.config import get_opencodon_home
 
         captured = {}
 
@@ -580,7 +580,7 @@ class TestOpsEndpoints:
             "subcommand": ["backup", "-o", str(archive)],
             "name": "backup",
         }
-        assert archive.parent == get_hermes_home() / "backups"
+        assert archive.parent == get_opencodon_home() / "backups"
 
     def test_hooks_list_reads_config(self):
         from opencodon_cli.config import load_config, save_config
@@ -640,7 +640,7 @@ class TestOpsEndpoints:
 
 class TestSystemStatsEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_stats_shape(self):
@@ -656,7 +656,7 @@ class TestSystemStatsEndpoint:
 
 class TestCuratorEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_status_and_pause_toggle(self):
@@ -674,7 +674,7 @@ class TestCuratorEndpoints:
 
 class TestPortalEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_status_shape(self):
@@ -687,7 +687,7 @@ class TestPortalEndpoint:
 
 class TestSessionManagementEndpoints:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
         from opencodon_state import SessionDB
 
@@ -753,7 +753,7 @@ class TestSessionManagementEndpoints:
 
 class TestSkillsHubSearchEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_empty_query_returns_empty(self):
@@ -803,7 +803,7 @@ class _FakeBundle:
 
 class TestSkillsHubSourcesEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_sources_lists_configured_hubs(self, monkeypatch):
@@ -848,7 +848,7 @@ class TestSkillsHubSourcesEndpoint:
 
 class TestSkillsHubPreviewEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_preview_requires_identifier(self):
@@ -890,7 +890,7 @@ class TestSkillsHubPreviewEndpoint:
 
 class TestSkillsHubScanEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_scan_requires_identifier(self):
@@ -969,7 +969,7 @@ class TestSkillsHubScanEndpoint:
 
 class TestWebhookToggleEndpoint:
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
         # Enable the webhook platform so a subscription can be created.
         from opencodon_cli.config import load_config, save_config
@@ -1000,7 +1000,7 @@ class TestAdminEndpointsAuthGate:
     """Every admin endpoint must sit behind the dashboard session-token gate."""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         from starlette.testclient import TestClient
         from opencodon_cli.web_server import app
 
@@ -1041,7 +1041,7 @@ class TestUpdateCheckEndpoint:
     """
 
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
 
     def test_git_install_reports_behind_count(self, monkeypatch):
@@ -1166,11 +1166,11 @@ class TestDebugShareEndpoint:
     dashboard can render them as copyable links (not a backgrounded log tail)."""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, self.header = _client()
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        logs = get_hermes_home() / "logs"
+        logs = get_opencodon_home() / "logs"
         logs.mkdir(parents=True, exist_ok=True)
         (logs / "agent.log").write_text("agent line\n")
         (logs / "errors.log").write_text("err line\n")
@@ -1259,7 +1259,7 @@ class TestToolsConfigEndpoints:
     the dashboard surface that replicates the `hermes tools` configurator."""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_hermes_home):
+    def _setup(self, _isolate_opencodon_home):
         self.client, self.header = _client()
 
     def test_list_toolsets_shape(self):
@@ -1389,13 +1389,13 @@ class TestToolsConfigEndpoints:
 
 def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
     """The dashboard runs inside the gateway, so os.environ has
-    _HERMES_GATEWAY=1. Spawned actions (e.g. `gateway restart`) must NOT inherit
+    _OPENCODON_GATEWAY=1. Spawned actions (e.g. `gateway restart`) must NOT inherit
     it, or the in-process restart-loop guard rejects the restart and it silently
     fails (#52470).
     """
     import opencodon_cli.web_server as ws
 
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_OPENCODON_GATEWAY", "1")
     monkeypatch.setattr(ws, "_ACTION_LOG_DIR", tmp_path)
 
     captured = {}
@@ -1411,5 +1411,5 @@ def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path
 
     ws._spawn_hermes_action(["gateway", "restart"], "gateway-restart")
 
-    assert "_HERMES_GATEWAY" not in captured["env"]
-    assert captured["env"]["HERMES_NONINTERACTIVE"] == "1"
+    assert "_OPENCODON_GATEWAY" not in captured["env"]
+    assert captured["env"]["OPENCODON_NONINTERACTIVE"] == "1"

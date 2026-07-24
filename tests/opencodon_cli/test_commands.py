@@ -14,7 +14,7 @@ from opencodon_cli.commands import (
     SlashCommandCompleter,
     _CMD_NAME_LIMIT,
     _SLACK_RESERVED_COMMANDS,
-    _SLACK_VIA_HERMES_ONLY,
+    _SLACK_VIA_OPENCODON_ONLY,
     _TG_NAME_LIMIT,
     _clamp_command_names,
     _clamp_telegram_names,
@@ -384,7 +384,7 @@ class TestSlackNativeSlashes:
         reserved_norm = {_norm(n) for n in _SLACK_RESERVED_COMMANDS}
         # Commands deliberately routed through /hermes <command> on Slack only
         # (Slack's 50-slash cap) are expected to be absent from native slashes.
-        via_hermes_norm = {_norm(n) for n in _SLACK_VIA_HERMES_ONLY}
+        via_hermes_norm = {_norm(n) for n in _SLACK_VIA_OPENCODON_ONLY}
         missing = (tg_norm - slack_norm) - reserved_norm - via_hermes_norm
         assert not missing, (
             f"commands on Telegram but missing from Slack native slashes: {sorted(missing)}"
@@ -445,7 +445,7 @@ class TestGatewayConfigGate:
         # Write a config with the gate off (default)
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -455,7 +455,7 @@ class TestGatewayConfigGate:
         """When the config gate is truthy, the command should appear in help."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -465,7 +465,7 @@ class TestGatewayConfigGate:
         """Quoted false must not enable config-gated gateway commands."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text('display:\n  tool_progress_command: "false"\n')
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -479,7 +479,7 @@ class TestGatewayConfigGate:
     def test_config_gate_excluded_from_telegram_when_off(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         names = {name for name, _ in telegram_bot_commands()}
         assert "verbose" not in names
@@ -487,7 +487,7 @@ class TestGatewayConfigGate:
     def test_config_gate_included_in_telegram_when_on(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         names = {name for name, _ in telegram_bot_commands()}
         assert "verbose" in names
@@ -495,7 +495,7 @@ class TestGatewayConfigGate:
     def test_config_gate_excluded_from_slack_when_off(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         mapping = slack_subcommand_map()
         assert "verbose" not in mapping
@@ -503,7 +503,7 @@ class TestGatewayConfigGate:
     def test_config_gate_included_in_slack_when_on(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         mapping = slack_subcommand_map()
         assert "verbose" in mapping
@@ -1227,7 +1227,7 @@ class TestTelegramMenuCommands:
         (tmp_path / "config.yaml").write_text(
             "display:\n  tool_progress_command: true\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         menu, hidden = telegram_menu_commands(max_commands=30)
         names = [name for name, _desc in menu]
@@ -1273,7 +1273,7 @@ class TestTelegramMenuCommands:
             "        priority:\n"
             "          - lcm\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             menu, _hidden = telegram_menu_commands(max_commands=30)
@@ -1308,7 +1308,7 @@ class TestTelegramMenuCommands:
             "        priority:\n"
             "          - lcm\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             menu, _hidden = telegram_menu_commands(max_commands=30)
@@ -1327,7 +1327,7 @@ class TestTelegramMenuCommands:
             "          - status\n"
             "          - help\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         menu, _hidden = telegram_menu_commands(max_commands=5)
         names = [name for name, _desc in menu]
@@ -1335,7 +1335,7 @@ class TestTelegramMenuCommands:
         assert names[:2] == ["status", "help"]
 
     def test_telegram_menu_max_commands_uses_config_with_safe_bounds(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         assert telegram_menu_max_commands() == 60
 
@@ -1376,7 +1376,7 @@ class TestTelegramMenuCommands:
         assert telegram_menu_max_commands() == 60
 
     def test_telegram_menu_ignores_undocumented_command_menu_paths(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             "telegram:\n"
             "  command_menu:\n"
@@ -1408,7 +1408,7 @@ class TestTelegramMenuCommands:
         (tmp_path / "config.yaml").write_text(
             "plugins:\n  enabled:\n    - cmd-plugin\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             menu, _ = telegram_menu_commands(max_commands=100)
@@ -1428,7 +1428,7 @@ class TestTelegramMenuCommands:
             "    telegram:\n"
             "      - my-disabled-skill\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         # Mock get_skill_commands to return two skills
         fake_skills_dir = str(tmp_path / "skills")
@@ -1479,7 +1479,7 @@ class TestTelegramMenuCommands:
         lookalike_dir = tmp_path / "my-skills-extra"
         lookalike_dir.mkdir()
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             f"skills:\n  external_dirs:\n    - {external_dir}\n"
         )
@@ -1529,7 +1529,7 @@ class TestTelegramMenuCommands:
         from unittest.mock import patch
         import re
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1562,7 +1562,7 @@ class TestTelegramMenuCommands:
         """Skills whose names sanitize to empty string are silently dropped."""
         from unittest.mock import patch
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1633,7 +1633,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/code-review",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1665,7 +1665,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/my-cool-skill",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1691,7 +1691,7 @@ class TestDiscordSkillCommands:
             }
             for i in range(20)
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1715,7 +1715,7 @@ class TestDiscordSkillCommands:
             "    discord:\n"
             "      - secret-skill\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1758,7 +1758,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/status",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1785,7 +1785,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/verbose-skill",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1812,7 +1812,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/{long_name}",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1869,7 +1869,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/media/gif-search/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1900,7 +1900,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/dogfood/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1928,7 +1928,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/.hub/some-skill/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1962,7 +1962,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/mlops/inference/vllm/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -2009,7 +2009,7 @@ class TestDiscordSkillCommandsByCategory:
                     "skill_md_path": f"{fake_skills_dir}/{cat}/{name}/SKILL.md",
                 }
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -2066,7 +2066,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": str(external_dir / "mlops" / "external-skill" / "SKILL.md"),
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", local_skills_dir),

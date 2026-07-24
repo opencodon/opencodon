@@ -649,7 +649,7 @@ async def test_status_command_bypasses_active_session_guard():
 
 @pytest.mark.asyncio
 async def test_profile_command_reports_custom_root_profile(monkeypatch, tmp_path):
-    """Gateway /profile detects custom-root profiles (not under ~/.hermes)."""
+    """Gateway /profile detects custom-root profiles (not under ~/.opencodon)."""
     from pathlib import Path
 
     session_entry = SessionEntry(
@@ -663,7 +663,7 @@ async def test_profile_command_reports_custom_root_profile(monkeypatch, tmp_path
     runner = _make_runner(session_entry)
     profile_home = tmp_path / "profiles" / "coder"
 
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "unrelated-home")
 
     result = await runner._handle_profile_command(_make_event("/profile"))
@@ -678,8 +678,8 @@ async def test_profile_command_reports_source_stamped_profile(monkeypatch, tmp_p
     source (source.profile — URL prefix / per-credential adapter / room map),
     not the multiplexer's active profile, which is always the default and
     made /profile answer "default" in every persona chat."""
-    hermes_home = tmp_path / ".hermes"
-    profile_home = hermes_home / "profiles" / "milo"
+    opencodon_home = tmp_path / ".opencodon"
+    profile_home = opencodon_home / "profiles" / "milo"
     profile_home.mkdir(parents=True)
 
     session_entry = SessionEntry(
@@ -692,7 +692,7 @@ async def test_profile_command_reports_source_stamped_profile(monkeypatch, tmp_p
     )
     runner = _make_runner(session_entry)
     runner.config.multiplex_profiles = True
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     event = _make_event("/profile")
     event.source.profile = "milo"
@@ -709,8 +709,8 @@ async def test_profile_command_ignores_stamp_when_multiplexing_off(monkeypatch, 
     /profile keeps reporting the active profile and the default home,
     mirroring the multiplex gating in ``_run_agent`` and
     ``_reset_notice_session_info``."""
-    hermes_home = tmp_path / ".hermes"
-    profile_home = hermes_home / "profiles" / "milo"
+    opencodon_home = tmp_path / ".opencodon"
+    profile_home = opencodon_home / "profiles" / "milo"
     profile_home.mkdir(parents=True)
 
     session_entry = SessionEntry(
@@ -723,7 +723,7 @@ async def test_profile_command_ignores_stamp_when_multiplexing_off(monkeypatch, 
     )
     runner = _make_runner(session_entry)
     assert runner.config.multiplex_profiles is False
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     event = _make_event("/profile")
     event.source.profile = "milo"
@@ -731,15 +731,15 @@ async def test_profile_command_ignores_stamp_when_multiplexing_off(monkeypatch, 
     result = await runner._handle_profile_command(event)
 
     assert "**Profile:** `default`" in result
-    assert f"**Home:** `{hermes_home}`" in result
+    assert f"**Home:** `{opencodon_home}`" in result
 
 
 @pytest.mark.asyncio
 async def test_profile_command_unstamped_source_unchanged(monkeypatch, tmp_path):
     """Single-profile behavior is untouched: an unstamped source reports the
     active profile and the default home."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
 
     session_entry = SessionEntry(
         session_key=build_session_key(_make_source()),
@@ -750,12 +750,12 @@ async def test_profile_command_unstamped_source_unchanged(monkeypatch, tmp_path)
         chat_type="dm",
     )
     runner = _make_runner(session_entry)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     result = await runner._handle_profile_command(_make_event("/profile"))
 
     assert "**Profile:** `default`" in result
-    assert f"**Home:** `{hermes_home}`" in result
+    assert f"**Home:** `{opencodon_home}`" in result
 
 
 @pytest.mark.asyncio

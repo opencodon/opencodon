@@ -5,7 +5,7 @@ Implements ``hermes mcp add/remove/list/test/configure`` for interactive
 MCP server lifecycle management (issue #690 Phase 2).
 
 Relies on tools/mcp_tool.py for connection/discovery and keeps
-configuration in ~/.hermes/config.yaml under the ``mcp_servers`` key.
+configuration in ~/.opencodon/config.yaml under the ``mcp_servers`` key.
 """
 
 import asyncio
@@ -21,10 +21,10 @@ from opencodon_cli.config import (
     save_config,
     get_env_value,
     save_env_value,
-    get_hermes_home,  # noqa: F401 — used by test mocks
+    get_opencodon_home,  # noqa: F401 — used by test mocks
 )
 from opencodon_cli.colors import Colors, color
-from opencodon_constants import display_hermes_home
+from opencodon_constants import display_opencodon_home
 from opencodon_cli.mcp_security import validate_mcp_server_entry
 from tools.mcp_tool import _ENV_VAR_PATTERN, _env_ref_name
 
@@ -255,7 +255,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     """Resolve ``${ENV}`` placeholders in a server config before connecting.
 
     Mirrors ``_load_mcp_config()`` in ``tools/mcp_tool.py``: load
-    ``~/.hermes/.env`` into ``os.environ`` and recursively interpolate any
+    ``~/.opencodon/.env`` into ``os.environ`` and recursively interpolate any
     ``${VAR}`` placeholders. The CLI builds header templates like
     ``Authorization: Bearer ${MCP_X_API_KEY}`` but the probe path never
     resolved them, so the discovery probe sent the literal placeholder and
@@ -526,7 +526,7 @@ def cmd_mcp_add(args):
                         server_config["headers"] = _save_bearer_auth_token(
                             name, api_key
                         )
-                        _success(f"Saved to {display_hermes_home()}/.env as {env_key}")
+                        _success(f"Saved to {display_opencodon_home()}/.env as {env_key}")
 
                 # Set header with env var interpolation
                 if existing_key:
@@ -611,7 +611,7 @@ def cmd_mcp_add(args):
     server_config["enabled"] = True
     if _save_mcp_server(name, server_config):
         print()
-        _success(f"Saved '{name}' to {display_hermes_home()}/config.yaml ({tool_count}/{total} tools enabled)")
+        _success(f"Saved '{name}' to {display_opencodon_home()}/config.yaml ({tool_count}/{total} tools enabled)")
         _info("Start a new session to use these tools.")
 
 

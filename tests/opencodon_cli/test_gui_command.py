@@ -29,7 +29,7 @@ def _ns(**kw):
 
 
 def _make_desktop_tree(tmp_path: Path) -> Path:
-    root = tmp_path / "hermes-agent"
+    root = tmp_path / "opencodon"
     desktop_dir = root / "apps" / "desktop"
     desktop_dir.mkdir(parents=True)
     (desktop_dir / "package.json").write_text("{}", encoding="utf-8")
@@ -100,7 +100,7 @@ def test_gui_install_env_prepends_managed_node_on_bare_path(tmp_path, monkeypatc
     # A managed Node tree on disk so with_hermes_node_path() actually prepends it.
     home = tmp_path / "hermes-home"
     (home / "node" / "bin").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     # Simulate the stripped PATH the desktop updater chain hands us.
     monkeypatch.setenv("PATH", os.pathsep.join(["/usr/bin", "/bin"]))
 
@@ -149,10 +149,10 @@ def test_gui_forwards_desktop_environment_overrides(tmp_path, monkeypatch):
         ))
 
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_BOOT_FAKE"] == "1"
-    assert launch_env["HERMES_DESKTOP_IGNORE_EXISTING"] == "1"
-    assert launch_env["HERMES_DESKTOP_HERMES_ROOT"] == str(hermes_root)
-    assert launch_env["HERMES_DESKTOP_CWD"] == str(cwd)
+    assert launch_env["OPENCODON_DESKTOP_BOOT_FAKE"] == "1"
+    assert launch_env["OPENCODON_DESKTOP_IGNORE_EXISTING"] == "1"
+    assert launch_env["OPENCODON_DESKTOP_OPENCODON_ROOT"] == str(hermes_root)
+    assert launch_env["OPENCODON_DESKTOP_CWD"] == str(cwd)
 
 
 def test_gui_exits_when_npm_missing(tmp_path, monkeypatch, capsys):

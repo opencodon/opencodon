@@ -1,7 +1,7 @@
 /**
  * In-app update mutual-exclusion marker (#50238).
  *
- * The Tauri updater writes HERMES_HOME/.hermes-update-in-progress for the whole
+ * The Tauri updater writes OPENCODON_HOME/.opencodon-update-in-progress for the whole
  * duration of an `--update` run (see apps/bootstrap-installer/src-tauri/src/
  * update.rs `UpdateMarkerGuard`). The marker body is two lines: the updater's
  * pid and the unix-seconds it started.
@@ -30,7 +30,7 @@ import path from 'path'
 export const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
 export function markerPath(hermesHome) {
-  return path.join(hermesHome, '.hermes-update-in-progress')
+  return path.join(hermesHome, '.opencodon-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does

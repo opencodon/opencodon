@@ -289,9 +289,9 @@ class TestApiKeyHintRealPool:
     def _seed_pool(self, tmp_path, monkeypatch):
         import json
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(
+        opencodon_home = tmp_path / "hermes"
+        opencodon_home.mkdir(parents=True, exist_ok=True)
+        (opencodon_home / "auth.json").write_text(
             json.dumps(
                 {
                     "version": 1,
@@ -319,7 +319,7 @@ class TestApiKeyHintRealPool:
                 }
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         from agent.credential_pool import load_pool
 
         return load_pool("openrouter")

@@ -49,7 +49,7 @@ def _make_conflicted_managed_checkout(tmp_path: Path) -> Path:
     _git(seed, "remote", "add", "origin", str(remote))
     _git(seed, "push", "-u", "origin", "main")
 
-    managed = tmp_path / "hermes-agent"
+    managed = tmp_path / "opencodon"
     _git(tmp_path, "clone", "--branch", "main", str(remote), str(managed))
 
     (managed / "tracked.txt").write_text("local edit\n", encoding="utf-8")
@@ -88,8 +88,8 @@ def test_install_sh_repository_stage_recovers_from_autostash_conflict(
 ) -> None:
     managed = _make_conflicted_managed_checkout(tmp_path)
     env = os.environ | {
-        "HERMES_HOME": str(tmp_path / "hermes-home"),
-        "HERMES_INSTALL_DIR": str(managed),
+        "OPENCODON_HOME": str(tmp_path / "hermes-home"),
+        "OPENCODON_INSTALL_DIR": str(managed),
     }
 
     result = subprocess.run(
@@ -162,7 +162,7 @@ def test_install_sh_repository_stage_clean_apply_drops_stash(
     _git(seed, "remote", "add", "origin", str(remote))
     _git(seed, "push", "-u", "origin", "main")
 
-    managed = tmp_path / "hermes-agent"
+    managed = tmp_path / "opencodon"
     _git(tmp_path, "clone", "--branch", "main", str(remote), str(managed))
 
     # Local edit on a file upstream will NOT touch — no conflict on apply.
@@ -175,8 +175,8 @@ def test_install_sh_repository_stage_clean_apply_drops_stash(
     _git(upstream, "push", "origin", "main")
 
     env = os.environ | {
-        "HERMES_HOME": str(tmp_path / "hermes-home"),
-        "HERMES_INSTALL_DIR": str(managed),
+        "OPENCODON_HOME": str(tmp_path / "hermes-home"),
+        "OPENCODON_INSTALL_DIR": str(managed),
     }
     result = subprocess.run(
         ["bash", str(INSTALL_SH), "--stage", "repository", "--non-interactive"],

@@ -2,7 +2,7 @@
 
 Ported from the opencodon donor (``kernel_sdk/bootstrap.py`` +
 ``execution/artifact_bridge.py``). Contract (all paths under
-``<workspace>/.hermes-science/``):
+``<workspace>/.opencodon-science/``):
 
 - ``cell.json`` — the host writes it before each cell: ``execution_id``,
   ``inputs`` (``{version_id: {path, reference_name}}``), ``staging_dir``,
@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-SCIENCE_DIR = ".hermes-science"
+SCIENCE_DIR = ".opencodon-science"
 INPUTS_DIR = "inputs"
 CELL_CONFIG_NAME = "cell.json"
 _SCAN_FILE_LIMIT = 256
@@ -45,13 +45,13 @@ def science_dir(workspace: Path) -> Path:
 
 
 # ── Injected Python SDK ─────────────────────────────────────────────
-# The workspace path is baked in at injection time as __HERMES_SCIENCE_WS__.
+# The workspace path is baked in at injection time as __OPENCODON_SCIENCE_WS__.
 
 _SDK_SOURCE = r'''
 import json as _hs_json, os as _hs_os, shutil as _hs_shutil, socket as _hs_socket, uuid as _hs_uuid
 
 def _hs_dir():
-    return _hs_os.path.join(__HERMES_SCIENCE_WS__, ".hermes-science")
+    return _hs_os.path.join(__OPENCODON_SCIENCE_WS__, ".opencodon-science")
 
 def _hs_cell():
     with open(_hs_os.path.join(_hs_dir(), "cell.json"), "r") as _f:
@@ -156,13 +156,13 @@ host = _HermesHost()
 
 def bootstrap_source(workspace: str) -> str:
     """Injectable Python SDK source with the workspace path baked in."""
-    return f"__HERMES_SCIENCE_WS__ = {str(workspace)!r}\n" + _SDK_SOURCE
+    return f"__OPENCODON_SCIENCE_WS__ = {str(workspace)!r}\n" + _SDK_SOURCE
 
 
 # ── Injected R SDK (same filesystem contract; no host bridge yet) ───
 
 _R_SDK_SOURCE = r'''
-.hs_dir <- function() file.path(.HS_WS, ".hermes-science")
+.hs_dir <- function() file.path(.HS_WS, ".opencodon-science")
 .hs_cell <- function() jsonlite::fromJSON(file.path(.hs_dir(), "cell.json"), simplifyVector = FALSE)
 .hs_append <- function(entry) {
   cfg <- .hs_cell()

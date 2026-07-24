@@ -16,7 +16,7 @@ fires for ``uv build``, ``pip wheel``, ``python -m build``, and direct
 
 The one legitimate consumer of ``build_wheel`` is uv2nix, which calls
 ``setuptools.build_meta.build_wheel`` (→ ``bdist_wheel``) inside a Nix
-build sandbox. ``nix/python.nix`` sets ``HERMES_NIX_BUILD=1`` on the
+build sandbox. ``nix/python.nix`` sets ``OPENCODON_NIX_BUILD=1`` on the
 Hermes package derivation, so only that build may create an artifact.
 
 Editable installs (``uv sync``, ``pip install -e .``, ``nix develop``)
@@ -29,7 +29,7 @@ import os
 from setuptools import setup
 from setuptools.command.sdist import sdist
 
-_IN_NIX_BUILD = os.environ.get("HERMES_NIX_BUILD") == "1"
+_IN_NIX_BUILD = os.environ.get("OPENCODON_NIX_BUILD") == "1"
 
 _BLOCK_MESSAGE = (
     "Building wheels or sdists for hermes-agent is not supported.\n"
@@ -40,7 +40,7 @@ _BLOCK_MESSAGE = (
     "  uv sync          # or: uv pip install -e .\n"
     "\n"
     "If you are building with Nix (uv2nix), this error should not fire —\n"
-    "the Hermes Nix derivation sets HERMES_NIX_BUILD=1. If it does, file a bug."
+    "the Hermes Nix derivation sets OPENCODON_NIX_BUILD=1. If it does, file a bug."
 )
 
 

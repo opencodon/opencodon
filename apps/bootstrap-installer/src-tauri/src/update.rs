@@ -143,8 +143,8 @@ impl Drop for UpdateMarkerGuard {
 }
 
 async fn run_update(app: AppHandle) -> Result<()> {
-    let hermes_home = crate::paths::hermes_home();
-    let install_root = hermes_home.join("hermes-agent");
+    let opencodon_home = crate::paths::opencodon_home();
+    let install_root = opencodon_home.join("opencodon");
 
     // Mutual exclusion (#50238): publish an "update in progress" marker for the
     // entire duration of this update. A desktop instance the user relaunches
@@ -316,7 +316,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
             let msg = format!(
                 "hermes update failed (exit {:?}). See {} for details.",
                 other,
-                crate::paths::hermes_home()
+                crate::paths::opencodon_home()
                     .join("logs")
                     .join("update.log")
                     .display()
@@ -732,10 +732,10 @@ fn resolve_hermes(install_root: &Path) -> Option<PathBuf> {
 }
 
 fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
-    let hermes_home = crate::paths::hermes_home();
+    let opencodon_home = crate::paths::opencodon_home();
     let mut envs = vec![(
-        "HERMES_HOME".to_string(),
-        hermes_home.as_os_str().to_os_string(),
+        "OPENCODON_HOME".to_string(),
+        opencodon_home.as_os_str().to_os_string(),
     )];
     // `hermes update` is a Python CLI writing to a pipe here, so CPython
     // block-buffers its stdout: nothing reaches run_streamed (and the live
@@ -745,7 +745,7 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
     // output instead.
     envs.push(("PYTHONUNBUFFERED".to_string(), OsString::from("1")));
     if let Some(path) = path_with_prepended_entries(&[
-        hermes_home.join("node").join("bin"),
+        opencodon_home.join("node").join("bin"),
         venv_bin_dir(install_root),
     ]) {
         envs.push(("PATH".to_string(), path));
@@ -857,15 +857,15 @@ async fn install_macos_app_update(
     if let Some(parent) = target_app.parent() {
         tokio::fs::create_dir_all(parent).await?;
     }
-    let tmp = PathBuf::from(format!("{}.hermes-update-new", target_app.display()));
-    let old = PathBuf::from(format!("{}.hermes-update-old", target_app.display()));
+    let tmp = PathBuf::from(format!("{}.opencodon-update-new", target_app.display()));
+    let old = PathBuf::from(format!("{}.opencodon-update-old", target_app.display()));
     remove_dir_if_exists(&tmp).await;
     remove_dir_if_exists(&old).await;
 
     let ditto = Command::new("/usr/bin/ditto")
         .arg(&rebuilt_app)
         .arg(&tmp)
-        .current_dir(crate::paths::hermes_home())
+        .current_dir(crate::paths::opencodon_home())
         .status()
         .await
         .map_err(|e| anyhow!("running ditto: {e}"))?;
@@ -885,7 +885,7 @@ async fn install_macos_app_update(
         .arg("-dr")
         .arg("com.apple.quarantine")
         .arg(target_app)
-        .current_dir(crate::paths::hermes_home())
+        .current_dir(crate::paths::opencodon_home())
         .status()
         .await;
 
@@ -1099,7 +1099,7 @@ mod tests {
     fn update_marker_guard_writes_then_removes_on_drop() {
         let dir = unique_tmp_dir("marker-guard");
         std::fs::create_dir_all(&dir).unwrap();
-        let marker = dir.join(".hermes-update-in-progress");
+        let marker = dir.join(".opencodon-update-in-progress");
 
         {
             let _g = UpdateMarkerGuard::acquire(marker.clone());
@@ -1125,7 +1125,7 @@ mod tests {
     fn update_marker_guard_drop_is_quiet_when_already_gone() {
         let dir = unique_tmp_dir("marker-guard-gone");
         std::fs::create_dir_all(&dir).unwrap();
-        let marker = dir.join(".hermes-update-in-progress");
+        let marker = dir.join(".opencodon-update-in-progress");
 
         let guard = UpdateMarkerGuard::acquire(marker.clone());
         // Simulate an external cleanup (e.g. the desktop pruned a marker it
@@ -1222,8 +1222,8 @@ mod tests {
     async fn swap_installs_new_bundle_and_cleans_up() {
         let base = unique_tmp_dir("ok");
         let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new");
-        let old = base.join("Hermes.app.hermes-update-old");
+        let tmp = base.join("Hermes.app.opencodon-update-new");
+        let old = base.join("Hermes.app.opencodon-update-old");
         write_marker(&target, "OLD");
         write_marker(&tmp, "NEW");
 
@@ -1252,8 +1252,8 @@ mod tests {
         //  - `tmp` does not exist       -> rename(tmp, target) fails
         let base = unique_tmp_dir("fail");
         let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new"); // intentionally absent
-        let old = base.join("Hermes.app.hermes-update-old");
+        let tmp = base.join("Hermes.app.opencodon-update-new"); // intentionally absent
+        let old = base.join("Hermes.app.opencodon-update-old");
         write_marker(&target, "OLD");
         write_marker(&old, "OCCUPIED"); // non-empty => rename(target,old) fails
 
@@ -1275,8 +1275,8 @@ mod tests {
         // absent). The original must be rolled back from `old` to `target`.
         let base = unique_tmp_dir("rollback");
         let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new"); // absent
-        let old = base.join("Hermes.app.hermes-update-old");
+        let tmp = base.join("Hermes.app.opencodon-update-new"); // absent
+        let old = base.join("Hermes.app.opencodon-update-old");
         write_marker(&target, "OLD");
 
         let result = swap_in_new_bundle(&tmp, &target, &old).await;

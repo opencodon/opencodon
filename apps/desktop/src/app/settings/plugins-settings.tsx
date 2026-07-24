@@ -22,10 +22,10 @@ function reveal(file: string) {
 
 async function revealPluginsDir() {
   try {
-    const { hermes_home } = await getStatus()
+    const { opencodon_home } = await getStatus()
     // openDir (not reveal): the door often doesn't exist on first use, and
     // showItemInFolder on a missing path silently no-ops (esp. Windows).
-    const result = await window.hermesDesktop?.openDir?.(`${hermes_home}/desktop-plugins`)
+    const result = await window.hermesDesktop?.openDir?.(`${opencodon_home}/desktop-plugins`)
 
     if (result && !result.ok) {
       notifyError(result.error ?? 'unknown error', 'Could not open the plugins folder')

@@ -22,16 +22,16 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test.
+    """Isolate OPENCODON_HOME for each test.
 
-    The global hermetic fixture already redirects HERMES_HOME to a tempdir,
+    The global hermetic fixture already redirects OPENCODON_HOME to a tempdir,
     but we want the plugin to work with a predictable subpath. We reset
-    HERMES_HOME here for clarity.
+    OPENCODON_HOME here for clarity.
     """
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    yield opencodon_home
 
 
 def _load_lib():
@@ -75,14 +75,14 @@ def _load_plugin_init():
 # ---------------------------------------------------------------------------
 
 class TestIsSafePath:
-    def test_accepts_path_under_hermes_home(self, _isolate_env):
+    def test_accepts_path_under_opencodon_home(self, _isolate_env):
         dg = _load_lib()
         p = _isolate_env / "subdir" / "file.txt"
         p.parent.mkdir()
         p.write_text("x")
         assert dg.is_safe_path(p) is True
 
-    def test_rejects_outside_hermes_home(self, _isolate_env):
+    def test_rejects_outside_opencodon_home(self, _isolate_env):
         dg = _load_lib()
         assert dg.is_safe_path(Path("/etc/passwd")) is False
 
@@ -387,14 +387,14 @@ class TestTrackForgetQuick:
     ):
         dg = _load_lib()
         protected_empty = (
-            _isolate_env / "hermes-agent" / "node_modules" / "pkg" / "empty"
+            _isolate_env / "opencodon" / "node_modules" / "pkg" / "empty"
         )
         protected_empty.mkdir(parents=True)
 
         original_iterdir = Path.iterdir
 
         def guarded_iterdir(path):
-            if path == _isolate_env / "hermes-agent":
+            if path == _isolate_env / "opencodon":
                 raise AssertionError("quick() descended into protected hermes-agent/")
             return original_iterdir(path)
 
@@ -584,10 +584,10 @@ class TestSlashCommand:
 # ---------------------------------------------------------------------------
 
 class TestBundledDiscovery:
-    def _write_enabled_config(self, hermes_home, names):
+    def _write_enabled_config(self, opencodon_home, names):
         """Write plugins.enabled allow-list to config.yaml."""
         import yaml
-        cfg_path = hermes_home / "config.yaml"
+        cfg_path = opencodon_home / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({"plugins": {"enabled": list(names)}}))
 
     def test_disk_cleanup_discovered_but_not_loaded_by_default(self, _isolate_env):

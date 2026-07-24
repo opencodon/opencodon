@@ -159,8 +159,8 @@ _EXTRA_ENV_VARS = (
     # Base URLs / paths that influence detection but aren't api_key_env_vars.
     "LM_BASE_URL", "KIMI_BASE_URL", "STEPFUN_BASE_URL", "KILOCODE_BASE_URL",
     "GMI_BASE_URL", "OPENAI_BASE_URL",
-    "HERMES_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH",
-    "HERMES_COPILOT_ACP_ARGS", "COPILOT_ACP_BASE_URL",
+    "OPENCODON_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH",
+    "OPENCODON_COPILOT_ACP_ARGS", "COPILOT_ACP_BASE_URL",
 )
 
 PROVIDER_ENV_VARS = tuple(
@@ -392,7 +392,7 @@ class TestApiKeyProviderStatus:
         assert status["provider"] == "minimax"
 
     def test_copilot_acp_status_detects_local_cli(self, monkeypatch):
-        monkeypatch.setenv("HERMES_COPILOT_ACP_ARGS", "--acp --stdio --debug")
+        monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio --debug")
         monkeypatch.setattr("opencodon_cli.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
 
         status = get_external_process_provider_status("copilot-acp")
@@ -507,7 +507,7 @@ class TestResolveApiKeyProviderCredentials:
         assert calls == [["/opt/homebrew/bin/gh", "auth", "token"]]
 
     def test_resolve_copilot_acp_with_local_cli(self, monkeypatch):
-        monkeypatch.setenv("HERMES_COPILOT_ACP_ARGS", "--acp --stdio")
+        monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio")
         monkeypatch.setattr("opencodon_cli.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
 
         creds = resolve_external_process_provider_credentials("copilot-acp")
@@ -711,7 +711,7 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_copilot_acp_uses_process_runtime(self, monkeypatch):
         monkeypatch.setattr("opencodon_cli.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
-        monkeypatch.setenv("HERMES_COPILOT_ACP_ARGS", "--acp --stdio --debug")
+        monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio --debug")
 
         from opencodon_cli.runtime_provider import resolve_runtime_provider
 
@@ -734,30 +734,30 @@ class TestHasAnyProviderConfigured:
     def test_glm_key_counts(self, monkeypatch, tmp_path):
         from opencodon_cli import config as config_module
         monkeypatch.setenv("GLM_API_KEY", "test-key")
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
         from opencodon_cli.main import _has_any_provider_configured
         assert _has_any_provider_configured() is True
 
     def test_minimax_key_counts(self, monkeypatch, tmp_path):
         from opencodon_cli import config as config_module
         monkeypatch.setenv("MINIMAX_API_KEY", "test-key")
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
         from opencodon_cli.main import _has_any_provider_configured
         assert _has_any_provider_configured() is True
 
     def test_gh_cli_token_counts(self, monkeypatch, tmp_path):
         from opencodon_cli import config as config_module
         monkeypatch.setattr("opencodon_cli.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
         from opencodon_cli.main import _has_any_provider_configured
         assert _has_any_provider_configured() is True
 
@@ -765,10 +765,10 @@ class TestHasAnyProviderConfigured:
         """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
         from opencodon_cli import config as config_module
         from opencodon_cli.auth import PROVIDER_REGISTRY
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
         monkeypatch.setattr("opencodon_cli.copilot_auth.resolve_copilot_token", lambda: ("", ""))
         # Clear all provider env vars so earlier checks don't short-circuit
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
@@ -796,15 +796,15 @@ class TestHasAnyProviderConfigured:
         """config.yaml with model.provider set should count as configured."""
         import yaml
         from opencodon_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_file = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_file = opencodon_home / "config.yaml"
         config_file.write_text(yaml.dump({
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"},
         }))
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         # Clear all provider env vars
         for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                      "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"):
@@ -816,15 +816,15 @@ class TestHasAnyProviderConfigured:
         """config.yaml with model.base_url set (custom endpoint) should count."""
         import yaml
         from opencodon_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_file = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_file = opencodon_home / "config.yaml"
         config_file.write_text(yaml.dump({
             "model": {"default": "my-model", "base_url": "http://localhost:11434/v1"},
         }))
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                      "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"):
             monkeypatch.delenv(var, raising=False)
@@ -835,15 +835,15 @@ class TestHasAnyProviderConfigured:
         """config.yaml with model.api_key set should count."""
         import yaml
         from opencodon_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_file = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_file = opencodon_home / "config.yaml"
         config_file.write_text(yaml.dump({
             "model": {"default": "my-model", "api_key": "sk-test-key"},
         }))
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                      "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"):
             monkeypatch.delenv(var, raising=False)
@@ -855,15 +855,15 @@ class TestHasAnyProviderConfigured:
         import yaml
         from opencodon_cli import config as config_module
         from opencodon_cli.auth import PROVIDER_REGISTRY
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_file = hermes_home / "config.yaml"
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        config_file = opencodon_home / "config.yaml"
         config_file.write_text(yaml.dump({
             "model": {"default": ""},
         }))
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr("opencodon_cli.copilot_auth.resolve_copilot_token", lambda: ("", ""))
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                       "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"}
@@ -881,14 +881,14 @@ class TestHasAnyProviderConfigured:
         """Claude Code credentials should count when Hermes has been explicitly configured."""
         import yaml
         from opencodon_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
         # Write a config with a non-default model to simulate explicit configuration
-        config_file = hermes_home / "config.yaml"
+        config_file = opencodon_home / "config.yaml"
         config_file.write_text(yaml.dump({"model": {"default": "my-local-model"}}))
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
+        monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         # Clear all provider env vars
         for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                      "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"):

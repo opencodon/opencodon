@@ -66,8 +66,8 @@ class MemoryProvider(ABC):
         establish connections, start background threads, etc.
 
         kwargs always include:
-          - hermes_home (str): The active HERMES_HOME directory path. Use this
-            for profile-scoped storage instead of hardcoding ``~/.hermes``.
+          - opencodon_home (str): The active OPENCODON_HOME directory path. Use this
+            for profile-scoped storage instead of hardcoding ``~/.opencodon``.
           - platform (str): "cli", "telegram", "discord", "cron", etc.
 
         kwargs may also include:
@@ -260,12 +260,12 @@ class MemoryProvider(ABC):
         """
         return []
 
-    def save_config(self, values: Dict[str, Any], hermes_home: str) -> None:
+    def save_config(self, values: Dict[str, Any], opencodon_home: str) -> None:
         """Write non-secret config to the provider's native location.
 
         Called by 'hermes memory setup' after collecting user inputs.
         ``values`` contains only non-secret fields (secrets go to .env).
-        ``hermes_home`` is the active HERMES_HOME directory path.
+        ``opencodon_home`` is the active OPENCODON_HOME directory path.
 
         Providers with native config files (JSON, YAML) should override
         this to write to their expected location. Providers that use only
@@ -297,9 +297,9 @@ class MemoryProvider(ABC):
         """
 
     def backup_paths(self) -> List[str]:
-        """Return extra on-disk paths this provider stores OUTSIDE HERMES_HOME.
+        """Return extra on-disk paths this provider stores OUTSIDE OPENCODON_HOME.
 
-        ``hermes backup`` only walks HERMES_HOME, so any provider state kept
+        ``hermes backup`` only walks OPENCODON_HOME, so any provider state kept
         under ``~/.honcho`` etc. is lost
         across a backup/import cycle unless it's declared here.
 

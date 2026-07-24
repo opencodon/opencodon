@@ -72,9 +72,9 @@ class TestNonInteractiveSetup:
         args = _make_setup_args(non_interactive=True)
 
         with (
-            patch("opencodon_cli.setup.ensure_hermes_home"),
+            patch("opencodon_cli.setup.ensure_opencodon_home"),
             patch("opencodon_cli.setup.load_config", return_value={}),
-            patch("opencodon_cli.setup.get_hermes_home", return_value="/tmp/.hermes"),
+            patch("opencodon_cli.setup.get_opencodon_home", return_value="/tmp/.opencodon"),
             patch("opencodon_cli.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
             patch("builtins.input", side_effect=AssertionError("input should not be called")),
         ):
@@ -90,9 +90,9 @@ class TestNonInteractiveSetup:
         args = _make_setup_args(non_interactive=False)
 
         with (
-            patch("opencodon_cli.setup.ensure_hermes_home"),
+            patch("opencodon_cli.setup.ensure_opencodon_home"),
             patch("opencodon_cli.setup.load_config", return_value={}),
-            patch("opencodon_cli.setup.get_hermes_home", return_value="/tmp/.hermes"),
+            patch("opencodon_cli.setup.get_opencodon_home", return_value="/tmp/.opencodon"),
             patch("opencodon_cli.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
             patch("sys.stdin") as mock_stdin,
             patch("builtins.input", side_effect=AssertionError("input should not be called")),
@@ -107,7 +107,7 @@ class TestNonInteractiveSetup:
         """--reset should rewrite config.yaml even when the wizard cannot run interactively."""
         from opencodon_cli.setup import run_setup_wizard
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         cfg = load_config()
         cfg["model"] = {"provider": "custom", "base_url": "http://localhost:8080/v1", "default": "llama3"}
         cfg["agent"]["max_turns"] = 12

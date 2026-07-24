@@ -27,11 +27,11 @@ import pytest
 
 @pytest.fixture
 def tmp_skills(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Isolated skills dir + HERMES_HOME so the real user config is untouched."""
-    home = tmp_path / ".hermes"
+    """Isolated skills dir + OPENCODON_HOME so the real user config is untouched."""
+    home = tmp_path / ".opencodon"
     home.mkdir()
     (home / "skills").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     return home / "skills"
 

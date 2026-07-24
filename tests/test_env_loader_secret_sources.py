@@ -99,7 +99,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
     """End-to-end: when the Bitwarden source fetches keys, applied vars
     end up in ``_SECRET_SOURCES`` so the UI can label them."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.test-token")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     config_path = tmp_path / "config.yaml"
@@ -138,7 +138,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
 def test_apply_external_secret_sources_noop_when_disabled(tmp_path, monkeypatch):
     """Disabled Bitwarden config must not touch the source map."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "secrets:\n"
@@ -158,10 +158,10 @@ def test_apply_external_secret_sources_dedupes_within_process(tmp_path, monkeypa
     Bitwarden status line previously printed once per call — 3-5x per
     startup.  The applied-home guard must short-circuit subsequent calls
     so the heavy work (config re-parse, Bitwarden lookup, status print)
-    runs exactly once per HERMES_HOME per process.
+    runs exactly once per OPENCODON_HOME per process.
     """
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.test-token")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     config_path = tmp_path / "config.yaml"
@@ -213,7 +213,7 @@ def test_apply_external_secret_sources_dedupes_within_process(tmp_path, monkeypa
 def test_apply_external_secret_sources_status_line_suppresses_secret_names(
     tmp_path, monkeypatch, capsys
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.test-token")
     monkeypatch.delenv("LEAK_THIS_API_KEY", raising=False)
     monkeypatch.delenv("LEAK_THIS_TOKEN", raising=False)
@@ -324,7 +324,7 @@ def test_apply_external_secret_sources_records_onepassword_origin(tmp_path, monk
     """When the 1Password source resolves refs, applied vars end up in
     ``_SECRET_SOURCES`` labeled ``onepassword``."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     (tmp_path / "config.yaml").write_text(
         "secrets:\n"
@@ -365,7 +365,7 @@ def test_apply_external_secret_sources_survives_non_dict_section(tmp_path, monke
     load_hermes_dotenv().
     """
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         "secrets:\n"
         "  bitwarden: true\n"
@@ -381,7 +381,7 @@ def test_apply_external_secret_sources_survives_non_dict_section(tmp_path, monke
 def test_apply_external_secret_sources_bad_ttl_does_not_crash(tmp_path, monkeypatch):
     """A non-numeric cache_ttl_seconds must be coerced, not crash startup."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         "secrets:\n"
         "  onepassword:\n"

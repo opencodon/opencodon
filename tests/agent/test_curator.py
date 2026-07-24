@@ -16,11 +16,11 @@ import pytest
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME + freshly reloaded curator + skill_usage modules."""
-    home = tmp_path / ".hermes"
+    """Isolated OPENCODON_HOME + freshly reloaded curator + skill_usage modules."""
+    home = tmp_path / ".opencodon"
     (home / "skills").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
 
     import tools.skill_usage as usage
     importlib.reload(usage)
@@ -42,12 +42,12 @@ def curator_env(tmp_path, monkeypatch):
 
     # Teardown: a curator review launched with synchronous=False spawns a
     # daemon "curator-review" thread that calls save_state() when it finishes.
-    # save_state() resolves the state path from HERMES_HOME at write time, so a
+    # save_state() resolves the state path from OPENCODON_HOME at write time, so a
     # straggler thread that outlives this test would write into whatever home
-    # the *next* test has configured (or the default ~/.hermes once monkeypatch
+    # the *next* test has configured (or the default ~/.opencodon once monkeypatch
     # restores the env) — corrupting an unrelated test's state file. This race
     # is invisible on a fast machine but flakes under CI load. Join any such
-    # thread here, while HERMES_HOME is still pinned to this test's tmp home
+    # thread here, while OPENCODON_HOME is still pinned to this test's tmp home
     # (curator_env depends on monkeypatch, so this teardown runs before the
     # monkeypatch env is restored). See the salvage of #14261 CI flake.
     for t in threading.enumerate():

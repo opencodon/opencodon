@@ -1623,7 +1623,7 @@ def compress_context(
 
                         set_current_session_id(agent.session_id)
                     except Exception:
-                        os.environ["HERMES_SESSION_ID"] = agent.session_id
+                        os.environ["OPENCODON_SESSION_ID"] = agent.session_id
                     # The gateway/tools session context (ContextVar + env) and the
                     # logging session context are SEPARATE mechanisms. The call above
                     # moves the former; the ``[session_id]`` tag on log lines comes
@@ -1643,7 +1643,7 @@ def compress_context(
                     try:
                         agent._session_db.create_session(
                             session_id=agent.session_id,
-                            source=agent.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                            source=agent.platform or os.environ.get("OPENCODON_SESSION_SOURCE", "cli"),
                             model=agent.model,
                             model_config=agent._session_init_model_config,
                             parent_session_id=old_session_id,
@@ -1668,7 +1668,7 @@ def compress_context(
                             from gateway.session_context import set_current_session_id
                             set_current_session_id(agent.session_id)
                         except Exception:
-                            os.environ["HERMES_SESSION_ID"] = agent.session_id
+                            os.environ["OPENCODON_SESSION_ID"] = agent.session_id
                         try:
                             from opencodon_logging import set_session_context
                             set_session_context(agent.session_id)

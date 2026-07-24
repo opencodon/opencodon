@@ -49,7 +49,7 @@ class TestAsyncDeliverySupported:
         try:
             assert async_delivery_supported() is True
             # Platform metadata stays readable alongside the capability.
-            assert get_session_env("HERMES_SESSION_PLATFORM") == "telegram"
+            assert get_session_env("OPENCODON_SESSION_PLATFORM") == "telegram"
         finally:
             clear_session_vars(tokens)
 
@@ -64,7 +64,7 @@ class TestAsyncDeliverySupported:
             assert async_delivery_supported() is False
             # Platform must still be readable for routing/diagnostics even
             # though delivery is unsupported.
-            assert get_session_env("HERMES_SESSION_PLATFORM") == "api_server"
+            assert get_session_env("OPENCODON_SESSION_PLATFORM") == "api_server"
         finally:
             clear_session_vars(tokens)
 
@@ -94,7 +94,7 @@ class TestAsyncDeliverySupported:
 class TestDeclareStatelessChannel:
     """``hermes -z`` and cron cannot receive a completion after their turn ends.
 
-    Cron clears the ``HERMES_SESSION_*`` routing keys, so an async delegation's
+    Cron clears the ``OPENCODON_SESSION_*`` routing keys, so an async delegation's
     completion event carries ``session_key=""`` and the gateway watcher drops it
     for lack of routing metadata; either way the job's final response has already
     shipped. One-shot simply exits. Both must bind the capability, or
@@ -217,7 +217,7 @@ class TestAdapterCapabilityFlag:
         )
         try:
             assert async_delivery_supported() is False
-            assert get_session_env("HERMES_SESSION_PLATFORM") == "api_server"
+            assert get_session_env("OPENCODON_SESSION_PLATFORM") == "api_server"
         finally:
             clear_session_vars(tokens)
 

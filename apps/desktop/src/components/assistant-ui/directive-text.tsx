@@ -9,8 +9,8 @@ import { ZoomableImage } from '@/components/chat/zoomable-image'
 import { extractEmbeddedImages } from '@/lib/embedded-images'
 import { gatewayMediaDataUrl, isRemoteGateway } from '@/lib/media'
 
-const HERMES_REF_TYPES = ['file', 'folder', 'url', 'image', 'tool', 'line', 'terminal', 'session'] as const
-type HermesRefType = (typeof HERMES_REF_TYPES)[number]
+const OPENCODON_REF_TYPES = ['file', 'folder', 'url', 'image', 'tool', 'line', 'terminal', 'session'] as const
+type HermesRefType = (typeof OPENCODON_REF_TYPES)[number]
 
 /** Single source of truth for chip icon glyphs (Tabler outline @ 24×24).
  * Used both by the rendered <DirectiveIcon> and the raw SVG markup the
@@ -158,7 +158,7 @@ export const DIRECTIVE_CHIP_CLASS =
  */
 const CANONICAL_DIRECTIVE_RE = /:([\w-]{1,64})\[([^\]\n]{1,1024})\](?:\{name=([^}\n]{1,1024})\})?/g
 
-const HERMES_DIRECTIVE_RE = new RegExp(
+const OPENCODON_DIRECTIVE_RE = new RegExp(
   '@(file|folder|url|image|tool|line|terminal|session):(' +
     '`[^`\\n]+`' +
     '|"[^"\\n]+"' +
@@ -256,7 +256,7 @@ function parseDirectiveText(text: string): Unstable_DirectiveSegment[] {
       label: match[2] || match[3] || '',
       id: match[3] || match[2] || ''
     })),
-    ...Array.from(text.matchAll(HERMES_DIRECTIVE_RE)).map(match => {
+    ...Array.from(text.matchAll(OPENCODON_DIRECTIVE_RE)).map(match => {
       const id = unwrapRefValue(match[2] || '')
 
       return {

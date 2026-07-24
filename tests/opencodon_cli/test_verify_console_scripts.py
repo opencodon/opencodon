@@ -20,9 +20,9 @@ def temp_pyproject(tmp_path, monkeypatch):
         version = "0.0.0"
 
         [project.scripts]
-        hermes = "opencodon_cli.main:main"
-        hermes-agent = "run_agent:main"
-        hermes-acp = "acp_adapter.entry:main"
+        opencodon = "opencodon_cli.main:main"
+        opencodon-agent = "run_agent:main"
+        opencodon-acp = "acp_adapter.entry:main"
     """
         )
     )
@@ -41,7 +41,7 @@ def fake_scripts_dir(tmp_path):
 
 class TestVerifyConsoleScriptsInstalled:
     def test_no_action_when_all_shims_present(self, temp_pyproject, fake_scripts_dir):
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        for name in ("opencodon", "opencodon-agent", "opencodon-acp"):
             (fake_scripts_dir / f"{name}.exe").write_bytes(b"fake")
 
         with patch("opencodon_cli.main._is_windows", return_value=True), \
@@ -56,8 +56,8 @@ class TestVerifyConsoleScriptsInstalled:
     def test_triggers_reinstall_when_hermes_exe_missing(
         self, temp_pyproject, fake_scripts_dir
     ):
-        (fake_scripts_dir / "hermes-agent.exe").write_bytes(b"fake")
-        (fake_scripts_dir / "hermes-acp.exe").write_bytes(b"fake")
+        (fake_scripts_dir / "opencodon-agent.exe").write_bytes(b"fake")
+        (fake_scripts_dir / "opencodon-acp.exe").write_bytes(b"fake")
 
         with patch("opencodon_cli.main._is_windows", return_value=True), \
              patch("opencodon_cli.main._venv_scripts_dir", return_value=fake_scripts_dir), \
@@ -85,7 +85,7 @@ class TestVerifyConsoleScriptsInstalled:
         from opencodon_cli.main import _load_console_script_names
 
         names = _load_console_script_names()
-        assert names == ["hermes", "hermes-agent", "hermes-acp"]
+        assert names == ["opencodon", "opencodon-agent", "opencodon-acp"]
 
     def test_primary_install_success_still_verifies_scripts(self):
         import opencodon_cli.main as main_mod
@@ -112,5 +112,6 @@ class TestVerifyConsoleScriptsInstalled:
         with patch("opencodon_cli.main._is_windows", return_value=True):
             names = {path.name for path in main_mod._hermes_exe_shims(fake_scripts_dir)}
 
-        assert {"hermes.exe", "hermes-agent.exe", "hermes-acp.exe"} <= names
-        assert "hermes-gateway.exe" in names
+        assert {"opencodon.exe", "opencodon-agent.exe", "opencodon-acp.exe"} <= names
+        assert "opencodon-gateway.exe" in names
+        assert "hermes-gateway.exe" in names  # legacy shim still quarantined

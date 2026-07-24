@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def active_session_limit_message(active_count: int, max_sessions: int) -> str:
 
 
 def _state_dir() -> Path:
-    return Path(get_hermes_home()) / "runtime"
+    return Path(get_opencodon_home()) / "runtime"
 
 
 def _state_path() -> Path:

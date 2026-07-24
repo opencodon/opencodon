@@ -286,9 +286,9 @@ class TestWinPtyBridgeEnv:
             [
                 sys.executable,
                 "-c",
-                "import os; print('HERMES_PTY_TEST=' + os.environ.get('HERMES_PTY_TEST',''))",
+                "import os; print('OPENCODON_PTY_TEST=' + os.environ.get('OPENCODON_PTY_TEST',''))",
             ],
-            env={**os.environ, "HERMES_PTY_TEST": "pty-env-works"},
+            env={**os.environ, "OPENCODON_PTY_TEST": "pty-env-works"},
         )
         try:
             output = _read_until(bridge, b"pty-env-works")

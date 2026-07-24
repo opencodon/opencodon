@@ -1,6 +1,6 @@
 """Runtime smoke test for Docker config-schema migration on boot.
 
-Build the real image and verify: a config.yaml present in $HERMES_HOME
+Build the real image and verify: a config.yaml present in $OPENCODON_HOME
 is migrated by docker_config_migrate.py on boot, running as the hermes
 user.
 """
@@ -12,7 +12,7 @@ from tests.docker.conftest import docker_exec, docker_exec_sh, start_container
 def test_config_migration_runs_on_boot(
     built_image: str, container_name: str,
 ) -> None:
-    """A config.yaml in $HERMES_HOME must be migrated on boot by
+    """A config.yaml in $OPENCODON_HOME must be migrated on boot by
     docker_config_migrate.py, running as the hermes user."""
     # Start container
     start_container(built_image, container_name)
@@ -24,7 +24,7 @@ def test_config_migration_runs_on_boot(
         timeout=10,
     )
     assert "EXISTS" in r.stdout, (
-        f"config.yaml not found in $HERMES_HOME: {r.stdout}"
+        f"config.yaml not found in $OPENCODON_HOME: {r.stdout}"
     )
 
     # Verify the migration script exists in the image
@@ -53,9 +53,9 @@ def test_config_migration_runs_on_boot(
 def test_config_migration_opt_out_env_var_respected(
     built_image: str, container_name: str,
 ) -> None:
-    """HERMES_SKIP_CONFIG_MIGRATION=1 must skip the migration."""
+    """OPENCODON_SKIP_CONFIG_MIGRATION=1 must skip the migration."""
     start_container(
-        built_image, container_name, "HERMES_SKIP_CONFIG_MIGRATION=1",
+        built_image, container_name, "OPENCODON_SKIP_CONFIG_MIGRATION=1",
     )
 
     # config.yaml should still be seeded (seeding is separate from migration)

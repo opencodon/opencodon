@@ -7,7 +7,7 @@ full credential environment. Two tiers:
 
   * Tier 1 (_ALWAYS_STRIP_KEYS): gateway bot tokens, GitHub auth, infra
     secrets — stripped even when inherit_credentials=True.
-  * Tier 2 (_HERMES_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
+  * Tier 2 (_OPENCODON_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
     unless the caller opts into inherit_credentials=True.
 """
 
@@ -17,7 +17,7 @@ from unittest.mock import patch
 from tools.environments.local import (
     hermes_subprocess_env,
     _ALWAYS_STRIP_KEYS,
-    _HERMES_PROVIDER_ENV_FORCE_PREFIX,
+    _OPENCODON_PROVIDER_ENV_FORCE_PREFIX,
 )
 
 
@@ -26,7 +26,7 @@ _TIER1_SAMPLE = {
     "TELEGRAM_BOT_TOKEN": "bot-token",
     "SLACK_APP_TOKEN": "xapp-secret",
     "MODAL_TOKEN_SECRET": "modal-secret",
-    "HERMES_DASHBOARD_SESSION_TOKEN": "dash-secret",
+    "OPENCODON_DASHBOARD_SESSION_TOKEN": "dash-secret",
 }
 
 _PROVIDER_SAMPLE = {
@@ -70,8 +70,8 @@ class TestStripByDefault:
         assert result["MY_APP_VAR"] == "keep-me"
 
     def test_force_prefix_hints_stripped(self):
-        result = _build({f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-x"})
-        assert f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result
+        result = _build({f"{_OPENCODON_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-x"})
+        assert f"{_OPENCODON_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result
         assert "OPENAI_API_KEY" not in result
 
     def test_pythonutf8_set(self):

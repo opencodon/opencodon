@@ -86,9 +86,9 @@ from tools.approval import (
 logger = logging.getLogger(__name__)
 
 try:
-    from opencodon_cli import __version__ as HERMES_VERSION
+    from opencodon_cli import __version__ as OPENCODON_VERSION
 except Exception:
-    HERMES_VERSION = "0.0.0"
+    OPENCODON_VERSION = "0.0.0"
 
 # Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
@@ -724,7 +724,7 @@ class HermesACPAgent(acp.Agent):
         current_hermes_session_id: str,
         previous_hermes_session_id: Optional[str] = None,
     ) -> Optional[dict]:
-        """Best-effort ``_meta.hermes.sessionProvenance`` for an ACP session."""
+        """Best-effort ``_meta.opencodon.sessionProvenance`` for an ACP session."""
         try:
             return session_provenance_meta(
                 self.session_manager._get_db(),
@@ -749,7 +749,7 @@ class HermesACPAgent(acp.Agent):
 
         When the internal Hermes head rotated (e.g. compression-driven session
         split during a turn), pass ``previous_hermes_session_id`` so the
-        attached ``_meta.hermes.sessionProvenance`` flags the rotation reason.
+        attached ``_meta.opencodon.sessionProvenance`` flags the rotation reason.
         """
         if not self._conn:
             return
@@ -835,7 +835,7 @@ class HermesACPAgent(acp.Agent):
             from agent.memory_manager import inject_memory_provider_tools
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["hermes-acp"],
+                getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"],
                 mcp_server_names=[server.name for server in mcp_servers],
             )
             state.agent.enabled_toolsets = enabled_toolsets
@@ -887,7 +887,7 @@ class HermesACPAgent(acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="hermes-agent", version=HERMES_VERSION),
+            agent_info=Implementation(name="opencodon", version=OPENCODON_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -984,7 +984,7 @@ class HermesACPAgent(acp.Agent):
         first preserved tail message's real content. Without a wire flag,
         ACP frontends render all of these as ordinary turns.
 
-        Two distinct keys under ``_meta.hermes`` (ACP's extensibility
+        Two distinct keys under ``_meta.opencodon`` (ACP's extensibility
         channel), so clients cannot accidentally hide real content:
 
         * ``compactionSummary: true`` — the entire chunk is the handoff
@@ -1562,13 +1562,13 @@ class HermesACPAgent(acp.Agent):
         # thread — setting it here would write to the event-loop thread's TLS,
         # not the executor's. Interactive routing uses a contextvar in
         # tools.approval (set_hermes_interactive_context) rather than
-        # os.environ["HERMES_INTERACTIVE"], so concurrent executor workers can't
+        # os.environ["OPENCODON_INTERACTIVE"], so concurrent executor workers can't
         # race on a process-global flag — one session's restore can't drop
         # another onto the non-interactive auto-approve path mid-run
         # (GHSA-96vc-wcxf-jjff). The contextvar write is isolated by the
         # contextvars.copy_context() wrapper around the executor call below.
         # ACP's conn.request_permission maps cleanly to the interactive
-        # callback shape — not the gateway-queue HERMES_EXEC_ASK path,
+        # callback shape — not the gateway-queue OPENCODON_EXEC_ASK path,
         # which requires a notify_cb registered in _gateway_notify_cbs.
         previous_approval_cb = None
         interactive_token = None
@@ -1577,7 +1577,7 @@ class HermesACPAgent(acp.Agent):
 
         def _run_agent() -> dict:
             nonlocal previous_approval_cb, interactive_token, edit_approval_token, previous_session_id
-            # Bind HERMES_SESSION_KEY for this session so per-session caches
+            # Bind OPENCODON_SESSION_KEY for this session so per-session caches
             # (e.g. the interactive sudo password cache in tools.terminal_tool)
             # scope to the ACP session rather than leaking across sessions
             # that land on the same reused executor thread. This call runs
@@ -1617,8 +1617,8 @@ class HermesACPAgent(acp.Agent):
             # the new task so clients can render a per-session board). Save
             # and restore around the agent call so a re-used executor thread
             # never leaks one session's id into the next session's tools.
-            previous_session_id = os.environ.get("HERMES_SESSION_ID")
-            os.environ["HERMES_SESSION_ID"] = session_id
+            previous_session_id = os.environ.get("OPENCODON_SESSION_ID")
+            os.environ["OPENCODON_SESSION_ID"] = session_id
             try:
                 result = agent.run_conversation(
                     user_message=user_content,
@@ -1634,11 +1634,11 @@ class HermesACPAgent(acp.Agent):
                 # Restore the interactive contextvar for this context.
                 if interactive_token is not None:
                     reset_hermes_interactive_context(interactive_token)
-                # Restore HERMES_SESSION_ID symmetrically.
+                # Restore OPENCODON_SESSION_ID symmetrically.
                 if previous_session_id is None:
-                    os.environ.pop("HERMES_SESSION_ID", None)
+                    os.environ.pop("OPENCODON_SESSION_ID", None)
                 else:
-                    os.environ["HERMES_SESSION_ID"] = previous_session_id
+                    os.environ["OPENCODON_SESSION_ID"] = previous_session_id
                 if approval_cb:
                     try:
                         from tools import terminal_tool as _terminal_tool
@@ -1666,7 +1666,7 @@ class HermesACPAgent(acp.Agent):
             pre_turn_hermes_id = getattr(state.agent, "session_id", None)
             # Wrap the executor call in a fresh copy of the current context so
             # concurrent ACP sessions on the shared ThreadPoolExecutor don't
-            # stomp on each other's ContextVar writes (HERMES_SESSION_KEY in
+            # stomp on each other's ContextVar writes (OPENCODON_SESSION_KEY in
             # particular — used by the interactive sudo password cache scope).
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -1684,7 +1684,7 @@ class HermesACPAgent(acp.Agent):
 
         # Detect a compression-driven internal session rotation. If the agent's
         # DB head moved during the turn, emit a session_info_update carrying
-        # _meta.hermes.sessionProvenance so ACP clients can render the boundary
+        # _meta.opencodon.sessionProvenance so ACP clients can render the boundary
         # and keep old/new ids in lineage. The ACP session_id is unchanged.
         post_turn_hermes_id = getattr(state.agent, "session_id", None)
         if (
@@ -1917,7 +1917,7 @@ class HermesACPAgent(acp.Agent):
             from agent.memory_manager import inject_memory_provider_tools
 
             toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["hermes-acp"]
+                getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"]
             )
             tools = get_tool_definitions(enabled_toolsets=toolsets, quiet_mode=True)
             tool_view = SimpleNamespace(
@@ -2130,7 +2130,7 @@ class HermesACPAgent(acp.Agent):
         return f"Queued for the next turn. ({depth} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        return f"Hermes Agent v{HERMES_VERSION}"
+        return f"Hermes Agent v{OPENCODON_VERSION}"
 
     # ---- Model switching (ACP protocol method) -------------------------------
 

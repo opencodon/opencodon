@@ -9,7 +9,7 @@ Pipeline
 --------
 1. ``get_catalog()`` — returns a parsed manifest dict.
    - Checks in-process cache (invalidated by TTL).
-   - Reads disk cache at ``~/.hermes/cache/model_catalog.json``.
+   - Reads disk cache at ``~/.opencodon/cache/model_catalog.json``.
    - Fetches the master URL if disk cache is stale or missing.
    - On any fetch failure, keeps using the stale cache (or empty dict).
 
@@ -52,7 +52,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from opencodon_cli import __version__ as _HERMES_VERSION
+from opencodon_cli import __version__ as _OPENCODON_VERSION
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_HERMES_USER_AGENT = f"hermes-cli/{_HERMES_VERSION}"
+_OPENCODON_USER_AGENT = f"opencodon-cli/{_OPENCODON_VERSION}"
 
 # In-process cache to avoid repeated disk + parse work across multiple
 # calls within the same session. Invalidated by TTL against the disk file's
@@ -113,8 +113,8 @@ def _load_catalog_config() -> dict[str, Any]:
 
 def _cache_path() -> Path:
     """Return the disk cache path. Import lazily so tests can monkeypatch home."""
-    from opencodon_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "model_catalog.json"
+    from opencodon_constants import get_opencodon_home
+    return get_opencodon_home() / "cache" / "model_catalog.json"
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
             url,
             headers={
                 "Accept": "application/json",
-                "User-Agent": _HERMES_USER_AGENT,
+                "User-Agent": _OPENCODON_USER_AGENT,
             },
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -402,7 +402,7 @@ def seed_cache_from_checkout(project_root: "Path | str") -> bool:
     or the Portal hiccups.
 
     Reads the shipped manifest, validates it against the schema, and writes it
-    to ``~/.hermes/cache/model_catalog.json`` via the same atomic writer the
+    to ``~/.opencodon/cache/model_catalog.json`` via the same atomic writer the
     network path uses. Returns ``True`` on success, ``False`` if the file is
     missing, malformed, or fails validation (caller should treat a ``False``
     as non-fatal — the network fetch path still applies on the next picker

@@ -31,7 +31,7 @@ def _state(token: str) -> dict[str, Any]:
     return {
         "access_token": token,
         "portal_base_url": "https://portal.example.test",
-        "client_id": "hermes-cli",
+        "client_id": "opencodon-cli",
     }
 
 
@@ -85,9 +85,9 @@ def test_valid_jwt_with_paid_access_true(monkeypatch):
         {
             "sub": "user_123",
             "org_id": "org_123",
-            "client_id": "hermes-cli",
+            "client_id": "opencodon-cli",
             "product_id": "nous-hermes-agent",
-            "nous_client": "hermes-agent",
+            "nous_client": "opencodon",
             "exp": int(time.time()) + 900,
             "paid_access": True,
             "subscription_tier": 2,
@@ -325,7 +325,7 @@ def test_pool_oauth_entry_uses_jwt_snapshot(monkeypatch):
         {
             "sub": "user_123",
             "org_id": "org_123",
-            "client_id": "hermes-cli",
+            "client_id": "opencodon-cli",
             "exp": int(time.time()) + 900,
             "paid_access": True,
         }

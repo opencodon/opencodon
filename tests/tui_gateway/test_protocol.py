@@ -22,7 +22,7 @@ def _restore_stdout():
 @pytest.fixture()
 def server():
     with patch.dict("sys.modules", {
-        "opencodon_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
+        "opencodon_constants": MagicMock(get_opencodon_home=MagicMock(return_value="/tmp/hermes_test")),
         "opencodon_cli.env_loader": MagicMock(),
         "opencodon_cli.banner": MagicMock(),
         "opencodon_state": MagicMock(),
@@ -200,21 +200,21 @@ def test_write_json_skips_flush_when_disable_flush_true(monkeypatch):
 
 
 def test_disable_flush_env_var_actually_wires_to_module_constant(monkeypatch):
-    """End-to-end: setting `HERMES_TUI_GATEWAY_NO_FLUSH=1` and importing
+    """End-to-end: setting `OPENCODON_TUI_GATEWAY_NO_FLUSH=1` and importing
     `tui_gateway.transport` fresh actually flips `_DISABLE_FLUSH` true.
 
     Reloads only the transport module — server.py is untouched so its
     atexit hooks/worker pool stay intact."""
     import importlib
 
-    monkeypatch.setenv("HERMES_TUI_GATEWAY_NO_FLUSH", "1")
+    monkeypatch.setenv("OPENCODON_TUI_GATEWAY_NO_FLUSH", "1")
     transport_mod = importlib.reload(importlib.import_module("tui_gateway.transport"))
 
     try:
         assert transport_mod._DISABLE_FLUSH is True
     finally:
         # Restore the env-disabled state so other tests see the default.
-        monkeypatch.delenv("HERMES_TUI_GATEWAY_NO_FLUSH", raising=False)
+        monkeypatch.delenv("OPENCODON_TUI_GATEWAY_NO_FLUSH", raising=False)
         importlib.reload(transport_mod)
 
 
@@ -1037,8 +1037,8 @@ def test_session_resume_reuses_live_agent_after_compression_rotation(server, mon
 def test_sync_session_key_after_compress_reanchors_active_session_lease(
     server, monkeypatch, tmp_path
 ):
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".opencodon"
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
 
     from opencodon_cli.active_sessions import (
         active_session_registry_snapshot,
@@ -1418,12 +1418,12 @@ def test_make_agent_accepts_list_system_prompt(server, monkeypatch):
 
 
 def test_config_load_missing(server, tmp_path):
-    server._hermes_home = tmp_path
+    server._opencodon_home = tmp_path
     assert server._load_cfg() == {}
 
 
 def test_config_roundtrip(server, tmp_path):
-    server._hermes_home = tmp_path
+    server._opencodon_home = tmp_path
     server._save_cfg({"model": "test/model"})
     assert server._load_cfg()["model"] == "test/model"
 
@@ -2122,8 +2122,8 @@ def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
     (tmp_path / "skins" / "midnight.yaml").write_text(
         "name: midnight\ndescription: t\ncolors:\n  banner_title: '#00ffcc'\n  background: '#001010'\n"
     )
-    monkeypatch.setattr(skin_engine, "get_hermes_home", lambda: tmp_path)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(skin_engine, "get_opencodon_home", lambda: tmp_path)
+    monkeypatch.setattr(server, "_opencodon_home", tmp_path)
     monkeypatch.setattr(server, "_last_skin_sig", None, raising=False)
     server._cfg_cache = server._cfg_mtime = server._cfg_path = None
 

@@ -58,12 +58,12 @@ def _has_system_browser() -> bool:
 
 
 def _has_hermes_agent_browser() -> bool:
-    from opencodon_constants import get_hermes_home
-    home = get_hermes_home()
+    from opencodon_constants import get_opencodon_home
+    home = get_opencodon_home()
     if _IS_WINDOWS:
         # npm -g --prefix puts .cmd shims directly in the prefix dir on Windows
         return (home / "node" / "agent-browser.cmd").is_file()
-    # install.sh installs globally into $HERMES_HOME/node/bin/ via npm -g --prefix
+    # install.sh installs globally into $OPENCODON_HOME/node/bin/ via npm -g --prefix
     # Also check legacy node_modules/.bin/ path for git-clone installs.
     return (
         (home / "node" / "bin" / "agent-browser").is_file()
@@ -133,7 +133,7 @@ def ensure_dependency(
             return False
 
     if shell == "powershell":
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
         ps_bin = shutil.which("powershell") or shutil.which("pwsh")
         if not ps_bin:
             if interactive:
@@ -144,7 +144,7 @@ def ensure_dependency(
             "-ExecutionPolicy", "Bypass",
             "-File", str(script),
             "-Ensure", dep,
-            "-HermesHome", str(get_hermes_home()),
+            "-HermesHome", str(get_opencodon_home()),
         ]
     else:
         cmd = ["bash", str(script), "--ensure", dep]

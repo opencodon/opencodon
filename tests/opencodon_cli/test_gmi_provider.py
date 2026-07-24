@@ -130,10 +130,10 @@ class TestGmiModelCatalog:
 
 class TestGmiProvidersModule:
     def test_overlay_exists(self):
-        from opencodon_cli.providers import HERMES_OVERLAYS
+        from opencodon_cli.providers import OPENCODON_OVERLAYS
 
-        assert "gmi" in HERMES_OVERLAYS
-        overlay = HERMES_OVERLAYS["gmi"]
+        assert "gmi" in OPENCODON_OVERLAYS
+        overlay = OPENCODON_OVERLAYS["gmi"]
         assert overlay.transport == "openai_chat"
         assert overlay.extra_env_vars == ("GMI_API_KEY",)
         assert overlay.base_url_override == "https://api.gmi-serving.com/v1"
@@ -153,14 +153,14 @@ class TestGmiDoctor:
     def test_run_doctor_checks_gmi_models_endpoint(self, monkeypatch, tmp_path):
         from opencodon_cli import doctor as doctor_mod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".opencodon"
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
         (home / ".env").write_text("GMI_API_KEY=***\n", encoding="utf-8")
         project = tmp_path / "project"
         project.mkdir(exist_ok=True)
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "OPENCODON_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setenv("GMI_API_KEY", "gmi-test-key")
@@ -361,9 +361,9 @@ class TestGmiMainFlow:
             _model_flow_api_key_provider(load_config(), "gmi", "old-model")
 
         import yaml
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        config = yaml.safe_load((get_hermes_home() / "config.yaml").read_text()) or {}
+        config = yaml.safe_load((get_opencodon_home() / "config.yaml").read_text()) or {}
         model_cfg = config.get("model")
         assert isinstance(model_cfg, dict)
         assert model_cfg["provider"] == "gmi"

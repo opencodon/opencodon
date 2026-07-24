@@ -172,8 +172,8 @@ describe('settings helpers', () => {
       // KIMI_CN_ likewise must beat KIMI_.
       expect(providerGroup('KIMI_CN_API_KEY')).toBe('Kimi (China)')
       expect(providerGroup('KIMI_API_KEY')).toBe('Kimi / Moonshot')
-      // HERMES_QWEN_ shares the HERMES_ stem with other integrations.
-      expect(providerGroup('HERMES_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
+      // OPENCODON_QWEN_ shares the OPENCODON_ stem with other integrations.
+      expect(providerGroup('OPENCODON_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
       expect(providerGroup('GEMINI_API_KEY')).toBe('Gemini')
     })
 

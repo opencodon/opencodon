@@ -12,7 +12,7 @@ This module provides:
    completed within ``restart_drain_timeout + grace``, it dumps all-thread
    stacks via ``faulthandler`` plus a metadata snapshot, then ``os._exit`` so
    the service manager can revive the process.
-2. An event-loop heartbeat file at ``<HERMES_HOME>/state/gateway.heartbeat`` so
+2. An event-loop heartbeat file at ``<OPENCODON_HOME>/state/gateway.heartbeat`` so
    external supervision can distinguish "process alive" from "loop frozen"
    (``gateway_state.json`` alone can't — it only rewrites on transitions/turns).
 """
@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -44,23 +44,23 @@ _HEARTBEAT_RELATIVE = ("state", "gateway.heartbeat")
 _WATCHDOG_DUMP_RELATIVE = ("logs", "gateway-shutdown-watchdog.log")
 
 
-def _process_hermes_home() -> Path:
-    """HERMES_HOME for process-level identity files (ignore profile overrides)."""
-    val = os.environ.get("HERMES_HOME", "").strip()
+def _process_opencodon_home() -> Path:
+    """OPENCODON_HOME for process-level identity files (ignore profile overrides)."""
+    val = os.environ.get("OPENCODON_HOME", "").strip()
     if val:
         return Path(val)
-    return get_hermes_home()
+    return get_opencodon_home()
 
 
 def get_loop_heartbeat_path(home: Optional[Path] = None) -> Path:
-    """Return ``<HERMES_HOME>/state/gateway.heartbeat``."""
-    base = home if home is not None else _process_hermes_home()
+    """Return ``<OPENCODON_HOME>/state/gateway.heartbeat``."""
+    base = home if home is not None else _process_opencodon_home()
     return base.joinpath(*_HEARTBEAT_RELATIVE)
 
 
 def get_shutdown_watchdog_dump_path(home: Optional[Path] = None) -> Path:
     """Return the faulthandler / metadata dump path for a fired watchdog."""
-    base = home if home is not None else _process_hermes_home()
+    base = home if home is not None else _process_opencodon_home()
     return base.joinpath(*_WATCHDOG_DUMP_RELATIVE)
 
 

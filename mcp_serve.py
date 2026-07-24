@@ -61,12 +61,12 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 def _get_sessions_dir() -> Path:
-    """Return the sessions directory using HERMES_HOME."""
+    """Return the sessions directory using OPENCODON_HOME."""
     try:
-        from opencodon_constants import get_hermes_home
-        return get_hermes_home() / "sessions"
+        from opencodon_constants import get_opencodon_home
+        return get_opencodon_home() / "sessions"
     except ImportError:
-        return Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")) / "sessions"
+        return Path(os.environ.get("OPENCODON_HOME", Path.home() / ".opencodon")) / "sessions"
 
 
 def _get_session_db():
@@ -195,11 +195,11 @@ def _load_sessions_index_from_json() -> dict:
 def _load_channel_directory() -> dict:
     """Load the cached channel directory for available targets."""
     try:
-        from opencodon_constants import get_hermes_home
-        directory_file = get_hermes_home() / "channel_directory.json"
+        from opencodon_constants import get_opencodon_home
+        directory_file = get_opencodon_home() / "channel_directory.json"
     except ImportError:
         directory_file = Path(
-            os.environ.get("HERMES_HOME", Path.home() / ".hermes")
+            os.environ.get("OPENCODON_HOME", Path.home() / ".opencodon")
         ) / "channel_directory.json"
 
     if not directory_file.exists():
@@ -451,10 +451,10 @@ class EventBridge:
         could drop brand-new conversations (#8925).
         """
         try:
-            from opencodon_constants import get_hermes_home
-            db_file = get_hermes_home() / "state.db"
+            from opencodon_constants import get_opencodon_home
+            db_file = get_opencodon_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")) / "state.db"
+            db_file = Path(os.environ.get("OPENCODON_HOME", Path.home() / ".opencodon")) / "state.db"
 
         try:
             db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0

@@ -402,18 +402,18 @@ def test_nested_project_folders_pick_the_deepest_match():
 
 
 def test_junk_root_never_becomes_an_auto_project():
-    # A session whose git root is HERMES_HOME (config/state) must not spawn a
+    # A session whose git root is OPENCODON_HOME (config/state) must not spawn a
     # phantom project; it falls through to flat Recents (unscoped). A real repo
     # alongside it still groups normally.
     resolve = _resolver(
         {
-            "/home/me/.hermes": ("/home/me/.hermes", "/home/me/.hermes"),
+            "/home/me/.opencodon": ("/home/me/.opencodon", "/home/me/.opencodon"),
             "/www/app": ("/www/app", "/www/app"),
         }
     )
-    junk = _session("/home/me/.hermes", branch="main")
+    junk = _session("/home/me/.opencodon", branch="main")
     real = _session("/www/app", branch="main")
-    is_junk = lambda root: root == "/home/me/.hermes"
+    is_junk = lambda root: root == "/home/me/.opencodon"
 
     tree = pt.build_tree([], [junk, real], [], resolve, hydrate=True, is_junk_root=is_junk)
 
@@ -424,9 +424,9 @@ def test_junk_root_never_becomes_an_auto_project():
 
 
 def test_junk_root_is_dropped_from_the_discovered_tier():
-    discovered = [{"root": "/home/me/.hermes", "label": ".hermes", "sessions": 0, "last_active": 9}]
+    discovered = [{"root": "/home/me/.opencodon", "label": ".opencodon", "sessions": 0, "last_active": 9}]
 
-    tree = pt.build_tree([], [], discovered, resolve=None, is_junk_root=lambda r: r == "/home/me/.hermes")
+    tree = pt.build_tree([], [], discovered, resolve=None, is_junk_root=lambda r: r == "/home/me/.opencodon")
 
     assert tree["projects"] == []
 
@@ -434,7 +434,7 @@ def test_junk_root_is_dropped_from_the_discovered_tier():
 def test_non_git_cwd_can_group_inside_a_junk_repo_subtree():
     # Repo discovery rejects the full state subtree, but a selected non-git
     # descendant may be an intentional workspace carried over from the old UI.
-    workspace = _session("/home/test/.hermes/workspaces/notes")
+    workspace = _session("/home/test/.opencodon/workspaces/notes")
 
     tree = pt.build_tree(
         [],
@@ -442,16 +442,16 @@ def test_non_git_cwd_can_group_inside_a_junk_repo_subtree():
         [],
         resolve=lambda _cwd: None,
         hydrate=True,
-        is_junk_root=lambda path: path.startswith("/home/test/.hermes"),
-        is_junk_cwd=lambda path: path in {"/home/test", "/home/test/.hermes"},
+        is_junk_root=lambda path: path.startswith("/home/test/.opencodon"),
+        is_junk_cwd=lambda path: path in {"/home/test", "/home/test/.opencodon"},
     )
 
-    assert [p["id"] for p in tree["projects"]] == ["/home/test/.hermes/workspaces/notes"]
+    assert [p["id"] for p in tree["projects"]] == ["/home/test/.opencodon/workspaces/notes"]
     assert tree["scoped_session_ids"] == [workspace["id"]]
 
 
 def test_broad_default_non_git_cwd_stays_unscoped():
-    detached = _session("/home/test/.hermes")
+    detached = _session("/home/test/.opencodon")
 
     tree = pt.build_tree(
         [],
@@ -459,7 +459,7 @@ def test_broad_default_non_git_cwd_stays_unscoped():
         [],
         resolve=lambda _cwd: None,
         hydrate=True,
-        is_junk_cwd=lambda path: path in {"/home/test", "/home/test/.hermes"},
+        is_junk_cwd=lambda path: path in {"/home/test", "/home/test/.opencodon"},
     )
 
     assert tree["projects"] == []

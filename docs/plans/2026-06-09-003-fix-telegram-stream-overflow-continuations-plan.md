@@ -223,7 +223,7 @@ sequenceDiagram
 
 ## Sources & Research
 
-- User-provided screenshot at `/root/.hermes/image_cache/img_f664e68f6ddf.jpg`.
+- User-provided screenshot at `/root/.opencodon/image_cache/img_f664e68f6ddf.jpg`.
 - `gateway/stream_consumer.py` streamed edit, overflow, fallback, and final-delivery state handling.
 - `gateway/platforms/telegram.py` Telegram send/edit overflow splitting and topic routing helpers.
 - `gateway/platforms/base.py` `SendResult` contract and shared message chunking helper.

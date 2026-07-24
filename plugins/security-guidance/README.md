@@ -43,7 +43,7 @@ Plugins are opt-in. Add it to your allow-list:
 
 ```bash
 hermes plugins enable security-guidance
-# or edit ~/.hermes/config.yaml manually:
+# or edit ~/.opencodon/config.yaml manually:
 plugins:
   enabled:
     - security-guidance
@@ -69,7 +69,7 @@ plugins:
   follow-up that would build on `delegate_task`.
 * **No project-local rules file.** Anthropic's `.claude/claude-security-guidance.md`
   is read by their layer 2/3 LLM prompts, not the pattern scanner. We can
-  add an analogous `.hermes/security-guidance.md` once layer 2 lands.
+  add an analogous `.opencodon/security-guidance.md` once layer 2 lands.
 
 ## Limitations
 

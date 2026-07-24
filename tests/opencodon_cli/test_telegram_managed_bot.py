@@ -327,10 +327,10 @@ class TestSetupTelegramAuto:
         from opencodon_cli import setup
 
         seen = {}
-        profile_home = tmp_path / ".hermes" / "profiles" / "oracle"
+        profile_home = tmp_path / ".opencodon" / "profiles" / "oracle"
         profile_home.mkdir(parents=True)
 
-        monkeypatch.setattr(setup, "get_hermes_home", lambda: profile_home)
+        monkeypatch.setattr(setup, "get_opencodon_home", lambda: profile_home)
 
         def fake_auto_setup_telegram_bot_result(*, profile_name=None):
             seen["profile_name"] = profile_name
@@ -345,10 +345,10 @@ class TestSetupTelegramAuto:
         assert seen["profile_name"] == "oracle"
 
     def test_profile_name_from_home_path_handles_windows_separators(self):
-        from opencodon_cli.setup import _profile_name_from_hermes_home
+        from opencodon_cli.setup import _profile_name_from_opencodon_home
 
         assert (
-            _profile_name_from_hermes_home(
+            _profile_name_from_opencodon_home(
                 PureWindowsPath(r"C:\Users\test\AppData\Local\hermes\profiles\oracle")
             )
             == "oracle"

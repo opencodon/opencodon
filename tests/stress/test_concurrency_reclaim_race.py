@@ -38,9 +38,9 @@ WORK_DURATION_S = 2.0  # longer than TTL => reclaimer wins
 WT = str(Path(__file__).resolve().parents[2])
 
 
-def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
-    os.environ["HERMES_HOME"] = hermes_home
-    os.environ["HOME"] = hermes_home
+def worker_loop(worker_id: int, opencodon_home: str, result_file: str) -> None:
+    os.environ["OPENCODON_HOME"] = opencodon_home
+    os.environ["HOME"] = opencodon_home
     sys.path.insert(0, WT)
     from opencodon_cli import kanban_db as kb
 
@@ -95,9 +95,9 @@ def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
         json.dump(events, f)
 
 
-def reclaimer_loop(hermes_home: str, result_file: str) -> None:
-    os.environ["HERMES_HOME"] = hermes_home
-    os.environ["HOME"] = hermes_home
+def reclaimer_loop(opencodon_home: str, result_file: str) -> None:
+    os.environ["OPENCODON_HOME"] = opencodon_home
+    os.environ["HOME"] = opencodon_home
     sys.path.insert(0, WT)
     from opencodon_cli import kanban_db as kb
 
@@ -122,7 +122,7 @@ def reclaimer_loop(hermes_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="hermes_reclaim_race_")
-    os.environ["HERMES_HOME"] = home
+    os.environ["OPENCODON_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from opencodon_cli import kanban_db as kb

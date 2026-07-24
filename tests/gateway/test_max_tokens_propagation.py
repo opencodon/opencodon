@@ -6,7 +6,7 @@ free models, Ollama Cloud, custom OpenAI-compatible endpoints) truncated long
 generations with `finish_reason="length"`.
 
 Precedence verified here:
-    HERMES_MAX_TOKENS env  >  model.max_tokens  >  per-provider
+    OPENCODON_MAX_TOKENS env  >  model.max_tokens  >  per-provider
     max_output_tokens  >  None
 """
 
@@ -20,17 +20,17 @@ import pytest
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with a writable config.yaml and a clean module cache.
+    """Isolated OPENCODON_HOME with a writable config.yaml and a clean module cache.
 
     These tests deliberately re-import ``opencodon_cli`` / ``gateway`` so each
     config write is read fresh. To avoid leaking that purge into sibling test
     files in the same worker (which breaks their import-time mocks), we snapshot
     the affected modules and restore them on teardown.
     """
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.delenv("HERMES_MAX_TOKENS", raising=False)
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    monkeypatch.delenv("OPENCODON_MAX_TOKENS", raising=False)
 
     _saved = {
         k: v
@@ -39,7 +39,7 @@ def isolated_home(tmp_path, monkeypatch):
     }
 
     def write_cfg(body: str) -> None:
-        (hermes_home / "config.yaml").write_text(textwrap.dedent(body))
+        (opencodon_home / "config.yaml").write_text(textwrap.dedent(body))
 
     def fresh_gateway():
         for mod in list(sys.modules.keys()):
@@ -118,9 +118,9 @@ def test_global_max_tokens_beats_per_provider(isolated_home):
 
 
 def test_env_override_beats_everything(isolated_home, monkeypatch):
-    """HERMES_MAX_TOKENS is the internal override mechanism (highest priority)."""
+    """OPENCODON_MAX_TOKENS is the internal override mechanism (highest priority)."""
     write_cfg, fresh_gateway = isolated_home
-    monkeypatch.setenv("HERMES_MAX_TOKENS", "2048")
+    monkeypatch.setenv("OPENCODON_MAX_TOKENS", "2048")
     write_cfg(
         """
         model:

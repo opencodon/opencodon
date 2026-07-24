@@ -35,7 +35,7 @@ class TestConfigureWindowsStdio:
     - set PYTHONIOENCODING / PYTHONUTF8 without overriding explicit user settings
     - reconfigure sys.stdout/stderr/stdin to UTF-8 on Windows
     - flip the console code page to CP_UTF8 (65001) via ctypes
-    - respect HERMES_DISABLE_WINDOWS_UTF8 opt-out
+    - respect OPENCODON_DISABLE_WINDOWS_UTF8 opt-out
     """
 
     @pytest.fixture(autouse=True)
@@ -71,7 +71,7 @@ class TestConfigureWindowsStdio:
         # Pretend the user has no prior setting
         monkeypatch.delenv("PYTHONIOENCODING", raising=False)
         monkeypatch.delenv("PYTHONUTF8", raising=False)
-        monkeypatch.delenv("HERMES_DISABLE_WINDOWS_UTF8", raising=False)
+        monkeypatch.delenv("OPENCODON_DISABLE_WINDOWS_UTF8", raising=False)
         monkeypatch.delenv("EDITOR", raising=False)
         monkeypatch.delenv("VISUAL", raising=False)
 
@@ -149,7 +149,7 @@ class TestConfigureWindowsStdio:
         from opencodon_cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
-        monkeypatch.setenv("HERMES_DISABLE_WINDOWS_UTF8", optout)
+        monkeypatch.setenv("OPENCODON_DISABLE_WINDOWS_UTF8", optout)
 
         reconfigure_hit = []
         monkeypatch.setattr(
@@ -703,7 +703,7 @@ class TestCodeExecutionTransportTcpFallback:
 
     We can't easily execute the sandbox on Linux CI in Windows mode, but we
     CAN assert that the generated client module supports both AF_UNIX and
-    AF_INET endpoints based on the HERMES_RPC_SOCKET format.
+    AF_INET endpoints based on the OPENCODON_RPC_SOCKET format.
     """
 
     def test_generated_client_handles_tcp_endpoint(self):
@@ -833,12 +833,12 @@ class TestLocalEnvironmentWindowsTempDir:
                 f"POSIX temp dir must start with '/'; got {tmp_dir!r}"
             )
 
-    def test_source_has_windows_branch_using_hermes_home(self):
+    def test_source_has_windows_branch_using_opencodon_home(self):
         root = Path(__file__).resolve().parents[2]
         source = (root / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
         assert "if _IS_WINDOWS:" in source
-        assert "get_hermes_home" in source
-        assert 'cache_dir = get_hermes_home() / "cache" / "terminal"' in source
+        assert "get_opencodon_home" in source
+        assert 'cache_dir = get_opencodon_home() / "cache" / "terminal"' in source
 
 
 class TestLocalEnvironmentPathInjectionGated:
@@ -1049,7 +1049,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
         )
         assert '_popen_kwargs["env"]' in block, (
             "Inlined respawn must overlay env (VIRTUAL_ENV / PYTHONPATH / "
-            "HERMES_HOME) so the windowless base pythonw resolves opencodon_cli."
+            "OPENCODON_HOME) so the windowless base pythonw resolves opencodon_cli."
         )
 
 
@@ -1103,7 +1103,7 @@ class TestWindowlessGatewayRestartSpec:
         def fake_resolve(python_exe):
             return ("C:/base/pythonw.exe", Path("C:/venv"), ["C:/venv/Lib/site-packages"])
 
-        # Mock get_hermes_home too: the real one calls Path.resolve(), which
+        # Mock get_opencodon_home too: the real one calls Path.resolve(), which
         # consults sysconfig and raises ModuleNotFoundError under the win32
         # platform patch on a Linux host.
         with mock.patch.object(gw.sys, "platform", "win32"), mock.patch.object(
@@ -1111,7 +1111,7 @@ class TestWindowlessGatewayRestartSpec:
         ), mock.patch.object(
             gw, "_stable_gateway_working_dir", return_value="C:/hermes"
         ), mock.patch(
-            "opencodon_cli.config.get_hermes_home", return_value="C:/hermes"
+            "opencodon_cli.config.get_opencodon_home", return_value="C:/hermes"
         ):
             new_argv, cwd, env = gw.windowless_gateway_restart_spec(list(argv))
 

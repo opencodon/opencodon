@@ -2,7 +2,7 @@
 
 The dump reads ``os.getenv`` — the invoking terminal's environment — but the
 managed backends (launchd / systemd / the desktop-spawned ``serve`` process)
-load credentials from ``~/.hermes/.env``, not the login shell. A key exported
+load credentials from ``~/.opencodon/.env``, not the login shell. A key exported
 in the shell but absent from ``.env`` is invisible to the backend, yet the dump
 used to print a bare "set", sending support down a phantom "the key is
 configured" path (the real cause behind gated tools like ``web_search`` going
@@ -22,11 +22,11 @@ def _api_key_line(out: str, label: str) -> str:
 
 def test_dump_flags_shell_only_key_not_in_dotenv(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_hermes_home
+    from opencodon_cli.config import get_opencodon_home
 
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_opencodon_home()
     home.mkdir(parents=True, exist_ok=True)
     # .env has some OTHER key but NOT firecrawl.
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-xxxx\n")
@@ -43,11 +43,11 @@ def test_dump_flags_shell_only_key_not_in_dotenv(monkeypatch, capsys, tmp_path):
 
 def test_dump_does_not_flag_key_present_in_dotenv(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_hermes_home
+    from opencodon_cli.config import get_opencodon_home
 
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_opencodon_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / ".env").write_text("FIRECRAWL_API_KEY=fc-in-dotenv\n")
     monkeypatch.setenv("FIRECRAWL_API_KEY", "fc-in-dotenv")
@@ -61,12 +61,12 @@ def test_dump_does_not_flag_key_present_in_dotenv(monkeypatch, capsys, tmp_path)
 
 def test_dump_leaves_unset_key_untouched(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_hermes_home
+    from opencodon_cli.config import get_opencodon_home
 
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
     monkeypatch.delenv("TAVILY_API_KEY", raising=False)
 
-    home = get_hermes_home()
+    home = get_opencodon_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-xxxx\n")
 

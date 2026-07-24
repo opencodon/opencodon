@@ -14,69 +14,69 @@ from pathlib import Path
 
 _profile_fallback_warned: bool = False
 _UNSET = object()
-_HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
-    "_HERMES_HOME_OVERRIDE", default=_UNSET
+_OPENCODON_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
+    "_OPENCODON_HOME_OVERRIDE", default=_UNSET
 )
 
 
-def set_hermes_home_override(path: str | Path | None) -> Token:
+def set_opencodon_home_override(path: str | Path | None) -> Token:
     """Set a context-local Hermes home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
     """
     value: str | object = _UNSET if path is None else str(path)
-    return _HERMES_HOME_OVERRIDE.set(value)
+    return _OPENCODON_HOME_OVERRIDE.set(value)
 
 
-def reset_hermes_home_override(token: Token) -> None:
+def reset_opencodon_home_override(token: Token) -> None:
     """Restore the previous context-local Hermes home override."""
-    _HERMES_HOME_OVERRIDE.reset(token)
+    _OPENCODON_HOME_OVERRIDE.reset(token)
 
 
-def get_hermes_home_override() -> str | None:
+def get_opencodon_home_override() -> str | None:
     """Return the active context-local Hermes home override, if any."""
-    override = _HERMES_HOME_OVERRIDE.get()
+    override = _OPENCODON_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
     return str(override)
 
 
-def _get_platform_default_hermes_home() -> Path:
+def _get_platform_default_opencodon_home() -> Path:
     """Return the platform-native default Hermes home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "opencodon"
+    return Path.home() / ".opencodon"
 
 
-def _hermes_home_from_env() -> Path:
-    """Resolve HERMES_HOME from the process environment only.
+def _opencodon_home_from_env() -> Path:
+    """Resolve OPENCODON_HOME from the process environment only.
 
-    Reads the ``HERMES_HOME`` env var, falling back to the platform-native
+    Reads the ``OPENCODON_HOME`` env var, falling back to the platform-native
     default.  Deliberately ignores the context-local override installed by
-    :func:`set_hermes_home_override`, so this reflects the process/launch
-    scope rather than a per-task profile.  Shared by :func:`get_hermes_home`
-    and :func:`get_process_hermes_home` so the two never drift.
+    :func:`set_opencodon_home_override`, so this reflects the process/launch
+    scope rather than a per-task profile.  Shared by :func:`get_opencodon_home`
+    and :func:`get_process_opencodon_home` so the two never drift.
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
+    val = os.environ.get("OPENCODON_HOME", "").strip()
     if val:
         return Path(val)
-    return _get_platform_default_hermes_home()
+    return _get_platform_default_opencodon_home()
 
 
 def _warn_profile_fallback_once() -> None:
     """Warn once when falling back to the default home while a profile is active.
 
-    Guard: if a non-default profile is sticky-active but ``HERMES_HOME`` is
+    Guard: if a non-default profile is sticky-active but ``OPENCODON_HOME`` is
     unset, the fallback to the default profile is almost certainly wrong.
     """
     global _profile_fallback_warned
     if _profile_fallback_warned:
         return
     try:
-        fallback_home = _get_platform_default_hermes_home()
+        fallback_home = _get_platform_default_opencodon_home()
         active_path = fallback_home / "active_profile"
         active = active_path.read_text().strip() if active_path.exists() else ""
     except (UnicodeDecodeError, OSError):
@@ -89,11 +89,11 @@ def _warn_profile_fallback_once() -> None:
         # configured, and (b) root-logger propagation would double-emit
         # on consoles where a StreamHandler is already attached.
         msg = (
-            f"[HERMES_HOME fallback] HERMES_HOME is unset but active "
+            f"[OPENCODON_HOME fallback] OPENCODON_HOME is unset but active "
             f"profile is {active!r}. Falling back to {fallback_home}, which "
             f"is the DEFAULT profile — not {active!r}. Any data this "
             f"process writes will land in the wrong profile. The "
-            f"subprocess spawner should pass HERMES_HOME explicitly "
+            f"subprocess spawner should pass OPENCODON_HOME explicitly "
             f"(see issue #18594)."
         )
         try:
@@ -103,40 +103,71 @@ def _warn_profile_fallback_once() -> None:
             pass
 
 
-def get_hermes_home() -> Path:
+def legacy_hermes_home_hint() -> str | None:
+    """One-line hint when a hermes-agent home exists but no opencodon home.
+
+    Fires only when ``OPENCODON_HOME`` is unset, the default
+    ``~/.opencodon`` does not exist yet, and a legacy ``~/.hermes``
+    (or ``%LOCALAPPDATA%\\hermes``) does. We deliberately do NOT migrate
+    data automatically: the legacy home may belong to a still-running
+    hermes-agent install, and moving or copying live SQLite state under
+    it would risk corruption. Adoption is explicit via OPENCODON_HOME.
+    """
+    if os.environ.get("OPENCODON_HOME", "").strip():
+        return None
+    new_home = _get_platform_default_opencodon_home()
+    if new_home.exists():
+        return None
+    if sys.platform == "win32":
+        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
+        legacy = base / "hermes"
+    else:
+        legacy = Path.home() / ".hermes"
+    if not legacy.exists():
+        return None
+    return (
+        f"note: found a legacy hermes-agent home at {legacy}. opencodon uses "
+        f"{new_home} and starts fresh. To keep your existing config, "
+        f"sessions, and skills, set OPENCODON_HOME={legacy} (adopts the old "
+        f"home in place)."
+    )
+
+
+def get_opencodon_home() -> Path:
     """Return the Hermes home directory (default: platform-native path).
 
     Resolution order: context-local override (see
-    :func:`set_hermes_home_override`) → ``HERMES_HOME`` env var → the
+    :func:`set_opencodon_home_override`) → ``OPENCODON_HOME`` env var → the
     platform-native default.  This is the single source of truth — all other
     copies should import this.
 
-    When ``HERMES_HOME`` is unset but an ``active_profile`` file indicates
+    When ``OPENCODON_HOME`` is unset but an ``active_profile`` file indicates
     a non-default profile is active, logs a loud one-shot warning to
     ``errors.log`` so cross-profile data corruption is diagnosable instead
     of silent.  Behavior is unchanged otherwise — we still return
     the platform-native default — because raising here would brick 30+ module-level
     callers that import this at load time.  Subprocess spawners are
-    expected to propagate ``HERMES_HOME`` explicitly (see the systemd
+    expected to propagate ``OPENCODON_HOME`` explicitly (see the systemd
     template in ``opencodon_cli/gateway.py`` and the kanban dispatcher in
     ``opencodon_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
     """
-    override = get_hermes_home_override()
+    override = get_opencodon_home_override()
     if override:
         return Path(override)
 
-    if not os.environ.get("HERMES_HOME", "").strip():
+    if not os.environ.get("OPENCODON_HOME", "").strip():
         _warn_profile_fallback_once()
 
-    return _hermes_home_from_env()
+    return _opencodon_home_from_env()
 
 
-def get_process_hermes_home() -> Path:
+def get_process_opencodon_home() -> Path:
     """Return the Hermes home for the running process, ignoring task overrides.
 
-    Unlike :func:`get_hermes_home`, this never follows the context-local
-    override set by :func:`set_hermes_home_override`.  It resolves only the
-    process ``HERMES_HOME`` env var (falling back to the platform default),
+    Unlike :func:`get_opencodon_home`, this never follows the context-local
+    override set by :func:`set_opencodon_home_override`.  It resolves only the
+    process ``OPENCODON_HOME`` env var (falling back to the platform default),
     so it reflects the scope the process was launched under **as long as
     nothing mutates ``os.environ`` in-process**.
 
@@ -147,34 +178,34 @@ def get_process_hermes_home() -> Path:
     for genuinely profile-scoped data (memories, backups, checkpoints,
     provider config) — those should keep following the override.
     """
-    return _hermes_home_from_env()
+    return _opencodon_home_from_env()
 
 
 def get_default_hermes_root() -> Path:
     """Return the root Hermes directory for profile-level operations.
 
-    In standard deployments this is the platform-native Hermes home
-    (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\hermes`` on native Windows).
+    In standard deployments this is the platform-native home
+    (``~/.opencodon`` on POSIX, ``%LOCALAPPDATA%\\opencodon`` on native Windows).
 
-    In Docker or custom deployments where ``HERMES_HOME`` points outside
-    ``~/.hermes`` (e.g. ``/opt/data``), returns ``HERMES_HOME`` directly
+    In Docker or custom deployments where ``OPENCODON_HOME`` points outside
+    ``~/.opencodon`` (e.g. ``/opt/data``), returns ``OPENCODON_HOME`` directly
     — that IS the root.
 
-    In profile mode where ``HERMES_HOME`` is ``<root>/profiles/<name>``,
+    In profile mode where ``OPENCODON_HOME`` is ``<root>/profiles/<name>``,
     returns ``<root>`` so that ``profile list`` can see all profiles.
-    Works both for standard (``~/.hermes/profiles/coder``) and Docker
+    Works both for standard (``~/.opencodon/profiles/coder``) and Docker
     (``/opt/data/profiles/coder``) layouts.
 
     Import-safe — no dependencies beyond stdlib.
     """
-    native_home = _get_platform_default_hermes_home()
-    env_home = os.environ.get("HERMES_HOME", "")
+    native_home = _get_platform_default_opencodon_home()
+    env_home = os.environ.get("OPENCODON_HOME", "")
     if not env_home:
         return native_home
     env_path = Path(env_home)
     try:
         env_path.resolve().relative_to(native_home.resolve())
-        # HERMES_HOME is under ~/.hermes (normal or profile mode)
+        # OPENCODON_HOME is under ~/.opencodon (normal or profile mode)
         return native_home
     except ValueError:
         pass
@@ -186,7 +217,7 @@ def get_default_hermes_root() -> Path:
     if env_path.parent.name == "profiles":
         return env_path.parent.parent
 
-    # Not a profile path — HERMES_HOME itself is the root
+    # Not a profile path — OPENCODON_HOME itself is the root
     return env_path
 
 
@@ -194,14 +225,14 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers.
 
     Packaged installs may ship ``optional-skills`` outside the Python package
-    tree and expose it via ``HERMES_OPTIONAL_SKILLS``.
+    tree and expose it via ``OPENCODON_OPTIONAL_SKILLS``.
     """
-    override = os.getenv("HERMES_OPTIONAL_SKILLS", "").strip()
+    override = os.getenv("OPENCODON_OPTIONAL_SKILLS", "").strip()
     if override:
         return Path(override)
     if default is not None:
         return default
-    return get_hermes_home() / "optional-skills"
+    return get_opencodon_home() / "optional-skills"
 
 
 def get_optional_mcps_dir(default: Path | None = None) -> Path:
@@ -210,30 +241,30 @@ def get_optional_mcps_dir(default: Path | None = None) -> Path:
     Mirrors :func:`get_optional_skills_dir` for the MCP catalog (Nous-approved
     Model Context Protocol servers shipped with the repo but disabled by
     default). Packaged installs may ship ``optional-mcps`` outside the Python
-    package tree and expose it via ``HERMES_OPTIONAL_MCPS``.
+    package tree and expose it via ``OPENCODON_OPTIONAL_MCPS``.
     """
-    override = os.getenv("HERMES_OPTIONAL_MCPS", "").strip()
+    override = os.getenv("OPENCODON_OPTIONAL_MCPS", "").strip()
     if override:
         return Path(override)
     if default is not None:
         return default
-    return get_hermes_home() / "optional-mcps"
+    return get_opencodon_home() / "optional-mcps"
 
 
 def get_bundled_skills_dir(default: Path | None = None) -> Path:
     """Return the bundled skills directory for source and packaged installs.
 
     Resolution order:
-        1. ``HERMES_BUNDLED_SKILLS`` env var (Nix wrapper / explicit override)
+        1. ``OPENCODON_BUNDLED_SKILLS`` env var (Nix wrapper / explicit override)
         2. Caller-supplied ``default`` (typically the source-checkout path)
-        3. ``<HERMES_HOME>/skills`` last-resort
+        3. ``<OPENCODON_HOME>/skills`` last-resort
     """
-    override = os.getenv("HERMES_BUNDLED_SKILLS", "").strip()
+    override = os.getenv("OPENCODON_BUNDLED_SKILLS", "").strip()
     if override:
         return Path(override)
     if default is not None:
         return default
-    return get_hermes_home() / "skills"
+    return get_opencodon_home() / "skills"
 
 
 def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
@@ -252,14 +283,14 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     ``platforms/pairing/``.
 
     Args:
-        new_subpath: Preferred path relative to HERMES_HOME (e.g. ``"cache/images"``).
-        old_name: Legacy path relative to HERMES_HOME (e.g. ``"image_cache"``).
+        new_subpath: Preferred path relative to OPENCODON_HOME (e.g. ``"cache/images"``).
+        old_name: Legacy path relative to OPENCODON_HOME (e.g. ``"image_cache"``).
 
     Returns:
         Absolute ``Path`` — legacy location if it exists with content,
         otherwise the new location.
     """
-    home = get_hermes_home()
+    home = get_opencodon_home()
     old_path = home / old_name
     if _legacy_path_has_content(old_path):
         return old_path
@@ -271,10 +302,10 @@ def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
     into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
-    ``$HERMES_HOME/node/bin``. Include both shapes on every platform so mixed
+    ``$OPENCODON_HOME/node/bin``. Include both shapes on every platform so mixed
     or migrated installs still work.
     """
-    root = home or get_hermes_home()
+    root = home or get_opencodon_home()
     dirs = [root / "node"]
     bin_dir = root / "node" / "bin"
     # NOTE: keep this ordering in sync with hermesManagedNodePathEntries() in
@@ -300,7 +331,7 @@ def _candidate_node_command_names(command: str) -> list[str]:
     return [f"{base}.cmd", f"{base}.exe", base]
 
 
-_HERMES_NODE_TARGET_MAJOR = int(os.environ.get("HERMES_NODE_TARGET_MAJOR", "22"))
+_OPENCODON_NODE_TARGET_MAJOR = int(os.environ.get("OPENCODON_NODE_TARGET_MAJOR", "22"))
 _managed_node_heal_attempted = False
 _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "node-bootstrap.sh"
 
@@ -308,8 +339,8 @@ _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "
 def node_tool_runnable(path: str | None) -> bool:
     """Return True only when *path* is a Node/npm/npx binary that actually runs.
 
-    Hermes-managed Node trees live under ``$HERMES_HOME/node`` (or a profile's
-    ``HERMES_HOME``). A partial upgrade or interrupted install can leave
+    Hermes-managed Node trees live under ``$OPENCODON_HOME/node`` (or a profile's
+    ``OPENCODON_HOME``). A partial upgrade or interrupted install can leave
     ``bin/npm`` behind while ``lib/cli.js`` is missing — the wrapper exists but
     immediately throws ``MODULE_NOT_FOUND``. ``find_hermes_node_executable``
     used to trust file presence alone, so ``hermes update`` would pick that
@@ -360,7 +391,7 @@ def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
 
 
 def _heal_managed_node_windows() -> bool:
-    """Redownload the portable Node zip into ``%HERMES_HOME%\\node`` on Windows."""
+    """Redownload the portable Node zip into ``%OPENCODON_HOME%\\node`` on Windows."""
     import re
     import tempfile
     import urllib.request
@@ -376,8 +407,8 @@ def _heal_managed_node_windows() -> bool:
     else:
         return False
 
-    home = get_hermes_home()
-    index_url = f"https://nodejs.org/dist/latest-v{_HERMES_NODE_TARGET_MAJOR}.x/"
+    home = get_opencodon_home()
+    index_url = f"https://nodejs.org/dist/latest-v{_OPENCODON_NODE_TARGET_MAJOR}.x/"
     try:
         with urllib.request.urlopen(index_url, timeout=60) as response:
             index_html = response.read().decode("utf-8", errors="replace")
@@ -385,7 +416,7 @@ def _heal_managed_node_windows() -> bool:
         return False
 
     match = re.search(
-        rf"node-v{_HERMES_NODE_TARGET_MAJOR}\.\d+\.\d+-win-{node_arch}\.zip",
+        rf"node-v{_OPENCODON_NODE_TARGET_MAJOR}\.\d+\.\d+-win-{node_arch}\.zip",
         index_html,
     )
     if not match:
@@ -450,7 +481,7 @@ def heal_hermes_managed_node() -> bool:
                 "-c",
                 f'source "{_NODE_BOOTSTRAP_SCRIPT}" && heal_managed_node',
             ],
-            env={**os.environ, "HERMES_HOME": str(get_hermes_home())},
+            env={**os.environ, "OPENCODON_HOME": str(get_opencodon_home())},
             capture_output=True,
             timeout=300,
             check=False,
@@ -641,20 +672,20 @@ def _legacy_path_has_content(path: Path) -> bool:
     return True
 
 
-def display_hermes_home() -> str:
-    """Return a user-friendly display string for the current HERMES_HOME.
+def display_opencodon_home() -> str:
+    """Return a user-friendly display string for the current OPENCODON_HOME.
 
     Uses ``~/`` shorthand for readability::
 
-        default:  ``~/.hermes``
-        profile:  ``~/.hermes/profiles/coder``
+        default:  ``~/.opencodon``
+        profile:  ``~/.opencodon/profiles/coder``
         custom:   ``/opt/hermes-custom``
 
     Use this in **user-facing** print/log messages instead of hardcoding
-    ``~/.hermes``.  For code that needs a real ``Path``, use
-    :func:`get_hermes_home` instead.
+    ``~/.opencodon``.  For code that needs a real ``Path``, use
+    :func:`get_opencodon_home` instead.
     """
-    home = get_hermes_home()
+    home = get_opencodon_home()
     try:
         return "~/" + str(home.relative_to(Path.home()))
     except ValueError:
@@ -666,7 +697,7 @@ def secure_parent_dir(path: Path) -> None:
 
     Refuses to chmod ``/`` or any top-level directory (resolved parent with
     fewer than 3 parts, i.e. ``/`` or any direct child like ``/usr``) to
-    prevent catastrophic host bricking when ``HERMES_HOME`` or other path
+    prevent catastrophic host bricking when ``OPENCODON_HOME`` or other path
     env vars resolve to an unexpected location.
 
     See https://github.com/NousResearch/hermes-agent/issues/25821.
@@ -693,11 +724,11 @@ def _norm_home_path(path: str | None) -> str:
 
 
 def _profile_home_path(env: dict[str, str] | None = None) -> str | None:
-    """Return ``{HERMES_HOME}/home`` when the profile-home directory exists."""
-    hermes_home = get_hermes_home_override() or (env or {}).get("HERMES_HOME") or os.getenv("HERMES_HOME")
-    if not hermes_home:
+    """Return ``{OPENCODON_HOME}/home`` when the profile-home directory exists."""
+    opencodon_home = get_opencodon_home_override() or (env or {}).get("OPENCODON_HOME") or os.getenv("OPENCODON_HOME")
+    if not opencodon_home:
         return None
-    profile_home = os.path.join(hermes_home, "home")
+    profile_home = os.path.join(opencodon_home, "home")
     if os.path.isdir(profile_home):
         return profile_home
     return None
@@ -711,7 +742,7 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
     """Return likely OS-user home candidates in trust order."""
     env = env or {}
     candidates: list[str] = []
-    explicit = str(env.get("HERMES_REAL_HOME") or os.getenv("HERMES_REAL_HOME", "")).strip()
+    explicit = str(env.get("OPENCODON_REAL_HOME") or os.getenv("OPENCODON_REAL_HOME", "")).strip()
     if explicit:
         candidates.append(explicit)
     home = str(env.get("HOME") or os.getenv("HOME", "")).strip()
@@ -741,9 +772,9 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 def get_real_home(env: dict[str, str] | None = None) -> str:
     """Return the OS user's real home directory, avoiding Hermes profile HOME.
 
-    ``HERMES_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
+    ``OPENCODON_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
-    If a parent process is already running with ``HOME={HERMES_HOME}/home``,
+    If a parent process is already running with ``HOME={OPENCODON_HOME}/home``,
     this helper repairs back to the account home when possible.
     """
     profile_home = _profile_home_path(env)
@@ -765,10 +796,10 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
     ``TERMINAL_HOME_MODE``):
 
     * ``auto`` (default): host installs keep the real user HOME; containers use
-      ``{HERMES_HOME}/home`` for persistent state. If a host parent already has
+      ``{OPENCODON_HOME}/home`` for persistent state. If a host parent already has
       HOME pointed at the profile home, repair subprocesses back to real HOME.
     * ``real``: always prefer the real OS-user HOME.
-    * ``profile``: use ``{HERMES_HOME}/home`` when it exists, preserving the
+    * ``profile``: use ``{OPENCODON_HOME}/home`` when it exists, preserving the
       older strict per-profile tool-config isolation.
     """
     env = env or {}
@@ -798,7 +829,7 @@ def apply_subprocess_home_env(env: dict[str, str]) -> None:
     """Apply Hermes' subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
-        env["HERMES_REAL_HOME"] = real_home
+        env["OPENCODON_REAL_HOME"] = real_home
     home = get_subprocess_home(env)
     if home:
         env["HOME"] = home
@@ -1156,23 +1187,23 @@ def is_container() -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under HERMES_HOME.
+    """Return the path to ``config.yaml`` under OPENCODON_HOME.
 
-    Replaces the ``get_hermes_home() / "config.yaml"`` pattern repeated
+    Replaces the ``get_opencodon_home() / "config.yaml"`` pattern repeated
     in 7+ files (skill_utils.py, opencodon_logging.py, opencodon_time.py, etc.).
     """
-    return get_hermes_home() / "config.yaml"
+    return get_opencodon_home() / "config.yaml"
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under HERMES_HOME."""
-    return get_hermes_home() / "skills"
+    """Return the path to the skills directory under OPENCODON_HOME."""
+    return get_opencodon_home() / "skills"
 
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under HERMES_HOME."""
-    return get_hermes_home() / ".env"
+    """Return the path to the ``.env`` file under OPENCODON_HOME."""
+    return get_opencodon_home() / ".env"
 
 
 # ─── Network Preferences ─────────────────────────────────────────────────────

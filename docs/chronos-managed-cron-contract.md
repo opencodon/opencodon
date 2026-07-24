@@ -40,7 +40,7 @@ agent verifies the NAS JWT → store CAS claim → run_one_job → re-arm next o
 
 | Hop | Who calls whom | Auth mechanism | Verified by |
 |---|---|---|---|
-| 1 | agent → NAS (`provision`/`cancel`/`list`) | the agent's existing **Nous Portal access token** (Bearer) — for a hosted agent this is the **bootstrap-session token** NAS planted in `auth.json` (client `hermes-cli-vps`), NOT an `agent:*` client token | NAS (its normal agent-token path) |
+| 1 | agent → NAS (`provision`/`cancel`/`list`) | the agent's existing **Nous Portal access token** (Bearer) — for a hosted agent this is the **bootstrap-session token** NAS planted in `auth.json` (client `opencodon-cli-vps`), NOT an `agent:*` client token | NAS (its normal agent-token path) |
 | 2 | scheduler → NAS (`relay`) | the scheduler's request **signature** | NAS (the signature path it already has) |
 | 3 | NAS → agent (`/api/cron/fire`) | a **short-lived NAS-minted JWT** (`aud=agent:{instance_id}`, `purpose=cron_fire`) | agent (PyJWT against NAS JWKS) |
 
@@ -48,7 +48,7 @@ agent verifies the NAS JWT → store CAS claim → run_one_job → re-arm next o
 > OAuth client credential — that shape is minted only by the interactive dashboard
 > auth-code grant (a browser user). For all of its own outbound portal calls the
 > agent uses the **bootstrap-session access token** (`resolve_nous_access_token`),
-> minted under the bootstrap-only client `hermes-cli-vps` and seeded into the
+> minted under the bootstrap-only client `opencodon-cli-vps` and seeded into the
 > container on first boot. NAS therefore must resolve the calling agent's instance
 > id from EITHER an `agent:{id}` client (self-hosted/dashboard callers) OR — for the
 > bootstrap token — from `AgentInstance.bootstrapSessionId` matching the token's
@@ -169,7 +169,7 @@ callback through to the verifier. (Also registered on the optional
   `get_job` returns `None` after the final fire → the agent does **not** re-arm
   → the schedule stops cleanly with no orphaned one-shot.
 - **Multi-replica agents:** the store CAS makes the fire at-most-once across N
-  gateway replicas sharing one `HERMES_HOME` — exactly one replica runs each
+  gateway replicas sharing one `OPENCODON_HOME` — exactly one replica runs each
   fire.
 
 ## Reconcile (self-healing)

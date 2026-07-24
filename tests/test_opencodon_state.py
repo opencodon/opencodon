@@ -6814,9 +6814,9 @@ def test_v18_backfill_from_sessions_json(tmp_path, monkeypatch):
     """Migration backfills display_name/origin_json/expiry_finalized from sessions.json."""
     import opencodon_state as hs
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     (home / "sessions").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(hs, "DEFAULT_DB_PATH", home / "state.db")
 
     # Seed a pre-v18 database: create schema, downgrade version, add a bare row.

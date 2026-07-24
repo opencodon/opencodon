@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from opencodon_cli._subprocess_compat import windows_hide_flags
 from agent.skill_utils import is_excluded_skill_path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -60,13 +60,13 @@ def _override(name: str):
     return globals().get(name)
 
 
-def _hermes_home() -> Path:
-    return get_hermes_home()
+def _opencodon_home() -> Path:
+    return get_opencodon_home()
 
 
 def _skills_dir() -> Path:
     forced = _override("SKILLS_DIR")
-    return Path(forced) if forced is not None else _hermes_home() / "skills"
+    return Path(forced) if forced is not None else _opencodon_home() / "skills"
 
 
 def _hub_dir() -> Path:
@@ -100,7 +100,7 @@ def _index_cache_dir() -> Path:
 
 
 _DYNAMIC_PATH_RESOLVERS = {
-    "HERMES_HOME": _hermes_home,
+    "OPENCODON_HOME": _opencodon_home,
     "SKILLS_DIR": _skills_dir,
     "HUB_DIR": _hub_dir,
     "LOCK_FILE": _lock_file,
@@ -3162,7 +3162,7 @@ class OptionalSkillSource(SkillSource):
 
     These skills are official (maintained by Nous Research) but not activated
     by default — they don't appear in the system prompt and aren't copied to
-    ~/.hermes/skills/ during setup.  They are discoverable via the Skills Hub
+    ~/.opencodon/skills/ during setup.  They are discoverable via the Skills Hub
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
@@ -3772,8 +3772,8 @@ def check_for_skill_updates(
 # Hermes centralized index source
 # ---------------------------------------------------------------------------
 
-HERMES_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
-HERMES_INDEX_TTL = 6 * 3600  # 6 hours
+OPENCODON_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+OPENCODON_INDEX_TTL = 6 * 3600  # 6 hours
 
 
 def _hermes_index_cache_file() -> Path:
@@ -3784,7 +3784,7 @@ def _load_hermes_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for HERMES_INDEX_TTL seconds to avoid repeated
+    We cache it locally for OPENCODON_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
@@ -3792,7 +3792,7 @@ def _load_hermes_index() -> Optional[dict]:
     if hermes_index_cache_file.exists():
         try:
             age = time.time() - hermes_index_cache_file.stat().st_mtime
-            if age < HERMES_INDEX_TTL:
+            if age < OPENCODON_INDEX_TTL:
                 return json.loads(hermes_index_cache_file.read_text())
         except (OSError, json.JSONDecodeError):
             pass
@@ -3814,7 +3814,7 @@ def _load_hermes_index() -> Optional[dict]:
     for accept_encoding in ("gzip, deflate", "identity"):
         try:
             resp = httpx.get(
-                HERMES_INDEX_URL,
+                OPENCODON_INDEX_URL,
                 timeout=15,
                 follow_redirects=True,
                 headers={"Accept-Encoding": accept_encoding},

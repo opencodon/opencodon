@@ -7,9 +7,9 @@ import textwrap
 
 def test_container_sets_hosted_write_policy_env(built_image: str) -> None:
     script = (
-        'test "$HERMES_HOME" = "/opt/data" && '
-        'test "$HERMES_WRITE_SAFE_ROOT" = "/opt/data" && '
-        'test "$HERMES_DISABLE_LAZY_INSTALLS" = "1" && '
+        'test "$OPENCODON_HOME" = "/opt/data" && '
+        'test "$OPENCODON_WRITE_SAFE_ROOT" = "/opt/data" && '
+        'test "$OPENCODON_DISABLE_LAZY_INSTALLS" = "1" && '
         'test "$PYTHONDONTWRITEBYTECODE" = "1"'
     )
     result = subprocess.run(

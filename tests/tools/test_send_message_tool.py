@@ -275,8 +275,8 @@ class TestSendMessageTool:
         with patch.dict(
             os.environ,
             {
-                "HERMES_CRON_AUTO_DELIVER_PLATFORM": "telegram",
-                "HERMES_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
+                "OPENCODON_CRON_AUTO_DELIVER_PLATFORM": "telegram",
+                "OPENCODON_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
             },
             clear=False,
         ), \
@@ -415,8 +415,8 @@ class TestSendMessageTool:
              patch("gateway.session_context.get_session_env") as get_session_env_mock, \
              patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             get_session_env_mock.side_effect = lambda name, default="": {
-                "HERMES_SESSION_PLATFORM": "telegram",
-                "HERMES_SESSION_USER_ID": "user-123",
+                "OPENCODON_SESSION_PLATFORM": "telegram",
+                "OPENCODON_SESSION_USER_ID": "user-123",
             }.get(name, default)
             result = json.loads(
                 send_message_tool(
@@ -444,8 +444,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("OPENCODON_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("OPENCODON_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -2334,61 +2334,61 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``HERMES_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``OPENCODON_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
-       ``HERMES_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``HERMES_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+       ``OPENCODON_HOME`` may be a profile dir without a ``gateway.pid``).
+    2. ``OPENCODON_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
-       a live gateway colocated under the same ``HERMES_HOME``).
+       a live gateway colocated under the same ``OPENCODON_HOME``).
     4. None of the above → False, tool is hidden.
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (HERMES_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (OPENCODON_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("OPENCODON_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("OPENCODON_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_kanban_task_env_short_circuits_before_gateway_check(self, monkeypatch):
-        """Honoring HERMES_KANBAN_TASK must not depend on importing or calling
-        gateway.status — the worker may run with a HERMES_HOME that has no
+        """Honoring OPENCODON_KANBAN_TASK must not depend on importing or calling
+        gateway.status — the worker may run with a OPENCODON_HOME that has no
         gateway.pid, and we don't want that import path to be load-bearing."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
+        monkeypatch.setenv("OPENCODON_KANBAN_TASK", "t_abc12345")
 
         with patch("gateway.session_context.get_session_env",
                    side_effect=AssertionError("session_context not consulted "
-                                              "when HERMES_KANBAN_TASK is set")), \
+                                              "when OPENCODON_KANBAN_TASK is set")), \
              patch("gateway.status.is_gateway_running",
                    side_effect=AssertionError("gateway.status not consulted "
-                                              "when HERMES_KANBAN_TASK is set")):
+                                              "when OPENCODON_KANBAN_TASK is set")):
             assert _check_send_message() is True
 
     def test_messaging_platform_session_grants_access(self, monkeypatch):
         """Telegram/Discord/etc. sessions pass via the platform branch even
-        without HERMES_KANBAN_TASK."""
+        without OPENCODON_KANBAN_TASK."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="telegram"), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_local_platform_falls_through_to_gateway_check(self, monkeypatch):
-        """``HERMES_SESSION_PLATFORM=local`` means CLI-style — must defer to
+        """``OPENCODON_SESSION_PLATFORM=local`` means CLI-style — must defer to
         is_gateway_running() rather than auto-grant."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="local"), \
              patch("gateway.status.is_gateway_running", return_value=True) as gw_mock:
@@ -2400,7 +2400,7 @@ class TestCheckSendMessage:
         gateway: tool is callable."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=True):
@@ -2410,7 +2410,7 @@ class TestCheckSendMessage:
         """No kanban task, no platform, no gateway: tool is hidden."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -2421,7 +2421,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",

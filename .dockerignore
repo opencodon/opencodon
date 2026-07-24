@@ -57,7 +57,7 @@ htmlcov/
 
 # Runtime data (bind-mounted at /opt/data; must not leak into build context)
 data/
-.hermes-docker/
+.opencodon-docker/
 .notebooklm-home/
 
 # Compose/profile runtime state (bind-mounted; avoid ownership/secret issues)

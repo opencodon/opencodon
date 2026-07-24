@@ -165,12 +165,12 @@ def build_dashboard_parser(
     )
     # `headless_backend` marks the lean path: desktop/remote clients speak pure
     # JSON-RPC/WS, so `serve` skips the web UI build AND never serves the SPA
-    # (cmd_dashboard exports HERMES_SERVE_HEADLESS=1). `dashboard` leaves it
+    # (cmd_dashboard exports OPENCODON_SERVE_HEADLESS=1). `dashboard` leaves it
     # unset and serves the browser UI as before.
     serve_parser.set_defaults(func=cmd_dashboard, no_open=True, headless_backend=True)
 
     # `hermes dashboard register` — register a self-hosted dashboard OAuth
-    # client with Nous Portal and write the client_id into ~/.hermes/.env.
+    # client with Nous Portal and write the client_id into ~/.opencodon/.env.
     # Nested subparser so bare `hermes dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
@@ -182,7 +182,7 @@ def build_dashboard_parser(
         description=(
             "Register this install as a self-hosted dashboard with your Nous "
             "Portal account. Creates an OAuth client, writes "
-            "HERMES_DASHBOARD_OAUTH_CLIENT_ID into ~/.hermes/.env, and prints "
+            "OPENCODON_DASHBOARD_OAUTH_CLIENT_ID into ~/.opencodon/.env, and prints "
             "how to engage the login gate. Requires being logged in (hermes setup)."
         ),
     )
@@ -207,7 +207,7 @@ def build_dashboard_parser(
         help=(
             "Override the Nous Portal base URL for registration (default: the "
             "portal you logged into). The access token must be valid at this "
-            "portal. Also settable via HERMES_DASHBOARD_PORTAL_URL. Mainly for "
+            "portal. Also settable via OPENCODON_DASHBOARD_PORTAL_URL. Mainly for "
             "testing against a staging/preview portal."
         ),
     )

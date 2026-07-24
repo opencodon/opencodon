@@ -113,7 +113,7 @@ USER_OWNED_EXCLUDE: frozenset = frozenset({
     "browser_screenshots", "checkpoints", "sandboxes",
     "backups", "cache",
     # Infrastructure
-    "hermes-agent", ".worktrees", "profiles", "bin", "node_modules",
+    "opencodon", ".worktrees", "profiles", "bin", "node_modules",
     # User customization namespace
     "local",
 })
@@ -516,7 +516,7 @@ def plan_install(
     if canon == "default":
         raise DistributionError(
             "Cannot install a distribution as 'default' — that is the built-in "
-            "root profile (~/.hermes).  Pass --name <name> to install under a "
+            "root profile (~/.opencodon).  Pass --name <name> to install under a "
             "new profile."
         )
     manifest.name = canon

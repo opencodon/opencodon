@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from opencodon_cli.config import get_hermes_home, get_config_path, load_config, save_config
+from opencodon_cli.config import get_opencodon_home, get_config_path, load_config, save_config
 from opencodon_constants import get_optional_skills_dir
 from opencodon_cli.setup import (
     Colors,
@@ -44,7 +44,7 @@ _OPENCLAW_SCRIPT = (
 
 # Fallback: user may have installed the skill from the Hub
 _OPENCLAW_SCRIPT_INSTALLED = (
-    get_hermes_home()
+    get_opencodon_home()
     / "skills"
     / "migration"
     / "openclaw-migration"
@@ -379,12 +379,12 @@ def _cmd_migrate(args):
         return
 
     # Show what we're doing
-    hermes_home = get_hermes_home()
+    opencodon_home = get_opencodon_home()
     auto_yes = getattr(args, "yes", False)
     print()
     print_header("Migration Settings")
     print_info(f"Source:      {source_dir}")
-    print_info(f"Target:      {hermes_home}")
+    print_info(f"Target:      {opencodon_home}")
     print_info(f"Preset:      {preset}")
     print_info(f"Overwrite:   {'yes' if overwrite else 'no (skip conflicts)'}")
     print_info(f"Secrets:     {'yes (allowlisted only)' if migrate_secrets else 'no'}")
@@ -425,7 +425,7 @@ def _cmd_migrate(args):
     try:
         preview = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=opencodon_home.resolve(),
             execute=False,
             workspace_target=ws_target,
             overwrite=overwrite,
@@ -480,7 +480,7 @@ def _cmd_migrate(args):
             f"Plan has {preview_conflicts} conflict(s). Refusing to apply."
         )
         print_info(
-            "Each conflict is an item whose target already exists in ~/.hermes/. "
+            "Each conflict is an item whose target already exists in ~/.opencodon/. "
             "Re-run with --overwrite to replace conflicting targets (item-level "
             "backups are written to the migration report directory)."
         )
@@ -509,7 +509,7 @@ def _cmd_migrate(args):
     if not no_backup:
         try:
             from opencodon_cli.backup import create_pre_migration_backup, _format_size
-            backup_archive = create_pre_migration_backup(hermes_home=hermes_home)
+            backup_archive = create_pre_migration_backup(opencodon_home=opencodon_home)
             if backup_archive:
                 size_str = _format_size(backup_archive.stat().st_size)
                 print()
@@ -527,7 +527,7 @@ def _cmd_migrate(args):
     try:
         migrator = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=hermes_home.resolve(),
+            target_root=opencodon_home.resolve(),
             execute=True,
             workspace_target=ws_target,
             overwrite=overwrite,

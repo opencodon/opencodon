@@ -21,7 +21,7 @@ def server():
         "sys.modules",
         {
             "opencodon_constants": MagicMock(
-                get_hermes_home=MagicMock(return_value="/tmp/hermes_test_compaction")
+                get_opencodon_home=MagicMock(return_value="/tmp/hermes_test_compaction")
             ),
             "opencodon_cli.env_loader": MagicMock(),
             "opencodon_cli.banner": MagicMock(),

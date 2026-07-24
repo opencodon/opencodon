@@ -22,7 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from opencodon_constants import get_hermes_home
+from opencodon_constants import get_opencodon_home
 from tools.environments.local import hermes_subprocess_env
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ def _build_sha() -> str:
 
 
 def _default_registry_path() -> Path:
-    return get_hermes_home() / "state" / _REGISTRY_NAME
+    return get_opencodon_home() / "state" / _REGISTRY_NAME
 
 
 def _pid_alive(pid: int) -> bool:
@@ -138,7 +138,7 @@ class HostSupervisor:
         respawn_max: int = 3,
         heartbeat_secs: int = 15,
         expected_build_sha: str | None = None,
-        expected_hermes_home: str | None = None,
+        expected_opencodon_home: str | None = None,
         autostart: bool = True,
     ) -> None:
         self.registry_path = Path(registry_path) if registry_path is not None else _default_registry_path()
@@ -149,7 +149,7 @@ class HostSupervisor:
         self.respawn_max = max(0, int(respawn_max))
         self.heartbeat_secs = max(1, int(heartbeat_secs))
         self.expected_build_sha = expected_build_sha if expected_build_sha is not None else _build_sha()
-        self.expected_hermes_home = expected_hermes_home if expected_hermes_home is not None else str(get_hermes_home())
+        self.expected_opencodon_home = expected_opencodon_home if expected_opencodon_home is not None else str(get_opencodon_home())
 
         self._lock = threading.RLock()
         self._proc: subprocess.Popen[str] | None = None
@@ -315,7 +315,7 @@ class HostSupervisor:
         env.update(os.environ)
         if self.env:
             env.update(self.env)
-        env["HERMES_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
+        env["OPENCODON_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
         env.setdefault("PYTHONPATH", str(_repo_root()))
         if str(_repo_root()) not in env["PYTHONPATH"].split(os.pathsep):
             env["PYTHONPATH"] = str(_repo_root()) + os.pathsep + env["PYTHONPATH"]
@@ -348,9 +348,9 @@ class HostSupervisor:
         hello = self._hello
         if not hello:
             raise RuntimeError("compute host missing hello")
-        got_home = str(hello.get("hermes_home") or "")
-        if got_home and got_home != self.expected_hermes_home:
-            raise RuntimeError(f"compute host HERMES_HOME mismatch: {got_home} != {self.expected_hermes_home}")
+        got_home = str(hello.get("opencodon_home") or "")
+        if got_home and got_home != self.expected_opencodon_home:
+            raise RuntimeError(f"compute host OPENCODON_HOME mismatch: {got_home} != {self.expected_opencodon_home}")
         got_sha = str(hello.get("build_sha") or "")
         if self.expected_build_sha != "unknown" and got_sha not in {"", "unknown", self.expected_build_sha}:
             raise RuntimeError(f"compute host build mismatch: {got_sha} != {self.expected_build_sha}")

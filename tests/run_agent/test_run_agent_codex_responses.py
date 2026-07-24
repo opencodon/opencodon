@@ -1942,7 +1942,7 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
     """
     from opencodon_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     agent = _build_agent(monkeypatch)
     # _build_agent stubs _persist_session; restore the real one so the flush
     # cursor / double-write behaviour is exercised end to end.
@@ -2885,7 +2885,7 @@ def test_dump_api_request_debug_redacts_request_and_error_secrets(monkeypatch, t
     import json
 
     _patch_agent_bootstrap(monkeypatch)
-    monkeypatch.setenv("HERMES_DUMP_REQUEST_STDOUT", "1")
+    monkeypatch.setenv("OPENCODON_DUMP_REQUEST_STDOUT", "1")
     agent = run_agent.AIAgent(
         model="gpt-4o",
         base_url="http://127.0.0.1:9208/v1",

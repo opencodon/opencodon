@@ -7,7 +7,7 @@ default for bare ``hermes`` / ``hermes chat``. Explicit flags always win:
     --cli                forces the classic REPL (highest precedence)
     --tui                forces the TUI
     (no TTY)             forces the classic REPL — ambient prefs don't apply
-    HERMES_TUI=1         the env default
+    OPENCODON_TUI=1         the env default
     display.interface    the configured default
     (unset)              classic REPL
 
@@ -41,9 +41,9 @@ from opencodon_cli import main as m
 @pytest.fixture(autouse=True)
 def _reset_early_cache(monkeypatch):
     # The early resolver memoizes the config read; clear it so each test sees
-    # a fresh value, and make sure no stray HERMES_TUI leaks in.
+    # a fresh value, and make sure no stray OPENCODON_TUI leaks in.
     monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
-    monkeypatch.delenv("HERMES_TUI", raising=False)
+    monkeypatch.delenv("OPENCODON_TUI", raising=False)
     yield
     monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
 
@@ -80,7 +80,7 @@ class TestResolveUseTui:
 
     def test_cli_flag_beats_tui_flag_and_env(self, monkeypatch):
         _patch_config(monkeypatch, "tui")
-        monkeypatch.setenv("HERMES_TUI", "1")
+        monkeypatch.setenv("OPENCODON_TUI", "1")
         assert m._resolve_use_tui(_args(cli=True, tui=True)) is False
 
     def test_tui_flag_beats_config_cli(self, monkeypatch):
@@ -90,7 +90,7 @@ class TestResolveUseTui:
     def test_env_beats_config_cli(self, monkeypatch):
         _patch_config(monkeypatch, "cli")
         _fake_tty(monkeypatch, True)
-        monkeypatch.setenv("HERMES_TUI", "1")
+        monkeypatch.setenv("OPENCODON_TUI", "1")
         assert m._resolve_use_tui(_args()) is True
 
     def test_config_tui_with_no_flags(self, monkeypatch):
@@ -122,7 +122,7 @@ class TestResolveUseTui:
     def test_no_tty_blocks_env_tui(self, monkeypatch):
         _patch_config(monkeypatch, "cli")
         _fake_tty(monkeypatch, False)
-        monkeypatch.setenv("HERMES_TUI", "1")
+        monkeypatch.setenv("OPENCODON_TUI", "1")
         assert m._resolve_use_tui(_args()) is False
 
     def test_no_tty_blocks_config_tui(self, monkeypatch):
@@ -148,7 +148,7 @@ class TestWantsTuiEarly:
             (tmp_path / "config.yaml").write_text(
                 f"display:\n  interface: {interface}\n"
             )
-            monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+            monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
             monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
 
         return _make
@@ -181,7 +181,7 @@ class TestWantsTuiEarly:
 
     def test_env_with_config_cli(self, home_with_interface, monkeypatch):
         home_with_interface("cli")
-        monkeypatch.setenv("HERMES_TUI", "1")
+        monkeypatch.setenv("OPENCODON_TUI", "1")
         assert m._wants_tui_early([]) is True
 
     def test_config_cli_bare_argv(self, home_with_interface):
@@ -189,15 +189,15 @@ class TestWantsTuiEarly:
         assert m._wants_tui_early([]) is False
 
     def test_missing_config_defaults_to_cli(self, tmp_path, monkeypatch):
-        # HERMES_HOME points at an empty dir — no config.yaml.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        # OPENCODON_HOME points at an empty dir — no config.yaml.
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
         assert m._wants_tui_early([]) is False
 
     def test_unreadable_config_defaults_to_cli(self, tmp_path, monkeypatch):
         # Garbage YAML must not crash the hot path; falls back to cli.
         (tmp_path / "config.yaml").write_text("this: : : not valid yaml\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
         assert m._wants_tui_early([]) is False
 

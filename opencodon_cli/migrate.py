@@ -110,6 +110,6 @@ def cmd_migrate_xai(args: Any) -> int:
 
 def _resolve_config_path() -> Path:
     """Best-effort: locate the active config.yaml on disk."""
-    from opencodon_cli.config import get_hermes_home
+    from opencodon_cli.config import get_opencodon_home
 
-    return get_hermes_home() / "config.yaml"
+    return get_opencodon_home() / "config.yaml"

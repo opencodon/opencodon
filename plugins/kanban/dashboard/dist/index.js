@@ -2,17 +2,17 @@
  * Hermes Kanban — Dashboard Plugin
  *
  * Board view for the multi-agent collaboration board backed by
- * ~/.hermes/kanban.db. Calls the plugin's backend at /api/plugins/kanban/
+ * ~/.opencodon/kanban.db. Calls the plugin's backend at /api/plugins/kanban/
  * and tails task_events over a WebSocket for live updates.
  *
- * Plain IIFE, no build step. Uses window.__HERMES_PLUGIN_SDK__ for React +
+ * Plain IIFE, no build step. Uses window.__OPENCODON_PLUGIN_SDK__ for React +
  * shadcn primitives; HTML5 drag-and-drop for card movement on desktop and
  * a pointer-based fallback for touch.
  */
 (function () {
   "use strict";
 
-  const SDK = window.__HERMES_PLUGIN_SDK__;
+  const SDK = window.__OPENCODON_PLUGIN_SDK__;
   if (!SDK) return;
 
   const { React } = SDK;
@@ -633,7 +633,7 @@
         if (wsClosedRef.current) return;
         // Build the WS URL via the host SDK so the correct auth param is used
         // in BOTH modes: single-use ?ticket= in gated OAuth mode, ?token= in
-        // loopback. Reading window.__HERMES_SESSION_TOKEN__ directly (the old
+        // loopback. Reading window.__OPENCODON_SESSION_TOKEN__ directly (the old
         // path) sends an empty token and is rejected in gated mode. buildWsUrl
         // also applies the dashboard base-path prefix for reverse-proxied
         // deployments, which the old inline URL did not. It's async (gated
@@ -1335,7 +1335,7 @@
       if (action.kind === "comment") {
         // Scroll the comment input into view; the drawer already has one
         // at the bottom. Focus it so the operator can start typing.
-        const ta = document.querySelector(".hermes-kanban-drawer-comment-row input, .hermes-kanban-drawer-comment-row textarea");
+        const ta = document.querySelector(".opencodon-kanban-drawer-comment-row input, .opencodon-kanban-drawer-comment-row textarea");
         if (ta) {
           ta.scrollIntoView({ behavior: "smooth", block: "nearest" });
           ta.focus();
@@ -2457,9 +2457,9 @@
 
     const isPanBlockedTarget = useCallback(function (target) {
       if (!target) return true;
-      if (target.closest && target.closest(".hermes-kanban-card")) return true;
-      if (target.closest && target.closest(".hermes-kanban-column-add")) return true;
-      if (target.closest && target.closest(".hermes-kanban-col-check")) return true;
+      if (target.closest && target.closest(".opencodon-kanban-card")) return true;
+      if (target.closest && target.closest(".opencodon-kanban-column-add")) return true;
+      if (target.closest && target.closest(".opencodon-kanban-col-check")) return true;
       if (target.closest && target.closest("button,input,textarea,select,a,[role='button']")) return true;
       return false;
     }, []);
@@ -2520,7 +2520,7 @@
     }, [isPanBlockedTarget, stopPan]);
 
     const handleDragStart = useCallback(function (e) {
-      const card = e.target.closest && e.target.closest(".hermes-kanban-card");
+      const card = e.target.closest && e.target.closest(".opencodon-kanban-card");
       if (!card) return;
       const taskId = card.getAttribute("data-task-id");
       if (taskId && props.onDragStart) props.onDragStart(taskId);
@@ -2748,7 +2748,7 @@
     const handleDragStart = function (e) {
       e.dataTransfer.setData(MIME_TASK, t.id);
       e.dataTransfer.effectAllowed = "move";
-      const selectedCards = document.querySelectorAll(".hermes-kanban-card--selected");
+      const selectedCards = document.querySelectorAll(".opencodon-kanban-card--selected");
       if (selectedCards.length > 1 && props.selected) {
         const ghost = document.createElement("div");
         ghost.className = "hermes-kanban-drag-ghost";
@@ -4463,7 +4463,7 @@
   // Register
   // -------------------------------------------------------------------------
 
-  if (window.__HERMES_PLUGINS__ && typeof window.__HERMES_PLUGINS__.register === "function") {
-    window.__HERMES_PLUGINS__.register("kanban", KanbanPage);
+  if (window.__OPENCODON_PLUGINS__ && typeof window.__OPENCODON_PLUGINS__.register === "function") {
+    window.__OPENCODON_PLUGINS__.register("kanban", KanbanPage);
   }
 })();

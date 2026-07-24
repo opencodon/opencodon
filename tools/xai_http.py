@@ -26,7 +26,7 @@ def has_xai_credentials() -> bool:
     Resolution order, fast-to-slow:
 
     1. ``XAI_API_KEY`` env var (cheapest; covers explicit-key users).
-    2. ``~/.hermes/auth.json`` has a non-empty ``providers.xai-oauth.tokens.access_token``
+    2. ``~/.opencodon/auth.json`` has a non-empty ``providers.xai-oauth.tokens.access_token``
        (single file read, no expiry check, no refresh).
     3. ``credential_pool.xai-oauth`` has any entry with a non-empty
        ``access_token`` (covers multi-account ``hermes auth add xai-oauth``
@@ -39,9 +39,9 @@ def has_xai_credentials() -> bool:
     if os.environ.get("XAI_API_KEY", "").strip():
         return True
     try:
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        auth_path = get_hermes_home() / "auth.json"
+        auth_path = get_opencodon_home() / "auth.json"
         if not auth_path.exists():
             return False
         store = json.loads(auth_path.read_text())
@@ -71,7 +71,7 @@ def has_xai_credentials() -> bool:
 
 
 def get_env_value(name: str, default=None):
-    """Read ``name`` from ``~/.hermes/.env`` first, then ``os.environ``.
+    """Read ``name`` from ``~/.opencodon/.env`` first, then ``os.environ``.
 
     Wraps :func:`opencodon_cli.config.get_env_value` so tests can patch
     ``tools.xai_http.get_env_value`` to inject dotenv-only secrets into the
@@ -227,9 +227,9 @@ def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
     if not notice:
         return None
     try:
-        from opencodon_constants import get_hermes_home
+        from opencodon_constants import get_opencodon_home
 
-        marker_dir = get_hermes_home() / "state"
+        marker_dir = get_opencodon_home() / "state"
         marker_dir.mkdir(parents=True, exist_ok=True)
         marker = marker_dir / f"{section_name}_xai_storage_notice_seen"
         if marker.exists():
@@ -249,7 +249,7 @@ def resolve_xai_http_credentials(
 
     Prefers Hermes-managed xAI OAuth credentials when available, then falls back
     to ``XAI_API_KEY`` resolved via ``opencodon_cli.config.get_env_value`` so keys
-    stored in ``~/.hermes/.env`` (the standard Hermes location) are honored —
+    stored in ``~/.opencodon/.env`` (the standard Hermes location) are honored —
     not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model
     and preserves the regression contract from PR #17140 / #17163.
@@ -284,7 +284,7 @@ def resolve_xai_http_credentials(
             or auth_mod.DEFAULT_XAI_OAUTH_BASE_URL
         ).strip().rstrip("/")
         override_base_url = str(
-            get_env_value("HERMES_XAI_BASE_URL")
+            get_env_value("OPENCODON_XAI_BASE_URL")
             or get_env_value("XAI_BASE_URL")
             or ""
         ).strip().rstrip("/")

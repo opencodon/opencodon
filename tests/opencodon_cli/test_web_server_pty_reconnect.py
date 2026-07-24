@@ -39,7 +39,7 @@ class _OneFrameBridge:
 
 
 @pytest.fixture
-def pty_client(monkeypatch, _isolate_hermes_home):
+def pty_client(monkeypatch, _isolate_opencodon_home):
     from starlette.testclient import TestClient
 
     import opencodon_cli.web_server as ws
@@ -71,7 +71,7 @@ def test_resolve_chat_argv_sets_active_session_file_env(monkeypatch):
         active_session_file="/tmp/hermes-active-session.json"
     )
 
-    assert env["HERMES_TUI_ACTIVE_SESSION_FILE"] == "/tmp/hermes-active-session.json"
+    assert env["OPENCODON_TUI_ACTIVE_SESSION_FILE"] == "/tmp/hermes-active-session.json"
 
 
 def test_channel_reconnect_resumes_active_session_file(pty_client, monkeypatch):

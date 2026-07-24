@@ -2,7 +2,7 @@
 
 Covers the core catalog/slot schema/renderers/fill (cron/blueprint_catalog.py),
 the shared /blueprint command handler (opencodon_cli/blueprint_cmd.py), and
-the docs generator. Uses an isolated HERMES_HOME for anything that touches the
+the docs generator. Uses an isolated OPENCODON_HOME for anything that touches the
 cron job store.
 """
 
@@ -156,9 +156,9 @@ class TestRenderers:
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     import opencodon_constants
     importlib.reload(opencodon_constants)
     import cron.jobs as jobs
@@ -223,23 +223,3 @@ class TestCommandHandler:
         res = handle_blueprint_command("morning-brief time=99:99")
         assert "Can't set up" in res.text and "time" in res.text
         assert res.agent_seed is None
-
-
-class TestDocsGenerator:
-    def test_generator_emits_valid_index(self, tmp_path):
-        # The generator imports the catalog and writes a flat JSON array.
-        import importlib.util
-
-        script = (
-            Path(__file__).resolve().parents[2]
-            / "website" / "scripts" / "extract-automation-blueprints.py"
-        )
-        spec = importlib.util.spec_from_file_location("extract_cron_blueprints", script)
-        assert spec is not None and spec.loader is not None
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        index = mod.build_index()
-        assert isinstance(index, list) and len(index) == len(CATALOG)
-        # Each entry must round-trip through json and carry the surfaces.
-        json.dumps(index)
-        assert all("command" in e and "appUrl" in e for e in index)

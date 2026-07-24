@@ -30,20 +30,20 @@ def _make_setup_args(**overrides):
 @pytest.fixture
 def existing_install(tmp_path, monkeypatch):
     """Simulate a returning user with an existing configured install."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     return home
 
 
 @pytest.fixture
 def fresh_install(tmp_path, monkeypatch):
     """Simulate a first-time user with no existing configuration."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     return home
 
 
@@ -55,7 +55,7 @@ def _enter_existing_install_patches(stack, **extra):
     """
     # Unconditional mocks (no return values to assert against).
     for target, kwargs in [
-        ("opencodon_cli.setup.ensure_hermes_home", {}),
+        ("opencodon_cli.setup.ensure_opencodon_home", {}),
         ("opencodon_cli.setup.is_interactive_stdin", {"return_value": True}),
         ("opencodon_cli.config.is_managed", {"return_value": False}),
         ("opencodon_cli.setup.load_config", {"return_value": {}}),
@@ -76,7 +76,7 @@ def _enter_existing_install_patches(stack, **extra):
 
 def _enter_fresh_install_patches(stack, **extra):
     for target, kwargs in [
-        ("opencodon_cli.setup.ensure_hermes_home", {}),
+        ("opencodon_cli.setup.ensure_opencodon_home", {}),
         ("opencodon_cli.setup.is_interactive_stdin", {"return_value": True}),
         ("opencodon_cli.config.is_managed", {"return_value": False}),
         ("opencodon_cli.setup.load_config", {"return_value": {}}),

@@ -6,7 +6,7 @@ Connects to external MCP servers via stdio, HTTP/StreamableHTTP, or SSE
 transport, discovers their tools, and registers them into the hermes-agent
 tool registry so the agent can call them like any built-in tool.
 
-Configuration is read from ~/.hermes/config.yaml under the ``mcp_servers`` key.
+Configuration is read from ~/.opencodon/config.yaml under the ``mcp_servers`` key.
 The ``mcp`` Python package is optional -- if not installed, this module is a
 no-op and logs a debug message.
 
@@ -135,7 +135,7 @@ _OSV_MALWARE_CHECK_TIMEOUT_S = 12.0
 # corrupts the display and can hang the session.
 #
 # Instead we redirect every stdio MCP subprocess's stderr into a shared
-# per-profile log file (~/.hermes/logs/mcp-stderr.log), tagged with the
+# per-profile log file (~/.opencodon/logs/mcp-stderr.log), tagged with the
 # server name so individual servers remain debuggable.
 #
 # Fallback is os.devnull if opening the log file fails for any reason.
@@ -157,8 +157,8 @@ def _get_mcp_stderr_log() -> Any:
         if _mcp_stderr_log_fh is not None:
             return _mcp_stderr_log_fh
         try:
-            from opencodon_constants import get_hermes_home
-            log_dir = get_hermes_home() / "logs"
+            from opencodon_constants import get_opencodon_home
+            log_dir = get_opencodon_home() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_path = log_dir / "mcp-stderr.log"
             # Line-buffered so server output lands on disk promptly; errors=
@@ -659,13 +659,13 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
         if which_hit:
             resolved_command = which_hit
         elif resolved_command in {"npx", "npm", "node"}:
-            hermes_home = os.path.expanduser(
+            opencodon_home = os.path.expanduser(
                 os.getenv(
-                    "HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes")
+                    "OPENCODON_HOME", os.path.join(os.path.expanduser("~"), ".opencodon")
                 )
             )
             candidates = [
-                os.path.join(hermes_home, "node", "bin", resolved_command),
+                os.path.join(opencodon_home, "node", "bin", resolved_command),
                 os.path.join(os.path.expanduser("~"), ".local", "bin", resolved_command),
                 # /usr/local/bin is the canonical install location for Node on
                 # Linux from-source builds, the upstream node:bookworm-slim
@@ -1751,7 +1751,7 @@ class ElicitationHandler:
         # normalizes the answer to one of accept / decline / cancel.
         #
         # The recv-loop task that fires this callback does NOT inherit
-        # the agent's contextvars (HERMES_SESSION_PLATFORM etc.). When
+        # the agent's contextvars (OPENCODON_SESSION_PLATFORM etc.). When
         # the MCP tool wrapper captured the agent's context onto
         # owner._pending_call_context we replay it here via
         # contextvars.Context.run so the gateway-platform detection in
@@ -1879,7 +1879,7 @@ class MCPServerTask:
         # contextvars snapshot of the agent task that's currently in
         # session.call_tool(). The MCP recv loop dispatches incoming
         # elicitation/create requests on a SEPARATE asyncio task whose
-        # context doesn't inherit HERMES_SESSION_PLATFORM, so the
+        # context doesn't inherit OPENCODON_SESSION_PLATFORM, so the
         # elicitation handler has no way to detect the gateway session
         # that triggered the call. Capturing the agent's context here
         # and replaying it inside the elicitation callback restores
@@ -2439,7 +2439,7 @@ class MCPServerTask:
         # Redirect subprocess stderr into a shared log file so MCP servers
         # (FastMCP banners, slack-mcp startup JSON, etc.) don't dump onto
         # the user's TTY and corrupt the TUI.  Preserves debuggability via
-        # ~/.hermes/logs/mcp-stderr.log.
+        # ~/.opencodon/logs/mcp-stderr.log.
         _write_stderr_log_header(self.name)
         _errlog = _get_mcp_stderr_log()
         try:
@@ -3880,7 +3880,7 @@ def _handle_auth_error_and_retry(
         "error": (
             f"MCP server '{server_name}' requires re-authentication. "
             f"Run `hermes mcp login {server_name}` (or delete the tokens "
-            f"file under ~/.hermes/mcp-tokens/ and restart). Do NOT retry "
+            f"file under ~/.opencodon/mcp-tokens/ and restart). Do NOT retry "
             f"this tool — ask the user to re-authenticate."
         ),
         "needs_reauth": True,
@@ -4227,7 +4227,7 @@ def _ensure_mcp_loop():
 
 
 def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
-    """Carry the caller's context-local HERMES_HOME override into ``coro``.
+    """Carry the caller's context-local OPENCODON_HOME override into ``coro``.
 
     Returns ``coro`` unchanged when no override is active. Otherwise wraps
     it so the override is set inside the coroutine's own (task-local)
@@ -4236,23 +4236,23 @@ def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
     """
     try:
         from opencodon_constants import (
-            get_hermes_home_override,
-            reset_hermes_home_override,
-            set_hermes_home_override,
+            get_opencodon_home_override,
+            reset_opencodon_home_override,
+            set_opencodon_home_override,
         )
 
-        home_override = get_hermes_home_override()
+        home_override = get_opencodon_home_override()
     except Exception:
         return coro
     if not home_override:
         return coro
 
     async def _scoped():
-        token = set_hermes_home_override(home_override)
+        token = set_opencodon_home_override(home_override)
         try:
             return await coro
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
 
     return _scoped()
 
@@ -4301,12 +4301,12 @@ def _run_on_mcp_loop(coro_or_factory, timeout: float = 30):
 
     coro = coro_or_factory() if callable(coro_or_factory) else coro_or_factory
 
-    # Propagate the context-local HERMES_HOME override onto the MCP loop.
+    # Propagate the context-local OPENCODON_HOME override onto the MCP loop.
     # Tasks scheduled via run_coroutine_threadsafe are created INSIDE the
     # loop thread, so they copy the loop thread's context — not the
     # scheduling thread's. A per-request profile scope (the dashboard's
     # ?profile= endpoints, e.g. the MCP "Test server" probe) would silently
-    # vanish here: OAuth token stores and any other get_hermes_home()
+    # vanish here: OAuth token stores and any other get_opencodon_home()
     # resolution inside the coroutine would read the process home instead
     # of the selected profile's. Re-establish the override inside the
     # task's own context (task-local — concurrent calls carrying different
@@ -4426,13 +4426,13 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``timeout``, ``connect_timeout``, and ``auth`` overrides.
 
     ``${ENV_VAR}`` placeholders in string values are resolved from
-    ``os.environ`` (which includes ``~/.hermes/.env`` loaded at startup).
+    ``os.environ`` (which includes ``~/.opencodon/.env`` loaded at startup).
     """
     try:
         from opencodon_cli.config import load_config
         from utils import env_var_enabled as _env_enabled
 
-        if _env_enabled("HERMES_SAFE_MODE"):
+        if _env_enabled("OPENCODON_SAFE_MODE"):
             return {}
         config = load_config()
         servers = config.get("mcp_servers")

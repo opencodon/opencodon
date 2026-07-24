@@ -20,11 +20,11 @@ import pytest
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch, capsys):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".opencodon"
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import opencodon_constants

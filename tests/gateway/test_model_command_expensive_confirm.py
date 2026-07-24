@@ -69,22 +69,22 @@ def _fake_warning():
 def _setup_isolated_home(tmp_path, monkeypatch, *, warn):
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    cfg_path = hermes_home / "config.yaml"
+    opencodon_home = tmp_path / ".opencodon"
+    opencodon_home.mkdir()
+    cfg_path = opencodon_home / "config.yaml"
     cfg_path.write_text(
         yaml.safe_dump({"model": {"default": "old-model", "provider": "openrouter"}, "providers": {}}),
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_opencodon_home", opencodon_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
         "opencodon_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(),
     )
-    monkeypatch.setattr("opencodon_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("opencodon_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
+    monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: opencodon_home)
     monkeypatch.setattr(
         "opencodon_cli.model_cost_guard.expensive_model_warning",
         (lambda *a, **kw: _fake_warning()) if warn else (lambda *a, **kw: None),

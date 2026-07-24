@@ -463,16 +463,16 @@ class TestDisabledToolsetsPlatformBundle:
     must not remove core tools from other enabled toolsets."""
 
     def test_disabling_platform_bundle_preserves_core_tools(self):
-        """Disabling hermes-slack should not strip core tools from hermes-telegram."""
+        """Disabling opencodon-slack should not strip core tools from opencodon-telegram."""
         from model_tools import get_tool_definitions
 
         tools_telegram = get_tool_definitions(
-            enabled_toolsets=["hermes-telegram"],
+            enabled_toolsets=["opencodon-telegram"],
             quiet_mode=True,
         )
         tools_telegram_no_slack = get_tool_definitions(
-            enabled_toolsets=["hermes-telegram"],
-            disabled_toolsets=["hermes-slack"],
+            enabled_toolsets=["opencodon-telegram"],
+            disabled_toolsets=["opencodon-slack"],
             quiet_mode=True,
         )
         names_telegram = {t["function"]["name"] for t in tools_telegram}
@@ -480,17 +480,17 @@ class TestDisabledToolsetsPlatformBundle:
 
         # Disabling a *different* platform bundle must not remove any tools
         assert names_telegram == names_no_slack, (
-            f"Tools lost after disabling hermes-slack: "
+            f"Tools lost after disabling opencodon-slack: "
             f"{names_telegram - names_no_slack}"
         )
 
     def test_disabling_platform_bundle_removes_own_tools(self):
-        """Disabling hermes-discord should remove discord-specific tools."""
+        """Disabling opencodon-discord should remove discord-specific tools."""
         from model_tools import get_tool_definitions
 
         tools = get_tool_definitions(
-            enabled_toolsets=["hermes-discord"],
-            disabled_toolsets=["hermes-discord"],
+            enabled_toolsets=["opencodon-discord"],
+            disabled_toolsets=["opencodon-discord"],
             quiet_mode=True,
         )
         names = {t["function"]["name"] for t in tools}
@@ -501,11 +501,11 @@ class TestDisabledToolsetsPlatformBundle:
         from model_tools import get_tool_definitions
 
         tools_normal = get_tool_definitions(
-            enabled_toolsets=["hermes-telegram"],
+            enabled_toolsets=["opencodon-telegram"],
             quiet_mode=True,
         )
         tools_no_web = get_tool_definitions(
-            enabled_toolsets=["hermes-telegram"],
+            enabled_toolsets=["opencodon-telegram"],
             disabled_toolsets=["web"],
             quiet_mode=True,
         )
@@ -522,14 +522,14 @@ class TestDisabledToolsetsPlatformBundle:
 
 
     def test_disabling_bundle_removes_platform_tools_but_keeps_core(self):
-        """Disabling hermes-discord (when enabled) removes discord/discord_admin
+        """Disabling opencodon-discord (when enabled) removes discord/discord_admin
         from the resolved delta but keeps core tools — via bundle_non_core_tools."""
-        from toolsets import bundle_non_core_tools, _HERMES_CORE_TOOLS
+        from toolsets import bundle_non_core_tools, _OPENCODON_CORE_TOOLS
 
-        delta = bundle_non_core_tools("hermes-discord")
+        delta = bundle_non_core_tools("opencodon-discord")
         # The delta is the bundle's platform-specific tools, NOT core.
         assert "discord" in delta
-        assert not (delta & set(_HERMES_CORE_TOOLS)), "core tools must not be in the removal delta"
+        assert not (delta & set(_OPENCODON_CORE_TOOLS)), "core tools must not be in the removal delta"
 
     def test_bundle_non_core_tools_unknown_falls_back(self):
         """An unknown/garbage bundle name falls back to full resolution (best effort)."""

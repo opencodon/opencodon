@@ -104,7 +104,7 @@ class TestHermesToolsGeneration(unittest.TestCase):
 
     def test_rpc_infrastructure_present(self):
         src = generate_hermes_tools_module(["terminal"])
-        self.assertIn("HERMES_RPC_SOCKET", src)
+        self.assertIn("OPENCODON_RPC_SOCKET", src)
         self.assertIn("AF_UNIX", src)
         self.assertIn("def _connect(", src)
         self.assertIn("def _call(", src)
@@ -121,7 +121,7 @@ class TestHermesToolsGeneration(unittest.TestCase):
         src = generate_hermes_tools_module(["terminal"], transport="file")
         self.assertIn("import json, os, shlex, tempfile, threading, time", src)
         self.assertIn("os.path.join(tempfile.gettempdir(), \"hermes_rpc\")", src)
-        self.assertNotIn('os.environ.get("HERMES_RPC_DIR", "/tmp/hermes_rpc")', src)
+        self.assertNotIn('os.environ.get("OPENCODON_RPC_DIR", "/tmp/hermes_rpc")', src)
 
     def test_uds_transport_serializes_concurrent_calls(self):
         """Regression: UDS _call() must hold a lock across send+recv so that
@@ -174,12 +174,12 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
         run_cmd = next(cmd for cmd, _, _ in env.commands if "python3 script.py" in cmd)
         cleanup_cmd = env.commands[-1][0]
         self.assertIn("mkdir -p /data/data/com.termux/files/usr/tmp/hermes_exec_", mkdir_cmd)
-        self.assertIn("HERMES_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
+        self.assertIn("OPENCODON_RPC_DIR=/data/data/com.termux/files/usr/tmp/hermes_exec_", run_cmd)
         self.assertIn("rm -rf /data/data/com.termux/files/usr/tmp/hermes_exec_", cleanup_cmd)
         self.assertNotIn("mkdir -p /tmp/hermes_exec_", mkdir_cmd)
 
     def test_timezone_shell_quoted_in_remote_execution(self):
-        """HERMES_TIMEZONE must be shell-quoted in remote env_prefix to prevent injection."""
+        """OPENCODON_TIMEZONE must be shell-quoted in remote env_prefix to prevent injection."""
         class FakeEnv:
             def __init__(self):
                 self.commands = []
@@ -207,7 +207,7 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
              patch("tools.code_execution_tool._ship_file_to_remote"), \
              patch("tools.code_execution_tool.threading.Thread",
                    return_value=fake_thread), \
-             patch.dict(os.environ, {"HERMES_TIMEZONE": malicious_tz}):
+             patch.dict(os.environ, {"OPENCODON_TIMEZONE": malicious_tz}):
             result = json.loads(_execute_remote("print('hello')", "task-1", ["terminal"]))
 
         self.assertEqual(result["status"], "success")
@@ -794,7 +794,7 @@ class TestEnvVarFiltering(unittest.TestCase):
 
     def test_hermes_rpc_socket_injected(self):
         child_env = self._get_child_env()
-        self.assertIn("HERMES_RPC_SOCKET", child_env)
+        self.assertIn("OPENCODON_RPC_SOCKET", child_env)
 
     def test_pythondontwritebytecode_set(self):
         child_env = self._get_child_env()
@@ -803,7 +803,7 @@ class TestEnvVarFiltering(unittest.TestCase):
     def test_timezone_injected_when_set(self):
         env_backup = os.environ.copy()
         try:
-            os.environ["HERMES_TIMEZONE"] = "America/New_York"
+            os.environ["OPENCODON_TIMEZONE"] = "America/New_York"
             child_env = self._get_child_env()
             self.assertEqual(child_env.get("TZ"), "America/New_York")
         finally:
@@ -813,7 +813,7 @@ class TestEnvVarFiltering(unittest.TestCase):
     def test_timezone_not_set_when_empty(self):
         env_backup = os.environ.copy()
         try:
-            os.environ.pop("HERMES_TIMEZONE", None)
+            os.environ.pop("OPENCODON_TIMEZONE", None)
             child_env = self._get_child_env()
             if "TZ" in child_env:
                 self.assertNotEqual(child_env["TZ"], "")
@@ -1060,7 +1060,7 @@ class TestRpcTokenAuthorization(unittest.TestCase):
     """The per-session RPC token must gate socket dispatch (fail-closed).
 
     Regression coverage for the execute_code tool-socket hardening: a
-    request without the matching HERMES_RPC_TOKEN must be rejected before
+    request without the matching OPENCODON_RPC_TOKEN must be rejected before
     the tool is dispatched, while a request carrying the correct token
     round-trips normally.
     """
@@ -1176,9 +1176,9 @@ class TestRpcTokenAuthorization(unittest.TestCase):
         self.assertIn("Unauthorized", resp[0].get("error", ""))
 
     def test_generated_module_sends_token(self):
-        """The generated hermes_tools module reads HERMES_RPC_TOKEN and sends it."""
+        """The generated hermes_tools module reads OPENCODON_RPC_TOKEN and sends it."""
         src = generate_hermes_tools_module(["terminal"], transport="uds")
-        self.assertIn("HERMES_RPC_TOKEN", src)
+        self.assertIn("OPENCODON_RPC_TOKEN", src)
         self.assertIn('"token"', src)
 
 

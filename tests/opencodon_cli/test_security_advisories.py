@@ -44,12 +44,12 @@ def fake_advisory() -> adv.Advisory:
 
 @pytest.fixture
 def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect HERMES_HOME so banner cache and config writes are sandboxed."""
-    home = tmp_path / ".hermes"
+    """Redirect OPENCODON_HOME so banner cache and config writes are sandboxed."""
+    home = tmp_path / ".opencodon"
     home.mkdir()
     (home / "cache").mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("OPENCODON_HOME", str(home))
     return home
 
 

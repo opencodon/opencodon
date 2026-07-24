@@ -1,7 +1,7 @@
 /**
  * Hermes desktop plugin template. Save as:
  *   <hermes home>/desktop-plugins/<id>/plugin.js   (folder name == id)
- * where <hermes home> is ~/.hermes by default, or ~/.hermes/profiles/<name>
+ * where <hermes home> is ~/.opencodon by default, or ~/.opencodon/profiles/<name>
  * when running a named profile (`hermes -p <name>`). Run `hermes doctor` (or
  * check the app's Settings → Plugins folder path) if unsure which is active.
  * Then run "Reload desktop plugins" from ⌘K in the desktop app.

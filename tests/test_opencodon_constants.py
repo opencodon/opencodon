@@ -15,17 +15,17 @@ from opencodon_constants import (
     find_node_executable_on_path,
     get_default_hermes_root,
     get_hermes_dir,
-    get_hermes_home,
-    get_process_hermes_home,
+    get_opencodon_home,
+    get_process_opencodon_home,
     heal_hermes_managed_node,
     hermes_managed_node_tree_present,
     iter_hermes_node_dirs,
     is_container,
     node_tool_runnable,
     parse_reasoning_effort,
-    reset_hermes_home_override,
+    reset_opencodon_home_override,
     secure_parent_dir,
-    set_hermes_home_override,
+    set_opencodon_home_override,
     with_hermes_node_path,
 )
 
@@ -33,122 +33,122 @@ from opencodon_constants import (
 class TestGetDefaultHermesRoot:
     """Tests for get_default_hermes_root() — Docker/custom deployment awareness."""
 
-    def test_no_hermes_home_returns_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is not set, returns ~/.hermes."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    def test_no_opencodon_home_returns_native(self, tmp_path, monkeypatch):
+        """When OPENCODON_HOME is not set, returns ~/.opencodon."""
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        assert get_default_hermes_root() == tmp_path / ".hermes"
+        assert get_default_hermes_root() == tmp_path / ".opencodon"
 
-    def test_hermes_home_is_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME = ~/.hermes, returns ~/.hermes."""
-        native = tmp_path / ".hermes"
+    def test_opencodon_home_is_native(self, tmp_path, monkeypatch):
+        """When OPENCODON_HOME = ~/.opencodon, returns ~/.opencodon."""
+        native = tmp_path / ".opencodon"
         native.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(native))
+        monkeypatch.setenv("OPENCODON_HOME", str(native))
         assert get_default_hermes_root() == native
 
-    def test_hermes_home_is_profile(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is a profile under ~/.hermes, returns ~/.hermes."""
-        native = tmp_path / ".hermes"
+    def test_opencodon_home_is_profile(self, tmp_path, monkeypatch):
+        """When OPENCODON_HOME is a profile under ~/.opencodon, returns ~/.opencodon."""
+        native = tmp_path / ".opencodon"
         profile = native / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile))
         assert get_default_hermes_root() == native
 
-    def test_hermes_home_is_docker(self, tmp_path, monkeypatch):
-        """When HERMES_HOME points outside ~/.hermes (Docker), returns HERMES_HOME."""
+    def test_opencodon_home_is_docker(self, tmp_path, monkeypatch):
+        """When OPENCODON_HOME points outside ~/.opencodon (Docker), returns OPENCODON_HOME."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(docker_home))
         assert get_default_hermes_root() == docker_home
 
-    def test_hermes_home_is_custom_path(self, tmp_path, monkeypatch):
-        """Any HERMES_HOME outside ~/.hermes is treated as the root."""
+    def test_opencodon_home_is_custom_path(self, tmp_path, monkeypatch):
+        """Any OPENCODON_HOME outside ~/.opencodon is treated as the root."""
         custom = tmp_path / "my-hermes-data"
         custom.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(custom))
+        monkeypatch.setenv("OPENCODON_HOME", str(custom))
         assert get_default_hermes_root() == custom
 
     def test_docker_profile_active(self, tmp_path, monkeypatch):
-        """When a Docker profile is active (HERMES_HOME=<root>/profiles/<name>),
+        """When a Docker profile is active (OPENCODON_HOME=<root>/profiles/<name>),
         returns the Docker root, not the profile dir."""
         docker_root = tmp_path / "opt" / "data"
         profile = docker_root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile))
         assert get_default_hermes_root() == docker_root
 
-    def test_no_hermes_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
-        """Native Windows falls back to %LOCALAPPDATA%\\hermes, not ~/.hermes."""
+    def test_no_opencodon_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
+        """Native Windows falls back to %LOCALAPPDATA%\\hermes, not ~/.opencodon."""
         local_appdata = tmp_path / "LocalAppData"
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "Home")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == local_appdata / "hermes"
+        assert get_default_hermes_root() == local_appdata / "opencodon"
 
-    def test_no_hermes_home_uses_windows_path_when_localappdata_missing(self, tmp_path, monkeypatch):
+    def test_no_opencodon_home_uses_windows_path_when_localappdata_missing(self, tmp_path, monkeypatch):
         """Windows fallback still uses AppData/Local/hermes without LOCALAPPDATA."""
         home = tmp_path / "Home"
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.delenv("LOCALAPPDATA", raising=False)
         monkeypatch.setattr(Path, "home", lambda: home)
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == home / "AppData" / "Local" / "hermes"
+        assert get_default_hermes_root() == home / "AppData" / "Local" / "opencodon"
 
 
 class TestGetHermesHome:
-    """Tests for get_hermes_home() platform-aware fallback."""
+    """Tests for get_opencodon_home() platform-aware fallback."""
 
     def test_windows_fallback_uses_localappdata(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is unset on Windows, use %LOCALAPPDATA%\\hermes."""
+        """When OPENCODON_HOME is unset on Windows, use %LOCALAPPDATA%\\hermes."""
         local_appdata = tmp_path / "LocalAppData"
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "Home")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
         monkeypatch.setattr(opencodon_constants, "_profile_fallback_warned", False)
 
-        assert get_hermes_home() == local_appdata / "hermes"
+        assert get_opencodon_home() == local_appdata / "opencodon"
 
 
 class TestGetProcessHermesHome:
-    """Tests for get_process_hermes_home() — process launch scope.
+    """Tests for get_process_opencodon_home() — process launch scope.
 
     Contract: resolve only the process env / platform default, and never
     follow the context-local override that per-task profile scoping installs
-    via set_hermes_home_override().
+    via set_opencodon_home_override().
     """
 
     def test_env_set_returns_that_path(self, tmp_path, monkeypatch):
         home = tmp_path / "launch-home"
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        assert get_process_hermes_home() == home
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
+        assert get_process_opencodon_home() == home
 
     def test_env_unset_returns_platform_default(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        assert get_process_hermes_home() == tmp_path / ".hermes"
+        assert get_process_opencodon_home() == tmp_path / ".opencodon"
 
     def test_ignores_context_local_override(self, tmp_path, monkeypatch):
         launch_home = tmp_path / "launch-home"
         profile_home = tmp_path / "profiles" / "coder"
-        monkeypatch.setenv("HERMES_HOME", str(launch_home))
-        token = set_hermes_home_override(profile_home)
+        monkeypatch.setenv("OPENCODON_HOME", str(launch_home))
+        token = set_opencodon_home_override(profile_home)
         try:
-            # get_hermes_home() follows the override; the process-scoped
+            # get_opencodon_home() follows the override; the process-scoped
             # variant must not.
-            assert get_hermes_home() == profile_home
-            assert get_process_hermes_home() == launch_home
+            assert get_opencodon_home() == profile_home
+            assert get_process_opencodon_home() == launch_home
         finally:
-            reset_hermes_home_override(token)
+            reset_opencodon_home_override(token)
 
 
 class TestHermesManagedNode:
@@ -159,7 +159,7 @@ class TestHermesManagedNode:
         node_dir.mkdir(parents=True)
         bin_dir.mkdir()
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
 
         assert iter_hermes_node_dirs() == [node_dir, bin_dir]
 
@@ -170,7 +170,7 @@ class TestHermesManagedNode:
         npm_cmd = node_dir / "npm.cmd"
         npm_cmd.write_text("@echo off\n")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
         monkeypatch.setattr(opencodon_constants, "node_tool_runnable", lambda path: True)
 
         assert find_hermes_node_executable("npm") == str(npm_cmd)
@@ -199,7 +199,7 @@ class TestHermesManagedNode:
         extensionless.write_text("#!/usr/bin/env node\n")
         npm_cmd.write_text("@echo off\n")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
         monkeypatch.setenv("PATH", str(bin_dir))
 
         assert find_node_executable("npm") == str(npm_cmd)
@@ -214,7 +214,7 @@ class TestHermesManagedNode:
         path_npm = bin_dir / "npm.cmd"
         path_npm.write_text("@echo off\n")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
         monkeypatch.setenv("PATH", str(bin_dir))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
         monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", lambda: False)
@@ -235,7 +235,7 @@ class TestHermesManagedNode:
         node_dir.mkdir(parents=True)
         bin_dir.mkdir()
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("OPENCODON_HOME", str(home))
 
         env = with_hermes_node_path({"PATH": "system-node"})
         parts = env["PATH"].split(os.pathsep)
@@ -279,7 +279,7 @@ class TestNodeToolRunnable:
         system_bin.mkdir()
         self._stub(system_bin, "npm", "#!/bin/sh\necho '11.10.0'\nexit 0\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
         monkeypatch.setenv("PATH", str(system_bin))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
 
@@ -307,7 +307,7 @@ class TestNodeToolRunnable:
         system_bin.mkdir()
         good_npm = self._stub(system_bin, "npm", "#!/bin/sh\necho '11.10.0'\nexit 0\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
         monkeypatch.setenv("PATH", str(system_bin))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
 
@@ -332,7 +332,7 @@ class TestNodeToolRunnable:
         system_bin.mkdir()
         self._stub(system_bin, "npm", "#!/bin/sh\necho '11.10.0'\nexit 0\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
         monkeypatch.setenv("PATH", str(system_bin))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
         monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", lambda: False)
@@ -349,7 +349,7 @@ class TestNodeToolRunnable:
         system_bin.mkdir()
         self._stub(system_bin, "npm", "#!/bin/sh\necho '11.10.0'\nexit 0\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
         monkeypatch.setenv("PATH", str(system_bin))
 
         assert find_node_executable("npm") == str(managed_npm)
@@ -831,7 +831,7 @@ class TestSecureParentDir:
 
     def test_safe_path_calls_chmod(self, tmp_path, monkeypatch):
         """Normal nested path (depth >= 3) should call os.chmod."""
-        safe_dir = tmp_path / "home" / "user" / ".hermes"
+        safe_dir = tmp_path / "home" / "user" / ".opencodon"
         safe_dir.mkdir(parents=True)
         target = safe_dir / "auth.json"
         target.touch()
@@ -1008,7 +1008,7 @@ class TestGetHermesDir:
     """
 
     def _set_home(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
     def test_neither_exists_returns_new(self, tmp_path, monkeypatch):
         self._set_home(tmp_path, monkeypatch)
@@ -1205,3 +1205,35 @@ class TestWslPathTranslation:
         assert opencodon_constants.translate_cwd_for_wsl_backend(r"\\wsl.localhost\Ubuntu\home\alex") == "/home/alex"
         # Already-POSIX paths pass through untouched.
         assert opencodon_constants.translate_cwd_for_wsl_backend("/home/alex") == "/home/alex"
+
+
+class TestLegacyHermesHomeHint:
+    """First-run hint pointing hermes-agent users at OPENCODON_HOME adoption."""
+
+    def test_hint_when_only_legacy_home_exists(self, tmp_path, monkeypatch):
+        import opencodon_constants as oc
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
+        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
+        (tmp_path / ".hermes").mkdir()
+        hint = oc.legacy_hermes_home_hint()
+        assert hint is not None
+        assert "OPENCODON_HOME" in hint and ".hermes" in hint
+
+    def test_silent_when_new_home_exists(self, tmp_path, monkeypatch):
+        import opencodon_constants as oc
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
+        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
+        (tmp_path / ".hermes").mkdir()
+        (tmp_path / ".opencodon").mkdir()
+        assert oc.legacy_hermes_home_hint() is None
+
+    def test_silent_when_env_set(self, tmp_path, monkeypatch):
+        import opencodon_constants as oc
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "custom"))
+        assert oc.legacy_hermes_home_hint() is None
+
+    def test_silent_when_no_legacy_home(self, tmp_path, monkeypatch):
+        import opencodon_constants as oc
+        monkeypatch.delenv("OPENCODON_HOME", raising=False)
+        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
+        assert oc.legacy_hermes_home_hint() is None

@@ -8,7 +8,7 @@ cross-session search, image generation, TTS — is unreachable.
 
 This module exposes a curated subset of those Hermes tools to the
 spawned codex subprocess via stdio MCP. Codex registers it as a normal
-MCP server (per `~/.codex/config.toml [mcp_servers.hermes-tools]`) and
+MCP server (per `~/.codex/config.toml [mcp_servers.opencodon-tools]`) and
 the user gets full Hermes capability inside a Codex turn.
 
 Scope (what we expose):
@@ -22,7 +22,7 @@ Scope (what we expose):
   - text_to_speech                       — TTS
   - kanban_* (complete/block/comment/    — kanban worker + orchestrator
     heartbeat/show/list/create/            handoff (stateless: read env var,
-    unblock/link)                          write ~/.hermes/kanban.db)
+    unblock/link)                          write ~/.opencodon/kanban.db)
 
 What we DO NOT expose:
   - terminal / shell                     — codex's own shell tool
@@ -127,12 +127,12 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "skill_view",
     "skills_list",
     "text_to_speech",
-    # Kanban worker handoff tools — gated on HERMES_KANBAN_TASK env var
+    # Kanban worker handoff tools — gated on OPENCODON_KANBAN_TASK env var
     # (set by the kanban dispatcher when spawning a worker). Without these
     # in the callback, a worker spawned with openai_runtime=codex_app_server
     # could do the work but couldn't report completion back to the kernel,
     # making it hang until timeout. Stateless dispatch — they just read
-    # the env var and write to ~/.hermes/kanban.db.
+    # the env var and write to ~/.opencodon/kanban.db.
     "kanban_complete",
     "kanban_block",
     "kanban_comment",
@@ -140,7 +140,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "kanban_show",
     "kanban_list",
     # NOTE: kanban_create / kanban_unblock / kanban_link are orchestrator-
-    # only — the kanban tool gates them on HERMES_KANBAN_TASK being unset.
+    # only — the kanban tool gates them on OPENCODON_KANBAN_TASK being unset.
     # They're exposed here for orchestrator agents running on the codex
     # runtime that need to dispatch new tasks.
     "kanban_create",
@@ -157,7 +157,7 @@ def _build_server() -> Any:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:  # pragma: no cover - install hint
         raise ImportError(
-            f"hermes-tools MCP server requires the 'mcp' package: {exc}"
+            f"opencodon-tools MCP server requires the 'mcp' package: {exc}"
         ) from exc
 
     # Discover Hermes tools so dispatch works.
@@ -167,7 +167,7 @@ def _build_server() -> Any:
     )
 
     mcp = FastMCP(
-        "hermes-tools",
+        "opencodon-tools",
         instructions=(
             "Hermes Agent's tool surface, exposed for use inside a Codex "
             "session. Use these for capabilities Codex's built-in toolset "
@@ -238,7 +238,7 @@ def _build_server() -> Any:
         exposed_count += 1
 
     logger.info(
-        "hermes-tools MCP server registered %d/%d tools",
+        "opencodon-tools MCP server registered %d/%d tools",
         exposed_count,
         len(EXPOSED_TOOLS),
     )
@@ -258,13 +258,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
 
     # Quiet mode: keep Hermes' own banners off stdout (which is the MCP wire).
-    os.environ.setdefault("HERMES_QUIET", "1")
-    os.environ.setdefault("HERMES_REDACT_SECRETS", "true")
+    os.environ.setdefault("OPENCODON_QUIET", "1")
+    os.environ.setdefault("OPENCODON_REDACT_SECRETS", "true")
 
     try:
         server = _build_server()
     except ImportError as exc:
-        sys.stderr.write(f"hermes-tools MCP server cannot start: {exc}\n")
+        sys.stderr.write(f"opencodon-tools MCP server cannot start: {exc}\n")
         return 2
 
     # FastMCP runs with stdio transport by default when launched as a
@@ -274,8 +274,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as exc:
-        logger.exception("hermes-tools MCP server crashed")
-        sys.stderr.write(f"hermes-tools MCP server error: {exc}\n")
+        logger.exception("opencodon-tools MCP server crashed")
+        sys.stderr.write(f"opencodon-tools MCP server error: {exc}\n")
         return 1
     return 0
 

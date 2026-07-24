@@ -162,7 +162,7 @@ def test_run_job_releases_cwd_lock_when_body_raises(tmp_path):
             raise RuntimeError("boom")
         return real_info(msg, *args, **kwargs)
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
+    with patch("cron.scheduler._opencodon_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
          patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
          patch("opencodon_cli.env_loader.reset_secret_source_cache"), \

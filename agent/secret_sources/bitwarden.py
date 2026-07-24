@@ -1,16 +1,16 @@
 """Bitwarden Secrets Manager (`bws` CLI) integration.
 
 Hermes pulls API keys from Bitwarden Secrets Manager at process startup
-so they don't have to live in plaintext in ``~/.hermes/.env``.
+so they don't have to live in plaintext in ``~/.opencodon/.env``.
 
 Design summary
 --------------
 
-* The ``bws`` binary is auto-installed into ``<hermes_home>/bin/bws`` on
+* The ``bws`` binary is auto-installed into ``<opencodon_home>/bin/bws`` on
   first use.  Hermes pins one version (``_BWS_VERSION``) and downloads
   the matching asset from the official GitHub Releases page, verifying
   the SHA-256 against the release's published checksum file.
-* The access token is stored in ``~/.hermes/.env`` as
+* The access token is stored in ``~/.opencodon/.env`` as
   ``BWS_ACCESS_TOKEN`` (or whatever name the user picked in
   ``secrets.bitwarden.access_token_env``).  This is the one
   bootstrap secret — every other provider key can live in Bitwarden.
@@ -91,8 +91,8 @@ _CACHE: Dict[_CacheKey, _CachedFetch] = {}
 # fetches WITHIN one process; this saves repeated fetches ACROSS processes.
 #
 # Layout: one JSON object per cache key, written atomically with mode 0600 in
-# <hermes_home>/cache/bws_cache.json. The file holds only the secret VALUES,
-# never the access token. It's plaintext-equivalent to ~/.hermes/.env (which
+# <opencodon_home>/cache/bws_cache.json. The file holds only the secret VALUES,
+# never the access token. It's plaintext-equivalent to ~/.opencodon/.env (which
 # we already accept) but kept out of the .env file so users editing it won't
 # accidentally commit BSM-sourced secrets. The atomic-write/0600/TTL mechanics
 # live in agent.secret_sources._cache.DiskCache, shared with the other backends.
@@ -114,16 +114,16 @@ _DISK_CACHE: DiskCache = DiskCache(
 
 
 def _disk_cache_path(home_path: Optional[Path] = None) -> Path:
-    """Return the disk cache path under hermes_home/cache/.
+    """Return the disk cache path under opencodon_home/cache/.
 
     Thin wrapper over the shared DiskCache, kept for tests and any direct
-    callers; falls back to `$HERMES_HOME` / `~/.hermes` when home is None.
+    callers; falls back to `$OPENCODON_HOME` / `~/.opencodon` when home is None.
     """
     return _DISK_CACHE.path(home_path)
 
 
 def _encrypted_disk_cache_path(home_path: Optional[Path] = None) -> Path:
-    """Return the encrypted disk cache path under hermes_home/cache/."""
+    """Return the encrypted disk cache path under opencodon_home/cache/."""
     from agent.secret_sources._cache import resolve_cache_home
 
     return resolve_cache_home(home_path) / "cache" / _ENCRYPTED_CACHE_BASENAME
@@ -136,16 +136,16 @@ def _encrypted_disk_cache_path(home_path: Optional[Path] = None) -> Path:
 
 def _hermes_bin_dir() -> Path:
     """Where Hermes stores its managed binaries.  Profile-aware."""
-    from opencodon_constants import get_hermes_home
+    from opencodon_constants import get_opencodon_home
 
-    return get_hermes_home() / "bin"
+    return get_opencodon_home() / "bin"
 
 
 def find_bws(*, install_if_missing: bool = False) -> Optional[Path]:
     """Return a path to a usable ``bws`` binary, or None.
 
     Resolution order:
-      1. ``<hermes_home>/bin/bws``  (our managed copy — preferred)
+      1. ``<opencodon_home>/bin/bws``  (our managed copy — preferred)
       2. ``shutil.which("bws")``    (system PATH)
 
     When ``install_if_missing`` is True and neither resolves, this calls
@@ -277,7 +277,7 @@ def install_bws(*, force: bool = False) -> Path:
 
 
 def _http_download(url: str, dest: Path) -> None:
-    req = urllib.request.Request(url, headers={"User-Agent": "hermes-agent"})
+    req = urllib.request.Request(url, headers={"User-Agent": "opencodon"})
     try:
         with urllib.request.urlopen(req, timeout=_BWS_DOWNLOAD_TIMEOUT) as resp:  # noqa: S310
             with open(dest, "wb") as f:

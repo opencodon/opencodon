@@ -228,7 +228,7 @@ interface Scene {
 }
 
 const setup = (bgHex: string) => {
-  process.env.HERMES_TUI_BACKGROUND = bgHex
+  process.env.OPENCODON_TUI_BACKGROUND = bgHex
   resetOverlayState()
   resetUiState()
 }

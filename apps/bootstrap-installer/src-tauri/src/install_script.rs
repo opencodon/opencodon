@@ -1,7 +1,7 @@
 //! Resolves and downloads `scripts/install.ps1` (and `install.sh`).
 //!
 //! Resolution order:
-//!   1. Dev shortcut: a sibling repo checkout via $HERMES_SETUP_DEV_REPO_ROOT
+//!   1. Dev shortcut: a sibling repo checkout via $OPENCODON_SETUP_DEV_REPO_ROOT
 //!      env var. Lets devs iterate without re-publishing the script.
 //!   2. Bundled fallback: if the installer was bundled with a script (e.g.
 //!      tauri's `resource` mechanism), serve from there. Not used today.
@@ -103,7 +103,7 @@ pub async fn resolve(
     emit_log: &impl Fn(&str),
 ) -> Result<ResolvedScript> {
     // 1. Dev shortcut.
-    if let Ok(repo_root) = std::env::var("HERMES_SETUP_DEV_REPO_ROOT") {
+    if let Ok(repo_root) = std::env::var("OPENCODON_SETUP_DEV_REPO_ROOT") {
         let candidate = PathBuf::from(repo_root).join("scripts").join(kind.filename());
         if candidate.exists() {
             emit_log(&format!(

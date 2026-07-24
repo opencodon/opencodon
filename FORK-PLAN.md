@@ -100,7 +100,7 @@ test_api_server. All verified failing at the pre-slim baseline
 3. Slimming pass per the CUT table — delete per subsystem, full test run
    per deletion, one commit each. Verify decoupling of cron delivery and
    async-delegation delivery from removed platforms.
-4. Rebrand: package name, CLI entry points, `~/.hermes` → own home dir
+4. Rebrand: package name, CLI entry points, `~/.opencodon` → own home dir
    (one-time migration), config naming, LICENSE dual copyright, NOTICE.
 5. CI: tests + lint + `pip-audit`/Dependabot against the inherited
    pinning policy (we own CVE response now).

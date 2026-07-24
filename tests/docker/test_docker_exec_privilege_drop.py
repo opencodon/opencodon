@@ -1,6 +1,6 @@
 """Regression tests for the docker-exec privilege-drop shim.
 
-The shim (docker/hermes-exec-shim.sh, installed at /opt/hermes/bin/hermes)
+The shim (docker/opencodon-exec-shim.sh, installed at /opt/hermes/bin/hermes)
 exists to prevent the auth.json ownership-mismatch bug where
 `docker exec <c> hermes login` would write /opt/data/auth.json as
 root:root mode 0600, leaving the supervised gateway (UID 10000) unable
@@ -13,9 +13,9 @@ These tests verify:
    hermes user before the real binary runs.
 2. ``docker exec --user hermes <c> hermes …`` (already non-root) short-
    circuits and doesn't try to drop again.
-3. Files written under $HERMES_HOME from a ``docker exec`` session land
+3. Files written under $OPENCODON_HOME from a ``docker exec`` session land
    as hermes:hermes — the actual user-visible invariant.
-4. The HERMES_DOCKER_EXEC_AS_ROOT opt-out lets diagnostic sessions keep
+4. The OPENCODON_DOCKER_EXEC_AS_ROOT opt-out lets diagnostic sessions keep
    running as root deliberately.
 5. The main CMD path (``docker run <image> …``) is unaffected by the
    PATH-shim ordering — no recursion, no behavior change.
@@ -53,7 +53,7 @@ def _wait_for_cont_init(container: str) -> None:
     failing ``test_shim_opt_out_keeps_root`` non-deterministically.
 
     The reliable "cont-init is done" signal is
-    ``$HERMES_HOME/logs/container-boot.log``: it is written by
+    ``$OPENCODON_HOME/logs/container-boot.log``: it is written by
     ``02-reconcile-profiles`` (opencodon_cli.container_boot), which s6 runs
     *strictly after* ``01-hermes-setup`` in lexicographic order. The
     reconciler always logs at least one ``profile=default`` line even for a
@@ -115,7 +115,7 @@ def test_shim_drops_root_to_hermes_uid(sleep_container: str) -> None:
     into it without forking subcommands. Simplest approach: have `hermes`
     do anything that writes to disk, then check the file's owner.
 
-    Use `hermes config set` which writes config.yaml under HERMES_HOME.
+    Use `hermes config set` which writes config.yaml under OPENCODON_HOME.
     The resulting file ownership tells us what UID the shim ended up at.
     """
     # Wipe any prior state.
@@ -180,7 +180,7 @@ def test_shim_short_circuits_for_non_root_exec(sleep_container: str) -> None:
 
 
 def test_shim_opt_out_keeps_root(sleep_container: str) -> None:
-    """HERMES_DOCKER_EXEC_AS_ROOT=1 should suppress the privilege drop.
+    """OPENCODON_DOCKER_EXEC_AS_ROOT=1 should suppress the privilege drop.
 
     Reserved for diagnostic sessions where the operator deliberately
     wants root semantics. Verified by writing a file and checking its
@@ -194,7 +194,7 @@ def test_shim_opt_out_keeps_root(sleep_container: str) -> None:
 
     r = subprocess.run(
         ["docker", "exec",
-         "-e", "HERMES_DOCKER_EXEC_AS_ROOT=1",
+         "-e", "OPENCODON_DOCKER_EXEC_AS_ROOT=1",
          sleep_container,
          "hermes", "config", "set", "_test.opt_out", "1"],
         capture_output=True, text=True, timeout=30,
@@ -207,7 +207,7 @@ def test_shim_opt_out_keeps_root(sleep_container: str) -> None:
         capture_output=True, text=True, timeout=10,
     )
     assert r.stdout.strip() == "root:root", (
-        f"With HERMES_DOCKER_EXEC_AS_ROOT=1, expected root:root, "
+        f"With OPENCODON_DOCKER_EXEC_AS_ROOT=1, expected root:root, "
         f"got {r.stdout.strip()!r}"
     )
 
@@ -218,9 +218,9 @@ def test_shim_opt_out_strict_truthiness(
 ) -> None:
     """Anything other than 1/true/yes (case-insensitive) does NOT opt out.
 
-    Strict truthiness so a typo (``HERMES_DOCKER_EXEC_AS_ROOT=0``) doesn't
+    Strict truthiness so a typo (``OPENCODON_DOCKER_EXEC_AS_ROOT=0``) doesn't
     silently keep the user as root. Mirrors the policy used by
-    ``HERMES_GATEWAY_NO_SUPERVISE`` in #33583.
+    ``OPENCODON_GATEWAY_NO_SUPERVISE`` in #33583.
     """
     subprocess.run(
         ["docker", "exec", "--user", "root", sleep_container,
@@ -230,7 +230,7 @@ def test_shim_opt_out_strict_truthiness(
 
     r = subprocess.run(
         ["docker", "exec",
-         "-e", f"HERMES_DOCKER_EXEC_AS_ROOT={falsy_value}",
+         "-e", f"OPENCODON_DOCKER_EXEC_AS_ROOT={falsy_value}",
          sleep_container,
          "hermes", "config", "set", "_test.falsy", "1"],
         capture_output=True, text=True, timeout=30,
@@ -296,7 +296,7 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     # Have the shim-protected `docker exec` write the auth store.
     # `hermes auth list` is read-only but still exercises _load_auth_store
     # under the shim's UID. We invoke `hermes config set` first to
-    # provoke a write into HERMES_HOME so we have something concrete to
+    # provoke a write into OPENCODON_HOME so we have something concrete to
     # owner-check.
     r = subprocess.run(
         ["docker", "exec", sleep_container,
@@ -306,7 +306,7 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     assert r.returncode == 0, f"config set failed: {r.stderr}"
 
     # The supervised UID (10000) must be able to read everything under
-    # HERMES_HOME that docker exec just wrote.
+    # OPENCODON_HOME that docker exec just wrote.
     r = subprocess.run(
         ["docker", "exec", "--user", "hermes", sleep_container,
          "find", "/opt/data", "-maxdepth", "2", "-type", "f",

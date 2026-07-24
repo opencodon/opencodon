@@ -424,9 +424,9 @@ class MemoryManager:
         # (#40466). Reject it here, at the door, so it never enters the routing
         # table at all — matching the built-ins-always-win invariant used by
         # the TTS/browser/search provider registries.
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _OPENCODON_CORE_TOOLS
 
-        _core_tool_names = set(_HERMES_CORE_TOOLS)
+        _core_tool_names = set(_OPENCODON_CORE_TOOLS)
 
         # Index tool names → provider for routing
         for raw_schema in provider.get_tool_schemas():
@@ -779,9 +779,9 @@ class MemoryManager:
         :meth:`add_provider`, so the manager must not advertise a schema it
         will never route. Built-ins always win (#40466).
         """
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _OPENCODON_CORE_TOOLS
 
-        _core_tool_names = set(_HERMES_CORE_TOOLS)
+        _core_tool_names = set(_OPENCODON_CORE_TOOLS)
         schemas = []
         seen = set()
         for provider in self._providers:
@@ -1214,13 +1214,13 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers.
 
-        Automatically injects ``hermes_home`` into *kwargs* so that every
+        Automatically injects ``opencodon_home`` into *kwargs* so that every
         provider can resolve profile-scoped storage paths without importing
-        ``get_hermes_home()`` themselves.
+        ``get_opencodon_home()`` themselves.
         """
-        if "hermes_home" not in kwargs:
-            from opencodon_constants import get_hermes_home
-            kwargs["hermes_home"] = str(get_hermes_home())
+        if "opencodon_home" not in kwargs:
+            from opencodon_constants import get_opencodon_home
+            kwargs["opencodon_home"] = str(get_opencodon_home())
         for provider in self._providers:
             try:
                 provider.initialize(session_id=session_id, **kwargs)

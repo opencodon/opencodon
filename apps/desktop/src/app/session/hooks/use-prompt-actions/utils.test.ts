@@ -187,8 +187,8 @@ describe('renderRpcResult', () => {
 
   describe('session.save', () => {
     it('echoes the saved file path', () => {
-      expect(renderRpcResult({ file: '/home/user/.hermes/sessions/saved/x.json' }, 'save')).toBe(
-        'Saved transcript to /home/user/.hermes/sessions/saved/x.json'
+      expect(renderRpcResult({ file: '/home/user/.opencodon/sessions/saved/x.json' }, 'save')).toBe(
+        'Saved transcript to /home/user/.opencodon/sessions/saved/x.json'
       )
     })
   })

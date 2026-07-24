@@ -19,15 +19,15 @@ class PlatformInfo(NamedTuple):
 
 # Ordered so that TUI menus are deterministic.
 PLATFORMS: OrderedDict[str, PlatformInfo] = OrderedDict([
-    ("cli",            PlatformInfo(label="🖥️  CLI",            default_toolset="hermes-cli")),
-    ("telegram",       PlatformInfo(label="📱 Telegram",        default_toolset="hermes-telegram")),
-    ("discord",        PlatformInfo(label="💬 Discord",         default_toolset="hermes-discord")),
-    ("slack",          PlatformInfo(label="💼 Slack",           default_toolset="hermes-slack")),
-    ("whatsapp",       PlatformInfo(label="📱 WhatsApp",        default_toolset="hermes-whatsapp")),
-    ("whatsapp_cloud", PlatformInfo(label="📱 WhatsApp Business (Cloud)", default_toolset="hermes-whatsapp")),
-    ("webhook",        PlatformInfo(label="🔗 Webhook",         default_toolset="hermes-webhook")),
-    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="hermes-api-server")),
-    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="hermes-cron")),
+    ("cli",            PlatformInfo(label="🖥️  CLI",            default_toolset="opencodon-cli")),
+    ("telegram",       PlatformInfo(label="📱 Telegram",        default_toolset="opencodon-telegram")),
+    ("discord",        PlatformInfo(label="💬 Discord",         default_toolset="opencodon-discord")),
+    ("slack",          PlatformInfo(label="💼 Slack",           default_toolset="opencodon-slack")),
+    ("whatsapp",       PlatformInfo(label="📱 WhatsApp",        default_toolset="opencodon-whatsapp")),
+    ("whatsapp_cloud", PlatformInfo(label="📱 WhatsApp Business (Cloud)", default_toolset="opencodon-whatsapp")),
+    ("webhook",        PlatformInfo(label="🔗 Webhook",         default_toolset="opencodon-webhook")),
+    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="opencodon-api-server")),
+    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="opencodon-cron")),
 ])
 
 

@@ -40,11 +40,11 @@
   }
 }
 
-.hermes-fade-in {
+.opencodon-fade-in {
   animation: hermes-fade-in 0.45s ease-out both;
 }
 
-.hermes-glow {
+.opencodon-glow {
   background: radial-gradient(
     ellipse at center,
     color-mix(in srgb, var(--ui-warm) 18%, transparent) 0%,

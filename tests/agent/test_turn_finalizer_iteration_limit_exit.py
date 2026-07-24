@@ -269,7 +269,7 @@ def test_pending_response_does_not_mask_later_terminal_exit(
 
 def test_pending_response_records_kanban_timeout(monkeypatch):
     monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "task-123")
+    monkeypatch.setenv("OPENCODON_KANBAN_TASK", "task-123")
     record = MagicMock(name="record_task_failure")
     conn = SimpleNamespace(close=lambda: None)
     monkeypatch.setattr("opencodon_cli.kanban_db.connect", lambda: conn)

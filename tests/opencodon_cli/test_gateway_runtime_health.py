@@ -140,7 +140,7 @@ def test_runtime_status_running_pid_validates_live_gateway_record(monkeypatch):
 
     runtime = {
         "pid": 12345,
-        "kind": "hermes-gateway",
+        "kind": "opencodon-gateway",
         "argv": ["/opt/hermes/opencodon_cli/main.py", "gateway", "run", "--replace"],
         "start_time": None,
         "gateway_state": "running",
@@ -157,7 +157,7 @@ def test_runtime_status_running_pid_rejects_stopped_record(monkeypatch):
 
     runtime = {
         "pid": 12345,
-        "kind": "hermes-gateway",
+        "kind": "opencodon-gateway",
         "argv": ["/opt/hermes/opencodon_cli/main.py", "gateway", "run", "--replace"],
         "gateway_state": "stopped",
     }
