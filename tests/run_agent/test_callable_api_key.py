@@ -211,51 +211,6 @@ class TestRuntimeDictSerializationGuard:
 
 
 # ---------------------------------------------------------------------------
-# batch_runner strips callables from the worker config dict
-# ---------------------------------------------------------------------------
-
-
-class TestBatchRunnerCallableHandling:
-    def test_callable_api_key_stripped_from_worker_config(self, capsys, monkeypatch, tmp_path):
-        """``BatchRunner._run_batches`` (or the equivalent code path)
-        must replace a callable api_key with None before pickling the
-        worker config dict — otherwise multiprocessing.Pool fails."""
-        # We can't easily run BatchRunner end-to-end in a unit test
-        # (it spawns subprocesses), but we CAN inline the same logic:
-        # the production code uses ``callable(self.api_key) and not
-        # isinstance(self.api_key, str)`` to gate the substitution.
-        # Re-execute the same predicate here as a contract guard.
-
-        def provider():
-            return "jwt"
-
-        api_key = provider
-        worker_api_key = None if (callable(api_key) and not isinstance(api_key, str)) else api_key
-        assert worker_api_key is None, (
-            "BatchRunner must replace callable api_key with None so "
-            "multiprocessing.Pool can pickle the worker config"
-        )
-
-        # And a string passes through unchanged.
-        api_key_str = "sk-static"
-        worker_api_key_str = None if (callable(api_key_str) and not isinstance(api_key_str, str)) else api_key_str
-        assert worker_api_key_str == "sk-static"
-
-    def test_batch_runner_source_uses_the_correct_predicate(self):
-        """Pin the predicate string in batch_runner so refactors that
-        change it are caught here. Reading the source rather than
-        importing avoids spinning up the full BatchRunner."""
-        from pathlib import Path
-        src = (Path(__file__).resolve().parent.parent.parent
-               / "batch_runner.py").read_text()
-        assert "callable(self.api_key) and not isinstance(self.api_key, str)" in src, (
-            "BatchRunner.api_key callable check changed — update test or "
-            "verify the new predicate still routes Entra token providers "
-            "to the worker-rebuild path."
-        )
-
-
-# ---------------------------------------------------------------------------
 # Inline masked-banner / display sites (callable-aware)
 # ---------------------------------------------------------------------------
 

@@ -86,9 +86,12 @@ Pre-existing test failures catalogued against clean-worktree baselines
 test_gateway_wsl (2), test_resolve_provider_openrouter_pool (1),
 test_signal_handler_kanban_worker (1), test_service_manager (2),
 test_file_tools (3), test_approval (1), test_execution_flag_detection (3),
-plus intermittent flakes in test_base_environment,
+test_bedrock_integration (1), test_anthropic_adapter (3, OAuth
+credential-file tests), test_live_system_guard_self_test (4, systemctl
+pass-through), plus intermittent flakes in test_base_environment,
 test_background_command, test_readiness, test_systemd_notify,
-test_api_server.
+test_api_server. All verified failing at the pre-slim baseline
+(fdb34795b) in a clean worktree.
 
 ## Execution sequence
 
