@@ -13833,8 +13833,19 @@ def cmd_claw(args):
     claw_command(args)
 
 
+def main_hermes_deprecated():
+    """Entry point for the deprecated `hermes` alias (removed after one release)."""
+    import sys as _sys
+    print(
+        "warning: the `hermes` command is deprecated — this project is now "
+        "opencodon. Use `opencodon` instead.",
+        file=_sys.stderr,
+    )
+    return main()
+
+
 def main():
-    """Main entry point for hermes CLI."""
+    """Main entry point for the opencodon CLI."""
     # Cosmetic: make the process show up as 'hermes' instead of 'python3.11'
     # in ps/top/htop.  Non-fatal — just a nicer UX.
     _set_process_title()

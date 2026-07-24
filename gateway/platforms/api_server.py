@@ -114,7 +114,7 @@ def _hermes_version() -> str:
     try:
         from importlib.metadata import version
 
-        return version("hermes-agent")
+        return version("opencodon")
     except Exception:
         return "dev"
 

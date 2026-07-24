@@ -1,9 +1,9 @@
 
 
 [project]
-name = "hermes-agent"
-version = "0.19.0"
-description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
+name = "opencodon"
+version = "0.1.0.dev0"
+description = "The open-science AI agent — provenance-first research sessions with reproducible, exportable results"
 readme = "README.md"
 # Upper bound is load-bearing, not cosmetic. uv resolves the project's
 # Python from `requires-python`, and an inherited `UV_PYTHON` env var (or a
@@ -206,21 +206,21 @@ azure-identity = ["azure-identity==1.25.3"]
 termux = [
   # Baseline Android / Termux path for reliable fresh installs.
   "python-telegram-bot[webhooks]==22.6",
-  "hermes-agent[cron]",
-  "hermes-agent[cli]",
-  "hermes-agent[mcp]",
-  "hermes-agent[honcho]",
-  "hermes-agent[acp]",
+  "opencodon[cron]",
+  "opencodon[cli]",
+  "opencodon[mcp]",
+  "opencodon[honcho]",
+  "opencodon[acp]",
 ]
 termux-all = [
   # Best-effort "install all" profile for Termux. Same policy as [all]:
   # only includes extras that aren't covered by `tools/lazy_deps.py`.
   # Backends like telegram/slack/honcho lazy-install at
   # first use, so they're no longer eager-installed here.
-  "hermes-agent[termux]",
-  "hermes-agent[google]",
-  "hermes-agent[web]",
-  "hermes-agent[pty]",
+  "opencodon[termux]",
+  "opencodon[google]",
+  "opencodon[web]",
+  "opencodon[pty]",
 ]
 google = [
   # Required by the google-workspace skill (Gmail, Calendar, Drive, Contacts,
@@ -257,14 +257,14 @@ all = [
   #   modal, daytona, messaging (telegram/discord/slack),
   #   slack, honcho, voice (faster-whisper),
   #   bedrock, tts-premium (elevenlabs)
-  "hermes-agent[cron]",
-  "hermes-agent[cli]",
-  "hermes-agent[pty]",
-  "hermes-agent[mcp]",
-  "hermes-agent[acp]",
-  "hermes-agent[google]",
-  "hermes-agent[web]",
-  "hermes-agent[youtube]",
+  "opencodon[cron]",
+  "opencodon[cli]",
+  "opencodon[pty]",
+  "opencodon[mcp]",
+  "opencodon[acp]",
+  "opencodon[google]",
+  "opencodon[web]",
+  "opencodon[youtube]",
 ]
 
 [build-system]
@@ -272,7 +272,11 @@ requires = ["setuptools>=77.0,<83"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-hermes = "opencodon_cli.main:main"
+opencodon = "opencodon_cli.main:main"
+opencodon-agent = "run_agent:main"
+opencodon-acp = "acp_adapter.entry:main"
+# Deprecated aliases from the hermes-agent lineage; removed after one release.
+hermes = "opencodon_cli.main:main_hermes_deprecated"
 hermes-agent = "run_agent:main"
 hermes-acp = "acp_adapter.entry:main"
 
