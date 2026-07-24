@@ -7,5 +7,5 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 
 export function visualOutDir() {
-  return process.env.OPENCODON_TUI_VISUAL_DIR || join(tmpdir(), 'hermes-tui-visual')
+  return process.env.OPENCODON_TUI_VISUAL_DIR || join(tmpdir(), 'opencodon-tui-visual')
 }
