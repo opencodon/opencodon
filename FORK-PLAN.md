@@ -65,6 +65,31 @@ bluebubbles, yuanbao, homeassistant, msgraph).
 | Non-science optional-skills categories (blockchain, creative, health, …) | keep research/mlops/devops |
 | Website content, locales, brand assets | replaced by our own |
 
+### Slimming status (2026-07-24)
+
+Done, one commit per subsystem on main: novelty plugins (df9fa9fea),
+external memory providers (c68ff92ec), optional-skills prune (e84df6aef),
+Nous ML machinery (0a320cb30), platform adapters (148451147),
+spotify + video generation (c170f87ec). uv.lock regenerated after each
+extras change. image_gen and video_analyze are kept.
+
+Deferred to the rebrand/CLI-pruning phase (not cut yet — each has
+first-class plumbing in core files that a plugin delete alone won't
+remove cleanly):
+- honcho memory provider (~20 refs of core wiring around the
+  MemoryProvider ABC)
+- kanban (signal-handler + worker plumbing in hermes_cli)
+- moa toolset remnants
+
+Pre-existing test failures catalogued against clean-worktree baselines
+(not caused by, and not to be fixed within, the slimming pass):
+test_gateway_wsl (2), test_resolve_provider_openrouter_pool (1),
+test_signal_handler_kanban_worker (1), test_service_manager (2),
+test_file_tools (3), test_approval (1), test_execution_flag_detection (3),
+plus intermittent flakes in test_base_environment,
+test_background_command, test_readiness, test_systemd_notify,
+test_api_server.
+
 ## Execution sequence
 
 1. Merge `science/frame-architecture` into the project's main line.
