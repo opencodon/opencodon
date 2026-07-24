@@ -1,5 +1,5 @@
 /*
- * Hermes Kanban — dashboard plugin styles.
+ * Opencodon Kanban — dashboard plugin styles.
  *
  * All colors reference theme CSS vars so the board reskins with the
  * active dashboard theme. No hardcoded palette.
@@ -40,7 +40,7 @@
 }
 /* The Markdown renderer intentionally paints a subtle code pill behind
  * inline ``<code>`` inside task-body prose — but NOT inside a fenced
- * block (those are a ``<pre class="hermes-kanban-md-code">`` with a
+ * block (those are a ``<pre class="opencodon-kanban-md-code">`` with a
  * bare ``<code>`` inside, and the pill would double up with the pre
  * background). ``:not()`` scopes this opt-back-in to inline code only.
  *
@@ -331,7 +331,7 @@
 }
 
 .opencodon-kanban-drawer {
-  width: min(var(--hermes-kanban-drawer-width, 640px), 92vw);
+  width: min(var(--opencodon-kanban-drawer-width, 640px), 92vw);
   height: 100vh;
   /* Dynamic viewport unit excludes the mobile browser's collapsing chrome
      (URL/nav bars) so the drawer's bottom row stays reachable. Falls back to
@@ -343,10 +343,10 @@
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 18px rgba(0, 0, 0, 0.35);
-  animation: hermes-kanban-drawer-in 180ms ease-out;
+  animation: opencodon-kanban-drawer-in 180ms ease-out;
 }
 
-@keyframes hermes-kanban-drawer-in {
+@keyframes opencodon-kanban-drawer-in {
   from { transform: translateX(100%); opacity: 0.3; }
   to   { transform: translateX(0);    opacity: 1; }
 }
@@ -1343,15 +1343,15 @@
 .opencodon-kanban-attention,
 .opencodon-kanban-warning-badge,
 .opencodon-kanban-attention-row {
-  --hermes-diag-warning: #ff9e3b;
-  --hermes-diag-error:   #ff6b3d;
-  --hermes-diag-critical: #ff4d4d;
+  --opencodon-diag-warning: #ff9e3b;
+  --opencodon-diag-error:   #ff6b3d;
+  --opencodon-diag-critical: #ff4d4d;
 }
 
 /* Warning-badge severity variants (overrides the base colour). */
-.opencodon-kanban-warning-badge--warning { color: var(--hermes-diag-warning); }
-.opencodon-kanban-warning-badge--error   { color: var(--hermes-diag-error); font-weight: 700; }
-.opencodon-kanban-warning-badge--critical { color: var(--hermes-diag-critical); font-weight: 700; }
+.opencodon-kanban-warning-badge--warning { color: var(--opencodon-diag-warning); }
+.opencodon-kanban-warning-badge--error   { color: var(--opencodon-diag-error); font-weight: 700; }
+.opencodon-kanban-warning-badge--critical { color: var(--opencodon-diag-critical); font-weight: 700; }
 
 /* Attention-strip severity variants. */
 .opencodon-kanban-attention--warning {
@@ -1366,8 +1366,8 @@
   border-color: rgba(255, 77, 77, 0.55);
   background: rgba(255, 77, 77, 0.10);
 }
-.opencodon-kanban-attention--error .opencodon-kanban-attention-icon { color: var(--hermes-diag-error); }
-.opencodon-kanban-attention--critical .opencodon-kanban-attention-icon { color: var(--hermes-diag-critical); }
+.opencodon-kanban-attention--error .opencodon-kanban-attention-icon { color: var(--opencodon-diag-error); }
+.opencodon-kanban-attention--critical .opencodon-kanban-attention-icon { color: var(--opencodon-diag-critical); }
 
 /* Per-row severity marker in the expanded attention list. */
 .opencodon-kanban-attention-row-sev {
@@ -1375,9 +1375,9 @@
   min-width: 1.5rem;
   font-weight: 600;
 }
-.opencodon-kanban-attention-row--warning .opencodon-kanban-attention-row-sev { color: var(--hermes-diag-warning); }
-.opencodon-kanban-attention-row--error    .opencodon-kanban-attention-row-sev { color: var(--hermes-diag-error); font-weight: 700; }
-.opencodon-kanban-attention-row--critical .opencodon-kanban-attention-row-sev { color: var(--hermes-diag-critical); font-weight: 700; }
+.opencodon-kanban-attention-row--warning .opencodon-kanban-attention-row-sev { color: var(--opencodon-diag-warning); }
+.opencodon-kanban-attention-row--error    .opencodon-kanban-attention-row-sev { color: var(--opencodon-diag-error); font-weight: 700; }
+.opencodon-kanban-attention-row--critical .opencodon-kanban-attention-row-sev { color: var(--opencodon-diag-critical); font-weight: 700; }
 
 /* Individual diagnostic card inside the drawer's Diagnostics section. */
 .opencodon-kanban-diag-list {
@@ -1386,7 +1386,7 @@
   gap: 0.6rem;
 }
 .opencodon-kanban-diag {
-  border-left: 3px solid var(--hermes-diag-warning);
+  border-left: 3px solid var(--opencodon-diag-warning);
   background: rgba(255, 158, 59, 0.05);
   border-radius: 0.35rem;
   padding: 0.6rem 0.75rem;
@@ -1395,11 +1395,11 @@
   gap: 0.4rem;
 }
 .opencodon-kanban-diag--error {
-  border-left-color: var(--hermes-diag-error);
+  border-left-color: var(--opencodon-diag-error);
   background: rgba(255, 107, 61, 0.06);
 }
 .opencodon-kanban-diag--critical {
-  border-left-color: var(--hermes-diag-critical);
+  border-left-color: var(--opencodon-diag-critical);
   background: rgba(255, 77, 77, 0.07);
 }
 .opencodon-kanban-diag-header {
@@ -1411,9 +1411,9 @@
   font-weight: 700;
   min-width: 1.5rem;
 }
-.opencodon-kanban-diag--warning .opencodon-kanban-diag-sev { color: var(--hermes-diag-warning); }
-.opencodon-kanban-diag--error    .opencodon-kanban-diag-sev { color: var(--hermes-diag-error); }
-.opencodon-kanban-diag--critical .opencodon-kanban-diag-sev { color: var(--hermes-diag-critical); }
+.opencodon-kanban-diag--warning .opencodon-kanban-diag-sev { color: var(--opencodon-diag-warning); }
+.opencodon-kanban-diag--error    .opencodon-kanban-diag-sev { color: var(--opencodon-diag-error); }
+.opencodon-kanban-diag--critical .opencodon-kanban-diag-sev { color: var(--opencodon-diag-critical); }
 .opencodon-kanban-diag-title {
   font-weight: 600;
   font-size: 0.875rem;

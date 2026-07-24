@@ -638,7 +638,7 @@ class TestUserInstalledProviderDiscovery:
         """
         from plugins.memory import load_memory_provider
         plugin_dir = tmp_path / "plugins" / "nestedimpl"
-        impl_dir = plugin_dir / "adapters" / "hermes"  # adapters/ has no __init__.py
+        impl_dir = plugin_dir / "adapters" / "opencodon"  # adapters/ has no __init__.py
         impl_dir.mkdir(parents=True)
         (impl_dir / "__init__.py").write_text(
             "from agent.memory_provider import MemoryProvider\n"

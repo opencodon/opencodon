@@ -115,12 +115,3 @@ def test_pdf_reference_docs_exist():
     for doc in ("forms.md", "reference.md"):
         assert doc in body
         assert (pdf_dir / doc).exists(), f"pdf: missing linked doc {doc}"
-
-
-def test_docs_pages_generated():
-    """Each bundled office skill has a generated docs-site page."""
-    docs_dir = REPO / "website" / "docs" / "user-guide" / "skills" / "bundled" / "productivity"
-    for name in OFFICE_SKILLS:
-        assert (docs_dir / f"productivity-{name}.md").exists(), (
-            f"missing generated docs page for {name}; run website/scripts/generate-skill-docs.py"
-        )

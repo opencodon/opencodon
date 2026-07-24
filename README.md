@@ -34,6 +34,8 @@ uv sync --extra science
 opencodon
 ```
 
+On native Windows, run the PowerShell installer instead: [scripts/install.ps1](scripts/install.ps1) (installs uv, Python, Node.js, and a portable Git Bash — no admin required).
+
 `opencodon` stores its state in `~/.opencodon` (`OPENCODON_HOME` to override; `%LOCALAPPDATA%\opencodon` on native Windows). Upgrading from a hermes-agent install? Your `HERMES_*` environment variables are honored for one release, and pointing `OPENCODON_HOME` at your old `~/.hermes` adopts it in place.
 
 ## Science quickstart

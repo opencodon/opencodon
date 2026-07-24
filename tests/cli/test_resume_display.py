@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 
 import cli as cli_mod
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _make_cli(config_overrides=None, env_overrides=None, **kwargs):

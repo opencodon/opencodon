@@ -305,6 +305,8 @@ _CODEX_TOOL_ITEM_TYPES = frozenset(
 # vision_analyze, ...) since the user thinks of these as Hermes tools,
 # not as MCP calls.
 _INTERNAL_MCP_SERVER = "opencodon-tools"
+# Server name written by pre-rename (hermes-agent) codex configs.
+_LEGACY_INTERNAL_MCP_SERVER = "hermes-tools"
 
 
 def _codex_item_to_tool_name(item: dict) -> str:
@@ -319,7 +321,7 @@ def _codex_item_to_tool_name(item: dict) -> str:
     if item_type == "mcpToolCall":
         server = item.get("server") or "mcp"
         tool = item.get("tool") or "unknown"
-        if server == _INTERNAL_MCP_SERVER:
+        if server in (_INTERNAL_MCP_SERVER, _LEGACY_INTERNAL_MCP_SERVER):
             return tool
         return f"mcp.{server}.{tool}"
     if item_type == "dynamicToolCall":
