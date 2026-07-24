@@ -101,7 +101,6 @@ CONFIGURABLE_TOOLSETS = [
     ("vision",          "👁️  Vision / Image Analysis",  "vision_analyze"),
     ("video",           "🎬 Video Analysis",            "video_analyze (requires video-capable model)"),
     ("image_gen",       "🎨 Image Generation",          "image_generate"),
-    ("video_gen",       "🎬 Video Generation",          "video_generate (text/image/reference)"),
     ("x_search",        "🐦 X (Twitter) Search",        "x_search (requires xAI OAuth or XAI_API_KEY)"),
     ("tts",             "🔊 Text-to-Speech",            "text_to_speech"),
     ("skills",          "📚 Skills",                    "list, view, manage"),
@@ -112,7 +111,6 @@ CONFIGURABLE_TOOLSETS = [
     ("clarify",         "❓ Clarifying Questions",      "clarify"),
     ("delegation",      "👥 Task Delegation",           "delegate_task"),
     ("cronjob",         "⏰ Cron Jobs",                 "create/list/update/pause/resume/run, with optional attached skills"),
-    ("spotify",          "🎵 Spotify",                  "playback, search, playlists, library"),
     ("discord",         "💬 Discord (read/participate)", "fetch messages, search members, create thread"),
     ("discord_admin",   "🛡️  Discord Server Admin",    "list channels/roles, pin, assign roles"),
     ("computer_use",     "🖱️  Computer Use (macOS/Windows/Linux)", "background desktop control via cua-driver"),
@@ -138,16 +136,12 @@ def gui_toolset_label(label: str) -> str:
 # They're still in _HERMES_CORE_TOOLS (available at runtime if enabled),
 # but the setup checklist won't pre-select them for first-time users.
 #
-# Video gen is off by default — it's a niche, paid, slow feature. Users
-# who want it opt in via `hermes tools` → Video Generation, which walks
-# them through provider + model selection.
-#
 # X search is off by default for users without xAI credentials, but
 # auto-enables when SuperGrok OAuth tokens are stored OR XAI_API_KEY is
 # set. The `hermes tools` → X (Twitter) Search setup walks users through
 # credential setup. The tool's check_fn means the schema still won't appear to the
 # model if the credential later goes missing or expires.
-_DEFAULT_OFF_TOOLSETS = {"spotify", "discord", "discord_admin", "video", "video_gen", "x_search"}
+_DEFAULT_OFF_TOOLSETS = {"discord", "discord_admin", "video", "x_search"}
 
 
 def _xai_credentials_present() -> bool:
@@ -219,7 +213,7 @@ def _get_effective_configurable_toolsets():
     Plugin toolsets are appended at the end so they appear after the
     built-in toolsets in the TUI checklist. A plugin whose toolset key
     already appears in ``CONFIGURABLE_TOOLSETS`` is skipped — bundled
-    plugins (e.g. ``plugins/spotify``) share their toolset key with the
+    plugins may share their toolset key with the
     built-in entry, and we want the built-in label/description to win.
     Without the dedupe, ``hermes tools`` → "reconfigure existing" would
     list the same toolset twice.
@@ -429,7 +423,7 @@ TOOL_CATEGORIES = {
         #     subscription (requires_nous_auth + override_env_vars).
         #     Uses the fal plugin as the underlying backend but has a
         #     distinct setup UX.
-        # Mirrors the shape browser/video_gen ship today.
+        # Mirrors the shape browser ships today.
         "providers": [
             {
                 "name": "Nous Subscription",
@@ -440,30 +434,6 @@ TOOL_CATEGORIES = {
                 "managed_nous_feature": "image_gen",
                 "override_env_vars": ["FAL_KEY"],
                 "imagegen_backend": "fal",
-            },
-        ],
-    },
-    "video_gen": {
-        "name": "Video Generation",
-        "icon": "🎬",
-        # "Nous Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the Nous Portal.  Plugin-backed
-        # provider rows (FAL BYOK, xAI, …) are injected at runtime by
-        # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
-        "providers": [
-            {
-                "name": "Nous Subscription",
-                "badge": "subscription",
-                "tag": "Managed FAL video generation billed to your subscription",
-                "env_vars": [],
-                "requires_nous_auth": True,
-                "managed_nous_feature": "video_gen",
-                "override_env_vars": ["FAL_KEY"],
-                # The underlying plugin backend — when the user picks
-                # "Nous Subscription" we set video_gen.provider = "fal"
-                # and video_gen.use_gateway = True so the FAL plugin
-                # routes through the managed queue gateway.
-                "video_gen_plugin_name": "fal",
             },
         ],
     },
@@ -547,18 +517,6 @@ TOOL_CATEGORIES = {
                 ],
                 "browser_provider": "camofox",
                 "post_setup": "camofox",
-            },
-        ],
-    },
-    "spotify": {
-        "name": "Spotify",
-        "icon": "🎵",
-        "providers": [
-            {
-                "name": "Spotify Web API",
-                "tag": "PKCE OAuth — opens the setup wizard",
-                "env_vars": [],
-                "post_setup": "spotify",
             },
         ],
     },
@@ -1428,35 +1386,6 @@ def _run_post_setup(post_setup_key: str):
         _print_info("    No API key required. DuckDuckGo enforces server-side rate limits.")
         _print_info("    Pair with an extract provider if you also need web_extract.")
 
-    elif post_setup_key == "spotify":
-        # Run the full `hermes auth spotify` flow — if the user has no
-        # client_id yet, this drops them into the interactive wizard
-        # (opens the Spotify dashboard, prompts for client_id, persists
-        # to ~/.hermes/.env), then continues straight into PKCE. If they
-        # already have an app, it skips the wizard and just does OAuth.
-        from types import SimpleNamespace
-        try:
-            from hermes_cli.auth import login_spotify_command
-        except Exception as exc:
-            _print_warning(f"    Could not load Spotify auth: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
-            return
-        _print_info("    Starting Spotify login...")
-        try:
-            login_spotify_command(SimpleNamespace(
-                client_id=None, redirect_uri=None, scope=None,
-                no_browser=False, timeout=None,
-            ))
-            _print_success("    Spotify authenticated")
-        except SystemExit as exc:
-            # User aborted the wizard, or OAuth failed — don't fail the
-            # toolset enable; they can retry with `hermes auth spotify`.
-            _print_warning(f"    Spotify login did not complete: {exc}")
-            _print_info("    Run later: hermes auth spotify")
-        except Exception as exc:
-            _print_warning(f"    Spotify login failed: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
-
     elif post_setup_key == "langfuse":
         # Install the langfuse SDK.
         try:
@@ -1574,7 +1503,6 @@ def valid_post_setup_keys() -> Set[str]:
     for builder in (
         _plugin_web_search_providers,
         _plugin_image_gen_providers,
-        _plugin_video_gen_providers,
         _plugin_browser_providers,
     ):
         try:
@@ -1753,12 +1681,12 @@ def _get_platform_tools(
             if ts in configurable_keys and _toolset_allowed_for_platform(ts, platform)
         }
         # Mixed config: composite toolset alongside configurables (e.g.
-        # ``[hermes-cli, spotify]`` after enabling Spotify via ``hermes
+        # ``[hermes-cli, discord]`` after enabling Discord via ``hermes
         # tools``). Without expansion the composite name is silently dropped,
         # leaving sessions with only the configurable opt-ins and no native
         # tools. Mirror the else-branch's subset inference, but apply
         # _DEFAULT_OFF_TOOLSETS only to the implicit expansion — anything the
-        # user explicitly listed (e.g. ``spotify``) must survive.
+        # user explicitly listed (e.g. ``discord``) must survive.
         composite_tools = set()
         for ts_name in toolset_names:
             if ts_name in configurable_keys or ts_name in plugin_ts_keys:
@@ -1880,9 +1808,9 @@ def _get_platform_tools(
             claimed.update(ts_tools)
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
-    # unless the toolset is in _DEFAULT_OFF_TOOLSETS (e.g. spotify —
-    # shipped as a bundled plugin but user must opt in via `hermes tools`
-    # so we don't ship 7 Spotify tool schemas to users who don't use it).
+    # unless the toolset is in _DEFAULT_OFF_TOOLSETS (bundled plugins the
+    # user must opt in to via `hermes tools`, so we don't ship their tool
+    # schemas to users who don't use them).
     # A plugin toolset is "known" for a platform once `hermes tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
@@ -2091,7 +2019,7 @@ def _toolset_has_keys(
         except Exception:
             return False
 
-    if ts_key in {"web", "image_gen", "video_gen", "tts", "browser"}:
+    if ts_key in {"web", "image_gen", "tts", "browser"}:
         features = get_nous_subscription_features(config, force_fresh=force_fresh)
         feature = features.features.get(ts_key)
         if feature and (feature.available or feature.managed_by_nous):
@@ -2287,44 +2215,6 @@ def _plugin_image_gen_providers() -> list[dict]:
             "tag": schema.get("tag", ""),
             "env_vars": schema.get("env_vars", []),
             "image_gen_plugin_name": provider.name,
-        }
-        if schema.get("post_setup"):
-            row["post_setup"] = schema["post_setup"]
-        rows.append(row)
-    return rows
-
-
-def _plugin_video_gen_providers() -> list[dict]:
-    """Build picker-row dicts from plugin-registered video gen providers.
-
-    Mirrors ``_plugin_image_gen_providers`` exactly — every video backend
-    is a plugin, so this function is the *only* source of provider rows
-    for the Video Generation category. The hardcoded ``TOOL_CATEGORIES``
-    entry for ``video_gen`` keeps an empty providers list.
-    """
-    try:
-        from agent.video_gen_registry import list_providers
-        from hermes_cli.plugins import _ensure_plugins_discovered
-
-        _ensure_plugins_discovered()
-        providers = list_providers()
-    except Exception:
-        return []
-
-    rows: list[dict] = []
-    for provider in providers:
-        try:
-            schema = provider.get_setup_schema()
-        except Exception:
-            continue
-        if not isinstance(schema, dict):
-            continue
-        row = {
-            "name": schema.get("name", provider.display_name),
-            "badge": schema.get("badge", ""),
-            "tag": schema.get("tag", ""),
-            "env_vars": schema.get("env_vars", []),
-            "video_gen_plugin_name": provider.name,
         }
         if schema.get("post_setup"):
             row["post_setup"] = schema["post_setup"]
@@ -2543,18 +2433,6 @@ def _visible_providers(
     *activates* the gateway once paid access is confirmed.
     """
     features = get_nous_subscription_features(config, force_fresh=force_fresh)
-    acct = features.account_info
-    # Pool-only users (entitled to managed tools via the free tool pool but with
-    # no paid access) get image gen but NOT video gen — the pool doesn't fund
-    # `fal-video`. Rather than advertise a managed video row that would be denied
-    # on select, hide it for them. Logged-out users still see it (advertising)
-    # and paid users are entitled to it.
-    pool_only = bool(
-        acct
-        and acct.logged_in
-        and acct.paid_service_access is not True
-        and acct.tool_gateway_entitled
-    )
     visible = []
     for provider in cat.get("providers", []):
         # Nous-managed Tool Gateway rows stay visible regardless of auth —
@@ -2567,25 +2445,12 @@ def _visible_providers(
             and not features.nous_auth_present
         ):
             continue
-        # Hide the managed video-gen row from pool-only users — their free tool
-        # pool doesn't cover video, so showing it would only lead to a denial.
-        if (
-            pool_only
-            and provider.get("managed_nous_feature") == "video_gen"
-            and not (acct and acct.tool_gateway_entitled_for("fal-video"))
-        ):
-            continue
         visible.append(provider)
 
     # Inject plugin-registered image_gen backends (OpenAI today, more
     # later) so the picker lists them alongside FAL / Nous Subscription.
     if cat.get("name") == "Image Generation":
         visible.extend(_plugin_image_gen_providers())
-
-    # Inject plugin-registered video_gen backends. Unlike image_gen,
-    # video_gen has NO hardcoded providers — every backend is a plugin.
-    if cat.get("name") == "Video Generation":
-        visible.extend(_plugin_video_gen_providers())
 
     # Inject plugin-registered web search backends. After PR #25182, this
     # is the SOLE source of provider rows for the Web Search & Extract
@@ -2759,7 +2624,7 @@ def provider_readiness_status(
             return "needs_auth"
         if managed_feature:
             # Same per-category entitlement gate the CLI applies at selection
-            # time (free tool-pool users get image gen but not video gen).
+            # time.
             acct = features.account_info
             category = MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature)
             entitled = bool(
@@ -2845,24 +2710,6 @@ def _toolset_needs_configuration_prompt(
         except Exception:
             pass
         return True
-    if ts_key == "video_gen":
-        # Satisfied when any plugin-registered video gen provider reports
-        # available — no in-tree fallback (every backend is a plugin).
-        try:
-            from agent.video_gen_registry import list_providers
-            from hermes_cli.plugins import _ensure_plugins_discovered
-
-            _ensure_plugins_discovered()
-            for provider in list_providers():
-                try:
-                    if provider.is_available():
-                        return False
-                except Exception:
-                    continue
-        except Exception:
-            pass
-        return True
-
     return not _toolset_has_keys(ts_key, config, force_fresh=force_fresh)
 
 
@@ -2992,11 +2839,6 @@ def _is_provider_active(
         image_cfg = config.get("image_gen", {})
         return isinstance(image_cfg, dict) and image_cfg.get("provider") == plugin_name
 
-    video_plugin_name = provider.get("video_gen_plugin_name")
-    if video_plugin_name and not provider.get("managed_nous_feature"):
-        video_cfg = config.get("video_gen", {})
-        return isinstance(video_cfg, dict) and video_cfg.get("provider") == video_plugin_name
-
     managed_feature = provider.get("managed_nous_feature")
     if managed_feature:
         features = get_nous_subscription_features(config, force_fresh=force_fresh)
@@ -3010,15 +2852,6 @@ def _is_provider_active(
                 if configured_provider not in {None, "", "fal"}:
                     return False
                 if image_cfg.get("use_gateway") is not None and not is_truthy_value(image_cfg.get("use_gateway"), default=False):
-                    return False
-            return feature.managed_by_nous
-        if managed_feature == "video_gen":
-            video_cfg = config.get("video_gen", {})
-            if isinstance(video_cfg, dict):
-                configured_provider = video_cfg.get("provider")
-                if configured_provider not in {None, "", "fal"}:
-                    return False
-                if video_cfg.get("use_gateway") is not None and not is_truthy_value(video_cfg.get("use_gateway"), default=False):
                     return False
             return feature.managed_by_nous
         if provider.get("tts_provider"):
@@ -3311,108 +3144,6 @@ def _select_plugin_image_gen_provider(plugin_name: str, config: dict) -> None:
         _configure_xai_imagine_storage("image_gen", config)
 
 
-# ─── Video Generation Model Pickers ───────────────────────────────────────────
-
-
-def _plugin_video_gen_catalog(plugin_name: str):
-    """Return ``(catalog_dict, default_model_id)`` for a video gen plugin.
-
-    Mirrors :func:`_plugin_image_gen_catalog`. Returns ``({}, None)`` when
-    the plugin isn't registered or has no models.
-    """
-    try:
-        from agent.video_gen_registry import get_provider
-        from hermes_cli.plugins import _ensure_plugins_discovered
-
-        _ensure_plugins_discovered()
-        provider = get_provider(plugin_name)
-    except Exception:
-        return {}, None
-    if provider is None:
-        return {}, None
-    try:
-        models = provider.list_models() or []
-        default = provider.default_model()
-    except Exception:
-        return {}, None
-    catalog = {m["id"]: m for m in models if isinstance(m, dict) and "id" in m}
-    return catalog, default
-
-
-def _configure_videogen_model_for_plugin(plugin_name: str, config: dict) -> None:
-    """Prompt for a video gen model from a plugin's catalog.
-
-    Mirrors :func:`_configure_imagegen_model_for_plugin`. Writes the
-    selection to ``video_gen.model``.
-    """
-    catalog, default_model = _plugin_video_gen_catalog(plugin_name)
-    if not catalog:
-        return
-
-    cur_cfg = config.setdefault("video_gen", {})
-    if not isinstance(cur_cfg, dict):
-        cur_cfg = {}
-        config["video_gen"] = cur_cfg
-    current_model = cur_cfg.get("model") or default_model
-    if current_model not in catalog:
-        current_model = default_model
-
-    model_ids = list(catalog.keys())
-    ordered = [current_model] + [m for m in model_ids if m != current_model]
-
-    widths = {
-        "model": max(len(m) for m in model_ids),
-        "speed": max((len(catalog[m].get("speed", "")) for m in model_ids), default=6),
-        "strengths": max((len(catalog[m].get("strengths", "")) for m in model_ids), default=0),
-    }
-
-    print()
-    header = (
-        f"  {'Model':<{widths['model']}}  "
-        f"{'Speed':<{widths['speed']}}  "
-        f"{'Strengths':<{widths['strengths']}}  "
-        f"Price"
-    )
-    print(color(header, Colors.CYAN))
-
-    rows = []
-    for mid in ordered:
-        meta = catalog[mid]
-        row = (
-            f"  {mid:<{widths['model']}}  "
-            f"{meta.get('speed', ''):<{widths['speed']}}  "
-            f"{meta.get('strengths', ''):<{widths['strengths']}}  "
-            f"{meta.get('price', '')}"
-        )
-        if mid == current_model:
-            row += "  ← currently in use"
-        rows.append(row)
-
-    idx = _prompt_choice(
-        f"  Choose {plugin_name} model:",
-        rows,
-        default=0,
-    )
-
-    chosen = ordered[idx]
-    cur_cfg["model"] = chosen
-    _print_success(f"  Model set to: {chosen}")
-
-
-def _select_plugin_video_gen_provider(plugin_name: str, config: dict, *, use_gateway: bool = False) -> None:
-    """Persist a plugin-backed video generation provider selection."""
-    vid_cfg = config.setdefault("video_gen", {})
-    if not isinstance(vid_cfg, dict):
-        vid_cfg = {}
-        config["video_gen"] = vid_cfg
-    vid_cfg["provider"] = plugin_name
-    vid_cfg["use_gateway"] = use_gateway
-    _print_success(f"  video_gen.provider set to: {plugin_name}")
-    _configure_videogen_model_for_plugin(plugin_name, config)
-    if plugin_name == "xai":
-        _configure_xai_imagine_storage("video_gen", config)
-
-
 def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> None:
     """Persist the provider/backend config keys for a selected provider.
 
@@ -3496,15 +3227,6 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
             config["image_gen"] = img_cfg
         img_cfg["provider"] = plugin_name
         img_cfg["use_gateway"] = bool(managed_feature)
-
-    video_plugin = provider.get("video_gen_plugin_name")
-    if video_plugin:
-        vid_cfg = config.setdefault("video_gen", {})
-        if not isinstance(vid_cfg, dict):
-            vid_cfg = {}
-            config["video_gen"] = vid_cfg
-        vid_cfg["provider"] = video_plugin
-        vid_cfg["use_gateway"] = bool(managed_feature)
 
     # In-tree FAL imagegen backend: keep image_gen.provider on the legacy
     # path (mirrors _configure_provider).
@@ -3597,12 +3319,6 @@ def _configure_provider(
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
             return
-        # Plugin-registered video_gen provider — same flow, different
-        # registry.
-        video_plugin = provider.get("video_gen_plugin_name")
-        if video_plugin:
-            _select_plugin_video_gen_provider(video_plugin, config, use_gateway=bool(managed_feature))
-            return
         # Imagegen backends prompt for model selection after backend pick.
         backend = provider.get("imagegen_backend")
         if backend:
@@ -3677,10 +3393,6 @@ def _configure_provider(
         plugin_name = provider.get("image_gen_plugin_name")
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
-            return
-        video_plugin = provider.get("video_gen_plugin_name")
-        if video_plugin:
-            _select_plugin_video_gen_provider(video_plugin, config, use_gateway=bool(managed_feature))
             return
         # Imagegen backends prompt for model selection after env vars are in.
         backend = provider.get("imagegen_backend")
@@ -4090,11 +3802,6 @@ def _reconfigure_provider(
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
             return
-        # Plugin-registered video_gen provider — same flow, different registry.
-        video_plugin = provider.get("video_gen_plugin_name")
-        if video_plugin:
-            _select_plugin_video_gen_provider(video_plugin, config, use_gateway=bool(managed_feature))
-            return
         # Imagegen backends prompt for model selection on reconfig too.
         backend = provider.get("imagegen_backend")
         if backend:
@@ -4128,12 +3835,6 @@ def _reconfigure_provider(
     plugin_name = provider.get("image_gen_plugin_name")
     if plugin_name:
         _select_plugin_image_gen_provider(plugin_name, config)
-        return
-
-    # Plugin-registered video_gen provider — same flow, different registry.
-    video_plugin = provider.get("video_gen_plugin_name")
-    if video_plugin:
-        _select_plugin_video_gen_provider(video_plugin, config, use_gateway=bool(managed_feature))
         return
 
     backend = provider.get("imagegen_backend")

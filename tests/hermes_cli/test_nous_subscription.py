@@ -235,7 +235,7 @@ def test_get_nous_subscription_features_does_not_treat_quoted_false_as_gateway_o
 
 
 def test_get_gateway_eligible_tools_ignores_quoted_false_opt_in(monkeypatch):
-    # Paid account: entitled to every category, including video.
+    # Paid account: entitled to every category.
     monkeypatch.setattr(
         ns, "get_nous_portal_account_info", lambda **kw: _account(logged_in=True, paid=True)
     )
@@ -245,7 +245,6 @@ def test_get_gateway_eligible_tools_ignores_quoted_false_opt_in(monkeypatch):
         lambda: {
             "web": True,
             "image_gen": False,
-            "video_gen": False,
             "tts": False,
             "stt": False,
             "browser": False,
@@ -261,7 +260,7 @@ def test_get_gateway_eligible_tools_ignores_quoted_false_opt_in(monkeypatch):
 
     assert "web" in has_direct
     assert "web" not in already_managed
-    assert set(unconfigured) == {"image_gen", "video_gen", "tts", "stt", "browser"}
+    assert set(unconfigured) == {"image_gen", "tts", "stt", "browser"}
 
 
 def _stub_browser_probes(monkeypatch, *, has_agent_browser, chromium, lightpanda=False):
@@ -372,25 +371,6 @@ def test_cloud_browserbase_available_without_local_chromium(monkeypatch):
     assert features.browser.current_provider == "Browserbase"
 
 
-def test_get_gateway_eligible_tools_pool_excludes_video(monkeypatch):
-    """A free-tool-pool user is offered the covered tools but NOT video gen."""
-    monkeypatch.setattr(ns, "get_nous_portal_account_info", lambda **kw: _pool_account())
-    monkeypatch.setattr(
-        ns,
-        "_get_gateway_direct_credentials",
-        lambda: {"web": False, "image_gen": False, "video_gen": False, "tts": False, "browser": False},
-    )
-
-    unconfigured, has_direct, already_managed = ns.get_gateway_eligible_tools(
-        {"model": {"provider": "nous"}}
-    )
-
-    assert set(unconfigured) == {"web", "image_gen", "tts", "stt", "browser"}
-    assert "video_gen" not in unconfigured
-    assert "video_gen" not in has_direct
-    assert "video_gen" not in already_managed
-
-
 def test_get_gateway_eligible_tools_empty_when_not_entitled(monkeypatch):
     """A logged-in free user with no pool and no paid access gets nothing."""
     monkeypatch.setattr(
@@ -424,12 +404,12 @@ def _capture_checklist(monkeypatch, *, selected_idx):
 
 
 def test_prompt_enable_tool_gateway_pool_offers_covered_tools_only(monkeypatch):
-    """Pool user's checklist lists web/image/tts/browser and never video."""
+    """Pool user's checklist lists the covered tools (web/image/tts/browser)."""
     monkeypatch.setattr(ns, "get_nous_portal_account_info", lambda **kw: _pool_account())
     monkeypatch.setattr(
         ns,
         "_get_gateway_direct_credentials",
-        lambda: {"web": False, "image_gen": False, "video_gen": False, "tts": False, "browser": False},
+        lambda: {"web": False, "image_gen": False, "tts": False, "browser": False},
     )
     captured = _capture_checklist(monkeypatch, selected_idx=[])
 
@@ -438,7 +418,6 @@ def test_prompt_enable_tool_gateway_pool_offers_covered_tools_only(monkeypatch):
 
     blob = " ".join(captured["items"]).lower()
     assert "firecrawl" in blob  # web offered
-    assert "video" not in blob  # video NOT offered to a pool user
     # Pool-aware framing, not "subscription".
     assert "free" in captured["title"].lower() and "pool" in captured["title"].lower()
 
@@ -449,10 +428,10 @@ def test_prompt_enable_tool_gateway_writes_only_selected(monkeypatch):
     monkeypatch.setattr(
         ns,
         "_get_gateway_direct_credentials",
-        lambda: {"web": False, "image_gen": False, "video_gen": False, "tts": False, "browser": False},
+        lambda: {"web": False, "image_gen": False, "tts": False, "browser": False},
     )
-    # Offered order is _ALL_GATEWAY_KEYS filtered to covered: web, image_gen, tts, browser.
-    # Select index 0 (web) and 1 (image_gen) only.
+    # Offered order is _ALL_GATEWAY_KEYS filtered to covered: web, image_gen,
+    # tts, browser. Select index 0 (web) and 1 (image_gen) only.
     _capture_checklist(monkeypatch, selected_idx=[0, 1])
 
     config = {"model": {"provider": "nous"}}
@@ -462,47 +441,6 @@ def test_prompt_enable_tool_gateway_writes_only_selected(monkeypatch):
     assert config["web"]["use_gateway"] is True
     assert config["image_gen"]["use_gateway"] is True
     assert "tts" not in config or config.get("tts", {}).get("use_gateway") is not True
-    assert "video_gen" not in config
-
-
-def test_prompt_enable_tool_gateway_paid_user_offers_video(monkeypatch):
-    """Paid users still get video gen in the offer (regression guard)."""
-    monkeypatch.setattr(
-        ns, "get_nous_portal_account_info", lambda **kw: _account(logged_in=True, paid=True)
-    )
-    monkeypatch.setattr(
-        ns,
-        "_get_gateway_direct_credentials",
-        lambda: {"web": False, "image_gen": False, "video_gen": False, "tts": False, "browser": False},
-    )
-    captured = _capture_checklist(monkeypatch, selected_idx=[])
-
-    ns.prompt_enable_tool_gateway({"model": {"provider": "nous"}})
-
-    blob = " ".join(captured["items"]).lower()
-    assert "video" in blob
-
-
-def test_apply_nous_managed_defaults_writes_video_gen_config(monkeypatch):
-    """apply_nous_managed_defaults must write video_gen.provider and
-    video_gen.use_gateway when a Nous subscriber selects video_gen
-    without a direct FAL_KEY."""
-    monkeypatch.setattr(ns, "managed_nous_tools_enabled", lambda **kw: True)
-    monkeypatch.delenv("FAL_KEY", raising=False)
-    monkeypatch.setattr(ns, "fal_key_is_configured", lambda: False)
-    monkeypatch.setattr(
-        ns, "get_nous_portal_account_info",
-        lambda **kw: _account(logged_in=True, paid=True),
-    )
-
-    config = {"model": {"provider": "nous"}}
-    changed = ns.apply_nous_managed_defaults(
-        config, enabled_toolsets=["video_gen"],
-    )
-
-    assert "video_gen" in changed
-    assert config["video_gen"]["provider"] == "fal"
-    assert config["video_gen"]["use_gateway"] is True
 
 
 def test_apply_nous_managed_defaults_writes_image_gen_config(monkeypatch):
@@ -527,7 +465,7 @@ def test_apply_nous_managed_defaults_writes_image_gen_config(monkeypatch):
 
 def test_apply_nous_managed_defaults_skips_fal_tools_when_key_present(monkeypatch):
     """When FAL_KEY is set, apply_nous_managed_defaults should not touch
-    image_gen or video_gen config — the user's direct key takes precedence."""
+    image_gen config — the user's direct key takes precedence."""
     monkeypatch.setattr(ns, "managed_nous_tools_enabled", lambda **kw: True)
     monkeypatch.setenv("FAL_KEY", "fal-direct-key")
     monkeypatch.setattr(ns, "fal_key_is_configured", lambda: True)
@@ -538,39 +476,11 @@ def test_apply_nous_managed_defaults_skips_fal_tools_when_key_present(monkeypatc
 
     config = {"model": {"provider": "nous"}}
     changed = ns.apply_nous_managed_defaults(
-        config, enabled_toolsets=["image_gen", "video_gen"],
+        config, enabled_toolsets=["image_gen"],
     )
 
     assert "image_gen" not in changed
-    assert "video_gen" not in changed
     assert "image_gen" not in config
-    assert "video_gen" not in config
-
-
-def test_apply_nous_managed_defaults_preserves_existing_video_gen_section(monkeypatch):
-    """When video_gen config already exists as a dict, the function should
-    update it in-place rather than replacing it."""
-    monkeypatch.setattr(ns, "managed_nous_tools_enabled", lambda **kw: True)
-    monkeypatch.delenv("FAL_KEY", raising=False)
-    monkeypatch.setattr(ns, "fal_key_is_configured", lambda: False)
-    monkeypatch.setattr(
-        ns, "get_nous_portal_account_info",
-        lambda **kw: _account(logged_in=True, paid=True),
-    )
-
-    config = {
-        "model": {"provider": "nous"},
-        "video_gen": {"model": "pixverse-v6"},
-    }
-    changed = ns.apply_nous_managed_defaults(
-        config, enabled_toolsets=["video_gen"],
-    )
-
-    assert "video_gen" in changed
-    assert config["video_gen"]["provider"] == "fal"
-    assert config["video_gen"]["use_gateway"] is True
-    # Pre-existing keys should be preserved
-    assert config["video_gen"]["model"] == "pixverse-v6"
 
 
 # ---------------------------------------------------------------------------
@@ -743,7 +653,7 @@ def test_apply_nous_managed_defaults_flips_stt_provider_to_openai_for_nous_users
                     direct_override=False, toolset_enabled=False,
                     explicit_configured=False,
                 )
-                for key in ("web", "image_gen", "video_gen", "tts", "stt", "browser", "modal")
+                for key in ("web", "image_gen", "tts", "stt", "browser", "modal")
             },
         ),
     )
@@ -768,7 +678,7 @@ def _stt_features_stub(*, account_info):
                 direct_override=False, toolset_enabled=False,
                 explicit_configured=False,
             )
-            for key in ("web", "image_gen", "video_gen", "tts", "stt", "browser", "modal")
+            for key in ("web", "image_gen", "tts", "stt", "browser", "modal")
         },
     )
 
@@ -834,7 +744,7 @@ def test_apply_nous_managed_defaults_skips_stt_when_groq_key_present(monkeypatch
                     direct_override=False, toolset_enabled=False,
                     explicit_configured=False,
                 )
-                for key in ("web", "image_gen", "video_gen", "tts", "stt", "browser", "modal")
+                for key in ("web", "image_gen", "tts", "stt", "browser", "modal")
             },
         ),
     )

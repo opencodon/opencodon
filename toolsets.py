@@ -134,18 +134,6 @@ TOOLSETS = {
         "includes": []
     },
 
-    "video_gen": {
-        "description": (
-            "Video generation tools. Single ``video_generate`` tool covers "
-            "text-to-video (prompt only) and image-to-video (prompt + "
-            "image_url), plus reference-to-video. Provider-specific edit/"
-            "extend workflows may appear as separate tools. Configure via "
-            "``hermes tools`` → Video Generation."
-        ),
-        "tools": ["video_generate", "xai_video_edit", "xai_video_extend"],
-        "includes": []
-    },
-
     "computer_use": {
         "description": (
             "Background desktop control via cua-driver (macOS/Windows/Linux) — "
@@ -289,16 +277,6 @@ TOOLSETS = {
         "includes": [],
     },
 
-    "spotify": {
-        "description": "Native Spotify playback, search, playlist, album, and library tools",
-        "tools": [
-            "spotify_playback", "spotify_devices", "spotify_queue", "spotify_search",
-            "spotify_playlists", "spotify_albums", "spotify_library",
-        ],
-        "includes": []
-    },
-
-
     # Scenario-specific toolsets
     
     "debugging": {
@@ -316,7 +294,7 @@ TOOLSETS = {
     # Coding posture (base Hermes — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,
-    # spotify, home-assistant, cron, computer-use).
+    # home-assistant, cron, computer-use).
     "coding": {
         "description": "Coding-focused toolset: files, terminal, search, web docs, skills, todo, delegate, vision, browser",
         "tools": [

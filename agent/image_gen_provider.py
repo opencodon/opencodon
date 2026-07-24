@@ -19,9 +19,7 @@ One tool — ``image_generate`` — covers **text-to-image** and
 provided, the provider routes to its image-to-image / edit endpoint; if
 omitted, the provider routes to text-to-image. Users pick one **model**
 (e.g. nano-banana-pro, gpt-image-2, grok-imagine-image); the provider
-handles which underlying endpoint to hit. This mirrors the ``video_gen``
-provider design (``agent/video_gen_provider.py``) so the two surfaces
-stay learnable together.
+handles which underlying endpoint to hit.
 
 Response shape
 --------------

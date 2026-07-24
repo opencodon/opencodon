@@ -40,7 +40,7 @@ def _make_agent_stub(agent_cls):
     agent._COMBINED_REVIEW_PROMPT = "review both"
     # Non-None so the test catches a missing-kwarg regression.
     agent.enabled_toolsets = ["memory", "skills", "terminal"]
-    agent.disabled_toolsets = ["spotify", "feishu_doc"]
+    agent.disabled_toolsets = ["discord", "feishu_doc"]
     # Non-None so the test catches reasoning_config NOT being inherited —
     # which would put the fork into a different Anthropic cache namespace.
     agent.reasoning_config = {"enabled": True, "effort": "medium"}

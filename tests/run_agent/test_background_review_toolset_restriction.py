@@ -39,7 +39,7 @@ def _make_agent_stub(agent_cls):
     agent._COMBINED_REVIEW_PROMPT = "review both"
     # Non-None so the test catches a missing-kwarg regression.
     agent.enabled_toolsets = ["memory", "skills", "terminal"]
-    agent.disabled_toolsets = ["spotify", "feishu_doc"]
+    agent.disabled_toolsets = ["discord", "feishu_doc"]
     return agent
 
 

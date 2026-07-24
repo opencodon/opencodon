@@ -149,7 +149,7 @@ def _coerce_expires_after(value: Any) -> Optional[int]:
 
 
 def read_xai_imagine_storage_config(section_name: str) -> Dict[str, Any]:
-    """Read storage settings for xAI Imagine under image_gen/video_gen config.
+    """Read storage settings for xAI Imagine under image_gen config.
 
     Supported config shape:
 
@@ -160,8 +160,8 @@ def read_xai_imagine_storage_config(section_name: str) -> Dict[str, Any]:
               public_url: true
               expires_after: null     # omit for permanent public URLs
 
-    The same shape is accepted under ``video_gen.xai.storage``. Storage is on
-    by default so xAI returns permanent public URLs instead of short-lived CDN URLs.
+    Storage is on by default so xAI returns permanent public URLs instead of
+    short-lived CDN URLs.
     """
     section = _load_config_section(section_name)
     xai_section = section.get("xai") if isinstance(section, dict) else None

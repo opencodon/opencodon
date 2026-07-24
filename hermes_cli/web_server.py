@@ -15307,18 +15307,17 @@ class ToolsetProviderSelect(BaseModel):
 
 # Toolsets whose backends carry a selectable model catalog, mapped to the
 # config.yaml section their `model` key lives in. Mirrors the CLI's
-# post-selection model pickers (`_configure_imagegen_model_for_plugin` /
-# `_configure_videogen_model_for_plugin` in tools_config.py).
+# post-selection model picker (`_configure_imagegen_model_for_plugin`
+# in tools_config.py).
 _MODEL_CATALOG_TOOLSETS = {
     "image_gen": "image_gen",
-    "video_gen": "video_gen",
 }
 
 
 def _resolve_toolset_model_plugin(ts_key: str, provider_row: dict) -> Optional[str]:
     """Map a provider picker row to its model-catalog plugin name.
 
-    Plugin-backed rows carry ``image_gen_plugin_name`` / ``video_gen_plugin_name``;
+    Plugin-backed rows carry ``image_gen_plugin_name``;
     the managed "Nous Subscription" image row instead carries the legacy
     ``imagegen_backend: "fal"`` marker (same underlying FAL catalog).
     """
@@ -15326,21 +15325,14 @@ def _resolve_toolset_model_plugin(ts_key: str, provider_row: dict) -> Optional[s
         return provider_row.get("image_gen_plugin_name") or (
             "fal" if provider_row.get("imagegen_backend") else None
         )
-    if ts_key == "video_gen":
-        return provider_row.get("video_gen_plugin_name")
     return None
 
 
 def _toolset_model_catalog(ts_key: str, plugin_name: str):
     """Return ``(catalog_dict, default_model)`` for a toolset's plugin backend."""
-    from hermes_cli.tools_config import (
-        _plugin_image_gen_catalog,
-        _plugin_video_gen_catalog,
-    )
+    from hermes_cli.tools_config import _plugin_image_gen_catalog
 
-    if ts_key == "image_gen":
-        return _plugin_image_gen_catalog(plugin_name)
-    return _plugin_video_gen_catalog(plugin_name)
+    return _plugin_image_gen_catalog(plugin_name)
 
 
 def _find_toolset_provider_row(ts_key: str, config: dict, provider: Optional[str]) -> Optional[dict]:
@@ -15432,7 +15424,7 @@ class ToolsetModelSelect(BaseModel):
 async def select_toolset_model(
     name: str, body: ToolsetModelSelect, profile: Optional[str] = None
 ):
-    """Persist a backend model selection (``image_gen.model`` / ``video_gen.model``).
+    """Persist a backend model selection (``image_gen.model``).
 
     Validates the model against the resolved backend's catalog — the same
     write the CLI's post-selection model picker performs. Returns 400 for

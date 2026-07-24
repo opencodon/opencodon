@@ -581,7 +581,6 @@ _TOOL_VERBS: dict[str, str] = {
     "terminal": "Running",
     "execute_code": "Running code",
     "image_generate": "Generating image",
-    "video_generate": "Generating video",
     "text_to_speech": "Generating speech",
     "vision_analyze": "Looking at the image",
     "session_search": "Searching past sessions",

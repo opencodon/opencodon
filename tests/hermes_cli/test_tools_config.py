@@ -226,9 +226,9 @@ def test_discord_composite_only_enables_discord_toolsets():
 
 
 def test_discord_composite_plus_configurable_enables_discord_toolsets():
-    """Layer 2: mixing the composite with a configurable key (e.g. spotify)
+    """Layer 2: mixing the composite with a configurable key (e.g. video)
     still opts into the Discord toolsets carried by the composite."""
-    config = {"platform_toolsets": {"discord": ["hermes-discord", "spotify"]}}
+    config = {"platform_toolsets": {"discord": ["hermes-discord", "video"]}}
     enabled = _get_platform_tools(config, "discord")
     assert "discord" in enabled
     assert "discord_admin" in enabled
@@ -312,19 +312,19 @@ def test_get_platform_tools_x_search_respects_explicit_config(monkeypatch):
         "hermes_cli.tools_config._xai_credentials_present", lambda: True
     )
 
-    # User explicitly opted into spotify but not x_search via `hermes tools`.
-    config = {"platform_toolsets": {"cli": ["hermes-cli", "spotify"]}}
+    # User explicitly opted into video but not x_search via `hermes tools`.
+    config = {"platform_toolsets": {"cli": ["hermes-cli", "video"]}}
     enabled = _get_platform_tools(config, "cli")
     assert "x_search" not in enabled
-    assert "spotify" in enabled
+    assert "video" in enabled
 
 
 def test_get_platform_tools_expands_composite_when_mixed_with_configurable():
-    """``[hermes-cli, spotify]`` (composite + configurable) must keep the full
-    ``hermes-cli`` toolset alongside the explicit Spotify opt-in. The
+    """``[hermes-cli, video]`` (composite + configurable) must keep the full
+    ``hermes-cli`` toolset alongside the explicit video opt-in. The
     has_explicit_config branch used to drop ``hermes-cli`` on the floor,
-    leaving sessions with only ``{spotify, kanban}``."""
-    config = {"platform_toolsets": {"cli": ["hermes-cli", "spotify"]}}
+    leaving sessions with only ``{video, kanban}``."""
+    config = {"platform_toolsets": {"cli": ["hermes-cli", "video"]}}
 
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
 
@@ -332,8 +332,8 @@ def test_get_platform_tools_expands_composite_when_mixed_with_configurable():
     for ts in ("terminal", "file", "web", "browser", "memory", "delegation",
                "code_execution", "todo", "session_search", "skills"):
         assert ts in enabled, f"{ts} should be enabled when hermes-cli is listed"
-    # User explicitly opted into Spotify — must survive _DEFAULT_OFF_TOOLSETS subtraction.
-    assert "spotify" in enabled
+    # User explicitly opted into video — must survive _DEFAULT_OFF_TOOLSETS subtraction.
+    assert "video" in enabled
 
 
 def test_get_platform_tools_composite_only_unchanged():
@@ -1008,64 +1008,6 @@ def test_first_install_nous_auto_configures_managed_defaults(monkeypatch):
     assert configured == []
 
 
-def test_first_install_nous_auto_configures_video_gen(monkeypatch):
-    """When a Nous subscriber checks video_gen in the toolset checklist,
-    apply_nous_managed_defaults must write video_gen.provider and
-    video_gen.use_gateway so the FAL plugin can route through the gateway
-    at runtime.  Regression test for the bug where video_gen was marked as
-    auto-configured but no config was actually written."""
-    monkeypatch.setattr("hermes_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
-    config = {
-        "model": {"provider": "nous"},
-        "platform_toolsets": {"cli": []},
-    }
-    for env_var in (
-        "VOICE_TOOLS_OPENAI_KEY",
-        "OPENAI_API_KEY",
-        "ELEVENLABS_API_KEY",
-        "FIRECRAWL_API_KEY",
-        "FIRECRAWL_API_URL",
-        "TAVILY_API_KEY",
-        "PARALLEL_API_KEY",
-        "BROWSERBASE_API_KEY",
-        "BROWSERBASE_PROJECT_ID",
-        "BROWSER_USE_API_KEY",
-        "FAL_KEY",
-    ):
-        monkeypatch.delenv(env_var, raising=False)
-
-    monkeypatch.setattr(
-        "hermes_cli.tools_config._prompt_toolset_checklist",
-        lambda *args, **kwargs: {"video_gen"},
-    )
-    monkeypatch.setattr("hermes_cli.tools_config.save_config", lambda config: None)
-    monkeypatch.setattr(
-        "hermes_cli.tools_config._get_enabled_platforms",
-        lambda: ["cli"],
-    )
-    monkeypatch.setattr(
-        "hermes_cli.nous_subscription.get_nous_portal_account_info",
-        lambda *args, **kwargs: NousPortalAccountInfo(
-            logged_in=True,
-            source="jwt",
-            fresh=False,
-            paid_service_access=True,
-        ),
-    )
-
-    configured = []
-    monkeypatch.setattr(
-        "hermes_cli.tools_config._configure_toolset",
-        lambda ts_key, config: configured.append(ts_key),
-    )
-
-    tools_command(first_install=True, config=config)
-
-    assert config["video_gen"]["provider"] == "fal"
-    assert config["video_gen"]["use_gateway"] is True
-    # video_gen should NOT appear in the manual configure list — it's auto-configured
-    assert "video_gen" not in configured
-
 # ── Platform / toolset consistency ────────────────────────────────────────────
 
 
@@ -1471,8 +1413,8 @@ def test_save_platform_tools_strips_restricted_toolsets():
 
 
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
-    """Bundled plugins (plugins/spotify) share their toolset key with the
-    built-in CONFIGURABLE_TOOLSETS entry. The effective list must not list
+    """Bundled plugins may share their toolset key with the built-in
+    CONFIGURABLE_TOOLSETS entry. The effective list must not list
     them twice — otherwise `hermes tools` → "reconfigure existing" shows
     the same toolset two rows in a row.
     """
@@ -1484,11 +1426,6 @@ def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
         f"duplicate toolset keys in effective list: "
         f"{[k for k in keys if keys.count(k) > 1]}"
     )
-    # Spotify specifically — the bug that motivated the dedupe.
-    spotify_rows = [t for t in all_ts if t[0] == "spotify"]
-    assert len(spotify_rows) == 1, spotify_rows
-    # Built-in label wins over the plugin label.
-    assert spotify_rows[0][1] == "🎵 Spotify"
 
 
 @pytest.mark.parametrize("provider,config_key,expected", [
@@ -1946,7 +1883,7 @@ def test_provider_readiness_managed_nous_row_needs_auth_when_unentitled():
         "name": "Nous Subscription",
         "env_vars": [],
         "requires_nous_auth": True,
-        "managed_nous_feature": "video_gen",
+        "managed_nous_feature": "browser",
     }
     status = provider_readiness_status(
         provider, {}, features=_fake_features(logged_in=True, paid=False)

@@ -187,7 +187,7 @@ _ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 #
 # IMPORTANT: ``HERMES_*`` overall is NOT blocked. Many legitimate
 # integration credentials follow that prefix (HERMES_LANGFUSE_PUBLIC_KEY,
-# HERMES_SPOTIFY_CLIENT_ID, ...). The
+# HERMES_GEMINI_API_KEY, ...). The
 # denylist is name-by-name on purpose so the gate stays narrow and
 # doesn't accidentally break provider setup wizards.
 #
@@ -211,7 +211,7 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "GIT_SSH_COMMAND", "GIT_EXEC_PATH", "GIT_SHELL",
     # Hermes runtime location — never via dashboard env writer.
     # NOT a HERMES_* blanket: integration credentials (HERMES_GEMINI_*,
-    # HERMES_LANGFUSE_*, HERMES_SPOTIFY_*, ...) ARE allowed.
+    # HERMES_LANGFUSE_*, ...) ARE allowed.
     "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
 })
 
@@ -4069,10 +4069,10 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "FAL_KEY": {
-        "description": "FAL API key for image and video generation",
+        "description": "FAL API key for image generation",
         "prompt": "FAL API key",
         "url": "https://fal.ai/",
-        "tools": ["image_generate", "video_generate"],
+        "tools": ["image_generate"],
         "password": True,
         "category": "tool",
     },
@@ -5243,7 +5243,7 @@ _EXTRA_KNOWN_ROOT_KEYS = {
     # Roots read from the raw user YAML (or written by our own flows) that are
     # intentionally absent from DEFAULT_CONFIG:
     "image_gen",         # image-generation provider config (agent/image_gen_registry.py)
-    "video_gen",         # video-generation provider config (agent/video_gen_registry.py)
+    "video_gen",         # legacy video-generation provider config (feature removed; accepted so old configs stay valid)
     "plugins",           # plugin enable/disable lists (hermes_cli/plugins_cmd.py)
     "smart_model_routing",   # written by the setup wizard (hermes_cli/setup.py)
     "platform_toolsets",     # written by the setup wizard (hermes_cli/setup.py)
