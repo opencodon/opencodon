@@ -8757,7 +8757,7 @@ async def cancel_whatsapp_onboarding(pairing_id: str):
     return {"ok": True}
 
 
-_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.opencodon-agent.nousresearch.com"
+_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.hermes-agent.nousresearch.com"
 _TELEGRAM_ONBOARDING_USER_AGENT = f"HermesDashboard/{__version__}"
 @dataclass
 class _TelegramOnboardingPairing:
