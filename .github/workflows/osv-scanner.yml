@@ -50,10 +50,9 @@ jobs:
       # fixed artifact name, which the wrapper downloads below.
       results-file-name: osv-results.sarif
       fail-on-vuln: false
-      # Code-scanning SARIF upload needs GitHub Advanced Security, which
-      # private repos don't have — findings still land in the job summary
-      # and the uploaded artifact. Re-enable when the repo goes public.
-      upload-sarif: false
+      # SARIF upload to code scanning — available now that the repo is
+      # public (was disabled while private; needs Advanced Security there).
+      upload-sarif: true
 
   emit-status:
     name: Emit review status

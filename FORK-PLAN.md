@@ -141,7 +141,24 @@ order-dependent on a lazy install before), osv-scanner upload-sarif
 off while private (needs Advanced Security), desktop packaging scripts
 rebranded (test-desktop.mjs expected Hermes.app/Hermes.exe binaries).
 Note: full Python suite passes on ubuntu runners — the 26-failure
-local baseline is macOS-environment-specific. Dependabot alerts +
-security fixes enabled; 46 alerts (1 critical/27 high) on inherited
-pins pending triage alongside .fork/triage SECURITY commits.
-Remaining: tag v0.1.0 + CHANGELOG, flip public, PyPI.
+local baseline is macOS-environment-specific.
+
+## Security debt + v0.1.0 (2026-07-24, later same day)
+
+Security debt CLEARED: all applicable upstream SECURITY commits
+cherry-picked (11 of 12; msgraph test N/A) plus two PROVIDER
+prerequisites — dispositions in .fork/triage/2026-07-24.md; baseline
+advanced to 3910ab28c089. All 46 Dependabot alerts addressed in one
+batch (pyproject pins + uv lock + npm updates + action bumps applied
+locally from the Dependabot PR diffs). Known deferral: PyNaCl 1.6.2
+(medium, voice-only) — discord.py (incl. latest 2.7.1) caps pynacl <1.6.
+
+v0.1.0 released: CHANGELOG.md added, version 0.1.0, repo flipped
+PUBLIC, osv upload-sarif re-enabled.
+
+PyPI: deliberately deferred. `uv build` works with OPENCODON_NIX_BUILD=1
+and a pip-installed CLI runs, but the wheel ships without skills/,
+web_dist, tui_dist, and plugin manifests (upstream never supported pip
+distribution) — bundling those as package data is the roadmap item
+before publishing. The `opencodon` name on PyPI already carries a
+0.0.1 "name reservation" stub (verify it's ours).
