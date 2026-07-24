@@ -100,7 +100,7 @@ export const ja = defineLocale({
       remoteFailureHint:
         '「ゲートウェイ設定」でゲートウェイの URL とサインインを確認するか、ローカルゲートウェイに切り替えてください。',
       hideRecentLogs: '最近のログを非表示',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRecentLogs: '最近のログを表示',
+      showRecentLogs: '最近のログを表示',
       signedInTitle: 'サインインしました',
       signedInMessage: 'リモートゲートウェイに再接続中…',
       signInIncompleteTitle: 'サインインが完了していません',
@@ -115,7 +115,7 @@ export const ja = defineLocale({
   notifications: {
     region: '通知',
     hide: '非表示',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashow: '表示',
+    show: '表示',
     more: count => `他 ${count} 件の通知`,
     clearAll: 'すべてクリア',
     dismiss: '通知を閉じる',
@@ -190,13 +190,13 @@ export const ja = defineLocale({
 
   titlebar: {
     hideSidebar: 'サイドバーを非表示',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSidebar: 'サイドバーを表示',
+    showSidebar: 'サイドバーを表示',
     search: '検索',
     searchTitle: 'セッション、ビュー、アクションを検索',
     swapSidebarSides: 'サイドバーの向きを切り替え',
     swapSidebarSidesTitle: 'セッションとファイルブラウザーの位置を入れ替える',
     hideRightSidebar: '右サイドバーを非表示',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRightSidebar: '右サイドバーを表示',
+    showRightSidebar: '右サイドバーを表示',
     muteHaptics: '触覚フィードバックをオフ',
     unmuteHaptics: '触覚フィードバックをオン',
     openSettings: '設定を開く',
@@ -390,7 +390,7 @@ export const ja = defineLocale({
       timezone: 'タイムゾーン',
       display: {
         personality: '人格',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: '推論ブロック'
+        showReasoning: '推論ブロック'
       },
       desktop: {
         repoScanEnabled: 'リポジトリの自動検出',
@@ -550,7 +550,7 @@ export const ja = defineLocale({
       fallbackProviders: 'デフォルトモデルが失敗したときに試す provider:model 形式のバックアップです。',
       display: {
         personality: '新しいセッションのデフォルトのアシスタントスタイルです。',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: 'バックエンドが推論内容を提供したときに表示します。'
+        showReasoning: 'バックエンドが推論内容を提供したときに表示します。'
       },
       desktop: {
         repoScanEnabled: 'ローカルフォルダを検索して Git リポジトリをプロジェクトに表示します。',
@@ -773,7 +773,7 @@ export const ja = defineLocale({
       sshErrHostKey:
         '前回の接続以降、ホスト鍵が変更されています。想定どおりか確認し、ssh-keygen -R <host> を実行してから再接続してください。',
       sshErrNotInstalled:
-        'リモートホストに Opencodon がインストールされていません。リモートでインストールする（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash|curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）か、Opencodon パスを設定してください。',
+        'リモートホストに Opencodon がインストールされていません。リモートでインストールする（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）か、Opencodon パスを設定してください。',
       sshErrPlatform:
         'サポートされていないリモートプラットフォームです。Opencodon Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
@@ -1360,7 +1360,7 @@ export const ja = defineLocale({
     loading: 'プロファイルを読み込み中...',
     newProfile: '新しいプロファイル',
     allProfiles: 'すべてのプロファイル',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowAllProfiles: 'すべてのプロファイルを表示',
+    showAllProfiles: 'すべてのプロファイルを表示',
     switchToProfile: name => `${name} に切り替え`,
     manageProfiles: 'プロファイルを管理…',
     actionsFor: name => `${name} のアクション`,
@@ -1497,7 +1497,7 @@ export const ja = defineLocale({
     next: '次回',
     noRuns: 'まだ実行されていません',
     manage: '管理',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRuns: '実行履歴を表示',
+    showRuns: '実行履歴を表示',
     hideRuns: '実行履歴を隠す',
     runHistory: '実行履歴',
     actionsFor: title => `${title} のアクション`,
@@ -1600,12 +1600,12 @@ export const ja = defineLocale({
     cronJobs: 'Cronジョブ',
     groupAriaGrouped: 'セッションを単一リストとして表示',
     groupAriaUngrouped: 'ワークスペースごとにセッションをグループ化',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowProjects: 'プロジェクトを表示',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSessions: 'セッションを表示',
+    showProjects: 'プロジェクトを表示',
+    showSessions: 'セッションを表示',
     groupTitleGrouped: 'セッションのグループ化を解除',
     groupTitleUngrouped: 'ワークスペースでグループ化',
     allPinned: 'ここにあるものはすべてピン留めされています。チャットのピン留めを解除すると最近のものに表示されます。',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashiftClickHint: 'Shift クリックでピン留め · ドラッグで並べ替え',
+    shiftClickHint: 'Shift クリックでピン留め · ドラッグで並べ替え',
     noWorkspace: 'ワークスペースなし',
     noProject: 'プロジェクトなし',
     projectEmpty: 'セッションはまだありません',
@@ -1672,7 +1672,7 @@ export const ja = defineLocale({
       enter: label => `${label} を開く`
     },
     newSessionIn: label => `${label} で新しいセッション`,
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowMoreIn: (count, label) => `${label} でさらに ${count} 件を表示`,
+    showMoreIn: (count, label) => `${label} でさらに ${count} 件を表示`,
     loading: '読み込み中…',
     loadMore: 'さらに読み込む',
     loadCount: step => `さらに ${step} 件を読み込む`,
@@ -1987,7 +1987,7 @@ export const ja = defineLocale({
     fetchingManifest: 'インストーラーマニフェストを取得中...',
     error: 'エラー',
     hideOutput: 'インストーラーの出力を非表示',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowOutput: 'インストーラーの出力を表示',
+    showOutput: 'インストーラーの出力を表示',
     lines: count => `${count} 行`,
     noOutput: 'まだ出力がありません。',
     cancelling: 'キャンセル中...',
@@ -2015,18 +2015,18 @@ export const ja = defineLocale({
     openRouterPitch: '1 つのキーで数百のモデル — 堅実なデフォルト',
     apiKeyOptions: {
       fireworks: {
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'モデル API に直接接続',
+        short: 'モデル API に直接接続',
         description: 'Fireworks AI がホストするモデルに直接アクセスします。'
       },
       openrouter: {
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '1 つのキーで多くのモデル',
+        short: '1 つのキーで多くのモデル',
         description: '1 つのキーで数百のモデルをホスト。新規インストールのデフォルトとして最適。'
       },
-      openai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'GPT クラスのモデル', description: 'OpenAI モデルへの直接アクセス。' },
-      gemini: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Gemini モデル', description: 'Google Gemini モデルへの直接アクセス。' },
-      xai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Grok モデル', description: 'xAI Grok モデルへの直接アクセス。' },
+      openai: { short: 'GPT クラスのモデル', description: 'OpenAI モデルへの直接アクセス。' },
+      gemini: { short: 'Gemini モデル', description: 'Google Gemini モデルへの直接アクセス。' },
+      xai: { short: 'Grok モデル', description: 'xAI Grok モデルへの直接アクセス。' },
       local: {
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'セルフホスト',
+        short: 'セルフホスト',
         description:
           'ローカルまたはセルフホストの OpenAI 互換エンドポイント（vLLM、llama.cpp、Ollama など）に Opencodon を接続。'
       }
@@ -2099,7 +2099,7 @@ export const ja = defineLocale({
     addProvider: 'プロバイダーを追加…'
   },
 
- curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashell: {
+  shell: {
     windowControls: 'ウィンドウコントロール',
     paneControls: 'ペインコントロール',
     appControls: 'アプリコントロール',
@@ -2168,11 +2168,11 @@ export const ja = defineLocale({
       connectionSshTooltip: host => `SSH 経由で ${host} に接続中 · クリックして管理`,
       connectionRemoteTooltip: host => `リモートバックエンド ${host} に接続中 · クリックして管理`,
       backendLabel: version => `バックエンド v${version}`,
-      commit:curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | basha => `コミット ${sha}`,
+      commit: sha => `コミット ${sha}`,
       branch: branch => `ブランチ ${branch}`,
       closeCommandCenter: 'コマンドセンターを閉じる',
       openCommandCenter: 'コマンドセンターを開く',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowTerminal: 'ターミナルを表示',
+      showTerminal: 'ターミナルを表示',
       hideTerminal: 'ターミナルを非表示',
       gateway: 'ゲートウェイ',
       gatewayReady: '準備完了',
@@ -2333,7 +2333,7 @@ export const ja = defineLocale({
       startRestartFailed: message => `サーバー再起動を開始できませんでした: ${message}`,
       restartFailed: 'サーバーの再起動に失敗しました',
       hideConsole: 'プレビューコンソールを非表示',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowConsole: 'プレビューコンソールを表示',
+      showConsole: 'プレビューコンソールを表示',
       hideDevTools: 'プレビュー DevTools を非表示',
       openDevTools: 'プレビュー DevTools を開く',
       finishedRestarting: message =>
@@ -2360,7 +2360,7 @@ export const ja = defineLocale({
   },
 
   zones: {
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowHeader: 'ヘッダーを表示',
+    showHeader: 'ヘッダーを表示',
     hideHeader: 'ヘッダーを隠す',
     minimize: '最小化',
     restore: '復元',
@@ -2405,7 +2405,7 @@ export const ja = defineLocale({
   assistant: {
     thread: {
       loadingSession: 'セッションを読み込み中',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowEarlier: '以前のメッセージを表示',
+      showEarlier: '以前のメッセージを表示',
       loadingResponse: 'Opencodon が応答を読み込み中',
       resumeWhenBackgroundDone: count =>
         count === 1

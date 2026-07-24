@@ -97,7 +97,7 @@ export const zhHant = defineLocale({
       signOutAndSignIn: '登出並重新登入',
       remoteFailureHint: '在「閘道設定」中檢查閘道 URL 與登入，或切換至本機閘道。',
       hideRecentLogs: '隱藏最近記錄',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRecentLogs: '顯示最近記錄',
+      showRecentLogs: '顯示最近記錄',
       signedInTitle: '已登入',
       signedInMessage: '正在重新連線至遠端閘道…',
       signInIncompleteTitle: '登入未完成',
@@ -112,7 +112,7 @@ export const zhHant = defineLocale({
   notifications: {
     region: '通知',
     hide: '隱藏',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashow: '顯示',
+    show: '顯示',
     more: count => `另外 ${count} 則通知`,
     clearAll: '全部清除',
     dismiss: '關閉通知',
@@ -184,13 +184,13 @@ export const zhHant = defineLocale({
 
   titlebar: {
     hideSidebar: '隱藏側邊欄',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSidebar: '顯示側邊欄',
+    showSidebar: '顯示側邊欄',
     search: '搜尋',
     searchTitle: '搜尋工作階段、檢視和動作',
     swapSidebarSides: '交換側邊欄位置',
     swapSidebarSidesTitle: '交換工作階段欄和檔案瀏覽器的位置',
     hideRightSidebar: '隱藏右側邊欄',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRightSidebar: '顯示右側邊欄',
+    showRightSidebar: '顯示右側邊欄',
     muteHaptics: '靜音觸感回饋',
     unmuteHaptics: '開啟觸感回饋',
     openSettings: '開啟設定',
@@ -379,7 +379,7 @@ export const zhHant = defineLocale({
       timezone: '時區',
       display: {
         personality: '人格',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: '推理區塊'
+        showReasoning: '推理區塊'
       },
       desktop: {
         repoScanEnabled: '自動探索程式碼儲存庫',
@@ -539,7 +539,7 @@ export const zhHant = defineLocale({
       fallbackProviders: '預設模型失敗時要嘗試的備用 provider:model 項目。',
       display: {
         personality: '新工作階段的預設助手風格。',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: '後端提供推理內容時顯示該區塊。'
+        showReasoning: '後端提供推理內容時顯示該區塊。'
       },
       desktop: {
         repoScanEnabled: '掃描本機資料夾，並在「專案」中顯示 Git 程式碼儲存庫。',
@@ -751,7 +751,7 @@ export const zhHant = defineLocale({
         'SSH 驗證失敗。請將金鑰載入 ssh-agent（ssh-add），或在 ~/.ssh/config 中設定 IdentityFile——Opencodon 以非互動方式執行 ssh。',
       sshErrHostKey: '自上次連線以來主機金鑰已變更。請確認這是預期的，然後執行 ssh-keygen -R <host> 並重新連線。',
       sshErrNotInstalled:
-        '遠端主機上未安裝 Opencodon。請在遠端安裝（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash|curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）或設定 Opencodon 路徑。',
+        '遠端主機上未安裝 Opencodon。請在遠端安裝（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）或設定 Opencodon 路徑。',
       sshErrPlatform: '不支援的遠端平台。Opencodon Desktop 的 SSH 模式支援 Linux、macOS 和 Windows 遠端主機。',
       sshErrTimeout: 'SSH 連線逾時。主機可能無法存取或處於睡眠狀態。',
       sshErrUpdateRequired: '使用 Desktop SSH 連線前，請更新遠端主機上的 Opencodon。',
@@ -1312,7 +1312,7 @@ export const zhHant = defineLocale({
     loading: '正在載入設定檔…',
     newProfile: '新增設定檔',
     allProfiles: '全部設定檔',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowAllProfiles: '顯示全部設定檔',
+    showAllProfiles: '顯示全部設定檔',
     switchToProfile: name => `切換至 ${name}`,
     manageProfiles: '管理設定檔…',
     actionsFor: name => `${name} 的動作`,
@@ -1447,7 +1447,7 @@ export const zhHant = defineLocale({
     next: '下次：',
     noRuns: '尚無執行',
     manage: '管理',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRuns: '顯示執行記錄',
+    showRuns: '顯示執行記錄',
     hideRuns: '隱藏執行記錄',
     runHistory: '執行記錄',
     actionsFor: title => `${title} 的動作`,
@@ -1549,12 +1549,12 @@ export const zhHant = defineLocale({
     cronJobs: '排程任務',
     groupAriaGrouped: '以單一清單顯示工作階段',
     groupAriaUngrouped: '依工作區分組工作階段',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowProjects: '顯示專案',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSessions: '顯示工作階段',
+    showProjects: '顯示專案',
+    showSessions: '顯示工作階段',
     groupTitleGrouped: '取消分組',
     groupTitleUngrouped: '依工作區分組',
     allPinned: '這裡的全部已釘選。取消釘選某個聊天即可在最近中顯示。',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashiftClickHint: 'Shift + 點擊聊天以釘選 · 拖曳以重新排序',
+    shiftClickHint: 'Shift + 點擊聊天以釘選 · 拖曳以重新排序',
     noWorkspace: '無工作區',
     noProject: '無專案',
     projectEmpty: '尚無工作階段',
@@ -1618,7 +1618,7 @@ export const zhHant = defineLocale({
       enter: label => `開啟 ${label}`
     },
     newSessionIn: label => `在 ${label} 中新建工作階段`,
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowMoreIn: (count, label) => `在 ${label} 中再顯示 ${count} 個`,
+    showMoreIn: (count, label) => `在 ${label} 中再顯示 ${count} 個`,
     loading: '載入中…',
     loadMore: '載入更多',
     loadCount: step => `再載入 ${step} 個`,
@@ -1927,7 +1927,7 @@ export const zhHant = defineLocale({
     fetchingManifest: '正在取得安裝程式 manifest...',
     error: '錯誤',
     hideOutput: '隱藏安裝程式輸出',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowOutput: '顯示安裝程式輸出',
+    showOutput: '顯示安裝程式輸出',
     lines: count => `${count} 行`,
     noOutput: '暫無輸出。',
     cancelling: '取消中...',
@@ -1954,13 +1954,13 @@ export const zhHant = defineLocale({
     fireworksPitch: '直接模型 API — Fireworks 託管的前沿模型',
     openRouterPitch: '一個金鑰，數百個模型 — 穩定的預設選擇',
     apiKeyOptions: {
-      fireworks: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '直接模型 API', description: '直接存取 Fireworks AI 託管的模型。' },
-      openrouter: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '一個金鑰，多個模型', description: '用一個金鑰存取數百個模型。適合新安裝的預設選擇。' },
-      openai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'GPT 等級模型', description: '直接存取 OpenAI 模型。' },
-      gemini: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Gemini 模型', description: '直接存取 Google Gemini 模型。' },
-      xai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Grok 模型', description: '直接存取 xAI Grok 模型。' },
+      fireworks: { short: '直接模型 API', description: '直接存取 Fireworks AI 託管的模型。' },
+      openrouter: { short: '一個金鑰，多個模型', description: '用一個金鑰存取數百個模型。適合新安裝的預設選擇。' },
+      openai: { short: 'GPT 等級模型', description: '直接存取 OpenAI 模型。' },
+      gemini: { short: 'Gemini 模型', description: '直接存取 Google Gemini 模型。' },
+      xai: { short: 'Grok 模型', description: '直接存取 xAI Grok 模型。' },
       local: {
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '自託管',
+        short: '自託管',
         description: '將 Opencodon 指向本機或自託管的 OpenAI 相容端點（vLLM、llama.cpp、Ollama 等）。'
       }
     },
@@ -2030,7 +2030,7 @@ export const zhHant = defineLocale({
     addProvider: '新增提供方…'
   },
 
- curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashell: {
+  shell: {
     windowControls: '視窗控制項',
     paneControls: '窗格控制項',
     appControls: '應用程式控制項',
@@ -2099,11 +2099,11 @@ export const zhHant = defineLocale({
       connectionSshTooltip: host => `已透過 SSH 連線到 ${host} · 點擊管理`,
       connectionRemoteTooltip: host => `已連線到遠端後端 ${host} · 點擊管理`,
       backendLabel: version => `後端 v${version}`,
-      commit:curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | basha => `提交 ${sha}`,
+      commit: sha => `提交 ${sha}`,
       branch: branch => `分支 ${branch}`,
       closeCommandCenter: '關閉命令中心',
       openCommandCenter: '開啟命令中心',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowTerminal: '顯示終端機',
+      showTerminal: '顯示終端機',
       hideTerminal: '隱藏終端機',
       gateway: '閘道',
       gatewayReady: '就緒',
@@ -2209,7 +2209,7 @@ export const zhHant = defineLocale({
     openPreview: '開啟預覽',
     openInBrowser: '在瀏覽器中開啟',
     linkHint: '⌘/Ctrl+點擊在預覽窗格開啟',
-    sourceLineTitle: '點擊選取 ·curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashift 點擊擴展 · 拖曳至輸入框',
+    sourceLineTitle: '點擊選取 · shift 點擊擴展 · 拖曳至輸入框',
     source: '原始碼',
     renderedPreview: '預覽',
     diff: '差異',
@@ -2263,7 +2263,7 @@ export const zhHant = defineLocale({
       startRestartFailed: message => `無法啟動伺服器重新啟動：${message}`,
       restartFailed: '伺服器重新啟動失敗',
       hideConsole: '隱藏預覽主控台',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowConsole: '顯示預覽主控台',
+      showConsole: '顯示預覽主控台',
       hideDevTools: '隱藏預覽 DevTools',
       openDevTools: '開啟預覽 DevTools',
       finishedRestarting: message => `Opencodon 已完成預覽伺服器重新啟動${message ? `：${message}` : ''}`,
@@ -2288,7 +2288,7 @@ export const zhHant = defineLocale({
   },
 
   zones: {
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowHeader: '顯示標題列',
+    showHeader: '顯示標題列',
     hideHeader: '隱藏標題列',
     minimize: '最小化',
     restore: '還原',
@@ -2333,7 +2333,7 @@ export const zhHant = defineLocale({
   assistant: {
     thread: {
       loadingSession: '正在載入工作階段',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowEarlier: '顯示較早的訊息',
+      showEarlier: '顯示較早的訊息',
       loadingResponse: 'Opencodon 正在載入回覆',
       resumeWhenBackgroundDone: count =>
         count === 1 ? '背景工作完成後將自動繼續' : `${count} 個背景工作完成後將自動繼續`,

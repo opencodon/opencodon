@@ -97,7 +97,7 @@ export const zh: Translations = {
       signOutAndSignIn: '退出并重新登录',
       remoteFailureHint: '在“网关设置”中检查网关 URL 和登录，或切换到本地网关。',
       hideRecentLogs: '隐藏最近日志',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRecentLogs: '显示最近日志',
+      showRecentLogs: '显示最近日志',
       signedInTitle: '已登录',
       signedInMessage: '正在重新连接远程网关…',
       signInIncompleteTitle: '登录未完成',
@@ -112,7 +112,7 @@ export const zh: Translations = {
   notifications: {
     region: '通知',
     hide: '隐藏',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashow: '显示',
+    show: '显示',
     more: count => `另外 ${count} 条通知`,
     clearAll: '全部清除',
     dismiss: '关闭通知',
@@ -184,13 +184,13 @@ export const zh: Translations = {
 
   titlebar: {
     hideSidebar: '隐藏侧边栏',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSidebar: '显示侧边栏',
+    showSidebar: '显示侧边栏',
     search: '搜索',
     searchTitle: '搜索会话、视图与操作',
     swapSidebarSides: '交换侧边栏位置',
     swapSidebarSidesTitle: '交换会话栏和文件浏览器的位置',
     hideRightSidebar: '隐藏右侧栏',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRightSidebar: '显示右侧栏',
+    showRightSidebar: '显示右侧栏',
     muteHaptics: '关闭触感反馈',
     unmuteHaptics: '开启触感反馈',
     openSettings: '打开设置',
@@ -491,7 +491,7 @@ export const zh: Translations = {
       timezone: '时区',
       display: {
         personality: '人格',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: '推理过程块'
+        showReasoning: '推理过程块'
       },
       desktop: {
         repoScanEnabled: '自动发现代码仓库',
@@ -651,7 +651,7 @@ export const zh: Translations = {
       fallbackProviders: '默认模型失败时尝试的备用 provider:model 条目。',
       display: {
         personality: '新会话的默认助手风格。',
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowReasoning: '当后端提供推理内容时予以显示。'
+        showReasoning: '当后端提供推理内容时予以显示。'
       },
       desktop: {
         repoScanEnabled: '扫描本地文件夹，并在“项目”中显示 Git 代码仓库。',
@@ -895,7 +895,7 @@ export const zh: Translations = {
         'SSH 认证失败。请将密钥加载到 ssh-agent（ssh-add），或在 ~/.ssh/config 中设置 IdentityFile——Opencodon 以非交互方式运行 ssh。',
       sshErrHostKey: '自上次连接以来主机密钥已更改。请确认这是预期的，然后运行 ssh-keygen -R <host> 并重新连接。',
       sshErrNotInstalled:
-        '远程主机上未安装 Opencodon。请在远程安装（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash|curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）或设置 Opencodon 路径。',
+        '远程主机上未安装 Opencodon。请在远程安装（curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash）或设置 Opencodon 路径。',
       sshErrPlatform: '不支持的远程平台。Opencodon Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
       sshErrTimeout: 'SSH 连接超时。主机可能无法访问或处于休眠状态。',
       sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Opencodon。',
@@ -1249,10 +1249,10 @@ export const zh: Translations = {
     loading: '加载中…',
     emptyTitle: '尚无学习内容',
     emptyDesc: '当 Opencodon 为你的工作构建技能和记忆时，会显示在这里。',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashare: '分享图谱',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashareHint: '复制代码以分享此图谱，或粘贴代码以载入。仅包含布局，不含你的记忆或技能内容。',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashareTitle: '导入 / 导出图谱',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | basharePlaceholder: '粘贴图谱代码…',
+    share: '分享图谱',
+    shareHint: '复制代码以分享此图谱，或粘贴代码以载入。仅包含布局，不含你的记忆或技能内容。',
+    shareTitle: '导入 / 导出图谱',
+    sharePlaceholder: '粘贴图谱代码…',
     copy: '复制图谱代码',
     copied: '已复制！',
     importMap: '导入图谱',
@@ -1616,7 +1616,7 @@ export const zh: Translations = {
     loading: '正在加载配置档案…',
     newProfile: '新建配置档案',
     allProfiles: '全部配置档案',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowAllProfiles: '显示全部配置档案',
+    showAllProfiles: '显示全部配置档案',
     switchToProfile: name => `切换到 ${name}`,
     manageProfiles: '管理配置档案…',
     actionsFor: name => `${name} 的操作`,
@@ -1751,7 +1751,7 @@ export const zh: Translations = {
     next: '下次：',
     noRuns: '尚无运行',
     manage: '管理',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowRuns: '显示运行记录',
+    showRuns: '显示运行记录',
     hideRuns: '隐藏运行记录',
     runHistory: '运行记录',
     actionsFor: title => `${title} 的操作`,
@@ -1853,12 +1853,12 @@ export const zh: Translations = {
     cronJobs: '定时任务',
     groupAriaGrouped: '以单一列表显示会话',
     groupAriaUngrouped: '按工作区分组会话',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowProjects: '显示项目',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowSessions: '显示会话',
+    showProjects: '显示项目',
+    showSessions: '显示会话',
     groupTitleGrouped: '取消分组',
     groupTitleUngrouped: '按工作区分组',
     allPinned: '这里的全部已置顶。取消置顶某个对话即可在最近中显示。',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashiftClickHint: 'Shift+ 单击对话以置顶 · 拖动以重新排序',
+    shiftClickHint: 'Shift+ 单击对话以置顶 · 拖动以重新排序',
     noWorkspace: '无工作区',
     noProject: '无项目',
     projectEmpty: '暂无会话',
@@ -1925,7 +1925,7 @@ export const zh: Translations = {
       back: '全部项目'
     },
     newSessionIn: label => `在 ${label} 中新建会话`,
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowMoreIn: (count, label) => `在 ${label} 中再显示 ${count} 个`,
+    showMoreIn: (count, label) => `在 ${label} 中再显示 ${count} 个`,
     loading: '加载中…',
     loadMore: '加载更多',
     loadCount: step => `再加载 ${step} 个`,
@@ -2238,7 +2238,7 @@ export const zh: Translations = {
     fetchingManifest: '正在获取安装器 manifest...',
     error: '错误',
     hideOutput: '隐藏安装器输出',
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowOutput: '显示安装器输出',
+    showOutput: '显示安装器输出',
     lines: count => `${count} 行`,
     noOutput: '暂无输出。',
     cancelling: '取消中...',
@@ -2265,13 +2265,13 @@ export const zh: Translations = {
     fireworksPitch: '直接模型 API — Fireworks 托管的前沿模型',
     openRouterPitch: '一个密钥，数百个模型 — 稳妥的默认选择',
     apiKeyOptions: {
-      fireworks: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '直接模型 API', description: '直接访问 Fireworks AI 托管的模型。' },
-      openrouter: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '一个密钥，多个模型', description: '用一个密钥访问数百个模型。适合新安装的默认选择。' },
-      openai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'GPT 级模型', description: '直接访问 OpenAI 模型。' },
-      gemini: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Gemini 模型', description: '直接访问 Google Gemini 模型。' },
-      xai: {curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: 'Grok 模型', description: '直接访问 xAI Grok 模型。' },
+      fireworks: { short: '直接模型 API', description: '直接访问 Fireworks AI 托管的模型。' },
+      openrouter: { short: '一个密钥，多个模型', description: '用一个密钥访问数百个模型。适合新安装的默认选择。' },
+      openai: { short: 'GPT 级模型', description: '直接访问 OpenAI 模型。' },
+      gemini: { short: 'Gemini 模型', description: '直接访问 Google Gemini 模型。' },
+      xai: { short: 'Grok 模型', description: '直接访问 xAI Grok 模型。' },
       local: {
-       curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashort: '自托管',
+        short: '自托管',
         description: '将 Opencodon 指向本地或自托管的 OpenAI 兼容端点 (vLLM、llama.cpp、Ollama 等)。'
       }
     },
@@ -2342,7 +2342,7 @@ export const zh: Translations = {
     addProvider: '添加提供方…'
   },
 
- curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashell: {
+  shell: {
     windowControls: '窗口控件',
     paneControls: '面板控件',
     appControls: '应用控件',
@@ -2411,11 +2411,11 @@ export const zh: Translations = {
       connectionSshTooltip: host => `已通过 SSH 连接到 ${host} · 点击管理`,
       connectionRemoteTooltip: host => `已连接到远程后端 ${host} · 点击管理`,
       backendLabel: version => `后端 v${version}`,
-      commit:curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | basha => `提交 ${sha}`,
+      commit: sha => `提交 ${sha}`,
       branch: branch => `分支 ${branch}`,
       closeCommandCenter: '关闭命令中心',
       openCommandCenter: '打开命令中心',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowTerminal: '显示终端',
+      showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',
       gatewayReady: '就绪',
@@ -2521,7 +2521,7 @@ export const zh: Translations = {
     openPreview: '打开预览',
     openInBrowser: '在浏览器中打开',
     linkHint: '⌘/Ctrl+点击在预览面板打开',
-    sourceLineTitle: '点击选择 ·curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashift 点击扩展 · 拖到输入框',
+    sourceLineTitle: '点击选择 · shift 点击扩展 · 拖到输入框',
     source: '源码',
     renderedPreview: '预览',
     diff: '差异',
@@ -2575,7 +2575,7 @@ export const zh: Translations = {
       startRestartFailed: message => `无法启动服务器重启：${message}`,
       restartFailed: '服务器重启失败',
       hideConsole: '隐藏预览控制台',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowConsole: '显示预览控制台',
+      showConsole: '显示预览控制台',
       hideDevTools: '隐藏预览 DevTools',
       openDevTools: '打开预览 DevTools',
       finishedRestarting: message => `Opencodon 已完成预览服务器重启${message ? `: ${message}` : ''}`,
@@ -2600,7 +2600,7 @@ export const zh: Translations = {
   },
 
   zones: {
-   curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowHeader: '显示标题栏',
+    showHeader: '显示标题栏',
     hideHeader: '隐藏标题栏',
     minimize: '最小化',
     restore: '还原',
@@ -2648,7 +2648,7 @@ export const zh: Translations = {
   assistant: {
     thread: {
       loadingSession: '正在加载会话',
-     curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bashowEarlier: '显示更早的消息',
+      showEarlier: '显示更早的消息',
       loadingResponse: 'Opencodon 正在加载回复',
       resumeWhenBackgroundDone: count =>
         count === 1 ? '后台任务完成后将自动继续' : `${count} 个后台任务完成后将自动继续`,
