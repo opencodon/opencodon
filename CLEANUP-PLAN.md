@@ -235,6 +235,45 @@ lines with the mode plumbing) — small enough that it is not worth its own
 commit, and incoherent alone unless `resolve_modal_backend_state`'s "managed"
 mode goes with it.
 
+### B5-i progress (2026-07-25, second attempt)
+
+**Source is complete and verified clean** — `ruff` passes, every module
+imports, and no source file references a removed module. Saved as
+`.fork/b5i-source-complete.patch` (116 files, −27,802 lines).
+
+Done in that patch: the tool gateway and all ten leaf BYO-key fallbacks
+(firecrawl, krea, fal, browser-use, modal, openai-audio, tts, transcription,
+web_tools, terminal_tool); `nous_subscription` + `nous_account`; the five
+Portal-only view modules; `credits_tracker` and the whole `_capture_credits`
+/ notice path in `run_agent`; `portal_tags`; `nous_rate_guard` and its three
+call sites in `conversation_loop`; `cli_billing_mixin` + `/topup` +
+`/subscription`; the TUI's 22k-char Phase-2b RPC block; `portal_cli`; the
+proxy adapter; `dashboard_auth/nous`; the `nous-girl.jpg` assets; the four
+"Nous Subscription" rows in the `hermes tools` picker and every branch that
+gated on them; `setup.py`'s availability summary rewritten onto direct
+probes; `auth.py`'s two lazy account imports and its orphaned
+billing-scope helpers.
+
+Two files trimmed rather than deleted, per the warning above:
+`agent/account_usage.py` and `agent/billing_links.py`. Two generic helpers
+(`_has_agent_browser`, `_local_browser_runnable`) were relocated from
+`nous_subscription` into `tools_config` rather than lost.
+
+**Remaining: 34 test files / 109 failures.** Cause histogram:
+
+| Count | Cause |
+|---|---|
+| 55 | test modules importing a deleted module (`nous_account`, `nous_billing`, `nous_subscription`, `portal_tags`, `credits_tracker`, `billing_view`, `proxy.adapters.nous_portal`) |
+| ~12 | provider-parity suites enumerating the deleted `nous` provider profile (`build_extra_body`, `build_api_kwargs_extras`, `register`) |
+| ~8 | tests importing removed functions (`is_nous_inference_route`, `build_nous_subscription_prompt`, `nous_credits_lines`) |
+| ~7 | expected-output assertions (`extra_body` tags, `/usage` credits lines, console-engine command list) |
+
+Lesson recorded: a bulk regex sweep over test files must be **single-line
+only**. A multi-line `monkeypatch.setattr(...)` pattern silently ate 66 lines
+of unrelated tests in `test_web_tools_config.py` and 115 in `test_setup.py`;
+caught by comparing per-file deletion counts, then reverted and redone with a
+strictly single-line pattern.
+
 Patch from the abandoned attempt (81 files, reverted so the tree stays green):
 `scratchpad/b5-partial.patch`. Reverted rather than pushed to completion
 because the tree did not import mid-cut and the remaining work was
