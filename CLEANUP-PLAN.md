@@ -188,16 +188,52 @@ Correctly Nous-only, safe to delete: `nous_rate_guard.py`, `portal_tags.py`,
 `credits_tracker.py` (parses `x-nous-credits-*` headers), and all five
 `opencodon_cli/nous_*.py` + `cli_billing_mixin.py`.
 
-**Recommendation: split B5 into three commits**, in this order, each verified:
-1. **B5a — Nous Tool Gateway.** Self-contained, every consumer has a BYO-key
-   fallback. ~2,500 lines. (This part was completed in the abandoned attempt
-   and is the cleanest piece of the patch.)
-2. **B5b — billing/subscription/credits UI.** The five Portal-only view modules,
-   the TUI's 22k-char Phase-2b RPC block, `cli_billing_mixin`, the desktop
-   billing screens, plus the trims to `account_usage.py` / `billing_links.py`.
-3. **B5c — the auth provider.** `auth.py`'s Nous section, the dashboard-auth
-   plugin, the proxy adapter, `portal_cli.py`, and the Quick Setup replacement.
-   Highest risk — it is the credential/OAuth layer — so it belongs alone.
+**Correction (same day): the three-way split above does not exist.** Verified
+by reading module-level imports:
+
+```
+tools/managed_tool_gateway.py  -> tools.tool_backend_helpers
+opencodon_cli/nous_subscription.py -> nous_account, managed_tool_gateway, tool_backend_helpers
+opencodon_cli/nous_account.py  -> (leaf)
+```
+
+All module-level. So deleting the gateway forces deleting
+`nous_subscription.py`, which forces deleting `nous_account.py` — the Portal
+account layer that was supposed to be a *later* commit. And
+`nous_subscription.py` is itself a hub: **30+ call sites in
+`opencodon_cli/tools_config.py`** (the `hermes tools` UI) plus `web_server.py`,
+`setup.py`, `status.py`, `model_setup_flows.py`, `portal_cli.py`, and
+`agent/prompt_builder.py`. There is no independently-shippable "tool gateway"
+commit.
+
+`auth.py` **is** a real seam: it holds only two *lazy*, function-local imports
+of `nous_account` (both for entitlement-error copy), so everything else depends
+on auth rather than the reverse.
+
+**Actual split — two commits:**
+
+1. **B5-i — the managed-tools + billing + subscription layer** (~20k lines, one
+   connected component): `managed_tool_gateway.py`, `environments/managed_modal.py`,
+   `nous_subscription.py`, `nous_account.py`, `credits_tracker.py`,
+   `portal_tags.py`, `nous_rate_guard.py`, `billing_view.py`, `billing_usage.py`,
+   `subscription_view.py`, `cli_billing_mixin.py`, `portal_cli.py`, the TUI's
+   Phase-2b RPC block, the desktop billing screens, the managed branches in
+   `tools_config`/`setup`/`status`/`web_server`/`model_setup_flows`/`prompt_builder`,
+   the ten tool-consumer BYO-key fallbacks, the trims to `account_usage.py` and
+   `billing_links.py`, and the two lazy `auth.py` entitlement branches.
+   Intermediate state is coherent: you can still authenticate to Nous as an
+   inference provider, but there is no billing UI, no credits display, and no
+   managed tools.
+2. **B5-ii — the auth provider**: `auth.py`'s Nous `ProviderConfig` entry and its
+   1,260-line section, `plugins/dashboard_auth/nous/`,
+   `proxy/adapters/nous_portal.py`, and a replacement for Quick Setup's default
+   option.
+
+The only genuinely isolated sub-slice is the managed-Modal *terminal backend*
+(`environments/managed_modal.py`, imported solely by `terminal_tool.py`, ~500
+lines with the mode plumbing) — small enough that it is not worth its own
+commit, and incoherent alone unless `resolve_modal_backend_state`'s "managed"
+mode goes with it.
 
 Patch from the abandoned attempt (81 files, reverted so the tree stays green):
 `scratchpad/b5-partial.patch`. Reverted rather than pushed to completion
