@@ -53,16 +53,6 @@ MIGRATION_MARKER = (
 MIGRATION_END_MARKER = (
     "# end opencodon managed section"
 )
-# Markers written by hermes-agent (pre-rename) installs; recognized on
-# re-migration so existing config.toml files keep round-tripping.
-LEGACY_MIGRATION_MARKER = (
-    "# managed by hermes-agent — `hermes codex-runtime migrate` regenerates this section"
-)
-LEGACY_MIGRATION_END_MARKER = (
-    "# end hermes-agent managed section"
-)
-
-
 @dataclass
 class MigrationReport:
     """Outcome of a migration pass."""
@@ -428,12 +418,12 @@ def _strip_existing_managed_block(toml_text: str) -> str:
     saw_end_marker = False
     for line in lines:
         line_stripped_nl = line.rstrip("\n")
-        if line_stripped_nl in (MIGRATION_MARKER, LEGACY_MIGRATION_MARKER):
+        if line_stripped_nl == MIGRATION_MARKER:
             in_managed = True
             saw_end_marker = False
             continue
         if in_managed:
-            if line_stripped_nl in (MIGRATION_END_MARKER, LEGACY_MIGRATION_END_MARKER):
+            if line_stripped_nl == MIGRATION_END_MARKER:
                 in_managed = False
                 saw_end_marker = True
                 continue

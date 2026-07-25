@@ -307,7 +307,7 @@ class TestQwenAlibabaFamily:
         # routed through Portal keep their existing fall-through behavior.
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference.example.com/v1",
             api_mode="chat_completions",
             model="openai/gpt-5.4",
         )

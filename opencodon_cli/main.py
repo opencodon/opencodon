@@ -6300,7 +6300,7 @@ def _print_curator_first_run_notice() -> None:
     print("  Preview now:  hermes curator run --dry-run")
     print("  Pause it:     hermes curator pause")
     print(
-        "  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator"
+        "  Docs:         https://github.com/opencodon/opencodon/tree/main/docs"
     )
 
 
@@ -6813,7 +6813,7 @@ def _update_via_zip(args):
         )
         sys.exit(1)
     zip_url = (
-        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/opencodon/opencodon/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
@@ -7236,12 +7236,12 @@ def _discard_stashed_changes(
 # =========================================================================
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
+    "https://github.com/opencodon/opencodon.git",
+    "git@github.com:opencodon/opencodon.git",
+    "https://github.com/opencodon/opencodon",
+    "git@github.com:opencodon/opencodon",
 }
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/opencodon/opencodon.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 
@@ -7375,7 +7375,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Hermes repository.")
-        print("  This means you may miss updates from NousResearch/hermes-agent.")
+        print("  This means you may miss updates from opencodon/opencodon.")
         print()
         try:
             response = (
@@ -7389,7 +7389,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
+                    "  ✓ Added upstream: https://github.com/opencodon/opencodon.git"
                 )
                 has_upstream = True
             else:
@@ -7397,7 +7397,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/opencodon/opencodon.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -7803,13 +7803,10 @@ def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
 
     names = set(_load_console_script_names()) or {
         "opencodon", "opencodon-agent", "opencodon-acp",
-        # Legacy hermes-agent shims; installs from before the rename.
-        "hermes", "hermes-agent", "hermes-acp",
     }
-    # The gateway shims are not [project.scripts] entry points, but older
-    # update/install paths still rewrite and quarantine them.
+    # The gateway shim is not a [project.scripts] entry point, but the
+    # update/install paths still rewrite and quarantine it.
     names.add("opencodon-gateway")
-    names.add("hermes-gateway")
     return [scripts_dir / f"{name}.exe" for name in sorted(names)]
 
 
@@ -7934,16 +7931,16 @@ def _format_concurrent_instances_message(
     matches: list[tuple[int, str]], scripts_dir: Path
 ) -> str:
     """Build a human-readable explanation + remediation hint for the user."""
-    shim = scripts_dir / "hermes.exe"
-    lines = ["✗ Another hermes.exe is running:"]
+    shim = scripts_dir / "opencodon.exe"
+    lines = ["✗ Another opencodon.exe is running:"]
     for pid, name in matches:
         lines.append(f"    PID {pid}  {name}")
     lines.append("")
     lines.append(f"  Updating now would fail to overwrite {shim} because")
     lines.append("  Windows blocks REPLACE on a running executable.")
     lines.append("")
-    lines.append("  Close Hermes Desktop, exit any open `hermes` REPLs, and")
-    lines.append("  stop the gateway (`hermes gateway stop`) before retrying.")
+    lines.append("  Close the desktop app, exit any open `opencodon` REPLs,")
+    lines.append("  and stop the gateway (`opencodon gateway stop`) before retrying.")
     lines.append("")
     if matches:
         pid_args = " ".join(f"/PID {pid}" for pid, _ in matches)
@@ -7951,7 +7948,7 @@ def _format_concurrent_instances_message(
         lines.append("  stale, terminate them directly, then retry the update:")
         lines.append(f"      taskkill {pid_args} /F")
         lines.append("")
-    lines.append("  Override with `hermes update --force` if you've already")
+    lines.append("  Override with `opencodon update --force` if you've already")
     lines.append("  confirmed those processes will not write to the venv.")
     return "\n".join(lines)
 
@@ -10304,7 +10301,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         else:
             print("✗ Not a git repository. Please reinstall:")
             print(
-                "  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash"
+                "  curl -fsSL https://raw.githubusercontent.com/opencodon/opencodon/main/scripts/install.sh | bash"
             )
             sys.exit(1)
 
@@ -11821,33 +11818,6 @@ def _cmd_update_impl(args, gateway_mode: bool):
         _resume_windows_gateways_after_update(_windows_gateway_resume)
 
         # Warn if legacy Hermes gateway unit files are still installed.
-        # When both hermes.service (from a pre-rename install) and the
-        # current hermes-gateway.service are enabled, they SIGTERM-fight
-        # for the same bot token (see PR #11909). Flagging here means
-        # every `hermes update` surfaces the issue until the user migrates.
-        try:
-            from opencodon_cli.gateway import (
-                has_legacy_hermes_units,
-                _find_legacy_hermes_units,
-                supports_systemd_services,
-            )
-
-            if supports_systemd_services() and has_legacy_hermes_units():
-                print()
-                print("⚠ Legacy Hermes gateway unit(s) detected:")
-                for name, path, is_sys in _find_legacy_hermes_units():
-                    scope = "system" if is_sys else "user"
-                    print(f"    {path}  ({scope} scope)")
-                print()
-                print("  These pre-rename units (hermes.service) fight the current")
-                print("  hermes-gateway.service for the bot token and cause SIGTERM")
-                print("  flap loops. Remove them with:")
-                print()
-                print("    hermes gateway migrate-legacy")
-                print()
-                print("  (add `sudo` if any are in system scope)")
-        except Exception as e:
-            logger.debug("Legacy unit check during update failed: %s", e)
 
         # Restart a managed dashboard through systemd, or stop stale manual
         # dashboard processes.  Raw-killing a systemd-owned dashboard PID makes
@@ -13766,32 +13736,11 @@ def cmd_mcp(args):
     mcp_command(args)
 
 
-def main_hermes_deprecated():
-    """Entry point for the deprecated `hermes` alias (removed after one release)."""
-    import sys as _sys
-    print(
-        "warning: the `hermes` command is deprecated — this project is now "
-        "opencodon. Use `opencodon` instead.",
-        file=_sys.stderr,
-    )
-    return main()
-
-
 def main():
     """Main entry point for the opencodon CLI."""
     # Cosmetic: make the process show up as 'opencodon' instead of 'python3.11'
     # in ps/top/htop.  Non-fatal — just a nicer UX.
     _set_process_title()
-
-    # First-run courtesy for hermes-agent lineage users: point at the legacy
-    # home instead of silently starting fresh. Never migrates data.
-    try:
-        from opencodon_constants import legacy_hermes_home_hint
-        _hint = legacy_hermes_home_hint()
-        if _hint:
-            print(_hint, file=sys.stderr)
-    except Exception:
-        pass
 
     # Force UTF-8 stdio on Windows before anything prints.  No-op elsewhere.
     try:
@@ -13866,7 +13815,7 @@ def main():
             "Manage the fallback provider chain.  Fallback providers are tried "
             "in order when the primary model fails with rate-limit, overload, or "
             "connection errors.  See: "
-            "https://hermes-agent.nousresearch.com/docs/user-guide/features/fallback-providers"
+            "https://github.com/opencodon/opencodon/tree/main/docs"
         ),
     )
     fallback_subparsers = fallback_parser.add_subparsers(dest="fallback_command")
@@ -13900,7 +13849,7 @@ def main():
             "Pull API keys from an external secret manager at process startup "
             "instead of storing them in ~/.opencodon/.env.  Supports Bitwarden "
             "Secrets Manager and 1Password.  See: "
-            "https://hermes-agent.nousresearch.com/docs/user-guide/secrets/"
+            "https://github.com/opencodon/opencodon/tree/main/docs"
         ),
     )
     secrets_subparsers = secrets_parser.add_subparsers(dest="secrets_command")

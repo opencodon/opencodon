@@ -3782,7 +3782,7 @@ def check_for_skill_updates(
 # Hermes centralized index source
 # ---------------------------------------------------------------------------
 
-OPENCODON_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+OPENCODON_INDEX_URL = "https://raw.githubusercontent.com/opencodon/opencodon/main/catalog/skills-index.json"
 OPENCODON_INDEX_TTL = 6 * 3600  # 6 hours
 
 

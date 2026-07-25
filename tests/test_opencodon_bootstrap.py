@@ -397,33 +397,3 @@ class TestHardenImportPath:
                 os.environ["OPENCODON_PYTHON_SRC_ROOT"] = original_env
 
 
-class TestLegacyHermesEnvCompat:
-    """The HERMES_* -> OPENCODON_* env fallback shim (one-release compat)."""
-
-    def _module(self):
-        import opencodon_bootstrap
-        return opencodon_bootstrap
-
-    def test_legacy_var_copied_when_new_unset(self, monkeypatch):
-        hb = self._module()
-        monkeypatch.delenv("OPENCODON_FAKE_COMPAT_VAR", raising=False)
-        monkeypatch.setenv("HERMES_FAKE_COMPAT_VAR", "legacy-value")
-        copied = hb.apply_legacy_hermes_env_compat()
-        assert "HERMES_FAKE_COMPAT_VAR" in copied
-        assert os.environ["OPENCODON_FAKE_COMPAT_VAR"] == "legacy-value"
-        monkeypatch.delenv("OPENCODON_FAKE_COMPAT_VAR", raising=False)
-
-    def test_new_var_always_wins(self, monkeypatch):
-        hb = self._module()
-        monkeypatch.setenv("HERMES_FAKE_COMPAT_VAR", "legacy-value")
-        monkeypatch.setenv("OPENCODON_FAKE_COMPAT_VAR", "new-value")
-        copied = hb.apply_legacy_hermes_env_compat()
-        assert "HERMES_FAKE_COMPAT_VAR" not in copied
-        assert os.environ["OPENCODON_FAKE_COMPAT_VAR"] == "new-value"
-
-    def test_no_legacy_vars_is_noop(self, monkeypatch):
-        hb = self._module()
-        for key in list(os.environ):
-            if key.startswith("HERMES_"):
-                monkeypatch.delenv(key, raising=False)
-        assert hb.apply_legacy_hermes_env_compat() == []

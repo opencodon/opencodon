@@ -1207,33 +1207,3 @@ class TestWslPathTranslation:
         assert opencodon_constants.translate_cwd_for_wsl_backend("/home/alex") == "/home/alex"
 
 
-class TestLegacyHermesHomeHint:
-    """First-run hint pointing hermes-agent users at OPENCODON_HOME adoption."""
-
-    def test_hint_when_only_legacy_home_exists(self, tmp_path, monkeypatch):
-        import opencodon_constants as oc
-        monkeypatch.delenv("OPENCODON_HOME", raising=False)
-        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
-        (tmp_path / ".hermes").mkdir()
-        hint = oc.legacy_hermes_home_hint()
-        assert hint is not None
-        assert "OPENCODON_HOME" in hint and ".hermes" in hint
-
-    def test_silent_when_new_home_exists(self, tmp_path, monkeypatch):
-        import opencodon_constants as oc
-        monkeypatch.delenv("OPENCODON_HOME", raising=False)
-        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
-        (tmp_path / ".hermes").mkdir()
-        (tmp_path / ".opencodon").mkdir()
-        assert oc.legacy_hermes_home_hint() is None
-
-    def test_silent_when_env_set(self, tmp_path, monkeypatch):
-        import opencodon_constants as oc
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "custom"))
-        assert oc.legacy_hermes_home_hint() is None
-
-    def test_silent_when_no_legacy_home(self, tmp_path, monkeypatch):
-        import opencodon_constants as oc
-        monkeypatch.delenv("OPENCODON_HOME", raising=False)
-        monkeypatch.setattr(oc.Path, "home", classmethod(lambda cls: tmp_path))
-        assert oc.legacy_hermes_home_hint() is None

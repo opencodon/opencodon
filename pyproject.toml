@@ -275,10 +275,6 @@ build-backend = "setuptools.build_meta"
 opencodon = "opencodon_cli.main:main"
 opencodon-agent = "run_agent:main"
 opencodon-acp = "acp_adapter.entry:main"
-# Deprecated aliases from the hermes-agent lineage; removed after one release.
-hermes = "opencodon_cli.main:main_hermes_deprecated"
-hermes-agent = "run_agent:main"
-hermes-acp = "acp_adapter.entry:main"
 
 [tool.setuptools]
 # Top-level single-file modules (not packages). Without this, uv2nix's

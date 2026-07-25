@@ -1,6 +1,6 @@
 """Tests for get_opencodon_home() profile-mode fallback warning.
 
-Regression test for https://github.com/NousResearch/hermes-agent/issues/18594.
+Regression test for upstream#18594
 
 When OPENCODON_HOME is unset but an active_profile file indicates a non-default
 profile is active, get_opencodon_home() should:

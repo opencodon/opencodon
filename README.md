@@ -16,7 +16,7 @@ Most AI agents optimize for chat. Science needs provenance:
 
 ## Inherited strengths
 
-opencodon is a hard fork of [hermes-agent](https://github.com/NousResearch/hermes-agent) by Nous Research, and keeps its best machinery:
+opencodon is a hard fork of [hermes-agent](https://github.com/opencodon/opencodon) by Nous Research, and keeps its best machinery:
 
 - **Any model** — 33 providers (OpenRouter, OpenAI, Anthropic, local endpoints, …); switch with `opencodon model`, no lock-in.
 - **Three UI surfaces** — terminal TUI, web dashboard, and desktop app (being redesigned result-first for science work).
@@ -99,4 +99,4 @@ Weekly upstream triage: security and dependency-pin fixes from hermes-agent are 
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The repository predates the fork by 17,000+ commits — `git blame` and the issue references in commit messages point at [upstream](https://github.com/NousResearch/hermes-agent) history.
+See [CONTRIBUTING.md](CONTRIBUTING.md). The repository predates the fork by 17,000+ commits — `git blame` and the issue references in commit messages point at [upstream](https://github.com/opencodon/opencodon) history.

@@ -6,10 +6,9 @@ scope for vulnerability reports.
 
 ## 1. Reporting a Vulnerability
 
-Report privately via [GitHub Security Advisories](https://github.com/NousResearch/hermes-agent/security/advisories/new)
-or **security@nousresearch.com**. Do not open public issues for
-security vulnerabilities. **Hermes Agent does not operate a bug
-bounty program.**
+Report privately via [GitHub Security Advisories](https://github.com/opencodon/opencodon/security/advisories/new).
+Do not open public issues for security vulnerabilities. **opencodon does
+not operate a bug bounty program.**
 
 A useful report includes:
 
@@ -326,7 +325,6 @@ that:
 
 - **Coordinated disclosure window:** 90 days from report, or until a
   fix is released, whichever comes first.
-- **Channel:** the GHSA thread or email correspondence with
-  security@nousresearch.com.
+- **Channel:** the GHSA thread.
 - **Credit:** reporters are credited in release notes unless
   anonymity is requested.

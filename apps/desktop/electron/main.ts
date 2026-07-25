@@ -888,12 +888,12 @@ app.setName(APP_NAME)
 // Windows toast notifications silently no-op unless an AppUserModelID is set:
 // `new Notification().show()` returns without error and nothing appears. The
 // AUMID must match the installed Start Menu shortcut's AUMID, which
-// electron-builder derives from the build `appId` (com.nousresearch.opencodon) —
+// electron-builder derives from the build `appId` (ai.opencodon.desktop) —
 // keep this string in sync with package.json `build.appId`. macOS/Linux don't
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nousresearch.opencodon')
+  app.setAppUserModelId('ai.opencodon.desktop')
 }
 
 // Seed the native About panel with the live Opencodon version. This is refreshed
@@ -5950,7 +5950,7 @@ async function freshGatewayWsUrl(profile) {
 // Canonical Nous portal base URL, overridable for staging/dev. Mirrors the CLI
 // convention (opencodon_cli/auth.py DEFAULT_NOUS_PORTAL_URL + the same env names)
 // so a single override flips every Opencodon surface to the same portal.
-const DEFAULT_NOUS_PORTAL_URL = 'https://portal.nousresearch.com'
+const DEFAULT_NOUS_PORTAL_URL = 'https://idp.example.com'
 
 function resolvePortalBaseUrl() {
   const raw = process.env.OPENCODON_PORTAL_BASE_URL || process.env.NOUS_PORTAL_BASE_URL || DEFAULT_NOUS_PORTAL_URL

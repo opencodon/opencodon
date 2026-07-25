@@ -2592,8 +2592,7 @@ class TestConvertToolsToAnthropicDedup:
     """convert_tools_to_anthropic must deduplicate tool names.
 
     Anthropic rejects requests with duplicate tool names.  This guard converts
-    a hard failure into a warning log.  See:
-    https://github.com/NousResearch/hermes-agent/issues/18478
+    a hard failure into a warning log.  upstream#18478
     """
 
     def _make_openai_tool(self, name: str) -> dict:

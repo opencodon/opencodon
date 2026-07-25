@@ -380,7 +380,7 @@ def test_running_under_gateway_supervisor_markers(monkeypatch):
     _clear_supervisor_markers(monkeypatch)
     assert gateway._running_under_gateway_supervisor() is False
 
-    monkeypatch.setenv("XPC_SERVICE_NAME", "org.nousresearch.opencodon.gateway")
+    monkeypatch.setenv("XPC_SERVICE_NAME", "ai.opencodon.gateway")
     assert gateway._running_under_gateway_supervisor() is True
 
     monkeypatch.setenv("XPC_SERVICE_NAME", "0")
@@ -996,36 +996,6 @@ def test_gateway_install_systemd_no_start_now_flag_non_tty(monkeypatch):
     assert ("start",) not in calls
 
 
-def test_gateway_install_noninteractive_skips_legacy_unit_prompt(monkeypatch, tmp_path):
-    """In non-TTY, the legacy-unit removal prompt in systemd_install is skipped.
-
-    Covers the second hidden prompt that --start-now/--start-on-login do not
-    guard. Originally contributed via PR #42124 (kyssta-exe).
-    """
-    monkeypatch.setattr(gateway, "has_legacy_hermes_units", lambda: True)
-
-    calls = []
-    monkeypatch.setattr(
-        gateway,
-        "prompt_yes_no",
-        lambda question, default=True: calls.append(("prompt", question)) or True,
-    )
-    monkeypatch.setattr(gateway, "remove_legacy_hermes_units", lambda interactive=False: calls.append(("remove_legacy",)))
-    monkeypatch.setattr(gateway, "print_legacy_unit_warning", lambda: None)
-
-    fake_path = tmp_path / "opencodon-gateway.service"
-    monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: fake_path)
-    monkeypatch.setattr(gateway, "generate_systemd_unit", lambda system=False, run_as_user=None: "[Service]")
-    monkeypatch.setattr(gateway, "_run_systemctl", lambda *a, **kw: None)
-    monkeypatch.setattr(gateway, "_ensure_linger_enabled", lambda: None)
-    monkeypatch.setattr(gateway, "print_systemd_scope_conflict_warning", lambda: None)
-    monkeypatch.setattr(gateway, "_service_scope_label", lambda system=False: "user")
-
-    gateway.systemd_install(non_interactive=True)
-
-    # Legacy units removed without prompting.
-    assert ("remove_legacy",) in calls
-    assert all(c[0] != "prompt" for c in calls)
 
 
 def test_find_gateway_pids_falls_back_to_pid_file_when_process_scan_fails(monkeypatch):

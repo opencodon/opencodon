@@ -84,5 +84,6 @@ not a substitute for code review, SAST, dependency scanning, or pen testing.
   (commit `0bde168`, 2026-05-26), licensed under the
   [Apache License 2.0](./LICENSE). See [NOTICE](./NOTICE) for the full
   attribution.
-* `__init__.py`, `plugin.yaml`, `README.md`, and tests are original work by
-  NousResearch, MIT-licensed alongside the rest of hermes-agent.
+* `__init__.py`, `plugin.yaml`, `README.md`, and tests are inherited from
+  hermes-agent (Copyright (c) 2025 Nous Research), MIT-licensed alongside
+  the rest of opencodon.

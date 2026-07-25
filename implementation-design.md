@@ -131,7 +131,7 @@ re-runs and checksums match.
 
 - **This repo (`opencodon-hermes`) is the canonical product repo.** All building happens here,
   and it replaces the `opencodon` repo once the science layer reaches parity (decided
-  2026-07-18). It is a fork tracking `NousResearch/hermes-agent`; the science layer lives in
+  2026-07-18). It is a fork tracking `opencodon/opencodon`; the science layer lives in
   **new modules** (`science/`, new tool files) and diffs to existing hermes core files stay
   minimal, so pulling upstream hermes fixes stays cheap for as long as it's worth doing.
 - Opencodon is donor-only from now on: no new features land there, no migration of its

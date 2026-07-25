@@ -3,7 +3,7 @@
 ## 0.1.0 — 2026-07-24
 
 Initial release. **opencodon** is a hard fork of
-[NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+[opencodon/opencodon](https://github.com/opencodon/opencodon)
 (forked at upstream commit `8fc278207b0f`, 2026-07-23) refocused on
 scientific computing workflows. Full git history is retained; upstream
 security fixes are triaged weekly and cherry-picked (see `FORK-PLAN.md`).

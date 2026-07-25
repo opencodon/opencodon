@@ -103,36 +103,6 @@ def _warn_profile_fallback_once() -> None:
             pass
 
 
-def legacy_hermes_home_hint() -> str | None:
-    """One-line hint when a hermes-agent home exists but no opencodon home.
-
-    Fires only when ``OPENCODON_HOME`` is unset, the default
-    ``~/.opencodon`` does not exist yet, and a legacy ``~/.hermes``
-    (or ``%LOCALAPPDATA%\\hermes``) does. We deliberately do NOT migrate
-    data automatically: the legacy home may belong to a still-running
-    hermes-agent install, and moving or copying live SQLite state under
-    it would risk corruption. Adoption is explicit via OPENCODON_HOME.
-    """
-    if os.environ.get("OPENCODON_HOME", "").strip():
-        return None
-    new_home = _get_platform_default_opencodon_home()
-    if new_home.exists():
-        return None
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        legacy = base / "hermes"
-    else:
-        legacy = Path.home() / ".hermes"
-    if not legacy.exists():
-        return None
-    return (
-        f"note: found a legacy hermes-agent home at {legacy}. opencodon uses "
-        f"{new_home} and starts fresh. To keep your existing config, "
-        f"sessions, and skills, set OPENCODON_HOME={legacy} (adopts the old "
-        f"home in place)."
-    )
-
 
 def get_opencodon_home() -> Path:
     """Return the Hermes home directory (default: platform-native path).
@@ -150,7 +120,7 @@ def get_opencodon_home() -> Path:
     callers that import this at load time.  Subprocess spawners are
     expected to propagate ``OPENCODON_HOME`` explicitly (see the systemd
     template in ``opencodon_cli/gateway.py`` and the kanban dispatcher in
-    ``opencodon_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    ``opencodon_cli/kanban_db.py``).  upstream#18594
     """
     override = get_opencodon_home_override()
     if override:
@@ -700,7 +670,7 @@ def secure_parent_dir(path: Path) -> None:
     prevent catastrophic host bricking when ``OPENCODON_HOME`` or other path
     env vars resolve to an unexpected location.
 
-    See https://github.com/NousResearch/hermes-agent/issues/25821.
+    upstream#25821
     """
     parent = path.parent.resolve()
     # Refuse root and its direct children (/usr, /home, /var, /tmp, …).
@@ -1144,7 +1114,7 @@ def is_container() -> bool:
 
     Result is cached for the process lifetime.  Import-safe — no heavy deps.
 
-    See: NousResearch/hermes-agent#47111
+    See: upstream#47111
     """
     global _container_detected
     if _container_detected is not None:

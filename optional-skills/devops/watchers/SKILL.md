@@ -66,7 +66,7 @@ Watch a GitHub repo (set `GITHUB_TOKEN` in `${OPENCODON_HOME:-~/.opencodon}/.env
 
 ```bash
 python $OPENCODON_HOME/skills/devops/watchers/scripts/watch_github.py \
-  --name hermes-issues --repo NousResearch/hermes-agent --scope issues
+  --name hermes-issues --repo opencodon/opencodon --scope issues
 ```
 
 Poll an arbitrary JSON API:
