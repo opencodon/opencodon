@@ -388,6 +388,29 @@ Both are the same class of failure: a name referenced only inside a function
 body, which neither `ruff` nor `import <module>` evaluates. The AST scan is
 now the standard check after any function removal.
 
+### Telegram managed-bot onboarding — CUT (2026-07-25)
+
+The QR "automatic" bot-creation flow talked only to a Nous-hosted Cloudflare
+Worker (`setup.hermes-agent.nousresearch.com`), so it could never work for a
+fork. Removed end to end:
+
+- `opencodon_cli/telegram_managed_bot.py` and its test module
+- the four `/api/messaging/telegram/onboarding/*` dashboard endpoints and
+  their ~360-line helper block, plus the two request models
+- `setup.py`'s `_setup_telegram_auto{,_result}` and the "[1] Automatic /
+  [2] Manual" prompt — `_setup_telegram` now goes straight to the token prompt
+- the same auto/manual branch in `gateway.py`'s platform wizard, including
+  the `auto_owner_user_id` allowlist pre-fill
+- the web SPA's `TelegramOnboardingPanel` (~400 lines), its API client
+  methods, and its three response types
+
+**Telegram itself is untouched** — the platform adapter, allowlist, and home
+channel all work exactly as before. Only the bot-*creation* shortcut is gone;
+users create a bot via @BotFather and paste the token, which was already the
+fallback path. One user-visible improvement falls out of it: Telegram now
+shows the standard "Configure" button on the Channels page like every other
+platform, instead of being special-cased to hide it behind the QR panel.
+
 ### How to run the tests (learned the hard way, 2026-07-25)
 
 **Use `scripts/run_tests_parallel.py`. Never `pytest tests/` directly.**
@@ -444,18 +467,16 @@ generic; a fourth (`_refresh_access_token`, which POSTs
 ("a hard fork of Nous Research's hermes-agent"), and the
 `anthropic_adapter` sanitizer that scrubs it off the Anthropic OAuth wire.
 
-**Deferred out of B5-ii** (tracked separately, not blockers):
+**Deferred out of B5-ii — both now RESOLVED by the user (2026-07-25):**
 
-- `@nous-research/ui` is a **third-party npm dependency** (v0.18.2) that the
-  web dashboard imports in ~50 files. It is an upstream package name, not our
-  code; removing it means replacing the dashboard's component library. Needs
-  an explicit decision: keep, vendor, or migrate.
-- The Telegram managed-bot onboarding
-  (`opencodon_cli/telegram_managed_bot.py`, the `/api/messaging/telegram/
-  onboarding/*` dashboard endpoints, and the setup/gateway call sites) works
-  only against the Nous-hosted worker at `setup.hermes-agent.nousresearch.com`
-  and is therefore non-functional post-fork. Cutting it is a self-contained
-  change that also touches the web SPA.
+- **`@nous-research/ui`: KEEP.** It is a published third-party npm package
+  (v0.18.2) imported across ~50 `web/src` files, plus font files referenced by
+  `dashboard_auth/login_page.py`. A published package name cannot be renamed
+  away. Its name therefore stays in `package.json` and in import statements —
+  an accepted, documented exception to "no Nous references", alongside the MIT
+  `LICENSE` / `NOTICE` attribution. Do not "fix" these in the Part A sweep.
+- **Telegram managed-bot onboarding: CUT** (done — see below). BotFather token
+  entry remains the supported path.
 - `dashboard_auth/login_page.py` carries Nous Research branding and
   `@nous-research/ui` font files; `banner.py` prints a "Nous Research"
   attribution line. Both are Part A4/A5 (branded assets).

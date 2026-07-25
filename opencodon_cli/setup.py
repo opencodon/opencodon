@@ -1595,35 +1595,6 @@ def _is_valid_telegram_bot_token(token: str) -> bool:
     return bool(_TELEGRAM_BOT_TOKEN_RE.match(token))
 
 
-def _setup_telegram_auto_result():
-    """Attempt automatic Telegram bot creation via managed QR onboarding."""
-    try:
-        from opencodon_cli.telegram_managed_bot import auto_setup_telegram_bot_result
-    except ImportError:
-        return None
-
-    profile_name: str | None = None
-    try:
-        profile_name = _profile_name_from_opencodon_home(Path(get_opencodon_home()))
-    except Exception:
-        pass
-
-    return auto_setup_telegram_bot_result(profile_name=profile_name)
-
-
-def _profile_name_from_opencodon_home(opencodon_home) -> str | None:
-    """Return the active profile name when OPENCODON_HOME is a profile dir."""
-    if opencodon_home.parent.name == "profiles":
-        return opencodon_home.name
-    return None
-
-
-def _setup_telegram_auto() -> str | None:
-    """Attempt automatic Telegram bot creation and return only the token."""
-    result = _setup_telegram_auto_result()
-    return result.token if result else None
-
-
 def _prompt_telegram_bot_token() -> str | None:
     print_info("Create a bot via @BotFather on Telegram")
     while True:
@@ -1657,37 +1628,7 @@ def _setup_telegram():
                         print_success("Telegram allowlist configured")
             return
 
-    print_info("How would you like to create your Telegram bot?")
-    print()
-    print_info("  [1] Automatic (recommended)")
-    print_info("      Scan a QR code → confirm in Telegram → done.")
-    print_info("      No token copy-paste needed.")
-    print()
-    print_info("  [2] Manual")
-    print_info("      Create a bot via @BotFather yourself and paste the token.")
-    print()
-
-    choice = prompt("Choice [1/2]", default="1")
-    token = None
-    setup_result = None
-
-    if choice.strip() == "1":
-        setup_result = _setup_telegram_auto_result()
-        if setup_result:
-            token = setup_result.token
-            if not _is_valid_telegram_bot_token(token):
-                print_error("Automatic setup returned an invalid Telegram bot token.")
-                token = None
-                setup_result = None
-        else:
-            token = None
-        if not token:
-            print()
-            print_info("Falling back to manual setup...")
-            print()
-
-    if not token:
-        token = _prompt_telegram_bot_token()
+    token = _prompt_telegram_bot_token()
     if not token:
         return
 
@@ -1701,25 +1642,9 @@ def _setup_telegram():
     print_info("   2. It will reply with your numeric ID (e.g., 123456789)")
     print()
 
-    detected_user_id = getattr(setup_result, "owner_user_id", None)
-    if detected_user_id:
-        detected_id = str(detected_user_id)
-        print_success(f"Detected your Telegram user ID: {detected_id}")
-        if prompt_yes_no("Allow this Telegram account to use the bot?", True):
-            extra = prompt("Additional allowed user IDs (comma-separated, optional)")
-            ids = [detected_id]
-            for uid in extra.replace(" ", "").split(","):
-                if uid and uid not in ids:
-                    ids.append(uid)
-            allowed_users = ",".join(ids)
-        else:
-            allowed_users = prompt(
-                "Allowed user IDs (comma-separated, leave empty for open access)"
-            )
-    else:
-        allowed_users = prompt(
-            "Allowed user IDs (comma-separated, leave empty for open access)"
-        )
+    allowed_users = prompt(
+        "Allowed user IDs (comma-separated, leave empty for open access)"
+    )
 
     if allowed_users:
         allowed_users = allowed_users.replace(" ", "")
