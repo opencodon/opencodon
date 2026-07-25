@@ -1,6 +1,6 @@
-"""Hermes skin/theme engine — the theme SDK for every surface.
+"""Opencodon skin/theme engine — the theme SDK for every surface.
 
-A data-driven skin system that lets users (and Hermes itself) customize the
+A data-driven skin system that lets users (and Opencodon itself) customize the
 visual appearance across the CLI, the TUI, and the desktop GUI from a single
 file. Skins are defined as YAML files in ~/.opencodon/skins/ or as built-in presets.
 No code changes are needed to add a new skin.
@@ -96,8 +96,8 @@ All fields are optional. Missing values inherit from the ``default`` skin.
     branding:
       agent_name: "Opencodon"             # Banner title, status display
       welcome: "Welcome message"          # Shown at CLI startup
-      goodbye: "Goodbye! ⚕"              # Shown on exit
-      response_label: " ⚕ Hermes "       # Response box header label
+      goodbye: "Goodbye! ⌬"              # Shown on exit
+      response_label: " ⌬ Opencodon "     # Response box header label
       prompt_symbol: "❯"                 # Input prompt symbol (bare token; renderers add trailing space)
       help_header: "(^_^)? Commands"      # /help header text
 
@@ -127,7 +127,7 @@ USAGE
 BUILT-IN SKINS
 ==============
 
-- ``default`` — Classic Hermes gold/kawaii (the current look)
+- ``default`` — Classic Opencodon lime/kawaii (the current look)
 - ``ares``    — Crimson/bronze war-god theme with custom spinner wings
 - ``mono``    — Clean grayscale monochrome
 - ``slate``   — Cool blue developer-focused theme
@@ -174,7 +174,7 @@ class SkinConfig:
     tool_prefix: str = "┊"
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
     banner_logo: str = ""    # Rich-markup ASCII art logo (replaces OPENCODON_AGENT_LOGO)
-    banner_hero: str = ""    # Rich-markup hero art (replaces OPENCODON_CADUCEUS)
+    banner_hero: str = ""    # Rich-markup hero art (opt-in; no default art)
 
     def get_color(self, key: str, fallback: str = "") -> str:
         """Get a color value with fallback."""
@@ -201,32 +201,32 @@ class SkinConfig:
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     "default": {
         "name": "default",
-        "description": "Classic Hermes — gold and kawaii",
+        "description": "Classic Opencodon — lime and kawaii",
         # Dark-authored. Values match the TUI's DARK_THEME so the classic CLI
-        # and the TUI render the same Hermes gold.
+        # and the TUI render the same Opencodon lime.
         "colors": {
-            "banner_border": "#CD7F32",
-            "banner_title": "#FFD700",
-            "banner_accent": "#FFBF00",
-            "banner_dim": "#B8860B",
+            "banner_border": "#4D7C0F",
+            "banner_title": "#A3E635",
+            "banner_accent": "#84CC16",
+            "banner_dim": "#65A30D",
             "banner_text": "#FFF8DC",
-            "ui_accent": "#FFBF00",
-            "ui_label": "#DAA520",
+            "ui_accent": "#84CC16",
+            "ui_label": "#84CC16",
             "ui_ok": "#4caf50",
             "ui_error": "#ef5350",
             "ui_warn": "#ffa726",
             "prompt": "#FFF8DC",
-            "input_rule": "#CD7F32",
-            "response_border": "#FFD700",
+            "input_rule": "#4D7C0F",
+            "response_border": "#A3E635",
             "status_bar_bg": "#1a1a2e",
             "status_bar_text": "#C0C0C0",
-            "status_bar_strong": "#FFD700",
+            "status_bar_strong": "#A3E635",
             "status_bar_dim": "#8A7A4A",
             "status_bar_good": "#8FBC8F",
-            "status_bar_warn": "#FFD700",
+            "status_bar_warn": "#A3E635",
             "status_bar_bad": "#FF8C00",
             "status_bar_critical": "#FF6B6B",
-            "session_label": "#DAA520",
+            "session_label": "#84CC16",
             "session_border": "#8B8682",
             "completion_menu_bg": "#1a1a2e",
             "completion_menu_current_bg": "#333355",
@@ -235,31 +235,28 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "voice_status_bg": "#1a1a2e",
         },
         # Light overlay (merged onto `colors`; dark mode renders the vivid
-        # block above untouched). The goldenrod ladder: on white, the vivid
-        # #FFD700/#FFBF00 read as glare and WCAG-darkened mustard (#867000)
-        # reads as mud — the sweet spot is the statusbar's goldenrod family
-        # (#B8860B/#DAA520): hue kept, saturation tamed, mid luminance.
-        # Hierarchy on white: ink body 8.9:1 > fade 5.2 > label 3.7 >
-        # muted 3.3 > title 2.7 > headers 2.4 (accents recede last, like
-        # slate's pastels — the raw-canon look, just not neon).
+        # block above untouched). The vivid lime (#A3E635/#84CC16) glares on
+        # white, so the light ladder steps down to the deep lime/olive family
+        # (#4D7C0F title & accent ~5.3:1, #65A30D dim, #557C10 label): hue
+        # kept, luminance clamped so headers stay legible on a white terminal.
         "light_colors": {
-            "banner_title": "#C8961E",
-            "banner_accent": "#D89B04",
-            "banner_dim": "#B8860B",
-            "banner_text": "#5C4718",
-            "ui_accent": "#D89B04",
-            "ui_label": "#A97E10",
+            "banner_title": "#4D7C0F",
+            "banner_accent": "#4D7C0F",
+            "banner_dim": "#65A30D",
+            "banner_text": "#33361D",
+            "ui_accent": "#4D7C0F",
+            "ui_label": "#557C10",
             "ui_ok": "#2E7D32",
             "ui_error": "#C62828",
             "ui_warn": "#D97706",
-            "prompt": "#5C4718",
-            "response_border": "#C8961E",
-            "session_label": "#A97E10",
+            "prompt": "#33361D",
+            "response_border": "#4D7C0F",
+            "session_label": "#557C10",
             "status_bar_text": "#6F6F6F",
-            "status_bar_strong": "#C8961E",
+            "status_bar_strong": "#4D7C0F",
             "status_bar_dim": "#9A8A5A",
             "status_bar_good": "#2E7D32",
-            "status_bar_warn": "#C8961E",
+            "status_bar_warn": "#4D7C0F",
             "status_bar_bad": "#C2410C",
             "status_bar_critical": "#B91C1C",
             "shell_dollar": "#1E6FC0",
@@ -275,9 +272,9 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "branding": {
             "agent_name": "Opencodon",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
-            "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ Hermes ",
+            "welcome": "Welcome to Opencodon! Type your message or /help for commands.",
+            "goodbye": "Goodbye! ⌬",
+            "response_label": " ⌬ Opencodon ",
             "prompt_symbol": "❯",
             "help_header": "(^_^)? Available Commands",
         },
@@ -396,9 +393,9 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         "spinner": {},
         "branding": {
             "agent_name": "Opencodon",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
-            "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ Hermes ",
+            "welcome": "Welcome to Opencodon! Type your message or /help for commands.",
+            "goodbye": "Goodbye! ⌬",
+            "response_label": " ⌬ Opencodon ",
             "prompt_symbol": "❯",
             "help_header": "[?] Available Commands",
         },
@@ -440,9 +437,9 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         "spinner": {},
         "branding": {
             "agent_name": "Opencodon",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
-            "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ Hermes ",
+            "welcome": "Welcome to Opencodon! Type your message or /help for commands.",
+            "goodbye": "Goodbye! ⌬",
+            "response_label": " ⌬ Opencodon ",
             "prompt_symbol": "❯",
             "help_header": "(^_^)? Available Commands",
         },
@@ -486,9 +483,9 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         "spinner": {},
         "branding": {
             "agent_name": "Opencodon",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
-            "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ Hermes ",
+            "welcome": "Welcome to Opencodon! Type your message or /help for commands.",
+            "goodbye": "Goodbye! ⌬",
+            "response_label": " ⌬ Opencodon ",
             "prompt_symbol": "❯",
             "help_header": "[?] Available Commands",
         },
@@ -532,9 +529,9 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         "spinner": {},
         "branding": {
             "agent_name": "Opencodon",
-            "welcome": "Welcome to Hermes Agent! Type your message or /help for commands.",
-            "goodbye": "Goodbye! \u2695",
-            "response_label": " \u2695 Hermes ",
+            "welcome": "Welcome to Opencodon! Type your message or /help for commands.",
+            "goodbye": "Goodbye! \u232c",
+            "response_label": " \u232c Opencodon ",
             "prompt_symbol": "\u276f",
             "help_header": "(^_^)? Available Commands",
         },
@@ -976,7 +973,7 @@ def get_active_help_header(fallback: str = "(^_^)? Available Commands") -> str:
 
 
 
-def get_active_goodbye(fallback: str = "Goodbye! ⚕") -> str:
+def get_active_goodbye(fallback: str = "Goodbye! ⌬") -> str:
     """Get the goodbye line from the active skin."""
     try:
         return get_active_skin().get_branding("goodbye", fallback)

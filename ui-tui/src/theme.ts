@@ -225,11 +225,11 @@ function normalizeAnsiForeground(color: string): string {
 // ── Defaults ─────────────────────────────────────────────────────────
 
 const BRAND: ThemeBrand = {
-  name: 'Opencodon Agent',
-  icon: '⚕',
+  name: 'Opencodon',
+  icon: '⌬',
   prompt: '❯',
   welcome: 'Type your message or /help for commands.',
-  goodbye: 'Goodbye! ⚕',
+  goodbye: 'Goodbye! ⌬',
   tool: '┊',
   helpHeader: '(^_^)? Commands'
 }
@@ -343,23 +343,23 @@ export function buildPalette(seeds: ThemeSeeds, isLight: boolean): ThemeColors {
 }
 
 export const DARK_SEEDS: ThemeSeeds = {
-  accent: '#FFBF00',
+  accent: '#84CC16',
   // The classic Opencodon navy surfaces are IDENTITY, not derivation drift —
   // keep them as explicit fill seeds (the ladder derives them for skins
   // that don't care).
   activeRow: '#333355',
   bg: '#101014',
-  border: '#CD7F32',
+  border: '#4D7C0F',
   error: '#ef5350',
   ok: '#4caf50',
-  primary: '#FFD700',
+  primary: '#A3E635',
   prompt: '#FFF8DC',
   selection: '#3a3a55',
   shellDollar: '#4dabf7',
   statusBad: '#FF8C00',
   statusCritical: '#FF6B6B',
   statusGood: '#8FBC8F',
-  statusWarn: '#FFD700',
+  statusWarn: '#A3E635',
   surface: '#1a1a2e',
   text: '#FFF8DC',
   warn: '#ffa726'
@@ -374,18 +374,18 @@ export const DARK_SEEDS: ThemeSeeds = {
 // render the same thing Cursor always showed. Text/prompt stay ink — body
 // copy historically rendered in the terminal's default near-black fg.
 export const LIGHT_SEEDS: ThemeSeeds = {
-  accent: '#956E00',
+  accent: '#557C10',
   bg: '#ffffff',
-  border: '#A56628',
+  border: '#65A30D',
   error: '#C14240',
   ok: '#367E39',
-  primary: '#867000',
+  primary: '#4D7C0F',
   prompt: '#2B2014',
   shellDollar: '#377BB3',
   statusBad: '#A65A00',
   statusCritical: '#B94D4D',
   statusGood: '#5C7A5C',
-  statusWarn: '#867000',
+  statusWarn: '#4D7C0F',
   text: '#3D2F13',
   warn: '#956115'
 }

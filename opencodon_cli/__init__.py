@@ -1,21 +1,23 @@
 """
-Hermes CLI - Unified command-line interface for Hermes Agent.
+Opencodon CLI - Unified command-line interface for Opencodon.
 
 Provides subcommands for:
-- hermes chat          - Interactive chat (same as ./hermes)
-- hermes gateway       - Run gateway in foreground
-- hermes gateway start - Start gateway service
-- hermes gateway stop  - Stop gateway service
-- hermes setup         - Interactive setup wizard
-- hermes status        - Show status of all components
-- hermes cron          - Manage cron jobs
+- opencodon chat          - Interactive chat (same as ./opencodon)
+- opencodon gateway       - Run gateway in foreground
+- opencodon gateway start - Start gateway service
+- opencodon gateway stop  - Stop gateway service
+- opencodon setup         - Interactive setup wizard
+- opencodon status        - Show status of all components
+- opencodon cron          - Manage cron jobs
 """
 
 import os
 import sys
 
-__version__ = "0.19.0"
-__release_date__ = "2026.7.20"
+# Opencodon's own version line — independent of the upstream fork point.
+# Keep in sync with `version` in pyproject.toml.
+__version__ = "0.1.0"
+__release_date__ = "2026.7.25"
 
 
 def _ensure_utf8():

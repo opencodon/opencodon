@@ -43,7 +43,7 @@ describe('DEFAULT_THEME', () => {
   it('has brand defaults', async () => {
     const { DEFAULT_THEME } = await importThemeWithCleanEnv()
 
-    expect(DEFAULT_THEME.brand.name).toBe('Opencodon Agent')
+    expect(DEFAULT_THEME.brand.name).toBe('Opencodon')
     expect(DEFAULT_THEME.brand.prompt).toBe('❯')
     expect(DEFAULT_THEME.brand.tool).toBe('┊')
   })
@@ -51,7 +51,7 @@ describe('DEFAULT_THEME', () => {
   it('has color palette', async () => {
     const { DEFAULT_THEME } = await importThemeWithCleanEnv()
 
-    expect(DEFAULT_THEME.color.primary).toBe('#FFD700')
+    expect(DEFAULT_THEME.color.primary).toBe('#A3E635')
     expect(DEFAULT_THEME.color.error).toBe('#ef5350')
   })
 })
@@ -429,24 +429,70 @@ describe('derived tone ladder', () => {
     // The ladder's knobs were grid-search fitted so the MATH lands on the
     // pre-refactor hand-tuned literals. Contract: every derived tone stays
     // within a-few-RGB-units of the original (imperceptible), so knob edits
-    // that drift the classic look fail here instead of shipping as vibes.
-    const dark = await importThemeWithCleanEnv()
-    const light = await importThemeWithEnv({ OPENCODON_TUI_BACKGROUND: '#ffffff' })
+    // that drift the ladder fail here instead of shipping as vibes.
+    //
+    // Pinned to the ORIGINAL GOLD seeds, not the live brand seeds: this guards
+    // the derivation math, and the brand hue is free to change (it moved to
+    // lime) without silently disabling the check.
+    const { buildPalette } = await importThemeWithCleanEnv()
+
+    const goldDark = buildPalette(
+      {
+        accent: '#FFBF00',
+        activeRow: '#333355',
+        bg: '#101014',
+        border: '#CD7F32',
+        error: '#ef5350',
+        ok: '#4caf50',
+        primary: '#FFD700',
+        prompt: '#FFF8DC',
+        selection: '#3a3a55',
+        shellDollar: '#4dabf7',
+        statusBad: '#FF8C00',
+        statusCritical: '#FF6B6B',
+        statusGood: '#8FBC8F',
+        statusWarn: '#FFD700',
+        surface: '#1a1a2e',
+        text: '#FFF8DC',
+        warn: '#ffa726'
+      },
+      false
+    )
+
+    const goldLight = buildPalette(
+      {
+        accent: '#956E00',
+        bg: '#ffffff',
+        border: '#A56628',
+        error: '#C14240',
+        ok: '#367E39',
+        primary: '#867000',
+        prompt: '#2B2014',
+        shellDollar: '#377BB3',
+        statusBad: '#A65A00',
+        statusCritical: '#B94D4D',
+        statusGood: '#5C7A5C',
+        statusWarn: '#867000',
+        text: '#3D2F13',
+        warn: '#956115'
+      },
+      true
+    )
 
     const cases: Array<[string, string, string]> = [
-      [dark.DARK_THEME.color.muted, '#CC9B1F', 'dark muted'],
-      [dark.DARK_THEME.color.label, '#DAA520', 'dark label'],
-      [dark.DARK_THEME.color.statusFg, '#C0C0C0', 'dark statusFg'],
-      [dark.DARK_THEME.color.completionBg, '#1a1a2e', 'dark surface'],
-      [dark.DARK_THEME.color.completionCurrentBg, '#333355', 'dark chip'],
-      [dark.DARK_THEME.color.selectionBg, '#3a3a55', 'dark selection'],
+      [goldDark.muted, '#CC9B1F', 'dark muted'],
+      [goldDark.label, '#DAA520', 'dark label'],
+      [goldDark.statusFg, '#C0C0C0', 'dark statusFg'],
+      [goldDark.completionBg, '#1a1a2e', 'dark surface'],
+      [goldDark.completionCurrentBg, '#333355', 'dark chip'],
+      [goldDark.selectionBg, '#3a3a55', 'dark selection'],
       // Light canon = liftForContrast(dark literal, white, 4.5): the exact
       // colors xterm's minimumContrastRatio rendered on light hosts.
-      [light.LIGHT_THEME.color.muted, '#946C08', 'light muted'],
-      [light.LIGHT_THEME.color.statusFg, '#6F6F6F', 'light statusFg'],
-      [light.LIGHT_THEME.color.completionBg, '#F5F5F5', 'light surface'],
-      [light.LIGHT_THEME.color.completionCurrentBg, '#e0d1bf', 'light chip'],
-      [light.LIGHT_THEME.color.selectionBg, '#D4E4F7', 'light selection']
+      [goldLight.muted, '#946C08', 'light muted'],
+      [goldLight.statusFg, '#6F6F6F', 'light statusFg'],
+      [goldLight.completionBg, '#F5F5F5', 'light surface'],
+      [goldLight.completionCurrentBg, '#e0d1bf', 'light chip'],
+      [goldLight.selectionBg, '#D4E4F7', 'light selection']
     ]
 
     for (const [got, original, label] of cases) {
