@@ -305,7 +305,6 @@ _NON_CODING_SKILL_CATEGORIES = (
     "apple", "communication", "cooking", "creative", "email", "finance",
     "gaming", "gifs", "health", "media", "music", "note-taking",
     "productivity", "shopping", "smart-home", "social-media", "travel",
-    "yuanbao",
 )
 
 
