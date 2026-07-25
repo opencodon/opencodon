@@ -28,9 +28,11 @@ export interface PluginMessages {
   [key: string]: PluginMessages | PluginMessageValue
 }
 
-/** Locale → messages. Keyed by the app's locales so autocomplete guides you;
- *  a bundle for a locale the app can't select is simply never resolved. */
-export type PluginLocaleBundles = Partial<Record<Locale, PluginMessages>>
+/** Locale → messages. Keyed by BCP-47 tag rather than the app's own `Locale`
+ *  union: the app ships English only, but a third-party plugin may still ship
+ *  other languages. A bundle for a locale the app can't select is simply
+ *  never resolved. */
+export type PluginLocaleBundles = Partial<Record<string, PluginMessages>>
 
 /** Resolve `key` for this plugin against `args`; falls back to English, then
  *  the raw key. */
@@ -45,7 +47,7 @@ export interface PluginI18n {
   t: PluginTranslate
 }
 
-const registry = new Map<string, Map<Locale, PluginMessages>>()
+const registry = new Map<string, Map<string, PluginMessages>>()
 
 /** Bumps whenever a plugin's bundles change, so React translators re-render on
  *  a registration that lands after first paint. */
@@ -67,10 +69,10 @@ function mergeMessages(base: PluginMessages, overrides: PluginMessages): PluginM
 }
 
 export function registerPluginLocales(pluginId: string, bundles: PluginLocaleBundles): () => void {
-  const byLocale = registry.get(pluginId) ?? new Map<Locale, PluginMessages>()
+  const byLocale = registry.get(pluginId) ?? new Map<string, PluginMessages>()
   registry.set(pluginId, byLocale)
 
-  for (const [locale, messages] of Object.entries(bundles) as [Locale, PluginMessages | undefined][]) {
+  for (const [locale, messages] of Object.entries(bundles) as [string, PluginMessages | undefined][]) {
     if (!messages) {
       continue
     }
@@ -87,7 +89,7 @@ export function registerPluginLocales(pluginId: string, bundles: PluginLocaleBun
   }
 }
 
-export function translatePlugin(pluginId: string, locale: Locale, key: string, args: unknown[]): string {
+export function translatePlugin(pluginId: string, locale: string, key: string, args: unknown[]): string {
   return translateFrom(l => registry.get(pluginId)?.get(l), locale, key, args)
 }
 

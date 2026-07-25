@@ -2,7 +2,6 @@ import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
-import { LanguageSwitcher } from '@/components/language-switcher'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { DesktopMarketplaceSearchItem } from '@/global'
@@ -305,12 +304,6 @@ export function AppearanceSettings() {
         </p>
 
         <div className="mt-2">
-          <ListRow
-            action={<LanguageSwitcher />}
-            description={isSavingLocale ? t.language.saving : t.language.description}
-            title={t.language.label}
-          />
-
           <ListRow
             below={
               <>

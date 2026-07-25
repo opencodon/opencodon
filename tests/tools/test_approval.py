@@ -1193,57 +1193,15 @@ class TestSmartDeniedPrompt:
         assert "[s]ession" not in rendered and "[a]lways" not in rendered
         assert prompts == ["      Choice [o/D]: "]
 
-    @pytest.mark.parametrize(
-        ("lang", "once_key", "deny_key", "once_label", "deny_label"),
-        [
-            ("tr", "b", "r", "[b]ir kez", "[r]eddet"),
-            ("fr", "o", "r", "[o]ne fois", "[r]efuser"),
-            ("ja", "o", "d", "[o]今回のみ", "[d]拒否"),
-        ],
-    )
-    def test_smart_deny_uses_locale_specific_once_deny_choices(
-        self, monkeypatch, capsys, lang, once_key, deny_key, once_label, deny_label,
-    ):
-        monkeypatch.setenv("OPENCODON_LANGUAGE", lang)
-        from agent import i18n
-        i18n.reset_language_cache()
-        prompts = []
-
-        def choose_once(prompt):
-            prompts.append(prompt)
-            return once_key
-
-        try:
-            with mock_patch("builtins.input", side_effect=choose_once):
-                result = prompt_dangerous_approval(
-                    "rm -rf /tmp/example", "recursive delete",
-                    allow_permanent=False, smart_denied=True,
-                )
-        finally:
-            i18n.reset_language_cache()
-
-        rendered = capsys.readouterr().out
-        assert result == "once"
-        assert once_label in rendered
-        assert deny_label in rendered
-        assert i18n.t("approval.choose_short", lang=lang).split("|")[1].strip() not in rendered
-        assert "/".join((once_key, deny_key.upper())) in prompts[0]
-
-    @pytest.mark.parametrize(("lang", "forbidden"), [("tr", "o"), ("fr", "s"), ("ja", "a")])
-    def test_smart_deny_rejects_localized_session_or_always_shortcuts(
-        self, monkeypatch, lang, forbidden,
-    ):
-        monkeypatch.setenv("OPENCODON_LANGUAGE", lang)
-        from agent import i18n
-        i18n.reset_language_cache()
-        try:
-            with mock_patch("builtins.input", return_value=forbidden):
-                result = prompt_dangerous_approval(
-                    "rm -rf /tmp/example", "recursive delete",
-                    allow_permanent=False, smart_denied=True,
-                )
-        finally:
-            i18n.reset_language_cache()
+    @pytest.mark.parametrize("forbidden", ["s", "a"])
+    def test_smart_deny_rejects_session_or_always_shortcuts(self, forbidden):
+        """Smart-deny offers only once/deny — the broader grants must not be
+        reachable by typing their usual accelerator."""
+        with mock_patch("builtins.input", return_value=forbidden):
+            result = prompt_dangerous_approval(
+                "rm -rf /tmp/example", "recursive delete",
+                allow_permanent=False, smart_denied=True,
+            )
         assert result == "deny"
 
 
