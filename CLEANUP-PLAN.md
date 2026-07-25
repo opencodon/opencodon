@@ -93,20 +93,65 @@ orphaned by an earlier cut.
 | Desktop pet UI (`pet-overlay/`, `components/pet/`, `pet-generate/`, `pet-settings.tsx`, `store/pet*.ts`, `vibe-hearts.tsx`) | 28 | 4,225 |
 | Branded sprite assets (A5) | 10 | 2.2 MB |
 
-### B2. Kanban — **CUT** (fork plan deferral: "signal-handler + worker plumbing")
-`opencodon_cli/kanban{,_db,_decompose,_diagnostics,_specify,_swarm}.py`,
-`agent/kanban_stop.py`, `tools/kanban_tools.py`, `plugins/kanban/`
-→ **13 files, 25,825 lines**, plus 224 files referencing it (ACP adapter,
-prompt builder, system prompt, tool executor, desktop sidebar, routes).
-Largest single win in the pass.
+### B2. Kanban — **KEEP** (reversed 2026-07-25, user decision)
+Real footprint is **58 files, 53,192 lines** — double the original estimate,
+which counted neither the 44 test files nor `gateway/kanban_watchers.py`, the
+dashboard plugin, or the docs.
 
-### B3. MoA (mixture-of-agents) — **CUT** (fork plan: "moa toolset remnants")
+Reversed after reading it. FORK-PLAN listed "kanban" inside a line reading
+*"Novelty/third-party plugins: achievements, pets, spotify, google_meet,
+kanban, teams_pipeline, video_gen, observability"*. That grouping describes
+`plugins/kanban/` (the dashboard), not the kernel — and FORK-PLAN's own
+deferral note concedes it ("signal-handler + worker plumbing in
+opencodon_cli"). What it actually is:
+
+- a 9,675-line SQLite kernel, 15 tables, statuses triage → todo → ready →
+  running → scheduled → blocked → done → archived
+- a **dispatcher** hosted in the gateway (`kanban.dispatch_in_gateway`,
+  default true) that spawns worker agents to work tasks unattended
+- `decompose` — aux LLM fans a task into a dependency graph of children
+  assigned across the profile roster; the root outlives its children so the
+  orchestrator can judge completion and add more work
+- `specify` — aux LLM turns a one-liner into goal + approach + acceptance
+  criteria
+- `swarm` — parallel specialists → verifier → synthesizer, blackboard kept as
+  JSON comments on the root task (no second scheduler, no new service)
+- `tools/kanban_tools.py` (2,058 lines) — structured tool surface so workers
+  can claim/complete/block from inside Docker/Modal/SSH backends where neither
+  the CLI nor the DB is reachable
+
+FORK-PLAN explicitly KEEPS cron/routines for *"scheduled science pipelines."*
+Kanban is the richer member of that same family and the only thing here that
+can drive a multi-step pipeline to completion unattended.
+
+### B3. MoA (mixture-of-agents) — **KEEP** (reversed 2026-07-25, user decision)
 `agent/moa_loop.py`, `agent/moa_trace.py`, `opencodon_cli/moa_cmd.py`,
-`opencodon_cli/moa_config.py` → 4 files, 1,915 lines; 12 files referencing.
+`opencodon_cli/moa_config.py` → 4 files, 1,915 lines.
 
-### B4. Honcho memory provider — **CUT** (fork plan deferral)
+FORK-PLAN filed "moa toolsets" under *"Nous ML machinery — training-data
+tooling, not our product."* That was true of its neighbours
+(`batch_runner`, `trajectory_compressor`, `mini_swe_runner`, rl/datagen),
+all already cut in 0a320cb30. What remains is the **inference** runtime:
+`/moa` marks a turn, fans out to N advisory reference models concurrently
+(cap 8, no tools), and feeds their output to an aggregator — with per-advisor
+usage priced at each advisor's *own* model rate, because folding advisor
+tokens into the aggregator's usage would misprice every one.
+
+Generic multi-model ensembling, not Nous-specific, not training-related.
+Live in the UI (`moa.reference` / `moa.aggregating` events render as labelled
+thinking chunks; config in `model-settings.tsx` + `model-menu-panel.tsx`) and
+off by default via `_DEFAULT_OFF_TOOLSETS`, so it costs nothing unused.
+
+### B4. Honcho memory provider — **CUT** (fork plan deferral; confirmed 2026-07-25)
 `plugins/memory/honcho/`, `tests/honcho_plugin/` → 19 files, 14,213 lines;
-120 files referencing. Keep the `MemoryProvider` ABC + built-in file memory.
+~130 core refs with 10 hard import sites. Keep the `MemoryProvider` ABC +
+built-in file memory.
+
+A third-party hosted service (`honcho-ai==2.2.0`, optional extra): peer cards
+of standing facts, dialectic Q&A, semantic search, persistent conclusions, via
+five model tools. Its whole class — mem0, supermemory — is already gone
+(c68ff92ec); this one was deferred only because the wiring is mechanical, not
+because the decision was in doubt.
 
 ### B5. Nous Portal provider + its billing/subscription stack — **CUT**
 This is the big one the fork plan deliberately deferred ("identifies us to
@@ -165,41 +210,52 @@ hermes-agent), `skills/software-development/hermes-agent-skill-authoring/`
 
 ---
 
-## Open question — B5 scope
+## Decisions taken
 
-`FORK-PLAN.md` deliberately kept the Nous Portal OAuth client ID and provider
-because they "identify us to external services." Cutting all Nous mentions
-means **cutting the Portal provider and its billing/subscription/credits stack
-(~8,200 lines)**. That is real functionality removed, not a rename.
-
-Recommendation: **cut it.** A provider that authenticates against the upstream
-org's paid portal is not opencodon functionality, and it drags the entire
-billing UI with it. 32 providers remain, including every major API and OAuth
-route. Alternative if you want it kept: leave B5 out and accept ~368 files
-retaining `nous`/`portal` identifiers.
-
-**B6 recommendation: drop from default catalog, don't rewrite the IDs.**
+| # | Item | Decision | When |
+|---|---|---|---|
+| B5 | Nous Portal provider + billing/subscription/credits stack (~8,200 lines) | **CUT** — overrides the FORK-PLAN deferral. A provider authenticating against the upstream org's paid portal is not opencodon functionality, and it drags the whole billing UI with it. 32 providers remain. | 2026-07-25 |
+| B6 | Nous Hermes model IDs | **Drop the entries** from the default catalog; do NOT rewrite the ID strings — a renamed model ID is a broken API call. | 2026-07-25 |
+| B2 | Kanban | **KEEP** — it is the unattended pipeline engine, not novelty. | 2026-07-25 |
+| B3 | MoA | **KEEP** — inference-time ensembling, misfiled as training tooling. | 2026-07-25 |
+| B4 | Honcho | **CUT** — third-party SaaS; its whole class is already gone. | 2026-07-25 |
+| B7 | The four `hermes-*` skills | **RENAME, not cut** — they are the project's own docs. Moved to Part A as A6. | 2026-07-25 |
+| B9 | `goals.py`, `skin_engine.py`, `skin_cmd.py` | **KEEP** — the persistent-goal loop and the theming SDK for all three UI surfaces. Only pets/claw/journey/tips were novelty. | 2026-07-25 |
 
 ---
 
 ## Execution order
 
-Deletions before renames — deleting 25k lines of kanban removes thousands of
-`hermes` refs for free, so Part A shrinks a lot if B runs first.
+Deletions before renames — every subsystem removed takes its `hermes`
+references with it, so Part A shrinks as B proceeds.
 
-1. **C** — dead weight (zero risk, ~14 MB, no code paths)
-2. **B8** — orphans (already dead)
-3. **B1, B7, B9** — pets, upstream-named skills, novelty CLI
-4. **B3, B4** — moa, honcho
-5. **B2** — kanban (largest; deep core plumbing)
-6. **B5** — Nous Portal + billing *(pending decision)*
-7. **B6** — model IDs out of default catalog
-8. **A1** — expire compat shims
-9. **A2, A3** — identifier + docstring rename sweep
-10. **A4, A5** — docs and assets
-11. Final verification: `git grep -ri -E 'hermes|nous' ` should return only
-    `LICENSE`, `NOTICE`, `.fork/`, and third-party model IDs if B6 kept them.
+1. ~~**C** — dead weight~~ ✅ 595604184
+2. ~~**B8** — orphans~~ ✅ eef11a895
+3. ~~**B1** — pets~~ ✅ b0a145b94
+4. ~~**B9** — tips + journey CLI~~ ✅ 77e2ca2ba; ~~claw~~ ✅ 168d0196e
+5. **B4** — honcho *(B2/B3 dropped from the plan: keep)*
+6. **B5** — Nous Portal + billing
+7. **B6** — model IDs out of the default catalog
+8. **C2** — locales down to `en` (live subsystem: `SUPPORTED_LANGUAGES`,
+   alias map, desktop catalog)
+9. **A1** — expire compat shims
+10. **A2, A3** — identifier + docstring rename sweep (the bulk: ~1,900 files)
+11. **A4, A5** — docs and assets
+12. **A6** — rename the four self-documentation skills
+13. Retired-platform residue sweep (14 cut adapters left entries in
+    `desktop-toolsets.ts`, `session-source.ts`, `platform-icon.tsx`,
+    `cli-config.yaml.example`, `gateway/config.py`)
+14. Final verification: `git grep -ri -E 'hermes|nous'` should return only
+    `LICENSE`, `NOTICE`, `.fork/`, and the ported-fix provenance comments
+    (`openclaw/openclaw#NNNN` and friends).
 
-Per step: delete → `scripts/run_tests.sh` → one commit. Failures are compared
-against the documented pre-existing baseline in `FORK-PLAN.md` (26 local
-macOS-specific failures; the suite is green on ubuntu/CI).
+Per step: delete → `scripts/run_tests.sh` → compare failures against the
+saved baseline → one commit. Baseline confirmed empirically at 2075 files /
+40,991 passed / **26 failed**, matching the documented macOS-specific set in
+`FORK-PLAN.md` exactly; the suite is green on ubuntu/CI.
+
+Note: no local test environment existed at the start of this pass (no pytest
+anywhere, and `scripts/run_tests.sh` was resolving a stale pre-rebrand
+`~/.hermes/hermes-agent/venv`). Built with
+`uv sync --locked --python 3.11 --extra all --extra dev --extra messaging`
+plus `npm ci` for the JS workspaces.
