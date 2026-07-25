@@ -1,16 +1,17 @@
 from unittest.mock import MagicMock, patch
 
 
-def test_format_banner_version_label_without_git_state():
+def test_format_banner_version_label_is_our_version_only():
     from opencodon_cli import banner
 
     with patch.object(banner, "get_git_banner_state", return_value=None):
         value = banner.format_banner_version_label()
 
-    assert value == f"opencodon v{banner.VERSION} ({banner.RELEASE_DATE})"
+    assert value == f"opencodon v{banner.VERSION}"
 
 
-def test_format_banner_version_label_on_upstream_main():
+def test_format_banner_version_label_omits_upstream_sha():
+    """The fork point is an implementation detail — never shown in the banner."""
     from opencodon_cli import banner
 
     with patch.object(
@@ -20,11 +21,12 @@ def test_format_banner_version_label_on_upstream_main():
     ):
         value = banner.format_banner_version_label()
 
-    assert value.endswith("· upstream b2f477a3")
-    assert "local" not in value
+    assert value == f"opencodon v{banner.VERSION}"
+    assert "upstream" not in value
+    assert "b2f477a3" not in value
 
 
-def test_format_banner_version_label_with_carried_commits():
+def test_format_banner_version_label_omits_carried_commits():
     from opencodon_cli import banner
 
     with patch.object(
@@ -34,9 +36,9 @@ def test_format_banner_version_label_with_carried_commits():
     ):
         value = banner.format_banner_version_label()
 
-    assert "upstream b2f477a3" in value
-    assert "local af8aad31" in value
-    assert "+3 carried commits" in value
+    assert value == f"opencodon v{banner.VERSION}"
+    assert "carried" not in value
+    assert "af8aad31" not in value
 
 
 def test_get_git_banner_state_reads_origin_and_head(tmp_path):
