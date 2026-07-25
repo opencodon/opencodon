@@ -411,6 +411,37 @@ fallback path. One user-visible improvement falls out of it: Telegram now
 shows the standard "Configure" button on the Channels page like every other
 platform, instead of being special-cased to hide it behind the QR panel.
 
+### Retired-platform residue — partially done, one piece deliberately left
+
+Done: the misleading half. `cli-config.yaml.example` was still *configuring*
+`platform_toolsets` for signal / homeassistant / qqbot / yuanbao / teams /
+google_chat — platforms with no adapter, so a user copying the example
+configured things that can never run. Also pruned the dead desktop UI
+mappings (`session-source.ts` labels/aliases/messaging-ids,
+`platform-icon.tsx` brand glyphs) down to the four live adapters plus
+webhook/api_server.
+
+**NOT done, on purpose: the `Platform` enum in `gateway/config.py` and its
+guarded branches.** The 15 retired members carry an explicit comment saying
+they exist so stale configs and session stores still parse. Removing them
+means also removing the branches that reference them, and those are not
+inert:
+
+| Symbol | Source refs | Notes |
+|---|---|---|
+| `Platform.MATRIX` | 8 | includes `_same_matrix_room` and the `--all` cross-room gate in `_resume_caller_is_admin` — session ACCESS CONTROL |
+| `Platform.MATTERMOST` | 4 | `require_platform_override_for` sets |
+| `Platform.FEISHU` | 2 | thread-id handling in delivery |
+
+Plus ~20 test modules that use these members as arbitrary platform fixtures.
+
+The argument for removing them is real (no opencodon release ever shipped
+those adapters, so no user can hold such a session, which makes the
+back-compat rationale moot). The argument against doing it *quickly* is
+stronger: several branches sit inside session authorization, and a careless
+edit there is a security bug, not a cosmetic one. Left as a standalone task
+so it gets its own review.
+
 ### How to run the tests (learned the hard way, 2026-07-25)
 
 **Use `scripts/run_tests_parallel.py`. Never `pytest tests/` directly.**

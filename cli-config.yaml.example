@@ -838,7 +838,7 @@ agent:
 #   - A preset like "opencodon-cli" or "opencodon-telegram" (curated tool set)
 #   - A list of individual toolsets to compose your own (see list below)
 #
-# Supported platform keys: cli, telegram, discord, whatsapp, slack, qqbot, teams, google_chat
+# Supported platform keys: cli, telegram, discord, whatsapp, slack
 #
 # Examples:
 #
@@ -865,11 +865,6 @@ agent:
 #   discord:       opencodon-discord        (same as telegram)
 #   whatsapp:      opencodon-whatsapp       (same as telegram)
 #   slack:         opencodon-slack          (same as telegram)
-#   signal:        opencodon-signal         (same as telegram)
-#   homeassistant: opencodon-homeassistant  (same as telegram)
-#   qqbot:            opencodon-qqbot            (same as telegram)
-#   teams:            opencodon-teams            (same as telegram)
-#   google_chat:      opencodon-google_chat      (same as telegram)
 #
 platform_toolsets:
   cli: [opencodon-cli]
@@ -877,12 +872,6 @@ platform_toolsets:
   discord: [opencodon-discord]
   whatsapp: [opencodon-whatsapp]
   slack: [opencodon-slack]
-  signal: [opencodon-signal]
-  homeassistant: [opencodon-homeassistant]
-  qqbot: [opencodon-qqbot]
-  yuanbao: [opencodon-yuanbao]
-  teams: [opencodon-teams]
-  google_chat: [opencodon-google_chat]
 
 # =============================================================================
 # Gateway Platform Settings
