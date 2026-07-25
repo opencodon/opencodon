@@ -153,7 +153,58 @@ five model tools. Its whole class — mem0, supermemory — is already gone
 (c68ff92ec); this one was deferred only because the wiring is mechanical, not
 because the decision was in doubt.
 
-### B5. Nous Portal provider + its billing/subscription stack — **CUT**
+### B5 — REVISED SCOPE (measured 2026-07-25, attempt abandoned mid-cut)
+
+The estimate below (~8,200 lines, 16 files) was **wrong by roughly 3×**. A full
+attempt was made, reverted, and saved as a patch. What it actually found:
+
+**True footprint: ~24,700 lines across 81 files.** Beyond the files listed
+below, the cut also reaches:
+
+| Surface | Detail |
+|---|---|
+| `opencodon_cli/auth.py` | **409 refs.** Nous is one entry in a generic `PROVIDERS`/`ProviderConfig` registry, but it owns a dedicated 1,260-line section (device-code flow, token refresh, model discovery, invoke-JWT minting, billing-scope step-up) plus ~8 special-case branches in the status and login/logout paths. It is also the **default Quick Setup path**, so removing it changes first-run onboarding. |
+| The **Nous Tool Gateway** | An entire subsystem not in the original plan: `tools/managed_tool_gateway.py` + `tools/environments/managed_modal.py`, a Nous-hosted passthrough that bills vendor tools (Firecrawl, Krea, FAL, Browser Use, Modal, OpenAI audio) to a Portal subscription. Reaches 16 source files. Every consumer does have a BYO-key fallback, so it removes cleanly — but it is a second functional cut, not part of "billing UI". |
+| `plugins/dashboard_auth/nous/` | Dashboard OAuth provider against `portal.nousresearch.com`. |
+| `opencodon_cli/proxy/adapters/nous_portal.py` | Proxy upstream adapter. |
+| `opencodon_cli/portal_cli.py` | The `hermes portal` onboarding command. |
+| Desktop + web | `apps/desktop/src/app/settings/billing/*`, `store/billing-block.ts`, `apps/shared/src/billing-types.ts`, `web/src/pages/SystemPage.tsx`, plus `nous-girl.jpg` in two apps. |
+| Tests | 35 dedicated files (~24k lines) plus ~30 more with incidental refs. |
+
+**Two files were nearly destroyed by mistake — do not delete them:**
+
+- `agent/account_usage.py` is **multi-provider**. `fetch_account_usage` dispatches
+  to Codex, Anthropic, and OpenRouter and never to Nous; only
+  `build_nous_credits_snapshot` / `nous_credits_lines` /
+  `_snapshot_from_credits_state` / `CreditsView` / `build_credits_view` are
+  Nous-specific. **Trim, don't delete** — it backs `/usage` for every provider.
+- `agent/billing_links.py` is explicitly *"provider-agnostic"*: a 14-provider
+  billing-URL table (OpenAI, Anthropic, OpenRouter, xAI, DeepSeek, Groq,
+  Mistral, Together, Fireworks, Perplexity, Google, Cohere, Moonshot, NVIDIA)
+  with one Nous branch. **Trim the `is_nous` routing bit, keep the table.**
+
+Correctly Nous-only, safe to delete: `nous_rate_guard.py`, `portal_tags.py`,
+`billing_view.py`, `billing_usage.py`, `subscription_view.py`,
+`credits_tracker.py` (parses `x-nous-credits-*` headers), and all five
+`opencodon_cli/nous_*.py` + `cli_billing_mixin.py`.
+
+**Recommendation: split B5 into three commits**, in this order, each verified:
+1. **B5a — Nous Tool Gateway.** Self-contained, every consumer has a BYO-key
+   fallback. ~2,500 lines. (This part was completed in the abandoned attempt
+   and is the cleanest piece of the patch.)
+2. **B5b — billing/subscription/credits UI.** The five Portal-only view modules,
+   the TUI's 22k-char Phase-2b RPC block, `cli_billing_mixin`, the desktop
+   billing screens, plus the trims to `account_usage.py` / `billing_links.py`.
+3. **B5c — the auth provider.** `auth.py`'s Nous section, the dashboard-auth
+   plugin, the proxy adapter, `portal_cli.py`, and the Quick Setup replacement.
+   Highest risk — it is the credential/OAuth layer — so it belongs alone.
+
+Patch from the abandoned attempt (81 files, reverted so the tree stays green):
+`scratchpad/b5-partial.patch`. Reverted rather than pushed to completion
+because the tree did not import mid-cut and the remaining work was
+concentrated in `auth.py`, where a scope error is worse than anywhere else.
+
+### B5 (original estimate — superseded by the section above). Nous Portal provider + its billing/subscription stack — **CUT**
 This is the big one the fork plan deliberately deferred ("identifies us to
 external services"). Removing all Nous mentions means removing the provider.
 
@@ -233,8 +284,8 @@ references with it, so Part A shrinks as B proceeds.
 2. ~~**B8** — orphans~~ ✅ eef11a895
 3. ~~**B1** — pets~~ ✅ b0a145b94
 4. ~~**B9** — tips + journey CLI~~ ✅ 77e2ca2ba; ~~claw~~ ✅ 168d0196e
-5. **B4** — honcho *(B2/B3 dropped from the plan: keep)*
-6. **B5** — Nous Portal + billing
+5. ~~**B4** — honcho~~ ✅ 730e3c589 *(B2/B3 dropped from the plan: keep)*
+6. **B5** — Nous Portal + billing, split into B5a/B5b/B5c (see revised scope)
 7. **B6** — model IDs out of the default catalog
 8. **C2** — locales down to `en` (live subsystem: `SUPPORTED_LANGUAGES`,
    alias map, desktop catalog)
