@@ -348,7 +348,6 @@ def _model_flow_nous(config, current_model="", args=None):
         save_config,
         save_env_value,
     )
-    from opencodon_cli.nous_subscription import prompt_enable_tool_gateway
 
     state = get_provider_auth_state("nous")
     if not state or not state.get("access_token"):
@@ -366,12 +365,6 @@ def _model_flow_nous(config, current_model="", args=None):
                 insecure=bool(getattr(args, "insecure", False)),
             )
             _login_nous(mock_args, PROVIDER_REGISTRY["nous"])
-            # Offer Tool Gateway enablement for paid subscribers
-            try:
-                _refreshed = load_config() or {}
-                prompt_enable_tool_gateway(_refreshed)
-            except Exception:
-                pass
         except SystemExit:
             print("Login cancelled or failed.")
             return
@@ -465,22 +458,6 @@ def _model_flow_nous(config, current_model="", args=None):
     unavailable_models: list[str] = []
     unavailable_message = ""
     if free_tier:
-        try:
-            from opencodon_cli.nous_account import (
-                format_nous_portal_entitlement_message,
-                get_nous_portal_account_info,
-            )
-
-            _account_info = get_nous_portal_account_info(force_fresh=True)
-            unavailable_message = (
-                format_nous_portal_entitlement_message(
-                    _account_info,
-                    capability="paid Nous models",
-                )
-                or ""
-            )
-        except Exception:
-            unavailable_message = ""
         model_ids, pricing = union_with_portal_free_recommendations(
             model_ids, pricing, _nous_portal_url,
         )
@@ -549,8 +526,6 @@ def _model_flow_nous(config, current_model="", args=None):
             save_env_value("OPENAI_API_KEY", "")
         save_config(config)
         print(f"Default model set to: {selected} (via Nous Portal)")
-        # Offer Tool Gateway enablement for paid subscribers
-        prompt_enable_tool_gateway(config)
     else:
         print("No change.")
 

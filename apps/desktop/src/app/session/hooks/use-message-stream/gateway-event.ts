@@ -66,8 +66,8 @@ function firstBillingLine(text: string): string {
  * A turn failed on a billing wall (out of credits / payment required). The
  * gateway forwards the structured descriptor built by `agent/billing_links.py`;
  * we cache it per-session (drives the in-chat banner) AND raise one sticky,
- * billing-specific toast — never the generic "Opencodon error" — with a smart CTA
- * (Nous → in-app Settings → Billing, other providers → their billing page).
+ * billing-specific toast — never the generic "Opencodon error" — with a CTA
+ * deep-linking to the provider's billing page.
  */
 function surfaceBillingBlock(sessionId: string, raw: unknown): void {
   if (!raw || typeof raw !== 'object') {
@@ -92,9 +92,7 @@ function surfaceBillingBlock(sessionId: string, raw: unknown): void {
     id: `billing-block:${block.provider}`,
     kind: 'warning',
     icon: 'credit-card',
-    title: block.is_nous
-      ? translateNow('billingBlock.titleNous')
-      : translateNow('billingBlock.titleProvider', block.provider_label),
+    title: translateNow('billingBlock.titleProvider', block.provider_label),
     message: firstBillingLine(block.message) || translateNow('billingBlock.fallbackMessage'),
     // Sticky: a credit wall blocks every turn until resolved.
     durationMs: 0,
@@ -828,7 +826,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         }
       } else if (event.type === 'notification.show') {
         // Driver-agnostic agent notice (credits usage/grant/depleted/restored
-        // from `agent/credits_tracker.py`). The Ink TUI renders these in its
+        // from `agent/notices.py`). The Ink TUI renders these in its
         // status bar; the desktop renders them as toasts. The notice key doubles
         // as the toast id, so the escalating 50→75→90 credits line replaces in
         // place instead of stacking. Account-wide signal — shown regardless of

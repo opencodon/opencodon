@@ -1,4 +1,3 @@
-import { usageBarsText } from '../../../components/overlayPrimitives.js'
 import { attachedImageNotice, introMsg, toTranscriptMessages } from '../../../domain/messages.js'
 import { sessionScopedModelArg, TUI_SESSION_MODEL_FLAG } from '../../../domain/slash.js'
 import type {
@@ -636,52 +635,8 @@ export const sessionCommands: SlashCommand[] = [
           })
         }
 
-        // Nous balance block is agent-independent (a portal fetch), so it shows
-        // even with zero API calls or on a resumed session. Prefer the shared
-        // dollar usage model (two-bar view, dollars-only); fall back to the
-        // legacy text lines only when the model is unavailable.
-        const usageModel = r?.usage
-        const barLines = usageBarsText(usageModel)
-        let showedBalance = false
-
-        if (usageModel?.available && (barLines.length || usageModel.status === 'free')) {
-          const sections: PanelSection[] = []
-          const plan = usageModel.plan_name ?? (usageModel.status === 'free' ? 'Free' : null)
-
-          if (plan) {
-            sections.push({
-              text: `Plan: ${plan}${usageModel.renews_display ? ` · renews ${usageModel.renews_display}` : ''}`
-            })
-          }
-
-          if (barLines.length) {
-            sections.push({ text: barLines.join('\n') })
-          }
-
-          if (usageModel.status === 'free') {
-            sections.push({ text: '> Free · free models only. Run /subscription to reach paid models.' })
-          } else if (usageModel.status === 'low') {
-            sections.push({
-              text: `! Low balance · ${usageModel.total_spendable_display ?? 'under $5'} left. Run /topup or /subscription.`
-            })
-          }
-
-          ctx.transcript.panel('Balance', sections)
-          showedBalance = true
-        } else {
-          const creditsLines = r?.credits_lines ?? []
-
-          if (creditsLines.length) {
-            ctx.transcript.panel('Nous balance', [{ text: creditsLines.join('\n') }])
-            showedBalance = true
-          }
-        }
-
         if (!r?.calls) {
-          if (!showedBalance) {
-            sys('no API calls yet')
-          }
-
+          sys('no API calls yet')
           sys(USAGE_CTA)
 
           return

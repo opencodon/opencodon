@@ -21,8 +21,6 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from opencodon_cli.nous_subscription import get_nous_subscription_features
-from tools.tool_backend_helpers import managed_nous_tools_enabled
 from utils import base_url_hostname
 from opencodon_constants import get_optional_skills_dir
 
@@ -399,7 +397,6 @@ def _print_setup_summary(config: dict, opencodon_home):
     print_header("Tool Availability Summary")
 
     tool_status = []
-    subscription_features = get_nous_subscription_features(config)
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
@@ -416,21 +413,43 @@ def _print_setup_summary(config: dict, opencodon_home):
 
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
-    if subscription_features.web.managed_by_nous:
-        tool_status.append(("Web Search & Extract (Nous subscription)", True, None))
-    elif subscription_features.web.available:
+    try:
+        from tools.web_tools import _get_backend as _web_backend_fn
+        from tools.web_tools import check_web_api_key as _web_available_fn
+
+        _web_available = bool(_web_available_fn())
+        _web_backend = _web_backend_fn() if _web_available else ""
+    except Exception:
+        _web_available, _web_backend = False, ""
+    if _web_available:
         label = "Web Search & Extract"
-        if subscription_features.web.current_provider:
-            label = f"Web Search & Extract ({subscription_features.web.current_provider})"
+        if _web_backend:
+            label = f"Web Search & Extract ({_web_backend})"
         tool_status.append((label, True, None))
     else:
         tool_status.append(("Web Search & Extract", False, "EXA_API_KEY, PARALLEL_API_KEY, FIRECRAWL_API_KEY/FIRECRAWL_API_URL, TAVILY_API_KEY, or SEARXNG_URL"))
 
     # Browser tools (local Chromium, Camofox, Browserbase, Browser Use, or Firecrawl)
-    browser_provider = subscription_features.browser.current_provider
-    if subscription_features.browser.managed_by_nous:
-        tool_status.append(("Browser Automation (Nous Browser Use)", True, None))
-    elif subscription_features.browser.available:
+    # Map the stored config value onto the display label the hints below and
+    # the summary line both key off (was nous_subscription._browser_label).
+    _BROWSER_LABELS = {
+        "browserbase": "Browserbase",
+        "browser-use": "Browser Use",
+        "firecrawl": "Firecrawl",
+        "camofox": "Camofox",
+        "local": "Local browser",
+    }
+    _browser_cfg_value = cfg_get(config, "browser", "cloud_provider") or "local"
+    browser_provider = _BROWSER_LABELS.get(
+        _browser_cfg_value, _browser_cfg_value or "Local browser"
+    )
+    try:
+        from tools.browser_tool import check_browser_requirements as _browser_ok_fn
+
+        _browser_available = bool(_browser_ok_fn())
+    except Exception:
+        _browser_available = False
+    if _browser_available:
         label = "Browser Automation"
         if browser_provider:
             label = f"Browser Automation ({browser_provider})"
@@ -456,11 +475,14 @@ def _print_setup_summary(config: dict, opencodon_home):
             ("Browser Automation", False, missing_browser_hint)
         )
 
-    # Image generation — FAL (direct or via Nous), or any plugin-registered
-    # provider (OpenAI, etc.)
-    if subscription_features.image_gen.managed_by_nous:
-        tool_status.append(("Image Generation (Nous subscription)", True, None))
-    elif subscription_features.image_gen.available:
+    # Image generation — FAL, or any plugin-registered provider (OpenAI, etc.)
+    try:
+        from tools.image_generation_tool import check_fal_api_key as _fal_ok_fn
+
+        _fal_available = bool(_fal_ok_fn())
+    except Exception:
+        _fal_available = False
+    if _fal_available:
         tool_status.append(("Image Generation", True, None))
     else:
         # Fall back to probing plugin-registered providers so OpenAI-only
@@ -489,9 +511,7 @@ def _print_setup_summary(config: dict, opencodon_home):
 
     # TTS — show configured provider
     tts_provider = cfg_get(config, "tts", "provider", default="edge")
-    if subscription_features.tts.managed_by_nous:
-        tool_status.append(("Text-to-Speech (OpenAI via Nous subscription)", True, None))
-    elif tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
+    if tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
         tool_status.append(("Text-to-Speech (ElevenLabs)", True, None))
     elif tts_provider == "openai" and (
         get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
@@ -524,15 +544,13 @@ def _print_setup_summary(config: dict, opencodon_home):
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
-    if subscription_features.modal.managed_by_nous:
-        tool_status.append(("Modal Execution (Nous subscription)", True, None))
-    elif cfg_get(config, "terminal", "backend") == "modal":
-        if subscription_features.modal.direct_override:
+    if cfg_get(config, "terminal", "backend") == "modal":
+        from tools.tool_backend_helpers import has_direct_modal_credentials
+
+        if has_direct_modal_credentials():
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
             tool_status.append(("Modal Execution", False, "run 'hermes setup terminal'"))
-    elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
 
     # Skills Hub
     if get_env_value("GITHUB_TOKEN"):
@@ -900,7 +918,6 @@ def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
     current_provider = tts_config.get("provider", "edge")
-    subscription_features = get_nous_subscription_features(config)
 
     provider_labels = {
         "edge": "Edge TTS",
@@ -922,9 +939,6 @@ def _setup_tts_provider(config: dict):
 
     choices = []
     providers = []
-    if managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        choices.append("Nous Subscription (managed OpenAI TTS, billed to your subscription)")
-        providers.append("nous-openai")
     choices.extend(
         [
             "Edge TTS (free, cloud-based, no setup needed)",
@@ -1234,80 +1248,43 @@ def setup_terminal_backend(config: dict):
     elif selected_backend == "modal":
         print_success("Terminal backend: Modal")
         print_info("Serverless cloud sandboxes. Each session gets its own container.")
-        from tools.managed_tool_gateway import is_managed_tool_gateway_ready
-        from tools.tool_backend_helpers import normalize_modal_mode
+        config["terminal"]["modal_mode"] = "direct"
+        print_info("Requires a Modal account: https://modal.com")
 
-        managed_modal_available = bool(
-            managed_nous_tools_enabled()
-            and
-            get_nous_subscription_features(config).nous_auth_present
-            and is_managed_tool_gateway_ready("modal")
-        )
-        modal_mode = normalize_modal_mode(cfg_get(config, "terminal", "modal_mode"))
-        use_managed_modal = False
-        if managed_modal_available:
-            modal_choices = [
-                "Use my Nous subscription",
-                "Use my own Modal account",
-            ]
-            if modal_mode == "managed":
-                default_modal_idx = 0
-            elif modal_mode == "direct":
-                default_modal_idx = 1
+        # Check if modal SDK is installed
+        try:
+            __import__("modal")
+        except ImportError:
+            print_info("Installing modal SDK...")
+            from opencodon_cli.tools_config import _pip_install
+
+            result = _pip_install(["modal"])
+            if result.returncode == 0:
+                print_success("modal SDK installed")
             else:
-                default_modal_idx = 1 if get_env_value("MODAL_TOKEN_ID") else 0
-            modal_mode_idx = prompt_choice(
-                "Select how Modal execution should be billed:",
-                modal_choices,
-                default_modal_idx,
-            )
-            use_managed_modal = modal_mode_idx == 0
+                print_warning("Install failed — run manually: uv pip install modal")
 
-        if use_managed_modal:
-            config["terminal"]["modal_mode"] = "managed"
-            print_info("Modal execution will use the managed Nous gateway and bill to your subscription.")
-            if get_env_value("MODAL_TOKEN_ID") or get_env_value("MODAL_TOKEN_SECRET"):
-                print_info(
-                    "Direct Modal credentials are still configured, but this backend is pinned to managed mode."
-                )
-        else:
-            config["terminal"]["modal_mode"] = "direct"
-            print_info("Requires a Modal account: https://modal.com")
-
-            # Check if modal SDK is installed
-            try:
-                __import__("modal")
-            except ImportError:
-                print_info("Installing modal SDK...")
-                from opencodon_cli.tools_config import _pip_install
-
-                result = _pip_install(["modal"])
-                if result.returncode == 0:
-                    print_success("modal SDK installed")
-                else:
-                    print_warning("Install failed — run manually: uv pip install modal")
-
-            # Modal token
-            print()
-            print_info("Modal authentication:")
-            print_info("  Get your token at: https://modal.com/settings")
-            existing_token = get_env_value("MODAL_TOKEN_ID")
-            if existing_token:
-                print_info("  Modal token: already configured")
-                if prompt_yes_no("  Update Modal credentials?", False):
-                    token_id = prompt("    Modal Token ID", password=True)
-                    token_secret = prompt("    Modal Token Secret", password=True)
-                    if token_id:
-                        save_env_value("MODAL_TOKEN_ID", token_id)
-                    if token_secret:
-                        save_env_value("MODAL_TOKEN_SECRET", token_secret)
-            else:
+        # Modal token
+        print()
+        print_info("Modal authentication:")
+        print_info("  Get your token at: https://modal.com/settings")
+        existing_token = get_env_value("MODAL_TOKEN_ID")
+        if existing_token:
+            print_info("  Modal token: already configured")
+            if prompt_yes_no("  Update Modal credentials?", False):
                 token_id = prompt("    Modal Token ID", password=True)
                 token_secret = prompt("    Modal Token Secret", password=True)
                 if token_id:
                     save_env_value("MODAL_TOKEN_ID", token_id)
                 if token_secret:
                     save_env_value("MODAL_TOKEN_SECRET", token_secret)
+        else:
+            token_id = prompt("    Modal Token ID", password=True)
+            token_secret = prompt("    Modal Token Secret", password=True)
+            if token_id:
+                save_env_value("MODAL_TOKEN_ID", token_id)
+            if token_secret:
+                save_env_value("MODAL_TOKEN_SECRET", token_secret)
 
     elif selected_backend == "daytona":
         print_success("Terminal backend: Daytona")

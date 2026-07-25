@@ -15,7 +15,6 @@ class TestRegistry:
         assert get_provider_profile("moonshot").name == "kimi-coding"
         assert get_provider_profile("kimi-coding-cn").name == "kimi-coding-cn"
         assert get_provider_profile("or").name == "openrouter"
-        assert get_provider_profile("nous-portal").name == "nous"
         assert get_provider_profile("qwen").name == "qwen-oauth"
         assert get_provider_profile("qwen-portal").name == "qwen-oauth"
 
@@ -403,65 +402,6 @@ class TestOpenRouterProfile:
             model="anthropic/claude-fable-5",
         )
         assert tl == {"verbosity": "high"}
-
-
-class TestNousProfile:
-    def test_tags(self):
-        from agent.portal_tags import nous_portal_tags
-        p = get_provider_profile("nous")
-        body = p.build_extra_body()
-        assert body["tags"] == nous_portal_tags()
-
-    def test_extra_body_with_provider_preferences(self):
-        from agent.portal_tags import nous_portal_tags
-
-        p = get_provider_profile("nous")
-        assert p is not None
-        preferences = {"only": ["deepseek"], "ignore": ["deepinfra"]}
-        body = p.build_extra_body(provider_preferences=preferences)
-
-        assert body == {
-            "tags": nous_portal_tags(),
-            "provider": preferences,
-        }
-
-    def test_tags_include_conversation_when_session_id(self):
-        from agent.portal_tags import conversation_tag
-        p = get_provider_profile("nous")
-        body = p.build_extra_body(session_id="sess-99")
-        assert conversation_tag("sess-99") in body["tags"]
-
-    def test_extra_body_session_id(self):
-        """Top-level session_id is the provider sticky-routing key — keeps
-        Anthropic cache_control breakpoints pinned to one upstream endpoint."""
-        p = get_provider_profile("nous")
-        body = p.build_extra_body(session_id="sess-99")
-        assert body["session_id"] == "sess-99"
-
-    def test_extra_body_no_session_id(self):
-        p = get_provider_profile("nous")
-        body = p.build_extra_body()
-        assert "session_id" not in body
-
-    def test_auth_type(self):
-        p = get_provider_profile("nous")
-        assert p.auth_type == "oauth_device_code"
-
-    def test_reasoning_enabled(self):
-        p = get_provider_profile("nous")
-        eb, _ = p.build_api_kwargs_extras(
-            reasoning_config={"enabled": True, "effort": "medium"},
-            supports_reasoning=True,
-        )
-        assert eb["reasoning"] == {"enabled": True, "effort": "medium"}
-
-    def test_reasoning_omitted_when_disabled(self):
-        p = get_provider_profile("nous")
-        eb, _ = p.build_api_kwargs_extras(
-            reasoning_config={"enabled": False},
-            supports_reasoning=True,
-        )
-        assert "reasoning" not in eb
 
 
 class TestQwenProfile:

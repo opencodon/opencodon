@@ -20,8 +20,6 @@ EXPECTED_CONSOLE_COMMANDS = {
     ("prompt-size",),
     ("insights",),
     ("security", "audit"),
-    ("portal", "info"),
-    ("portal", "tools"),
     ("backup",),
     ("import",),
     ("send",),

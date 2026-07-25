@@ -28,21 +28,8 @@ class TestFirecrawlClientConfig:
         for key in (
             "FIRECRAWL_API_KEY",
             "FIRECRAWL_API_URL",
-            "FIRECRAWL_GATEWAY_URL",
-            "TOOL_GATEWAY_DOMAIN",
-            "TOOL_GATEWAY_SCHEME",
-            "TOOL_GATEWAY_USER_TOKEN",
         ):
             os.environ.pop(key, None)
-        # Enable managed tools by default for these tests — patch both the
-        # local web_tools import and the managed_tool_gateway import so the
-        # full firecrawl client init path sees True.
-        self._managed_patchers = [
-            patch("tools.web_tools.managed_nous_tools_enabled", return_value=True),
-            patch("tools.managed_tool_gateway.managed_nous_tools_enabled", return_value=True),
-        ]
-        for p in self._managed_patchers:
-            p.start()
 
     def teardown_method(self):
         """Reset client after each test."""
@@ -52,113 +39,24 @@ class TestFirecrawlClientConfig:
         for key in (
             "FIRECRAWL_API_KEY",
             "FIRECRAWL_API_URL",
-            "FIRECRAWL_GATEWAY_URL",
-            "TOOL_GATEWAY_DOMAIN",
-            "TOOL_GATEWAY_SCHEME",
-            "TOOL_GATEWAY_USER_TOKEN",
         ):
             os.environ.pop(key, None)
-        for p in self._managed_patchers:
-            p.stop()
 
     # ── Configuration matrix ─────────────────────────────────────────
 
     def test_no_config_raises_with_helpful_message(self):
         """Neither key nor URL → ValueError with guidance."""
         with patch("tools.web_tools.Firecrawl"):
-            with patch("tools.web_tools._read_nous_access_token", return_value=None):
+            with patch("tools.web_tools._ddgs_package_importable", return_value=False):
                 from tools.web_tools import _get_firecrawl_client
                 with pytest.raises(ValueError, match="FIRECRAWL_API_KEY"):
                     _get_firecrawl_client()
 
-    def test_tool_gateway_domain_builds_firecrawl_gateway_origin(self):
-        """Shared gateway domain should derive the Firecrawl vendor hostname."""
-        with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nousresearch.com"}):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch("tools.web_tools.Firecrawl") as mock_fc:
-                    from tools.web_tools import _get_firecrawl_client
-                    result = _get_firecrawl_client()
-                    mock_fc.assert_called_once_with(
-                        api_key="nous-token",
-                        api_url="https://firecrawl-gateway.nousresearch.com",
-                    )
-                    assert result is mock_fc.return_value
 
-    def test_tool_gateway_scheme_can_switch_derived_gateway_origin_to_http(self):
-        """Shared gateway scheme should allow local plain-http vendor hosts."""
-        with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "nousresearch.com",
-            "TOOL_GATEWAY_SCHEME": "http",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch("tools.web_tools.Firecrawl") as mock_fc:
-                    from tools.web_tools import _get_firecrawl_client
-                    result = _get_firecrawl_client()
-                    mock_fc.assert_called_once_with(
-                        api_key="nous-token",
-                        api_url="http://firecrawl-gateway.nousresearch.com",
-                    )
-                    assert result is mock_fc.return_value
 
-    def test_invalid_tool_gateway_scheme_raises(self):
-        """Unexpected shared gateway schemes should fail fast."""
-        with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "nousresearch.com",
-            "TOOL_GATEWAY_SCHEME": "ftp",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                from tools.web_tools import _get_firecrawl_client
-                with pytest.raises(ValueError, match="TOOL_GATEWAY_SCHEME"):
-                    _get_firecrawl_client()
 
-    def test_explicit_firecrawl_gateway_url_takes_precedence(self):
-        """An explicit Firecrawl gateway origin should override the shared domain."""
-        with patch.dict(os.environ, {
-            "FIRECRAWL_GATEWAY_URL": "https://firecrawl-gateway.localhost:3009/",
-            "TOOL_GATEWAY_DOMAIN": "nousresearch.com",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch("tools.web_tools.Firecrawl") as mock_fc:
-                    from tools.web_tools import _get_firecrawl_client
-                    _get_firecrawl_client()
-                    mock_fc.assert_called_once_with(
-                        api_key="nous-token",
-                        api_url="https://firecrawl-gateway.localhost:3009",
-                    )
 
-    def test_default_gateway_domain_targets_nous_production_origin(self):
-        """Default gateway origin should point at the Firecrawl vendor hostname."""
-        with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-            with patch("tools.web_tools.Firecrawl") as mock_fc:
-                from tools.web_tools import _get_firecrawl_client
-                _get_firecrawl_client()
-                mock_fc.assert_called_once_with(
-                    api_key="nous-token",
-                    api_url="https://firecrawl-gateway.nousresearch.com",
-                )
 
-    def test_nous_auth_token_respects_opencodon_home_override(self, tmp_path):
-        """Auth lookup should read from OPENCODON_HOME/auth.json, not ~/.opencodon/auth.json."""
-        real_home = tmp_path / "real-home"
-        (real_home / ".opencodon").mkdir(parents=True)
-
-        opencodon_home = tmp_path / "hermes-home"
-        opencodon_home.mkdir()
-        (opencodon_home / "auth.json").write_text(json.dumps({
-            "providers": {
-                "nous": {
-                    "access_token": "nous-token",
-                }
-            }
-        }))
-
-        with patch.dict(os.environ, {
-            "HOME": str(real_home),
-            "OPENCODON_HOME": str(opencodon_home),
-        }, clear=False):
-            import tools.web_tools
-            importlib.reload(tools.web_tools)
-            assert tools.web_tools._read_nous_access_token() == "nous-token"
 
     # ── Singleton caching ────────────────────────────────────────────
 
@@ -194,7 +92,7 @@ class TestFirecrawlClientConfig:
         """FIRECRAWL_API_KEY='' with no URL → should raise."""
         with patch.dict(os.environ, {"FIRECRAWL_API_KEY": ""}):
             with patch("tools.web_tools.Firecrawl"):
-                with patch("tools.web_tools._read_nous_access_token", return_value=None):
+                with patch("tools.web_tools._ddgs_package_importable", return_value=False):
                     from tools.web_tools import _get_firecrawl_client
                     with pytest.raises(ValueError):
                         _get_firecrawl_client()
@@ -213,28 +111,16 @@ class TestBackendSelection:
         "PARALLEL_API_KEY",
         "FIRECRAWL_API_KEY",
         "FIRECRAWL_API_URL",
-        "FIRECRAWL_GATEWAY_URL",
-        "TOOL_GATEWAY_DOMAIN",
-        "TOOL_GATEWAY_SCHEME",
-        "TOOL_GATEWAY_USER_TOKEN",
         "TAVILY_API_KEY",
     )
 
     def setup_method(self):
         for key in self._ENV_KEYS:
             os.environ.pop(key, None)
-        self._managed_patchers = [
-            patch("tools.web_tools.managed_nous_tools_enabled", return_value=True),
-            patch("tools.managed_tool_gateway.managed_nous_tools_enabled", return_value=True),
-        ]
-        for p in self._managed_patchers:
-            p.start()
 
     def teardown_method(self):
         for key in self._ENV_KEYS:
             os.environ.pop(key, None)
-        for p in self._managed_patchers:
-            p.stop()
 
     # ── Config-based selection (web.backend in config.yaml) ───────────
 
@@ -357,26 +243,7 @@ class TestBackendSelection:
              patch.dict(os.environ, {"PARALLEL_API_KEY": "test-key"}):
             assert _get_backend() == "parallel"
 
-    def test_managed_gateway_does_not_preempt_explicit_tavily(self):
-        """Regression: a Nous OAuth token (managed gateway "ready") must NOT
-        beat an explicitly configured TAVILY_API_KEY in the fallback path.
-        Free Nous tiers don't include web search, so the user's deliberate
-        Tavily setup would fail at runtime with "no subscription" if the
-        gateway pre-empted it."""
-        from tools.web_tools import _get_backend
-        with patch("tools.web_tools._load_web_config", return_value={}), \
-             patch("tools.web_tools._is_tool_gateway_ready", return_value=True), \
-             patch.dict(os.environ, {"TAVILY_API_KEY": "tvly-test"}):
-            assert _get_backend() == "tavily"
 
-    def test_managed_gateway_only_falls_through_to_firecrawl(self):
-        """When no explicit-credential backend is configured, a Nous-managed
-        gateway token still selects firecrawl — the convenience path is
-        preserved, just no longer pre-empts."""
-        from tools.web_tools import _get_backend
-        with patch("tools.web_tools._load_web_config", return_value={}), \
-             patch("tools.web_tools._is_tool_gateway_ready", return_value=True):
-            assert _get_backend() == "firecrawl"
 
 
 class TestParallelClientConfig:
@@ -535,36 +402,16 @@ class TestCheckWebApiKey:
         "PARALLEL_API_KEY",
         "FIRECRAWL_API_KEY",
         "FIRECRAWL_API_URL",
-        "FIRECRAWL_GATEWAY_URL",
-        "TOOL_GATEWAY_DOMAIN",
-        "TOOL_GATEWAY_SCHEME",
-        "TOOL_GATEWAY_USER_TOKEN",
         "TAVILY_API_KEY",
     )
 
     def setup_method(self):
         for key in self._ENV_KEYS:
             os.environ.pop(key, None)
-        self._managed_patchers = [
-            patch("tools.web_tools.managed_nous_tools_enabled", return_value=True),
-            patch("tools.managed_tool_gateway.managed_nous_tools_enabled", return_value=True),
-            # ddgs availability is package-presence driven and the plugin
-            # registry can hold an available ddgs provider. Neutralize both
-            # fallback surfaces so this class only exercises env-key/gateway
-            # resolution — otherwise these tests flip on machines where the
-            # optional ``ddgs`` package is installed (dev venvs) vs CI.
-            patch("tools.web_tools._ddgs_package_importable", return_value=False),
-            patch("agent.web_search_registry.get_active_search_provider", return_value=None),
-            patch("agent.web_search_registry.get_active_extract_provider", return_value=None),
-        ]
-        for p in self._managed_patchers:
-            p.start()
 
     def teardown_method(self):
         for key in self._ENV_KEYS:
             os.environ.pop(key, None)
-        for p in self._managed_patchers:
-            p.stop()
 
     def test_parallel_key_only(self):
         with patch.dict(os.environ, {"PARALLEL_API_KEY": "test-key"}):
@@ -629,63 +476,9 @@ class TestCheckWebApiKey:
             from tools.web_tools import check_web_api_key
             assert check_web_api_key() is True
 
-    def test_tool_gateway_returns_true(self):
-        with patch("tools.web_tools._peek_nous_access_token", return_value="nous-token"):
-            from tools.web_tools import check_web_api_key
-            assert check_web_api_key() is True
 
-    def test_tool_gateway_availability_skips_refresh_for_expired_cached_token(
-        self,
-        tmp_path,
-        monkeypatch,
-    ):
-        monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        expired_at = "2000-01-01T00:00:00+00:00"
-        (tmp_path / "auth.json").write_text(json.dumps({
-            "providers": {
-                "nous": {
-                    "access_token": "expired-token",
-                    "refresh_token": "refresh-token",
-                    "expires_at": expired_at,
-                }
-            }
-        }))
-        refresh_calls = []
 
-        def _record_refresh(*, refresh_skew_seconds=120, **_kwargs):
-            refresh_calls.append(refresh_skew_seconds)
-            return "fresh-token"
 
-        monkeypatch.setattr(
-            "opencodon_cli.auth.resolve_nous_access_token",
-            _record_refresh,
-        )
-
-        with patch.dict(
-            os.environ,
-            {"FIRECRAWL_GATEWAY_URL": "http://127.0.0.1:3002"},
-            clear=False,
-        ):
-            from tools.web_tools import check_web_api_key
-
-            assert check_web_api_key() is True
-
-        assert refresh_calls == []
-
-    def test_configured_backend_must_match_available_provider(self):
-        with patch("tools.web_tools._load_web_config", return_value={"backend": "parallel"}):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch.dict(os.environ, {"FIRECRAWL_GATEWAY_URL": "http://127.0.0.1:3002"}, clear=False):
-                    from tools.web_tools import check_web_api_key
-                    assert check_web_api_key() is False
-
-    def test_configured_firecrawl_backend_accepts_managed_gateway(self):
-        with patch("tools.web_tools._load_web_config", return_value={"backend": "firecrawl"}):
-            with patch("tools.web_tools._peek_nous_access_token", return_value="nous-token"):
-                with patch.dict(os.environ, {"FIRECRAWL_GATEWAY_URL": "http://127.0.0.1:3002"}, clear=False):
-                    from tools.web_tools import check_web_api_key
-                    assert check_web_api_key() is True
 
 
 def test_web_requires_env_includes_exa_key():
@@ -714,10 +507,6 @@ class TestNonBuiltinProviderAvailability:
         "PARALLEL_API_KEY",
         "FIRECRAWL_API_KEY",
         "FIRECRAWL_API_URL",
-        "FIRECRAWL_GATEWAY_URL",
-        "TOOL_GATEWAY_DOMAIN",
-        "TOOL_GATEWAY_SCHEME",
-        "TOOL_GATEWAY_USER_TOKEN",
         "TAVILY_API_KEY",
         "SEARXNG_URL",
         "BRAVE_SEARCH_API_KEY",
@@ -769,7 +558,7 @@ class TestNonBuiltinProviderAvailability:
         """With only a custom provider registered (no built-in creds),
         check_web_api_key() must return True."""
         with patch("tools.web_tools._ddgs_package_importable", return_value=False), \
-             patch("tools.web_tools._peek_nous_access_token", return_value=None):
+             patch("tools.web_tools._ddgs_package_importable", return_value=False):
             from tools.web_tools import check_web_api_key
             assert check_web_api_key() is True
 
@@ -777,7 +566,7 @@ class TestNonBuiltinProviderAvailability:
         """_get_backend() must return the custom provider name when it's
         the only available provider."""
         with patch("tools.web_tools._ddgs_package_importable", return_value=False), \
-             patch("tools.web_tools._peek_nous_access_token", return_value=None):
+             patch("tools.web_tools._ddgs_package_importable", return_value=False):
             from tools.web_tools import _get_backend
             assert _get_backend() == "fake-plugin-prov"
 
@@ -793,7 +582,7 @@ class TestNonBuiltinProviderAvailability:
         """Per-capability selection (_get_extract_backend) must resolve the
         custom provider when configured, instead of dead-ending — issue #32698."""
         with patch("tools.web_tools._ddgs_package_importable", return_value=False), \
-             patch("tools.web_tools._peek_nous_access_token", return_value=None), \
+             patch("tools.web_tools._ddgs_package_importable", return_value=False), \
              patch("tools.web_tools._load_web_config",
                    return_value={"extract_backend": "fake-plugin-prov"}):
             from tools.web_tools import _get_extract_backend
@@ -803,7 +592,7 @@ class TestNonBuiltinProviderAvailability:
         """web_search and web_extract tool entries must remain in the
         registry when only a custom provider is available."""
         with patch("tools.web_tools._ddgs_package_importable", return_value=False), \
-             patch("tools.web_tools._peek_nous_access_token", return_value=None):
+             patch("tools.web_tools._ddgs_package_importable", return_value=False):
             import tools.web_tools
             web_search_entry = tools.web_tools.registry.get_entry("web_search")
             web_extract_entry = tools.web_tools.registry.get_entry("web_extract")

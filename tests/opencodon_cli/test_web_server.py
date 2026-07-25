@@ -3276,52 +3276,7 @@ class TestWebServerEndpoints:
             assert resp.status_code == 404
             assert "web UI disabled" in resp.json()["error"]
 
-    def test_set_model_main_nous_applies_gateway_defaults(self, monkeypatch):
-        """Switching the main provider to Nous calls apply_nous_managed_defaults
-        (mirroring the CLI's post-model-selection Tool Gateway routing) and
-        surfaces the routed tools in the response."""
-        import opencodon_cli.nous_subscription as ns
 
-        called = {}
-
-        def fake_apply(config, *, enabled_toolsets=None, force_fresh=False):
-            called["enabled"] = set(enabled_toolsets or ())
-            called["force_fresh"] = force_fresh
-            # Simulate routing the unconfigured web tool through the gateway.
-            web = config.setdefault("web", {})
-            web["backend"] = "firecrawl"
-            return {"web"}
-
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", fake_apply)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "nous", "model": "hermes-4"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["provider"] == "nous"
-        assert data["gateway_tools"] == ["web"]
-        assert called["force_fresh"] is True
-
-    def test_set_model_main_non_nous_skips_gateway_defaults(self, monkeypatch):
-        """Non-Nous providers must NOT trigger Tool Gateway auto-routing."""
-        import opencodon_cli.nous_subscription as ns
-
-        def boom(*args, **kwargs):  # pragma: no cover - must not be called
-            raise AssertionError("apply_nous_managed_defaults called for non-nous provider")
-
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", boom)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "openrouter", "model": "anthropic/claude-opus-4.8"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data.get("gateway_tools", []) == []
 
     def test_apply_main_model_assignment_base_url_and_context_reconcile(self):
         """The shared main-slot assignment helper must persist a supplied
@@ -3912,23 +3867,6 @@ class TestWebServerEndpoints:
         assert model_cfg["base_url"] == "http://127.0.0.1:8081/v1"
         assert model_cfg["api_key"] == "sk-local"
 
-    def test_set_model_main_gateway_failure_does_not_block_save(self, monkeypatch):
-        """A Portal/gateway hiccup must never prevent saving the model."""
-        import opencodon_cli.nous_subscription as ns
-
-        def boom(*args, **kwargs):
-            raise RuntimeError("portal unreachable")
-
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", boom)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "nous", "model": "hermes-4"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data.get("gateway_tools", []) == []
 
     def test_recommended_default_nous_honors_free_tier(self, monkeypatch):
         """For a free-tier Nous user, the recommended default must be a free
@@ -5222,20 +5160,11 @@ class TestNewEndpoints:
         """Each provider row carries a server-computed readiness `status`.
 
         Regression: the GUI pilled every zero-env-var row "Ready" — including
-        logged-out Nous Subscription rows, xAI TTS without Grok OAuth, and
-        never-installed KittenTTS/Piper. The endpoint now reports the honest
-        state so keyless ≠ ready.
+        xAI TTS without Grok OAuth and never-installed KittenTTS/Piper. The
+        endpoint now reports the honest state so keyless ≠ ready.
         """
         import opencodon_cli.tools_config as tools_config
-        from opencodon_cli.nous_account import NousPortalAccountInfo
 
-        # Logged out of Nous Portal → managed subscription rows need sign-in.
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=False, source="none", fresh=False, paid_service_access=None
-            ),
-        )
         # No xAI credentials → the Grok OAuth-backed row needs sign-in.
         monkeypatch.setattr(tools_config, "_xai_credentials_present", lambda: False)
         # Local TTS engines not installed → their rows need setup.
@@ -5252,7 +5181,6 @@ class TestNewEndpoints:
         # Genuinely-free keyless row stays Ready.
         assert by_name["Microsoft Edge TTS"]["status"] == "ready"
         # Keyless ≠ ready for gated rows:
-        assert by_name["Nous Subscription"]["status"] == "needs_auth"
         assert by_name["xAI TTS"]["status"] == "needs_auth"
         assert by_name["KittenTTS"]["status"] == "needs_setup"
         assert by_name["Piper"]["status"] == "needs_setup"
@@ -5348,57 +5276,7 @@ class TestNewEndpoints:
         )
         assert resp.status_code == 400
 
-    def test_select_managed_nous_provider_reports_needs_nous_auth(self, monkeypatch):
-        """Selecting a managed Nous row while logged out flags needs_nous_auth.
 
-        Regression: the GUI PUT wrote browser.cloud_provider + use_gateway
-        but skipped the Portal entitlement handshake the CLI runs inline
-        (ensure_nous_portal_access) — so the row never activated and nothing
-        told the user to sign in. The endpoint now reports the entitlement
-        gap so the client can drive the existing Nous OAuth flow.
-        """
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=False, source="none", fresh=False, paid_service_access=None
-            ),
-        )
-
-        resp = self.client.put(
-            "/api/tools/toolsets/browser/provider",
-            json={"provider": "Nous Subscription (Browser Use cloud)"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["needs_nous_auth"] is True
-        assert data["feature"] == "browser"
-        # The selection is still persisted — activation is what's gated.
-        from opencodon_cli.config import load_config
-        cfg = load_config()
-        assert cfg["browser"]["cloud_provider"] == "browser-use"
-
-    def test_select_managed_nous_provider_entitled_no_auth_flag(self, monkeypatch):
-        """A signed-in, entitled subscriber gets no needs_nous_auth field."""
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=True, source="jwt", fresh=True, paid_service_access=True
-            ),
-        )
-
-        resp = self.client.put(
-            "/api/tools/toolsets/browser/provider",
-            json={"provider": "Nous Subscription (Browser Use cloud)"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert "needs_nous_auth" not in data
 
     def test_select_unmanaged_provider_has_no_nous_auth_field(self):
         """Non-managed rows never carry the entitlement fields."""

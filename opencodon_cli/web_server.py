@@ -3562,24 +3562,7 @@ async def get_portal_status():
     except Exception:
         auth = {}
 
-    features = []
-    try:
-        from opencodon_cli.nous_subscription import get_nous_subscription_features
-
-        feats = get_nous_subscription_features(cfg)
-        if feats is not None:
-            for feat in feats.items():
-                if getattr(feat, "managed_by_nous", False):
-                    state = "via Nous Portal"
-                elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
-                    state = feat.current_provider
-                elif getattr(feat, "active", False):
-                    state = "active"
-                else:
-                    state = "not configured"
-                features.append({"label": getattr(feat, "label", ""), "state": state})
-    except Exception:
-        _log.exception("portal features failed")
+    features: list = []
 
     model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
     return {
@@ -6816,34 +6799,7 @@ def _apply_model_assignment_sync(
             model_cfg["api_key"] = provider_entry["api_key"]
         cfg["model"] = model_cfg
 
-        # When switching the main provider to Nous, mirror the CLI's
-        # post-model-selection behaviour (opencodon_cli/main.py
-        # prompt_enable_tool_gateway / tools_config apply_nous_managed_defaults):
-        # auto-route any *unconfigured* tools through the Nous Tool Gateway.
-        # This is purely additive — apply_nous_managed_defaults skips every
-        # tool where the user already has a direct key (FIRECRAWL_API_KEY,
-        # FAL_KEY, etc.) or an explicit backend/provider in config, so it
-        # never overwrites a user's own setup. GUI users thus land on the
-        # gateway the same way CLI users do, without a separate prompt.
         gateway_tools: list[str] = []
-        if provider.strip().lower() == "nous":
-            try:
-                from opencodon_cli.nous_subscription import apply_nous_managed_defaults
-                from opencodon_cli.tools_config import _get_platform_tools
-
-                enabled = _get_platform_tools(
-                    cfg, "cli", include_default_mcp_servers=False
-                )
-                changed = apply_nous_managed_defaults(
-                    cfg,
-                    enabled_toolsets=enabled,
-                    force_fresh=True,
-                )
-                gateway_tools = sorted(changed)
-            except Exception:
-                # Portal lookup hiccups / non-subscriber / non-nous gating
-                # must never block saving the model assignment.
-                _log.debug("apply_nous_managed_defaults skipped", exc_info=True)
 
         save_config(cfg)
 
@@ -15108,7 +15064,6 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
         web_provider_capabilities,
     )
     from opencodon_cli.config import get_env_value
-    from opencodon_cli.nous_subscription import get_nous_subscription_features
 
     valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
     if name not in valid:
@@ -15122,10 +15077,6 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
         active_search_backend = None
         active_extract_backend = None
         if cat:
-            # Fetch portal/entitlement state once for the whole matrix — the
-            # per-provider readiness computation below reuses it instead of
-            # re-probing per row.
-            features = get_nous_subscription_features(config, force_fresh=True)
             for prov in _visible_providers(cat, config, force_fresh=True):
                 env_vars = [
                     {
@@ -15153,11 +15104,10 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
                     "requires_nous_auth": bool(prov.get("requires_nous_auth")),
                     "is_active": is_active,
                     # Honest server-side readiness. The GUI's old client-side
-                    # heuristic showed "Ready" for every zero-env-var row —
-                    # including logged-out Nous Subscription rows and never-run
-                    # post_setup installs (see provider_readiness_status).
+                    # heuristic showed "Ready" for every zero-env-var row,
+                    # including never-run post_setup installs.
                     "status": provider_readiness_status(
-                        prov, config, features=features, is_active=is_active
+                        prov, config, is_active=is_active
                     ),
                 }
                 if name == "web" and prov.get("web_backend"):
@@ -15407,11 +15357,6 @@ async def select_toolset_provider(
         _get_effective_configurable_toolsets,
         _visible_providers,
     )
-    from opencodon_cli.nous_subscription import (
-        MANAGED_FEATURE_COVERAGE_CATEGORY,
-        get_nous_subscription_features,
-    )
-
     valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
     if name not in valid:
         raise HTTPException(status_code=400, detail=f"Unknown toolset: {name}")
@@ -15482,23 +15427,6 @@ async def select_toolset_provider(
                 ),
                 None,
             )
-        managed_feature = (row or {}).get("managed_nous_feature")
-        if managed_feature:
-            features = get_nous_subscription_features(config, force_fresh=True)
-            acct = features.account_info
-            category = MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature)
-            entitled = bool(
-                acct
-                and acct.logged_in
-                and (
-                    acct.tool_gateway_entitled_for(category)
-                    if category
-                    else acct.tool_gateway_entitled
-                )
-            )
-            if not entitled:
-                response["needs_nous_auth"] = True
-                response["feature"] = managed_feature
     return response
 
 

@@ -76,7 +76,6 @@ DEFAULT_NOUS_PORTAL_URL = "https://portal.nousresearch.com"
 DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
 DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
-NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
 DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
 NOUS_DEVICE_CODE_SOURCE = "device_code"
 NOUS_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
@@ -838,21 +837,6 @@ def format_auth_error(error: Exception) -> str:
 
 
 def _format_nous_entitlement_auth_error(error: AuthError) -> str:
-    try:
-        from opencodon_cli.nous_account import (
-            format_nous_portal_entitlement_message,
-            get_nous_portal_account_info,
-        )
-
-        account_info = get_nous_portal_account_info(force_fresh=True)
-        message = format_nous_portal_entitlement_message(
-            account_info,
-            capability="Nous model access",
-        )
-        if message:
-            return message
-    except Exception:
-        pass
     return f"{error} Check credits or billing in Nous Portal, then retry."
 
 
@@ -7857,91 +7841,6 @@ def _nous_device_code_login(
         raise
 
 
-def nous_token_has_billing_scope() -> bool:
-    """Return True if the currently-held Nous token carries ``billing:manage``.
-
-    Reads the persisted ``scope`` string saved at login (``_save_provider_state``
-    stores ``token_data.get("scope") or scope``). A space-delimited match. Used by
-    the lazy step-up: if False, the first billing call will 403 ``insufficient_scope``
-    anyway, but checking up front lets a surface skip a doomed round-trip.
-    """
-    try:
-        state = get_provider_auth_state("nous") or {}
-    except Exception:
-        return False
-    scope = state.get("scope")
-    if not isinstance(scope, str):
-        return False
-    return NOUS_BILLING_MANAGE_SCOPE in scope.split()
-
-
-def step_up_nous_billing_scope(
-    *,
-    open_browser: bool = True,
-    timeout_seconds: float = 15.0,
-    on_verification: Optional[Callable[[str, str], None]] = None,
-) -> bool:
-    """Re-run the device flow requesting ``billing:manage`` and persist the result.
-
-    The lazy step-up (plan D-A): triggered when a billing endpoint returns
-    ``403 insufficient_scope``. Runs a fresh device-connect with
-    ``inference:invoke tool:invoke billing:manage`` on the scope. The user must be
-    an ADMIN/OWNER and select "Allow Remote Spending" in the portal for the minted
-    token to actually carry the scope; otherwise the server silently downscopes and this
-    returns False.
-
-    Reuses the held credential's portal/inference URLs + client_id so the step-up
-    targets the same deployment (incl. a preview via ``OPENCODON_PORTAL_BASE_URL`` set
-    at the original login). Persists to the auth store + shared store + pool, exactly
-    like ``_login_nous`` — but WITHOUT the model picker (this is a scope upgrade, not
-    a fresh login).
-
-    Returns True iff the new token carries ``billing:manage``.
-    """
-    prior = get_provider_auth_state("nous") or {}
-    pconfig = PROVIDER_REGISTRY["nous"]
-
-    # Build the step-up scope: existing scopes (if any) + billing:manage, deduped,
-    # order-stable. Fall back to the standard inference+tool+billing set.
-    _raw_scope = prior.get("scope")
-    prior_scope = _raw_scope if isinstance(_raw_scope, str) else ""
-    requested: list[str] = []
-    for tok in (prior_scope.split() or [NOUS_INFERENCE_INVOKE_SCOPE, "tool:invoke"]):
-        if tok and tok not in requested:
-            requested.append(tok)
-    if NOUS_BILLING_MANAGE_SCOPE not in requested:
-        requested.append(NOUS_BILLING_MANAGE_SCOPE)
-    scope = " ".join(requested)
-
-    auth_state = _nous_device_code_login(
-        portal_base_url=prior.get("portal_base_url") or None,
-        inference_base_url=prior.get("inference_base_url") or None,
-        client_id=prior.get("client_id") or pconfig.client_id,
-        scope=scope,
-        open_browser=open_browser,
-        timeout_seconds=timeout_seconds,
-        on_verification=on_verification,
-    )
-
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        _save_provider_state(auth_store, "nous", auth_state)
-        _save_auth_store(auth_store)
-
-    # Mirror to shared store + reseed the pool (best-effort), same as _login_nous.
-    try:
-        _write_shared_nous_state(auth_state)
-    except Exception:
-        pass
-    try:
-        _sync_nous_pool_from_auth_store()
-    except Exception:
-        pass
-
-    granted = auth_state.get("scope")
-    return isinstance(granted, str) and NOUS_BILLING_MANAGE_SCOPE in granted.split()
-
-
 def _login_nous(args, pconfig: ProviderConfig) -> None:
     """Nous Portal device authorization flow."""
     timeout_seconds = getattr(args, "timeout", None) or 15.0
@@ -8050,22 +7949,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 free_tier = check_nous_free_tier(force_fresh=True)
                 _portal_for_recs = auth_state.get("portal_base_url", "")
                 if free_tier:
-                    try:
-                        from opencodon_cli.nous_account import (
-                            format_nous_portal_entitlement_message,
-                            get_nous_portal_account_info,
-                        )
-
-                        _account_info = get_nous_portal_account_info(force_fresh=True)
-                        unavailable_message = (
-                            format_nous_portal_entitlement_message(
-                                _account_info,
-                                capability="paid Nous models",
-                            )
-                            or ""
-                        )
-                    except Exception:
-                        unavailable_message = ""
+                    unavailable_message = ""
                     # The Portal's freeRecommendedModels endpoint is the
                     # source of truth for what's free *right now*. Augment
                     # the curated list with anything new the Portal flags

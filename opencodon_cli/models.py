@@ -817,16 +817,10 @@ def check_nous_free_tier(*, force_fresh: bool = False) -> bool:
         if now - cached_at < _FREE_TIER_CACHE_TTL:
             return cached_result
 
-    try:
-        from opencodon_cli.nous_account import get_nous_portal_account_info
-
-        account_info = get_nous_portal_account_info(force_fresh=force_fresh)
-        result = account_info.is_free_tier
-        _free_tier_cache = (result, now)
-        return result
-    except Exception:
-        _free_tier_cache = (False, now)
-        return False  # default to paid on error — don't block users
+    # The Portal account API that reported free-tier status was removed with
+    # the billing layer. Default to paid so no model is hidden from the picker.
+    _free_tier_cache = (False, now)
+    return False
 
 
 # ---------------------------------------------------------------------------

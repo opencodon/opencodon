@@ -1424,10 +1424,6 @@ class TestBuildSystemPrompt:
         else:
             assert False, "Expected a 'Conversation started:' line in the system prompt"
 
-    def test_includes_nous_subscription_prompt(self, agent, monkeypatch):
-        monkeypatch.setattr(run_agent, "build_nous_subscription_prompt", lambda tool_names: "NOUS SUBSCRIPTION BLOCK")
-        prompt = agent._build_system_prompt()
-        assert "NOUS SUBSCRIPTION BLOCK" in prompt
 
     def test_skills_prompt_derives_available_toolsets_from_loaded_tools(self):
         tools = _make_tool_defs("web_search", "skills_list", "skill_view", "skill_manage")
@@ -4005,53 +4001,7 @@ class TestHandleMaxIterations:
         kwargs = agent.client.chat.completions.create.call_args.kwargs
         assert kwargs["extra_body"]["provider"]["only"] == ["Anthropic"]
 
-    def test_summary_keeps_provider_preferences_for_nous(self, agent):
-        agent.base_url = "https://proxy.example.com/v1"
-        agent._base_url_lower = agent.base_url.lower()
-        agent.provider = "nous"
-        agent.providers_allowed = ["deepseek"]
-        agent.providers_ignored = ["deepinfra"]
-        agent.provider_sort = "throughput"
-        agent.provider_require_parameters = True
-        agent.provider_data_collection = "deny"
-        agent.client.chat.completions.create.return_value = _mock_response(content="Summary")
-        agent._cached_system_prompt = "You are helpful."
 
-        result = agent._handle_max_iterations([{"role": "user", "content": "do stuff"}], 60)
-
-        assert result == "Summary"
-        kwargs = agent.client.chat.completions.create.call_args.kwargs
-        from agent.portal_tags import nous_portal_tags
-
-        assert kwargs["extra_body"]["tags"] == nous_portal_tags(
-            session_id=agent.session_id
-        )
-        assert kwargs["extra_body"]["provider"] == {
-            "only": ["deepseek"],
-            "ignore": ["deepinfra"],
-            "sort": "throughput",
-            "require_parameters": True,
-            "data_collection": "deny",
-        }
-
-    def test_summary_keeps_nous_profile_body_without_routing_preferences(self, agent):
-        agent.base_url = "https://proxy.example.com/v1"
-        agent._base_url_lower = agent.base_url.lower()
-        agent.provider = "nous"
-        agent.client.chat.completions.create.return_value = _mock_response(content="Summary")
-        agent._cached_system_prompt = "You are helpful."
-
-        result = agent._handle_max_iterations([{"role": "user", "content": "do stuff"}], 60)
-
-        assert result == "Summary"
-        kwargs = agent.client.chat.completions.create.call_args.kwargs
-        from agent.portal_tags import nous_portal_tags
-
-        expected = {"tags": nous_portal_tags(session_id=agent.session_id)}
-        if agent.session_id:
-            # Top-level sticky-routing key ships whenever a session exists.
-            expected["session_id"] = agent.session_id
-        assert kwargs["extra_body"] == expected
 
     def test_summary_drops_invalid_provider_sort(self, agent):
         agent.base_url = "https://openrouter.ai/api/v1"

@@ -2003,10 +2003,6 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
                     "enabled": True,
                     "effort": "medium"
                 }
-        if _is_nous:
-            from agent.portal_tags import nous_portal_tags as _portal_tags
-            summary_extra_body["tags"] = _portal_tags()
-
         if agent.api_mode == "codex_responses":
             codex_kwargs = agent._build_api_kwargs(api_messages)
             codex_kwargs.pop("tools", None)
@@ -2733,7 +2729,6 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
         # The OpenAI SDK Stream object exposes the underlying httpx
         # response via .response before any chunks are consumed.
         agent._capture_rate_limits(getattr(stream, "response", None))
-        agent._capture_credits(getattr(stream, "response", None))
         # Snapshot diagnostic headers (cf-ray, x-openrouter-provider, etc.)
         # so they survive even when the stream dies before any chunk
         # arrives.  Best-effort; never raises.

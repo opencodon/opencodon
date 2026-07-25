@@ -7,14 +7,12 @@ firecrawl implementation that previously lived in tools/web_tools.py:
   - :data:`Firecrawl` lazy proxy that defers the ~200ms SDK import to
     first use (re-exported by tools.web_tools for backward compat with
     existing tests that mock that name).
-  - :func:`_get_firecrawl_client` with direct + managed-gateway dual
-    mode, controlled by ``web.use_gateway`` config when both are
-    configured.
+  - :func:`_get_firecrawl_client` using the direct Firecrawl config.
   - :func:`check_firecrawl_api_key` re-exported (tests + tools_config
     setup hint depend on this name living in tools.web_tools).
   - :func:`_extract_web_search_results` / :func:`_extract_scrape_payload`
-    response-shape normalizers that handle SDK / direct API / gateway
-    response variants.
+    response-shape normalizers that handle SDK / direct API response
+    variants.
   - Per-URL extract loop with 60s timeout, redirect-aware SSRF re-check,
     website-policy gating, and format-aware content selection.
 
@@ -30,17 +28,11 @@ Config keys this provider responds to::
       search_backend: "firecrawl"     # explicit per-capability
       extract_backend: "firecrawl"    # explicit per-capability
       backend: "firecrawl"            # shared fallback (default)
-      use_gateway: false              # prefer managed gateway when both
-                                      # direct + gateway credentials exist
 
 Env vars::
 
     FIRECRAWL_API_KEY=...            # direct cloud auth
     FIRECRAWL_API_URL=...            # self-hosted Firecrawl
-    FIRECRAWL_GATEWAY_URL=...        # Nous tool-gateway (subscribers)
-    TOOL_GATEWAY_DOMAIN=...          # alternate gateway env
-    TOOL_GATEWAY_SCHEME=...
-    TOOL_GATEWAY_USER_TOKEN=...
 """
 
 from __future__ import annotations
@@ -111,7 +103,7 @@ Firecrawl = _FirecrawlProxy()
 
 
 # ---------------------------------------------------------------------------
-# Client construction (direct vs managed-gateway)
+# Client construction
 # ---------------------------------------------------------------------------
 #
 # The canonical cache slots live on :mod:`tools.web_tools` so tests that do
@@ -139,127 +131,55 @@ def _get_direct_firecrawl_config() -> Optional[tuple]:
     return kwargs, ("direct", api_url or None, api_key or None)
 
 
-def _get_firecrawl_gateway_url() -> str:
-    """Return the configured Firecrawl gateway URL."""
-    import tools.web_tools as _wt
-
-    return _wt.build_vendor_gateway_url("firecrawl")
-
-
-def _is_tool_gateway_ready() -> bool:
-    """Return True when gateway URL + Nous Subscriber token are available.
-
-    Reads ``peek_nous_access_token`` and ``resolve_managed_tool_gateway``
-    via :mod:`tools.web_tools` rather than direct imports, so unit tests
-    that ``patch("tools.web_tools._peek_nous_access_token", ...)`` see
-    their patches honored. The names are re-exported on
-    :mod:`tools.web_tools` for exactly this reason.
-    """
-    import tools.web_tools as _wt
-
-    return _wt.resolve_managed_tool_gateway(
-        "firecrawl", token_reader=_wt._peek_nous_access_token
-    ) is not None
-
-
 def _has_direct_firecrawl_config() -> bool:
     """Return True when direct Firecrawl config is explicitly configured."""
     return _get_direct_firecrawl_config() is not None
 
 
 def check_firecrawl_api_key() -> bool:
-    """Return True when Firecrawl backend (direct or gateway) is usable.
+    """Return True when the Firecrawl backend is usable.
 
     Re-exported by :mod:`tools.web_tools` for backward compatibility with
     existing tests and the ``hermes tools`` setup flow.
     """
-    return _has_direct_firecrawl_config() or _is_tool_gateway_ready()
-
-
-def _firecrawl_backend_help_suffix() -> str:
-    """Return optional managed-gateway guidance for Firecrawl help text."""
-    import tools.web_tools as _wt
-
-    if not _wt.managed_nous_tools_enabled():
-        return ""
-    return (
-        ", or use the Nous Tool Gateway via your subscription "
-        "(FIRECRAWL_GATEWAY_URL or TOOL_GATEWAY_DOMAIN)"
-    )
+    return _has_direct_firecrawl_config()
 
 
 def _raise_web_backend_configuration_error() -> None:
     """Raise a clear error for unsupported web backend configuration."""
-    import tools.web_tools as _wt
-
-    message = (
+    raise ValueError(
         "Web tools are not configured. "
         "Set FIRECRAWL_API_KEY for cloud Firecrawl or set FIRECRAWL_API_URL "
         "for a self-hosted Firecrawl instance."
     )
-    if _wt.managed_nous_tools_enabled():
-        message += (
-            " With your Nous subscription you can also use the Tool Gateway. "
-            "run `hermes tools` and select Nous Subscription as the web provider."
-        )
-    else:
-        message += " " + _wt.nous_tool_gateway_unavailable_message(
-            "managed Firecrawl web tools",
-        )
-    raise ValueError(message)
 
 
 def _get_firecrawl_client() -> Any:
     """Get or create the cached Firecrawl client.
 
-    When ``web.use_gateway`` is set in config, the managed Tool Gateway is
-    preferred even if direct Firecrawl credentials are present. Otherwise
-    direct Firecrawl takes precedence when explicitly configured.
-
-    Raises ValueError when neither path is usable.
+    Raises ValueError when direct Firecrawl config is not usable.
 
     The cached client is stored on :mod:`tools.web_tools` (as
     ``_firecrawl_client`` and ``_firecrawl_client_config``) rather than on
     this plugin module so that unit tests that reset the cache via
-    ``tools.web_tools._firecrawl_client = None`` keep working. Helper
-    functions (``prefers_gateway``, ``resolve_managed_tool_gateway``,
-    ``_read_nous_access_token``, ``Firecrawl``) are also looked up via
-    :mod:`tools.web_tools` for the same reason — see
-    :func:`_is_tool_gateway_ready`.
+    ``tools.web_tools._firecrawl_client = None`` keep working. ``Firecrawl``
+    is likewise looked up via :mod:`tools.web_tools` so tests patching
+    ``tools.web_tools.Firecrawl`` see their mock.
     """
     import tools.web_tools as _wt
 
     direct_config = _get_direct_firecrawl_config()
-    if direct_config is not None and not _wt.prefers_gateway("web"):
-        kwargs, client_config = direct_config
-    else:
-        managed_gateway = _wt.resolve_managed_tool_gateway(
-            "firecrawl", token_reader=_wt._read_nous_access_token
-        )
-        if managed_gateway is None:
-            logger.error(
-                "Firecrawl client initialization failed: "
-                "missing direct config and tool-gateway auth."
-            )
-            _raise_web_backend_configuration_error()
+    if direct_config is None:
+        logger.error("Firecrawl client initialization failed: missing direct config.")
+        _raise_web_backend_configuration_error()
 
-        kwargs = {
-            "api_key": managed_gateway.nous_user_token,
-            "api_url": managed_gateway.gateway_origin,
-        }
-        client_config = (
-            "tool-gateway",
-            kwargs["api_url"],
-            managed_gateway.nous_user_token,
-        )
+    kwargs, client_config = direct_config
 
     cached = getattr(_wt, "_firecrawl_client", None)
     cached_config = getattr(_wt, "_firecrawl_client_config", None)
     if cached is not None and cached_config == client_config:
         return cached
 
-    # Construct via the re-exported Firecrawl proxy on tools.web_tools so
-    # unit tests patching ``tools.web_tools.Firecrawl`` see their mock.
     _wt._firecrawl_client = _wt.Firecrawl(**kwargs)
     _wt._firecrawl_client_config = client_config
     return _wt._firecrawl_client
@@ -278,7 +198,7 @@ def _reset_client_for_tests() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Response shape normalization (SDK / direct / gateway differ)
+# Response shape normalization (SDK / direct differ)
 # ---------------------------------------------------------------------------
 
 

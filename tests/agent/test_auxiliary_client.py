@@ -343,45 +343,6 @@ class TestBuildCallKwargsMaxTokens:
         assert kwargs["max_tokens"] == 4096
 
 
-class TestNousTagsScoping:
-    def test_tags_injected_when_provider_is_nous(self, monkeypatch):
-        import agent.auxiliary_client as aux
-
-        monkeypatch.setattr(aux, "auxiliary_is_nous", False)
-
-        kwargs = aux._build_call_kwargs(
-            provider="nous",
-            model="hermes-4",
-            messages=[{"role": "user", "content": "hi"}],
-        )
-
-        assert kwargs["extra_body"]["tags"] == aux._nous_portal_tags()
-
-    def test_tags_not_injected_for_gemini_when_main_is_nous(self, monkeypatch):
-        import agent.auxiliary_client as aux
-
-        monkeypatch.setattr(aux, "auxiliary_is_nous", True)
-
-        kwargs = aux._build_call_kwargs(
-            provider="gemini",
-            model="gemini-2.5-flash",
-            messages=[{"role": "user", "content": "hi"}],
-        )
-
-        assert "extra_body" not in kwargs
-
-    def test_tags_not_injected_for_openrouter_when_main_is_nous(self, monkeypatch):
-        import agent.auxiliary_client as aux
-
-        monkeypatch.setattr(aux, "auxiliary_is_nous", True)
-
-        kwargs = aux._build_call_kwargs(
-            provider="openrouter",
-            model="openai/gpt-5.4",
-            messages=[{"role": "user", "content": "hi"}],
-        )
-
-        assert "extra_body" not in kwargs
 
 
 class TestNormalizeAuxProvider:
@@ -1486,46 +1447,6 @@ class TestAuxiliaryPoolAwareness:
         assert stale_client.chat.completions.create.call_count == 1
         assert fresh_client.chat.completions.create.call_count == 1
 
-    def test_call_llm_refreshes_nous_after_free_tier_block_when_account_paid(self):
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        class _Payment404(Exception):
-            status_code = 404
-
-        stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
-        stale_client.chat.completions.create.side_effect = _Payment404(
-            "model_not_supported_on_free_tier: model is not available on the free tier"
-        )
-
-        fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.nousresearch.com/v1"
-        fresh_client.chat.completions.create.return_value = {"ok": True}
-
-        with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
-            patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
-            patch(
-                "opencodon_cli.nous_account.get_nous_portal_account_info",
-                return_value=NousPortalAccountInfo(
-                    logged_in=True,
-                    source="account_api",
-                    fresh=True,
-                    paid_service_access=True,
-                ),
-            ),
-        ):
-            result = call_llm(
-                task="compression",
-                messages=[{"role": "user", "content": "hi"}],
-            )
-
-        assert result == {"ok": True}
-        assert stale_client.chat.completions.create.call_count == 1
-        assert fresh_client.chat.completions.create.call_count == 1
 
     @pytest.mark.asyncio
     async def test_async_call_llm_retries_nous_after_401(self):
@@ -1556,47 +1477,6 @@ class TestAuxiliaryPoolAwareness:
         assert stale_client.chat.completions.create.await_count == 1
         assert fresh_async_client.chat.completions.create.await_count == 1
 
-    @pytest.mark.asyncio
-    async def test_async_call_llm_refreshes_nous_after_free_tier_block_when_account_paid(self):
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        class _Payment404(Exception):
-            status_code = 404
-
-        stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
-        stale_client.chat.completions.create = AsyncMock(side_effect=_Payment404(
-            "model_not_supported_on_free_tier: model is not available on the free tier"
-        ))
-
-        fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.nousresearch.com/v1"
-        fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
-
-        with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
-            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
-            patch(
-                "opencodon_cli.nous_account.get_nous_portal_account_info",
-                return_value=NousPortalAccountInfo(
-                    logged_in=True,
-                    source="account_api",
-                    fresh=True,
-                    paid_service_access=True,
-                ),
-            ),
-        ):
-            result = await async_call_llm(
-                task="session_search",
-                messages=[{"role": "user", "content": "hi"}],
-            )
-
-        assert result == {"ok": True}
-        assert stale_client.chat.completions.create.await_count == 1
-        assert fresh_async_client.chat.completions.create.await_count == 1
 
     def test_cached_gmi_client_keeps_explicit_slash_model_override(self):
         import agent.auxiliary_client as aux
