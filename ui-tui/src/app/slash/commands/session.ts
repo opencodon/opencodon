@@ -391,31 +391,6 @@ export const sessionCommands: SlashCommand[] = [
   },
 
   {
-    help: 'toggle / adopt / resize an animated pet',
-    name: 'pet',
-    usage: '/pet [toggle | list | scale <n> | <slug>]',
-    run: (arg, ctx, cmd) => {
-      const sub = arg.trim().toLowerCase()
-
-      // Gallery picker — the interactive browse surface.
-      if (sub === 'list') {
-        return patchOverlayState({ petPicker: true })
-      }
-
-      // Bare /pet and /pet toggle flip display.pet.enabled via the slash worker.
-      ctx.gateway.gw
-        .request<SlashExecResponse>('slash.exec', { command: cmd.slice(1), session_id: ctx.sid })
-        .then(
-          ctx.guarded<SlashExecResponse>(r => {
-            const body = r.output || '/pet: no output'
-            ctx.transcript.sys(r.warning ? `warning: ${r.warning}\n${body}` : body)
-          })
-        )
-        .catch(ctx.guardedErr)
-    }
-  },
-
-  {
     help: 'pin light/dark mode or trust auto-detection (usage: /theme [auto|light|dark])',
     name: 'theme',
     usage: '/theme [auto|light|dark]',

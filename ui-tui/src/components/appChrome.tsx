@@ -407,31 +407,6 @@ const shortModelLabel = (model: string) =>
 const modelLabel = (model: string, effort?: string, fast?: boolean) =>
   [shortModelLabel(model), effortLabel(effort), fast ? 'fast' : ''].filter(Boolean).join(' ')
 
-export function GoodVibesHeart({ tick, t }: { tick: number; t: Theme }) {
-  const [active, setActive] = useState(false)
-  const [color, setColor] = useState(t.color.accent)
-
-  useEffect(() => {
-    if (tick <= 0) {
-      return
-    }
-
-    const palette = [t.color.error, t.color.warn, t.color.accent]
-    setColor(palette[Math.floor(Math.random() * palette.length)]!)
-    setActive(true)
-
-    const id = setTimeout(() => setActive(false), 650)
-
-    return () => clearTimeout(id)
-  }, [t.color.accent, t.color.error, t.color.warn, tick])
-
-  if (!active) {
-    return null
-  }
-
-  return <Text color={color}>♥</Text>
-}
-
 export function StatusRule({
   battery,
   cwdLabel,

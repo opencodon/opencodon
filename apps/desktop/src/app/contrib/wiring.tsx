@@ -20,7 +20,6 @@ import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overla
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { $newSessionTabAction } from '@/components/pane-shell/tree/store'
-import { FloatingPet } from '@/components/pet/floating-pet'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
 import { getSessionMessages, triggerCronJob } from '@/opencodon'
@@ -68,7 +67,6 @@ import { useGatewayRequest } from '../gateway/hooks/use-gateway-request'
 import { useKeybinds } from '../hooks/use-keybinds'
 import { ModelPickerOverlay } from '../model-picker-overlay'
 import { ModelVisibilityOverlay } from '../model-visibility-overlay'
-import { PetGenerateOverlay } from '../pet-generate/pet-generate-overlay'
 import { FileActionDialogs } from '../right-sidebar/file-actions'
 import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
 import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
@@ -99,7 +97,6 @@ import { UpdatesOverlay } from '../updates-overlay'
 import { ContribWiringContext } from './context'
 import { useBackgroundSync } from './hooks/use-background-sync'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
-import { usePetBridge } from './hooks/use-pet-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
 import { $restartPreviewServer, useTitlebarToolContributions } from './panes'
 import { ChatRoutesSurface, SidebarSurface, StatusbarSurface, TerminalSurface } from './surfaces'
@@ -581,8 +578,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     updateSessionState
   })
 
-  // The popped-out pet overlay's bridge back into the app.
-  usePetBridge({ requestGateway, resumeSession, submitText })
 
   // Clear a failed turn's red error banner. Errors are renderer-local (never
   // persisted): a bare error placeholder is dropped entirely; a partial-output
@@ -952,7 +947,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <GatewayConnectingOverlay />
       <BootFailureOverlay />
       <CommandPalette />
-      <PetGenerateOverlay />
       <SessionSwitcher />
       <FileActionDialogs />
       <RemoteFolderPicker />
@@ -1021,8 +1015,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       {/* Toasts above everything. */}
       <NotificationStack />
 
-      {/* Petdex floating mascot — renders nothing unless installed + enabled. */}
-      <FloatingPet />
 
       {/* Single persistent xterm host chasing the terminal pane's slot rect. */}
       <PersistentTerminal onAddSelectionToChat={composer.addTerminalSelectionAttachment} />

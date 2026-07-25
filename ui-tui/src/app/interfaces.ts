@@ -291,7 +291,6 @@ export interface OverlayState {
   journey: boolean
   modelPicker: boolean | { refresh?: boolean }
   pager: null | PagerState
-  petPicker: boolean
   pluginsHub: boolean
   secret: null | SecretReq
   sessions: boolean
@@ -569,7 +568,6 @@ export interface AppLayoutProgressProps {
 
 export interface AppLayoutStatusProps {
   cwdLabel: string
-  goodVibesTick: number
   lastTurnEndedAt: null | number
   sessionStartedAt: null | number
   showStickyPrompt: boolean

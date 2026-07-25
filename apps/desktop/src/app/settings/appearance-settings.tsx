@@ -24,7 +24,6 @@ import type { DesktopTheme } from '@/themes/types'
 import { $marketplaceInstalls, isUserTheme, removeUserTheme } from '@/themes/user-themes'
 
 import { MODE_OPTIONS } from './constants'
-import { PetSettings } from './pet-settings'
 import { ListRow, SectionHeading, SettingsContent } from './primitives'
 
 function ThemePreview({ name, mode }: { name: string; mode: 'light' | 'dark' }) {
@@ -518,7 +517,6 @@ export function AppearanceSettings() {
       </div>
 
       <div className="mt-6">
-        <PetSettings />
       </div>
     </SettingsContent>
   )

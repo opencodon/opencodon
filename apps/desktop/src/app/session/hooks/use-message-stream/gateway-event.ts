@@ -6,7 +6,6 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 import { writeAgentTerminalChunk } from '@/app/right-sidebar/terminal/agent-terminal-stream'
 import { readActiveTerminal } from '@/app/right-sidebar/terminal/buffer'
 import { closeAgentTerminalByProc } from '@/app/right-sidebar/terminal/terminals'
-import { burstVibeHearts } from '@/components/chat/vibe-hearts'
 import { translateNow } from '@/i18n'
 import { type GatewayEventPayload, textPart } from '@/lib/chat-messages'
 import { coerceGatewayText, coerceThinkingText, normalizePersonalityValue } from '@/lib/chat-runtime'
@@ -26,7 +25,6 @@ import { dispatchNativeNotification } from '@/store/native-notifications'
 import { notify } from '@/store/notifications'
 import { requestDesktopOnboarding, requestDesktopOnboardingForCredentialWarning } from '@/store/onboarding'
 import { revealDesktopPane } from '@/store/pane-focus'
-import { flashPetActivity, markPetUnread, setPetActivity } from '@/store/pet'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { followActiveSessionCwd } from '@/store/projects'
 import { clearAllPrompts, setApprovalRequest, setSecretRequest, setSudoRequest } from '@/store/prompts'
@@ -491,28 +489,16 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         // KawaiiSpinner), not real reasoning. The bottom-of-thread loading
         // indicator already covers that UX, so we ignore these events to
         // avoid a duplicative "Thinking" disclosure showing spinner text.
-      } else if (event.type === 'reaction') {
-        // Core-detected affection (ily / <3 / good bot) on the user's message.
-        // Play hearts only for the visible session so background turns stay quiet.
-        if (isActiveEvent && (payload?.kind ?? 'vibe') === 'vibe') {
-          burstVibeHearts()
-        }
       } else if (event.type === 'reasoning.delta') {
         if (sessionId) {
           appendReasoningDelta(sessionId, coerceThinkingText(payload?.text))
         }
 
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: true })
-        }
       } else if (event.type === 'reasoning.available') {
         if (sessionId) {
           appendReasoningDelta(sessionId, coerceThinkingText(payload?.text), true)
         }
 
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: true })
-        }
       } else if (event.type === 'moa.reference') {
         // MoA reference-model output — surface as a labelled thinking chunk
         // (tagged with the source model) before the aggregator's response, so
@@ -527,15 +513,9 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           appendReasoningDelta(sessionId, `${header}\n${body}\n\n`, true)
         }
 
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: true })
-        }
       } else if (event.type === 'moa.aggregating') {
         // Status transition only; the aggregator's reply arrives via the normal
         // message stream. No reasoning/transcript mutation here.
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: true })
-        }
       } else if (event.type === 'message.complete') {
         if (!sessionId) {
           return
@@ -569,20 +549,6 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
         if (isActiveEvent) {
           setTurnStartedAt(null)
-
-          // Pet beat: a finished turn always celebrates — go straight to the
-          // jump, never linger on the run/reason pose. One atom update (clears
-          // toolRunning/reasoning AND sets celebrate together) so no stray "run"
-          // frame leaks to the sprite — including the popped-out overlay, which
-          // mirrors each activity change. The jump runs ~2 loops, then settles.
-          flashPetActivity({ celebrate: true, reasoning: false, toolRunning: false }, 2200)
-
-          // Light up the pet's mail icon if the user wasn't looking when the turn
-          // finished — a glanceable "new message" hint on the popped-out overlay.
-          // Cleared when they open the app via the mail icon or refocus the window.
-          if (typeof document !== 'undefined' && !document.hasFocus()) {
-            markPetUnread()
-          }
         }
 
         if (payload?.usage) {
@@ -614,17 +580,11 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         flushQueuedDeltas(sessionId)
         upsertToolCall(sessionId, toTodoPayload(payload) ?? payload, 'running', event.type)
 
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: false, toolRunning: true })
-        }
       } else if (event.type === 'tool.complete') {
         if (sessionId) {
           flushQueuedDeltas(sessionId)
           upsertToolCall(sessionId, toTodoPayload(payload) ?? payload, 'complete', event.type)
 
-          if (isActiveEvent) {
-            setPetActivity({ toolRunning: false })
-          }
 
           // A pending clarify blocks the turn, so the first tool.complete after
           // one is the clarify resolving — drop the "needs input" flag here so
@@ -910,11 +870,6 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           clearActiveSessionTodos(sessionId)
           setSessionCompacting(sessionId, false)
           compactedTurnRef.current.delete(sessionId)
-        }
-
-        if (isActiveEvent) {
-          setPetActivity({ reasoning: false, toolRunning: false })
-          flashPetActivity({ error: true })
         }
 
         dispatchNativeNotification({

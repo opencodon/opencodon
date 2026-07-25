@@ -441,9 +441,3 @@ class TestRegistration:
         register(ctx)
         registered = [c.args[0].name for c in ctx.register_image_gen_provider.call_args_list]
         assert set(registered) == {"openrouter", "nous"}
-
-    def test_both_are_reference_capable_for_pets(self):
-        from agent.pet.generate.imagegen import _REF_CAPABLE
-
-        assert "openrouter" in _REF_CAPABLE
-        assert "nous" in _REF_CAPABLE

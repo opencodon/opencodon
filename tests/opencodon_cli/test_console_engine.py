@@ -185,14 +185,6 @@ EXPECTED_CONSOLE_COMMANDS = {
     ("curator", "prune"),
     ("curator", "backup"),
     ("curator", "rollback"),
-    ("pets", "list"),
-    ("pets", "install"),
-    ("pets", "select"),
-    ("pets", "show"),
-    ("pets", "off"),
-    ("pets", "scale"),
-    ("pets", "remove"),
-    ("pets", "doctor"),
 }
 
 
@@ -224,7 +216,6 @@ MUTATING_CONFIRMATION_SMOKE_COMMANDS = [
     "bundles create demo --skill skill-a",
     "checkpoints prune",
     "curator pause",
-    "pets install cat",
 ]
 
 
@@ -306,7 +297,6 @@ def test_console_help_uses_cli_subcommand_summaries():
     assert "List installed skills" in help_text
     assert "Show all tools and their enabled/disabled status" in help_text
     assert "Remove an MCP server" in help_text
-    assert "Check pet setup + terminal graphics support" in help_text
     assert "Run `hermes skills list`" not in help_text
     assert "Run `hermes tools list`" not in help_text
 
