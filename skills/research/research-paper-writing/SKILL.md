@@ -8,7 +8,7 @@ license: MIT
 dependencies: [semanticscholar, arxiv, habanero, requests, scipy, numpy, matplotlib, SciencePlots]
 platforms: [linux, macos]
 metadata:
-  hermes:
+  opencodon:
     tags: [Research, Paper Writing, Experiments, ML, AI, NeurIPS, ICML, ICLR, ACL, AAAI, COLM, LaTeX, Citations, Statistical Analysis]
     category: research
     related_skills: [arxiv, ml-paper-writing, subagent-driven-development, plan]
@@ -2114,13 +2114,13 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ---
 
-## Hermes Agent Integration
+## opencodon Integration
 
-This skill is designed for the Hermes agent. It uses Hermes tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the opencodon agent. It uses opencodon tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 
-Compose this skill with other Hermes skills for specific phases:
+Compose this skill with other opencodon skills for specific phases:
 
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
@@ -2133,7 +2133,7 @@ Compose this skill with other Hermes skills for specific phases:
 
 **This skill supersedes `ml-paper-writing`** — it contains all of ml-paper-writing's content plus the full experiment/analysis pipeline and autoreason methodology.
 
-### Hermes Tools Reference
+### opencodon Tools Reference
 
 | Tool | Usage in This Pipeline |
 |------|----------------------|
@@ -2148,7 +2148,7 @@ Compose this skill with other Hermes skills for specific phases:
 | **`memory`** | Persist key decisions across sessions: contribution framing, venue choice, reviewer feedback. |
 | **`cronjob`** | Schedule experiment monitoring, deadline countdowns, automated arXiv checks. |
 | **`clarify`** | Ask the user targeted questions when blocked (venue choice, contribution framing). |
-| **cron `deliver:`** | Notify the user when experiments complete or drafts are ready even if they're not in chat — schedule the check as a cron job with a messaging `deliver:` target (the agent no longer has a `send_message` tool; outbound delivery is handled by cron/`hermes send`). |
+| **cron `deliver:`** | Notify the user when experiments complete or drafts are ready even if they're not in chat — schedule the check as a cron job with a messaging `deliver:` target (the agent no longer has a `send_message` tool; outbound delivery is handled by cron/`opencodon send`). |
 
 ### Tool Usage Patterns
 
