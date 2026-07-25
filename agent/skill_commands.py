@@ -33,7 +33,7 @@ _SKILL_MULTI_HYPHEN = re.compile(r"-{2,}")
 # model-facing message that embeds the full skill body plus scaffolding. That
 # expanded text is what flows into the agent loop — and into memory providers
 # via MemoryManager. Providers that store or embed the raw user turn (e.g.
-# honcho) would otherwise capture the entire skill body instead of what the
+# a memory provider) would otherwise capture the entire skill body instead of what the
 # user actually asked. ``extract_user_instruction_from_skill_message``
 # recovers just the user's instruction so memory stays clean.
 #

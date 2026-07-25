@@ -355,7 +355,7 @@ def test_background_review_fork_skips_external_memory_plugins(monkeypatch):
     assert captured_kwargs.get("skip_memory") is True, (
         "Background review fork must be constructed with skip_memory=True "
         "so AIAgent.__init__ does not rebuild a _memory_manager wired to "
-        "external plugins (honcho, mem0, supermemory, ...).  Without this "
+        "external memory plugins.  Without this "
         "the fork leaks harness prompts into the user's real memory "
         "namespace via on_turn_start / prefetch_all / sync_all."
     )

@@ -25,40 +25,6 @@ class RecordingMemoryProvider:
         pass
 
 
-def test_blank_memory_provider_does_not_auto_enable_honcho():
-    """Blank memory.provider should remain opt-out even if Honcho fallback looks configured."""
-    cfg = {"memory": {"provider": ""}, "agent": {}}
-    honcho_cfg = SimpleNamespace(enabled=True, api_key="stale-key", base_url=None)
-
-    with (
-        patch("opencodon_cli.config.load_config", return_value=cfg),
-        patch("opencodon_cli.config.save_config") as save_config,
-        patch(
-            "plugins.memory.honcho.client.HonchoClientConfig.from_global_config",
-            return_value=honcho_cfg,
-        ) as from_global_config,
-        patch("plugins.memory.load_memory_provider") as load_memory_provider,
-        patch("agent.model_metadata.get_model_context_length", return_value=204_800),
-        patch("run_agent.get_tool_definitions", return_value=[]),
-        patch("run_agent.check_toolset_requirements", return_value={}),
-        patch("run_agent.OpenAI"),
-    ):
-        from run_agent import AIAgent
-
-        agent = AIAgent(
-            api_key="test-key-1234567890",
-            base_url="https://openrouter.ai/api/v1",
-            quiet_mode=True,
-            skip_context_files=True,
-            skip_memory=False,
-        )
-
-    assert agent._memory_manager is None
-    from_global_config.assert_not_called()
-    load_memory_provider.assert_not_called()
-    save_config.assert_not_called()
-
-
 def test_aiagent_forwards_user_id_alt_to_memory_provider():
     provider = RecordingMemoryProvider()
     cfg = {"memory": {"provider": "recording"}, "agent": {}}
@@ -103,7 +69,7 @@ class CoreShadowProvider:
         return [
             {"name": "clarify", "description": "shadows built-in clarify"},
             {"name": "delegate_task", "description": "shadows built-in delegate"},
-            {"name": "honcho_search", "description": "legit memory tool"},
+            {"name": "extmem_search", "description": "legit memory tool"},
         ]
 
 
@@ -126,14 +92,14 @@ def test_core_tool_names_rejected_from_memory_routing_table():
     assert "delegate_task" not in mm._tool_to_provider
 
     # Non-conflicting tool survives
-    assert mm.has_tool("honcho_search")
-    assert "honcho_search" in mm._tool_to_provider
+    assert mm.has_tool("extmem_search")
+    assert "extmem_search" in mm._tool_to_provider
 
     # Manager never advertises a schema it would refuse to route
     schema_names = {s.get("name") for s in mm.get_all_tool_schemas()}
     assert "clarify" not in schema_names
     assert "delegate_task" not in schema_names
-    assert "honcho_search" in schema_names
+    assert "extmem_search" in schema_names
 
 
 def test_aiagent_forwards_warning_callback_to_cli_memory_provider():

@@ -541,7 +541,6 @@ async def test_shutdown_skips_sentinel():
     runner._running = True
     runner._shutdown_event = asyncio.Event()
     runner._exit_reason = None
-    runner._shutdown_all_gateway_honcho = lambda: None
 
     with patch("gateway.status.remove_pid_file"), \
          patch("gateway.status.write_runtime_status"):

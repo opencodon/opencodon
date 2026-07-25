@@ -2239,7 +2239,7 @@ DEFAULT_CONFIG = {
         "memory_char_limit": 2200,   # ~800 tokens at 2.75 chars/token
         "user_char_limit": 1375,     # ~500 tokens at 2.75 chars/token
         # External memory provider plugin (empty = built-in only).
-        # Set to a provider name to activate, e.g. "honcho".
+        # Set to a provider name to activate.
         # Only ONE external provider is allowed at a time.
         "provider": "",
     },
@@ -2450,11 +2450,6 @@ DEFAULT_CONFIG = {
             "keep": 5,  # retain last N regular snapshots
         },
     },
-
-    # Honcho AI-native memory -- reads ~/.honcho/config.json as single source of truth.
-    # This section is only needed for hermes-specific overrides; everything else
-    # (apiKey, workspace, peerName, sessions, enabled) comes from the global config.
-    "honcho": {},
 
     # IANA timezone (e.g. "Asia/Kolkata", "America/New_York").
     # Empty string means use server-local time.
@@ -4128,21 +4123,6 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
 
-    # ── Honcho ──
-    "HONCHO_API_KEY": {
-        "description": "Honcho API key for AI-native persistent memory",
-        "prompt": "Honcho API key",
-        "url": "https://app.honcho.dev",
-        "tools": ["honcho_context"],
-        "password": True,
-        "category": "tool",
-    },
-    "HONCHO_BASE_URL": {
-        "description": "Base URL for self-hosted Honcho instances (no API key needed)",
-        "prompt": "Honcho base URL (e.g. http://localhost:8000)",
-        "category": "tool",
-    },
-
     # ── Langfuse observability ──
     "OPENCODON_LANGFUSE_PUBLIC_KEY": {
         "description": "Langfuse project public key (pk-lf-...)",
@@ -4556,7 +4536,7 @@ def _is_env_config_key(key: str) -> bool:
         'FAL_KEY', 'TELEGRAM_BOT_TOKEN', 'DISCORD_BOT_TOKEN',
         'TERMINAL_SSH_HOST', 'TERMINAL_SSH_USER', 'TERMINAL_SSH_KEY',
         'SUDO_PASSWORD', 'SLACK_BOT_TOKEN', 'SLACK_APP_TOKEN',
-        'GITHUB_TOKEN', 'HONCHO_API_KEY',
+        'GITHUB_TOKEN',
     ]
     return (
         key_upper in api_keys

@@ -18,22 +18,6 @@ Usage:
     hermes cron list           # List cron jobs
     hermes cron status         # Check if cron scheduler is running
     hermes doctor              # Check configuration and dependencies
-    hermes honcho setup                    # Configure Honcho AI memory integration
-    hermes honcho status                   # Show Honcho config and connection status
-    hermes honcho sessions                 # List directory → session name mappings
-    hermes honcho map <name>               # Map current directory to a session name
-    hermes honcho peer                     # Show peer names and dialectic settings
-    hermes honcho peer --user NAME         # Set user peer name
-    hermes honcho peer --ai NAME           # Set AI peer name
-    hermes honcho peer --reasoning LEVEL   # Set dialectic reasoning level
-    hermes honcho mode                     # Show current memory mode
-    hermes honcho mode [hybrid|honcho|local]  # Set memory mode
-    hermes honcho tokens                   # Show token budget settings
-    hermes honcho tokens --context N       # Set session.context() token cap
-    hermes honcho tokens --dialectic N     # Set dialectic result char cap
-    hermes honcho identity                 # Show AI peer identity representation
-    hermes honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
     hermes version             Show version
     hermes update              Update to latest version
     hermes uninstall           Uninstall Hermes Agent
@@ -10912,16 +10896,6 @@ def _cmd_update_impl(args, gateway_mode: bool):
         except Exception:
             pass  # profiles module not available or no profiles
 
-        # Sync Honcho host blocks to all profiles
-        try:
-            from plugins.memory.honcho.cli import sync_honcho_profiles_quiet
-
-            synced = sync_honcho_profiles_quiet()
-            if synced:
-                print(f"\n-> Honcho: synced {synced} profile(s)")
-        except Exception:
-            pass  # honcho plugin not installed or not configured
-
         # Check for config migrations
         print()
         print("→ Checking configuration for new options...")
@@ -11950,7 +11924,6 @@ def _coalesce_session_name_args(argv: list) -> list:
         "serve",
         "desktop",
         "gui",
-        "honcho",
         "plugins",
         "security",
         "acp",
@@ -12119,16 +12092,6 @@ def cmd_profile(args):
                     print(
                         f"Cloned config, .env, SOUL.md, and skills from {source_label}."
                     )
-
-            # Auto-clone Honcho config for the new profile (only with clone operations)
-            if clone_config or clone_all:
-                try:
-                    from plugins.memory.honcho.cli import clone_honcho_for_profile
-
-                    if clone_honcho_for_profile(name):
-                        print(f"Honcho config cloned (peer: {name})")
-                except Exception:
-                    pass  # Honcho plugin not installed or not configured
 
             # Seed bundled skills for fresh profiles only. Clone operations
             # already copied the source profile's skills, including any

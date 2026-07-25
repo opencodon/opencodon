@@ -22,19 +22,19 @@ vi.mock('@/store/notifications', () => ({
   notifyError: vi.fn()
 }))
 
-function honchoSchema(): MemoryProviderConfig {
+function extmemSchema(): MemoryProviderConfig {
   return {
-    name: 'honcho',
-    label: 'Honcho',
-    docs_url: 'https://docs.honcho.dev/v3/guides/integrations/opencodon',
+    name: 'extmem',
+    label: 'ExtMem',
+    docs_url: 'https://example.test/extmem/docs',
     fields: [
       {
         key: 'apiKey',
         label: 'API key',
         kind: 'secret',
         value: '',
-        description: 'Authenticate with Honcho Cloud.',
-        placeholder: 'Enter Honcho API key',
+        description: 'Authenticate with ExtMem Cloud.',
+        placeholder: 'Enter ExtMem API key',
         is_set: false,
         inline: true,
         group: 'Connection',
@@ -45,7 +45,7 @@ function honchoSchema(): MemoryProviderConfig {
         label: 'Base URL',
         kind: 'text',
         value: '',
-        description: 'Self-hosted Honcho URL.',
+        description: 'Self-hosted ExtMem URL.',
         placeholder: 'https://… (self-hosted)',
         is_set: false,
         inline: true,
@@ -57,7 +57,7 @@ function honchoSchema(): MemoryProviderConfig {
         label: 'Environment',
         kind: 'select',
         value: 'production',
-        description: 'Honcho environment.',
+        description: 'ExtMem environment.',
         placeholder: '',
         is_set: true,
         inline: true,
@@ -73,7 +73,7 @@ function honchoSchema(): MemoryProviderConfig {
         label: 'Workspace',
         kind: 'text',
         value: 'myws',
-        description: 'Honcho workspace ID.',
+        description: 'ExtMem workspace ID.',
         placeholder: 'opencodon',
         is_set: true,
         inline: true,
@@ -99,7 +99,7 @@ function honchoSchema(): MemoryProviderConfig {
 }
 
 beforeEach(() => {
-  getMemoryProviderConfig.mockResolvedValue(honchoSchema())
+  getMemoryProviderConfig.mockResolvedValue(extmemSchema())
   saveMemoryProviderConfig.mockResolvedValue({ ok: true })
 })
 
@@ -108,7 +108,7 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-async function renderPanel(provider = 'honcho') {
+async function renderPanel(provider = 'extmem') {
   const { ProviderConfigPanel } = await import('./provider-config-panel')
 
   return render(<ProviderConfigPanel provider={provider} />)
@@ -121,7 +121,7 @@ describe('ProviderConfigPanel', () => {
     expect(await screen.findByDisplayValue('myws')).toBeTruthy()
     expect(screen.getByPlaceholderText('https://… (self-hosted)')).toBeTruthy()
     expect(screen.getByText('Production')).toBeTruthy()
-    expect(screen.getByText('Self-hosted Honcho URL.')).toBeTruthy()
+    expect(screen.getByText('Self-hosted ExtMem URL.')).toBeTruthy()
   })
 
   it('hides fields that are not marked inline', async () => {
@@ -136,9 +136,9 @@ describe('ProviderConfigPanel', () => {
     await renderPanel()
 
     expect(await screen.findByDisplayValue('myws')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /Honcho settings/ }))
+    fireEvent.click(screen.getByRole('button', { name: /ExtMem settings/ }))
     expect(screen.queryByDisplayValue('myws')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /Honcho settings/ }))
+    fireEvent.click(screen.getByRole('button', { name: /ExtMem settings/ }))
     expect(await screen.findByDisplayValue('myws')).toBeTruthy()
   })
 
@@ -150,7 +150,7 @@ describe('ProviderConfigPanel', () => {
     fireEvent.blur(baseUrl)
 
     await waitFor(() =>
-      expect(saveMemoryProviderConfig).toHaveBeenCalledWith('honcho', { baseUrl: 'http://localhost:8000' })
+      expect(saveMemoryProviderConfig).toHaveBeenCalledWith('extmem', { baseUrl: 'http://localhost:8000' })
     )
     expect(saveMemoryProviderConfig).toHaveBeenCalledTimes(1)
   })
@@ -168,14 +168,14 @@ describe('ProviderConfigPanel', () => {
   it('autosaves a committed secret and clears the draft', async () => {
     await renderPanel()
 
-    const apiKey = await screen.findByPlaceholderText('Enter Honcho API key')
+    const apiKey = await screen.findByPlaceholderText('Enter ExtMem API key')
     fireEvent.blur(apiKey)
     expect(saveMemoryProviderConfig).not.toHaveBeenCalled()
 
     fireEvent.change(apiKey, { target: { value: 'hch-new-key' } })
     fireEvent.blur(apiKey)
 
-    await waitFor(() => expect(saveMemoryProviderConfig).toHaveBeenCalledWith('honcho', { apiKey: 'hch-new-key' }))
+    await waitFor(() => expect(saveMemoryProviderConfig).toHaveBeenCalledWith('extmem', { apiKey: 'hch-new-key' }))
     await waitFor(() => expect((apiKey as HTMLInputElement).value).toBe(''))
   })
 

@@ -3362,10 +3362,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         import itertools as _itertools
         self._slash_confirm_counter = _itertools.count(1)
 
-        # Persistent Honcho managers keyed by gateway session key.
-        # This preserves write_frequency="session" semantics across short-lived
-        # per-message AIAgent instances.
-
 
 
         # Ensure tirith security scanner is available (downloads if needed)
@@ -17623,49 +17619,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         ("checkpoints", "max_file_size_mb"),
     )
 
-    _HONCHO_CACHE_BUSTING_KEYS = (
-        "honcho.peer_name",
-        "honcho.ai_peer",
-        "honcho.pin_peer_name",
-        "honcho.runtime_peer_prefix",
-        "honcho.user_peer_aliases",
-    )
-    _HONCHO_CACHE_BUSTING_MEMO: dict[tuple[str, int | None], dict[str, Any]] = {}
-
-    @classmethod
-    def _empty_honcho_cache_busting_config(cls) -> dict[str, Any]:
-        return {key: None for key in cls._HONCHO_CACHE_BUSTING_KEYS}
-
-    @classmethod
-    def _extract_honcho_cache_busting_config(cls) -> dict[str, Any]:
-        """Extract Honcho identity keys, memoized by honcho.json mtime."""
-        try:
-            from plugins.memory.honcho.client import HonchoClientConfig, resolve_config_path
-
-            path = resolve_config_path()
-            try:
-                mtime_ns = path.stat().st_mtime_ns
-            except OSError:
-                mtime_ns = None
-            memo_key = (str(path), mtime_ns)
-            cached = cls._HONCHO_CACHE_BUSTING_MEMO.get(memo_key)
-            if cached is not None:
-                return dict(cached)
-
-            hcfg = HonchoClientConfig.from_global_config(config_path=path)
-            aliases = hcfg.user_peer_aliases or {}
-            values = {
-                "honcho.peer_name": hcfg.peer_name,
-                "honcho.ai_peer": hcfg.ai_peer,
-                "honcho.pin_peer_name": bool(hcfg.pin_peer_name),
-                "honcho.runtime_peer_prefix": hcfg.runtime_peer_prefix or "",
-                "honcho.user_peer_aliases": sorted(aliases.items()) if isinstance(aliases, dict) else [],
-            }
-            cls._HONCHO_CACHE_BUSTING_MEMO = {memo_key: values}
-            return dict(values)
-        except Exception:
-            return cls._empty_honcho_cache_busting_config()
-
     @classmethod
     def _extract_cache_busting_config(cls, user_config: dict | None) -> dict:
         """Pull values that must bust the cached agent.
@@ -17699,14 +17652,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         except Exception:
             out["tools.registry_generation"] = None
 
-        # Honcho identity-mapping keys live in honcho.json, not user_config.
-        # Only read that file when Honcho is the active memory provider.
-        provider = cfg_get(cfg, "memory", "provider")
-        if isinstance(provider, str) and provider.lower() == "honcho":
-            out.update(cls._extract_honcho_cache_busting_config())
-        else:
-            out.update(cls._empty_honcho_cache_busting_config())
-
         return out
 
     @staticmethod
@@ -17734,17 +17679,15 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         ``user_id`` and ``user_id_alt`` are the runtime user identities
         carried by the current message's gateway source.  They participate
-        in the cache key because the Honcho memory provider freezes them
-        into ``HonchoSessionManager`` at first-message init (see
-        ``plugins/memory/honcho/__init__.py::_do_session_init``).  Without
-        them in the signature, a shared-thread session_key (one in which
+        in the cache key because a memory provider may bind the resolved
+        user identity at first-message init.  Without them in the
+        signature, a shared-thread session_key (one in which
         ``build_session_key`` intentionally omits the participant ID,
         e.g. ``thread_sessions_per_user=False``) would reuse the cached
-        AIAgent across distinct users, causing the second user's messages
-        to be attributed to the first user's resolved Honcho peer.  This
-        broke #27371's per-user-peer contract in multi-user gateways.
-        Per-user agent rebuilds in shared threads trade prompt-cache
-        warmth for correct memory attribution.
+        AIAgent across distinct users, attributing the second user's
+        messages to the first user's resolved identity — the bug behind
+        #27371 in multi-user gateways.  Per-user agent rebuilds in shared
+        threads trade prompt-cache warmth for correct memory attribution.
         """
         import hashlib, json as _j
 

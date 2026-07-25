@@ -16,7 +16,6 @@ def build_memory_parser(subparsers, *, cmd_memory: Callable) -> None:
         help="Configure external memory provider",
         description=(
             "Set up and manage external memory provider plugins.\n\n"
-            "Available providers: honcho.\n\n"
             "Only one external provider can be active at a time.\n"
             "Built-in memory (MEMORY.md/USER.md) is always active."
         ),
@@ -29,7 +28,7 @@ def build_memory_parser(subparsers, *, cmd_memory: Callable) -> None:
         "provider",
         nargs="?",
         default=None,
-        help="Provider to configure directly (e.g. honcho), skipping the picker",
+        help="Provider to configure directly, skipping the picker",
     )
     memory_sub.add_parser("status", help="Show current memory provider config")
     memory_sub.add_parser("off", help="Disable external provider (built-in only)")

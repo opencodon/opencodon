@@ -1123,42 +1123,6 @@ class TestOptionalEnvVarsRegistry:
         assert "OPENCODON_MAX_ITERATIONS" not in OPTIONAL_ENV_VARS
 
 
-class TestMemoryProviderEnvVarsRegistry:
-    """Every memory provider that reads an API key from the environment must
-    have that key catalogued in OPTIONAL_ENV_VARS so the dashboard Keys page
-    and `hermes setup` surface it.
-
-    This is a behavior contract, not a snapshot: it asserts each provider's
-    primary credential key is present, tool-categorised, and password-masked —
-    not a frozen count of entries.
-    """
-
-    # provider primary-credential env key -> the tool-call name it powers.
-    MEMORY_PROVIDER_KEYS = {
-        "HONCHO_API_KEY": "honcho_context",
-    }
-
-    def test_memory_provider_keys_are_catalogued(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
-        missing = [k for k in self.MEMORY_PROVIDER_KEYS if k not in OPTIONAL_ENV_VARS]
-        assert not missing, f"memory provider keys missing from OPTIONAL_ENV_VARS: {missing}"
-
-    def test_memory_provider_keys_are_tool_category(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
-        for key in self.MEMORY_PROVIDER_KEYS:
-            assert OPTIONAL_ENV_VARS[key]["category"] == "tool", key
-
-    def test_memory_provider_keys_are_password_masked(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
-        for key in self.MEMORY_PROVIDER_KEYS:
-            assert OPTIONAL_ENV_VARS[key].get("password") is True, key
-
-    def test_memory_provider_keys_advertise_their_tool(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
-        for key, tool in self.MEMORY_PROVIDER_KEYS.items():
-            assert tool in OPTIONAL_ENV_VARS[key].get("tools", []), key
-
-
 class TestConfigMigrationSecretPrompts:
     def test_required_secret_env_prompt_uses_masked_prompt(self, tmp_path, monkeypatch):
         from opencodon_cli import config as cfg_mod

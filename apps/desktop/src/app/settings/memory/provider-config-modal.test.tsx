@@ -38,9 +38,9 @@ function field(
 
 function schema(): MemoryProviderConfig {
   return {
-    name: 'honcho',
-    label: 'Honcho',
-    docs_url: 'https://docs.honcho.dev/v3/guides/integrations/opencodon',
+    name: 'extmem',
+    label: 'ExtMem',
+    docs_url: 'https://example.test/extmem/docs',
     fields: [
       field({ key: 'workspace', kind: 'text', label: 'Workspace', value: 'myws', inline: true, group: 'Connection' }),
       field({ key: 'saveMessages', kind: 'bool', label: 'Save messages', value: 'true', group: 'Message writing' }),
@@ -76,7 +76,7 @@ async function renderModal(open = true) {
       onOpenChange={onOpenChange}
       onSaved={onSaved}
       open={open}
-      provider="honcho"
+      provider="extmem"
     />
   )
 
@@ -103,7 +103,7 @@ describe('ProviderConfigModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
     // A save must never ratify rendered defaults the backend does not store.
-    await waitFor(() => expect(saveMemoryProviderConfig).toHaveBeenCalledWith('honcho', { saveMessages: 'false' }))
+    await waitFor(() => expect(saveMemoryProviderConfig).toHaveBeenCalledWith('extmem', { saveMessages: 'false' }))
     await waitFor(() => expect(onSaved).toHaveBeenCalled())
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })

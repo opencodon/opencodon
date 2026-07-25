@@ -575,7 +575,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             if str(item.get("id", item.get("name", ""))) in _enabled_ts
         ]
     disabled_tools = set()
-    # Tools whose toolset has a check_fn are lazy-initialized (e.g. honcho,
+    # Tools whose toolset has a check_fn are lazy-initialized (e.g.
     # homeassistant) — they show as unavailable at banner time because the
     # check hasn't run yet, but they aren't misconfigured.
     lazy_tools = set()

@@ -105,7 +105,6 @@ _CREDENTIAL_NAMES = frozenset({
     "TAVILY_API_KEY",
     "WANDB_API_KEY",
     "ELEVENLABS_API_KEY",
-    "HONCHO_API_KEY",
     "DAYTONA_API_KEY",
     "TWILIO_AUTH_TOKEN",
     "TELEGRAM_BOT_TOKEN",
@@ -208,10 +207,6 @@ _OPENCODON_BEHAVIORAL_VARS = frozenset({
     "OPENCODON_KANBAN_CLAIM_LOCK",
     "OPENCODON_KANBAN_DISPATCH_IN_GATEWAY",
     "OPENCODON_TENANT",
-    # Honcho host selection changes which nested config block wins. A local
-    # shell override leaked "myhost" into the full suite and flipped 20
-    # otherwise-unrelated config tests away from the default "hermes" host.
-    "OPENCODON_HONCHO_HOST",
     # Dashboard OAuth auth gate (PR #30156). When set, the bundled
     # dashboard-auth `nous` plugin auto-registers itself on plugin discovery,
     # which is triggered by any `/api/status` call. That leaks a provider
@@ -342,13 +337,6 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # 2. Blank behavioral OPENCODON_* vars that could change test semantics.
     for name in _OPENCODON_BEHAVIORAL_VARS:
         monkeypatch.delenv(name, raising=False)
-
-    # Honcho's fallback host/config resolution legitimately reads the user's
-    # global ~/.honcho/config.json. Keep HOME stable (subprocess tests depend
-    # on it), but pin the host so ordinary tests cannot inherit a developer's
-    # defaultHost and silently select the wrong nested config block. Tests of
-    # custom host resolution override/delete this explicitly.
-    monkeypatch.setenv("OPENCODON_HONCHO_HOST", "hermes")
 
     # 3. Redirect OPENCODON_HOME to a per-test tempdir. Code that reads
     #    ``~/.opencodon/*`` via ``get_opencodon_home()`` now gets the tempdir.

@@ -599,7 +599,7 @@ def load_cli_config() -> Dict[str, Any]:
                         defaults[key] = file_config[key]
             
             # Second: carry over keys from file_config that aren't in defaults
-            # (e.g. platform_toolsets, provider_routing, memory, honcho, etc.)
+            # (e.g. platform_toolsets, provider_routing, memory, etc.)
             for key in file_config:
                 if key not in defaults and key != "model":
                     defaults[key] = file_config[key]

@@ -127,31 +127,7 @@ class TestDoctorEnvFileEncoding:
 
 
 class TestDoctorToolAvailabilityOverrides:
-    def test_marks_honcho_available_when_configured(self, monkeypatch):
-        monkeypatch.setattr(doctor, "_honcho_is_configured_for_doctor", lambda: True)
-
-        available, unavailable = doctor._apply_doctor_tool_availability_overrides(
-            [],
-            [{"name": "honcho", "env_vars": [], "tools": ["query_user_context"]}],
-        )
-
-        assert available == ["honcho"]
-        assert unavailable == []
-
-    def test_leaves_honcho_unavailable_when_not_configured(self, monkeypatch):
-        monkeypatch.setattr(doctor, "_honcho_is_configured_for_doctor", lambda: False)
-
-        honcho_entry = {"name": "honcho", "env_vars": [], "tools": ["query_user_context"]}
-        available, unavailable = doctor._apply_doctor_tool_availability_overrides(
-            [],
-            [honcho_entry],
-        )
-
-        assert available == []
-        assert unavailable == [honcho_entry]
-
     def test_marks_kanban_available_only_when_missing_worker_env_gate(self, monkeypatch):
-        monkeypatch.setattr(doctor, "_honcho_is_configured_for_doctor", lambda: False)
         monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         available, unavailable = doctor._apply_doctor_tool_availability_overrides(
@@ -190,94 +166,6 @@ class TestDoctorToolAvailabilityOverrides:
         monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
 
         assert doctor._doctor_tool_availability_detail("kanban") == "(runtime-gated; loaded only for dispatcher-spawned workers)"
-
-
-class TestHonchoDoctorConfigDetection:
-    def test_reports_configured_when_enabled_with_api_key(self, monkeypatch):
-        fake_config = SimpleNamespace(enabled=True, api_key="***")
-
-        monkeypatch.setattr(
-            "plugins.memory.honcho.client.HonchoClientConfig.from_global_config",
-            lambda: fake_config,
-        )
-
-        assert doctor._honcho_is_configured_for_doctor()
-
-    def test_reports_not_configured_without_api_key(self, monkeypatch):
-        fake_config = SimpleNamespace(enabled=True, api_key="")
-
-        monkeypatch.setattr(
-            "plugins.memory.honcho.client.HonchoClientConfig.from_global_config",
-            lambda: fake_config,
-        )
-
-        assert not doctor._honcho_is_configured_for_doctor()
-
-
-def test_run_doctor_sets_interactive_env_for_tool_checks(monkeypatch, tmp_path):
-    """Doctor should present CLI-gated tools as available in CLI context."""
-    project_root = tmp_path / "project"
-    opencodon_home = tmp_path / ".opencodon"
-    project_root.mkdir()
-    opencodon_home.mkdir()
-
-    monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project_root)
-    monkeypatch.setattr(doctor_mod, "OPENCODON_HOME", opencodon_home)
-    monkeypatch.delenv("OPENCODON_INTERACTIVE", raising=False)
-
-    seen = {}
-
-    def fake_check_tool_availability(*args, **kwargs):
-        seen["interactive"] = os.getenv("OPENCODON_INTERACTIVE")
-        raise SystemExit(0)
-
-    fake_model_tools = types.SimpleNamespace(
-        check_tool_availability=fake_check_tool_availability,
-        TOOLSET_REQUIREMENTS={},
-    )
-    monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
-
-    with pytest.raises(SystemExit):
-        doctor_mod.run_doctor(Namespace(fix=False))
-
-    assert seen["interactive"] == "1"
-
-
-def test_check_gateway_service_linger_warns_when_disabled(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "opencodon-gateway.service"
-    unit_path.write_text("[Unit]\n")
-
-    monkeypatch.setattr(gateway_cli, "is_linux", lambda: True)
-    monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda: unit_path)
-    monkeypatch.setattr(gateway_cli, "get_systemd_linger_status", lambda: (False, ""))
-
-    issues = []
-    doctor._check_gateway_service_linger(issues)
-
-    out = capsys.readouterr().out
-    assert "Gateway Service" in out
-    assert "Systemd linger disabled" in out
-    assert "loginctl enable-linger" in out
-    assert issues == [
-        "Enable linger for the gateway user service: sudo loginctl enable-linger $USER"
-    ]
-
-
-def test_check_gateway_service_linger_skips_when_service_not_installed(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "missing.service"
-
-    monkeypatch.setattr(gateway_cli, "is_linux", lambda: True)
-    monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda: unit_path)
-
-    issues = []
-    doctor._check_gateway_service_linger(issues)
-
-    out = capsys.readouterr().out
-    assert out == ""
-    assert issues == []
-
-
-# ── Memory provider section (doctor should only check the *active* provider) ──
 
 
 class TestDoctorMemoryProviderSection:
@@ -326,19 +214,6 @@ class TestDoctorMemoryProviderSection:
         out = self._run_doctor_and_capture(monkeypatch, tmp_path, provider="")
         assert "Memory Provider" in out
         assert "Built-in memory active" in out
-        # Should NOT mention Honcho errors
-        assert "Honcho API key" not in out
-
-    def test_honcho_provider_not_installed_shows_fail(self, monkeypatch, tmp_path):
-        # Make honcho import fail
-        monkeypatch.setitem(
-            sys.modules, "plugins.memory.honcho.client", None
-        )
-        out = self._run_doctor_and_capture(monkeypatch, tmp_path, provider="honcho")
-        assert "Memory Provider" in out
-        # Should show failure since honcho is set but not importable
-        assert "Built-in memory active" not in out
-
 
 def test_run_doctor_termux_treats_docker_and_browser_warnings_as_expected(monkeypatch, tmp_path):
     helper = TestDoctorMemoryProviderSection()

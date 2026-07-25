@@ -2486,7 +2486,7 @@ class TestRestoreCronJobsIfEmptied:
 
 
 # ---------------------------------------------------------------------------
-# Memory-provider external paths (~/.honcho, ...) — captured via
+# Memory-provider external paths — captured via
 # MemoryProvider.backup_paths() and restored to their original home-relative
 # location, NOT under OPENCODON_HOME. (backup/import cycle data-loss fix)
 # ---------------------------------------------------------------------------
@@ -2499,23 +2499,23 @@ class TestMemoryProviderExternalPaths:
         (opencodon_home / "state.db").write_bytes(b"x")
 
     def test_backup_captures_external_paths_under_external_prefix(self, tmp_path, monkeypatch):
-        """Provider state under ~/.honcho is archived beneath _external/,
+        """Provider state under an external dir is archived beneath _external/,
         encoded relative to the home directory."""
         opencodon_home = tmp_path / ".opencodon"
         self._make_min_tree(opencodon_home)
         # External provider state living OUTSIDE OPENCODON_HOME.
-        honcho = tmp_path / ".honcho"
-        honcho.mkdir()
-        (honcho / "config.json").write_text('{"peer":"alice"}')
-        (honcho / "sub").mkdir()
-        (honcho / "sub" / "x.json").write_text('{"a":1}')
+        extmem = tmp_path / ".extmem"
+        extmem.mkdir()
+        (extmem / "config.json").write_text('{"peer":"alice"}')
+        (extmem / "sub").mkdir()
+        (extmem / "sub" / "x.json").write_text('{"a":1}')
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         import opencodon_cli.backup as backup_mod
         monkeypatch.setattr(
-            backup_mod, "_collect_memory_provider_external_paths", lambda: [honcho]
+            backup_mod, "_collect_memory_provider_external_paths", lambda: [extmem]
         )
 
         out_zip = tmp_path / "backup.zip"
@@ -2523,8 +2523,8 @@ class TestMemoryProviderExternalPaths:
 
         with zipfile.ZipFile(out_zip) as zf:
             names = set(zf.namelist())
-        assert "_external/.honcho/config.json" in names
-        assert "_external/.honcho/sub/x.json" in names
+        assert "_external/.extmem/config.json" in names
+        assert "_external/.extmem/sub/x.json" in names
         # In-home files still present.
         assert "config.yaml" in names
 
@@ -2568,7 +2568,7 @@ class TestMemoryProviderExternalPaths:
             zf.writestr("config.yaml", "model: {}\n")
             zf.writestr(".env", "X=1\n")
             zf.writestr("state.db", "")
-            zf.writestr("_external/.honcho/config.json", '{"peer":"bob"}')
+            zf.writestr("_external/.extmem/config.json", '{"peer":"bob"}')
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
@@ -2576,7 +2576,7 @@ class TestMemoryProviderExternalPaths:
         from opencodon_cli.backup import run_import
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
-        restored = dst_home / ".honcho" / "config.json"
+        restored = dst_home / ".extmem" / "config.json"
         assert restored.exists()
         assert restored.read_text() == '{"peer":"bob"}'
         # Credential-shaped file tightened.
@@ -2626,12 +2626,3 @@ class TestMemoryProviderExternalPaths:
                 return []
 
         assert _Dummy().backup_paths() == []
-
-    def test_honcho_provider_declares_global_config_dir(self, tmp_path, monkeypatch):
-        """The honcho provider's backup_paths() resolves to ~/.honcho."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        from plugins.memory.honcho import HonchoMemoryProvider
-
-        paths = HonchoMemoryProvider().backup_paths()
-        assert str(tmp_path / ".honcho") in paths
-

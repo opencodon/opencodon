@@ -39,7 +39,6 @@ def test_lazy_installable_extras_excluded_from_all():
         "voice",  # faster-whisper / sounddevice / numpy
         "modal", "daytona",
         "messaging", "slack", "matrix", "dingtalk", "feishu",
-        "honcho",
         "mistral",  # mistralai — Voxtral STT/TTS, lazy-installed (stt.mistral / tts.mistral)
     }
     all_extra_specs = optional_dependencies["all"]

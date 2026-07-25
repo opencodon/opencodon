@@ -31,7 +31,7 @@ def _resolve_flow(provider: str):
 @contextmanager
 def _scope_to_profile(profile: Optional[str]):
     """Scope config resolution to ``profile`` so the flow's eager path resolve
-    targets that profile's honcho.json. None/""/"current" leaves it untouched."""
+    targets that profile's provider config. None/""/"current" leaves it untouched."""
     requested = (profile or "").strip()
     if not requested or requested.lower() == "current":
         yield

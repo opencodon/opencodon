@@ -1502,8 +1502,3 @@ def get_cute_tool_message(
         return f"┊ ⚡ {safe_name:9} completed  {safe_duration}"
 
 
-# =========================================================================
-# Honcho session line (one-liner with clickable OSC 8 hyperlink)
-# =========================================================================
-
-

@@ -105,17 +105,6 @@ def _has_provider_env_config(content: str) -> bool:
     return any(key in content for key in _PROVIDER_ENV_HINTS)
 
 
-def _honcho_is_configured_for_doctor() -> bool:
-    """Return True when Honcho is configured, even if this process has no active session."""
-    try:
-        from plugins.memory.honcho.client import HonchoClientConfig
-
-        cfg = HonchoClientConfig.from_global_config()
-        return bool(cfg.enabled and (cfg.api_key or cfg.base_url))
-    except Exception:
-        return False
-
-
 def _is_kanban_worker_env_gate(item: dict) -> bool:
     """Return True when Kanban is unavailable only because this is not a worker process."""
     if item.get("name") != "kanban":
@@ -143,10 +132,6 @@ def _apply_doctor_tool_availability_overrides(available: list[str], unavailable:
         if _is_kanban_worker_env_gate(item):
             if "kanban" not in updated_available:
                 updated_available.append("kanban")
-            continue
-        if name == "honcho" and _honcho_is_configured_for_doctor():
-            if "honcho" not in updated_available:
-                updated_available.append("honcho")
             continue
         updated_unavailable.append(item)
     return updated_available, updated_unavailable
@@ -2395,51 +2380,6 @@ def run_doctor(args):
 
     if not _active_memory_provider:
         check_ok("Built-in memory active", "(no external provider configured — this is fine)")
-    elif _active_memory_provider == "honcho":
-        try:
-            from plugins.memory.honcho.client import HonchoClientConfig, resolve_config_path
-            hcfg = HonchoClientConfig.from_global_config()
-            _honcho_cfg_path = resolve_config_path()
-
-            if not _honcho_cfg_path.exists():
-                # Config file missing — but env var fallback may have resolved it.
-                # Only warn if the config didn't actually resolve from env vars.
-                if hcfg.api_key or hcfg.base_url:
-                    check_ok(
-                        "Honcho configured via environment variables",
-                        f"config file {_honcho_cfg_path} not found, using HONCHO_API_KEY env var",
-                    )
-                else:
-                    check_warn("Honcho config not found", "run: hermes memory setup")
-            elif not hcfg.enabled:
-                check_info(f"Honcho disabled (set enabled: true in {_honcho_cfg_path} to activate)")
-            elif not (hcfg.api_key or hcfg.base_url):
-                _fail_and_issue(
-                    "Honcho API key or base URL not set",
-                    "run: hermes memory setup",
-                    "No Honcho API key — run 'hermes memory setup'",
-                    issues,
-                )
-            else:
-                from plugins.memory.honcho.client import get_honcho_client, reset_honcho_client
-                reset_honcho_client()
-                try:
-                    get_honcho_client(hcfg)
-                    check_ok(
-                        "Honcho connected",
-                        f"workspace={hcfg.workspace_id} mode={hcfg.recall_mode} freq={hcfg.write_frequency}",
-                    )
-                except Exception as _e:
-                    _fail_and_issue("Honcho connection failed", str(_e), f"Honcho unreachable: {_e}", issues)
-        except ImportError:
-            _fail_and_issue(
-                "honcho-ai not installed",
-                "pip install honcho-ai",
-                "Honcho is set as memory provider but honcho-ai is not installed",
-                issues,
-            )
-        except Exception as _e:
-            check_warn("Honcho check failed", str(_e))
     else:
         # Generic check for other memory providers (user-installed plugins)
         try:

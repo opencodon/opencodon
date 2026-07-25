@@ -166,7 +166,6 @@ voice = [
   "sounddevice==0.5.5",
   "numpy==2.4.3",
 ]
-honcho = ["honcho-ai==2.2.0"]
 # Image resize recovery for the vision tools. Pillow is now a CORE dependency
 # (see the main `dependencies` list above) since the byte/pixel shrink paths are on
 # the default vision-embed path and the mid-session lazy install deadlocked the
@@ -211,13 +210,12 @@ termux = [
   "opencodon[cron]",
   "opencodon[cli]",
   "opencodon[mcp]",
-  "opencodon[honcho]",
   "opencodon[acp]",
 ]
 termux-all = [
   # Best-effort "install all" profile for Termux. Same policy as [all]:
   # only includes extras that aren't covered by `tools/lazy_deps.py`.
-  # Backends like telegram/slack/honcho lazy-install at
+  # Backends like telegram/slack lazy-install at
   # first use, so they're no longer eager-installed here.
   "opencodon[termux]",
   "opencodon[google]",
@@ -257,7 +255,7 @@ all = [
   # Removed from [all] on 2026-05-12 (covered by lazy-install):
   #   anthropic, exa, firecrawl, parallel-web, fal, edge-tts,
   #   modal, daytona, messaging (telegram/discord/slack),
-  #   slack, honcho, voice (faster-whisper),
+  #   slack, voice (faster-whisper),
   #   bedrock, tts-premium (elevenlabs)
   "opencodon[cron]",
   "opencodon[cli]",

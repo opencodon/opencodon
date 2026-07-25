@@ -1608,7 +1608,7 @@ class APIServerAdapter(BasePlatformAdapter):
     # caller can't burn memory by passing a multi-kilobyte "session key".
     # 256 chars is well above any realistic stable channel identifier
     # (e.g. ``agent:main:webui:dm:user-42``) while staying small enough
-    # that the sanitized form is safe to pass into Honcho / state.db.
+    # that the sanitized form is safe to pass into the memory provider / state.db.
     _MAX_SESSION_HEADER_LEN = 256
 
     def _parse_session_key_header(
@@ -1617,7 +1617,7 @@ class APIServerAdapter(BasePlatformAdapter):
         """Extract and validate the ``X-Hermes-Session-Key`` header.
 
         The session key is a stable per-channel identifier that scopes
-        long-term memory (e.g. Honcho sessions) across transcripts.  It
+        long-term memory across transcripts.  It
         is independent of ``X-Hermes-Session-Id``: callers may send
         either, both, or neither.
 
@@ -1842,7 +1842,7 @@ class APIServerAdapter(BasePlatformAdapter):
         by the client (via ``X-Hermes-Session-Key``).  Unlike ``session_id``
         which scopes the short-term transcript and rotates on /new, this
         key is meant to persist across transcripts so long-term memory
-        providers (e.g. Honcho) can scope their per-chat state correctly
+        providers can scope their per-chat state correctly
         — matching the semantics of the native gateway's ``session_key``.
 
         ``route`` is an optional ``model_routes`` entry (per-client model
@@ -2785,7 +2785,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 status=400,
             )
 
-        # Allow caller to scope long-term memory (e.g. Honcho) with a
+        # Allow caller to scope long-term memory with a
         # stable per-channel identifier via X-Hermes-Session-Key.  This
         # is independent of X-Hermes-Session-Id: the key persists across
         # transcripts while the id rotates when the caller starts a new

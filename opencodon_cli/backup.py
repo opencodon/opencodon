@@ -127,7 +127,7 @@ _IMPORT_SKIP_NAMES = {
 _SECRET_FILE_NAMES = {".env", "auth.json", "state.db"}
 
 # Reserved archive subtree for provider state that lives OUTSIDE OPENCODON_HOME
-# (e.g. ~/.honcho). The active memory provider declares these via
+# outside OPENCODON_HOME. The active memory provider declares these via
 # MemoryProvider.backup_paths(); they're stored under this prefix encoded
 # relative to the user's home directory, and restored to their original
 # home-relative location on import. Anything not under home is skipped.
@@ -355,7 +355,7 @@ def run_backup(args) -> None:
 
             files_to_add.append((fpath, rel))
 
-    # External memory-provider state (e.g. ~/.honcho) lives
+    # External memory-provider state lives
     # outside OPENCODON_HOME, so the walk above never sees it. Ask the active
     # provider for its declared paths and stage them under the reserved
     # ``_external/`` arc prefix, encoded relative to the user's home dir.
@@ -596,7 +596,7 @@ def run_import(args) -> None:
         for member in members:
             # External memory-provider state captured under the reserved
             # ``_external/`` arc prefix restores to its original home-relative
-            # location (e.g. ~/.honcho/config.json), NOT under OPENCODON_HOME.
+            # location, NOT under OPENCODON_HOME.
             if member.startswith(_EXTERNAL_PREFIX):
                 ext_rel = member[len(_EXTERNAL_PREFIX):]
                 if not ext_rel:

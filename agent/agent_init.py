@@ -1626,7 +1626,7 @@ def init_agent(
                         _init_kwargs["warning_callback"] = agent._emit_warning
                         _init_kwargs["status_callback"] = agent._emit_status
                     # Thread session title for memory provider scoping
-                    # (e.g. honcho uses this to derive chat-scoped session keys)
+                    # (a memory provider may use this to derive chat-scoped session keys)
                     if agent._session_db:
                         try:
                             _st = agent._session_db.get_session_title(agent.session_id)
@@ -1649,7 +1649,7 @@ def init_agent(
                         _init_kwargs["chat_type"] = agent._chat_type
                     if agent._thread_id:
                         _init_kwargs["thread_id"] = agent._thread_id
-                    # Thread gateway session key for stable per-chat Honcho session isolation
+                    # Thread gateway session key for stable per-chat memory session isolation
                     if agent._gateway_session_key:
                         _init_kwargs["gateway_session_key"] = agent._gateway_session_key
                     # Profile identity for per-profile provider scoping

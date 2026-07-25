@@ -248,7 +248,7 @@ hermes-agent/
 │   │                     #   yuanbao, webhook, api_server, ...). See ADDING_A_PLATFORM.md.
 │   └── builtin_hooks/    # Extension point for always-registered gateway hooks (none shipped)
 ├── plugins/              # Plugin system (see "Plugins" section below)
-│   ├── memory/           # Memory-provider plugins (honcho, mem0, supermemory, ...)
+│   ├── memory/           # Memory-provider plugins (none bundled; user-installed)
 │   ├── context_engine/   # Context-engine plugins
 │   ├── model-providers/  # Inference backend plugins (openrouter, anthropic, gmi, ...)
 │   ├── kanban/           # Multi-agent board dispatcher + worker plugin
@@ -593,7 +593,7 @@ Reference: #2810 (bounds pass), #9801 (SHA pinning + audit CI).
 `model`, `agent`, `terminal`, `compression`, `display`, `stt`, `tts`,
 `memory`, `security`, `delegation`, `smart_model_routing`, `checkpoints`,
 `auxiliary`, `curator`, `skills`, `gateway`, `logging`, `cron`, `profiles`,
-`plugins`, `honcho`.
+`plugins`.
 
 `auxiliary` holds per-task overrides for side-LLM work (curator, vision,
 embedding, title generation, session_search, etc.) — each task can pin
@@ -759,9 +759,9 @@ explicitly (it's idempotent).
 
 ### Memory-provider plugins (`plugins/memory/<name>/`)
 
-Separate discovery system for pluggable memory backends. Current built-in
-providers include **honcho, mem0, supermemory, byterover, hindsight,
-holographic, openviking, retaindb**.
+Separate discovery system for pluggable memory backends. **No provider is
+bundled** — the built-in file memory is not a plugin. Providers are installed
+by the user into `~/.opencodon/plugins/`.
 
 Each provider implements the `MemoryProvider` ABC (see `agent/memory_provider.py`)
 and is orchestrated by `agent/memory_manager.py`. Lifecycle hooks include
@@ -780,7 +780,7 @@ providers don't clutter `hermes --help`.
 If a plugin needs a capability the framework doesn't expose, expand the
 generic plugin surface (new hook, new ctx method) — never hardcode
 plugin-specific logic into core. PR #5295 removed 95 lines of hardcoded
-honcho argparse from `main.py` for exactly this reason.
+provider-specific argparse from `main.py` for exactly this reason.
 
 **No new in-tree memory providers (policy, May 2026):** the set of
 built-in memory providers under `plugins/memory/` is closed. New memory

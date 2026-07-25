@@ -673,7 +673,7 @@ def _run_review_in_thread(
             _rt = _resolve_review_runtime(agent)
             _routed = bool(_rt.get("routed"))
             # skip_memory=True keeps the review fork from
-            # touching external memory plugins (honcho, mem0,
+            # touching external memory plugins (
             # supermemory, etc.).  Without it, the fork's
             # __init__ rebuilds its own _memory_manager from
             # config, scoped to the parent's session_id, and
@@ -866,7 +866,7 @@ def _run_review_in_thread(
             review_messages = list(getattr(review_agent, "_session_messages", []))
 
             # Tear down memory providers while stdout is still
-            # redirected so background thread teardown (Honcho flush,
+            # redirected so background thread teardown (memory-provider flush,
             # Hindsight sync, etc.) stays silent.  The finally block
             # below is a safety net for the exception path.
             try:
@@ -929,7 +929,7 @@ def _run_review_in_thread(
     finally:
         # Safety-net cleanup for the exception path.  Normal completion already
         # shut down inside the thread-scoped silence above.  Re-enter the
-        # thread-scoped silence here so teardown output (Honcho flush, Hindsight
+        # thread-scoped silence here so teardown output (memory-provider flush,
         # sync, background thread joins) stays quiet even on the exception path,
         # without blanking other threads' streams.
         if review_agent is not None:

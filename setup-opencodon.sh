@@ -210,12 +210,12 @@ else
     # Multi-tier pip fallback. Goal: ONE compromised PyPI package
     # (mistralai 2.4.6 in May 2026 → quarantined) shouldn't silently demote
     # a fresh setup to "core only". Edit _BROKEN_EXTRAS when a transitive
-    # breaks; users keep voice / honcho / google / slack / matrix etc. even
+    # breaks; users keep voice / google / slack etc. even
     # if mistral can't resolve.
     _BROKEN_EXTRAS=()  # populate when an extra becomes unresolvable
     _ALL_EXTRAS=(
         modal daytona messaging matrix cron cli dev tts-premium slack
-        pty honcho mcp homeassistant sms acp voice dingtalk feishu google
+        pty mcp acp voice google
         bedrock web youtube
     )
     _SAFE_EXTRAS=()
