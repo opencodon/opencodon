@@ -264,8 +264,7 @@ hermes-agent/
 ├── tui_gateway/          # Python JSON-RPC backend for the TUI
 ├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains integration)
 ├── cron/                 # Scheduler — jobs.py, scheduler.py
-├── scripts/              # run_tests.sh, release.py, auxiliary scripts
-├── website/              # Docusaurus docs site
+├── scripts/              # run_tests.sh, auxiliary scripts
 └── tests/                # Pytest suite (~17k tests across ~900 files as of May 2026)
 ```
 

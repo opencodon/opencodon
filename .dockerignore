@@ -76,22 +76,16 @@ apps/
 # Test suite — not shipped in production images
 tests/
 
-# Documentation site (Docusaurus) and supplementary docs
-website/
+# Supplementary docs
 docs/
 
 # Assets only used by the GitHub README
 assets/
-infographic/
-
-# Plugin-level docs (hermes-achievements ships docs/ but the runtime doesn't read them)
-plugins/hermes-achievements/docs/
 
 # Nix / Homebrew / AUR packaging metadata — irrelevant to Docker
 nix/
 flake.nix
 flake.lock
-packaging/
 
 # Design and planning documents
 plans/
@@ -102,4 +96,3 @@ plans/
 .envrc
 .gitattributes
 .hadolint.yaml
-.mailmap

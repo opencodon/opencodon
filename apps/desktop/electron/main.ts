@@ -10246,7 +10246,7 @@ ipcMain.handle('opencodon:updates:branch:set', async (_event, name) => {
   return { branch }
 })
 
-// Resolve the canonical Opencodon version (the one `release.py` bumps in
+// Resolve the canonical Opencodon version (the one declared in
 // opencodon_cli/__init__.py + pyproject.toml) so the desktop About panel shows the
 // real Opencodon version instead of the Electron app's own package.json version,
 // which historically drifted (stuck at 0.0.2). Falls back to app.getVersion()

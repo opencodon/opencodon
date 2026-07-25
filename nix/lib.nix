@@ -86,15 +86,9 @@ let
           ++ [
             # Documentation
             "docs"
-            "website"
             # CI/infra
             "docker"
             ".github"
-            # Content/examples
-            "infographic"
-            "datagen-config-examples"
-            # unused packaging infra
-            "packaging"
             # Test infrastructure
             "tests"
             # Plan/temp files

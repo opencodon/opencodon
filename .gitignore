@@ -56,7 +56,7 @@ agent-browser/
 privvy*
 images/
 __pycache__/
-hermes_agent.egg-info/
+*.egg-info/
 wandb/
 testlogs
 playwright-report/
@@ -162,16 +162,11 @@ scripts/out/
 # Per-release changelog drafts. These exist only transiently during a release
 # cut (passed to `gh release create --notes-file`); the GitHub Release itself
 # stores the published notes. They are not a build artifact and must never be
-# committed to the repo root. See the hermes-release skill.
+# committed to the repo root.
 RELEASE_v*.md
 
-# Desktop demo-run scratch output (hermes writes demo/*.txt during recorded
-# walkthroughs). Throwaway artifacts, never part of the app.
-apps/desktop/demo/
-
-# PR infographics are rendered locally and embedded in PR descriptions via the
-# image-provider (fal.media) URL — they are NEVER committed to the repo. The
-# PR body is the archive. See the hermes-agent-dev skill's
-# pr-infographic-workflow reference (storage rule + lapse #8 / #COMMIT-1).
+# Runtime output of the baoyu-infographic skill (infographic/<topic-slug>/).
+# Generated locally, never committed.
 infographic/
+
 native/fts5_cjk/*.so
