@@ -13052,31 +13052,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 )
         except Exception:
             pass
-        # First-time OpenClaw-residue banner — fires once if ~/.openclaw/ exists
-        # after an OpenClaw→Hermes migration (especially migrations done by
-        # OpenClaw's own tool, which doesn't archive the source directory).
-        try:
-            from agent.onboarding import (
-                OPENCLAW_RESIDUE_FLAG,
-                detect_openclaw_residue,
-                is_seen,
-                mark_seen,
-                openclaw_residue_hint_cli,
-            )
-            if not is_seen(self.config, OPENCLAW_RESIDUE_FLAG) and detect_openclaw_residue():
-                try:
-                    _resid_color = _welcome_skin.get_color("banner_dim", "#B8860B")
-                except Exception:
-                    _resid_color = "#B8860B"
-                self._console_print(f"[{_resid_color}]{openclaw_residue_hint_cli()}[/]")
-                try:
-                    from opencodon_cli.config import get_config_path as _get_cfg_path_resid
-                    mark_seen(_get_cfg_path_resid(), OPENCLAW_RESIDUE_FLAG)
-                except Exception:
-                    pass  # best-effort — banner will fire again next session
-        except Exception:
-            pass  # banner is non-critical — never break startup
-
         # Curator — kick off a background skill-maintenance pass on startup
         # if the schedule says we're due.  Runs in a daemon thread so it
         # never blocks the interactive loop.  Best-effort; any failure is

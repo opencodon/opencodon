@@ -249,7 +249,6 @@ hermes memory setup/status/off  Memory provider config
 hermes send                 Send a one-off message through a gateway platform
 hermes completion bash|zsh  Shell completions
 hermes acp                  ACP server (IDE integration)
-hermes claw migrate         Migrate from OpenClaw
 hermes uninstall            Uninstall Hermes
 ```
 

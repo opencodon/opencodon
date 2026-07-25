@@ -39,8 +39,6 @@ Usage:
     hermes uninstall           Uninstall Hermes Agent
     hermes acp                 Run as an ACP server for editor integration
     hermes sessions browse     Interactive session picker with search
-
-    hermes claw migrate --dry-run  # Preview migration without changes
 """
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — it sets up
@@ -439,7 +437,6 @@ from opencodon_cli.subcommands.skills import build_skills_parser
 from opencodon_cli.subcommands.pairing import build_pairing_parser
 from opencodon_cli.subcommands.plugins import build_plugins_parser
 from opencodon_cli.subcommands.mcp import build_mcp_parser
-from opencodon_cli.subcommands.claw import build_claw_parser
 
 
 def _require_tty(command_name: str) -> None:
@@ -11954,7 +11951,6 @@ def _coalesce_session_name_args(argv: list) -> list:
         "desktop",
         "gui",
         "honcho",
-        "claw",
         "plugins",
         "security",
         "acp",
@@ -13342,7 +13338,7 @@ def _build_provider_choices() -> list[str]:
 # to parse.
 _BUILTIN_SUBCOMMANDS = frozenset(
     {
-        "acp", "auth", "backup", "bundles", "checkpoints", "claw", "completion",
+        "acp", "auth", "backup", "bundles", "checkpoints", "completion",
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
@@ -13829,12 +13825,6 @@ def cmd_mcp(args):
     from opencodon_cli.mcp_config import mcp_command
 
     mcp_command(args)
-
-
-def cmd_claw(args):
-    from opencodon_cli.claw import claw_command
-
-    claw_command(args)
 
 
 def main_hermes_deprecated():
@@ -15695,11 +15685,6 @@ def main():
     # insights command  (parser built in opencodon_cli/subcommands/insights.py)
     # =========================================================================
     build_insights_parser(subparsers, cmd_insights=cmd_insights)
-
-    # =========================================================================
-    # claw command  (parser built in opencodon_cli/subcommands/claw.py)
-    # =========================================================================
-    build_claw_parser(subparsers, cmd_claw=cmd_claw)
 
     # =========================================================================
     # version command  (parser built in opencodon_cli/subcommands/version.py)

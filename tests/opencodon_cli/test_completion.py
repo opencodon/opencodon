@@ -243,7 +243,7 @@ class TestSubcommandDrift:
             "chat", "model", "gateway", "setup", "login", "logout", "auth",
             "status", "cron", "config", "sessions", "version", "update",
             "uninstall", "profile", "skills", "tools", "mcp", "plugins",
-            "acp", "claw", "honcho", "completion", "logs",
+            "acp", "honcho", "completion", "logs",
         }
         missing = required - defined
         assert not missing, f"Missing from _SUBCOMMANDS: {missing}"
