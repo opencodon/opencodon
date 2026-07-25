@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ Название отклонено: {error}"
     title_error_untitled:  "\n⚠️ {error} — сеанс запущен без названия."
     title_empty_untitled:  "\n⚠️ После очистки название пусто — сеанс запущен без названия."
-    tip:                   "\n✦ Совет: {tip}"
 
   restart:
     in_progress:           "⏳ Перезапуск шлюза уже выполняется..."

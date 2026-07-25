@@ -340,13 +340,6 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
-    # /new appends a random tip from opencodon_cli.tips; one tip's text contains
-    # the phrase "parallel work", which collides with the negative assertion
-    # below (observed as a 1-in-N CI flake). Pin the tip.
-    monkeypatch.setattr(
-        "opencodon_cli.tips.get_random_tip", lambda: "pinned tip for test"
-    )
-
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))
 
     assert "Started a new Hermes session in this topic" not in result

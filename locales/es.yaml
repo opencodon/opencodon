@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ Título rechazado: {error}"
     title_error_untitled:  "\n⚠️ {error} — sesión iniciada sin título."
     title_empty_untitled:  "\n⚠️ El título queda vacío tras la limpieza — sesión iniciada sin título."
-    tip:                   "\n✦ Consejo: {tip}"
 
   restart:
     in_progress:           "⏳ El reinicio del gateway ya está en curso..."

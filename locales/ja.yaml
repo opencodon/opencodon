@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ タイトルが拒否されました: {error}"
     title_error_untitled:  "\n⚠️ {error} — タイトルなしでセッションを開始しました。"
     title_empty_untitled:  "\n⚠️ クリーンアップ後にタイトルが空になりました — タイトルなしでセッションを開始しました。"
-    tip:                   "\n✦ ヒント: {tip}"
 
   restart:
     in_progress:           "⏳ ゲートウェイの再起動はすでに進行中です..."

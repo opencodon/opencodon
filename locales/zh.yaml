@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ 标题被拒绝：{error}"
     title_error_untitled:  "\n⚠️ {error} — 会话以未命名方式启动。"
     title_empty_untitled:  "\n⚠️ 清理后标题为空 — 会话以未命名方式启动。"
-    tip:                   "\n✦ 提示：{tip}"
 
   restart:
     in_progress:           "⏳ 网关重启已在进行中……"

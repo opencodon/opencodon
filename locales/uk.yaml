@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ Назву відхилено: {error}"
     title_error_untitled:  "\n⚠️ {error} — сесію запущено без назви."
     title_empty_untitled:  "\n⚠️ Після очищення назва порожня — сесію запущено без назви."
-    tip:                   "\n✦ Порада: {tip}"
 
   restart:
     in_progress:           "⏳ Перезапуск гейтвея вже виконується..."

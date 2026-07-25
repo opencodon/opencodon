@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ Başlık reddedildi: {error}"
     title_error_untitled:  "\n⚠️ {error} — oturum başlıksız başlatıldı."
     title_empty_untitled:  "\n⚠️ Temizlik sonrası başlık boş — oturum başlıksız başlatıldı."
-    tip:                   "\n✦ İpucu: {tip}"
 
   restart:
     in_progress:           "⏳ Gateway yeniden başlatma zaten sürüyor..."

@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ 제목이 거부되었습니다: {error}"
     title_error_untitled:  "\n⚠️ {error} — 제목 없이 세션을 시작했습니다."
     title_empty_untitled:  "\n⚠️ 정리 후 제목이 비어 있습니다 — 제목 없이 세션을 시작했습니다."
-    tip:                   "\n✦ 팁: {tip}"
 
   restart:
     in_progress:           "⏳ 게이트웨이 재시작이 이미 진행 중입니다..."

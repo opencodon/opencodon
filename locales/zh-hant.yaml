@@ -235,7 +235,6 @@ gateway:
     title_rejected:        "\n⚠️ 標題遭拒絕：{error}"
     title_error_untitled:  "\n⚠️ {error} — 工作階段以未命名方式啟動。"
     title_empty_untitled:  "\n⚠️ 清理後標題為空 — 工作階段以未命名方式啟動。"
-    tip:                   "\n✦ 提示：{tip}"
 
   restart:
     in_progress:           "⏳ 閘道重新啟動已在進行中……"
