@@ -279,6 +279,189 @@ Patch from the abandoned attempt (81 files, reverted so the tree stays green):
 because the tree did not import mid-cut and the remaining work was
 concentrated in `auth.py`, where a scope error is worse than anywhere else.
 
+### B5-ii progress (2026-07-25) — the Nous auth provider
+
+**Source is complete and verified clean.** `ruff check .` passes, every key
+module imports, and a whole-tree AST name-resolution scan finds no dangling
+`nous`-named references. `agent/`, `opencodon_cli/`, `gateway/`, `tools/`,
+`plugins/`, `cron/`, `cli.py`, `run_agent.py` are all at zero non-URL Nous
+references.
+
+Removed in B5-ii:
+
+- `opencodon_cli/auth.py`: the whole `# Nous Portal` section (54k chars), the
+  `"nous"` `ProviderConfig` registry entry, 21 nous-named functions, the
+  Portal constants, the entitlement branches in `format_auth_error`, the
+  legacy `"systems"` auth-store migration, four host allowlists, and the
+  sale-chrome rendering in the model picker. 8,178 → ~5,900 lines, 0 refs.
+- `agent/auxiliary_client.py`: 9 nous-named functions, the `nous` rung of the
+  provider chain, both stale-model self-heal blocks, both auth-refresh-parity
+  blocks, the vision strict-backend branch, and `auxiliary_is_nous`.
+- `agent/credential_pool.py`: `_sync_nous_entry_from_auth_store`, the seed
+  branch, the refresh dispatch + failure-recovery blocks, the
+  `runtime_api_key`/`runtime_base_url` agent-key paths.
+- `opencodon_cli/models.py`: the entire 468-line Nous Portal block
+  (tier detection, Portal recommendations, the recommended-models cache,
+  `compute_sale_discount`, `_resolve_nous_pricing_credentials`) plus the
+  curated `_PROVIDER_MODELS["nous"]` list — **this also completes B6.**
+- `opencodon_cli/model_catalog.py`: `get_curated_nous_models`; the catalog
+  manifest URL now points at this repo's raw GitHub path instead of the Nous
+  docs host (the old fallback promoted to primary).
+- `opencodon_cli/model_switch.py`: the Nous-Hermes-3/4 "not agentic" warning
+  guard (`is_nous_hermes_non_agentic`) — the name collision it existed to
+  catch does not exist post-fork — plus the picker branch and its callers in
+  `cli.py` and `agent/agent_init.py`.
+- `opencodon_cli/model_setup_flows.py`: `_model_flow_nous`; `setup.py`'s
+  `_run_portal_one_shot` and `--portal`; quick setup rewired onto the generic
+  `setup_model_provider`.
+- `opencodon_cli/web_server.py`: `/api/portal`, the nous OAuth catalog entry +
+  status dispatcher + device-code start + `_nous_poller`, the
+  `nous_session_valid` health field, and the nous branch of
+  `/api/model/recommended-default`.
+- `opencodon_cli/debug.py` + `diagnostics_upload.py`: `hermes debug share
+  --nous` (upload to Nous-internal S3 via NAS) — module deleted.
+- `gateway/slash_commands.py`: `/topup` and the `credits_lines` plumbing.
+- `gateway/relay/__init__.py`: mode 2 (Nous Portal) of the identity-token
+  resolver. Generic OIDC client-credentials (mode 1) survives as the only
+  mode; a missing `gateway.idp.token_url` is now an explicit error.
+- `agent/model_metadata.py`: `_resolve_nous_context_length` and the
+  Portal-authoritative cache-bypass branch.
+- Dead flags/registry entries: `--portal-url` / `--inference-url` /
+  `--client-id` / `--scope` on `model`/`login`/`auth add`, the `nous`
+  `HermesOverlay` + label, the `nous` proxy default, `NOUS_BASE_URL`, the
+  orphaned `cron.chronos` config block, and `credits_notices`.
+
+Also removed in B5-ii, discovered while chasing dangling references:
+
+- **The `/api/cron/fire` webhook** — the *inbound* half of Chronos managed
+  cron, on both the dashboard (`web_server.py`) and the api_server adapter.
+  With the Chronos plugin gone (B5-i) both handlers raised `ImportError` on
+  `plugins.cron_providers.chronos.verify`, and the `cron.chronos.*` config keys
+  they read had already been removed. Also dropped the `PUBLIC_API_PATHS`
+  entry and the four Chronos test modules.
+- **`catalog/model-catalog.json` regenerated.** `scripts/build_model_catalog.py`
+  still emitted a `nous` provider block from the deleted
+  `_PROVIDER_MODELS["nous"]`. Generator trimmed, manifest regenerated
+  (openrouter only, 39 models, zero Nous references), and the drift-guard test
+  updated. The generator's published-URL docstring now points at raw GitHub.
+- **`_fetch_manifest_with_fallback` default made call-time.** `fallback_urls`
+  defaulted to `DEFAULT_CATALOG_FALLBACK_URLS` as a *definition-time* bound
+  default, so the constant could not be overridden or patched. Now `None` ->
+  resolved at call time, with the constant as the single source of truth.
+
+**Test surface** — 22 test modules touched, zero Nous references left in
+`tests/`. Whole-module deletions: `test_sale_pricing.py`,
+`test_quarantine_forensic_logging.py`, `test_diagnostics_upload.py`,
+`test_nous_hermes_non_agentic.py`, `test_chronos_verify.py`,
+`test_cron_fire_webhook.py`, `test_cron_fire_dashboard.py`,
+`test_cron_dashboard_off_loop.py`, `appChromeStatusRuleDevCredits.test.tsx`.
+Everything else was trimmed test-by-test.
+
+Three test-repair patterns worth reusing:
+
+1. **Retarget, don't delete, when the behaviour still exists.** The
+   unhealthy-provider-cache tests used `nous` as their healthy fallback rung;
+   they now use `local/custom` (and `api-key` where `local/custom` is the one
+   marked unhealthy), so the coverage survives the provider's removal.
+   Same for the keyword-only-signature test, now pinned on the whole tail of
+   the signature rather than one removed parameter.
+2. **Delete when the behaviour is gone.** `test_reasoning_sent_for_nous_route`
+   covered a `nousresearch.com`-host bypass in
+   `_supports_reasoning_extra_body`. Retargeting it to OpenRouter made it
+   assert something false, so it was dropped instead.
+3. **Removing a `patch()` from a backslash-continued `with` chain needs
+   continuation-aware editing**, not line deletion — dropping the last item
+   leaves a dangling `\`. Where the guard was merely defensive (patching a
+   now-absent `_read_nous_auth` to "no Nous auth present"), replacing the
+   expression with an inert `patch.dict("os.environ", {})` preserves the chain
+   shape with zero risk.
+
+Two bugs this pass caught that `ruff` could not:
+
+1. `_load_auth_store` still called `_migrate_stale_nous_portal_url`, which had
+   been removed — a `NameError` on *every* auth-store read. Found by an AST
+   name-resolution scan over the whole tree, not by lint or import checks.
+2. `setup.py`'s TTS section still read `selected_via_nous` after its
+   assignment was removed.
+
+Both are the same class of failure: a name referenced only inside a function
+body, which neither `ruff` nor `import <module>` evaluates. The AST scan is
+now the standard check after any function removal.
+
+### How to run the tests (learned the hard way, 2026-07-25)
+
+**Use `scripts/run_tests_parallel.py`. Never `pytest tests/` directly.**
+
+The suite is designed for **per-file subprocess isolation** — one fresh
+`python -m pytest <file>` per test file (see the script's own docstring and
+`.github/workflows/tests.yml`, which drives it via `scripts/run_tests.sh`).
+Module-level state leaks across files, so a single monolithic pytest process
+produces failures that are pure cross-file pollution.
+
+Concretely, on this tree:
+
+| invocation | result |
+|---|---|
+| `pytest tests/` (one process) | exits 0 at 49% with no summary — output lost |
+| `pytest tests/<dir>` per directory | 266 "failures", nearly all pollution |
+| `scripts/run_tests_parallel.py -q` | real result, ~13 min |
+
+Two further lessons from the same session:
+
+- **Compare against a baseline measured the same way, on the same tree.** The
+  honest procedure is: collect the failing-file list, `git stash`, re-run
+  *those files* with `--files`, unstash, and diff. Without that step, 53
+  failing files looked catastrophic; 23 of them fail identically before the
+  change (macOS-specific), and the real number was 30.
+- **`--files` takes a COLON-separated list**, not shell-globbed arguments.
+
+### Verify a removal with an AST name-resolution scan
+
+`ruff` and `import <module>` both miss a name that is only referenced inside a
+function body — exactly what a function removal leaves behind. `scratchpad/
+dangling.py` walks each changed file's own bindings and reports unresolved
+`Load` names.
+
+Run it **unfiltered**. The first version of this scan filtered hits to names
+containing "nous", which is why it caught `_migrate_stale_nous_portal_url` and
+`selected_via_nous` but silently missed two worse ones:
+
+- `DebugShareResult` — a block cut in `debug.py` overran and swallowed the
+  dataclass. 95 test failures.
+- `_is_terminal_xai_oauth_refresh_error` /
+  `_is_terminal_codex_oauth_refresh_error` — **xAI and Codex** helpers that
+  happened to sit inside the Nous section of `auth.py` and went out with it.
+
+That last one is the real lesson: **a section boundary is not a semantic
+boundary.** When cutting a region, diff the removed `def` names against the
+cut's stated scope (`git diff | grep '^-def '`) and restore anything whose
+name has nothing to do with it. Three helpers in that block were genuinely
+generic; a fourth (`_refresh_access_token`, which POSTs
+`x-nous-refresh-token` to the portal) correctly stayed removed.
+
+**Deliberately kept** (not Nous-coupled despite the name):
+`agent/prompt_builder.py`'s identity line, which states the fork provenance
+("a hard fork of Nous Research's hermes-agent"), and the
+`anthropic_adapter` sanitizer that scrubs it off the Anthropic OAuth wire.
+
+**Deferred out of B5-ii** (tracked separately, not blockers):
+
+- `@nous-research/ui` is a **third-party npm dependency** (v0.18.2) that the
+  web dashboard imports in ~50 files. It is an upstream package name, not our
+  code; removing it means replacing the dashboard's component library. Needs
+  an explicit decision: keep, vendor, or migrate.
+- The Telegram managed-bot onboarding
+  (`opencodon_cli/telegram_managed_bot.py`, the `/api/messaging/telegram/
+  onboarding/*` dashboard endpoints, and the setup/gateway call sites) works
+  only against the Nous-hosted worker at `setup.hermes-agent.nousresearch.com`
+  and is therefore non-functional post-fork. Cutting it is a self-contained
+  change that also touches the web SPA.
+- `dashboard_auth/login_page.py` carries Nous Research branding and
+  `@nous-research/ui` font files; `banner.py` prints a "Nous Research"
+  attribution line. Both are Part A4/A5 (branded assets).
+- All remaining `NousResearch/hermes-agent` repo/issue URLs and
+  `ghcr.io/nousresearch/hermes-agent` image names are Part A4/A5.
+
 ### B5 (original estimate — superseded by the section above). Nous Portal provider + its billing/subscription stack — **CUT**
 This is the big one the fork plan deliberately deferred ("identifies us to
 external services"). Removing all Nous mentions means removing the provider.

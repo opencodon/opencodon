@@ -525,7 +525,7 @@ class FirecrawlWebSearchProvider(WebSearchProvider):
             "badge": "paid · optional gateway",
             "tag": (
                 "Full search + extract; supports direct API and "
-                "Nous tool-gateway routing."
+                "tool-gateway routing."
             ),
             "env_vars": [
                 {

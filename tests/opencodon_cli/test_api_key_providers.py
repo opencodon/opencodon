@@ -137,8 +137,6 @@ class TestProviderRegistry:
 
     def test_oauth_providers_unchanged(self):
         """Ensure we didn't break the existing OAuth providers."""
-        assert "nous" in PROVIDER_REGISTRY
-        assert PROVIDER_REGISTRY["nous"].auth_type == "oauth_device_code"
         assert "openai-codex" in PROVIDER_REGISTRY
         assert PROVIDER_REGISTRY["openai-codex"].auth_type == "oauth_external"
 
@@ -413,7 +411,7 @@ class TestApiKeyProviderStatus:
         assert status["provider"] == "copilot-acp"
 
     def test_non_api_key_provider(self):
-        status = get_api_key_provider_status("nous")
+        status = get_api_key_provider_status("openai-codex")
         assert status["configured"] is False
 
 
@@ -592,7 +590,7 @@ class TestResolveApiKeyProviderCredentials:
 
     def test_resolve_invalid_provider_raises(self):
         with pytest.raises(AuthError):
-            resolve_api_key_provider_credentials("nous")
+            resolve_api_key_provider_credentials("openai-codex")
 
     def test_glm_key_priority(self, monkeypatch):
         """GLM_API_KEY takes priority over ZAI_API_KEY."""

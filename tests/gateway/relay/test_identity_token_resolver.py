@@ -1,15 +1,11 @@
-"""Unit tests for the generic-OIDC / Nous-Portal caller-identity token resolver.
+"""Unit tests for the generic-OIDC caller-identity token resolver.
 
 Covers gateway.relay._resolve_relay_identity_token() — the canonical resolver
 shared by the runtime self-provision path and the `hermes gateway enroll` CLI.
 
-Two modes:
-  1. Generic OAuth2 client_credentials when gateway.idp.token_url (or
-     GATEWAY_RELAY_IDP_TOKEN_URL) is configured (air-gapped / self-hosted-IdP).
-  2. Nous Portal (resolve_nous_access_token) otherwise — the default.
-
-The HTTP POST and the Nous resolver are monkeypatched; these prove the mode
-SELECTION, the client_credentials request shape, and the fail-closed paths.
+Generic OAuth2 client_credentials against gateway.idp.token_url (or
+GATEWAY_RELAY_IDP_TOKEN_URL). The HTTP POST is monkeypatched; these prove the
+client_credentials request shape and the fail-closed paths.
 """
 
 from __future__ import annotations
@@ -35,18 +31,6 @@ def _clean_env(monkeypatch):
     monkeypatch.setattr("gateway.run._load_gateway_config", lambda: {}, raising=False)
 
 
-def test_defaults_to_nous_portal_when_no_idp_configured(monkeypatch):
-    called = {}
-
-    def fake_resolve():
-        called["yes"] = True
-        return "nous-portal-token"
-
-    monkeypatch.setattr(
-        "opencodon_cli.auth.resolve_nous_access_token", fake_resolve, raising=False
-    )
-    assert relay._resolve_relay_identity_token() == "nous-portal-token"
-    assert called == {"yes": True}
 
 
 def test_client_credentials_via_env(monkeypatch):

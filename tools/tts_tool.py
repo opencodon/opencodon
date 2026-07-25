@@ -168,7 +168,7 @@ DEFAULT_ELEVENLABS_VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Adam
 DEFAULT_ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
 DEFAULT_ELEVENLABS_STREAMING_MODEL_ID = "eleven_flash_v2_5"
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts"
-# The managed OpenAI audio gateway (Nous portal proxy) only proxies these speech
+# The managed OpenAI audio gateway only proxies these speech
 # models. A user's tts.openai.model set for *direct* OpenAI (e.g. "tts-1-hd")
 # is rejected with a 400 "Unsupported managed OpenAI speech model", so it must be
 # coerced to a supported model when routing through the gateway.

@@ -368,8 +368,6 @@ TOOL_CATEGORIES = {
         # plugins.web.<vendor>.provider via _plugin_web_search_providers()
         # in _visible_providers(). Only non-provider UX setup-flow rows
         # for the firecrawl backend are listed here:
-        #   - "Nous Subscription" — managed Firecrawl billed via Nous
-        #     subscription (requires_nous_auth + override_env_vars).
         #   - "Firecrawl Self-Hosted" — points firecrawl at a private
         #     Docker instance via FIRECRAWL_API_URL only.
         # See PR #25182 for the migration rationale.
@@ -392,11 +390,7 @@ TOOL_CATEGORIES = {
         # OpenAI Codex, and xAI are injected at runtime from each
         # ``plugins.image_gen.<vendor>`` package via
         # ``_plugin_image_gen_providers()`` in ``_visible_providers``.
-        # Only non-provider UX setup-flow rows remain here:
-        #   - "Nous Subscription" — managed FAL billed via the Nous
-        #     subscription (requires_nous_auth + override_env_vars).
-        #     Uses the fal plugin as the underlying backend but has a
-        #     distinct setup UX.
+        # Only non-provider UX setup-flow rows remain here.
         # Mirrors the shape browser ships today.
         "providers": [
         ],
@@ -443,12 +437,8 @@ TOOL_CATEGORIES = {
         # non-provider UX setup-flow rows remain here. "Local Browser" is
         # listed FIRST so it is the default-highlighted (index 0) choice on a
         # fresh install — pressing Enter must land on the free, no-key local
-        # backend, never on the paid Nous Subscription gateway row:
+        # backend, never on a paid cloud row:
         #   - "Local Browser" — non-cloud option, no CloudBrowserProvider.
-        #   - "Nous Subscription (Browser Use cloud)" — managed Browser Use
-        #     billed via Nous subscription (requires_nous_auth +
-        #     override_env_vars). Uses the browser-use plugin as the
-        #     underlying backend but has a distinct setup UX.
         #   - "Camofox" — anti-detection local Firefox; short-circuits the
         #     cloud-provider dispatch path via _is_camofox_mode().
         "providers": [
@@ -1187,7 +1177,7 @@ def _run_post_setup(post_setup_key: str):
                 "    Pull the latest image to get the bundled Chromium:"
             )
             _print_info(
-                "      docker pull ghcr.io/nousresearch/hermes-agent:latest"
+                "      docker pull ghcr.io/opencodon/opencodon:latest"
             )
             return
 
@@ -2175,10 +2165,10 @@ def _plugin_image_gen_providers() -> list[dict]:
 # searxng, exa, parallel, tavily, firecrawl) live as plugins after
 # PR #25182 — this helper is the sole source of truth for the category's
 # provider rows. The hardcoded entries that used to drive the category
-# were deleted in the same PR; only the two non-provider UX rows
-# ("Nous Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
-# remain in TOOL_CATEGORIES because they describe alternative *setup
-# flows* for the firecrawl backend rather than distinct providers.
+# were deleted in the same PR; only the non-provider UX row
+# ("Firecrawl Self-Hosted") remains in TOOL_CATEGORIES because it describes
+# an alternative *setup flow* for the firecrawl backend rather than a
+# distinct provider.
 def _plugin_web_search_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered web search providers.
 
@@ -2260,8 +2250,8 @@ def web_provider_capabilities(backend: str) -> list:
 # for those three in the "Browser Automation" picker. The hardcoded
 # ``TOOL_CATEGORIES["browser"]`` entries that drove the category before
 # were deleted in the same PR; only non-provider UX setup-flow rows remain
-# ("Nous Subscription", "Local Browser", "Camofox") — see the comment block
-# in ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
+# ("Local Browser", "Camofox") — see the comment block in
+# ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
 def _plugin_browser_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered cloud browser providers.
 
@@ -2371,34 +2361,27 @@ def _visible_providers(
     *,
     force_fresh: bool = False,
 ) -> list[dict]:
-    """Return provider entries visible for the current auth/config state.
-
-    Nous-managed Tool Gateway rows (``managed_nous_feature``) are always
-    shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nous Portal
-    login + entitlement check (see ``_configure_provider``); the row only
-    *activates* the gateway once paid access is confirmed.
-    """
+    """Return provider entries visible for the current auth/config state."""
     visible = list(cat.get("providers", []))
 
     # Inject plugin-registered image_gen backends (OpenAI today, more
-    # later) so the picker lists them alongside FAL / Nous Subscription.
+    # later) so the picker lists them alongside FAL.
     if cat.get("name") == "Image Generation":
         visible.extend(_plugin_image_gen_providers())
 
     # Inject plugin-registered web search backends. After PR #25182, this
     # is the SOLE source of provider rows for the Web Search & Extract
-    # category — the per-provider hardcoded entries were deleted. The two
-    # remaining hardcoded rows ("Nous Subscription", "Firecrawl
-    # Self-Hosted") are non-provider UX setup-flow rows for firecrawl.
+    # category — the per-provider hardcoded entries were deleted. The one
+    # remaining hardcoded row ("Firecrawl Self-Hosted") is a non-provider
+    # UX setup-flow row for firecrawl.
     if cat.get("name") == "Web Search & Extract":
         visible.extend(_plugin_web_search_providers())
 
     # Inject plugin-registered cloud browser backends. After PR #25214,
     # Browserbase / Browser Use / Firecrawl are the plugin-supplied rows;
-    # the hardcoded "Nous Subscription" / "Local Browser" / "Camofox" rows
-    # stay because they're non-provider UX setup flows (subscription auth,
-    # local fallback, and the REST-API anti-detection backend respectively).
+    # the hardcoded "Local Browser" / "Camofox" rows stay because they're
+    # non-provider UX setup flows (local fallback and the REST-API
+    # anti-detection backend respectively).
     if cat.get("name") == "Browser Automation":
         visible.extend(_plugin_browser_providers())
 
@@ -2547,18 +2530,16 @@ def provider_readiness_status(
 
     - ``"ready"``       — usable as-is (keys set / entitled / installed).
     - ``"needs_keys"``  — declares env vars and at least one is unset.
-    - ``"needs_auth"``  — needs a sign-in: Nous Portal login/entitlement for
-      managed Tool Gateway rows, or xAI Grok OAuth / XAI_API_KEY for
+    - ``"needs_auth"``  — needs a sign-in: xAI Grok OAuth / XAI_API_KEY for
       ``post_setup: "xai_grok"`` rows.
     - ``"needs_setup"`` — keyless row whose ``post_setup`` install hook has
       verifiably not run yet (see ``_POST_SETUP_READY``).
 
     Keyless ≠ usable: this is the server-side truth the GUI "Ready" pill
     renders from (the old client-side heuristic showed Ready for every
-    zero-env-var row, including logged-out Nous Subscription rows).
+    zero-env-var row).
 
-    ``features`` (a ``NousSubscriptionFeatures``) can be passed to avoid
-    re-fetching portal state per row. ``is_active`` is the completed-setup
+    ``is_active`` is the completed-setup
     fallback signal for post_setup hooks with no registered installed-check
     (selecting a row runs its hook, so the active row has been set up).
     """
@@ -3648,7 +3629,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     print(color("⚕ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://github.com/opencodon/opencodon/blob/main/docs/user-guide/features/tools.md", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──

@@ -3808,15 +3808,6 @@ def _get_usage(agent) -> dict:
         usage["active_subagents"] = _async_active_count()
     except Exception:
         pass
-    # Dev-only live credits-spent readout (L0 usage-aware-credits). Gated on
-    # OPENCODON_DEV_CREDITS so the payload stays clean when the flag is off.
-    if is_truthy_value(os.environ.get("OPENCODON_DEV_CREDITS")):
-        try:
-            spent = agent.get_credits_spent_micros()
-            if spent is not None:
-                usage["dev_credits_spent_micros"] = int(spent)
-        except Exception:
-            pass
     return usage
 
 

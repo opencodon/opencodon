@@ -3868,52 +3868,7 @@ class TestWebServerEndpoints:
         assert model_cfg["api_key"] == "sk-local"
 
 
-    def test_recommended_default_nous_honors_free_tier(self, monkeypatch):
-        """For a free-tier Nous user, the recommended default must be a free
-        model (mirroring `hermes model`), not the first curated paid entry."""
-        import opencodon_cli.models as models_mod
 
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", lambda: ["paid/expensive", "free/cheap"])
-        monkeypatch.setattr(
-            models_mod, "get_pricing_for_provider",
-            lambda provider: {"paid/expensive": {"input": "1"}, "free/cheap": {"input": "0"}},
-        )
-        monkeypatch.setattr(models_mod, "check_nous_free_tier", lambda *, force_fresh=False: True)
-        monkeypatch.setattr(
-            models_mod, "union_with_portal_free_recommendations",
-            lambda ids, pricing, url: (ids, pricing),
-        )
-        # Free partition keeps only the free model selectable.
-        monkeypatch.setattr(
-            models_mod, "partition_nous_models_by_tier",
-            lambda ids, pricing, free_tier: (["free/cheap"], ["paid/expensive"]),
-        )
-
-        resp = self.client.get("/api/model/recommended-default?provider=nous")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["provider"] == "nous"
-        assert data["model"] == "free/cheap"
-        assert data["free_tier"] is True
-
-    def test_recommended_default_nous_paid_uses_curated_default(self, monkeypatch):
-        """A paid Nous user gets the first curated/paid-augmented model."""
-        import opencodon_cli.models as models_mod
-
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", lambda: ["top/model", "other/model"])
-        monkeypatch.setattr(models_mod, "get_pricing_for_provider", lambda provider: {})
-        monkeypatch.setattr(models_mod, "check_nous_free_tier", lambda *, force_fresh=False: False)
-        monkeypatch.setattr(
-            models_mod, "union_with_portal_paid_recommendations",
-            lambda ids, pricing, url: (ids, pricing),
-        )
-
-        resp = self.client.get("/api/model/recommended-default?provider=nous")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["provider"] == "nous"
-        assert data["model"] == "top/model"
-        assert data["free_tier"] is False
 
     def test_recommended_default_handles_failure_gracefully(self, monkeypatch):
         """Endpoint never 500s — returns empty model on internal error."""
@@ -3922,7 +3877,6 @@ class TestWebServerEndpoints:
         def boom():
             raise RuntimeError("portal down")
 
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", boom)
 
         resp = self.client.get("/api/model/recommended-default?provider=nous")
         assert resp.status_code == 200

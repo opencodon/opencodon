@@ -5,7 +5,6 @@ import type { SessionUsageResponse } from '../gatewayTypes.js'
 
 const usageCommand = sessionCommands.find(cmd => cmd.name === 'usage')!
 
-const USAGE_CTA = 'Run /subscription to change plan · /topup to add to your balance'
 
 const guarded =
   <T>(fn: (r: T) => void) =>
@@ -57,16 +56,14 @@ describe('/usage slash command', () => {
     vi.clearAllMocks()
   })
 
-  it('always shows the CTA; "no API calls yet" when there are no calls', async () => {
+  it('shows "no API calls yet" only when there are no calls', async () => {
     const empty = buildCtx({ 'session.usage': baseUsage({ calls: 0 }) })
     await empty.run('')
     expect(printed(empty.sys)).toContain('no API calls yet')
-    expect(printed(empty.sys)).toContain(USAGE_CTA)
 
     const withCalls = buildCtx({ 'session.usage': baseUsage({ calls: 3, total: 120 }) })
     await withCalls.run('')
     expect(printed(withCalls.sys)).not.toContain('no API calls yet')
-    expect(printed(withCalls.sys)).toContain(USAGE_CTA)
   })
 
 

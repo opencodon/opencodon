@@ -167,16 +167,6 @@ def _list_auth_returning(rows: list[dict]):
     )
 
 
-def _nous_row(model: str = "openai/gpt-5.5") -> dict:
-    return {
-        "slug": "nous",
-        "name": "Nous",
-        "models": [model],
-        "total_models": 1,
-        "is_current": True,
-        "is_user_defined": False,
-        "source": "built-in",
-    }
 
 
 def test_build_models_payload_returns_expected_shape():
@@ -203,7 +193,7 @@ def test_build_models_payload_does_not_call_provider_model_ids():
     caching). ``build_models_payload`` itself must not call the live fetcher
     directly; the test pins that boundary.
     """
-    rows = [{"slug": "nous", "name": "Nous", "models": ["hermes-4-405b"],
+    rows = [{"slug": "openrouter", "name": "OpenRouter", "models": ["anthropic/claude-sonnet-5"],
              "total_models": 1, "is_current": False, "is_user_defined": False,
              "source": "built-in"}]
     ctx = _empty_ctx()
@@ -213,36 +203,8 @@ def test_build_models_payload_does_not_call_provider_model_ids():
     mock_pm.assert_not_called()
 
 
-def test_build_models_payload_uses_cached_nous_tier_by_default():
-    """Picker payloads should not force fresh Nous account checks.
-
-    Desktop/status picker opens are request/response UI paths. They can hit
-    the short free-tier cache; explicit model/auth flows can still opt into a
-    fresh account check when needed.
-    """
-    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
-    rows = [_nous_row()]
-    with patch(
-        "opencodon_cli.model_switch.list_authenticated_providers",
-        return_value=rows,
-    ) as mock_list:
-        build_models_payload(ctx)
-
-    mock_list.assert_called_once()
-    assert mock_list.call_args.kwargs["force_fresh_nous_tier"] is False
 
 
-def test_build_models_payload_can_force_fresh_nous_tier():
-    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
-    rows = [_nous_row()]
-    with patch(
-        "opencodon_cli.model_switch.list_authenticated_providers",
-        return_value=rows,
-    ) as mock_list:
-        build_models_payload(ctx, force_fresh_nous_tier=True)
-
-    mock_list.assert_called_once()
-    assert mock_list.call_args.kwargs["force_fresh_nous_tier"] is True
 
 
 def test_build_models_payload_can_skip_custom_provider_probes():
@@ -313,64 +275,30 @@ def test_cli_model_picker_forwards_force_refresh_to_probe_flags():
     assert mock_list.call_args.kwargs["probe_current_custom_provider"] is False
 
 
-def test_list_authenticated_providers_force_fresh_is_keyword_only():
-    """``force_fresh_nous_tier`` must be keyword-only on the public listing API.
+def test_list_authenticated_providers_tail_params_are_keyword_only():
+    """Everything after ``custom_providers`` must be keyword-only.
 
-    It was inserted between ``custom_providers`` and ``max_models``; making it
-    keyword-only ensures no positional caller passing ``max_models`` as the 5th
-    arg silently mis-binds it to the tier-refresh flag. Pin the contract so a
-    future signature edit that drops the ``*`` separator is caught.
+    A positional caller passing ``max_models`` as the 5th arg would otherwise
+    silently mis-bind it to whatever flag currently sits in that slot. Pin the
+    contract so a future signature edit that drops the ``*`` separator is
+    caught.
     """
     import inspect
 
     from opencodon_cli.model_switch import list_authenticated_providers
 
     sig = inspect.signature(list_authenticated_providers)
-    param = sig.parameters["force_fresh_nous_tier"]
-    assert param.kind is inspect.Parameter.KEYWORD_ONLY
-    assert param.default is False
+    params = list(sig.parameters.values())
+    tail = params[params.index(sig.parameters["custom_providers"]) + 1:]
+    assert tail, "signature has no params after custom_providers"
+    assert all(p.kind is inspect.Parameter.KEYWORD_ONLY for p in tail), [
+        p.name for p in tail if p.kind is not inspect.Parameter.KEYWORD_ONLY
+    ]
+    assert sig.parameters["max_models"].default is None
 
 
-def test_pricing_uses_cached_nous_tier_by_default():
-    rows = [_nous_row()]
-    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
-    with (
-        _list_auth_returning(rows),
-        patch(
-            "opencodon_cli.models.get_pricing_for_provider",
-            return_value={
-                "openai/gpt-5.5": {
-                    "prompt": "0.000001",
-                    "completion": "0.000002",
-                },
-            },
-        ),
-        patch("opencodon_cli.models.check_nous_free_tier", return_value=False) as mock_free,
-    ):
-        build_models_payload(ctx, pricing=True)
-
-    mock_free.assert_called_once_with(force_fresh=False)
 
 
-def test_pricing_can_force_fresh_nous_tier():
-    rows = [_nous_row()]
-    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
-    with (
-        _list_auth_returning(rows),
-        patch(
-            "opencodon_cli.models.get_pricing_for_provider",
-            return_value={
-                "openai/gpt-5.5": {
-                    "prompt": "0.000001",
-                    "completion": "0.000002",
-                },
-            },
-        ),
-        patch("opencodon_cli.models.check_nous_free_tier", return_value=False) as mock_free,
-    ):
-        build_models_payload(ctx, pricing=True, force_fresh_nous_tier=True)
-
-    mock_free.assert_called_once_with(force_fresh=True)
 
 
 def test_include_unconfigured_appends_canonical_skeletons():
@@ -426,7 +354,7 @@ def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_
         {"slug": "copilot", "name": "Copilot", "models": ["gpt-5.4"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
          "source": "hermes"},
-        {"slug": "nous", "name": "Nous", "models": ["anthropic/claude-sonnet-5"],
+        {"slug": "openrouter", "name": "OpenRouter", "models": ["anthropic/claude-sonnet-5"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
          "source": "hermes"},
         {"slug": "custom:lab", "name": "Lab", "models": ["lab-1"],

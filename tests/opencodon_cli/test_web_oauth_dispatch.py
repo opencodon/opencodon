@@ -41,30 +41,8 @@ def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
     return profile_home
 
 
-def _fake_nous_device_data():
-    return {
-        "device_code": "device-code",
-        "user_code": "NOUS-1234",
-        "verification_uri": "https://portal.nousresearch.com/device",
-        "verification_uri_complete": (
-            "https://portal.nousresearch.com/device?user_code=NOUS-1234"
-        ),
-        "expires_in": 600,
-        "interval": 5,
-    }
 
 
-def _invoke_scope_refusal():
-    request = httpx.Request("POST", "https://portal.nousresearch.com/oauth/device/code")
-    response = httpx.Response(
-        400,
-        json={
-            "error": "invalid_scope",
-            "error_description": "unsupported scope inference:invoke",
-        },
-        request=request,
-    )
-    return httpx.HTTPStatusError("invalid scope", request=request, response=response)
 
 
 def test_minimax_login_does_not_launch_anthropic_flow():
@@ -107,31 +85,6 @@ def test_minimax_login_does_not_launch_anthropic_flow():
     assert body["expires_in"] == 600
 
 
-def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
-    from opencodon_cli import auth as auth_mod
-    from opencodon_cli import web_server as ws
-
-    requested_scopes = []
-
-    def fake_request_device_code(**kwargs):
-        requested_scopes.append(kwargs["scope"])
-        return _fake_nous_device_data()
-
-    monkeypatch.setenv("OPENCODON_AGENT_USE_LEGACY_SESSION_KEYS", "true")
-    monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
-    monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
-
-    result = asyncio.run(ws._start_device_code_flow("nous"))
-    try:
-        assert requested_scopes == [auth_mod.DEFAULT_NOUS_SCOPE]
-        assert result["flow"] == "device_code"
-        assert result["user_code"] == "NOUS-1234"
-        assert (
-            ws._oauth_sessions[result["session_id"]]["scope"]
-            == auth_mod.DEFAULT_NOUS_SCOPE
-        )
-    finally:
-        ws._oauth_sessions.pop(result["session_id"], None)
 
 
 def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
@@ -195,23 +148,6 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
         ws._oauth_sessions.pop(session_id, None)
 
 
-def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusal(monkeypatch):
-    from opencodon_cli import auth as auth_mod
-    from opencodon_cli import web_server as ws
-
-    requested_scopes = []
-
-    def fake_request_device_code(**kwargs):
-        requested_scopes.append(kwargs["scope"])
-        raise _invoke_scope_refusal()
-
-    monkeypatch.delenv("OPENCODON_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
-    monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
-    monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
-
-    with pytest.raises(httpx.HTTPStatusError):
-        asyncio.run(ws._start_device_code_flow("nous"))
-    assert requested_scopes == [auth_mod.DEFAULT_NOUS_SCOPE]
 
 
 def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch):
@@ -390,54 +326,6 @@ def test_codex_dashboard_start_rewords_device_authorization_error(monkeypatch):
             ws._oauth_sessions.pop(sid, None)
 
 
-def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
-    from opencodon_cli import auth as auth_mod
-    from opencodon_cli import web_server as ws
-
-    session_id = "nous-effective-scope-test"
-    ws._oauth_sessions[session_id] = {
-        "session_id": session_id,
-        "provider": "nous",
-        "flow": "device_code",
-        "created_at": time.time(),
-        "status": "pending",
-        "error_message": None,
-        "portal_base_url": "https://portal.nousresearch.com",
-        "client_id": "opencodon-cli",
-        "device_code": "device-code",
-        "interval": 5,
-        "expires_at": time.time() + 600,
-        "scope": auth_mod.DEFAULT_NOUS_SCOPE,
-    }
-    captured_state = {}
-
-    def fake_refresh_nous_oauth_from_state(state, **kwargs):
-        captured_state.update(state)
-        return {**state, "agent_key": "jwt-agent-key"}
-
-    monkeypatch.setattr(
-        auth_mod,
-        "_poll_for_token",
-        lambda **kwargs: {
-            "access_token": "access-token",
-            "refresh_token": "refresh-token",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-        },
-    )
-    monkeypatch.setattr(
-        auth_mod,
-        "refresh_nous_oauth_from_state",
-        fake_refresh_nous_oauth_from_state,
-    )
-    monkeypatch.setattr(auth_mod, "persist_nous_credentials", lambda state: None)
-
-    try:
-        ws._nous_poller(session_id)
-        assert captured_state["scope"] == auth_mod.DEFAULT_NOUS_SCOPE
-        assert ws._oauth_sessions[session_id]["status"] == "approved"
-    finally:
-        ws._oauth_sessions.pop(session_id, None)
 
 
 def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
@@ -790,16 +678,17 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
 
 
 def test_status_hardcoded_branch_wins_over_generic_fallback():
-    """An existing hardcoded branch (nous) is unaffected by the fallthrough."""
+    """An existing hardcoded branch (openai-codex) is unaffected by the fallthrough."""
     import opencodon_cli.web_server as ws
 
     with patch(
-        "opencodon_cli.auth.get_nous_auth_status",
-        return_value={"logged_in": True, "portal_base_url": "https://portal.test"},
+        "opencodon_cli.auth.get_codex_auth_status",
+        return_value={"logged_in": True, "source": "codex_cli",
+                      "auth_mode": "ChatGPT", "api_key": "sk-test"},
     ):
-        out = ws._resolve_provider_status("nous", None)
-    assert out["source"] == "nous_portal"
-    assert out["source_label"] == "https://portal.test"
+        out = ws._resolve_provider_status("openai-codex", None)
+    assert out["source"] == "codex_cli"
+    assert out["source_label"] == "ChatGPT"
 
 
 def test_status_unknown_provider_degrades_to_logged_out():

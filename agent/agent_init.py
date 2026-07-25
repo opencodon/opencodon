@@ -829,14 +829,6 @@ def init_agent(
     # after each API call.  Accessed by /usage slash command.
     agent._rate_limit_state: Optional["RateLimitState"] = None
 
-    # Credits tracking (dev-only, L0 usage-aware-credits) — updated from
-    # x-nous-credits-* response headers after each API call.  Session-start
-    # remaining is latched the first time a header is ever seen so we can
-    # report cumulative micros spent.  Surfaced behind OPENCODON_DEV_CREDITS.
-    agent._credits_session_start_micros = None
-    # Threshold-notice latch (L4): active sticky-notice keys + the warn90 crossing gate.
-    agent._credits_latch = {"active": set(), "seen_below_90": False, "usage_band": None}
-
     # OpenRouter response cache hit counter — incremented when
     # X-OpenRouter-Cache-Status: HIT is seen in streaming response headers.
     agent._or_cache_hits: int = 0
@@ -2332,33 +2324,6 @@ def init_agent(
             f"model.context_length in config.yaml to the real value "
             f"(this must be at least {MINIMUM_CONTEXT_LENGTH // 1000}K)."
         )
-
-    # Nous Hermes 3/4 are chat models, not tool-call-tuned. The interactive
-    # CLI already warns via cli.py show_banner() (richer output + /model hint),
-    # so skip platform=="cli" here to avoid emitting the warning twice per
-    # startup. (Gateway/TUI/cron construct with quiet_mode=True and are already
-    # gated off by the `not agent.quiet_mode` check above; this guard's active
-    # job is the CLI dedup, and it leaves the door open for any non-quiet
-    # non-CLI surface to still surface the warning.)
-    if not agent.quiet_mode and (agent.platform or "cli") != "cli":
-        try:
-            from opencodon_cli.model_switch import _check_hermes_model_warning
-
-            _hermes_warn = _check_hermes_model_warning(agent.model or "")
-            if _hermes_warn:
-                _user_msg = (
-                    "⚠ Nous Research Hermes 3 & 4 models are NOT agentic — they "
-                    "lack reliable tool-calling for agent workflows (delegation, "
-                    "cron, proactive tools). Consider an agentic model instead "
-                    "(Claude, GPT, Gemini, Qwen-Coder, etc.)."
-                )
-                if hasattr(agent, "_emit_warning"):
-                    agent._emit_warning(_user_msg)
-                else:
-                    print(f"\n{_user_msg}\n", file=sys.stderr)
-                _ra().logger.warning(_hermes_warn)
-        except Exception:
-            pass
 
     # Inject context engine tool schemas (e.g. lcm_grep, lcm_describe, lcm_expand).
     # Skip names that are already present — the _ra().get_tool_definitions()

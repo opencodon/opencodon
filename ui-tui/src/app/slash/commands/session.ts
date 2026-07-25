@@ -20,8 +20,6 @@ import { patchOverlayState } from '../../overlayStore.js'
 import { patchUiState } from '../../uiStore.js'
 import type { SlashCommand } from '../types.js'
 
-const USAGE_CTA = 'Run /subscription to change plan · /topup to add to your balance'
-
 const TUI_SESSION_MODEL_RE = new RegExp(`(?:^|\\s)${TUI_SESSION_MODEL_FLAG}(?:\\s|$)`)
 const REASONING_SESSION_FLAGS = new Set(['--session'])
 const REASONING_GLOBAL_FLAGS = new Set(['--global'])
@@ -637,7 +635,6 @@ export const sessionCommands: SlashCommand[] = [
 
         if (!r?.calls) {
           sys('no API calls yet')
-          sys(USAGE_CTA)
 
           return
         }
@@ -663,8 +660,6 @@ export const sessionCommands: SlashCommand[] = [
         }
 
         ctx.transcript.panel('Usage', sections)
-
-        sys(USAGE_CTA)
       })
     }
   }

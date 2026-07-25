@@ -6366,7 +6366,7 @@ class SessionDB:
             if row["observed"]:
                 msg["observed"] = True
             # Restore reasoning fields on assistant messages so providers
-            # that replay reasoning (OpenRouter, OpenAI, Nous) receive
+            # that replay reasoning (OpenRouter, OpenAI) receive
             # coherent multi-turn reasoning context.
             if row["role"] == "assistant":
                 if row["finish_reason"]:
@@ -6522,7 +6522,7 @@ class SessionDB:
         ``parent_session_id``, and delegate subagents hang off their
         parent the same way. Walking to the root gives every segment of
         one user-facing conversation (and its delegation tree) a single
-        identifier — used for Nous Portal ``conversation=`` usage tagging.
+        identifier — used for provider-side ``conversation=`` usage tagging.
         Returns *session_id* unchanged when it has no recorded parent.
         """
         chain = self._session_lineage_root_to_tip(session_id)

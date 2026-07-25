@@ -672,17 +672,6 @@ class TestCuratorEndpoints:
         assert r.status_code == 200 and r.json()["paused"] is False
 
 
-class TestPortalEndpoint:
-    @pytest.fixture(autouse=True)
-    def _setup(self, _isolate_opencodon_home):
-        self.client, _ = _client()
-
-    def test_status_shape(self):
-        r = self.client.get("/api/portal")
-        assert r.status_code == 200
-        body = r.json()
-        assert {"logged_in", "features", "subscription_url", "provider"} <= set(body)
-        assert isinstance(body["features"], list)
 
 
 class TestSessionManagementEndpoints:

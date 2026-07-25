@@ -721,7 +721,6 @@ from opencodon_cli import __version__, __release_date__
 from opencodon_cli.model_setup_flows import (
     _prompt_auth_credentials_choice,
     _model_flow_openrouter,
-    _model_flow_nous,
     _model_flow_openai_codex,
     _model_flow_xai_oauth,
     _model_flow_qwen_oauth,
@@ -968,7 +967,7 @@ def _has_any_provider_configured() -> bool:
     except Exception:
         pass
 
-    # Check for Nous Portal OAuth credentials
+    # Check for stored OAuth credentials
     auth_file = get_opencodon_home() / "auth.json"
     if auth_file.exists():
         try:
@@ -3273,8 +3272,6 @@ def select_provider_and_model(args=None):
         _model_flow_openrouter(config, current_model)
     elif selected_provider == "moa":
         _model_flow_moa(config, current_model)
-    elif selected_provider == "nous":
-        _model_flow_nous(config, current_model, args=args)
     elif selected_provider == "openai-codex":
         _model_flow_openai_codex(config, current_model)
     elif selected_provider == "xai-oauth":
@@ -3533,8 +3530,8 @@ def _aux_config_menu() -> None:
         print()
         print("  Side tasks (vision, compression, web extraction, etc.) default")
         print('  to your main chat model.  "auto" means "use my main model" —')
-        print("  Hermes only falls back to a lightweight backend (OpenRouter,")
-        print("  Nous Portal) if the main model is unavailable.  Override a")
+        print("  The agent only falls back to a lightweight backend")
+        print("  (e.g. OpenRouter) if the main model is unavailable.  Override a")
         print("  task below if you want it pinned to a specific provider/model.")
         print()
 
@@ -12701,8 +12698,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     print()
     print("  How do you want to authenticate the dashboard?")
     print("    [1] Username & password (quickest; for a trusted LAN / VPN)")
-    print("    [2] OAuth via Nous Portal (run `hermes dashboard register`)")
-    print("    [3] Cancel")
+    print("    [2] Cancel")
     print()
 
     try:
@@ -12710,19 +12706,6 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     except (EOFError, KeyboardInterrupt):
         print("\n  Cancelled.")
         sys.exit(1)
-
-    if choice == "2":
-        print()
-        print(
-            "  Run this on the host where the dashboard lives, then start "
-            "the dashboard again:\n"
-            "    hermes dashboard register\n"
-            "  It provisions a Nous Portal OAuth client and writes "
-            "OPENCODON_DASHBOARD_OAUTH_CLIENT_ID into ~/.opencodon/.env for you.\n"
-            "  Docs: https://hermes-agent.nousresearch.com/docs/"
-            "user-guide/features/web-dashboard#authentication-gated-mode"
-        )
-        sys.exit(0)
 
     if choice not in ("1",):
         print("  Cancelled.")
@@ -13153,7 +13136,7 @@ def cmd_dashboard(args):
         print(f"→ Using web dist from OPENCODON_WEB_DIST: {_dist_root}")
 
     # Discover and load plugins so any DashboardAuthProvider plugin
-    # (e.g. plugins/dashboard_auth/nous) registers BEFORE start_server's
+    # registers BEFORE start_server's
     # fail-closed gate check runs. The top-level argparse setup skips
     # plugin discovery for built-in subcommands like ``dashboard`` to
     # save ~500ms startup; we have to trigger it explicitly here because
@@ -13210,13 +13193,6 @@ def cmd_dashboard(args):
         ssh_session_token=_ssh_session_token,
         ssh_owner_nonce=_ssh_owner_nonce,
     )
-
-
-def cmd_dashboard_register(args):
-    """Register a self-hosted dashboard OAuth client with Nous Portal."""
-    from opencodon_cli.dashboard_register import cmd_dashboard_register as _impl
-
-    _impl(args)
 
 
 def cmd_gateway_enroll(args):
@@ -13282,7 +13258,7 @@ def _build_provider_choices() -> list[str]:
     except Exception:
         # Fallback: static list guarantees the CLI always works
         return [
-            "auto", "openrouter", "nous", "openai-codex", "xai-oauth", "copilot-acp", "copilot",
+            "auto", "openrouter", "openai-codex", "xai-oauth", "copilot-acp", "copilot",
             "anthropic", "gemini", "vertex", "xai", "bedrock", "azure-foundry",
             "ollama-cloud", "huggingface", "zai", "kimi-coding", "kimi-coding-cn",
             "stepfun", "minimax", "minimax-cn", "kilocode", "novita", "xiaomi", "arcee",
@@ -14551,7 +14527,7 @@ def main():
         p.add_argument(
             "--provider",
             help="Only match sessions billed through this provider "
-            "(e.g. openrouter, anthropic, nous)",
+            "(e.g. openrouter, anthropic)",
         )
         p.add_argument(
             "--user", help="Only match sessions from this user ID"
@@ -15690,7 +15666,6 @@ def main():
     build_dashboard_parser(
         subparsers,
         cmd_dashboard=cmd_dashboard,
-        cmd_dashboard_register=cmd_dashboard_register,
     )
 
 

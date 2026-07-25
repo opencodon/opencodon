@@ -84,9 +84,7 @@ def _add_server_runtime_args(parser) -> None:
     )
 
 
-def build_dashboard_parser(
-    subparsers, *, cmd_dashboard: Callable, cmd_dashboard_register: Callable
-) -> None:
+def build_dashboard_parser(subparsers, *, cmd_dashboard: Callable) -> None:
     """Attach the ``dashboard`` and ``serve`` subcommands.
 
     Both share the same backend (``cmd_dashboard`` → ``start_server``).
@@ -173,42 +171,3 @@ def build_dashboard_parser(
     # client with Nous Portal and write the client_id into ~/.opencodon/.env.
     # Nested subparser so bare `hermes dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
-    dashboard_subparsers = dashboard_parser.add_subparsers(
-        dest="dashboard_subcommand"
-    )
-    dashboard_register_parser = dashboard_subparsers.add_parser(
-        "register",
-        help="Register a self-hosted dashboard with Nous Portal (writes the OAuth client ID to .env)",
-        description=(
-            "Register this install as a self-hosted dashboard with your Nous "
-            "Portal account. Creates an OAuth client, writes "
-            "OPENCODON_DASHBOARD_OAUTH_CLIENT_ID into ~/.opencodon/.env, and prints "
-            "how to engage the login gate. Requires being logged in (hermes setup)."
-        ),
-    )
-    dashboard_register_parser.add_argument(
-        "--name",
-        default=None,
-        help="Human-readable label for the dashboard (default: an auto-generated name)",
-    )
-    dashboard_register_parser.add_argument(
-        "--redirect-uri",
-        dest="redirect_uri",
-        default=None,
-        help=(
-            "Optional public HTTPS OAuth redirect URI for the dashboard, e.g. "
-            "https://hermes.example.com/auth/callback. Omit for localhost-only use."
-        ),
-    )
-    dashboard_register_parser.add_argument(
-        "--portal-url",
-        dest="portal_url",
-        default=None,
-        help=(
-            "Override the Nous Portal base URL for registration (default: the "
-            "portal you logged into). The access token must be valid at this "
-            "portal. Also settable via OPENCODON_DASHBOARD_PORTAL_URL. Mainly for "
-            "testing against a staging/preview portal."
-        ),
-    )
-    dashboard_register_parser.set_defaults(func=cmd_dashboard_register)

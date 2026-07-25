@@ -35,7 +35,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
     """Browser Use (https://browser-use.com) cloud browser backend.
 
     Dual auth: prefers a direct BROWSER_USE_API_KEY when set, falling back
-    to the managed Nous tool gateway when ``tool_gateway.browser`` config
+    to the managed tool gateway when ``tool_gateway.browser`` config
     routes through it. Setting ``tool_gateway.browser: gateway`` flips the
     order so managed billing wins even when BROWSER_USE_API_KEY is present.
     """

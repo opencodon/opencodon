@@ -1208,7 +1208,6 @@ export const api = {
     fetchJSON<ActionResponse>("/api/curator/run", { method: "POST" }),
 
   // ── Admin: Portal ───────────────────────────────────────────────────
-  getPortal: () => fetchJSON<PortalStatus>("/api/portal"),
 
   // ── Admin: Diagnostics (backgrounded) ───────────────────────────────
   runPromptSize: () =>
@@ -1742,20 +1741,6 @@ export interface CuratorStatus {
   min_idle_hours: number | null;
   stale_after_days: number | null;
   archive_after_days: number | null;
-}
-
-export interface PortalFeature {
-  label: string;
-  state: string;
-}
-
-export interface PortalStatus {
-  logged_in: boolean;
-  portal_url: string | null;
-  inference_url: string | null;
-  provider: string;
-  subscription_url: string;
-  features: PortalFeature[];
 }
 
 export interface CheckpointSession {

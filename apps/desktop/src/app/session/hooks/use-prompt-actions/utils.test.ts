@@ -206,25 +206,6 @@ describe('renderRpcResult', () => {
         'Usage: 12 calls · 1,234,567 in / 89,012 out · 1,323,579 total'
       )
     })
-
-    it('appends credits_lines when present', () => {
-      const body = renderRpcResult(
-        {
-          calls: 1,
-          input: 10,
-          output: 20,
-          total: 30,
-          credits_lines: ['Nous credits: 8,420 remaining', 'Resets: 2026-08-01']
-        },
-        'usage'
-      )
-
-      expect(body.split('\n')).toEqual([
-        'Usage: 1 calls · 10 in / 20 out · 30 total',
-        'Nous credits: 8,420 remaining',
-        'Resets: 2026-08-01'
-      ])
-    })
   })
 
   describe('agents.list', () => {

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
 
-This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
-``_PROVIDER_MODELS["nous"]``) and writes them to a JSON manifest that the
-Hermes CLI fetches at runtime. Publishing the catalog through the docs site
-lets maintainers update model lists without shipping a Hermes release.
+This script reads the in-repo hardcoded curated list (``OPENROUTER_MODELS``)
+and writes it to a JSON manifest that the CLI fetches at runtime. Publishing
+the catalog lets maintainers update model lists without shipping a release.
 
 The runtime fetcher falls back to the same in-repo hardcoded lists if the
 manifest is unreachable, so this script is a convenience for keeping the
@@ -16,8 +15,8 @@ Usage::
 
 Output: ``catalog/model-catalog.json``
 
-Live URL (after ``deploy-site.yml`` runs on merge to main):
-``https://hermes-agent.nousresearch.com/docs/api/model-catalog.json``
+Live URL (raw GitHub, served straight from ``main``):
+``https://raw.githubusercontent.com/opencodon/opencodon/main/catalog/model-catalog.json``
 """
 
 from __future__ import annotations
@@ -36,7 +35,6 @@ os.environ.setdefault("OPENCODON_HOME", os.path.join(os.path.expanduser("~"), ".
 from opencodon_cli.models import (  # noqa: E402
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
-    _PROVIDER_MODELS,
 )
 
 OUTPUT_PATH = os.path.join(REPO_ROOT, "catalog", "model-catalog.json")
@@ -51,20 +49,13 @@ def _openrouter_entry(mid: str, desc: str) -> dict:
     return entry
 
 
-def _nous_entry(mid: str) -> dict:
-    entry: dict = {"id": mid}
-    if mid == PREFERRED_SILENT_DEFAULT_MODEL:
-        entry["default"] = True
-    return entry
-
-
 def build_catalog() -> dict:
     return {
         "version": CATALOG_VERSION,
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metadata": {
-            "source": "hermes-agent repo",
-            "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog",
+            "source": "opencodon repo",
+            "docs": "https://github.com/opencodon/opencodon/blob/main/docs/reference/model-catalog.md",
         },
         "providers": {
             "openrouter": {
@@ -80,21 +71,6 @@ def build_catalog() -> dict:
                 "models": [
                     _openrouter_entry(mid, desc)
                     for mid, desc in OPENROUTER_MODELS
-                ],
-            },
-            "nous": {
-                "metadata": {
-                    "display_name": "Nous Portal",
-                    "note": (
-                        "Free-tier gating is determined live via Portal pricing "
-                        "(partition_nous_models_by_tier), not this manifest. "
-                        'The entry labeled "default": true is the model Hermes '
-                        "silently lands on when the user never picked one."
-                    ),
-                },
-                "models": [
-                    _nous_entry(mid)
-                    for mid in _PROVIDER_MODELS.get("nous", [])
                 ],
             },
         },
