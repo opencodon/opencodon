@@ -79,10 +79,10 @@ class TestEnvFileReadBlocking:
             error = get_read_block_error(path)
             assert error is None, f"{path} should be allowed"
 
-    def test_allowed_hermes_env(self):
-        """Hermes' own .env inside OPENCODON_HOME is NOT blocked by this rule
+    def test_allowed_opencodon_env(self):
+        """opencodon' own .env inside OPENCODON_HOME is NOT blocked by this rule
         (it's handled by other mechanisms). Only project-local .env is blocked."""
-        # Note: hermes internal .env is in ~/.opencodon/.env which is NOT a project-local
+        # Note: opencodon internal .env is in ~/.opencodon/.env which is NOT a project-local
         # path, but the basename check applies to ANY .env. This is intentional —
         # even ~/.opencodon/.env should not be readable via read_file.
         error = get_read_block_error(os.path.expanduser("~/.opencodon/.env"))
@@ -100,7 +100,7 @@ class TestEnvFileReadBlocking:
 
 
 class TestCacheFileReadBlocking:
-    """Internal Hermes cache files must remain blocked."""
+    """Internal opencodon cache files must remain blocked."""
 
     def test_hub_index_cache_blocked(self, tmp_path):
         """Hub index-cache reads are blocked."""
@@ -112,7 +112,7 @@ class TestCacheFileReadBlocking:
         with patch("agent.file_safety._opencodon_home_path", return_value=opencodon_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal opencodon cache" in error
 
     def test_hub_directory_blocked(self, tmp_path):
         """Hub directory reads are blocked."""
@@ -158,4 +158,4 @@ class TestCombinedGuards:
         with patch("agent.file_safety._opencodon_home_path", return_value=opencodon_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal opencodon cache" in error

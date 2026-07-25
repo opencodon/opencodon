@@ -1,4 +1,4 @@
-"""Markdown/QMD export helpers for Hermes sessions.
+"""Markdown/QMD export helpers for opencodon sessions.
 
 This module is intentionally filesystem-only: it formats already-exported
 SessionDB dictionaries and writes them to user-selected export directories. It
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-EXPORTER_VERSION = "hermes sessions export (md/qmd) v1"
+EXPORTER_VERSION = "opencodon sessions export (md/qmd) v1"
 _SHA_LINE_RE = re.compile(r"- SHA256 of exported body: `([0-9a-f]{64})`")
 
 

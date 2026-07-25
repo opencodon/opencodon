@@ -1,7 +1,7 @@
 """Tests for inventory._apply_pricing — the pricing/tier enrichment that
 
 feeds the desktop GUI model picker (and onboarding) so it can show $/Mtok
-columns and Free/Pro badges, the same way the `hermes model` CLI picker does.
+columns and Free/Pro badges, the same way the `opencodon model` CLI picker does.
 """
 
 import opencodon_cli.inventory as inv

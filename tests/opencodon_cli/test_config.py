@@ -31,7 +31,7 @@ from opencodon_cli.config import (
 )
 
 
-class TestGetHermesHome:
+class TestGetOpencodonHome:
     def test_default_path(self):
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("OPENCODON_HOME", None)
@@ -44,7 +44,7 @@ class TestGetHermesHome:
             assert home == Path("/custom/path")
 
 
-class TestEnsureHermesHome:
+class TestEnsureOpencodonHome:
     def test_creates_subdirs(self, tmp_path):
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
             ensure_opencodon_home()
@@ -135,7 +135,7 @@ class TestLoadConfigParseFailure:
     Before issue #23570 this was a single ``print(...)`` that scrolled past
     on the first invocation — users saw aux-fallback misbehavior with no clue
     their config.yaml was being ignored. The helper must:
-      * log at WARNING (so ``hermes logs`` surfaces it)
+      * log at WARNING (so ``opencodon logs`` surfaces it)
       * also write to stderr (so it's visible at startup even before
         ``setup_logging()`` has wired up file handlers)
       * dedup on (path, mtime_ns, size) so concurrent loads don't spam
@@ -166,9 +166,9 @@ class TestLoadConfigParseFailure:
             ), f"expected WARNING log, got: {[r.message for r in caplog.records]}"
 
             # stderr also got a user-visible message (with the ⚠️ marker so it
-            # stands out at hermes startup before logging is configured)
+            # stands out at opencodon startup before logging is configured)
             captured = capsys.readouterr()
-            assert "hermes config:" in captured.err
+            assert "opencodon config:" in captured.err
             assert str(tmp_path / "config.yaml") in captured.err
 
     def test_dedup_on_repeated_load_same_file(self, tmp_path, capsys):
@@ -180,7 +180,7 @@ class TestLoadConfigParseFailure:
 
             load_config()
             first = capsys.readouterr().err
-            assert "hermes config:" in first
+            assert "opencodon config:" in first
 
             load_config()
             second = capsys.readouterr().err
@@ -201,7 +201,7 @@ class TestLoadConfigParseFailure:
             (tmp_path / "config.yaml").write_text("\tstill broken differently:\n")
             load_config()
             after_edit = capsys.readouterr().err
-            assert "hermes config:" in after_edit, "edited file should re-warn"
+            assert "opencodon config:" in after_edit, "edited file should re-warn"
 
     def test_corrupt_config_is_backed_up(self, tmp_path, capsys):
         """A broken config.yaml is snapshotted to a timestamped .bak so the
@@ -618,7 +618,7 @@ class TestSaveEnvValueSecure:
         import subprocess
         from dotenv import dotenv_values
 
-        path = "/Users/paulo/Library/Application Support/hermes/keys/id_ed25519"
+        path = "/Users/paulo/Library/Application Support/opencodon/keys/id_ed25519"
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}, clear=False):
             os.environ.pop("TERMINAL_SSH_KEY", None)
             save_env_value("TERMINAL_SSH_KEY", path)
@@ -698,7 +698,7 @@ class TestSaveEnvValueSecure:
             assert f'TERMINAL_SSH_KEY="{path}"' in first
 
     def test_save_env_value_readback_resave_is_idempotent(self, tmp_path):
-        """hermes setup path: dotenv unquotes, then re-save must not grow quotes."""
+        """opencodon setup path: dotenv unquotes, then re-save must not grow quotes."""
         from dotenv import dotenv_values
 
         path = "/Users/me/Application Support/key"
@@ -1113,7 +1113,7 @@ class TestOptionalEnvVarsRegistry:
     def test_max_iterations_not_offered_as_env_var(self):
         """OPENCODON_MAX_ITERATIONS must NOT be in OPTIONAL_ENV_VARS (issue #17534).
 
-        Offering it as an editable env var (dashboard, `hermes setup`) lets a
+        Offering it as an editable env var (dashboard, `opencodon setup`) lets a
         user write it to .env, recreating the stale ghost that shadows
         config.yaml's agent.max_turns. The iteration budget is configured ONLY
         via config.yaml; OPENCODON_MAX_ITERATIONS remains a read-only backward-compat
@@ -1586,7 +1586,7 @@ class TestEnvWriteDenylist:
     the session token lives in the SPA's HTML where any future plugin
     XSS or local process could exfiltrate it). Without this gate, an
     attacker who steals the token could plant
-    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next Hermes
+    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next opencodon
     process on next startup via the dotenv → ``os.environ`` chain in
     ``opencodon_cli/env_loader.py``.
 
@@ -1644,7 +1644,7 @@ class TestEnvWriteDenylist:
             "OPENCODON_MAX_ITERATIONS",
         ],
     )
-    def test_hermes_integration_keys_still_writable(self, allowed_key):
+    def test_opencodon_integration_keys_still_writable(self, allowed_key):
         """``OPENCODON_*`` overall is NOT blocked — only the four runtime
         location names (HOME/PROFILE/CONFIG/ENV) are. Integration
         credentials following the ``OPENCODON_*`` convention must keep
@@ -2204,13 +2204,13 @@ class TestCodexAppServerAutoConfig:
                 tmp_path,
                 "_config_version: 31\n"
                 "compression:\n"
-                "  codex_app_server_auto: hermes\n",
+                "  codex_app_server_auto: opencodon\n",
             )
 
             migrate_config(interactive=False, quiet=True)
 
             raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["compression"]["codex_app_server_auto"] == "hermes"
+            assert raw["compression"]["codex_app_server_auto"] == "opencodon"
 
 
 class TestIsProviderEnabled:

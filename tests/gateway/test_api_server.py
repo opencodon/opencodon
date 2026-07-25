@@ -30,7 +30,7 @@ from gateway.platforms.api_server import (
     ResponseStore,
     _IdempotencyCache,
     _derive_chat_session_id,
-    _hermes_version,
+    _opencodon_version,
     _redact_api_error_text,
     check_api_server_requirements,
     cors_middleware,
@@ -780,13 +780,13 @@ class TestHealthEndpoint:
     def test_health_version_prefers_runtime_source_over_stale_metadata(self):
         """Editable installs can leave importlib.metadata at an older release.
 
-        The health endpoint must report the running Hermes source version, not
-        stale ``hermes_agent-*.dist-info`` metadata from before a source update.
+        The health endpoint must report the running opencodon source version, not
+        stale ``opencodon_agent-*.dist-info`` metadata from before a source update.
         """
         from opencodon_cli import __version__
 
         with patch("importlib.metadata.version", return_value="0.18.0"):
-            assert _hermes_version() == __version__
+            assert _opencodon_version() == __version__
 
     @pytest.mark.asyncio
     async def test_health_endpoint_prefers_runtime_version_over_stale_metadata(self, adapter):
@@ -954,7 +954,7 @@ class TestHealthDetailedEndpoint:
 
 class TestModelsEndpoint:
     @pytest.mark.asyncio
-    async def test_models_returns_hermes_agent(self, adapter):
+    async def test_models_returns_opencodon_agent(self, adapter):
         app = _create_app(adapter)
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.get("/v1/models")
@@ -963,7 +963,7 @@ class TestModelsEndpoint:
             assert data["object"] == "list"
             assert len(data["data"]) == 1
             assert data["data"][0]["id"] == "opencodon"
-            assert data["data"][0]["owned_by"] == "hermes"
+            assert data["data"][0]["owned_by"] == "opencodon"
 
     @pytest.mark.asyncio
     async def test_models_returns_profile_name(self):
@@ -990,7 +990,7 @@ class TestModelsEndpoint:
         assert APIServerAdapter._resolve_model_name("my-bot") == "my-bot"
 
     def test_resolve_model_name_default_profile(self):
-        """Default profile falls back to 'hermes-agent'."""
+        """Default profile falls back to 'opencodon'."""
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="default"):
             assert APIServerAdapter._resolve_model_name("") == "opencodon"
 
@@ -1030,7 +1030,7 @@ class TestCapabilitiesEndpoint:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["object"] == "hermes.api_server.capabilities"
+            assert data["object"] == "opencodon.api_server.capabilities"
             assert data["platform"] == "opencodon"
             assert data["model"] == "opencodon"
             assert data["auth"]["type"] == "bearer"
@@ -1482,7 +1482,7 @@ class TestChatCompletionsEndpoint:
                 # Tool progress must appear as a custom SSE event, not in
                 # delta.content — prevents model from learning to imitate
                 # markers instead of calling tools (#6972).
-                assert "event: hermes.tool.progress" in body
+                assert "event: opencodon.tool.progress" in body
                 assert '"tool": "terminal"' in body
                 # ``label`` is now derived by ``build_tool_preview`` from the
                 # tool args rather than passed by the caller, so we assert
@@ -1541,7 +1541,7 @@ class TestChatCompletionsEndpoint:
                 assert "some internal state" not in body
                 assert "call_internal_1" not in body
                 # Real tool progress should appear as custom SSE event
-                assert "event: hermes.tool.progress" in body
+                assert "event: opencodon.tool.progress" in body
                 assert '"tool": "web_search"' in body
                 # Label is derived from the args dict by build_tool_preview;
                 # asserting on the structural fact (label exists, call id
@@ -1555,14 +1555,14 @@ class TestChatCompletionsEndpoint:
         """Regression for #16588.
 
         ``/v1/chat/completions`` streaming previously emitted only a
-        ``tool.started``-style ``hermes.tool.progress`` event; clients
+        ``tool.started``-style ``opencodon.tool.progress`` event; clients
         rendering tool lifecycle UI had no way to mark a tool as finished
         because no matching ``status: completed`` event was emitted, and
         no ``toolCallId`` was carried for correlation.
 
         The fix adds ``tool_start_callback`` / ``tool_complete_callback``
         to the chat completions agent invocation and writes both halves
-        of the lifecycle pair on the same ``event: hermes.tool.progress``
+        of the lifecycle pair on the same ``event: opencodon.tool.progress``
         SSE line, with stable ``toolCallId`` and ``status``.
         """
         import asyncio
@@ -1608,7 +1608,7 @@ class TestChatCompletionsEndpoint:
             pairs: list[tuple[str | None, str | None]] = []
             lines = body.splitlines()
             for i, line in enumerate(lines):
-                if line.strip() != "event: hermes.tool.progress":
+                if line.strip() != "event: opencodon.tool.progress":
                     continue
                 for follow in lines[i + 1: i + 4]:
                     if follow.startswith("data: "):
@@ -3671,7 +3671,7 @@ class TestChatCompletionsAgentIncomplete:
     @pytest.mark.asyncio
     async def test_truncation_with_partial_text_uses_length_finish_reason(self, adapter):
         """Partial text + truncation marker → finish_reason='length', 200 OK,
-        plus hermes extras + headers."""
+        plus opencodon extras + headers."""
         mock_result = {
             "final_response": "Here is part one of the answer",
             "completed": False,
@@ -3692,11 +3692,11 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "length"
             assert data["choices"][0]["message"]["content"] == "Here is part one of the answer"
-            assert data["hermes"]["partial"] is True
-            assert data["hermes"]["completed"] is False
-            assert data["hermes"]["error_code"] == "output_truncated"
-            assert resp.headers.get("X-Hermes-Completed") == "false"
-            assert resp.headers.get("X-Hermes-Partial") == "true"
+            assert data["opencodon"]["partial"] is True
+            assert data["opencodon"]["completed"] is False
+            assert data["opencodon"]["error_code"] == "output_truncated"
+            assert resp.headers.get("X-opencodon-Completed") == "false"
+            assert resp.headers.get("X-opencodon-Partial") == "true"
 
     @pytest.mark.asyncio
     async def test_hard_failure_redacts_secret_like_error_text(self, adapter):
@@ -3723,9 +3723,9 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             body = json.dumps(data)
             assert raw_secret not in body
-            assert raw_secret not in resp.headers.get("X-Hermes-Error", "")
+            assert raw_secret not in resp.headers.get("X-opencodon-Error", "")
             assert "OPENAI_API_KEY=" in body
-            assert data["error"]["hermes"]["failed"] is True
+            assert data["error"]["opencodon"]["failed"] is True
 
     @pytest.mark.asyncio
     async def test_failure_with_no_text_returns_502_error_envelope(self, adapter):
@@ -3757,14 +3757,14 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             assert data["error"]["code"] == "agent_incomplete"
             assert "truncated" in data["error"]["message"].lower()
-            assert data["error"]["hermes"]["partial"] is True
-            assert data["error"]["hermes"]["failed"] is True
-            assert resp.headers.get("X-Hermes-Completed") == "false"
+            assert data["error"]["opencodon"]["partial"] is True
+            assert data["error"]["opencodon"]["failed"] is True
+            assert resp.headers.get("X-opencodon-Completed") == "false"
 
     @pytest.mark.asyncio
     async def test_normal_completion_unchanged(self, adapter):
         """Sanity: a completed-True result still returns finish_reason='stop'
-        and no hermes extras (preserves the existing happy-path contract)."""
+        and no opencodon extras (preserves the existing happy-path contract)."""
         mock_result = {
             "final_response": "All good.",
             "completed": True,
@@ -3785,8 +3785,8 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "stop"
             assert data["choices"][0]["message"]["content"] == "All good."
-            assert "hermes" not in data
-            assert "X-Hermes-Completed" not in resp.headers
+            assert "opencodon" not in data
+            assert "X-opencodon-Completed" not in resp.headers
 
 
 # ---------------------------------------------------------------------------

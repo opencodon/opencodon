@@ -1,4 +1,4 @@
-"""Tests for `hermes chat --safe-mode` isolation."""
+"""Tests for `opencodon chat --safe-mode` isolation."""
 
 from __future__ import annotations
 

@@ -366,9 +366,9 @@ class ComputeHost:
             except Exception:
                 pass
             try:
-                import hermes_undo
+                import opencodon_undo
 
-                hermes_undo.on_user_message_appended(session["session_key"])
+                opencodon_undo.on_user_message_appended(session["session_key"])
             except Exception:
                 pass
             try:

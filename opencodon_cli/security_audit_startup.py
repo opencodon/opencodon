@@ -28,7 +28,7 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-logger = logging.getLogger("hermes.security_audit")
+logger = logging.getLogger("opencodon.security_audit")
 
 # Sentinel so the audit only runs once per process even if both the CLI and
 # gateway startup paths call it.
@@ -52,7 +52,7 @@ def _running_as_root() -> Optional[str]:
     return (
         "Running as ROOT. The agent's terminal/file tools execute with full "
         "root privileges — a single prompt-injection or exposed endpoint is a "
-        "full host compromise. Run Hermes as an unprivileged user (or in a "
+        "full host compromise. Run opencodon as an unprivileged user (or in a "
         "sandboxed terminal backend / container with a non-root user)."
     )
 

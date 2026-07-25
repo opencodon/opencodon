@@ -11,7 +11,7 @@ from opencodon_cli.proxy.adapters.base import UpstreamAdapter
 from opencodon_cli.proxy.adapters.xai import XAIGrokAdapter
 
 # Registry of available adapter classes keyed by provider name as used on
-# the ``hermes proxy start --provider <name>`` CLI flag.
+# the ``opencodon proxy start --provider <name>`` CLI flag.
 ADAPTERS: Dict[str, Type[UpstreamAdapter]] = {
     "xai": XAIGrokAdapter,
 }

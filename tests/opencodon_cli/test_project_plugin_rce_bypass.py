@@ -354,7 +354,7 @@ class TestEndToEndPocBlocked:
         for call in spec.call_args_list:
             module_name = call.args[0]
             target = Path(call.args[1])
-            assert module_name != "hermes_dashboard_plugin_evil"
+            assert module_name != "opencodon_dashboard_plugin_evil"
             assert target != payload_py
             assert "evil-repo" not in target.parts
-        assert "hermes_dashboard_plugin_evil" not in sys.modules
+        assert "opencodon_dashboard_plugin_evil" not in sys.modules

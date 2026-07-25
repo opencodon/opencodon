@@ -3,7 +3,7 @@
 Regression for #34536: the POSIX installer drops node/npm/npx symlinks in
 ~/.local/bin pointing into $OPENCODON_HOME/node and prepends ~/.local/bin to
 PATH, shadowing an existing nvm. Uninstall must remove those symlinks, but
-only when they still resolve into the Hermes-managed node dir.
+only when they still resolve into the opencodon-managed node dir.
 """
 
 import os
@@ -25,7 +25,7 @@ def fake_home(tmp_path, monkeypatch):
     return home
 
 
-def _make_hermes_node(opencodon_home: Path) -> Path:
+def _make_opencodon_node(opencodon_home: Path) -> Path:
     """Create a fake $OPENCODON_HOME/node/bin/{node,npm,npx} tree."""
     node_bin = opencodon_home / "node" / "bin"
     node_bin.mkdir(parents=True)
@@ -35,9 +35,9 @@ def _make_hermes_node(opencodon_home: Path) -> Path:
     return node_bin
 
 
-def test_removes_symlinks_pointing_into_hermes_node(fake_home):
+def test_removes_symlinks_pointing_into_opencodon_node(fake_home):
     opencodon_home = fake_home / ".opencodon"
-    node_bin = _make_hermes_node(opencodon_home)
+    node_bin = _make_opencodon_node(opencodon_home)
     local_bin = fake_home / ".local" / "bin"
 
     for name in ("node", "npm", "npx"):
@@ -54,7 +54,7 @@ def test_removes_symlinks_pointing_into_hermes_node(fake_home):
 def test_leaves_unrelated_symlinks_untouched(fake_home):
     """A node symlink the user repointed at nvm must survive uninstall."""
     opencodon_home = fake_home / ".opencodon"
-    _make_hermes_node(opencodon_home)
+    _make_opencodon_node(opencodon_home)
     local_bin = fake_home / ".local" / "bin"
 
     # Simulate nvm's node living elsewhere; user's ~/.local/bin/node -> nvm.
@@ -73,7 +73,7 @@ def test_leaves_unrelated_symlinks_untouched(fake_home):
 def test_leaves_real_binaries_untouched(fake_home):
     """A real (non-symlink) binary in ~/.local/bin is never deleted."""
     opencodon_home = fake_home / ".opencodon"
-    _make_hermes_node(opencodon_home)
+    _make_opencodon_node(opencodon_home)
     local_bin = fake_home / ".local" / "bin"
 
     real_node = local_bin / "node"
@@ -90,13 +90,13 @@ def test_leaves_real_binaries_untouched(fake_home):
 def test_handles_missing_local_bin(fake_home):
     """No symlinks present -> no-op, no error."""
     opencodon_home = fake_home / ".opencodon"
-    _make_hermes_node(opencodon_home)
+    _make_opencodon_node(opencodon_home)
 
     assert uninstall.remove_node_symlinks(opencodon_home) == []
 
 
-def test_removes_dangling_symlink_into_hermes_node(fake_home):
-    """A link into the Hermes node dir is removed even if the target file is
+def test_removes_dangling_symlink_into_opencodon_node(fake_home):
+    """A link into the opencodon node dir is removed even if the target file is
     already gone (dangling) \u2014 the link still shadows PATH."""
     opencodon_home = fake_home / ".opencodon"
     node_bin = opencodon_home / "node" / "bin"
@@ -114,12 +114,12 @@ def test_removes_dangling_symlink_into_hermes_node(fake_home):
 
 
 def test_only_some_links_present(fake_home):
-    """Removes the Hermes links that exist; ignores the ones that don't."""
+    """Removes the opencodon links that exist; ignores the ones that don't."""
     opencodon_home = fake_home / ".opencodon"
-    node_bin = _make_hermes_node(opencodon_home)
+    node_bin = _make_opencodon_node(opencodon_home)
     local_bin = fake_home / ".local" / "bin"
 
-    # Only npm and npx are Hermes-managed; node is a real user binary.
+    # Only npm and npx are opencodon-managed; node is a real user binary.
     (local_bin / "npm").symlink_to(node_bin / "npm")
     (local_bin / "npx").symlink_to(node_bin / "npx")
     (local_bin / "node").write_text("#!/bin/sh\n")
@@ -139,7 +139,7 @@ def test_removes_fhs_symlinks_in_usr_local_bin(fake_home, tmp_path, monkeypatch)
     in for /usr/local/bin so the test doesn't need real root privileges.
     """
     opencodon_home = fake_home / ".opencodon"
-    node_bin = _make_hermes_node(opencodon_home)
+    node_bin = _make_opencodon_node(opencodon_home)
 
     # Fake /usr/local/bin as a temp dir with our symlinks.
     fhs_bin = tmp_path / "usr_local_bin"

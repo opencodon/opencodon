@@ -100,7 +100,7 @@ def _discord_request(
         headers={
             "Authorization": f"Bot {token}",
             "Content-Type": "application/json",
-            "User-Agent": "Hermes-Agent (https://github.com/opencodon/opencodon)",
+            "User-Agent": "opencodon-Agent (https://github.com/opencodon/opencodon)",
         },
     )
 

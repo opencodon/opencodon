@@ -1,7 +1,7 @@
-"""Science layer — reproducibility tables and accessors for hermes-agent.
+"""Science layer — reproducibility tables and accessors for opencodon.
 
 This package owns the execution/provenance data model described in
-``implementation-design.md`` (the frame architecture ported onto hermes):
+``implementation-design.md`` (the frame architecture ported onto opencodon):
 
 - ``science.schema`` — DDL for the six science tables that live in state.db
 - ``science.store`` — typed accessors (``ScienceStore``) over those tables

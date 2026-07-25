@@ -220,7 +220,7 @@ def test_zero_user_provenance_survives_iterative_compaction(compressor):
 def test_compress_context_todo_snapshot_stays_synthetic_across_two_boundaries(
     tmp_path, monkeypatch
 ):
-    opencodon_home = tmp_path / "hermes-home"
+    opencodon_home = tmp_path / "opencodon-home"
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "zero-user-todo-lifecycle"

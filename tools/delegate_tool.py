@@ -1623,10 +1623,10 @@ def _spill_summary_to_file(task_index: int, summary: str) -> Optional[str]:
     the trimmed head+tail is still returned to the parent regardless).
     """
     try:
-        from opencodon_constants import get_hermes_dir
+        from opencodon_constants import get_opencodon_dir
         import datetime as _dt
 
-        cache_dir = get_hermes_dir("cache/delegation", "delegation_cache")
+        cache_dir = get_opencodon_dir("cache/delegation", "delegation_cache")
         cache_dir.mkdir(parents=True, exist_ok=True)
         ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         path = cache_dir / f"subagent-summary-{task_index}-{ts}.txt"
@@ -2926,7 +2926,7 @@ def delegate_task(
                 _sync_result["note"] = (
                     "background=true is not available in this session — it cannot "
                     "receive a detached subagent result after the turn ends (a "
-                    "one-shot runner such as `hermes -z` or a cron job, or a "
+                    "one-shot runner such as `opencodon -z` or a cron job, or a "
                     "stateless HTTP endpoint). The subagent(s) ran SYNCHRONOUSLY "
                     "and the result is included above."
                 )
@@ -3269,7 +3269,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
     if not api_key:
         raise ValueError(
             f"Delegation provider '{configured_provider}' resolved but has no API key. "
-            f"Set the appropriate environment variable or run 'hermes auth'."
+            f"Set the appropriate environment variable or run 'opencodon auth'."
         )
 
     return {
@@ -3286,7 +3286,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
 
 def _load_config() -> dict:
-    """Load delegation config from the active Hermes config.
+    """Load delegation config from the active opencodon config.
 
     Prefer the shared persistent loader because it follows the active
     OPENCODON_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
@@ -3299,7 +3299,7 @@ def _load_config() -> dict:
     rebuild via ``_get_max_concurrent_children``, so skipping the defensive
     deepcopy matters. Do NOT mutate the returned dict.
 
-    ``OPENCODON_IGNORE_USER_CONFIG=1`` (``hermes chat --ignore-user-config``) is
+    ``OPENCODON_IGNORE_USER_CONFIG=1`` (``opencodon chat --ignore-user-config``) is
     only honored by the legacy ``cli`` loader, not the shared one, so when the
     flag is set we keep ``cli.CLI_CONFIG`` authoritative to preserve the
     flag's contract of suppressing user config.yaml settings.

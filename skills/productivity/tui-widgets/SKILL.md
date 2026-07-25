@@ -1,18 +1,18 @@
 ---
 name: tui-widgets
-description: Author live widget apps for the Hermes TUI dock.
+description: Author live widget apps for the opencodon TUI dock.
 version: 1.0.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 metadata:
-  hermes:
+  opencodon:
     tags: [tui, widgets, sdk, ui]
     category: productivity
 ---
 
 # TUI Widgets Skill
 
-Author widget apps for the Hermes TUI (`hermes --tui`): glanceable ambient
+Author widget apps for the opencodon TUI (`opencodon --tui`): glanceable ambient
 panels docked above the status bar, or modal overlays that own the keyboard.
 Widgets are plain ESM files the TUI loads at startup — no build step, no
 repo changes. This skill does not cover desktop-app or web-dashboard
@@ -27,7 +27,7 @@ widgets.
 
 ## Prerequisites
 
-- The TUI must be in use (`hermes --tui`). Widgets do not render in the
+- The TUI must be in use (`opencodon --tui`). Widgets do not render in the
   classic CLI or messaging platforms.
 - Network-backed widgets need whatever credentials their API needs; fetch
   failures must land as an error phase, never a crash.

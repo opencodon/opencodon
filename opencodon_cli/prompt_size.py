@@ -1,4 +1,4 @@
-"""Prompt-size diagnostic: ``hermes prompt-size``.
+"""Prompt-size diagnostic: ``opencodon prompt-size``.
 
 Reports a byte/char breakdown of the system prompt the agent would build for
 a fresh session — system prompt total, the ``<available_skills>`` index,
@@ -147,7 +147,7 @@ def render_breakdown(data: Dict[str, Any]) -> str:
 
 
 def cmd_prompt_size(args: Any) -> None:
-    """Entry point for ``hermes prompt-size``."""
+    """Entry point for ``opencodon prompt-size``."""
     platform = getattr(args, "platform", "cli") or "cli"
     as_json = getattr(args, "json", False)
     try:

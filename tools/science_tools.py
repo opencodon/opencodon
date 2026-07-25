@@ -8,7 +8,7 @@ checksum-verifies the result.
 
 The toolset ships disabled by default (enable the ``science`` toolset per
 platform) and ``run_code`` is additionally service-gated on the jupyter
-kernel stack being installed (``pip install 'hermes-agent[science]'``).
+kernel stack being installed (``pip install 'opencodon[science]'``).
 """
 
 import json

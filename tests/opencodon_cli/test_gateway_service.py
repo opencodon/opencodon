@@ -173,12 +173,12 @@ class TestSystemdServiceRefresh:
         assert markers == [321]
         output = capsys.readouterr().out
         assert "still stopping after 90s" in output
-        assert "hermes gateway status" in output
+        assert "opencodon gateway status" in output
 
     def test_systemd_restart_timeout_prints_status_guidance(self, monkeypatch, capsys):
-        """`hermes gateway restart` must not surface a raw TimeoutExpired traceback.
+        """`opencodon gateway restart` must not surface a raw TimeoutExpired traceback.
 
-        The dashboard spawns `hermes gateway restart` in the background; when a
+        The dashboard spawns `opencodon gateway restart` in the background; when a
         wedged adapter websocket pushes drain past the 90s CLI timeout, the
         dashboard would previously show a Python traceback (issue #19937
         follow-up: the same failure mode applies to restart, not just stop).
@@ -212,12 +212,12 @@ class TestSystemdServiceRefresh:
 
         output = capsys.readouterr().out
         assert "still restarting after 90s" in output
-        assert "hermes gateway status" in output
+        assert "opencodon gateway status" in output
 
     def test_run_gateway_refreshes_outdated_unit_on_boot(self, tmp_path, monkeypatch):
         """run_gateway() should refresh the systemd unit on boot so that
         restart settings take effect even when the process was respawned
-        via exit-code-75 (bypassing `hermes gateway restart`)."""
+        via exit-code-75 (bypassing `opencodon gateway restart`)."""
         unit_path = tmp_path / "opencodon-gateway.service"
         unit_path.write_text("old unit\n", encoding="utf-8")
 
@@ -254,7 +254,7 @@ class TestSystemdServiceRefresh:
         ``Environment=`` line. Without this guard, any test that drives
         ``run_gateway()`` end-to-end on a real Linux dev box silently
         rewrites the developer's installed gateway unit with a
-        ``/tmp/pytest-of-.../hermes_test`` OPENCODON_HOME — silently breaking
+        ``/tmp/pytest-of-.../opencodon_test`` OPENCODON_HOME — silently breaking
         their gateway on the next boot. The guard sniffs the generated
         unit body for tmpdir markers and refuses the write. Tests that
         legitimately exercise the refresh flow patch
@@ -271,7 +271,7 @@ class TestSystemdServiceRefresh:
         polluted_unit = (
             "[Service]\n"
             'Environment="OPENCODON_HOME=/tmp/pytest-of-alice/pytest-42/'
-            'popen-gw0/test_x/hermes_test"\n'
+            'popen-gw0/test_x/opencodon_test"\n'
         )
         monkeypatch.setattr(
             gateway_cli,
@@ -302,9 +302,9 @@ class TestSystemdServiceRefresh:
         self, tmp_path, monkeypatch
     ):
         """Structural guard: a manual E2E OPENCODON_HOME like
-        ``/tmp/hermes-e2e-41264`` carries none of the pytest markers but
+        ``/tmp/opencodon-e2e-41264`` carries none of the pytest markers but
         poisons the unit identically (seen live 2026-06-11 — an E2E probe ran
-        ``hermes gateway restart`` with a /tmp OPENCODON_HOME exported; the
+        ``opencodon gateway restart`` with a /tmp OPENCODON_HOME exported; the
         restart's unit refresh baked it into the production unit and the
         post-update restart produced a 7-hour zombie gateway). The refresh
         must refuse ANY temp-dir OPENCODON_HOME, not just pytest-shaped ones.
@@ -317,8 +317,8 @@ class TestSystemdServiceRefresh:
         )
         polluted_unit = (
             "[Service]\n"
-            'Environment="OPENCODON_HOME=/tmp/hermes-e2e-41264"\n'
-            "WorkingDirectory=/tmp/hermes-e2e-41264\n"
+            'Environment="OPENCODON_HOME=/tmp/opencodon-e2e-41264"\n'
+            "WorkingDirectory=/tmp/opencodon-e2e-41264\n"
         )
         monkeypatch.setattr(
             gateway_cli,
@@ -349,31 +349,31 @@ class TestTempHomeServiceDefinitionGuard:
     """_temp_home_in_service_definition() — structural temp-dir detection."""
 
     def test_detects_tmp_home_in_systemd_unit(self):
-        unit = '[Service]\nEnvironment="OPENCODON_HOME=/tmp/hermes-e2e-41264"\n'
+        unit = '[Service]\nEnvironment="OPENCODON_HOME=/tmp/opencodon-e2e-41264"\n'
         assert (
             gateway_cli._temp_home_in_service_definition(unit)
-            == "/tmp/hermes-e2e-41264"
+            == "/tmp/opencodon-e2e-41264"
         )
 
     def test_detects_var_tmp_home(self):
-        unit = '[Service]\nEnvironment="OPENCODON_HOME=/var/tmp/hermes-x"\n'
+        unit = '[Service]\nEnvironment="OPENCODON_HOME=/var/tmp/opencodon-x"\n'
         assert gateway_cli._temp_home_in_service_definition(unit) is not None
 
     def test_detects_tempdir_env_home(self, monkeypatch, tmp_path):
         import tempfile as _tempfile
 
         monkeypatch.setattr(_tempfile, "gettempdir", lambda: str(tmp_path))
-        unit = f'[Service]\nEnvironment="OPENCODON_HOME={tmp_path}/hermes-home"\n'
+        unit = f'[Service]\nEnvironment="OPENCODON_HOME={tmp_path}/opencodon-home"\n'
         assert gateway_cli._temp_home_in_service_definition(unit) is not None
 
     def test_detects_tmp_home_in_launchd_plist(self):
         plist = (
             "<dict>\n  <key>OPENCODON_HOME</key>\n"
-            "  <string>/tmp/hermes-e2e-99999</string>\n</dict>\n"
+            "  <string>/tmp/opencodon-e2e-99999</string>\n</dict>\n"
         )
         assert (
             gateway_cli._temp_home_in_service_definition(plist)
-            == "/tmp/hermes-e2e-99999"
+            == "/tmp/opencodon-e2e-99999"
         )
 
     def test_accepts_real_home(self):
@@ -409,7 +409,7 @@ class TestRequireServiceInstalled:
         assert exc_info.value.code == 1
         out = capsys.readouterr().out
         assert "not installed" in out
-        assert "hermes gateway install" in out
+        assert "opencodon gateway install" in out
 
     def test_passes_when_unit_exists(self, tmp_path, monkeypatch):
         unit_path = tmp_path / "opencodon-gateway.service"
@@ -1199,7 +1199,7 @@ class TestLaunchdServiceRecovery:
             gateway_cli._launchd_fallback_to_detached("test reason")
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "nohup hermes gateway run" in out
+        assert "nohup opencodon gateway run" in out
         # Marker is still written so status knows launchd is unavailable
         assert gateway_cli._launchd_unsupported_marker_exists()
 
@@ -1816,7 +1816,7 @@ class TestGatewaySystemServiceRouting:
 
         out = capsys.readouterr().out
         assert "not supported on Termux" in out
-        assert "Run manually: hermes gateway" in out
+        assert "Run manually: opencodon gateway" in out
 
     def test_gateway_status_prefers_system_service_when_only_system_unit_exists(self, monkeypatch):
         user_unit = SimpleNamespace(exists=lambda: False)
@@ -1889,7 +1889,7 @@ class TestGatewaySystemServiceRouting:
 
         out = capsys.readouterr().out
         assert "Gateway is not running" in out
-        assert "nohup hermes gateway" in out
+        assert "nohup opencodon gateway" in out
         assert "install as user service" not in out
 
     def test_gateway_restart_does_not_fallback_to_foreground_when_launchd_restart_fails(self, tmp_path, monkeypatch):
@@ -1980,7 +1980,7 @@ class TestDetectVenvDir:
         assert result is None
 
 
-class TestSystemUnitHermesHome:
+class TestSystemUnitOpencodonHome:
     """OPENCODON_HOME in system units must reference the target user, not root."""
 
     def test_system_unit_uses_target_user_home_not_calling_user(self, monkeypatch):
@@ -2022,7 +2022,7 @@ class TestSystemUnitHermesHome:
     def test_system_unit_preserves_custom_opencodon_home(self, monkeypatch):
         # Custom OPENCODON_HOME not under any user's home — keep as-is
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/root")))
-        monkeypatch.setenv("OPENCODON_HOME", "/opt/hermes-shared")
+        monkeypatch.setenv("OPENCODON_HOME", "/opt/opencodon-shared")
         monkeypatch.setattr(
             gateway_cli, "_system_service_identity",
             lambda run_as_user=None: ("alice", "alice", "/home/alice"),
@@ -2034,7 +2034,7 @@ class TestSystemUnitHermesHome:
 
         unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="alice")
 
-        assert 'OPENCODON_HOME=/opt/hermes-shared' in unit
+        assert 'OPENCODON_HOME=/opt/opencodon-shared' in unit
 
     def test_user_unit_unaffected_by_change(self):
         # User-scope units should still use the calling user's OPENCODON_HOME
@@ -2044,20 +2044,20 @@ class TestSystemUnitHermesHome:
         assert f'OPENCODON_HOME={opencodon_home}' in unit
 
 
-class TestSystemUnitRefreshSyncsHermesHome:
+class TestSystemUnitRefreshSyncsOpencodonHome:
     """sudo system refresh must not flip TimeoutStopSec via /root/.opencodon."""
 
     def test_refresh_adopts_unit_opencodon_home_before_rewriting(self, tmp_path, monkeypatch):
         root_home = tmp_path / "root"
         alice_home = tmp_path / "alice"
-        root_hermes = root_home / ".opencodon"
-        alice_hermes = alice_home / ".opencodon"
-        root_hermes.mkdir(parents=True)
-        alice_hermes.mkdir(parents=True)
-        (root_hermes / "config.yaml").write_text(
+        root_opencodon = root_home / ".opencodon"
+        alice_opencodon = alice_home / ".opencodon"
+        root_opencodon.mkdir(parents=True)
+        alice_opencodon.mkdir(parents=True)
+        (root_opencodon / "config.yaml").write_text(
             "agent:\n  restart_drain_timeout: 60\n", encoding="utf-8"
         )
-        (alice_hermes / "config.yaml").write_text(
+        (alice_opencodon / "config.yaml").write_text(
             "agent:\n  restart_drain_timeout: 180\n", encoding="utf-8"
         )
 
@@ -2077,16 +2077,16 @@ class TestSystemUnitRefreshSyncsHermesHome:
         monkeypatch.delenv("OPENCODON_RESTART_DRAIN_TIMEOUT", raising=False)
 
         # Correct installed unit (operator's OPENCODON_HOME + drain timeout).
-        monkeypatch.setenv("OPENCODON_HOME", str(alice_hermes))
+        monkeypatch.setenv("OPENCODON_HOME", str(alice_opencodon))
         good_unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="alice")
         assert "TimeoutStopSec=210" in good_unit
         unit_path.write_text(good_unit, encoding="utf-8")
 
         # Simulate sudo without inherited OPENCODON_HOME (falls back to root).
-        monkeypatch.setenv("OPENCODON_HOME", str(root_hermes))
+        monkeypatch.setenv("OPENCODON_HOME", str(root_opencodon))
         assert gateway_cli.refresh_systemd_unit_if_needed(system=True) is False
         assert unit_path.read_text(encoding="utf-8") == good_unit
-        assert os.environ["OPENCODON_HOME"] == str(alice_hermes)
+        assert os.environ["OPENCODON_HOME"] == str(alice_opencodon)
         assert gateway_cli.systemd_unit_is_current(system=True) is True
 
     def test_is_current_syncs_before_reading_unit(self, tmp_path, monkeypatch):
@@ -2175,7 +2175,7 @@ class TestSystemUnitRefreshSyncsHermesHome:
             )
 
 
-class TestHermesHomeForTargetUser:
+class TestOpencodonHomeForTargetUser:
     """Unit tests for _opencodon_home_for_target_user()."""
 
     def test_remaps_default_home(self, monkeypatch):
@@ -2194,10 +2194,10 @@ class TestHermesHomeForTargetUser:
 
     def test_keeps_custom_path(self, monkeypatch):
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/root")))
-        monkeypatch.setenv("OPENCODON_HOME", "/opt/hermes")
+        monkeypatch.setenv("OPENCODON_HOME", "/opt/opencodon")
 
         result = gateway_cli._opencodon_home_for_target_user("/home/alice")
-        assert result == "/opt/hermes"
+        assert result == "/opt/opencodon"
 
     def test_noop_when_same_user(self, monkeypatch):
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/home/alice")))
@@ -2410,7 +2410,7 @@ class TestPreflightUserSystemd:
 
         msg = str(exc_info.value)
         assert "sudo loginctl enable-linger" in msg
-        assert "hermes gateway run" in msg  # foreground fallback mentioned
+        assert "opencodon gateway run" in msg  # foreground fallback mentioned
         assert "Interactive authentication required" in msg
 
     def test_raises_when_loginctl_missing(self, monkeypatch):
@@ -2523,7 +2523,7 @@ class TestProfileArg:
 
     def test_hash_path_returns_empty(self, tmp_path, monkeypatch):
         """Arbitrary non-profile OPENCODON_HOME should return empty string."""
-        custom_home = tmp_path / "custom" / "hermes"
+        custom_home = tmp_path / "custom" / "opencodon"
         custom_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
@@ -2638,8 +2638,8 @@ class TestRemapPathForUser:
     def test_keeps_system_path_unchanged(self, monkeypatch, tmp_path):
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "root")
         (tmp_path / "root").mkdir()
-        result = gateway_cli._remap_path_for_user("/opt/hermes", str(tmp_path / "alice"))
-        assert result == "/opt/hermes"
+        result = gateway_cli._remap_path_for_user("/opt/opencodon", str(tmp_path / "alice"))
+        assert result == "/opt/opencodon"
 
     def test_noop_when_same_user(self, monkeypatch, tmp_path):
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "alice")
@@ -2719,7 +2719,7 @@ class TestDockerAwareGateway:
         assert "status" in calls[0]
 
     def test_install_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway install' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway install' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_managed", lambda: False)
@@ -2739,7 +2739,7 @@ class TestDockerAwareGateway:
         assert "restart" in out.lower()
 
     def test_uninstall_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway uninstall' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway uninstall' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_managed", lambda: False)
@@ -2757,7 +2757,7 @@ class TestDockerAwareGateway:
         assert "docker" in out.lower()
 
     def test_start_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway start' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway start' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
@@ -2773,7 +2773,7 @@ class TestDockerAwareGateway:
         assert exc_info.value.code == 0
         out = capsys.readouterr().out
         assert "docker" in out.lower()
-        assert "hermes gateway run" in out
+        assert "opencodon gateway run" in out
 
 
 
@@ -2893,7 +2893,7 @@ class TestSystemScopeWizardPreCheck:
         assert gateway_cli._system_scope_wizard_would_need_root() is False
 
     def test_non_root_with_explicit_system_arg_returns_true(self, tmp_path, monkeypatch):
-        # Caller passed system=True explicitly (e.g. ``hermes gateway start --system``).
+        # Caller passed system=True explicitly (e.g. ``opencodon gateway start --system``).
         self._setup_units(tmp_path, monkeypatch, system_present=False, user_present=False)
         monkeypatch.setattr(gateway_cli.os, "geteuid", lambda: 1000)
 
@@ -2914,8 +2914,8 @@ class TestSystemScopeRemediationOutput:
         assert "system-wide service" in out
         assert "start requires root" in out
         assert "sudo systemctl start opencodon-gateway" in out
-        assert "sudo hermes gateway uninstall --system" in out
-        assert "hermes gateway install" in out
+        assert "sudo opencodon gateway uninstall --system" in out
+        assert "opencodon gateway install" in out
 
     def test_restart_remediation_uses_systemctl_restart(self, capsys, monkeypatch):
         monkeypatch.setattr(gateway_cli, "get_service_name", lambda: "opencodon-gateway")
@@ -2937,7 +2937,7 @@ class TestSystemScopeRemediationOutput:
 
 
 class TestGatewayCommandCatchesSystemScopeError:
-    """The direct CLI path (``hermes gateway start --system`` etc.) must
+    """The direct CLI path (``opencodon gateway start --system`` etc.) must
     still exit 1 with a clean message when non-root. The top-level
     ``gateway_command`` catches ``SystemScopeRequiresRootError`` and
     converts it back to ``sys.exit(1)``, preserving existing CLI behavior.

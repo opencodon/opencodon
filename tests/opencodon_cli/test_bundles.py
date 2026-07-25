@@ -1,4 +1,4 @@
-"""Tests for opencodon_cli/bundles.py — the `hermes bundles` CLI subcommand."""
+"""Tests for opencodon_cli/bundles.py — the `opencodon bundles` CLI subcommand."""
 
 import argparse
 

@@ -824,7 +824,7 @@ class TestPayloadFilters:
         assert captured[0].raw_message["body"] == "PAY BILLS"
 
     @pytest.mark.asyncio
-    async def test_script_tilde_hermes_path_resolves_to_active_profile_home(self, tmp_path, monkeypatch):
+    async def test_script_tilde_opencodon_path_resolves_to_active_profile_home(self, tmp_path, monkeypatch):
         """~/.opencodon/scripts paths must resolve through OPENCODON_HOME for profiles."""
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         scripts = tmp_path / "scripts"

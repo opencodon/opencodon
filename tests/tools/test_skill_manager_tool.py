@@ -1056,7 +1056,7 @@ class TestExternalSkillMutations:
 # ---------------------------------------------------------------------------
 # Pinned-skill guard — skill_manage refuses only `delete` on pinned skills.
 # Patches and edits go through so pinned skills can still evolve as pitfalls
-# come up. The user unpins via `hermes curator unpin <name>` to delete.
+# come up. The user unpins via `opencodon curator unpin <name>` to delete.
 # ---------------------------------------------------------------------------
 
 class TestPinnedGuard:
@@ -1111,7 +1111,7 @@ class TestPinnedGuard:
         assert result["success"] is False
         assert "pinned" in result["error"].lower()
         assert "cannot be deleted" in result["error"]
-        assert "hermes curator unpin my-skill" in result["error"]
+        assert "opencodon curator unpin my-skill" in result["error"]
         # Skill still exists
         assert (tmp_path / "my-skill" / "SKILL.md").exists()
 
@@ -1348,7 +1348,7 @@ class TestCuratorConsolidationDeleteGuard:
     def test_dispatcher_preserves_usage_record_on_curator_archive(self, tmp_path, monkeypatch):
         # skill_manage(delete) post-action telemetry must NOT forget a
         # recoverable curator archive — the record persists as archived so
-        # `hermes curator restore` can bring it back.
+        # `opencodon curator restore` can bring it back.
         from tools import skill_usage
         with _curator_pass(tmp_path, monkeypatch=monkeypatch):
             _create_skill("umbrella", _skill_content("umbrella"))

@@ -123,9 +123,9 @@ def apply_windows_utf8_bootstrap() -> bool:
 
 
 def harden_import_path(src_root: str | None = None) -> None:
-    """Stop a package in the current directory from shadowing Hermes modules.
+    """Stop a package in the current directory from shadowing opencodon modules.
 
-    Hermes ships top-level modules with common names (``utils``, ``proxy``,
+    opencodon ships top-level modules with common names (``utils``, ``proxy``,
     ``ui``).  Python always seeds ``sys.path`` with the current directory, so
     launching an entry point from a project that has its own ``utils/`` package
     makes ``from utils import ...`` resolve to the *user's* package and crash
@@ -139,7 +139,7 @@ def harden_import_path(src_root: str | None = None) -> None:
       - As its own *absolute* path, when a venv activation or a project that
         adds itself to ``PYTHONPATH`` puts the directory there explicitly.
 
-    We drop the relative forms outright, then force the real Hermes source root
+    We drop the relative forms outright, then force the real opencodon source root
     to the front — relocating it ahead of any absolute cwd entry rather than
     only inserting when absent, so an absolute cwd path can't keep winning.
 

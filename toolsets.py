@@ -110,7 +110,7 @@ TOOLSETS = {
             "Search X (Twitter) posts and threads via xAI's built-in "
             "x_search Responses tool. Available when xAI credentials are "
             "configured (SuperGrok OAuth or XAI_API_KEY). Off by default; "
-            "enable in `hermes tools` → X (Twitter) Search."
+            "enable in `opencodon tools` → X (Twitter) Search."
         ),
         "tools": ["x_search"],
         "includes": []
@@ -291,7 +291,7 @@ TOOLSETS = {
         "includes": ["web", "vision", "image_gen"]
     },
 
-    # Coding posture (base Hermes — CLI/TUI/desktop/ACP). Auto-selected in a
+    # Coding posture (base opencodon — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,
     # home-assistant, cron, computer-use).
@@ -319,12 +319,12 @@ TOOLSETS = {
     },
     
     # ==========================================================================
-    # Full Hermes toolsets (CLI + messaging platforms)
+    # Full opencodon toolsets (CLI + messaging platforms)
     #
     # All platforms share the same core tools. Note: agents do NOT get an
     # agent-callable send_message tool — outbound platform messaging is handled
     # outside the agent loop (cron delivery, the gateway kanban notifier, and
-    # the `hermes send` CLI), not by the model deciding to send on its own.
+    # the `opencodon send` CLI), not by the model deciding to send on its own.
     # ==========================================================================
 
     "opencodon-acp": {
@@ -384,11 +384,11 @@ TOOLSETS = {
 
     "opencodon-cron": {
         # Mirrors opencodon-cli so cron's "default" toolset is the same set of
-        # core tools users see interactively — then `hermes tools` filters
+        # core tools users see interactively — then `opencodon tools` filters
         # them down per the platform config. _DEFAULT_OFF_TOOLSETS (moa)
         # are excluded by _get_platform_tools() unless the user explicitly
         # enables them.
-        "description": "Default cron toolset - same core tools as opencodon-cli; gated by `hermes tools`",
+        "description": "Default cron toolset - same core tools as opencodon-cli; gated by `opencodon tools`",
         "tools": _OPENCODON_CORE_TOOLS,
         "includes": []
     },
@@ -435,10 +435,10 @@ TOOLSETS = {
 
 
 
-# Toolset IDs from the hermes-agent lineage; configs written before the
+# Toolset IDs from the opencodon lineage; configs written before the
 # opencodon rename still reference them. Removed after one release.
 _LEGACY_TOOLSET_ALIASES = {
-    f"hermes-{_x}": f"opencodon-{_x}"
+    f"opencodon-{_x}": f"opencodon-{_x}"
     for _x in (
         "telegram", "discord", "whatsapp", "slack", "webhook", "gateway",
         "acp", "api-server", "cli", "cron",
@@ -521,7 +521,7 @@ def get_toolset(name: str, *, include_registry: bool = True) -> Optional[Dict[st
 
 
 def bundle_non_core_tools(toolset_name: str) -> Set[str]:
-    """Return a ``hermes-*`` bundle's platform-specific tools, excluding core.
+    """Return a ``opencodon-*`` bundle's platform-specific tools, excluding core.
 
     Platform bundles are defined as ``_OPENCODON_CORE_TOOLS + [platform extras]``.
     When a bundle name appears in ``disabled_toolsets``, subtracting the whole
@@ -592,13 +592,13 @@ def resolve_toolset(name: str, visited: Set[str] = None, *, include_registry: bo
     # Get toolset definition
     toolset = get_toolset(name, include_registry=include_registry)
     if not toolset:
-        # Auto-generate a toolset for plugin platforms (hermes-<name>).
+        # Auto-generate a toolset for plugin platforms (opencodon-<name>).
         # Gives them _OPENCODON_CORE_TOOLS plus any tools the plugin registered
         # into a toolset matching the platform name. This is a registry-derived
         # view, so it only applies when registry tools are requested; the static
         # view (include_registry=False) has no plugin-platform definition.
-        if include_registry and name.startswith("hermes-"):
-            platform_name = name[len("hermes-"):]
+        if include_registry and name.startswith("opencodon-"):
+            platform_name = name[len("opencodon-"):]
             try:
                 from gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):

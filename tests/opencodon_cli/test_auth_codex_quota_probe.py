@@ -3,7 +3,7 @@
 Covers issue #43747 (externally-reset variant): Codex 429s persist a
 ``last_error_reset_at`` that can be days in the future, but the upstream
 window can reopen early (banked reset redeemed, plan upgrade, upstream
-reset).  Hermes must detect that and lift the stale local cooldown instead
+reset).  opencodon must detect that and lift the stale local cooldown instead
 of refusing requests until re-auth.
 """
 
@@ -241,7 +241,7 @@ def _exhausted_pool_store(now=None):
 
 
 def test_clear_cooldowns_only_touches_quota_shaped_entries(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, _exhausted_pool_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -273,7 +273,7 @@ def test_clear_cooldowns_scoped_to_access_token(tmp_path, monkeypatch):
             "last_error_reset_at": now + 3600,
         }
     )
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, store)
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -286,7 +286,7 @@ def test_clear_cooldowns_scoped_to_access_token(tmp_path, monkeypatch):
 
 
 def test_clear_cooldowns_noop_without_pool(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, {"version": 1, "providers": {}})
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     assert clear_codex_pool_quota_cooldowns() == 0
@@ -327,7 +327,7 @@ def test_resolver_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
     """The screenshot bug: pool-only cooldown raises `quota exhausted (429);
     retry after Ns` even though the upstream window already reset.  A positive
     probe must clear the cooldown and return the pool credential."""
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, _pool_only_rate_limited_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -346,7 +346,7 @@ def test_resolver_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
 
 
 def test_resolver_keeps_cooldown_when_probe_negative(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, _pool_only_rate_limited_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -361,7 +361,7 @@ def test_resolver_keeps_cooldown_when_probe_negative(tmp_path, monkeypatch):
 
 
 def test_resolver_keeps_cooldown_when_probe_indeterminate(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, _pool_only_rate_limited_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -380,8 +380,8 @@ def test_resolver_keeps_cooldown_when_probe_indeterminate(tmp_path, monkeypatch)
 
 
 def test_pool_entry_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path / "hermes", _pool_only_rate_limited_store())
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+    _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
     from agent.credential_pool import load_pool
 
@@ -397,8 +397,8 @@ def test_pool_entry_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
 
 
 def test_pool_entry_stays_frozen_when_probe_negative(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path / "hermes", _pool_only_rate_limited_store())
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+    _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
     from agent.credential_pool import load_pool
 
@@ -418,8 +418,8 @@ def test_pool_probe_not_fired_for_non_quota_exhaustion(tmp_path, monkeypatch):
     entry["last_error_code"] = 401
     entry["last_error_reason"] = "token_expired"
     entry["last_error_message"] = "expired"
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path / "hermes", store)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+    _write_auth_store(tmp_path / "opencodon", store)
 
     from agent.credential_pool import load_pool
 
@@ -438,8 +438,8 @@ def test_pool_probe_not_fired_for_non_quota_exhaustion(tmp_path, monkeypatch):
 def test_pool_readonly_enumeration_does_not_probe(tmp_path, monkeypatch):
     """clear_expired=False callers (read-only listing) must not fire probes
     or mutate persisted state."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path / "hermes", _pool_only_rate_limited_store())
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+    _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
     from agent.credential_pool import load_pool
 
@@ -461,7 +461,7 @@ def test_pool_readonly_enumeration_does_not_probe(tmp_path, monkeypatch):
 
 
 def test_redeem_reset_clears_pool_cooldowns(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     _write_auth_store(opencodon_home, _pool_only_rate_limited_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 

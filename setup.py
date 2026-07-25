@@ -2,7 +2,7 @@
 setup.py — wheel/sdist build guard.
 
 pip/PyPI and Homebrew are no longer supported distribution methods for
-Hermes Agent (see website/docs/getting-started/platform-support.md). The
+opencodon (see website/docs/getting-started/platform-support.md). The
 wheel would ship without bundled assets (locales, skills, optional-mcps,
 web_dist, tui_dist, plugin manifests) since those are resolved at runtime
 via env-var overrides set by the nix wrapper or the source-checkout layout.
@@ -17,7 +17,7 @@ fires for ``uv build``, ``pip wheel``, ``python -m build``, and direct
 The one legitimate consumer of ``build_wheel`` is uv2nix, which calls
 ``setuptools.build_meta.build_wheel`` (→ ``bdist_wheel``) inside a Nix
 build sandbox. ``nix/python.nix`` sets ``OPENCODON_NIX_BUILD=1`` on the
-Hermes package derivation, so only that build may create an artifact.
+opencodon package derivation, so only that build may create an artifact.
 
 Editable installs (``uv sync``, ``pip install -e .``, ``nix develop``)
 use ``build_editable``, which does NOT call ``bdist_wheel`` — it calls

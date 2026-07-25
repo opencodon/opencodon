@@ -1,4 +1,4 @@
-"""CLI subcommand: `hermes curator <subcommand>`.
+"""CLI subcommand: `opencodon curator <subcommand>`.
 
 Thin shell around agent/curator.py and tools/skill_usage.py. Renders a status
 table, triggers a run, pauses/resumes, and pins/unpins skills.
@@ -217,17 +217,17 @@ def _cmd_run(args) -> int:
                 f"reactivated={auto.get('reactivated', 0)}"
             )
     if not synchronous:
-        print("llm pass running in background — check `hermes curator status` later")
+        print("llm pass running in background — check `opencodon curator status` later")
     if dry:
         if synchronous:
             print(
                 "dry-run: no changes applied. Read the report with "
-                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
+                "`opencodon curator status` and run `opencodon curator run` (no flag) to apply."
             )
         else:
             print(
                 "dry-run: no changes applied. When the report lands, read it with "
-                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
+                "`opencodon curator status` and run `opencodon curator run` (no flag) to apply."
             )
     return 0
 
@@ -289,7 +289,7 @@ def _cmd_archive(args) -> int:
     if skill_usage.get_record(args.skill).get("pinned"):
         print(
             f"curator: '{args.skill}' is pinned — unpin first with "
-            f"`hermes curator unpin {args.skill}`"
+            f"`opencodon curator unpin {args.skill}`"
         )
         return 1
     ok, msg = skill_usage.archive_skill(args.skill)
@@ -424,7 +424,7 @@ def _cmd_rollback(args) -> int:
         if not rows:
             print(
                 "curator: no snapshots exist yet. Take one with "
-                "`hermes curator backup` or wait for the next curator run."
+                "`opencodon curator backup` or wait for the next curator run."
             )
         else:
             print(
@@ -684,7 +684,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
 def cli_main(argv=None) -> int:
     """Standalone entry (also usable by opencodon_cli.main fallthrough)."""
-    parser = argparse.ArgumentParser(prog="hermes curator")
+    parser = argparse.ArgumentParser(prog="opencodon curator")
     register_cli(parser)
     args = parser.parse_args(argv)
     fn = getattr(args, "func", None)

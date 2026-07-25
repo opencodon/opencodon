@@ -1,5 +1,5 @@
 """
-Top-level argparse construction for the hermes CLI.
+Top-level argparse construction for the opencodon CLI.
 
 Lives in its own module so other modules (e.g. ``relaunch.py``) can
 introspect the parser to discover which flags exist without running the
@@ -39,46 +39,46 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes --tui                  Launch the modern TUI (or set display.interface: tui)
-    hermes --cli                  Force the classic REPL (overrides display.interface: tui)
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <provider>  Clear exhaustion status for a provider
-    hermes model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
-    hermes fallback remove        Remove a fallback provider from the chain
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes gateway install        Install gateway background service
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
-    hermes update                 Update to latest version
-    hermes dashboard              Start web UI dashboard (port 9119)
-    hermes dashboard --stop       Stop running dashboard processes
-    hermes dashboard --status     List running dashboard processes
+    opencodon                        Start interactive chat
+    opencodon chat -q "Hello"        Single query mode
+    opencodon --tui                  Launch the modern TUI (or set display.interface: tui)
+    opencodon --cli                  Force the classic REPL (overrides display.interface: tui)
+    opencodon -c                     Resume the most recent session
+    opencodon -c "my project"        Resume a session by name (latest in lineage)
+    opencodon --resume <session_id>  Resume a specific session by ID
+    opencodon setup                  Run setup wizard
+    opencodon logout                 Clear stored authentication
+    opencodon auth add <provider>    Add a pooled credential
+    opencodon auth list              List pooled credentials
+    opencodon auth remove <p> <t>    Remove pooled credential by index, id, or label
+    opencodon auth reset <provider>  Clear exhaustion status for a provider
+    opencodon model                  Select default model
+    opencodon fallback [list]        Show fallback provider chain
+    opencodon fallback add           Add a fallback provider (same picker as `opencodon model`)
+    opencodon fallback remove        Remove a fallback provider from the chain
+    opencodon config                 View configuration
+    opencodon config edit            Edit config in $EDITOR
+    opencodon config set model gpt-4 Set a config value
+    opencodon gateway                Run messaging gateway
+    opencodon -s opencodon-dev,github-auth
+    opencodon -w                     Start in isolated git worktree
+    opencodon gateway install        Install gateway background service
+    opencodon sessions list          List past sessions
+    opencodon sessions browse        Interactive session picker
+    opencodon sessions rename ID T   Rename/title a session
+    opencodon logs                   View agent.log (last 50 lines)
+    opencodon logs -f                Follow agent.log in real time
+    opencodon logs errors            View errors.log
+    opencodon logs --since 1h        Lines from the last hour
+    opencodon debug share             Upload debug report for support
+    opencodon console                Open the safe opencodon command console
+    opencodon update                 Update to latest version
+    opencodon dashboard              Start web UI dashboard (port 9119)
+    opencodon dashboard --stop       Stop running dashboard processes
+    opencodon dashboard --status     List running dashboard processes
 
 For more help on a command:
-    hermes <command> --help
+    opencodon <command> --help
 """
 
 
@@ -90,8 +90,8 @@ def build_top_level_parser():
     other subparsers via ``subparsers.add_parser(...)``.
     """
     parser = argparse.ArgumentParser(
-        prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+        prog="opencodon",
+        description="opencodon - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EPILOGUE,
     )
@@ -126,7 +126,7 @@ def build_top_level_parser():
     # --model / --provider are accepted at the top level so they can pair
     # with -z without needing the `chat` subcommand.  If neither -z nor a
     # subcommand consumes them, they fall through harmlessly as None.
-    # Mirrors `hermes chat --model ... --provider ...` semantics.
+    # Mirrors `opencodon chat --model ... --provider ...` semantics.
     _inherited_flag(
         parser,
         "-m",
@@ -144,7 +144,7 @@ def build_top_level_parser():
         help=(
             "Provider override for this invocation (e.g. openrouter, anthropic). "
             "Applies to -z/--oneshot and --tui. The persistent provider lives in config.yaml "
-            "under model.provider — use `hermes setup` or edit the file to change it."
+            "under model.provider — use `opencodon setup` or edit the file to change it."
         ),
     )
     parser.add_argument(
@@ -269,7 +269,7 @@ def build_top_level_parser():
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with opencodon",
     )
     chat_parser.add_argument(
         "-q", "--query", help="Single query (non-interactive mode)"
@@ -278,7 +278,7 @@ def build_top_level_parser():
         "--image", help="Optional local image path to attach to a single query"
     )
     # `default=argparse.SUPPRESS` on flags that are ALSO declared on the
-    # top-level parser: when the user writes `hermes -m foo chat`, argparse
+    # top-level parser: when the user writes `opencodon -m foo chat`, argparse
     # first sets `args.model = "foo"` from the top-level parser, then
     # dispatches to the chat subparser. Without SUPPRESS the chat subparser's
     # own default (`None`) would silently clobber the top-level value because
@@ -417,7 +417,7 @@ def build_top_level_parser():
         "--safe-mode",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.",
+        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from opencodon itself.",
     )
     chat_parser.add_argument(
         "--source",

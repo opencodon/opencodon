@@ -52,7 +52,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     The user-plugin source is preferred over a transient
     ``OPENCODON_BUNDLED_PLUGINS`` override because the bundled dir is
     resolved per-call (other tests in the suite implicitly rely on the
-    real bundled plugins — kanban, hermes-achievements, model providers
+    real bundled plugins — kanban, opencodon-achievements, model providers
     — being available, and globally swapping that root would yank them
     all). User plugins are first in the discovery search order, so
     laying down the fixture here is enough.
@@ -72,7 +72,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     # An installed-but-not-enabled user plugin has its API mount skipped
     # and its assets 404'd — which is the whole point of the gate. These
     # fixtures exist to exercise the *serving* paths, so opt the example
-    # plugin in exactly as a real operator would with `hermes plugins
+    # plugin in exactly as a real operator would with `opencodon plugins
     # enable example`.
     from opencodon_cli.config import load_config, save_config
     _cfg = load_config()
@@ -163,7 +163,7 @@ class TestReloadEnv:
         os.environ.pop("TEST_RELOAD_VAR", None)
 
     def test_removes_deleted_known_vars(self, tmp_path):
-        """reload_env() removes known Hermes vars not present in .env."""
+        """reload_env() removes known opencodon vars not present in .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")  # empty .env
         # Pick a known key from OPTIONAL_ENV_VARS
@@ -175,7 +175,7 @@ class TestReloadEnv:
             assert count >= 1
 
     def test_does_not_remove_unknown_vars(self, tmp_path):
-        """reload_env() preserves non-Hermes env vars even when absent from .env."""
+        """reload_env() preserves non-opencodon env vars even when absent from .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")
         with patch.dict(reload_env.__globals__, {"get_env_path": lambda: env_file}):
@@ -266,7 +266,7 @@ class TestWebServerEndpoints:
         assert "version" in data
         assert "opencodon_home" in data
         assert "active_sessions" in data
-        assert data["can_update_hermes"] is True
+        assert data["can_update_opencodon"] is True
 
     def test_status_active_session_count_uses_read_only_db(self, monkeypatch, tmp_path):
         import opencodon_cli.web_server as web_server
@@ -422,7 +422,7 @@ class TestWebServerEndpoints:
 
         resp = self.client.get("/api/status")
         assert resp.status_code == 200
-        assert resp.json()["can_update_hermes"] is False
+        assert resp.json()["can_update_opencodon"] is False
 
     def test_dashboard_update_capability_detects_generic_container(self, monkeypatch):
         import opencodon_constants
@@ -435,7 +435,7 @@ class TestWebServerEndpoints:
         assert web_server._dashboard_local_update_managed_externally() is True
 
     def test_dashboard_update_capability_allows_git_in_container(self, monkeypatch):
-        """A git checkout inside a container (e.g. bind-mounted in hermes-webui)
+        """A git checkout inside a container (e.g. bind-mounted in opencodon-webui)
         should still offer dashboard updates — the checkout is self-managed."""
         import opencodon_constants
         import opencodon_cli.web_server as web_server
@@ -1729,7 +1729,7 @@ class TestWebServerEndpoints:
         resp = self.client.post("/api/audio/speak", json={"text": "   "})
         assert resp.status_code == 400
 
-    def test_update_hermes_returns_docker_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_docker_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         spawned = False
@@ -1737,27 +1737,27 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args, **_kwargs):
             nonlocal spawned
             spawned = True
-            raise AssertionError("docker update guard should not spawn hermes update")
+            raise AssertionError("docker update guard should not spawn opencodon update")
 
         # Bypass the managed-externally gate so we reach the docker install check.
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: False)
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "docker")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is False
-        assert data["name"] == "hermes-update"
+        assert data["name"] == "opencodon-update"
         assert data["pid"] is None
         assert data["error"] == "docker_update_unsupported"
         assert "docker pull opencodon/opencodon:latest" in data["message"]
         assert spawned is False
 
-        status = self.client.get("/api/actions/hermes-update/status")
+        status = self.client.get("/api/actions/opencodon-update/status")
         assert status.status_code == 200
         status_data = status.json()
         assert status_data["running"] is False
@@ -1765,19 +1765,19 @@ class TestWebServerEndpoints:
         assert status_data["pid"] is None
         assert any("docker pull opencodon/opencodon:latest" in line for line in status_data["lines"])
 
-    def test_update_hermes_returns_nix_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_nix_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         def fail_spawn(*_args, **_kwargs):
-            raise AssertionError("Nix update guard should not spawn hermes update")
+            raise AssertionError("Nix update guard should not spawn opencodon update")
 
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: False)
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "nix")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -1786,7 +1786,7 @@ class TestWebServerEndpoints:
         assert data["error"] == "nix_update_unsupported"
         assert "Nix" in data["message"]
 
-    def test_update_hermes_returns_managed_runtime_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_managed_runtime_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         spawned = False
@@ -1795,7 +1795,7 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args, **_kwargs):
             nonlocal spawned
             spawned = True
-            raise AssertionError("managed runtime update guard should not spawn hermes update")
+            raise AssertionError("managed runtime update guard should not spawn opencodon update")
 
         def fail_detect(*_args, **_kwargs):
             nonlocal detected
@@ -1804,23 +1804,23 @@ class TestWebServerEndpoints:
 
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: True)
         monkeypatch.setattr(web_server, "detect_install_method", fail_detect)
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is False
-        assert data["name"] == "hermes-update"
+        assert data["name"] == "opencodon-update"
         assert data["pid"] is None
         assert data["error"] == "dashboard_update_managed_externally"
         assert "managed outside this dashboard" in data["message"]
         assert spawned is False
         assert detected is False
 
-        status = self.client.get("/api/actions/hermes-update/status")
+        status = self.client.get("/api/actions/opencodon-update/status")
         assert status.status_code == 200
         status_data = status.json()
         assert status_data["running"] is False
@@ -1828,7 +1828,7 @@ class TestWebServerEndpoints:
         assert status_data["pid"] is None
         assert any("managed outside this dashboard" in line for line in status_data["lines"])
 
-    def test_update_hermes_spawns_on_non_docker_install(self, monkeypatch):
+    def test_update_opencodon_spawns_on_non_docker_install(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         class Proc:
@@ -1844,15 +1844,15 @@ class TestWebServerEndpoints:
             return Proc()
 
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "git")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fake_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fake_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
-        assert resp.json() == {"ok": True, "pid": 12345, "name": "hermes-update"}
-        assert calls == [(["update"], "hermes-update")]
+        assert resp.json() == {"ok": True, "pid": 12345, "name": "opencodon-update"}
+        assert calls == [(["update"], "opencodon-update")]
 
     def test_action_status_reaps_completed_process(self, monkeypatch):
         import opencodon_cli.web_server as web_server
@@ -1869,11 +1869,11 @@ class TestWebServerEndpoints:
                 waited["done"] = True
 
         proc = _Proc()
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
-        web_server._ACTION_PROCS["hermes-update"] = proc
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
+        web_server._ACTION_PROCS["opencodon-update"] = proc
 
-        resp = self.client.get("/api/actions/hermes-update/status")
+        resp = self.client.get("/api/actions/opencodon-update/status")
         assert resp.status_code == 200
         data = resp.json()
         assert data["running"] is False
@@ -1882,8 +1882,8 @@ class TestWebServerEndpoints:
 
         # Process should have been reaped and moved to results.
         assert waited["done"] is True
-        assert "hermes-update" not in web_server._ACTION_PROCS
-        assert web_server._ACTION_RESULTS["hermes-update"] == {
+        assert "opencodon-update" not in web_server._ACTION_PROCS
+        assert web_server._ACTION_RESULTS["opencodon-update"] == {
             "exit_code": 0,
             "pid": 42424,
         }
@@ -1901,17 +1901,17 @@ class TestWebServerEndpoints:
                 raise OSError("already reaped")
 
         proc = _Proc()
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
-        web_server._ACTION_PROCS["hermes-update"] = proc
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
+        web_server._ACTION_PROCS["opencodon-update"] = proc
 
-        resp = self.client.get("/api/actions/hermes-update/status")
+        resp = self.client.get("/api/actions/opencodon-update/status")
         assert resp.status_code == 200
         data = resp.json()
         assert data["exit_code"] == 1
         # Still reaped despite wait() raising.
-        assert "hermes-update" not in web_server._ACTION_PROCS
-        assert web_server._ACTION_RESULTS["hermes-update"] == {
+        assert "opencodon-update" not in web_server._ACTION_PROCS
+        assert web_server._ACTION_RESULTS["opencodon-update"] == {
             "exit_code": 1,
             "pid": 99,
         }
@@ -1920,10 +1920,10 @@ class TestWebServerEndpoints:
         import opencodon_cli.web_server as web_server
 
         monkeypatch.setattr(web_server, "_ACTION_LOG_DIR", tmp_path)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        log_path = tmp_path / web_server._ACTION_LOG_FILES["hermes-update"]
+        log_path = tmp_path / web_server._ACTION_LOG_FILES["opencodon-update"]
         log_path.write_text(
             "stale-start\n"
             + ("x" * (web_server._ACTION_LOG_TAIL_MAX_BYTES + 1024))
@@ -1941,7 +1941,7 @@ class TestWebServerEndpoints:
 
         monkeypatch.setattr(Path, "read_text", fail_if_status_reads_whole_log)
 
-        resp = self.client.get("/api/actions/hermes-update/status?lines=3")
+        resp = self.client.get("/api/actions/opencodon-update/status?lines=3")
 
         assert resp.status_code == 200
         assert resp.json()["lines"] == ["tail-one", "tail-two"]
@@ -2201,7 +2201,7 @@ class TestWebServerEndpoints:
         as a provider card, even when it has no hand entry in OPTIONAL_ENV_VARS.
 
         Regression for the GUI⇄CLI drift: openai-api, kilocode, novita,
-        tencent-tokenhub, copilot were configurable via `hermes model` but
+        tencent-tokenhub, copilot were configurable via `opencodon model` but
         invisible in the desktop Providers → API keys tab.
         """
         from opencodon_cli.provider_catalog import provider_catalog
@@ -2327,7 +2327,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_maps_unknown_vendor_to_aggregator(self, monkeypatch):
         """A bare vendor name from analytics rows (no billing_provider) is not
-        a Hermes provider — keep the user's aggregator instead of writing a
+        a opencodon provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
             "opencodon_cli.model_cost_guard.expensive_model_warning",
@@ -2374,7 +2374,7 @@ class TestWebServerEndpoints:
 
     def test_ops_import_passes_force_flag(self, tmp_path, monkeypatch):
         """force=True must append --force so the spawned non-interactive
-        `hermes import` doesn't auto-abort at the overwrite prompt."""
+        `opencodon import` doesn't auto-abort at the overwrite prompt."""
         import opencodon_cli.web_server as ws
 
         archive = tmp_path / "backup.zip"
@@ -2390,7 +2390,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/ops/import", json={"archive": str(archive), "force": True},
@@ -2418,7 +2418,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post("/api/ops/backup", json={})
         assert resp.status_code == 200
@@ -2429,7 +2429,7 @@ class TestWebServerEndpoints:
         assert captured["name"] == "backup"
         assert captured["args"] == ["backup", "-o", str(archive)]
         assert archive.parent == get_opencodon_home() / "backups"
-        assert archive.name.startswith("hermes-backup-")
+        assert archive.name.startswith("opencodon-backup-")
         assert archive.suffix == ".zip"
 
     def test_ops_backup_uses_hosted_opencodon_home(self, tmp_path, monkeypatch):
@@ -2447,7 +2447,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post("/api/ops/backup", json={})
         assert resp.status_code == 200
@@ -2462,7 +2462,7 @@ class TestWebServerEndpoints:
 
         backup_dir = ws._dashboard_backup_dir()
         backup_dir.mkdir(parents=True, exist_ok=True)
-        archive = backup_dir / "hermes-backup-test.zip"
+        archive = backup_dir / "opencodon-backup-test.zip"
         archive.write_bytes(b"zip bytes")
 
         resp = self.client.get(
@@ -2499,7 +2499,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/ops/import-upload",
@@ -2532,7 +2532,7 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args):
             raise AssertionError("invalid uploads must not spawn import")
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fail_spawn)
 
         resp = self.client.post(
             "/api/ops/import-upload",
@@ -2902,14 +2902,14 @@ class TestWebServerEndpoints:
         assert index_resp.status_code == 200
         assert "cafe cafe" in index_resp.text
 
-        css_resp = spa_client.get("/assets/app.css", headers={"x-forwarded-prefix": "/hermes"})
+        css_resp = spa_client.get("/assets/app.css", headers={"x-forwarded-prefix": "/opencodon"})
         assert css_resp.status_code == 200
         assert "content: 'cafe';" in css_resp.text
 
         assert seen_encodings == {"index": "utf-8", "css": "utf-8"}
 
     def test_headless_serve_disables_spa_even_with_a_dist(self, monkeypatch, tmp_path):
-        """`hermes serve` (OPENCODON_SERVE_HEADLESS) must NOT serve the SPA even
+        """`opencodon serve` (OPENCODON_SERVE_HEADLESS) must NOT serve the SPA even
         when a built dist is present — only the API/WS surface is reachable."""
         from fastapi import FastAPI
         from starlette.testclient import TestClient
@@ -3086,7 +3086,7 @@ class TestWebServerEndpoints:
         """A custom endpoint that requires auth must persist model.api_key (where
         the runtime reads it) AND register a named custom_providers entry so the
         endpoint reappears as a ready row in the picker — matching the
-        ``hermes model`` custom flow. Regression for the desktop loop where a
+        ``opencodon model`` custom flow. Regression for the desktop loop where a
         keyed custom endpoint could never be configured from the GUI."""
         from opencodon_cli.config import load_config
 
@@ -3945,7 +3945,7 @@ class TestNewEndpoints:
         first = blueprints[0]
         assert "fields" in first
         assert first["command"].startswith("/blueprint")
-        assert first["appUrl"].startswith("hermes://")
+        assert first["appUrl"].startswith("opencodon://")
 
     def test_blueprint_instantiate_creates_job(self):
         resp = self.client.post(
@@ -4047,7 +4047,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         assert resp.json()["command"] == "coder setup"
 
-    def test_profile_setup_command_uses_hermes_for_default_profile(self):
+    def test_profile_setup_command_uses_opencodon_for_default_profile(self):
         from opencodon_constants import get_opencodon_home
 
         get_opencodon_home().mkdir(parents=True, exist_ok=True)
@@ -4055,7 +4055,7 @@ class TestNewEndpoints:
         resp = self.client.get("/api/profiles/default/setup-command")
 
         assert resp.status_code == 200
-        assert resp.json()["command"] == "hermes setup"
+        assert resp.json()["command"] == "opencodon setup"
 
     def test_profiles_create_creates_wrapper_alias_when_safe(self, monkeypatch, tmp_path):
         import opencodon_cli.profiles as profiles_mod
@@ -4063,7 +4063,7 @@ class TestNewEndpoints:
         wrapper_dir = tmp_path / "bin"
         wrapper_dir.mkdir()
         monkeypatch.setattr(profiles_mod, "_get_wrapper_dir", lambda: wrapper_dir)
-        monkeypatch.setattr(profiles_mod.shutil, "which", lambda name: "/opt/hermes/bin/hermes")
+        monkeypatch.setattr(profiles_mod.shutil, "which", lambda name: "/opt/opencodon/bin/opencodon")
 
         resp = self.client.post(
             "/api/profiles",
@@ -4076,9 +4076,9 @@ class TestNewEndpoints:
         assert wrapper_path.exists()
         lines = [line.strip() for line in wrapper_path.read_text().splitlines() if line.strip()]
         if is_windows:
-            assert lines == ["@echo off", "hermes -p writer %*"]
+            assert lines == ["@echo off", "opencodon -p writer %*"]
         else:
-            assert lines == ["#!/bin/sh", 'exec /opt/hermes/bin/hermes -p writer "$@"']
+            assert lines == ["#!/bin/sh", 'exec /opt/opencodon/bin/opencodon -p writer "$@"']
 
     def test_profiles_create_with_clone_from_copies_source_skills(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
@@ -4214,7 +4214,7 @@ class TestNewEndpoints:
             spawned.append((list(subcommand), name))
             return _FakeProc()
 
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/profiles",
@@ -5137,13 +5137,13 @@ class TestNewEndpoints:
         config = load_config()
         config.setdefault("terminal", {})
         config["terminal"]["ssh_host"] = "devbox.example.com"
-        config["terminal"]["ssh_user"] = "hermes"
+        config["terminal"]["ssh_user"] = "opencodon"
         save_config(config)
 
         body = self.client.get("/api/tools/terminal/backends").json()
         ssh = next(r for r in body["backends"] if r["name"] == "ssh")
         assert ssh["status"] == "ready"
-        assert "hermes@devbox.example.com" in ssh["detail"]
+        assert "opencodon@devbox.example.com" in ssh["detail"]
 
     def test_select_terminal_backend_persists_config(self, monkeypatch):
         """PUT .../backend writes terminal.backend and the list reflects it."""
@@ -6546,7 +6546,7 @@ class TestThemeBootstrapCSS:
             web_server, "load_config", lambda: {"dashboard": {"theme": "ocean"}}
         )
         css = web_server._render_active_theme_bootstrap_css()
-        assert css.startswith('<style id="hermes-theme-bootstrap">')
+        assert css.startswith('<style id="opencodon-theme-bootstrap">')
         assert css.endswith("</style>")
         # Real bundle tokens (web/src/themes/context.tsx + index.css).
         assert "--background-base:#0a1628;" in css
@@ -6662,11 +6662,11 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert '<style id="hermes-theme-bootstrap">' in resp.text
+        assert '<style id="opencodon-theme-bootstrap">' in resp.text
         assert "--background-base:#0a1628;" in resp.text
         # Injected inside <head>, before the closing tag.
         head = resp.text.split("</head>")[0]
-        assert "hermes-theme-bootstrap" in head
+        assert "opencodon-theme-bootstrap" in head
 
     def test_serve_index_no_bootstrap_for_builtin_theme(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -6677,7 +6677,7 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert "hermes-theme-bootstrap" not in resp.text
+        assert "opencodon-theme-bootstrap" not in resp.text
 
     def test_serve_index_survives_render_failure(self, tmp_path, monkeypatch):
         """Even if theme rendering blows up internally, index serving
@@ -6692,7 +6692,7 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert "hermes-theme-bootstrap" not in resp.text
+        assert "opencodon-theme-bootstrap" not in resp.text
         assert "SPA" in resp.text
 
 
@@ -7428,7 +7428,7 @@ class TestDashboardPluginManifestExtensions:
 # /api/pty WebSocket — terminal bridge for the dashboard "Chat" tab.
 #
 # These tests drive the endpoint with a tiny fake command (typically ``cat``
-# or ``sh -c 'printf …'``) instead of the real ``hermes --tui`` binary.  The
+# or ``sh -c 'printf …'``) instead of the real ``opencodon --tui`` binary.  The
 # endpoint resolves its argv through ``_resolve_chat_argv``, so tests
 # monkeypatch that hook.
 # ---------------------------------------------------------------------------
@@ -7539,7 +7539,7 @@ class TestPtyWebSocket:
         """Dashboard chat does not preserve unusable inherited TUI Python env."""
         import opencodon_cli.main as main_mod
 
-        monkeypatch.setenv("OPENCODON_PYTHON_SRC_ROOT", "/definitely/missing/hermes-src")
+        monkeypatch.setenv("OPENCODON_PYTHON_SRC_ROOT", "/definitely/missing/opencodon-src")
         monkeypatch.setenv("OPENCODON_PYTHON", "/definitely/missing/python")
         monkeypatch.setenv("OPENCODON_CWD", "/definitely/missing/cwd")
         monkeypatch.setattr(
@@ -7584,7 +7584,7 @@ class TestPtyWebSocket:
         """Bare Python commands are resolved from the TUI child's PATH."""
         import opencodon_cli.main as main_mod
 
-        command = f"hermes-review-python{Path(sys.executable).suffix}"
+        command = f"opencodon-review-python{Path(sys.executable).suffix}"
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
         executable = bin_dir / command
@@ -7630,7 +7630,7 @@ class TestPtyWebSocket:
                 [
                     "terminal:",
                     "  backend: docker",
-                    "  docker_image: example/hermes-tools:latest",
+                    "  docker_image: example/opencodon-tools:latest",
                     "  docker_extra_args:",
                     "    - --network=host",
                 ]
@@ -7649,7 +7649,7 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env["TERMINAL_ENV"] == "docker"
-        assert env["TERMINAL_DOCKER_IMAGE"] == "example/hermes-tools:latest"
+        assert env["TERMINAL_DOCKER_IMAGE"] == "example/opencodon-tools:latest"
         assert env["TERMINAL_DOCKER_EXTRA_ARGS"] == '["--network=host"]'
 
     def test_rejects_when_embedded_chat_disabled(self, monkeypatch):
@@ -7793,7 +7793,7 @@ class TestPtyWebSocket:
             self.ws_module,
             "_resolve_chat_argv",
             lambda resume=None, sidecar_url=None, profile=None: (
-                ["/bin/sh", "-c", "printf hermes-ws-ok"],
+                ["/bin/sh", "-c", "printf opencodon-ws-ok"],
                 None,
                 None,
             ),
@@ -7812,9 +7812,9 @@ class TestPtyWebSocket:
                     break
                 if frame:
                     buf += frame
-                if b"hermes-ws-ok" in buf:
+                if b"opencodon-ws-ok" in buf:
                     break
-            assert b"hermes-ws-ok" in buf
+            assert b"opencodon-ws-ok" in buf
 
     def test_client_input_reaches_child_stdin(self, monkeypatch):
         # ``cat`` echoes stdin back, so a write → read round-trip proves

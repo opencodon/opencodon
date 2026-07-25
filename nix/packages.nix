@@ -1,4 +1,4 @@
-# nix/packages.nix — Hermes Agent package built with uv2nix
+# nix/packages.nix — opencodon package built with uv2nix
 { inputs, ... }:
 {
   perSystem =
@@ -52,11 +52,11 @@
           extraDependencyGroups = [ "messaging" ];
         };
 
-        tui = full.hermesTui;
-        web = full.hermesWeb;
-        desktop = full.hermesDesktop;
+        tui = full.opencodonTui;
+        web = full.opencodonWeb;
+        desktop = full.opencodonDesktop;
 
-        update-npm-lockfile = full.hermesNpmLib.updateNpmLockfile;
+        update-npm-lockfile = full.opencodonNpmLib.updateNpmLockfile;
       };
     };
 }

@@ -1,4 +1,4 @@
-"""``hermes gateway enroll`` — enroll a self-hosted gateway with a relay connector.
+"""``opencodon gateway enroll`` — enroll a self-hosted gateway with a relay connector.
 
 The connector⇄gateway channel is authenticated (the gateway may be
 customer-managed and internet-exposed). This command is the gateway half of the
@@ -51,7 +51,7 @@ def _default_gateway_id() -> str:
         host = socket.gethostname().strip()
     except Exception:
         host = ""
-    return f"gw-{host or 'hermes'}"
+    return f"gw-{host or 'opencodon'}"
 
 
 def _resolve_connector_url(override: Optional[str]) -> Optional[str]:
@@ -168,7 +168,7 @@ def cmd_gateway_enroll(args) -> None:
     # write anyway.
     if is_managed():
         print(
-            "✗ `hermes gateway enroll` is not available in a managed/hosted install.\n"
+            "✗ `opencodon gateway enroll` is not available in a managed/hosted install.\n"
             "  The relay gateway secret is provisioned by the hosting platform."
         )
         sys.exit(1)

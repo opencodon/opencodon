@@ -41,7 +41,7 @@ class TestLocalBackendCli:
         assert _resolve_cwd(tc, d, env) == "/fake/getcwd"
 
     def test_inherited_env_overwritten(self):
-        env = {"TERMINAL_CWD": "/parent/hermes"}
+        env = {"TERMINAL_CWD": "/parent/opencodon"}
         tc = {"cwd": "/home/user", "env_type": "local"}
         d = {"terminal": {"cwd": "/home/user"}}
         assert _resolve_cwd(tc, d, env) == "/fake/getcwd"

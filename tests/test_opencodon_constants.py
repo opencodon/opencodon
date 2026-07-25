@@ -10,35 +10,35 @@ import opencodon_constants
 from opencodon_constants import (
     VALID_REASONING_EFFORTS,
     agent_browser_runnable,
-    find_hermes_node_executable,
+    find_opencodon_node_executable,
     find_node_executable,
     find_node_executable_on_path,
-    get_default_hermes_root,
-    get_hermes_dir,
+    get_default_opencodon_root,
+    get_opencodon_dir,
     get_opencodon_home,
     get_process_opencodon_home,
-    heal_hermes_managed_node,
-    hermes_managed_node_tree_present,
-    iter_hermes_node_dirs,
+    heal_opencodon_managed_node,
+    opencodon_managed_node_tree_present,
+    iter_opencodon_node_dirs,
     is_container,
     node_tool_runnable,
     parse_reasoning_effort,
     reset_opencodon_home_override,
     secure_parent_dir,
     set_opencodon_home_override,
-    with_hermes_node_path,
+    with_opencodon_node_path,
 )
 
 
-class TestGetDefaultHermesRoot:
-    """Tests for get_default_hermes_root() — Docker/custom deployment awareness."""
+class TestGetDefaultOpencodonRoot:
+    """Tests for get_default_opencodon_root() — Docker/custom deployment awareness."""
 
     def test_no_opencodon_home_returns_native(self, tmp_path, monkeypatch):
         """When OPENCODON_HOME is not set, returns ~/.opencodon."""
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        assert get_default_hermes_root() == tmp_path / ".opencodon"
+        assert get_default_opencodon_root() == tmp_path / ".opencodon"
 
     def test_opencodon_home_is_native(self, tmp_path, monkeypatch):
         """When OPENCODON_HOME = ~/.opencodon, returns ~/.opencodon."""
@@ -46,7 +46,7 @@ class TestGetDefaultHermesRoot:
         native.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(native))
-        assert get_default_hermes_root() == native
+        assert get_default_opencodon_root() == native
 
     def test_opencodon_home_is_profile(self, tmp_path, monkeypatch):
         """When OPENCODON_HOME is a profile under ~/.opencodon, returns ~/.opencodon."""
@@ -55,7 +55,7 @@ class TestGetDefaultHermesRoot:
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))
-        assert get_default_hermes_root() == native
+        assert get_default_opencodon_root() == native
 
     def test_opencodon_home_is_docker(self, tmp_path, monkeypatch):
         """When OPENCODON_HOME points outside ~/.opencodon (Docker), returns OPENCODON_HOME."""
@@ -63,15 +63,15 @@ class TestGetDefaultHermesRoot:
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(docker_home))
-        assert get_default_hermes_root() == docker_home
+        assert get_default_opencodon_root() == docker_home
 
     def test_opencodon_home_is_custom_path(self, tmp_path, monkeypatch):
         """Any OPENCODON_HOME outside ~/.opencodon is treated as the root."""
-        custom = tmp_path / "my-hermes-data"
+        custom = tmp_path / "my-opencodon-data"
         custom.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(custom))
-        assert get_default_hermes_root() == custom
+        assert get_default_opencodon_root() == custom
 
     def test_docker_profile_active(self, tmp_path, monkeypatch):
         """When a Docker profile is active (OPENCODON_HOME=<root>/profiles/<name>),
@@ -81,34 +81,34 @@ class TestGetDefaultHermesRoot:
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))
-        assert get_default_hermes_root() == docker_root
+        assert get_default_opencodon_root() == docker_root
 
     def test_no_opencodon_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
-        """Native Windows falls back to %LOCALAPPDATA%\\hermes, not ~/.opencodon."""
+        """Native Windows falls back to %LOCALAPPDATA%\\opencodon, not ~/.opencodon."""
         local_appdata = tmp_path / "LocalAppData"
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "Home")
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == local_appdata / "opencodon"
+        assert get_default_opencodon_root() == local_appdata / "opencodon"
 
     def test_no_opencodon_home_uses_windows_path_when_localappdata_missing(self, tmp_path, monkeypatch):
-        """Windows fallback still uses AppData/Local/hermes without LOCALAPPDATA."""
+        """Windows fallback still uses AppData/Local/opencodon without LOCALAPPDATA."""
         home = tmp_path / "Home"
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.delenv("LOCALAPPDATA", raising=False)
         monkeypatch.setattr(Path, "home", lambda: home)
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == home / "AppData" / "Local" / "opencodon"
+        assert get_default_opencodon_root() == home / "AppData" / "Local" / "opencodon"
 
 
-class TestGetHermesHome:
+class TestGetOpencodonHome:
     """Tests for get_opencodon_home() platform-aware fallback."""
 
     def test_windows_fallback_uses_localappdata(self, tmp_path, monkeypatch):
-        """When OPENCODON_HOME is unset on Windows, use %LOCALAPPDATA%\\hermes."""
+        """When OPENCODON_HOME is unset on Windows, use %LOCALAPPDATA%\\opencodon."""
         local_appdata = tmp_path / "LocalAppData"
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
@@ -119,7 +119,7 @@ class TestGetHermesHome:
         assert get_opencodon_home() == local_appdata / "opencodon"
 
 
-class TestGetProcessHermesHome:
+class TestGetProcessOpencodonHome:
     """Tests for get_process_opencodon_home() — process launch scope.
 
     Contract: resolve only the process env / platform default, and never
@@ -151,9 +151,9 @@ class TestGetProcessHermesHome:
             reset_opencodon_home_override(token)
 
 
-class TestHermesManagedNode:
+class TestOpencodonManagedNode:
     def test_windows_node_dir_prefers_portable_root(self, tmp_path, monkeypatch):
-        home = tmp_path / "hermes"
+        home = tmp_path / "opencodon"
         node_dir = home / "node"
         bin_dir = node_dir / "bin"
         node_dir.mkdir(parents=True)
@@ -161,10 +161,10 @@ class TestHermesManagedNode:
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
         monkeypatch.setenv("OPENCODON_HOME", str(home))
 
-        assert iter_hermes_node_dirs() == [node_dir, bin_dir]
+        assert iter_opencodon_node_dirs() == [node_dir, bin_dir]
 
     def test_windows_finds_npm_cmd_before_path(self, tmp_path, monkeypatch):
-        home = tmp_path / "hermes"
+        home = tmp_path / "opencodon"
         node_dir = home / "node"
         node_dir.mkdir(parents=True)
         npm_cmd = node_dir / "npm.cmd"
@@ -173,7 +173,7 @@ class TestHermesManagedNode:
         monkeypatch.setenv("OPENCODON_HOME", str(home))
         monkeypatch.setattr(opencodon_constants, "node_tool_runnable", lambda path: True)
 
-        assert find_hermes_node_executable("npm") == str(npm_cmd)
+        assert find_opencodon_node_executable("npm") == str(npm_cmd)
 
     def test_windows_path_fallback_prefers_npm_cmd(self, tmp_path, monkeypatch):
         bin_dir = tmp_path / "nodejs"
@@ -190,7 +190,7 @@ class TestHermesManagedNode:
         assert find_node_executable_on_path("npm") == str(npm_cmd)
 
     def test_windows_node_executable_falls_back_to_safe_path_shim(self, tmp_path, monkeypatch):
-        home = tmp_path / "hermes"
+        home = tmp_path / "opencodon"
         home.mkdir()
         bin_dir = tmp_path / "nodejs"
         bin_dir.mkdir()
@@ -205,7 +205,7 @@ class TestHermesManagedNode:
         assert find_node_executable("npm") == str(npm_cmd)
 
     def test_windows_skips_broken_managed_npm_without_path_fallback(self, tmp_path, monkeypatch):
-        home = tmp_path / "hermes"
+        home = tmp_path / "opencodon"
         managed_npm = home / "node" / "npm.cmd"
         managed_npm.parent.mkdir(parents=True)
         managed_npm.write_text("@echo off\n")
@@ -217,19 +217,19 @@ class TestHermesManagedNode:
         monkeypatch.setenv("OPENCODON_HOME", str(home))
         monkeypatch.setenv("PATH", str(bin_dir))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
-        monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", lambda: False)
+        monkeypatch.setattr(opencodon_constants, "heal_opencodon_managed_node", lambda: False)
         monkeypatch.setattr(
             opencodon_constants,
             "node_tool_runnable",
             lambda path: False,
         )
 
-        assert hermes_managed_node_tree_present() is True
+        assert opencodon_managed_node_tree_present() is True
         assert find_node_executable("npm") is None
         assert find_node_executable("npm") != str(path_npm)
 
-    def test_with_hermes_node_path_prepends_existing_managed_dirs(self, tmp_path, monkeypatch):
-        home = tmp_path / "hermes"
+    def test_with_opencodon_node_path_prepends_existing_managed_dirs(self, tmp_path, monkeypatch):
+        home = tmp_path / "opencodon"
         node_dir = home / "node"
         bin_dir = node_dir / "bin"
         node_dir.mkdir(parents=True)
@@ -237,7 +237,7 @@ class TestHermesManagedNode:
         monkeypatch.setattr(opencodon_constants.sys, "platform", "win32")
         monkeypatch.setenv("OPENCODON_HOME", str(home))
 
-        env = with_hermes_node_path({"PATH": "system-node"})
+        env = with_opencodon_node_path({"PATH": "system-node"})
         parts = env["PATH"].split(os.pathsep)
 
         assert parts[:2] == [str(node_dir), str(bin_dir)]
@@ -246,7 +246,7 @@ class TestHermesManagedNode:
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX shell stubs; Windows uses .cmd shims")
 class TestNodeToolRunnable:
-    """node_tool_runnable() rejects broken Hermes-managed npm/node wrappers."""
+    """node_tool_runnable() rejects broken opencodon-managed npm/node wrappers."""
 
     def _stub(self, tmp_path, name, body, mode=0o755):
         path = tmp_path / name
@@ -289,7 +289,7 @@ class TestNodeToolRunnable:
             broken_npm.chmod(0o755)
             return True
 
-        monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", _heal)
+        monkeypatch.setattr(opencodon_constants, "heal_opencodon_managed_node", _heal)
 
         resolved = find_node_executable("npm")
         assert heal_called["value"] is True
@@ -316,9 +316,9 @@ class TestNodeToolRunnable:
             broken_npm.chmod(0o755)
             return True
 
-        monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", _heal)
+        monkeypatch.setattr(opencodon_constants, "heal_opencodon_managed_node", _heal)
 
-        assert find_hermes_node_executable("npm") == str(healed_npm)
+        assert find_opencodon_node_executable("npm") == str(healed_npm)
         assert find_node_executable("npm") == str(healed_npm)
         assert find_node_executable("npm") != str(good_npm)
 
@@ -335,7 +335,7 @@ class TestNodeToolRunnable:
         monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
         monkeypatch.setenv("PATH", str(system_bin))
         monkeypatch.setattr(opencodon_constants, "_managed_node_heal_attempted", False)
-        monkeypatch.setattr(opencodon_constants, "heal_hermes_managed_node", lambda: False)
+        monkeypatch.setattr(opencodon_constants, "heal_opencodon_managed_node", lambda: False)
 
         assert find_node_executable("npm") is None
 
@@ -998,8 +998,8 @@ class TestAgentBrowserRunnable:
         assert captured[0][1]["creationflags"] == 0x08000000
 
 
-class TestGetHermesDir:
-    """Tests for ``get_hermes_dir(new_subpath, old_name)``.
+class TestGetOpencodonDir:
+    """Tests for ``get_opencodon_dir(new_subpath, old_name)``.
 
     Contract: prefer the legacy ``<old_name>/`` location, but only when
     it has content. An empty legacy stub must fall through to the new
@@ -1012,7 +1012,7 @@ class TestGetHermesDir:
 
     def test_neither_exists_returns_new(self, tmp_path, monkeypatch):
         self._set_home(tmp_path, monkeypatch)
-        result = get_hermes_dir("platforms/pairing", "pairing")
+        result = get_opencodon_dir("platforms/pairing", "pairing")
         assert result == tmp_path / "platforms/pairing"
 
     def test_legacy_populated_returns_legacy(self, tmp_path, monkeypatch):
@@ -1020,7 +1020,7 @@ class TestGetHermesDir:
         legacy = tmp_path / "image_cache"
         legacy.mkdir()
         (legacy / "cached.png").write_bytes(b"x")
-        result = get_hermes_dir("cache/images", "image_cache")
+        result = get_opencodon_dir("cache/images", "image_cache")
         assert result == legacy
 
     def test_legacy_populated_with_subdir_returns_legacy(self, tmp_path, monkeypatch):
@@ -1029,7 +1029,7 @@ class TestGetHermesDir:
         legacy = tmp_path / "matrix" / "store"
         legacy.mkdir(parents=True)
         (legacy / "session").mkdir()  # subdir, not a file
-        result = get_hermes_dir("platforms/matrix/store", "matrix/store")
+        result = get_opencodon_dir("platforms/matrix/store", "matrix/store")
         assert result == legacy
 
     def test_legacy_empty_returns_new(self, tmp_path, monkeypatch):
@@ -1047,7 +1047,7 @@ class TestGetHermesDir:
         new = tmp_path / "platforms" / "pairing"
         new.mkdir(parents=True)
         (new / "telegram-approved.json").write_text("[]")
-        result = get_hermes_dir("platforms/pairing", "pairing")
+        result = get_opencodon_dir("platforms/pairing", "pairing")
         assert result == new
 
     def test_legacy_empty_and_new_missing_returns_new(self, tmp_path, monkeypatch):
@@ -1061,7 +1061,7 @@ class TestGetHermesDir:
         self._set_home(tmp_path, monkeypatch)
         legacy = tmp_path / "audio_cache"
         legacy.mkdir()
-        result = get_hermes_dir("cache/audio", "audio_cache")
+        result = get_opencodon_dir("cache/audio", "audio_cache")
         assert result == tmp_path / "cache/audio"
 
     def test_legacy_is_file_treated_as_content(self, tmp_path, monkeypatch):
@@ -1073,7 +1073,7 @@ class TestGetHermesDir:
         self._set_home(tmp_path, monkeypatch)
         legacy = tmp_path / "image_cache"
         legacy.write_bytes(b"sentinel")
-        result = get_hermes_dir("cache/images", "image_cache")
+        result = get_opencodon_dir("cache/images", "image_cache")
         assert result == legacy
 
     def test_unreadable_legacy_dir_kept(self, tmp_path, monkeypatch):
@@ -1097,7 +1097,7 @@ class TestGetHermesDir:
             return real_iterdir(self)
 
         monkeypatch.setattr(Path, "iterdir", boom)
-        result = get_hermes_dir(
+        result = get_opencodon_dir(
             "platforms/whatsapp/session", "whatsapp/session"
         )
         assert result == legacy
@@ -1129,7 +1129,7 @@ class TestGetHermesDir:
             return real_lstat(self)
 
         monkeypatch.setattr(Path, "lstat", boom)
-        result = get_hermes_dir("platforms/pairing", "pairing")
+        result = get_opencodon_dir("platforms/pairing", "pairing")
         assert result == legacy
 
     def test_dangling_legacy_symlink_returns_new(self, tmp_path, monkeypatch):
@@ -1147,7 +1147,7 @@ class TestGetHermesDir:
         new = tmp_path / "platforms" / "pairing"
         new.mkdir(parents=True)
         (new / "discord-approved.json").write_text("[]")
-        result = get_hermes_dir("platforms/pairing", "pairing")
+        result = get_opencodon_dir("platforms/pairing", "pairing")
         assert result == new
 
     def test_symlink_to_populated_dir_returns_legacy(self, tmp_path, monkeypatch):
@@ -1158,7 +1158,7 @@ class TestGetHermesDir:
         (real / "cached.png").write_bytes(b"x")
         legacy = tmp_path / "image_cache"
         legacy.symlink_to(real)
-        result = get_hermes_dir("cache/images", "image_cache")
+        result = get_opencodon_dir("cache/images", "image_cache")
         assert result == legacy
 
     def test_symlink_to_empty_dir_returns_new(self, tmp_path, monkeypatch):
@@ -1168,7 +1168,7 @@ class TestGetHermesDir:
         empty.mkdir()
         legacy = tmp_path / "audio_cache"
         legacy.symlink_to(empty)
-        result = get_hermes_dir("cache/audio", "audio_cache")
+        result = get_opencodon_dir("cache/audio", "audio_cache")
         assert result == tmp_path / "cache/audio"
 
 

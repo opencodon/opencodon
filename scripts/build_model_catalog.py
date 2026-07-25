@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
+"""Build the opencodon Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated list (``OPENROUTER_MODELS``)
 and writes it to a JSON manifest that the CLI fetches at runtime. Publishing
@@ -64,7 +64,7 @@ def build_catalog() -> dict:
                     "note": (
                         "Descriptions drive picker badges. Live /api/v1/models "
                         "filters curated ids by tool-calling support and free pricing. "
-                        'The entry labeled "default": true is the model Hermes '
+                        'The entry labeled "default": true is the model opencodon '
                         "silently lands on when the user never picked one."
                     ),
                 },

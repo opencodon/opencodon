@@ -100,7 +100,7 @@ def test_skills_hub_block_still_applies(fake_home):
     hub_file = _create(fake_home, "skills/.hub/manifest.json")
     err = get_read_block_error(str(hub_file))
     assert err is not None
-    assert "internal Hermes cache file" in err
+    assert "internal opencodon cache file" in err
 
 
 def test_path_traversal_resolves_to_blocked(fake_home, tmp_path):
@@ -342,10 +342,10 @@ def test_mcp_tokens_dir_itself_blocked(fake_home):
     assert "MCP token" in err
 
 
-def test_identically_named_hermes_files_outside_home_not_blocked(
+def test_identically_named_opencodon_files_outside_home_not_blocked(
     fake_home, tmp_path
 ):
-    """Hermes-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
+    """opencodon-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
     outside OPENCODON_HOME must remain readable — the gate is per-location for
     those, not per-filename. ``.env`` is the exception: it's blocked anywhere
     on disk (see test_project_local_env_blocked) because the basename always
@@ -397,11 +397,11 @@ def test_profile_mode_blocks_root_credentials(tmp_path, monkeypatch):
     inherited by every profile."""
     import agent.file_safety as fs
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "opencodon"
     profile = root / "profiles" / "coder"
     profile.mkdir(parents=True)
     monkeypatch.setattr(fs, "_opencodon_home_path", lambda: profile)
-    monkeypatch.setattr(fs, "_hermes_root_path", lambda: root)
+    monkeypatch.setattr(fs, "_opencodon_root_path", lambda: root)
 
     from agent.file_safety import get_read_block_error
 

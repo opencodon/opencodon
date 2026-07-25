@@ -1,6 +1,6 @@
 """Content-addressed blob store for artifact bytes.
 
-Layout: ``<root>/<sha256[:2]>/<sha256>`` under the profile's hermes home
+Layout: ``<root>/<sha256[:2]>/<sha256>`` under the profile's opencodon home
 (``~/.opencodon/science/blobs`` by default), so each profile gets its own store.
 Blobs are immutable and deduplicated by content; artifact_versions rows point
 at them via ``storage_path`` + ``checksum``.

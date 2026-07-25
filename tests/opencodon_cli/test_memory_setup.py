@@ -103,7 +103,7 @@ def test_cmd_setup_clears_interactive_picker_before_provider_post_setup(monkeypa
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: events.append("select") or 0)
     monkeypatch.setattr(memory_setup, "_clear_interactive_transition", lambda: events.append("clear"), raising=False)
     monkeypatch.setattr(memory_setup, "_install_dependencies", lambda name: events.append("install"))
-    monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/hermes-test")
+    monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/opencodon-test")
     monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"memory": {}})
 
     memory_setup.cmd_setup(SimpleNamespace())
@@ -121,7 +121,7 @@ def test_cmd_setup_provider_clears_before_provider_post_setup(monkeypatch):
     monkeypatch.setattr(memory_setup, "_get_available_providers", lambda: [("openviking", "local", PostSetupProvider())])
     monkeypatch.setattr(memory_setup, "_clear_interactive_transition", lambda: events.append("clear"), raising=False)
     monkeypatch.setattr(memory_setup, "_install_dependencies", lambda name: events.append("install"))
-    monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/hermes-test")
+    monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/opencodon-test")
     monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"memory": {}})
 
     memory_setup.cmd_setup_provider("openviking")
@@ -139,7 +139,7 @@ def test_cmd_status_prefers_provider_status_config(monkeypatch, capsys):
                 "endpoint": "https://vps.example",
                 "account": "acct",
                 "user": "alice",
-                "agent": "hermes",
+                "agent": "opencodon",
             }
 
         def is_available(self):

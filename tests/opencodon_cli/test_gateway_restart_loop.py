@@ -26,13 +26,13 @@ class TestGatewayLifecyclePattern:
     """Verify the regex catches gateway lifecycle commands."""
 
     @pytest.mark.parametrize("text", [
-        "hermes gateway restart",
-        "hermes gateway stop",
-        "hermes  gateway  restart",         # double spaces
-        "Hermez Gateway Restart".lower().replace("z", "s"),  # case handled
-        "HERMES GATEWAY RESTART",           # uppercase
+        "opencodon gateway restart",
+        "opencodon gateway stop",
+        "opencodon  gateway  restart",         # double spaces
+        "Opencodon Gateway Restart".lower(),   # case handled
+        "OPENCODON GATEWAY RESTART",           # uppercase
     ])
-    def test_hermes_gateway_commands(self, text):
+    def test_opencodon_gateway_commands(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"
 
     @pytest.mark.parametrize("text", [
@@ -47,33 +47,33 @@ class TestGatewayLifecyclePattern:
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"
 
     @pytest.mark.parametrize("text", [
-        "kill hermes gateway process",
-        "pkill -f hermes.*gateway",
-        "pkill -f gateway.*hermes",          # inverse token order
+        "kill opencodon gateway process",
+        "pkill -f opencodon.*gateway",
+        "pkill -f gateway.*opencodon",          # inverse token order
     ])
     def test_kill_commands(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"
 
     @pytest.mark.parametrize("text", [
         "restart the server application",
-        "hermes cron list",
-        "hermes update",
-        "hermes config set model claude",
+        "opencodon cron list",
+        "opencodon update",
+        "opencodon config set model claude",
         "echo 'just a normal cron job'",
         "run the backup script",
         "gateway is running fine",
-        # `hermes gateway start` is benign — starting a gateway from inside a
+        # `opencodon gateway start` is benign — starting a gateway from inside a
         # gateway is a no-op / "already running", and a legit cron job may
         # start a sibling profile's gateway. Only restart/stop/kill are the
         # foot-gun (#30719 lists only those).
-        "hermes gateway start",
-        "hermes gateway start --all",
-        # Tightened launchctl/systemctl branches: ops on NON-gateway hermes
-        # services must not be falsely blocked (the old `.*hermes` matched any
-        # hermes token).
+        "opencodon gateway start",
+        "opencodon gateway start --all",
+        # Tightened launchctl/systemctl branches: ops on NON-gateway opencodon
+        # services must not be falsely blocked (the old `.*opencodon` matched any
+        # opencodon token).
         "launchctl unload ai.opencodon.update-checker.plist",
         "launchctl restart ai.opencodon.daemon",
-        "systemctl restart hermes-meta.service",
+        "systemctl restart opencodon-meta.service",
         "systemctl restart opencodon-cron-helper",
         # Regression (#30728 follow-up): legit prompts that merely mention an
         # unrelated gateway + a restart must NOT be blocked. The cron prompt is
@@ -98,11 +98,11 @@ class TestCronCreateLifecycleBlock:
         monkeypatch.setattr("cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
         monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
 
-    def test_block_hermes_gateway_restart(self, capsys):
+    def test_block_opencodon_gateway_restart(self, capsys):
         args = Namespace(
             cron_command="create",
             schedule="30m",
-            prompt="Upgrade hermes then run hermes gateway restart",
+            prompt="Upgrade opencodon then run opencodon gateway restart",
             name=None,
             deliver=None,
             repeat=None,
@@ -141,12 +141,12 @@ class TestCronCreateLifecycleBlock:
 
     def test_block_script_with_lifecycle_command(self, tmp_path, capsys, monkeypatch):
         # A no_agent job whose script IS the job (the issue's real abuse path:
-        # restart_hermes_gateway_once.sh). The script must live under
+        # restart_opencodon_gateway_once.sh). The script must live under
         # OPENCODON_HOME/scripts so the scheduler — and the guard — resolve it.
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
         scripts_dir = tmp_path / ".opencodon" / "scripts"
         scripts_dir.mkdir(parents=True)
-        (scripts_dir / "restart.sh").write_text("#!/bin/bash\nhermes gateway restart\n")
+        (scripts_dir / "restart.sh").write_text("#!/bin/bash\nopencodon gateway restart\n")
         args = Namespace(
             cron_command="create",
             schedule="1h",
@@ -217,7 +217,7 @@ class TestCronCreateLifecycleBlock:
 # ---------------------------------------------------------------------------
 
 class TestGatewaySelfTargetingGuard:
-    """Verify hermes gateway stop/restart refuse when _OPENCODON_GATEWAY=1."""
+    """Verify opencodon gateway stop/restart refuse when _OPENCODON_GATEWAY=1."""
 
     def test_stop_refuses_inside_gateway(self, monkeypatch):
         monkeypatch.setenv("_OPENCODON_GATEWAY", "1")
@@ -314,9 +314,9 @@ class TestTerminalToolGatewayLifecycleGuard:
         "systemctl restart opencodon-gateway",
         "systemctl --user restart opencodon-gateway",
         "systemctl stop opencodon-gateway.service",
-        "hermes gateway restart",
+        "opencodon gateway restart",
         "launchctl kickstart gui/501/ai.opencodon.gateway",
-        "pkill -f hermes.*gateway",
+        "pkill -f opencodon.*gateway",
     ])
     def test_blocks_lifecycle_commands_inside_gateway(self, monkeypatch, cmd):
         import tools.terminal_tool as tt
@@ -339,7 +339,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         assert "Blocked" in result["error"]
 
     def test_safe_systemctl_commands_pass_through(self, monkeypatch):
-        """Non-hermes systemctl commands must not be blocked by this guard."""
+        """Non-opencodon systemctl commands must not be blocked by this guard."""
         import tools.terminal_tool as tt
 
         calls = []
@@ -391,7 +391,7 @@ class TestLifecycleGuardModule:
     def test_prompt_with_command_raises(self):
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         with pytest.raises(GatewayLifecycleBlocked) as exc:
-            check_gateway_lifecycle("please run hermes gateway restart", None)
+            check_gateway_lifecycle("please run opencodon gateway restart", None)
         assert "#30719" in str(exc.value)
 
     def test_clean_prompt_does_not_raise(self):
@@ -402,7 +402,7 @@ class TestLifecycleGuardModule:
     def test_script_with_command_raises(self, tmp_path, monkeypatch):
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "restart.sh"
-        script.write_text("#!/bin/bash\nhermes gateway restart\n")
+        script.write_text("#!/bin/bash\nopencodon gateway restart\n")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("clean prompt", str(script))
 
@@ -411,7 +411,7 @@ class TestLifecycleGuardModule:
         script to slip through."""
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "ops.sh"
-        script.write_text("hermes gateway stop\n")
+        script.write_text("opencodon gateway stop\n")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("daily ops job", str(script))
 
@@ -420,7 +420,7 @@ class TestLifecycleGuardModule:
         decode with errors='replace' so the scan always sees the command."""
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "weird.bin"
-        script.write_bytes(b"\xfehermes gateway restart\xff")
+        script.write_bytes(b"\xfeopencodon gateway restart\xff")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("", str(script))
 
@@ -462,7 +462,7 @@ class TestCreateJobBlocksLifecycleCommands:
         from cron.jobs import create_job
         from cron.lifecycle_guard import GatewayLifecycleBlocked
         with pytest.raises(GatewayLifecycleBlocked):
-            create_job(prompt="then run hermes gateway restart", schedule="30m")
+            create_job(prompt="then run opencodon gateway restart", schedule="30m")
 
     def test_create_job_allows_benign_prompt(self):
         from cron.jobs import create_job
@@ -478,7 +478,7 @@ class TestCreateJobBlocksLifecycleCommands:
         from tools.cronjob_tools import cronjob
         result = json.loads(cronjob(
             action="create", schedule="0 9 * * *",
-            prompt="please run hermes gateway restart nightly",
+            prompt="please run opencodon gateway restart nightly",
         ))
         assert result.get("success") is False
         assert "#30719" in result.get("error", "")

@@ -165,7 +165,7 @@ def _resolve_codex_usage_credentials(
     """Resolve Codex quota credentials from the native runtime path.
 
     Prefer explicit live-agent credentials, then the legacy singleton OAuth
-    state, then the credential pool.  Hermes's native OAuth setup now stores
+    state, then the credential pool.  opencodon's native OAuth setup now stores
     device-code logins in the pool, so quota diagnostics must not depend only
     on the older singleton store.
     """
@@ -325,7 +325,7 @@ def redeem_codex_reset_credit(
     except Exception:
         return CodexResetRedeemResult(
             status="unavailable",
-            message="No Codex credentials available. Run `hermes auth` to sign in with your ChatGPT account.",
+            message="No Codex credentials available. Run `opencodon auth` to sign in with your ChatGPT account.",
         )
     usage_url, _credits_url, consume_url = _codex_backend_urls(resolved_base_url)
     headers = {
@@ -391,7 +391,7 @@ def redeem_codex_reset_credit(
                 message=(
                     "Codex backend rejected the request (HTTP "
                     f"{code}). Reset credits require ChatGPT-account (OAuth) auth — "
-                    "run `hermes auth` and sign in with your ChatGPT account."
+                    "run `opencodon auth` and sign in with your ChatGPT account."
                 ),
             )
         return CodexResetRedeemResult(
@@ -411,7 +411,7 @@ def redeem_codex_reset_credit(
     plural = "s" if remaining != 1 else ""
     if code == "reset":
         # The redeemed reset restores the account's quota upstream — lift any
-        # persisted pool cooldowns so Hermes doesn't keep the credential
+        # persisted pool cooldowns so opencodon doesn't keep the credential
         # frozen behind the now-stale ``last_error_reset_at`` (issue #43747).
         try:
             from opencodon_cli.auth import clear_codex_pool_quota_cooldowns

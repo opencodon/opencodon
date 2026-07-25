@@ -3,12 +3,12 @@
 
 Usage (via cron with --no-agent):
 
-    hermes cron create hermes-issues \\
+    opencodon cron create opencodon-issues \\
       --schedule "*/5 * * * *" --no-agent \\
       --script "$OPENCODON_HOME/skills/devops/watchers/scripts/watch_github.py" \\
-      --script-args "--name hermes-issues --repo opencodon/opencodon --scope issues"
+      --script-args "--name opencodon-issues --repo opencodon/opencodon --scope issues"
 
-Set GITHUB_TOKEN (or GH_TOKEN) in the Hermes .env file
+Set GITHUB_TOKEN (or GH_TOKEN) in the opencodon .env file
 (``${OPENCODON_HOME:-~/.opencodon}/.env``) to avoid the 60 req/hr
 anonymous rate limit.
 
@@ -113,7 +113,7 @@ def main() -> int:
 
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "Hermes-Watcher/1.0",
+        "User-Agent": "opencodon-Watcher/1.0",
     }
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:

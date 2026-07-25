@@ -17,7 +17,7 @@ import pytest
 
 @pytest.fixture
 def opencodon_home(monkeypatch):
-    d = tempfile.mkdtemp(prefix="hermes_wa_test_")
+    d = tempfile.mkdtemp(prefix="opencodon_wa_test_")
     home = os.path.join(d, ".opencodon")
     os.makedirs(home)
     monkeypatch.setenv("OPENCODON_HOME", home)

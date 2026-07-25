@@ -232,8 +232,8 @@ class TestSetupLogging:
         """The custom record factory injects session_tag on all records."""
         opencodon_logging.setup_logging(opencodon_home=opencodon_home)
         factory = logging.getLogRecordFactory()
-        assert getattr(factory, "_hermes_session_injector", False), (
-            "Record factory should have _hermes_session_injector marker"
+        assert getattr(factory, "_opencodon_session_injector", False), (
+            "Record factory should have _opencodon_session_injector marker"
         )
         # Verify session_tag exists on a fresh record
         record = factory("test", logging.INFO, "", 0, "msg", (), None)
@@ -581,7 +581,7 @@ class TestComponentPrefixes:
 
     def test_gateway_prefix(self):
         assert "gateway" in opencodon_logging.COMPONENT_PREFIXES
-        # The gateway component captures core gateway logs, the hermes_plugins
+        # The gateway component captures core gateway logs, the opencodon_plugins
         # facility, and plugins.platforms (messaging-platform adapters that
         # migrated out of gateway/platforms/ into bundled plugins, #41112).
         # Assert the required members as an invariant rather than an exact
@@ -589,7 +589,7 @@ class TestComponentPrefixes:
         # break this test.
         gateway_prefixes = opencodon_logging.COMPONENT_PREFIXES["gateway"]
         assert "gateway" in gateway_prefixes
-        assert "hermes_plugins" in gateway_prefixes
+        assert "opencodon_plugins" in gateway_prefixes
         assert "plugins.platforms" in gateway_prefixes
 
     def test_agent_prefix(self):
@@ -627,7 +627,7 @@ class TestSetupVerboseLogging:
             h for h in root.handlers
             if isinstance(h, logging.StreamHandler)
             and not isinstance(h, RotatingFileHandler)
-            and getattr(h, "_hermes_verbose", False)
+            and getattr(h, "_opencodon_verbose", False)
         ]
         assert len(verbose_handlers) == 1
         assert verbose_handlers[0].level == logging.DEBUG
@@ -642,7 +642,7 @@ class TestSetupVerboseLogging:
             h for h in root.handlers
             if isinstance(h, logging.StreamHandler)
             and not isinstance(h, RotatingFileHandler)
-            and getattr(h, "_hermes_verbose", False)
+            and getattr(h, "_opencodon_verbose", False)
         ]
         assert len(verbose_handlers) == 1
 
@@ -1158,7 +1158,7 @@ class TestAsyncQueueLogging:
         assert not any(isinstance(h, RotatingFileHandler) for h in root.handlers)
         # Exactly one queue handler funnels records to the listener.
         queue_handlers = [
-            h for h in root.handlers if getattr(h, "_hermes_queue", False)
+            h for h in root.handlers if getattr(h, "_opencodon_queue", False)
         ]
         assert len(queue_handlers) == 1
         # The real file handlers are discoverable via the accessor.

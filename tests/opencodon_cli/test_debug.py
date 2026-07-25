@@ -1,4 +1,4 @@
-"""Tests for ``hermes debug`` CLI command and debug utilities."""
+"""Tests for ``opencodon debug`` CLI command and debug utilities."""
 
 import os
 import urllib.error
@@ -424,11 +424,11 @@ class TestCollectDebugReport:
 
         with patch("opencodon_cli.dump.run_dump") as mock_dump:
             mock_dump.side_effect = lambda args: print(
-                "--- hermes dump ---\nversion: 0.8.0\n--- end dump ---"
+                "--- opencodon dump ---\nversion: 0.8.0\n--- end dump ---"
             )
             report = collect_debug_report(log_lines=50)
 
-        assert "--- hermes dump ---" in report
+        assert "--- opencodon dump ---" in report
         assert "version: 0.8.0" in report
 
     def test_report_includes_agent_log(self, opencodon_home):
@@ -569,7 +569,7 @@ class TestRunDebugShare:
         with patch("opencodon_cli.dump.run_dump") as mock_dump, \
              patch("opencodon_cli.debug.upload_to_pastebin",
                     side_effect=_mock_upload):
-            mock_dump.side_effect = lambda a: print("--- hermes dump ---\nversion: test\n--- end dump ---")
+            mock_dump.side_effect = lambda a: print("--- opencodon dump ---\nversion: test\n--- end dump ---")
             run_debug_share(args)
 
         out = capsys.readouterr().out
@@ -588,16 +588,16 @@ class TestRunDebugShare:
 
         # Each log paste should start with the dump header
         agent_paste = uploaded_content[1]
-        assert "--- hermes dump ---" in agent_paste
+        assert "--- opencodon dump ---" in agent_paste
         assert "--- full agent.log ---" in agent_paste
         gateway_paste = uploaded_content[2]
-        assert "--- hermes dump ---" in gateway_paste
+        assert "--- opencodon dump ---" in gateway_paste
         assert "--- full gateway.log ---" in gateway_paste
         gui_paste = uploaded_content[3]
-        assert "--- hermes dump ---" in gui_paste
+        assert "--- opencodon dump ---" in gui_paste
         assert "--- full gui.log ---" in gui_paste
         desktop_paste = uploaded_content[4]
-        assert "--- hermes dump ---" in desktop_paste
+        assert "--- opencodon dump ---" in desktop_paste
         assert "--- full desktop.log ---" in desktop_paste
 
     def test_share_keeps_report_and_full_log_on_same_snapshot(self, opencodon_home, capsys):
@@ -855,7 +855,7 @@ class TestRunDebug:
         run_debug(args)
 
         out = capsys.readouterr().out
-        assert "hermes debug" in out
+        assert "opencodon debug" in out
         assert "share" in out
         assert "delete" in out
 
@@ -935,7 +935,7 @@ class TestScheduleAutoDelete:
 
     The new implementation is stateless: it records pending deletions to
     ``~/.opencodon/pastes/pending.json`` and lets ``_sweep_expired_pastes``
-    handle the DELETE requests synchronously on the next ``hermes debug``
+    handle the DELETE requests synchronously on the next ``opencodon debug``
     invocation.
     """
 
@@ -1193,7 +1193,7 @@ class TestRunDebugSweepsOnInvocation:
 
         # Default subcommand still printed help
         out = capsys.readouterr().out
-        assert "Usage: hermes debug" in out
+        assert "Usage: opencodon debug" in out
 
 
 class TestRunDebugDelete:
@@ -1301,7 +1301,7 @@ class TestShareIncludesAutoDelete:
 class TestBuildDebugShare:
     """The shared core that returns structured paste URLs (not printed text).
 
-    Backs both ``hermes debug share`` (CLI) and ``POST /api/ops/debug-share``
+    Backs both ``opencodon debug share`` (CLI) and ``POST /api/ops/debug-share``
     (dashboard). The dashboard renders ``urls`` as real, copyable links, so the
     contract here is the return value, not stdout.
     """
@@ -1476,7 +1476,7 @@ class TestDebugSlashCommand:
     """`/debug [local]` parsing in the CLI/TUI handler.
 
     The classic CLI and the TUI slash worker both dispatch through
-    ``HermesCLI.process_command`` → ``_handle_debug_command(cmd_original)``,
+    ``OpencodonCLI.process_command`` → ``_handle_debug_command(cmd_original)``,
     which parses an optional destination word and builds the args namespace
     handed to ``run_debug_share``.
     """
@@ -1525,7 +1525,7 @@ class TestDebugSlashCommand:
 
 
 class TestShareConsentGate:
-    """`hermes debug share` requires explicit consent before uploading.
+    """`opencodon debug share` requires explicit consent before uploading.
 
     Uses SimpleNamespace rather than MagicMock so ``args.yes`` is a real
     ``False`` — a MagicMock auto-provides a truthy ``.yes`` and would silently

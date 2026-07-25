@@ -760,7 +760,7 @@ class TestHasAnyProviderConfigured:
         assert _has_any_provider_configured() is True
 
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
-        """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
+        """Claude Code credentials should NOT skip the wizard when opencodon is unconfigured."""
         from opencodon_cli import config as config_module
         from opencodon_cli.auth import PROVIDER_REGISTRY
         opencodon_home = tmp_path / ".opencodon"
@@ -875,8 +875,8 @@ class TestHasAnyProviderConfigured:
         from opencodon_cli.main import _has_any_provider_configured
         assert _has_any_provider_configured() is False
 
-    def test_claude_code_creds_counted_when_hermes_configured(self, monkeypatch, tmp_path):
-        """Claude Code credentials should count when Hermes has been explicitly configured."""
+    def test_claude_code_creds_counted_when_opencodon_configured(self, monkeypatch, tmp_path):
+        """Claude Code credentials should count when opencodon has been explicitly configured."""
         import yaml
         from opencodon_cli import config as config_module
         opencodon_home = tmp_path / ".opencodon"

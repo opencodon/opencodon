@@ -107,35 +107,35 @@ def test_has_system_browser_checks_posix_names():
         assert _has_system_browser() is False
 
 
-def test_has_hermes_agent_browser_windows_path(tmp_path):
+def test_has_opencodon_agent_browser_windows_path(tmp_path):
     node_dir = tmp_path / "node"
     node_dir.mkdir(parents=True)
     (node_dir / "agent-browser.cmd").write_text("@echo off")
-    from opencodon_cli.dep_ensure import _has_hermes_agent_browser
+    from opencodon_cli.dep_ensure import _has_opencodon_agent_browser
     with patch("opencodon_cli.dep_ensure._IS_WINDOWS", True), \
          patch("opencodon_constants.get_opencodon_home", return_value=tmp_path):
-        assert _has_hermes_agent_browser() is True
+        assert _has_opencodon_agent_browser() is True
 
 
-def test_has_hermes_agent_browser_posix_path(tmp_path):
+def test_has_opencodon_agent_browser_posix_path(tmp_path):
     bin_dir = tmp_path / "node" / "bin"
     bin_dir.mkdir(parents=True)
     (bin_dir / "agent-browser").write_text("#!/bin/sh")
-    from opencodon_cli.dep_ensure import _has_hermes_agent_browser
+    from opencodon_cli.dep_ensure import _has_opencodon_agent_browser
     with patch("opencodon_cli.dep_ensure._IS_WINDOWS", False), \
          patch("opencodon_constants.get_opencodon_home", return_value=tmp_path):
-        assert _has_hermes_agent_browser() is True
+        assert _has_opencodon_agent_browser() is True
 
 
-def test_has_hermes_agent_browser_legacy_node_modules_path(tmp_path):
+def test_has_opencodon_agent_browser_legacy_node_modules_path(tmp_path):
     """Legacy git-clone installs put agent-browser in $OPENCODON_HOME/node_modules/.bin/."""
     bin_dir = tmp_path / "node_modules" / ".bin"
     bin_dir.mkdir(parents=True)
     (bin_dir / "agent-browser").write_text("#!/bin/sh")
-    from opencodon_cli.dep_ensure import _has_hermes_agent_browser
+    from opencodon_cli.dep_ensure import _has_opencodon_agent_browser
     with patch("opencodon_cli.dep_ensure._IS_WINDOWS", False), \
          patch("opencodon_constants.get_opencodon_home", return_value=tmp_path):
-        assert _has_hermes_agent_browser() is True
+        assert _has_opencodon_agent_browser() is True
 
 
 def test_ensure_dependency_uses_powershell_on_windows(tmp_path):
@@ -158,5 +158,5 @@ def test_ensure_dependency_uses_powershell_on_windows(tmp_path):
         assert "powershell" in cmd[0].lower()
         assert "-Ensure" in cmd
         assert cmd[cmd.index("-Ensure") + 1] == "node"
-        assert "-HermesHome" in cmd
+        assert "-OpencodonHome" in cmd
         assert str(tmp_path / "fakehome") in cmd

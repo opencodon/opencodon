@@ -28,7 +28,7 @@ def test_get_managed_dir_empty_override_falls_through(tmp_path, monkeypatch):
     from opencodon_cli import managed_scope
 
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", "   ")  # whitespace = unset
-    # Under pytest the /etc/hermes default is ignored, so this is None; the
+    # Under pytest the /etc/opencodon default is ignored, so this is None; the
     # assertion that matters is that it does NOT raise.
     result = managed_scope.get_managed_dir()
     assert result is None or result.exists()

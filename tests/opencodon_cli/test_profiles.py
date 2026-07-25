@@ -125,9 +125,9 @@ class TestValidateProfileName:
         with pytest.raises(ValueError):
             validate_profile_name("")
 
-    @pytest.mark.parametrize("name", ["hermes", "test", "tmp", "root", "sudo"])
+    @pytest.mark.parametrize("name", ["opencodon", "test", "tmp", "root", "sudo"])
     def test_reserved_names_rejected(self, name):
-        """Reserved names collide with the Hermes install itself or with
+        """Reserved names collide with the opencodon install itself or with
         common system binaries — reject them at validate time so
         create/install/rename all share one gate."""
         with pytest.raises(ValueError, match="reserved"):
@@ -294,7 +294,7 @@ class TestCreateProfile:
         assert not (profile_dir / "profiles").exists()
 
     def test_clone_all_excludes_default_infrastructure(self, profile_env):
-        """--clone-all from default profile excludes hermes-agent, .worktrees,
+        """--clone-all from default profile excludes opencodon, .worktrees,
         bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
         at any depth.  Profile data (config, env, skills, logs) must be
         preserved — clone-all means "complete snapshot minus infrastructure
@@ -396,7 +396,7 @@ class TestCreateProfile:
 # ===================================================================
 
 class TestNoSkillsOptOut:
-    """Tests for `hermes profile create --no-skills` and the opt-out marker."""
+    """Tests for `opencodon profile create --no-skills` and the opt-out marker."""
 
     def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
@@ -434,7 +434,7 @@ class TestNoSkillsOptOut:
 
     def test_seed_profile_skills_respects_marker(self, profile_env):
         """seed_profile_skills() must no-op on opted-out profiles even when
-        called directly (e.g. by `hermes update`'s all-profile sync loop)."""
+        called directly (e.g. by `opencodon update`'s all-profile sync loop)."""
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
 
         # Call seed_profile_skills() directly — it should NOT invoke subprocess,
@@ -506,7 +506,7 @@ class TestNoSkillsOptOut:
 # ===================================================================
 
 class TestBackfillProfileEnvs:
-    """Tests for backfill_profile_envs() — the `hermes update` pass that
+    """Tests for backfill_profile_envs() — the `opencodon update` pass that
     gives pre-#44792 profiles (created before .env seeding) their own
     .env, copied from the default install so credentials don't break."""
 
@@ -813,7 +813,7 @@ class TestAliasCollision:
         assert result is None
 
     def test_reserved_name_returns_message(self, profile_env):
-        result = check_alias_collision("hermes")
+        result = check_alias_collision("opencodon")
         assert result is not None
         assert "reserved" in result.lower()
 
@@ -848,7 +848,7 @@ class TestAliasCollision:
         wrapper_dir = profile_env / ".local" / "bin"
         wrapper_dir.mkdir(parents=True, exist_ok=True)
         bat_path = wrapper_dir / "mybot.bat"
-        bat_path.write_text("@echo off\r\nhermes -p mybot %*\r\n")
+        bat_path.write_text("@echo off\r\nopencodon -p mybot %*\r\n")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout=str(bat_path),
@@ -874,14 +874,14 @@ class TestWrapperScript:
 
     def test_creates_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
+        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/opencodon/bin/opencodon")
         from opencodon_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.name == "mybot"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "exec /opt/hermes/bin/hermes -p mybot" in content
+        assert "exec /opt/opencodon/bin/opencodon -p mybot" in content
 
     def test_creates_bat_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
@@ -891,7 +891,7 @@ class TestWrapperScript:
         assert wrapper.name == "mybot.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p mybot" in content
+        assert "opencodon -p mybot" in content
         assert "%*" in content
 
     def test_remove_finds_bat_on_windows(self, profile_env, monkeypatch):
@@ -928,7 +928,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
 
     def test_custom_alias_target_on_windows(self, profile_env, monkeypatch):
         # Regression: custom-name aliases must still produce an executable
@@ -940,7 +940,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
         assert "%*" in content
         assert "#!/bin/sh" not in content
 
@@ -989,7 +989,7 @@ class TestWrapperScriptSecurity:
         wrapper = create_wrapper_script("mybot", target="coder")
         assert wrapper is not None
         assert wrapper.resolve().is_relative_to(_get_wrapper_dir().resolve())
-        assert 'hermes -p coder "$@"' in wrapper.read_text()
+        assert 'opencodon -p coder "$@"' in wrapper.read_text()
 
 
 # ===================================================================
@@ -1165,7 +1165,7 @@ class TestRenameProfile:
         assert not (profile_dir / "profiles").exists()
 
     def test_clone_all_excludes_default_infrastructure(self, profile_env):
-        """--clone-all from default profile excludes hermes-agent, .worktrees,
+        """--clone-all from default profile excludes opencodon, .worktrees,
         bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
         at any depth.  Profile data (config, env, skills, logs) must be
         preserved — clone-all means "complete snapshot minus infrastructure
@@ -1267,7 +1267,7 @@ class TestRenameProfile:
 # ===================================================================
 
 class TestNoSkillsOptOut:
-    """Tests for `hermes profile create --no-skills` and the opt-out marker."""
+    """Tests for `opencodon profile create --no-skills` and the opt-out marker."""
 
     def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
@@ -1305,7 +1305,7 @@ class TestNoSkillsOptOut:
 
     def test_seed_profile_skills_respects_marker(self, profile_env):
         """seed_profile_skills() must no-op on opted-out profiles even when
-        called directly (e.g. by `hermes update`'s all-profile sync loop)."""
+        called directly (e.g. by `opencodon update`'s all-profile sync loop)."""
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
 
         # Call seed_profile_skills() directly — it should NOT invoke subprocess,
@@ -1377,7 +1377,7 @@ class TestNoSkillsOptOut:
 # ===================================================================
 
 class TestBackfillProfileEnvs:
-    """Tests for backfill_profile_envs() — the `hermes update` pass that
+    """Tests for backfill_profile_envs() — the `opencodon update` pass that
     gives pre-#44792 profiles (created before .env seeding) their own
     .env, copied from the default install so credentials don't break."""
 
@@ -1684,7 +1684,7 @@ class TestAliasCollision:
         assert result is None
 
     def test_reserved_name_returns_message(self, profile_env):
-        result = check_alias_collision("hermes")
+        result = check_alias_collision("opencodon")
         assert result is not None
         assert "reserved" in result.lower()
 
@@ -1719,7 +1719,7 @@ class TestAliasCollision:
         wrapper_dir = profile_env / ".local" / "bin"
         wrapper_dir.mkdir(parents=True, exist_ok=True)
         bat_path = wrapper_dir / "mybot.bat"
-        bat_path.write_text("@echo off\r\nhermes -p mybot %*\r\n")
+        bat_path.write_text("@echo off\r\nopencodon -p mybot %*\r\n")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout=str(bat_path),
@@ -1745,14 +1745,14 @@ class TestWrapperScript:
 
     def test_creates_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
+        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/opencodon/bin/opencodon")
         from opencodon_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.name == "mybot"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "exec /opt/hermes/bin/hermes -p mybot" in content
+        assert "exec /opt/opencodon/bin/opencodon -p mybot" in content
 
     def test_creates_bat_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
@@ -1762,7 +1762,7 @@ class TestWrapperScript:
         assert wrapper.name == "mybot.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p mybot" in content
+        assert "opencodon -p mybot" in content
         assert "%*" in content
 
     def test_remove_finds_bat_on_windows(self, profile_env, monkeypatch):
@@ -1799,7 +1799,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
 
     def test_custom_alias_target_on_windows(self, profile_env, monkeypatch):
         # Regression: custom-name aliases must still produce an executable
@@ -1811,7 +1811,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
         assert "%*" in content
         assert "#!/bin/sh" not in content
 
@@ -1860,7 +1860,7 @@ class TestWrapperScriptSecurity:
         wrapper = create_wrapper_script("mybot", target="coder")
         assert wrapper is not None
         assert wrapper.resolve().is_relative_to(_get_wrapper_dir().resolve())
-        assert 'hermes -p coder "$@"' in wrapper.read_text()
+        assert 'opencodon -p coder "$@"' in wrapper.read_text()
 
 
 # ===================================================================
@@ -2158,7 +2158,7 @@ class TestExportImport:
 
         # Infrastructure excluded
         excluded_prefixes = [
-            "default/hermes-agent", "default/.worktrees", "default/profiles",
+            "default/opencodon", "default/.worktrees", "default/profiles",
             "default/bin", "default/image_cache", "default/logs",
             "default/sandboxes", "default/checkpoints",
         ]
@@ -2199,7 +2199,7 @@ class TestExportImport:
         Docker/custom deployments often set OPENCODON_HOME to a working
         directory that also contains unrelated user projects (``x11-dev/``,
         etc.).  The root-level allow-list filters those out so only known
-        Hermes artifacts end up in the archive. Replaces the old
+        opencodon artifacts end up in the archive. Replaces the old
         exhaustive blacklist.
         """
         default_dir = get_profile_dir("default")
@@ -2345,7 +2345,7 @@ class TestProfileIsolation:
 
 
 # ===================================================================
-# TestGetProfilesRoot / TestGetDefaultHermesHome (internal helpers)
+# TestGetProfilesRoot / TestGetDefaultOpencodonHome (internal helpers)
 # ===================================================================
 
 class TestInternalHelpers:
@@ -2500,7 +2500,7 @@ class TestEdgeCases:
                 {
                     "pid": live_pid,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "start_time": gw_status._get_process_start_time(live_pid),
                     "gateway_state": "running",
                     "active_agents": 0,
@@ -2518,7 +2518,7 @@ class TestEdgeCases:
         # runs the gateway with no profile flag).
         with patch("gateway.status.get_running_pid", return_value=None), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes gateway run --replace",
+            return_value="opencodon gateway run --replace",
         ):
             assert _check_gateway_running(default_home) is True
 
@@ -2536,7 +2536,7 @@ class TestEdgeCases:
                 {
                     "pid": os.getpid(),
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "gateway_state": "stopped",
                 }
             ),
@@ -2548,7 +2548,7 @@ class TestEdgeCases:
 
     def test_gateway_running_check_rejects_pid_reused_by_other_profile(self, profile_env):
         """Regression (user report): the dashboard showed a NAMED profile's
-        gateway green while ``hermes -p <name> gateway status`` showed it
+        gateway green while ``opencodon -p <name> gateway status`` showed it
         stopped.
 
         Per-profile Docker supervision: a named profile (``coder``) left a
@@ -2568,7 +2568,7 @@ class TestEdgeCases:
                 {
                     "pid": 139,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "gateway_state": "running",
                     "active_agents": 0,
                 }
@@ -2583,7 +2583,7 @@ class TestEdgeCases:
             "gateway.status._pid_exists", return_value=True
         ), patch("gateway.status._get_process_start_time", return_value=None), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes gateway run --replace",
+            return_value="opencodon gateway run --replace",
         ):
             assert _check_gateway_running(coder_home) is False
 
@@ -2600,7 +2600,7 @@ class TestEdgeCases:
                 {
                     "pid": 139,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "start_time": 1000,
                     "gateway_state": "running",
                     "active_agents": 0,
@@ -2613,7 +2613,7 @@ class TestEdgeCases:
             "gateway.status._pid_exists", return_value=True
         ), patch("gateway.status._get_process_start_time", return_value=1000), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes -p coder gateway run --replace",
+            return_value="opencodon -p coder gateway run --replace",
         ):
             assert _check_gateway_running(coder_home) is True
 

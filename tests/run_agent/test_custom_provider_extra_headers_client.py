@@ -98,7 +98,7 @@ def test_extra_headers_merge_with_global_default_headers(mock_openai):
                 "name": "my-proxy",
                 "base_url": _PROXY_URL,
                 "api_key": "proxy-key",
-                "extra_headers": {"User-Agent": "hermes-proxy", "X-Local": "2"},
+                "extra_headers": {"User-Agent": "opencodon-proxy", "X-Local": "2"},
             }
         ],
     }
@@ -114,6 +114,6 @@ def test_extra_headers_merge_with_global_default_headers(mock_openai):
         )
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["User-Agent"] == "hermes-proxy"  # per-provider wins
+    assert headers["User-Agent"] == "opencodon-proxy"  # per-provider wins
     assert headers["X-Global"] == "1"
     assert headers["X-Local"] == "2"

@@ -53,7 +53,7 @@ class TestVerifyConsoleScriptsInstalled:
 
         mock_install.assert_not_called()
 
-    def test_triggers_reinstall_when_hermes_exe_missing(
+    def test_triggers_reinstall_when_opencodon_exe_missing(
         self, temp_pyproject, fake_scripts_dir
     ):
         (fake_scripts_dir / "opencodon-agent.exe").write_bytes(b"fake")
@@ -110,8 +110,8 @@ class TestVerifyConsoleScriptsInstalled:
         import opencodon_cli.main as main_mod
 
         with patch("opencodon_cli.main._is_windows", return_value=True):
-            names = {path.name for path in main_mod._hermes_exe_shims(fake_scripts_dir)}
+            names = {path.name for path in main_mod._opencodon_exe_shims(fake_scripts_dir)}
 
         assert {"opencodon.exe", "opencodon-agent.exe", "opencodon-acp.exe"} <= names
         assert "opencodon-gateway.exe" in names
-        assert "hermes-gateway.exe" in names  # legacy shim still quarantined
+        assert "opencodon-gateway.exe" in names  # legacy shim still quarantined

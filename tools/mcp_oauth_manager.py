@@ -99,11 +99,11 @@ class _ProviderEntry:
 
 
 # ---------------------------------------------------------------------------
-# HermesMCPOAuthProvider — OAuthClientProvider subclass with disk-watch
+# OpencodonMCPOAuthProvider — OAuthClientProvider subclass with disk-watch
 # ---------------------------------------------------------------------------
 
 
-def _make_hermes_provider_class() -> Optional[type]:
+def _make_opencodon_provider_class() -> Optional[type]:
     """Lazy-import the SDK base class and return our subclass.
 
     Wrapped in a function so this module imports cleanly even when the
@@ -114,7 +114,7 @@ def _make_hermes_provider_class() -> Optional[type]:
     except ImportError:  # pragma: no cover — SDK required in CI
         return None
 
-    class HermesMCPOAuthProvider(OAuthClientProvider):
+    class OpencodonMCPOAuthProvider(OAuthClientProvider):
         """OAuthClientProvider with pre-flow disk-mtime reload.
 
         Before every ``async_auth_flow`` invocation, asks the manager to
@@ -137,14 +137,14 @@ def _make_hermes_provider_class() -> Optional[type]:
             **kwargs: Any,
         ):
             super().__init__(*args, **kwargs)
-            self._hermes_server_name = server_name
+            self._opencodon_server_name = server_name
             self._opencodon_home = ""
             # When the client_id comes from config.yaml (pre-registered), an
             # invalid_client rejection means the *config* is wrong — deleting
             # client.json would just be re-seeded from config and re-running
             # registration can't help. Only auto-heal dynamically-registered
             # clients. See _maybe_flag_poisoned_client.
-            self._hermes_preregistered = preregistered
+            self._opencodon_preregistered = preregistered
 
         async def _initialize(self) -> None:
             """Load stored tokens + client info AND seed token_expiry_time.
@@ -174,7 +174,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             ``async_auth_flow`` takes the ``can_refresh_token()`` branch,
             and the SDK quietly refreshes before the first real request.
 
-            Paired with :class:`HermesTokenStorage` persisting an absolute
+            Paired with :class:`OpencodonTokenStorage` persisting an absolute
             ``expires_at`` timestamp (``mcp_oauth.py:set_tokens``) so the
             remaining TTL we compute here reflects real wall-clock age.
             """
@@ -189,9 +189,9 @@ def _make_hermes_provider_class() -> Optional[type]:
             # guessed ``{server_url}/token`` path (returns 404 on most real
             # providers) and require a full browser re-authorization.
             storage = self.context.storage
-            from tools.mcp_oauth import HermesTokenStorage
+            from tools.mcp_oauth import OpencodonTokenStorage
             if (
-                isinstance(storage, HermesTokenStorage)
+                isinstance(storage, OpencodonTokenStorage)
                 and self.context.oauth_metadata is None
             ):
                 meta = storage.load_oauth_metadata()
@@ -200,7 +200,7 @@ def _make_hermes_provider_class() -> Optional[type]:
                     logger.debug(
                         "MCP OAuth '%s': restored metadata from disk "
                         "(token_endpoint=%s)",
-                        self._hermes_server_name,
+                        self._opencodon_server_name,
                         meta.token_endpoint,
                     )
 
@@ -221,7 +221,7 @@ def _make_hermes_provider_class() -> Optional[type]:
                     logger.debug(
                         "MCP OAuth '%s': pre-flight metadata discovery "
                         "failed (non-fatal): %s",
-                        self._hermes_server_name, exc,
+                        self._opencodon_server_name, exc,
                     )
 
         async def _prefetch_oauth_metadata(self) -> None:
@@ -254,7 +254,7 @@ def _make_hermes_provider_class() -> Optional[type]:
                     except httpx.HTTPError as exc:
                         logger.debug(
                             "MCP OAuth '%s': PRM discovery to %s failed: %s",
-                            self._hermes_server_name, url, exc,
+                            self._opencodon_server_name, url, exc,
                         )
                         continue
                     prm = await handle_protected_resource_response(resp)
@@ -277,7 +277,7 @@ def _make_hermes_provider_class() -> Optional[type]:
                     except httpx.HTTPError as exc:
                         logger.debug(
                             "MCP OAuth '%s': ASM discovery to %s failed: %s",
-                            self._hermes_server_name, url, exc,
+                            self._opencodon_server_name, url, exc,
                         )
                         continue
                     ok, asm = await handle_auth_metadata_response(resp)
@@ -288,13 +288,13 @@ def _make_hermes_provider_class() -> Optional[type]:
                         # Persist immediately so a subsequent cold-load can
                         # skip discovery entirely.
                         storage = self.context.storage
-                        from tools.mcp_oauth import HermesTokenStorage
-                        if isinstance(storage, HermesTokenStorage):
+                        from tools.mcp_oauth import OpencodonTokenStorage
+                        if isinstance(storage, OpencodonTokenStorage):
                             storage.save_oauth_metadata(asm)
                         logger.debug(
                             "MCP OAuth '%s': pre-flight ASM discovered "
                             "token_endpoint=%s",
-                            self._hermes_server_name, asm.token_endpoint,
+                            self._opencodon_server_name, asm.token_endpoint,
                         )
                         break
 
@@ -309,8 +309,8 @@ def _make_hermes_provider_class() -> Optional[type]:
             if meta is None:
                 return
             storage = self.context.storage
-            from tools.mcp_oauth import HermesTokenStorage
-            if not isinstance(storage, HermesTokenStorage):
+            from tools.mcp_oauth import OpencodonTokenStorage
+            if not isinstance(storage, OpencodonTokenStorage):
                 return
             existing = storage.load_oauth_metadata()
             if (
@@ -330,7 +330,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             registration. This addresses the recurring manual-reset ritual in
             GH#36767 for the auto-detectable subset (token-endpoint rejection);
             the browser-side "Redirect URI Mismatch" case has no HTTP signal
-            and is handled by ``hermes mcp reauth``.
+            and is handled by ``opencodon mcp reauth``.
 
             Conservative by construction — acts ONLY when all hold:
               * status is 400/401,
@@ -347,10 +347,10 @@ def _make_hermes_provider_class() -> Optional[type]:
             preemptive refresh — but only when ``token_endpoint`` was
             discovered (``_initialize`` prefetches it on cold-load). If that
             discovery was skipped, the guard returns early and the user falls
-            back to ``hermes mcp reauth``.
+            back to ``opencodon mcp reauth``.
             """
             try:
-                if self._hermes_preregistered:
+                if self._opencodon_preregistered:
                     return
                 status = getattr(response, "status_code", None)
                 if status not in (400, 401):
@@ -375,8 +375,8 @@ def _make_hermes_provider_class() -> Optional[type]:
                     return
 
                 storage = self.context.storage
-                from tools.mcp_oauth import HermesTokenStorage
-                if isinstance(storage, HermesTokenStorage):
+                from tools.mcp_oauth import OpencodonTokenStorage
+                if isinstance(storage, OpencodonTokenStorage):
                     storage.poison_client_registration()
                 # Drop the in-memory client so the SDK re-registers next flow.
                 self.context.client_info = None
@@ -384,7 +384,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             except Exception as exc:  # pragma: no cover — defensive, must not throw
                 logger.debug(
                     "MCP OAuth '%s': invalid_client detection failed (non-fatal): %s",
-                    self._hermes_server_name, exc,
+                    self._opencodon_server_name, exc,
                 )
 
         async def async_auth_flow(self, request):  # type: ignore[override]
@@ -393,13 +393,13 @@ def _make_hermes_provider_class() -> Optional[type]:
             # whatever state the SDK already has.
             try:
                 await get_manager().invalidate_if_disk_changed(
-                    self._hermes_server_name,
+                    self._opencodon_server_name,
                     opencodon_home=self._opencodon_home,
                 )
             except Exception as exc:  # pragma: no cover — defensive
                 logger.debug(
                     "MCP OAuth '%s': pre-flow disk-watch failed (non-fatal): %s",
-                    self._hermes_server_name, exc,
+                    self._opencodon_server_name, exc,
                 )
 
             # Manually bridge the bidirectional generator protocol. httpx's
@@ -431,11 +431,11 @@ def _make_hermes_provider_class() -> Optional[type]:
                 self._persist_oauth_metadata_if_changed()
                 return
 
-    return HermesMCPOAuthProvider
+    return OpencodonMCPOAuthProvider
 
 
 # Cached at import time. Tested and used by :class:`MCPOAuthManager`.
-_OPENCODON_PROVIDER_CLS: Optional[type] = _make_hermes_provider_class()
+_OPENCODON_PROVIDER_CLS: Optional[type] = _make_opencodon_provider_class()
 
 
 # ---------------------------------------------------------------------------
@@ -516,7 +516,7 @@ class MCPOAuthManager:
     ) -> Optional[Any]:
         """Build the underlying OAuth provider.
 
-        Constructs :class:`HermesMCPOAuthProvider` directly using the helpers
+        Constructs :class:`OpencodonMCPOAuthProvider` directly using the helpers
         extracted from ``tools.mcp_oauth``. The subclass injects a pre-flow
         disk-watch hook so external token refreshes (cron, other CLI
         instances) are visible to running MCP sessions.
@@ -531,7 +531,7 @@ class MCPOAuthManager:
 
         # Local imports avoid circular deps at module import time.
         from tools.mcp_oauth import (
-            HermesTokenStorage,
+            OpencodonTokenStorage,
             OAuthNonInteractiveError,
             _OAUTH_AVAILABLE,
             _build_client_metadata,
@@ -546,7 +546,7 @@ class MCPOAuthManager:
             return None
 
         cfg = dict(entry.oauth_config or {})
-        storage = HermesTokenStorage(server_name)
+        storage = OpencodonTokenStorage(server_name)
 
         from tools.mcp_dashboard_oauth import get_dashboard_oauth_flow
 
@@ -558,7 +558,7 @@ class MCPOAuthManager:
             raise OAuthNonInteractiveError(
                 "MCP OAuth for "
                 f"'{server_name}': non-interactive environment and no "
-                "cached tokens found. Run `hermes mcp login "
+                "cached tokens found. Run `opencodon mcp login "
                 f"{server_name}` interactively first to complete initial "
                 "authorization."
             )
@@ -590,8 +590,8 @@ class MCPOAuthManager:
     ) -> _ProviderEntry | None:
         """Evict the provider from cache AND delete tokens from disk.
 
-        Called by ``hermes mcp remove <name>`` and (indirectly) by
-        ``hermes mcp login <name>`` during forced re-auth.
+        Called by ``opencodon mcp remove <name>`` and (indirectly) by
+        ``opencodon mcp login <name>`` during forced re-auth.
         """
         with self._entries_lock:
             entry = self._entries.pop(self._key(server_name, opencodon_home), None)

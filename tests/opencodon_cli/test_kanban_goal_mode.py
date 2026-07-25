@@ -299,11 +299,11 @@ def test_loop_stops_if_task_reclaimed(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# CLI judge gate tests (hermes kanban complete bypass fix)
+# CLI judge gate tests (opencodon kanban complete bypass fix)
 # ---------------------------------------------------------------------------
 
 class TestCLIJudgeGate:
-    """hermes kanban complete must apply the same goal_mode judge gate as the
+    """opencodon kanban complete must apply the same goal_mode judge gate as the
     kanban_complete tool (Issue #38367 sibling gap).
 
     Uses mocks for kb.get_task and kb.complete_task to avoid depending on the

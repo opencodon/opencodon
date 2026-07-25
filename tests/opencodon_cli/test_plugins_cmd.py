@@ -1,4 +1,4 @@
-"""Tests for opencodon_cli.plugins_cmd — the ``hermes plugins`` CLI subcommand."""
+"""Tests for opencodon_cli.plugins_cmd — the ``opencodon plugins`` CLI subcommand."""
 
 from __future__ import annotations
 

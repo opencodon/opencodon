@@ -62,7 +62,7 @@ def _install_modal_test_modules(
     opencodon_cli = types.ModuleType("opencodon_cli")
     opencodon_cli.__path__ = []  # type: ignore[attr-defined]
     sys.modules["opencodon_cli"] = opencodon_cli
-    opencodon_home = tmp_path / "hermes-home"
+    opencodon_home = tmp_path / "opencodon-home"
     os.environ["OPENCODON_HOME"] = str(opencodon_home)
     sys.modules["opencodon_cli.config"] = types.SimpleNamespace(
         get_opencodon_home=lambda: opencodon_home,

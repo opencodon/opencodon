@@ -246,7 +246,7 @@ def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
     if not (project_root / ".git").exists():
         pytest.skip("Not running from a git checkout")
 
-    # Point OPENCODON_HOME at a temp dir with no hermes-agent/.git
+    # Point OPENCODON_HOME at a temp dir with no opencodon/.git
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="0\n")

@@ -1,6 +1,6 @@
 """Regression tests for _apply_profile_override OPENCODON_HOME guard (issue #22502).
 
-When OPENCODON_HOME is set to the hermes root (e.g. systemd hardcodes
+When OPENCODON_HOME is set to the opencodon root (e.g. systemd hardcodes
 OPENCODON_HOME=/root/.opencodon), _apply_profile_override must still read
 active_profile and update OPENCODON_HOME to the profile directory.
 
@@ -27,14 +27,14 @@ def _run_apply_profile_override(
     Returns the value of os.environ["OPENCODON_HOME"] after the call,
     or None if unset.
     """
-    hermes_root = tmp_path / ".opencodon"
-    hermes_root.mkdir(parents=True, exist_ok=True)
+    opencodon_root = tmp_path / ".opencodon"
+    opencodon_root.mkdir(parents=True, exist_ok=True)
 
     if active_profile is not None:
-        (hermes_root / "active_profile").write_text(active_profile)
+        (opencodon_root / "active_profile").write_text(active_profile)
 
     if active_profile and active_profile != "default":
-        (hermes_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
+        (opencodon_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     if opencodon_home is not None:
@@ -42,7 +42,7 @@ def _run_apply_profile_override(
     else:
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
 
-    monkeypatch.setattr(sys, "argv", argv or ["hermes", "gateway", "start"])
+    monkeypatch.setattr(sys, "argv", argv or ["opencodon", "gateway", "start"])
 
     from opencodon_cli.main import _apply_profile_override
     _apply_profile_override()
@@ -50,10 +50,10 @@ def _run_apply_profile_override(
     return os.environ.get("OPENCODON_HOME")
 
 
-class TestApplyProfileOverrideHermesHomeGuard:
+class TestApplyProfileOverrideOpencodonHomeGuard:
     """Regression guard for issue #22502.
 
-    Verifies that OPENCODON_HOME pointing to the hermes root does NOT suppress
+    Verifies that OPENCODON_HOME pointing to the opencodon root does NOT suppress
     the active_profile check, while OPENCODON_HOME already pointing to a
     profile directory IS trusted as-is.
     """
@@ -64,17 +64,17 @@ class TestApplyProfileOverrideHermesHomeGuard:
         """OPENCODON_HOME=/root/.opencodon + active_profile=coder must redirect
         OPENCODON_HOME to .../profiles/coder.
 
-        Bug scenario from #22502: systemd sets OPENCODON_HOME to the hermes root
-        and the user switches to a profile via `hermes profile use`.
+        Bug scenario from #22502: systemd sets OPENCODON_HOME to the opencodon root
+        and the user switches to a profile via `opencodon profile use`.
         Before the fix, the guard returned early and active_profile was ignored.
         """
-        hermes_root = tmp_path / ".opencodon"
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        opencodon_root = tmp_path / ".opencodon"
+        opencodon_root.mkdir(parents=True, exist_ok=True)
 
         result = _run_apply_profile_override(
             tmp_path,
             monkeypatch,
-            opencodon_home=str(hermes_root),
+            opencodon_home=str(opencodon_root),
             active_profile="coder",
         )
 
@@ -94,15 +94,15 @@ class TestApplyProfileOverrideHermesHomeGuard:
         with OPENCODON_HOME already set to a specific profile must stay in that
         profile.
         """
-        hermes_root = tmp_path / ".opencodon"
-        profile_dir = hermes_root / "profiles" / "coder"
+        opencodon_root = tmp_path / ".opencodon"
+        profile_dir = opencodon_root / "profiles" / "coder"
         profile_dir.mkdir(parents=True, exist_ok=True)
 
-        (hermes_root / "active_profile").write_text("other")
+        (opencodon_root / "active_profile").write_text("other")
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(profile_dir))
-        monkeypatch.setattr(sys, "argv", ["hermes", "gateway", "start"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "gateway", "start"])
 
         from opencodon_cli.main import _apply_profile_override
         _apply_profile_override()
@@ -128,16 +128,16 @@ class TestApplyProfileOverrideHermesHomeGuard:
     def test_sudo_explicit_profile_resolves_invoking_users_profile(self, tmp_path, monkeypatch):
         """sudo elias ... should resolve `-p elias` under SUDO_USER, not root."""
         root_home = tmp_path / "root"
-        user_home = tmp_path / "home" / "hermes"
+        user_home = tmp_path / "home" / "opencodon"
         profile_dir = user_home / ".opencodon" / "profiles" / "elias"
         profile_dir.mkdir(parents=True, exist_ok=True)
         (root_home / ".opencodon").mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: root_home)
-        monkeypatch.setenv("SUDO_USER", "hermes")
+        monkeypatch.setenv("SUDO_USER", "opencodon")
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setattr(os, "geteuid", lambda: 0, raising=False)
-        monkeypatch.setattr(sys, "argv", ["hermes", "-p", "elias", "gateway", "install", "--system"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "-p", "elias", "gateway", "install", "--system"])
 
         import pwd
 
@@ -147,17 +147,17 @@ class TestApplyProfileOverrideHermesHomeGuard:
         _apply_profile_override()
 
         assert os.environ.get("OPENCODON_HOME") == str(profile_dir)
-        assert sys.argv == ["hermes", "gateway", "install", "--system"]
+        assert sys.argv == ["opencodon", "gateway", "install", "--system"]
 
     def test_opencodon_home_unset_default_profile_no_redirect(self, tmp_path, monkeypatch):
         """active_profile=default must not redirect OPENCODON_HOME."""
-        hermes_root = tmp_path / ".opencodon"
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        opencodon_root = tmp_path / ".opencodon"
+        opencodon_root.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
-        monkeypatch.setattr(sys, "argv", ["hermes", "gateway", "start"])
-        (hermes_root / "active_profile").write_text("default")
+        monkeypatch.setattr(sys, "argv", ["opencodon", "gateway", "start"])
+        (opencodon_root / "active_profile").write_text("default")
 
         from opencodon_cli.main import _apply_profile_override
         _apply_profile_override()
@@ -168,14 +168,14 @@ class TestApplyProfileOverrideHermesHomeGuard:
         """Command argv flags named --profile must stay with that command.
 
         Docker Desktop's MCP Toolkit uses `docker mcp gateway run --profile ...`.
-        When that argv is passed through `hermes mcp add --args`, the early
-        profile pre-parser must not interpret the Docker profile as a Hermes
+        When that argv is passed through `opencodon mcp add --args`, the early
+        profile pre-parser must not interpret the Docker profile as a opencodon
         profile.
         """
-        hermes_root = tmp_path / ".opencodon"
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        opencodon_root = tmp_path / ".opencodon"
+        opencodon_root.mkdir(parents=True, exist_ok=True)
         argv = [
-            "hermes",
+            "opencodon",
             "mcp",
             "add",
             "docker-research",
@@ -200,18 +200,18 @@ class TestApplyProfileOverrideHermesHomeGuard:
         assert sys.argv == argv
 
     def test_profile_after_chat_subcommand_is_still_consumed(self, tmp_path, monkeypatch):
-        """Profile flags historically work after normal Hermes subcommands."""
+        """Profile flags historically work after normal opencodon subcommands."""
         result = _run_apply_profile_override(
             tmp_path,
             monkeypatch,
             opencodon_home=None,
             active_profile="coder",
-            argv=["hermes", "chat", "-p", "coder", "-q", "hello"],
+            argv=["opencodon", "chat", "-p", "coder", "-q", "hello"],
         )
 
         assert result is not None
         assert result.endswith("coder")
-        assert sys.argv == ["hermes", "chat", "-q", "hello"]
+        assert sys.argv == ["opencodon", "chat", "-q", "hello"]
 
     def test_top_level_profile_after_value_flag_is_consumed(self, tmp_path, monkeypatch):
         """Top-level --profile still works after other top-level value flags."""
@@ -220,12 +220,12 @@ class TestApplyProfileOverrideHermesHomeGuard:
             monkeypatch,
             opencodon_home=None,
             active_profile="coder",
-            argv=["hermes", "-m", "gpt-5", "--profile", "coder", "chat"],
+            argv=["opencodon", "-m", "gpt-5", "--profile", "coder", "chat"],
         )
 
         assert result is not None
         assert result.endswith("coder")
-        assert sys.argv == ["hermes", "-m", "gpt-5", "chat"]
+        assert sys.argv == ["opencodon", "-m", "gpt-5", "chat"]
 
     def test_top_level_profile_after_continue_flag_is_consumed(self, tmp_path, monkeypatch):
         """--continue has an optional value, so a following --profile is a flag."""
@@ -234,19 +234,19 @@ class TestApplyProfileOverrideHermesHomeGuard:
             monkeypatch,
             opencodon_home=None,
             active_profile="coder",
-            argv=["hermes", "--continue", "--profile", "coder"],
+            argv=["opencodon", "--continue", "--profile", "coder"],
         )
 
         assert result is not None
         assert result.endswith("coder")
-        assert sys.argv == ["hermes", "--continue"]
+        assert sys.argv == ["opencodon", "--continue"]
 
 
 class TestSupervisedChildIgnoresStickyProfile:
     """The reserved default gateway s6 slot must not follow active_profile.
 
     Inside the Docker s6 image the ``gateway-default`` service slot runs a
-    bare ``hermes gateway run`` (no ``-p``) to mean "the root OPENCODON_HOME
+    bare ``opencodon gateway run`` (no ``-p``) to mean "the root OPENCODON_HOME
     profile". The run-script exports ``OPENCODON_S6_SUPERVISED_CHILD=1``.
     Without a guard, ``_apply_profile_override`` would read the sticky
     ``active_profile`` file (set by e.g. the dashboard profile switcher) and
@@ -260,27 +260,27 @@ class TestSupervisedChildIgnoresStickyProfile:
         """OPENCODON_S6_SUPERVISED_CHILD + active_profile=briefer must NOT redirect.
 
         Reproduces the Docker/profile scoping bug: the supervised default
-        gateway is launched as bare ``hermes gateway run`` with
+        gateway is launched as bare ``opencodon gateway run`` with
         OPENCODON_HOME=/opt/data (the container root, whose parent is NOT
         ``profiles``), and a sticky ``active_profile`` of another profile.
         The reserved default slot must stay on the root profile.
         """
-        hermes_root = tmp_path / ".opencodon"
-        hermes_root.mkdir(parents=True, exist_ok=True)
-        (hermes_root / "active_profile").write_text("briefer")
-        (hermes_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
+        opencodon_root = tmp_path / ".opencodon"
+        opencodon_root.mkdir(parents=True, exist_ok=True)
+        (opencodon_root / "active_profile").write_text("briefer")
+        (opencodon_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         # Container root OPENCODON_HOME: parent dir is NOT "profiles", so the
         # #22502 guard does not short-circuit — step 2 (active_profile) runs.
-        monkeypatch.setenv("OPENCODON_HOME", str(hermes_root))
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_root))
         monkeypatch.setenv("OPENCODON_S6_SUPERVISED_CHILD", "1")
-        monkeypatch.setattr(sys, "argv", ["hermes", "gateway", "run"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "gateway", "run"])
 
         from opencodon_cli.main import _apply_profile_override
         _apply_profile_override()
 
-        assert os.environ.get("OPENCODON_HOME") == str(hermes_root), (
+        assert os.environ.get("OPENCODON_HOME") == str(opencodon_root), (
             "Supervised default gateway must stay on the root profile, not be "
             f"hijacked by active_profile; got {os.environ.get('OPENCODON_HOME')!r}"
         )
@@ -288,14 +288,14 @@ class TestSupervisedChildIgnoresStickyProfile:
     def test_non_supervised_run_still_follows_active_profile(
         self, tmp_path, monkeypatch
     ):
-        """Without the sentinel, a normal `hermes gateway run` still honors
+        """Without the sentinel, a normal `opencodon gateway run` still honors
         active_profile — the guard is scoped strictly to supervised children."""
         result = _run_apply_profile_override(
             tmp_path,
             monkeypatch,
             opencodon_home=None,
             active_profile="briefer",
-            argv=["hermes", "gateway", "run"],
+            argv=["opencodon", "gateway", "run"],
         )
 
         assert result is not None
@@ -305,16 +305,16 @@ class TestSupervisedChildIgnoresStickyProfile:
         """A supervised named-profile slot passes ``-p <name>`` explicitly;
         that must still resolve (the sentinel guard only skips the sticky
         active_profile fallback, never an explicit flag)."""
-        hermes_root = tmp_path / ".opencodon"
-        hermes_root.mkdir(parents=True, exist_ok=True)
-        (hermes_root / "active_profile").write_text("briefer")
-        (hermes_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
-        (hermes_root / "profiles" / "coder").mkdir(parents=True, exist_ok=True)
+        opencodon_root = tmp_path / ".opencodon"
+        opencodon_root.mkdir(parents=True, exist_ok=True)
+        (opencodon_root / "active_profile").write_text("briefer")
+        (opencodon_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
+        (opencodon_root / "profiles" / "coder").mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
         monkeypatch.setenv("OPENCODON_S6_SUPERVISED_CHILD", "1")
-        monkeypatch.setattr(sys, "argv", ["hermes", "-p", "coder", "gateway", "run"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "-p", "coder", "gateway", "run"])
 
         from opencodon_cli.main import _apply_profile_override
         _apply_profile_override()

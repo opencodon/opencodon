@@ -2,12 +2,12 @@
 
 from unittest.mock import MagicMock, patch
 
-from cli import HermesCLI
+from cli import OpencodonCLI
 
 
 def _make_cli(enabled_toolsets=None):
-    """Build a minimal HermesCLI stub without running __init__."""
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    """Build a minimal OpencodonCLI stub without running __init__."""
+    cli_obj = OpencodonCLI.__new__(OpencodonCLI)
     cli_obj.enabled_toolsets = set(enabled_toolsets or ["web", "memory"])
     cli_obj._command_running = False
     cli_obj.console = MagicMock()

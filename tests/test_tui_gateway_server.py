@@ -62,7 +62,7 @@ def test_session_create_rejects_at_active_session_limit(monkeypatch, tmp_path):
 
         second = server._methods["session.create"]("r2", {"cols": 80})
         assert second["error"]["message"] == (
-            "Hermes is at the active session limit (1/1). "
+            "opencodon is at the active session limit (1/1). "
             "Try again when another session finishes."
         )
         assert list(server._sessions) == [sid]
@@ -2251,10 +2251,10 @@ def test_resolve_model_strips_config_model(monkeypatch):
     monkeypatch.delenv("OPENCODON_MODEL", raising=False)
     monkeypatch.delenv("OPENCODON_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(
-        server, "_load_cfg", lambda: {"model": {"default": " nous/hermes-test "}}
+        server, "_load_cfg", lambda: {"model": {"default": " nous/opencodon-test "}}
     )
 
-    assert server._resolve_model() == "nous/hermes-test"
+    assert server._resolve_model() == "nous/opencodon-test"
 
 
 def _sync_test_session(**extra):
@@ -2416,7 +2416,7 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `hermes --tui -m <model>` sets OPENCODON_MODEL/OPENCODON_INFERENCE_MODEL as a
+    # `opencodon --tui -m <model>` sets OPENCODON_MODEL/OPENCODON_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
@@ -2488,15 +2488,15 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("OPENCODON_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("OPENCODON_MODEL", "nous/opencodon-test")
     monkeypatch.setenv("OPENCODON_TUI_PROVIDER", "nous")
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", "nous")
+    assert server._resolve_startup_runtime() == ("nous/opencodon-test", "nous")
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("OPENCODON_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("OPENCODON_MODEL", "nous/opencodon-test")
     monkeypatch.delenv("OPENCODON_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
@@ -2504,7 +2504,7 @@ def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypat
         lambda model, provider: None,
     )
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", None)
+    assert server._resolve_startup_runtime() == ("nous/opencodon-test", None)
 
 
 def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
@@ -2529,7 +2529,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
 
 
 def test_load_fallback_model_merges_chain_providers_first(monkeypatch):
-    # Parity with HermesCLI / gateway: fallback_providers stays first and keeps
+    # Parity with OpencodonCLI / gateway: fallback_providers stays first and keeps
     # its order, with any distinct legacy fallback_model entry merged in after
     # (deduped on provider/model/base_url).
     fallback_chain = [
@@ -8458,13 +8458,13 @@ def test_session_delete_success_returns_deleted_id(monkeypatch):
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `opencodon model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `opencodon model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -9015,7 +9015,7 @@ def test_session_active_list_excludes_finalized_sessions(monkeypatch):
     that window ``session.active_list`` would otherwise still report the dead
     session, which is exactly the footer "N sessions" count that only ever grew
     until a gateway restart. A live session on the real stdio transport (the
-    standalone ``hermes --tui`` case) must still be reported.
+    standalone ``opencodon --tui`` case) must still be reported.
     """
     class _DB:
         def get_session_title(self, key):
@@ -10563,11 +10563,11 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
 
 
 def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Hermes profile
+    """TUI /save (session.save RPC) must snapshot under the opencodon profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
-    Regression: the gateway handler wrote ``hermes_conversation_*.json`` to
+    Regression: the gateway handler wrote ``opencodon_conversation_*.json`` to
     ``os.path.abspath(...)`` (the workspace CWD) and only exported ``model``
     and ``messages``, so ``system_prompt`` was missing.
     """
@@ -10582,10 +10582,10 @@ def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch
 
     sid = "save-sid"
     agent = types.SimpleNamespace(
-        model="hermes-test",
+        model="opencodon-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Hermes.",
+        _cached_system_prompt="You are opencodon.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -10607,17 +10607,17 @@ def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch
     saved_file = Path(resp["result"]["file"])
 
     # Must NOT leak into the workspace/project CWD.
-    assert not list(work.glob("hermes_conversation_*.json"))
+    assert not list(work.glob("opencodon_conversation_*.json"))
 
     saved_dir = home / "sessions" / "saved"
     assert saved_file.parent == saved_dir
     assert saved_file.exists()
 
     payload = json.loads(saved_file.read_text())
-    assert payload["model"] == "hermes-test"
+    assert payload["model"] == "opencodon-test"
     assert payload["session_id"] == "20260101_120000_abc123"
     assert payload["session_start"] == "2026-01-01T12:00:00"
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are opencodon."
     assert payload["messages"] == history
 
 

@@ -1,6 +1,6 @@
 """SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
 
-A standards-compliant OpenID Connect Relying Party for the ``hermes dashboard``
+A standards-compliant OpenID Connect Relying Party for the ``opencodon dashboard``
 OAuth gate. Unlike a vendor-specific provider (which would encode that
 bespoke contract — ``agent:{instance_id}`` client ids, a custom access-token
 vendor's custom JWT, headers, and contract-version claims),
@@ -53,8 +53,8 @@ same precedence convention as the other auth plugins)::
       oauth:
         provider: self-hosted
         self_hosted:
-          issuer: https://auth.example.com/application/o/hermes/   # required
-          client_id: hermes-dashboard                              # required
+          issuer: https://auth.example.com/application/o/opencodon/   # required
+          client_id: opencodon-dashboard                              # required
           scopes: "openid profile email"                           # optional
           # client_secret: set ONLY for a confidential client. It is a
           # credential — prefer the env var / ~/.opencodon/.env over config.yaml.
@@ -668,7 +668,7 @@ class SelfHostedOIDCProvider(DashboardAuthProvider):
 
         The verified ID token is stored in ``Session.access_token`` so the
         per-request ``verify_session`` re-verifies a real JWT. The opaque
-        OAuth access token is intentionally NOT stored — Hermes does not call
+        OAuth access token is intentionally NOT stored — opencodon does not call
         any resource API with it; the dashboard only needs identity.
         """
         user_id = str(claims.get("sub", ""))

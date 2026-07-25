@@ -258,7 +258,7 @@ class TestCredentialPoolEndpoints:
 
         load_pool() re-seeds from ~/.opencodon/.env on every call, so removing
         just the pool row silently reverts on the next dashboard refresh.
-        The endpoint must mirror `hermes auth remove`: clean up the backing
+        The endpoint must mirror `opencodon auth remove`: clean up the backing
         source and suppress (provider, source).
         """
         from agent.credential_pool import load_pool
@@ -286,7 +286,7 @@ class TestCredentialPoolEndpoints:
     def test_post_readd_lifts_suppression(self):
         """Re-adding via POST is an explicit re-engagement — suppressions lift.
 
-        Mirrors `hermes auth add`, which clears every suppression for the
+        Mirrors `opencodon auth add`, which clears every suppression for the
         provider so a user who deleted a credential and re-adds one isn't
         silently blocked from env re-seeding.
         """
@@ -451,7 +451,7 @@ class TestWebhookEndpoints:
             restart_calls.append((subcommand, name))
             return FakeRestartProc()
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn_action)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn_action)
 
         r = self.client.post("/api/webhooks/enable")
 
@@ -480,7 +480,7 @@ class TestWebhookEndpoints:
             assert name == "gateway-restart"
             raise RuntimeError("supervisor unavailable")
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn_action)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fail_spawn_action)
 
         r = self.client.post("/api/webhooks/enable")
 
@@ -511,7 +511,7 @@ class TestWebhookEndpoints:
         def fail_spawn_action(subcommand, name):
             raise AssertionError("must not spawn a second concurrent restart")
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn_action)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fail_spawn_action)
 
         r = self.client.post("/api/webhooks/enable")
 
@@ -541,16 +541,16 @@ class TestOpsEndpoints:
             captured["name"] = name
             return FakeProc()
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn_action)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn_action)
 
         r = self.client.post(
             "/api/ops/backup",
-            json={"output": "  /tmp/hermes-test.zip  "},
+            json={"output": "  /tmp/opencodon-test.zip  "},
         )
 
         assert r.status_code == 200
         assert captured == {
-            "subcommand": ["backup", "-o", "/tmp/hermes-test.zip"],
+            "subcommand": ["backup", "-o", "/tmp/opencodon-test.zip"],
             "name": "backup",
         }
 
@@ -570,7 +570,7 @@ class TestOpsEndpoints:
             captured["name"] = name
             return FakeProc()
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn_action)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn_action)
 
         r = self.client.post("/api/ops/backup", json={"output": "   "})
 
@@ -648,7 +648,7 @@ class TestSystemStatsEndpoint:
         assert r.status_code == 200
         s = r.json()
         # Identity fields always present (stdlib-sourced).
-        for key in ("os", "arch", "hostname", "python_version", "hermes_version"):
+        for key in ("os", "arch", "hostname", "python_version", "opencodon_version"):
             assert key in s and s[key]
         # psutil flag tells the UI whether the richer metrics are populated.
         assert "psutil" in s
@@ -808,12 +808,12 @@ class TestSkillsHubSourcesEndpoint:
                 return self._sid
 
             def search(self, q, limit=10):
-                return [_FakeMeta("hermes-index/featured-skill", "trusted")]
+                return [_FakeMeta("opencodon-index/featured-skill", "trusted")]
 
         def _fake_router():
             srcs = [_Src("official"), _Src("github")]
-            # hermes-index source advertises availability + featured search.
-            idx = _Src("hermes-index")
+            # opencodon-index source advertises availability + featured search.
+            idx = _Src("opencodon-index")
             idx.is_available = True
             srcs.insert(1, idx)
             return srcs
@@ -825,7 +825,7 @@ class TestSkillsHubSourcesEndpoint:
         assert r.status_code == 200
         body = r.json()
         ids = {s["id"] for s in body["sources"]}
-        assert {"official", "github", "hermes-index"} <= ids
+        assert {"official", "github", "opencodon-index"} <= ids
         # Every source carries a human label.
         assert all(s.get("label") for s in body["sources"])
         assert body["index_available"] is True
@@ -1009,7 +1009,7 @@ class TestAdminEndpointsAuthGate:
             "/api/curator",
             "/api/portal",
             "/api/system/stats",
-            "/api/hermes/update/check",
+            "/api/opencodon/update/check",
         ],
     )
     def test_gated(self, path):
@@ -1022,11 +1022,11 @@ class TestAdminEndpointsAuthGate:
 
 
 class TestUpdateCheckEndpoint:
-    """``GET /api/hermes/update/check`` reports availability without applying.
+    """``GET /api/opencodon/update/check`` reports availability without applying.
 
     Powers the dashboard's check-before-you-update flow: the System page
     shows the commit-behind count and asks the user to confirm before
-    ``POST /api/hermes/update`` runs ``hermes update``.
+    ``POST /api/opencodon/update`` runs ``opencodon update``.
     """
 
     @pytest.fixture(autouse=True)
@@ -1042,7 +1042,7 @@ class TestUpdateCheckEndpoint:
 
         monkeypatch.setattr(banner, "check_for_updates", lambda: 5)
 
-        r = self.client.get("/api/hermes/update/check")
+        r = self.client.get("/api/opencodon/update/check")
         assert r.status_code == 200
         body = r.json()
         assert {
@@ -1067,7 +1067,7 @@ class TestUpdateCheckEndpoint:
         monkeypatch.setattr(ws, "detect_install_method", lambda *a, **k: "git")
         monkeypatch.setattr(banner, "check_for_updates", lambda: 0)
 
-        body = self.client.get("/api/hermes/update/check").json()
+        body = self.client.get("/api/opencodon/update/check").json()
         assert body["behind"] == 0
         assert body["update_available"] is False
 
@@ -1075,7 +1075,7 @@ class TestUpdateCheckEndpoint:
         import opencodon_cli.web_server as ws
 
         monkeypatch.setattr(ws, "detect_install_method", lambda *a, **k: "docker")
-        body = self.client.get("/api/hermes/update/check").json()
+        body = self.client.get("/api/opencodon/update/check").json()
         # Docker images are immutable — the dashboard can't apply an update.
         assert body["can_apply"] is False
         assert body["message"]
@@ -1093,7 +1093,7 @@ class TestUpdateCheckEndpoint:
             ),
         )
 
-        body = self.client.get("/api/hermes/update/check").json()
+        body = self.client.get("/api/opencodon/update/check").json()
         assert body["install_method"] == "managed-runtime"
         assert body["can_apply"] is False
         assert body["update_available"] is False
@@ -1111,7 +1111,7 @@ class TestUpdateCheckEndpoint:
 
         monkeypatch.setattr(banner, "check_for_updates", _boom)
         # A failed check must not 500 — it returns behind=null with guidance.
-        r = self.client.get("/api/hermes/update/check")
+        r = self.client.get("/api/opencodon/update/check")
         assert r.status_code == 200
         body = r.json()
         assert body["behind"] is None
@@ -1132,7 +1132,7 @@ class TestUpdateCheckEndpoint:
             ],
         )
 
-        body = self.client.get("/api/hermes/update/check").json()
+        body = self.client.get("/api/opencodon/update/check").json()
         # The desktop overlay renders this as the "what's changed" list.
         assert isinstance(body["commits"], list)
         assert body["commits"][0]["sha"] == "abc1234"
@@ -1145,7 +1145,7 @@ class TestUpdateCheckEndpoint:
         monkeypatch.setattr(ws, "detect_install_method", lambda *a, **k: "git")
         monkeypatch.setattr(banner, "check_for_updates", lambda: 0)
 
-        body = self.client.get("/api/hermes/update/check").json()
+        body = self.client.get("/api/opencodon/update/check").json()
         # No commits list when there's nothing to show (additive, non-breaking).
         assert body.get("commits", []) == []
 
@@ -1245,7 +1245,7 @@ class TestDebugShareEndpoint:
 
 class TestToolsConfigEndpoints:
     """Provider selection, API-key save, and post-setup spawn for toolsets —
-    the dashboard surface that replicates the `hermes tools` configurator."""
+    the dashboard surface that replicates the `opencodon tools` configurator."""
 
     @pytest.fixture(autouse=True)
     def _setup(self, _isolate_opencodon_home):
@@ -1347,7 +1347,7 @@ class TestToolsConfigEndpoints:
             spawned["name"] = name
             return _FakeProc()
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", _fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", _fake_spawn)
         r = self.client.post(
             "/api/tools/toolsets/browser/post-setup",
             json={"key": "agent_browser"},
@@ -1373,10 +1373,10 @@ class TestToolsConfigEndpoints:
 
 
 # ---------------------------------------------------------------------------
-# _spawn_hermes_action env scrubbing (#52470)
+# _spawn_opencodon_action env scrubbing (#52470)
 # ---------------------------------------------------------------------------
 
-def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
+def test_spawn_opencodon_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
     """The dashboard runs inside the gateway, so os.environ has
     _OPENCODON_GATEWAY=1. Spawned actions (e.g. `gateway restart`) must NOT inherit
     it, or the in-process restart-loop guard rejects the restart and it silently
@@ -1398,7 +1398,7 @@ def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path
 
     monkeypatch.setattr(ws.subprocess, "Popen", _fake_popen)
 
-    ws._spawn_hermes_action(["gateway", "restart"], "gateway-restart")
+    ws._spawn_opencodon_action(["gateway", "restart"], "gateway-restart")
 
     assert "_OPENCODON_GATEWAY" not in captured["env"]
     assert captured["env"]["OPENCODON_NONINTERACTIVE"] == "1"

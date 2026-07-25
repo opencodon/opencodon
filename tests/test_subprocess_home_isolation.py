@@ -1,6 +1,6 @@
 """Tests for subprocess HOME handling in profile mode.
 
-Hermes state stays profile-scoped through OPENCODON_HOME. Host subprocesses should
+opencodon state stays profile-scoped through OPENCODON_HOME. Host subprocesses should
 keep the user's real HOME by default so external CLIs find existing credentials.
 Containers still use the profile home for persistence, and users can explicitly
 opt into profile HOME isolation on the host.
@@ -179,7 +179,7 @@ class TestMakeRunEnvHomeInjection:
     """Verify _make_run_env() applies the subprocess HOME policy."""
 
     def test_host_auto_preserves_real_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -196,7 +196,7 @@ class TestMakeRunEnvHomeInjection:
         assert result["OPENCODON_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -214,7 +214,7 @@ class TestMakeRunEnvHomeInjection:
         assert result["OPENCODON_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         # No home/ subdirectory
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
@@ -268,7 +268,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
     """Verify _sanitize_subprocess_env() applies the subprocess HOME policy."""
 
     def test_host_auto_preserves_real_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -284,7 +284,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
         assert result["OPENCODON_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "home").mkdir()
         real_home = tmp_path / "real-home"
@@ -301,7 +301,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
         assert result["OPENCODON_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -367,7 +367,7 @@ class TestPythonProcessUnchanged:
     def test_path_home_unchanged_after_subprocess_home_resolved(
         self, tmp_path, monkeypatch
     ):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "home").mkdir()
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))

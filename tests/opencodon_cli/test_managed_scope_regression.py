@@ -15,7 +15,7 @@ def opencodon_home(tmp_path, monkeypatch):
     home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     # No managed dir: point the override at a guaranteed-absent path so a real
-    # /etc/hermes on the dev/CI box can't influence the test.
+    # /etc/opencodon on the dev/CI box can't influence the test.
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(tmp_path / "no_such_managed_dir"))
     # Clear caches so each test re-reads from disk.
     import opencodon_cli.config as cfg
@@ -79,21 +79,21 @@ def test_no_managed_dir_means_user_value_wins(opencodon_home):
 
 
 def test_user_env_overrides_shell(tmp_path, monkeypatch):
-    from opencodon_cli.env_loader import load_hermes_dotenv
+    from opencodon_cli.env_loader import load_opencodon_dotenv
 
     home = tmp_path / "home"
     home.mkdir()
     (home / ".env").write_text("FOO_TOKEN=from_user_env\n", encoding="utf-8")
     monkeypatch.setenv("FOO_TOKEN", "from_shell")
-    load_hermes_dotenv(opencodon_home=str(home))
+    load_opencodon_dotenv(opencodon_home=str(home))
     assert os.environ["FOO_TOKEN"] == "from_user_env"
 
 
 def test_missing_user_env_is_noop(tmp_path, monkeypatch):
-    from opencodon_cli.env_loader import load_hermes_dotenv
+    from opencodon_cli.env_loader import load_opencodon_dotenv
 
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("BAR_TOKEN", "from_shell")
-    load_hermes_dotenv(opencodon_home=str(home))
+    load_opencodon_dotenv(opencodon_home=str(home))
     assert os.environ["BAR_TOKEN"] == "from_shell"

@@ -34,7 +34,7 @@ test_durations.json
 .pytest-cache/
 tmp/
 temp_vision_images/
-hermes-*/*
+opencodon-*/*
 examples/
 tests/quick_test_dataset.jsonl
 tests/sample_dataset.jsonl
@@ -130,14 +130,14 @@ config/mcporter.json
 opencodon_cli/tui_dist/*
 opencodon_cli/scripts/
 docs/superpowers/*
-# Working directory for the Hermes Agent's session state (~/.opencodon/ at runtime;
+# Working directory for opencodon's session state (~/.opencodon/ at runtime;
 # also created in-repo when an agent operates in this checkout). Plans, audit
 # logs, and per-session caches are never artifacts of the codebase.
 .opencodon/
 
 # Desktop/bootstrap install marker written into the managed checkout root by the
-# bootstrap installer. It is Hermes-managed runtime state, never a code change —
-# ignore it so `hermes update`'s `git stash push --include-untracked` does not
+# bootstrap installer. It is opencodon-managed runtime state, never a code change —
+# ignore it so `opencodon update`'s `git stash push --include-untracked` does not
 # treat it as a local edit and autostash it on every run (#38529).
 .opencodon-bootstrap-complete
 
@@ -145,14 +145,14 @@ docs/superpowers/*
 .opencodon-sandbox/
 
 # Interrupted-update breadcrumb + recovery lock written next to the shared venv
-# by `hermes update` / launch-time self-heal. Runtime state, never a code change
+# by `opencodon update` / launch-time self-heal. Runtime state, never a code change
 # — ignore so `git status` stays clean and update's autostash skips them.
 .update-incomplete
 .update-incomplete.lock
 
 # Installer-written method stamp in the managed checkout root (scripts/install.sh).
 # Runtime metadata only — never a code change. Ignore so `git status` stays clean
-# and `hermes update`'s untracked autostash does not treat it as a local edit (#66189 / #54855).
+# and `opencodon update`'s untracked autostash does not treat it as a local edit (#66189 / #54855).
 /.install_method
 
 # Tool Search live-test harness output — non-deterministic model transcripts,

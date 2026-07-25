@@ -1,4 +1,4 @@
-"""CLI entry point for the hermes-agent ACP adapter.
+"""CLI entry point for the opencodon ACP adapter.
 
 Loads environment variables from ``~/.opencodon/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),
@@ -8,7 +8,7 @@ Usage::
 
     python -m acp_adapter.entry
     # or
-    hermes acp
+    opencodon acp
     # or
     opencodon-acp
 """
@@ -19,13 +19,13 @@ try:
     import opencodon_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     # Graceful fallback when opencodon_bootstrap isn't registered in the venv
-    # yet — happens during partial ``hermes update`` where git-reset landed
+    # yet — happens during partial ``opencodon update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
 else:
     # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch directory from
-    # shadowing Hermes's own modules — ``hermes acp`` can be started from any
+    # shadowing opencodon's own modules — ``opencodon acp`` can be started from any
     # cwd, including a project that has same-named packages on its path.
     opencodon_bootstrap.harden_import_path()
 
@@ -100,10 +100,10 @@ def _setup_logging() -> None:
 
 def _load_env() -> None:
     """Load .env from OPENCODON_HOME (default ``~/.opencodon``)."""
-    from opencodon_cli.env_loader import load_hermes_dotenv
+    from opencodon_cli.env_loader import load_opencodon_dotenv
 
     opencodon_home = get_opencodon_home()
-    loaded = load_hermes_dotenv(opencodon_home=opencodon_home)
+    loaded = load_opencodon_dotenv(opencodon_home=opencodon_home)
     if loaded:
         for env_file in loaded:
             logging.getLogger(__name__).info("Loaded env from %s", env_file)
@@ -116,9 +116,9 @@ def _load_env() -> None:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="opencodon-acp",
-        description="Run Hermes Agent as an ACP stdio server.",
+        description="Run opencodon as an ACP stdio server.",
     )
-    parser.add_argument("--version", action="store_true", help="Print Hermes version and exit")
+    parser.add_argument("--version", action="store_true", help="Print opencodon version and exit")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -127,7 +127,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--setup",
         action="store_true",
-        help="Run interactive Hermes provider/model setup for ACP terminal auth",
+        help="Run interactive opencodon provider/model setup for ACP terminal auth",
     )
     parser.add_argument(
         "--setup-browser",
@@ -147,25 +147,25 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_version() -> None:
-    from opencodon_cli import __version__ as hermes_version
+    from opencodon_cli import __version__ as opencodon_version
 
-    print(hermes_version)
+    print(opencodon_version)
 
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import HermesACPAgent  # noqa: F401
+    from acp_adapter.server import OpencodonACPAgent  # noqa: F401
 
-    print("Hermes ACP check OK")
+    print("opencodon ACP check OK")
 
 
 def _run_setup() -> None:
-    from opencodon_cli.main import main as hermes_main
+    from opencodon_cli.main import main as opencodon_main
 
     old_argv = sys.argv[:]
     try:
-        sys.argv = [old_argv[0] if old_argv else "hermes", "model"]
-        hermes_main()
+        sys.argv = [old_argv[0] if old_argv else "opencodon", "model"]
+        opencodon_main()
     finally:
         sys.argv = old_argv
 
@@ -236,7 +236,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting hermes-agent ACP adapter")
+    logger.info("Starting opencodon ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = str(Path(__file__).resolve().parent.parent)
@@ -244,7 +244,7 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import HermesACPAgent
+    from .server import OpencodonACPAgent
 
     # MCP tool discovery from config.yaml — run before asyncio.run() so
     # it's safe to use blocking waits.  (ACP also registers per-session
@@ -257,7 +257,7 @@ def main(argv: list[str] | None = None) -> None:
     except Exception:
         logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
 
-    agent = HermesACPAgent()
+    agent = OpencodonACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

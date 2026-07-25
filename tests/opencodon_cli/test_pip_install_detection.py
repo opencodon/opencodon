@@ -70,7 +70,7 @@ def test_code_scoped_stamp_wins_over_home_stamp(tmp_path):
 
     Models a host git install whose $OPENCODON_HOME is shared with (and stamped
     'docker' by) a co-located container. The code-scoped stamp must win so the
-    host install is correctly identified as 'git' and 'hermes update' works.
+    host install is correctly identified as 'git' and 'opencodon update' works.
     """
     code = tmp_path / "code"
     home = tmp_path / "home"
@@ -164,7 +164,7 @@ def test_container_without_stamp_is_not_docker(tmp_path):
     ``test_stamp_file_takes_precedence``; the published image -> ``docker``),
     so neither hits this path. An unsupported manual install dropped into a
     container has no stamp and was wrongly classified as the published Docker
-    image, so ``hermes update`` refused to run. With a ``.git`` checkout it
+    image, so ``opencodon update`` refused to run. With a ``.git`` checkout it
     must resolve to ``git``.
     """
     (tmp_path / ".git").mkdir()
@@ -205,7 +205,7 @@ def test_nix_store_path_detected_as_nix(tmp_path, monkeypatch):
     # fake install path under it.
     fake_nix_store = tmp_path / "fake-nix-store"
     fake_nix_store.mkdir(parents=True)
-    fake_nix = fake_nix_store / "abc123-hermes-agent-0.19.0"
+    fake_nix = fake_nix_store / "abc123-opencodon-0.19.0"
     fake_nix.mkdir(parents=True)
 
     monkeypatch.setattr("opencodon_cli.config._NIX_STORE", fake_nix_store)

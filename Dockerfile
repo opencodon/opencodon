@@ -10,29 +10,29 @@ FROM node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac4
 FROM debian:13.4
 
 # Disable Python stdout buffering to ensure logs are printed immediately.
-# Do not write .pyc files at runtime: /opt/hermes is immutable in the
+# Do not write .pyc files at runtime: /opt/opencodon is immutable in the
 # published container and writable state belongs under /opt/data.
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Store Playwright browsers outside the volume mount so the build-time
 # install survives the /opt/data volume overlay at runtime.
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/opencodon/.playwright
 
 # Install system dependencies in one layer, clear APT cache.
 # tini was previously PID 1 to reap orphaned zombie processes (MCP stdio
-# subprocesses, git, bun, etc.) that would otherwise accumulate when hermes
+# subprocesses, git, bun, etc.) that would otherwise accumulate when opencodon
 # ran as PID 1. See #15012. Phase 2 of the s6-overlay supervision plan
 # replaces tini with s6-overlay's /init (PID 1 = s6-svscan), which reaps
 # zombies non-blockingly on SIGCHLD and additionally supervises the main
-# hermes process, the dashboard, and per-profile gateways.
+# opencodon process, the dashboard, and per-profile gateways.
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
     ca-certificates curl iputils-ping python3 python-is-python3 ripgrep ffmpeg gcc g++ make cmake python3-dev python3-venv libffi-dev procps git openssh-client docker-cli xz-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # ---------- s6-overlay install ----------
-# s6-overlay provides supervision for the main hermes process, the dashboard,
+# s6-overlay provides supervision for the main opencodon process, the dashboard,
 # and per-profile gateways. /init becomes PID 1 below — see ENTRYPOINT.
 #
 # Multi-arch: BuildKit auto-populates TARGETARCH (amd64 / arm64). s6-overlay
@@ -77,7 +77,7 @@ RUN set -eu; \
 
 # #34192 / #66679: backward-compat shim for orchestration templates that
 # still reference the legacy /usr/bin/tini entrypoint (Hostinger's
-# 'Hermes WebUI' catalog, NAS compose projects that preserve an old
+# 'opencodon WebUI' catalog, NAS compose projects that preserve an old
 # entrypoint on image update, etc.). A plain symlink to /init made the
 # path exist, but forwarded tini flags like `-g` into s6-overlay's
 # rc.init as the container CMD (`rc.init: 91: -g: not found`) and
@@ -88,7 +88,7 @@ RUN set -eu; \
 COPY --chmod=0755 docker/tini-shim.sh /usr/bin/tini
 
 # Non-root user for runtime; UID can be overridden via OPENCODON_UID at runtime
-RUN useradd -u 10000 -m -d /opt/data hermes
+RUN useradd -u 10000 -m -d /opt/data opencodon
 
 COPY --chmod=0755 --from=uv_source /usr/local/bin/uv /usr/local/bin/uvx /usr/local/bin/
 
@@ -104,22 +104,22 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && 
     ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
     ln -sf /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 
-WORKDIR /opt/hermes
+WORKDIR /opt/opencodon
 
 # ---------- Layer-cached dependency install ----------
 # Copy only package manifests first so npm install + Playwright are cached
 # unless the lockfiles themselves change.
 #
-# ui-tui/packages/hermes-ink/ is copied IN FULL (not just its manifests)
+# ui-tui/packages/opencodon-ink/ is copied IN FULL (not just its manifests)
 # because it is referenced as a `file:` workspace dependency from
 # ui-tui/package.json.  Copying the tree up front lets npm resolve the
 # workspace to real content instead of stopping at a bare package.json.
 COPY package.json package-lock.json ./
 COPY web/package.json web/
 COPY ui-tui/package.json ui-tui/
-COPY ui-tui/packages/hermes-ink/ ui-tui/packages/hermes-ink/
+COPY ui-tui/packages/opencodon-ink/ ui-tui/packages/opencodon-ink/
 # apps/shared/ is copied IN FULL because web/package.json references it as a
-# `file:` workspace dependency (same pattern as hermes-ink above).
+# `file:` workspace dependency (same pattern as opencodon-ink above).
 COPY apps/shared/ apps/shared/
 
 # `npm_config_install_links=false` forces npm to install `file:` deps as
@@ -128,7 +128,7 @@ COPY apps/shared/ apps/shared/
 # explicitly anyway as defense-in-depth: the previous Debian-bundled npm
 # 9.x defaulted to install-as-copy, which produced a hidden
 # node_modules/.package-lock.json that permanently disagreed with the root
-# lock on the @hermes/ink entry, tripped the TUI launcher's
+# lock on the @opencodon/ink entry, tripped the TUI launcher's
 # `_tui_need_npm_install()` check on every startup, and triggered a
 # runtime `npm install` that then failed with EACCES.  Keeping the env
 # guards against a future regression if the source npm version changes.
@@ -185,46 +185,46 @@ RUN cd web && npm run build && \
 # the final read-only permissions at copy time so we skip the separate
 # `chmod -R` pass that previously walked ~30k files across the venv +
 # node_modules + source (21s amd64 / 222s arm64 — #49113).  `a+rX,go-w`
-# gives the non-root hermes user read + traverse but no write; root retains
+# gives the non-root opencodon user read + traverse but no write; root retains
 # write so the build steps below don't need chmod u+w dances.
 COPY --link --chmod=a+rX,go-w . .
 
 # ---------- Permissions ----------
-# Link hermes-agent itself (editable). Deps are already installed in the
+# Link opencodon itself (editable). Deps are already installed in the
 # cached layer above; `--no-deps` makes this a fast egg-link creation with no
 # resolution or downloads.
 RUN uv pip install --no-cache-dir --no-deps -e "."
 
-# Wire the exec shim and install-method stamp.  Files under /opt/hermes are
+# Wire the exec shim and install-method stamp.  Files under /opt/opencodon are
 # already root-owned (COPY, uv sync, npm install all run as root) and
-# read-only for the hermes user (go-w from the --chmod above).
+# read-only for the opencodon user (go-w from the --chmod above).
 
 USER root
-RUN mkdir -p /opt/hermes/bin && \
-    cp /opt/hermes/docker/opencodon-exec-shim.sh /opt/hermes/bin/hermes && \
-    chmod 0755 /opt/hermes/bin/hermes && \
-    printf 'docker\n' > /opt/hermes/.install_method
+RUN mkdir -p /opt/opencodon/bin && \
+    cp /opt/opencodon/docker/opencodon-exec-shim.sh /opt/opencodon/bin/opencodon && \
+    chmod 0755 /opt/opencodon/bin/opencodon && \
+    printf 'docker\n' > /opt/opencodon/.install_method
 # The ``.install_method`` stamp is baked next to the running code (the install
 # tree), NOT into $OPENCODON_HOME. $OPENCODON_HOME (/opt/data) is a shared data
 # volume that is commonly bind-mounted from the host and even shared with a
 # host-side Desktop/CLI install; stamping it at boot used to clobber that
-# host install's marker and wrongly block its ``hermes update``. A code-scoped
+# host install's marker and wrongly block its ``opencodon update``. A code-scoped
 # stamp is read first by detect_install_method() and is immune to the share.
 # Start as root so the s6-overlay stage2 hook can usermod/groupmod and chown
-# the data volume. Each supervised service then drops to the hermes user via
-# `s6-setuidgid hermes` in its run script. If OPENCODON_UID is unset, services
-# run as the default hermes user (UID 10000).
+# the data volume. Each supervised service then drops to the opencodon user via
+# `s6-setuidgid opencodon` in its run script. If OPENCODON_UID is unset, services
+# run as the default opencodon user (UID 10000).
 
 # ---------- Bake build-time git revision ----------
 # .dockerignore excludes .git, so `git rev-parse HEAD` from inside the
-# container always returns nothing — meaning `hermes dump` reports
+# container always returns nothing — meaning `opencodon dump` reports
 # "(unknown)" and the startup banner drops its `· upstream <sha>` suffix.
 # That makes support triage from container bug reports impossible:
 # we can't tell which commit the user is actually running.
 #
 # Fix: write the commit SHA passed via the OPENCODON_GIT_SHA build-arg to
-# /opt/hermes/.hermes_build_sha at build time, and have
-# opencodon_cli/build_info.py read it at runtime.  Both `hermes dump` and
+# /opt/opencodon/.opencodon_build_sha at build time, and have
+# opencodon_cli/build_info.py read it at runtime.  Both `opencodon dump` and
 # banner.get_git_banner_state() try the baked SHA first, then fall back
 # to live `git rev-parse` for source installs (unchanged behaviour).
 #
@@ -234,7 +234,7 @@ RUN mkdir -p /opt/hermes/bin && \
 # every published image has it.
 ARG OPENCODON_GIT_SHA=
 RUN if [ -n "${OPENCODON_GIT_SHA}" ]; then \
-        printf '%s\n' "${OPENCODON_GIT_SHA}" > /opt/hermes/.hermes_build_sha; \
+        printf '%s\n' "${OPENCODON_GIT_SHA}" > /opt/opencodon/.opencodon_build_sha; \
     fi
 
 # ---------- s6-overlay service wiring ----------
@@ -247,24 +247,24 @@ COPY docker/s6-rc.d/ /etc/s6-overlay/s6-rc.d/
 
 # stage2-hook handles UID/GID remap, volume chown, config seeding,
 # skills sync — all the work the old entrypoint.sh did before
-# `exec hermes`. Wired in as cont-init.d/01- so it
+# `exec opencodon`. Wired in as cont-init.d/01- so it
 # runs before user services start.
 #
 # 02-reconcile-profiles re-creates per-profile gateway s6 service
 # slots from $OPENCODON_HOME/profiles/<name>/ after a container restart
 # (the /run/service/ scandir is tmpfs and wiped on restart). Phase 4.
 RUN mkdir -p /etc/cont-init.d && \
-    printf '#!/command/with-contenv sh\nexec /opt/hermes/docker/stage2-hook.sh\n' \
-        > /etc/cont-init.d/01-hermes-setup && \
-    chmod +x /etc/cont-init.d/01-hermes-setup
+    printf '#!/command/with-contenv sh\nexec /opt/opencodon/docker/stage2-hook.sh\n' \
+        > /etc/cont-init.d/01-opencodon-setup && \
+    chmod +x /etc/cont-init.d/01-opencodon-setup
 COPY --chmod=0755 docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms
 COPY --chmod=0755 docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles
 
 # ---------- Runtime ----------
-ENV OPENCODON_WEB_DIST=/opt/hermes/opencodon_cli/web_dist
+ENV OPENCODON_WEB_DIST=/opt/opencodon/opencodon_cli/web_dist
 # Point the TUI launcher at the prebuilt bundle baked at build time (Layer 8:
 # `ui-tui && npm run build`). This makes _make_tui_argv take the prebuilt-bundle
-# fast path (`node --expose-gc /opt/hermes/ui-tui/dist/entry.js`) and skip the
+# fast path (`node --expose-gc /opt/opencodon/ui-tui/dist/entry.js`) and skip the
 # _tui_need_npm_install / runtime `npm install` branch entirely — exactly the
 # nix/packaged-release path the launcher was designed for.
 #
@@ -278,11 +278,11 @@ ENV OPENCODON_WEB_DIST=/opt/hermes/opencodon_cli/web_dist
 # embedded-chat (/api/pty) connections → ENOTEMPTY → the chat tab dies with a
 # 502 / "[session ended]". Pointing at the prebuilt bundle sidesteps the whole
 # check. (A separate launcher hardening is tracked independently.)
-ENV OPENCODON_TUI_DIR=/opt/hermes/ui-tui
+ENV OPENCODON_TUI_DIR=/opt/opencodon/ui-tui
 ENV OPENCODON_HOME=/opt/data
 ENV OPENCODON_WRITE_SAFE_ROOT=/opt/data
 ENV OPENCODON_DISABLE_LAZY_INSTALLS=1
-# The published image seals /opt/hermes (root-owned, read-only) so a runtime
+# The published image seals /opt/opencodon (root-owned, read-only) so a runtime
 # lazy install can't mutate the agent's own venv and brick it. But opt-in
 # backends (Firecrawl web search, Exa, …) keep their SDKs in
 # tools/lazy_deps.py — deliberately NOT baked into [all] (see pyproject.toml
@@ -291,35 +291,35 @@ ENV OPENCODON_DISABLE_LAZY_INSTALLS=1
 # lazy_deps appends this dir to the END of sys.path, so a package installed
 # here can only ADD modules — it can never shadow or downgrade a core module,
 # so the sealed-venv guarantee holds even with installs re-enabled. The dir
-# is seeded + chowned to the hermes user by docker/stage2-hook.sh and lives
+# is seeded + chowned to the opencodon user by docker/stage2-hook.sh and lives
 # on the /opt/data volume, so it persists across container recreates / image
 # updates (an ABI stamp invalidates it if a rebuild bumps the interpreter).
 ENV OPENCODON_LAZY_INSTALL_TARGET=/opt/data/lazy-packages
 
 # `docker exec` privilege-drop shim. When operators run
-# `docker exec <c> hermes ...` they default to root, and any file the
+# `docker exec <c> opencodon ...` they default to root, and any file the
 # command writes under $OPENCODON_HOME (auth.json, .env, config.yaml) ends
 # up root-owned and unreadable to the supervised gateway (UID 10000).
-# The shim lives at /opt/hermes/bin/hermes, sits earliest on PATH, and
-# transparently re-exec's the real venv binary via `s6-setuidgid hermes`
+# The shim lives at /opt/opencodon/bin/opencodon, sits earliest on PATH, and
+# transparently re-exec's the real venv binary via `s6-setuidgid opencodon`
 # when invoked as root. Non-root callers (supervised processes,
-# `--user hermes`, etc.) hit the short-circuit path with no overhead.
+# `--user opencodon`, etc.) hit the short-circuit path with no overhead.
 # Recursion is impossible because the shim exec's the venv binary by
-# absolute path (/opt/hermes/.venv/bin/hermes). See the shim source for
+# absolute path (/opt/opencodon/.venv/bin/opencodon). See the shim source for
 # the opt-out env var (OPENCODON_DOCKER_EXEC_AS_ROOT=1).
 
 # Pre-s6 entrypoint.sh did `source .venv/bin/activate` which exported
 # the venv bin onto PATH; Architecture B's main-wrapper.sh does the
 # same for the container's main process, but `docker exec` and our
 # cont-init.d scripts don't pass through the wrapper. Expose the venv
-# bin globally so `docker exec <container> hermes ...` and any
-# subprocess that doesn't activate the venv first still find hermes.
+# bin globally so `docker exec <container> opencodon ...` and any
+# subprocess that doesn't activate the venv first still find opencodon.
 #
-# /opt/hermes/bin is prepended ahead of the venv so the privilege-drop
+# /opt/opencodon/bin is prepended ahead of the venv so the privilege-drop
 # shim wins PATH resolution. The shim's last act is to exec the venv
 # binary by absolute path, so this PATH ordering is transparent to
 # every other consumer.
-ENV PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
+ENV PATH="/opt/opencodon/bin:/opt/opencodon/.venv/bin:/opt/data/.local/bin:${PATH}"
 RUN mkdir -p /opt/data
 VOLUME [ "/opt/data" ]
 
@@ -340,10 +340,10 @@ VOLUME [ "/opt/data" ]
 #   docker run <image> sleep infinity   → /init main-wrapper.sh sleep infinity
 #   docker run <image> --tui            → /init main-wrapper.sh --tui
 #
-# main-wrapper.sh handles arg routing (bare-exec vs. hermes
-# subcommand vs. no-args), drops to the hermes user via s6-setuidgid,
+# main-wrapper.sh handles arg routing (bare-exec vs. opencodon
+# subcommand vs. no-args), drops to the opencodon user via s6-setuidgid,
 # and exec's the final program so its exit code becomes the container
 # exit code. Without the wrapper-as-ENTRYPOINT, leading-dash args
 # like `--version` would be intercepted by /init's POSIX shell.
-ENTRYPOINT [ "/init", "/opt/hermes/docker/main-wrapper.sh" ]
+ENTRYPOINT [ "/init", "/opt/opencodon/docker/main-wrapper.sh" ]
 CMD [ ]

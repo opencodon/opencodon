@@ -1,6 +1,6 @@
 """Unified provider catalog — one source of truth for the provider universe.
 
-The provider list shown by ``hermes model`` (CLI/TUI) and the desktop Settings
+The provider list shown by ``opencodon model`` (CLI/TUI) and the desktop Settings
 → Providers tabs (Accounts + API keys) **must be the same set**.  Historically
 they were not: the CLI picker read :data:`opencodon_cli.models.CANONICAL_PROVIDERS`
 (which auto-extends from ``plugins/model-providers/<name>/``), while the desktop
@@ -11,7 +11,7 @@ GUI — e.g. GitHub Copilot showing up only under "tools", or ``openai-api`` bei
 configurable from the CLI but not the desktop app.
 
 This module fixes that at the root: it derives ONE descriptor per provider from
-the same universe ``hermes model`` renders (``CANONICAL_PROVIDERS``), joining:
+the same universe ``opencodon model`` renders (``CANONICAL_PROVIDERS``), joining:
 
 * ``auth_type`` / ``api_key_env_vars`` / ``base_url_env_var`` from
   :data:`opencodon_cli.auth.PROVIDER_REGISTRY` (credential truth), and
@@ -30,7 +30,7 @@ this catalog; the old hand lists are demoted to presentation/override overlays
 longer decide which providers exist.
 
 Parity contract (locked by tests): the union of the two tabs equals the
-``CANONICAL_PROVIDERS`` universe, i.e. exactly what ``hermes model`` shows.
+``CANONICAL_PROVIDERS`` universe, i.e. exactly what ``opencodon model`` shows.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ class ProviderDescriptor:
     api_key_env_vars: tuple[str, ...]  # credential env vars (may be empty)
     base_url_env_var: str          # base-URL override env var (may be "")
     signup_url: str                # signup / console URL (may be "")
-    order: int                     # CANONICAL_PROVIDERS index — mirrors `hermes model`
+    order: int                     # CANONICAL_PROVIDERS index — mirrors `opencodon model`
 
 
 def tab_for_auth_type(auth_type: str) -> str:
@@ -81,7 +81,7 @@ def _split_env_vars(env_vars: tuple[str, ...]) -> tuple[tuple[str, ...], str]:
 
 
 def provider_catalog() -> list[ProviderDescriptor]:
-    """Return one descriptor per provider in the ``hermes model`` universe.
+    """Return one descriptor per provider in the ``opencodon model`` universe.
 
     Membership is :data:`CANONICAL_PROVIDERS` (the list the CLI/TUI picker
     renders, which auto-extends from provider plugins).  Auth + env come from
@@ -111,7 +111,7 @@ def provider_catalog() -> list[ProviderDescriptor]:
     except Exception:
         OPTIONAL_ENV_VARS = {}
 
-    # Hermes overlays carry auth_type for providers that have no registry/profile
+    # opencodon overlays carry auth_type for providers that have no registry/profile
     # entry of their own — notably the ``moa`` virtual provider (auth_type
     # "virtual"), which has no real credential and no network endpoint.
     try:
@@ -127,7 +127,7 @@ def provider_catalog() -> list[ProviderDescriptor]:
         overlay = OPENCODON_OVERLAYS.get(slug)
 
         # auth_type: registry is authoritative; fall back to profile, then the
-        # Hermes overlay (e.g. moa → "virtual"), then api_key.
+        # opencodon overlay (e.g. moa → "virtual"), then api_key.
         auth_type = (
             (getattr(cfg, "auth_type", "") if cfg else "")
             or (getattr(prof, "auth_type", "") if prof else "")

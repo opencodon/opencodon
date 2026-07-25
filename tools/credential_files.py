@@ -312,7 +312,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
     if _safe_skills_tempdir and _safe_skills_tempdir.is_dir():
         shutil.rmtree(_safe_skills_tempdir, ignore_errors=True)
 
-    safe_dir = Path(tempfile.mkdtemp(prefix="hermes-skills-safe-"))
+    safe_dir = Path(tempfile.mkdtemp(prefix="opencodon-skills-safe-"))
     _safe_skills_tempdir = safe_dir
 
     for item in skills_dir.rglob("*"):
@@ -386,7 +386,7 @@ def iter_skills_files(
 # ---------------------------------------------------------------------------
 
 # The cache subdirectories that should be mirrored into remote backends.
-# Each tuple is (new_subpath, old_name) matching opencodon_constants.get_hermes_dir().
+# Each tuple is (new_subpath, old_name) matching opencodon_constants.get_opencodon_dir().
 _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/documents", "document_cache"),
     ("cache/images", "image_cache"),
@@ -405,13 +405,13 @@ def get_cache_directory_mounts(
 
     Used by Docker to create bind mounts.  Each entry has ``host_path`` and
     ``container_path`` keys.  The host path is resolved via
-    ``get_hermes_dir()`` for backward compatibility with old directory layouts.
+    ``get_opencodon_dir()`` for backward compatibility with old directory layouts.
     """
-    from opencodon_constants import get_hermes_dir
+    from opencodon_constants import get_opencodon_dir
 
     mounts: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
-        host_dir = get_hermes_dir(new_subpath, old_name)
+        host_dir = get_opencodon_dir(new_subpath, old_name)
         if host_dir.is_dir():
             # Always map to the *new* container layout regardless of host layout.
             container_path = f"{container_base.rstrip('/')}/{new_subpath}"
@@ -499,11 +499,11 @@ def iter_cache_files(
     Used by Modal to upload files individually and resync before each command.
     Skips symlinks.  The container paths use the new ``cache/<subdir>`` layout.
     """
-    from opencodon_constants import get_hermes_dir
+    from opencodon_constants import get_opencodon_dir
 
     result: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
-        host_dir = get_hermes_dir(new_subpath, old_name)
+        host_dir = get_opencodon_dir(new_subpath, old_name)
         if not host_dir.is_dir():
             continue
         container_root = f"{container_base.rstrip('/')}/{new_subpath}"

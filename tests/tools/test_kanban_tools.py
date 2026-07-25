@@ -19,7 +19,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
-    """Normal `hermes chat` sessions (no OPENCODON_KANBAN_TASK) must have
+    """Normal `opencodon chat` sessions (no OPENCODON_KANBAN_TASK) must have
     zero kanban_* tools in their schema."""
     monkeypatch.delenv("OPENCODON_KANBAN_TASK", raising=False)
     home = tmp_path / ".opencodon"
@@ -956,14 +956,14 @@ def test_comment_rejects_empty_body(worker_env):
 def test_comment_ignores_caller_supplied_author(worker_env):
     """``args["author"]`` is no longer honored — the author is always
     derived from ``OPENCODON_PROFILE`` so a worker can't forge a comment
-    under an authoritative-looking name like ``hermes-system`` and
+    under an authoritative-looking name like ``opencodon-system`` and
     poison the next worker's prompt context. Cross-task commenting
     itself remains unrestricted (see #19713); only the author override
     is removed.
     """
     from tools import kanban_tools as kt
     out = kt._handle_comment({
-        "task_id": worker_env, "body": "hi", "author": "hermes-system",
+        "task_id": worker_env, "body": "hi", "author": "opencodon-system",
     })
     assert json.loads(out)["ok"]
     from opencodon_cli import kanban_db as kb
@@ -971,7 +971,7 @@ def test_comment_ignores_caller_supplied_author(worker_env):
     try:
         comments = kb.list_comments(conn, worker_env)
         # Author comes from OPENCODON_PROFILE in the fixture, not the
-        # caller-supplied "hermes-system" override.
+        # caller-supplied "opencodon-system" override.
         assert comments[0].author == "test-worker"
     finally:
         conn.close()
@@ -1761,14 +1761,14 @@ def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
 # The dispatcher pins the active board via OPENCODON_KANBAN_BOARD env var,
 # but a Telegram-side orchestrator handling multiple boards needs to be
 # able to route a single tool call to a specific board's DB without
-# restarting Hermes. These tests pin that ``board=<slug>`` argument
+# restarting opencodon. These tests pin that ``board=<slug>`` argument
 # routes each handler to that board's sqlite file, and that omitting
 # ``board`` preserves the legacy env-driven resolution.
 
 
 @pytest.fixture
 def multi_board_env(monkeypatch, tmp_path):
-    """Isolated Hermes home with two distinct kanban boards seeded.
+    """Isolated opencodon home with two distinct kanban boards seeded.
 
     Returns ``("default", "alt")`` slugs. The default board has one
     pre-existing task ``seed_default``; ``alt`` has ``seed_alt``. No

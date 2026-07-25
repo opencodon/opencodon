@@ -170,7 +170,7 @@ def reclaimer_loop(opencodon_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="hermes_mixed_stress_")
+    home = tempfile.mkdtemp(prefix="opencodon_mixed_stress_")
     print(f"OPENCODON_HOME = {home}")
 
     os.environ["OPENCODON_HOME"] = home

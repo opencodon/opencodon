@@ -1,4 +1,4 @@
-# nix/opencodon.nix — Overridable Hermes Agent package
+# nix/opencodon.nix — Overridable opencodon package
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
@@ -40,26 +40,26 @@
 }:
 let
   nodejs = nodejs_22;
-  mkHermesVenv =
+  mkOpencodonVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
-      pythonSrc = hermesNpmLib.pythonSrc;
+      pythonSrc = opencodonNpmLib.pythonSrc;
       dependency-groups = [ "all" ] ++ extraDependencyGroups;
     };
 
-  hermesVenv = (mkHermesVenv extraDependencyGroups).venv;
+  opencodonVenv = (mkOpencodonVenv extraDependencyGroups).venv;
 
-  hermesNpmLib = callPackage ./lib.nix {
+  opencodonNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix nodejs;
   };
 
-  hermesTui = callPackage ./tui.nix {
-    inherit hermesNpmLib;
+  opencodonTui = callPackage ./tui.nix {
+    inherit opencodonNpmLib;
   };
 
-  hermesWeb = callPackage ./web.nix {
-    inherit hermesNpmLib;
+  opencodonWeb = callPackage ./web.nix {
+    inherit opencodonNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -128,7 +128,7 @@ let
 
     # Collect core venv package names
     core = set()
-    venv_sp = pathlib.Path('${hermesVenv}/${sitePackagesPath}')
+    venv_sp = pathlib.Path('${opencodonVenv}/${sitePackagesPath}')
     for di in venv_sp.glob('*.dist-info'):
         meta = di / 'METADATA'
         if meta.exists():
@@ -151,7 +151,7 @@ let
                 if line.startswith('Name:'):
                     pkg = canonical(line.split(':', 1)[1].strip())
                     if pkg in core:
-                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in hermes sealed venv', file=sys.stderr)
+                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in opencodon sealed venv', file=sys.stderr)
                         print(f'  from: {di}', file=sys.stderr)
                         print(f'  Remove this dependency from extraPythonPackages.', file=sys.stderr)
                         sys.exit(1)
@@ -174,27 +174,27 @@ stdenv.mkDerivation (finalAttrs: {
     # Symlinks, not copies: these are all store paths already, and the
     # wrapper env vars just hold paths.  Symlinking keeps this derivation
     # near-instant when only the venv changed, with an identical closure.
-    mkdir -p $out/share/hermes-agent $out/bin
-    ln -s ${bundledSkills} $out/share/hermes-agent/skills
-    ln -s ${bundledOptionalSkills} $out/share/hermes-agent/optional-skills
-    ln -s ${bundledPlugins} $out/share/hermes-agent/plugins
-    ln -s ${bundledLocales} $out/share/hermes-agent/locales
-    ln -s ${bundledOptionalMcps} $out/share/hermes-agent/optional-mcps
-    ln -s ${hermesWeb} $out/share/hermes-agent/web_dist
-    ln -s ${hermesTui}/lib/hermes-tui $out/ui-tui
+    mkdir -p $out/share/opencodon $out/bin
+    ln -s ${bundledSkills} $out/share/opencodon/skills
+    ln -s ${bundledOptionalSkills} $out/share/opencodon/optional-skills
+    ln -s ${bundledPlugins} $out/share/opencodon/plugins
+    ln -s ${bundledLocales} $out/share/opencodon/locales
+    ln -s ${bundledOptionalMcps} $out/share/opencodon/optional-mcps
+    ln -s ${opencodonWeb} $out/share/opencodon/web_dist
+    ln -s ${opencodonTui}/lib/opencodon-tui $out/ui-tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
-        makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
+        makeWrapper ${opencodonVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
-          --set OPENCODON_BUNDLED_SKILLS $out/share/hermes-agent/skills \
-          --set OPENCODON_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
-          --set OPENCODON_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
-          --set OPENCODON_BUNDLED_LOCALES $out/share/hermes-agent/locales \
-          --set OPENCODON_OPTIONAL_MCPS $out/share/hermes-agent/optional-mcps \
-          --set OPENCODON_WEB_DIST $out/share/hermes-agent/web_dist \
+          --set OPENCODON_BUNDLED_SKILLS $out/share/opencodon/skills \
+          --set OPENCODON_OPTIONAL_SKILLS $out/share/opencodon/optional-skills \
+          --set OPENCODON_BUNDLED_PLUGINS $out/share/opencodon/plugins \
+          --set OPENCODON_BUNDLED_LOCALES $out/share/opencodon/locales \
+          --set OPENCODON_OPTIONAL_MCPS $out/share/opencodon/optional-mcps \
+          --set OPENCODON_WEB_DIST $out/share/opencodon/web_dist \
           --set OPENCODON_TUI_DIR $out/ui-tui \
-          --set OPENCODON_PYTHON ${hermesVenv}/bin/python3 \
+          --set OPENCODON_PYTHON ${opencodonVenv}/bin/python3 \
           --set OPENCODON_NODE ${lib.getExe nodejs}${
             # Fold the line continuation INTO the optionalString: a bare
             # `\` on the line above an empty expansion would dangle onto a
@@ -209,7 +209,7 @@ stdenv.mkDerivation (finalAttrs: {
           }
       '')
       [
-        "hermes"
+        "opencodon"
         "opencodon"
         "opencodon-acp"
       ]
@@ -217,7 +217,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
-      ${hermesVenv}/bin/python3 -c "${checkPackageCollisions}"
+      ${opencodonVenv}/bin/python3 -c "${checkPackageCollisions}"
       echo "=== No collisions ==="
     ''}
 
@@ -226,26 +226,26 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru =
     let
-      devPython = (mkHermesVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
+      devPython = (mkOpencodonVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
     in
     {
       inherit
-        hermesTui
-        hermesWeb
-        hermesNpmLib
-        hermesVenv
+        opencodonTui
+        opencodonWeb
+        opencodonNpmLib
+        opencodonVenv
         ;
 
-      # `hermesDesktop` references `finalAttrs.finalPackage` (this whole
+      # `opencodonDesktop` references `finalAttrs.finalPackage` (this whole
       # derivation, after all overrides are applied) so the desktop wrapper
       # can prepend its `/bin` to PATH.  The desktop's resolver step 4
-      # ("existing hermes on PATH") then picks up the fully wrapped
-      # `hermes` binary — venv with all deps, bundled skills/plugins,
+      # ("existing opencodon on PATH") then picks up the fully wrapped
+      # `opencodon` binary — venv with all deps, bundled skills/plugins,
       # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
       # of the agent resolution in the desktop wrapper.
-      hermesDesktop = callPackage ./desktop.nix {
-        inherit hermesNpmLib electron;
-        hermesAgent = finalAttrs.finalPackage;
+      opencodonDesktop = callPackage ./desktop.nix {
+        inherit opencodonNpmLib electron;
+        opencodonAgent = finalAttrs.finalPackage;
       };
 
       devShellHook = ''
@@ -265,7 +265,7 @@ stdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
     homepage = "https://github.com/opencodon/opencodon";
-    mainProgram = "hermes";
+    mainProgram = "opencodon";
     license = licenses.mit;
     platforms = platforms.unix;
   };

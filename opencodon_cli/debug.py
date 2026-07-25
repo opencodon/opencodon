@@ -1,7 +1,7 @@
-"""``hermes debug`` debug tools for Hermes Agent.
+"""``opencodon debug`` debug tools for opencodon.
 
 Currently supports:
-    hermes debug share    Upload debug report (system info + logs) to a
+    opencodon debug share    Upload debug report (system info + logs) to a
                           paste service and print a shareable URL.
                           By default, log content is run through
                           ``agent.redact.redact_sensitive_text`` with
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Visible in the public paste so reviewers know the content was sanitized.
 # Kept short; the trailing newline guarantees the banner sits on its own line.
 _REDACTION_BANNER = (
-    "[hermes debug share: log content redacted at upload time. "
+    "[opencodon debug share: log content redacted at upload time. "
     "run with --no-redact to disable]\n"
 )
 
@@ -69,11 +69,11 @@ def _pending_file() -> Path:
     Each entry: ``{"url": "...", "expire_at": <unix_ts>}``.  Scheduled
     DELETEs used to be handled by spawning a detached Python process per
     paste that slept for 6 hours; those accumulated forever if the user
-    ran ``hermes debug share`` repeatedly.
+    ran ``opencodon debug share`` repeatedly.
 
     Deletion is now driven by the gateway's cron ticker
     (``gateway/run.py::_start_cron_ticker``) which calls
-    ``_sweep_expired_pastes`` once per hour.  ``hermes debug share`` also
+    ``_sweep_expired_pastes`` once per hour.  ``opencodon debug share`` also
     runs an opportunistic sweep on entry as a fallback for CLI-only users
     who never start the gateway.
     """
@@ -105,7 +105,7 @@ def _save_pending(entries: list[dict]) -> None:
         tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
         atomic_replace(tmp, path)
     except OSError:
-        # Non-fatal — worst case the user has to run ``hermes debug delete``
+        # Non-fatal — worst case the user has to run ``opencodon debug delete``
         # manually.
         pass
 
@@ -135,7 +135,7 @@ def _sweep_expired_pastes(now: Optional[float] = None) -> tuple[int, int]:
 
     Returns ``(deleted, remaining)``.  Best-effort: failed deletes stay in
     the pending file and will be retried on the next sweep.  Silent —
-    intended to be called from every ``hermes debug`` invocation with
+    intended to be called from every ``opencodon debug`` invocation with
     minimal noise.
     """
     entries = _load_pending()
@@ -208,7 +208,7 @@ Use --local to view the report without uploading.
 _GATEWAY_PRIVACY_NOTICE = (
     "⚠️ **Privacy notice:** This uploads system info + recent log tails "
     "(may contain conversation fragments) to a public paste service. "
-    "Full logs are NOT included from the gateway — use `hermes debug share` "
+    "Full logs are NOT included from the gateway — use `opencodon debug share` "
     "from the CLI for full log uploads.\n"
     "Pastes auto-delete after 6 hours."
 )
@@ -241,7 +241,7 @@ def delete_paste(url: str) -> bool:
     target = f"{_PASTE_RS_URL}{paste_id}"
     req = urllib.request.Request(
         target, method="DELETE",
-        headers={"User-Agent": "hermes-agent/debug-share"},
+        headers={"User-Agent": "opencodon/debug-share"},
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         return 200 <= resp.status < 300
@@ -252,12 +252,12 @@ def _schedule_auto_delete(urls: list[str], delay_seconds: int = _AUTO_DELETE_SEC
 
     Previously this spawned a detached Python subprocess per call that slept
     for 6 hours and then issued DELETE requests.  Those subprocesses leaked —
-    every ``hermes debug share`` invocation added ~20 MB of resident Python
+    every ``opencodon debug share`` invocation added ~20 MB of resident Python
     interpreters that never exited until the sleep completed.
 
     The replacement is stateless: we append to ``~/.opencodon/pastes/pending.json``
     and the gateway's cron ticker sweeps expired entries once per hour.
-    ``hermes debug share`` also runs an opportunistic sweep as a fallback
+    ``opencodon debug share`` also runs an opportunistic sweep as a fallback
     for CLI-only users.  If neither runs again, paste.rs's own retention
     policy handles cleanup.
     """
@@ -274,7 +274,7 @@ def _upload_paste_rs(content: str) -> str:
         _PASTE_RS_URL, data=data, method="POST",
         headers={
             "Content-Type": "text/plain; charset=utf-8",
-            "User-Agent": "hermes-agent/debug-share",
+            "User-Agent": "opencodon/debug-share",
         },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -289,7 +289,7 @@ def _upload_dpaste_com(content: str, expiry_days: int = 7) -> str:
 
     dpaste.com uses multipart form data.
     """
-    boundary = "----HermesDebugBoundary9f3c"
+    boundary = "----OpencodonDebugBoundary9f3c"
 
     def _field(name: str, value: str) -> str:
         return (
@@ -310,7 +310,7 @@ def _upload_dpaste_com(content: str, expiry_days: int = 7) -> str:
         _DPASTE_COM_URL, data=body, method="POST",
         headers={
             "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "User-Agent": "hermes-agent/debug-share",
+            "User-Agent": "opencodon/debug-share",
         },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -421,7 +421,7 @@ def _capture_log_snapshot(
     ``full_text`` are run through ``_redact_log_text`` so the snapshot
     returned is upload-safe. The on-disk log file is never modified.
     Pass ``redact=False`` to capture original log content (used by
-    ``hermes debug share --no-redact``).
+    ``opencodon debug share --no-redact``).
     """
     log_path = _resolve_log_path(log_name)
     if log_path is None:
@@ -523,7 +523,7 @@ def _capture_default_log_snapshots(
 # ---------------------------------------------------------------------------
 
 def _capture_dump() -> str:
-    """Run ``hermes dump`` and return its stdout as a string."""
+    """Run ``opencodon dump`` and return its stdout as a string."""
     from opencodon_cli.dump import run_dump
 
     class _FakeArgs:
@@ -554,7 +554,7 @@ def collect_debug_report(
     log_lines
         Number of recent lines to include per log file.
     dump_text
-        Pre-captured dump output.  If empty, ``hermes dump`` is run
+        Pre-captured dump output.  If empty, ``opencodon dump`` is run
         internally.
 
     Returns the report as a plain-text string ready for upload.
@@ -692,7 +692,7 @@ def build_debug_share(
 ) -> DebugShareResult:
     """Collect the debug report + full logs, upload each, return the URLs.
 
-    This is the shared core behind ``hermes debug share`` (CLI) and the
+    This is the shared core behind ``opencodon debug share`` (CLI) and the
     dashboard ``POST /api/ops/debug-share`` endpoint. It performs blocking
     network I/O (paste uploads) — callers inside an event loop must run it in
     a worker thread.
@@ -711,7 +711,7 @@ def build_debug_share(
 
     if redact:
         logger.info(
-            "hermes debug share: applied force-mode redaction to log snapshots before upload"
+            "opencodon debug share: applied force-mode redaction to log snapshots before upload"
         )
 
     report = bundle["report"]
@@ -819,7 +819,7 @@ def run_debug_share(args):
         )
     except RuntimeError as exc:
         print(f"\nUpload failed: {exc}", file=sys.stderr)
-        print("\nRun `hermes debug share --local` to print the report instead.\n")
+        print("\nRun `opencodon debug share --local` to print the report instead.\n")
         sys.exit(1)
 
     # Print results
@@ -835,17 +835,17 @@ def run_debug_share(args):
     print(f"\n⏱  Pastes will auto-delete in {hours} hours.")
 
     # Manual delete fallback
-    print("To delete now:  hermes debug delete <url>")
+    print("To delete now:  opencodon debug delete <url>")
 
-    print("\nShare these links with the Hermes team for support.")
+    print("\nShare these links with the opencodon team for support.")
 
 
 def run_debug_delete(args):
     """Delete one or more paste URLs uploaded by /debug."""
     urls = getattr(args, "urls", [])
     if not urls:
-        print("Usage: hermes debug delete <url> [<url> ...]")
-        print("  Deletes paste.rs pastes uploaded by 'hermes debug share'.")
+        print("Usage: opencodon debug delete <url> [<url> ...]")
+        print("  Deletes paste.rs pastes uploaded by 'opencodon debug share'.")
         return
 
     for url in urls:
@@ -863,10 +863,10 @@ def run_debug_delete(args):
 
 def run_debug(args):
     """Route debug subcommands."""
-    # Opportunistic sweep of expired pastes on every ``hermes debug`` call.
+    # Opportunistic sweep of expired pastes on every ``opencodon debug`` call.
     # Replaces the old per-paste sleeping subprocess that used to leak as
     # one orphaned Python interpreter per scheduled deletion.  Silent and
-    # best-effort — any failure is swallowed so ``hermes debug`` stays
+    # best-effort — any failure is swallowed so ``opencodon debug`` stays
     # reliable even when offline.
     try:
         _sweep_expired_pastes()
@@ -880,7 +880,7 @@ def run_debug(args):
         run_debug_delete(args)
     else:
         # Default: show help
-        print("Usage: hermes debug <command>")
+        print("Usage: opencodon debug <command>")
         print()
         print("Commands:")
         print("  share    Upload debug report to a paste service and print URL")

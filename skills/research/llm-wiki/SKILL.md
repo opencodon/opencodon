@@ -2,11 +2,11 @@
 name: llm-wiki
 description: "Karpathy's LLM Wiki: build/query interlinked markdown KB."
 version: 2.1.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  opencodon:
     tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative]
     category: research
     related_skills: [obsidian, arxiv]

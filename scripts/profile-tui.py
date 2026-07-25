@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drive the Hermes TUI under OPENCODON_DEV_PERF and summarize the pipeline.
+"""Drive the opencodon TUI under OPENCODON_DEV_PERF and summarize the pipeline.
 
 Usage:
   scripts/profile-tui.py [--session SID] [--hold KEY] [--seconds N] [--rate HZ]
@@ -536,7 +536,7 @@ def loop_mode(args: argparse.Namespace) -> int:
 
     tui_dir = Path(args.tui_dir).resolve()
     src_root = tui_dir / "src"
-    pkg_root = tui_dir / "packages" / "hermes-ink" / "src"
+    pkg_root = tui_dir / "packages" / "opencodon-ink" / "src"
 
     def collect_mtimes() -> dict[str, float]:
         mtimes: dict[str, float] = {}

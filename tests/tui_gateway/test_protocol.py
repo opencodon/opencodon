@@ -22,7 +22,7 @@ def _restore_stdout():
 @pytest.fixture()
 def server():
     with patch.dict("sys.modules", {
-        "opencodon_constants": MagicMock(get_opencodon_home=MagicMock(return_value="/tmp/hermes_test")),
+        "opencodon_constants": MagicMock(get_opencodon_home=MagicMock(return_value="/tmp/opencodon_test")),
         "opencodon_cli.env_loader": MagicMock(),
         "opencodon_cli.banner": MagicMock(),
         "opencodon_state": MagicMock(),
@@ -1460,13 +1460,13 @@ def test_slash_exec_rejects_skill_commands(server):
     server._sessions[sid] = {"session_key": sid, "agent": None}
 
     # Mock scan_skill_commands to return a known skill
-    fake_skills = {"/hermes-agent-dev": {"name": "hermes-agent-dev", "description": "Dev workflow"}}
+    fake_skills = {"/opencodon-dev": {"name": "opencodon-dev", "description": "Dev workflow"}}
 
     with patch("agent.skill_commands.get_skill_commands", return_value=fake_skills):
         resp = server.handle_request({
             "id": "r1",
             "method": "slash.exec",
-            "params": {"command": "hermes-agent-dev", "session_id": sid},
+            "params": {"command": "opencodon-dev", "session_id": sid},
         })
 
     # Should return an error so the TUI's .catch() fires command.dispatch
@@ -1893,7 +1893,7 @@ def test_command_dispatch_returns_skill_payload(server):
     sid = "test-session"
     server._sessions[sid] = {"session_key": sid}
 
-    fake_skills = {"/hermes-agent-dev": {"name": "hermes-agent-dev", "description": "Dev workflow"}}
+    fake_skills = {"/opencodon-dev": {"name": "opencodon-dev", "description": "Dev workflow"}}
     fake_msg = "Loaded skill content here"
 
     with patch("agent.skill_commands.scan_skill_commands", return_value=fake_skills), \
@@ -1901,14 +1901,14 @@ def test_command_dispatch_returns_skill_payload(server):
         resp = server.handle_request({
             "id": "r2",
             "method": "command.dispatch",
-            "params": {"name": "hermes-agent-dev", "session_id": sid},
+            "params": {"name": "opencodon-dev", "session_id": sid},
         })
 
     assert "error" not in resp
     result = resp["result"]
     assert result["type"] == "skill"
     assert result["message"] == fake_msg
-    assert result["name"] == "hermes-agent-dev"
+    assert result["name"] == "opencodon-dev"
 
 
 def test_command_dispatch_returns_custom_bundle_payload(server):
@@ -2113,7 +2113,7 @@ def test_slow_completion_does_not_block_fast_handler(completion_method, server):
 
 
 def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
-    """Real config + skin files: activating a skin (as `hermes config set` does)
+    """Real config + skin files: activating a skin (as `opencodon config set` does)
     makes the per-tool reconcile broadcast skin.changed with the resolved palette.
     Exercises _load_cfg → _skin_sig → resolve_skin → _emit with no mocks in between."""
     import opencodon_cli.skin_engine as skin_engine
@@ -2135,7 +2135,7 @@ def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
     server._broadcast_skin_if_changed()
     emitted.clear()
 
-    # Activate midnight, as `hermes config set display.skin midnight` would.
+    # Activate midnight, as `opencodon config set display.skin midnight` would.
     time.sleep(0.01)  # ensure the config mtime moves
     (tmp_path / "config.yaml").write_text("display:\n  skin: midnight\n")
     server._broadcast_skin_if_changed()

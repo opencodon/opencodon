@@ -29,7 +29,7 @@ _SKILL_MULTI_HYPHEN = re.compile(r"-{2,}")
 # ---------------------------------------------------------------------------
 # Skill-scaffolding markers and the canonical extractor.
 #
-# When a user invokes a /skill (or /bundle), Hermes expands the turn into a
+# When a user invokes a /skill (or /bundle), opencodon expands the turn into a
 # model-facing message that embeds the full skill body plus scaffolding. That
 # expanded text is what flows into the agent loop — and into memory providers
 # via MemoryManager. Providers that store or embed the raw user turn (e.g.
@@ -374,14 +374,14 @@ def scan_skill_commands() -> Dict[str, Dict[str, Any]]:
                     if not cmd_name:
                         continue
                     # Skip if this skill's auto-generated /command collides
-                    # with a core Hermes slash command (name or alias). The
+                    # with a core opencodon slash command (name or alias). The
                     # skill remains fully loadable via /skill <name>.
                     # Uses resolve_command() so aliases and case variants are
                     # covered without maintaining a separate cache.
                     if resolve_command(cmd_name) is not None:
                         logger.warning(
                             "Skill %r generates slash command '/%s' which "
-                            "collides with a core Hermes command; skipping "
+                            "collides with a core opencodon command; skipping "
                             "auto-registration. Use '/skill %s' instead.",
                             name, cmd_name, name,
                         )
@@ -699,7 +699,7 @@ def build_preloaded_skills_prompt(
     Disabled skills are treated the same as missing ones: this loads via a
     raw identifier straight into ``_load_skill_payload``, bypassing
     ``get_skill_commands()``'s scan-time disabled filter — mirrors the
-    bundle-invocation gate (#59156). Without this, ``hermes -s <skill>`` or
+    bundle-invocation gate (#59156). Without this, ``opencodon -s <skill>`` or
     a deployment's ``OPENCODON_TUI_SKILLS`` env var could force-load a skill an
     operator disabled via ``skills.disabled``/``skills.platform_disabled``.
     """

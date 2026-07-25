@@ -4084,7 +4084,7 @@ class TestHandleMaxIterations:
         output ...'. The sanitizer renames the blank name to a non-empty
         sentinel so the call and its result stay PAIRED (no orphaned output,
         no 400) while the result content is preserved — it must NOT drop the
-        call, because hermes' dispatch loop keeps empty-name calls paired with
+        call, because opencodon' dispatch loop keeps empty-name calls paired with
         an anti-priming result for self-correction (#47967). (#12807)"""
         messages = [
             {
@@ -4230,7 +4230,7 @@ class TestRunConversation:
         assert "Ollama loaded `qwen3.5:9b` with only 4,096 tokens" in result["final_response"]
         assert "model.ollama_num_ctx: 65536" in result["final_response"]
         assert not agent.client.chat.completions.create.called
-        assert "Ollama runtime context too small for Hermes tool use" in caplog.text
+        assert "Ollama runtime context too small for opencodon tool use" in caplog.text
         assert "runtime_context=4096" in caplog.text
 
     def test_tool_calls_then_stop(self, agent):

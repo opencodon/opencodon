@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for Hermes Agent's Tool Search feature.
+"""Live test harness for opencodon's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),
@@ -32,7 +32,7 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-# Force-isolate the test environment BEFORE any hermes imports.
+# Force-isolate the test environment BEFORE any opencodon imports.
 ORIGINAL_HOME = os.environ.get("OPENCODON_HOME")
 ORIGINAL_AUTH = Path.home() / ".opencodon" / "auth.json"
 
@@ -254,7 +254,7 @@ def setup_isolated_home(enabled: bool) -> Path:
     Also reads OPENROUTER_API_KEY from the user's real ``~/.opencodon/.env`` so
     the agent can authenticate against OpenRouter inside the isolated home.
     """
-    home_dir = Path(tempfile.mkdtemp(prefix="hermes_ts_live_"))
+    home_dir = Path(tempfile.mkdtemp(prefix="opencodon_ts_live_"))
     opencodon_home = home_dir / ".opencodon"
     opencodon_home.mkdir(parents=True)
 
@@ -272,8 +272,8 @@ def setup_isolated_home(enabled: bool) -> Path:
         # hand — it never materializes the secret in a local variable in
         # this module, which both avoids a hand-rolled parser bug and keeps
         # static analysis from tainting the transcript records with the key.
-        from opencodon_cli.env_loader import load_hermes_dotenv
-        load_hermes_dotenv(opencodon_home=str(Path.home() / ".opencodon"))
+        from opencodon_cli.env_loader import load_opencodon_dotenv
+        load_opencodon_dotenv(opencodon_home=str(Path.home() / ".opencodon"))
 
     cfg = {
         "model": {

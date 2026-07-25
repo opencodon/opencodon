@@ -133,7 +133,7 @@ def test_addressed_pipe_form_other_user():
 
 
 def test_addressed_pipe_form_bot_is_not_other():
-    assert _addressed(f"<@{BOT_USER_ID}|hermes> hello") is False
+    assert _addressed(f"<@{BOT_USER_ID}|opencodon> hello") is False
 
 
 def test_addressed_no_mention():
@@ -172,7 +172,7 @@ def test_mentions_self_plain_form():
 
 
 def test_mentions_self_pipe_form():
-    assert _mentions_self(f"hello <@{BOT_USER_ID}|hermes>") is True
+    assert _mentions_self(f"hello <@{BOT_USER_ID}|opencodon>") is True
 
 
 def test_mentions_self_other_user_only():
@@ -284,7 +284,7 @@ async def test_free_response_replies_when_bot_mentioned_in_pipe_form(adapter):
     await _run(
         adapter,
         _event(
-            f"<@{OTHER_USER_ID}|rasha> and <@{BOT_USER_ID}|hermes> please compare",
+            f"<@{OTHER_USER_ID}|rasha> and <@{BOT_USER_ID}|opencodon> please compare",
             ts="1700000000.000004",
         ),
     )

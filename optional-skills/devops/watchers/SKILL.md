@@ -2,11 +2,11 @@
 name: watchers
 description: Poll RSS, JSON APIs, and GitHub with watermark dedup.
 version: 1.0.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 platforms: [linux, macos]
 metadata:
-  hermes:
+  opencodon:
     tags: [cron, polling, rss, github, http, automation, monitoring]
     category: devops
     requires_toolsets: [terminal]
@@ -66,7 +66,7 @@ Watch a GitHub repo (set `GITHUB_TOKEN` in `${OPENCODON_HOME:-~/.opencodon}/.env
 
 ```bash
 python $OPENCODON_HOME/skills/devops/watchers/scripts/watch_github.py \
-  --name hermes-issues --repo opencodon/opencodon --scope issues
+  --name opencodon-issues --repo opencodon/opencodon --scope issues
 ```
 
 Poll an arbitrary JSON API:

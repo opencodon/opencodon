@@ -1,7 +1,7 @@
-"""Coding-context awareness — base Hermes, every interactive surface.
+"""Coding-context awareness — base opencodon, every interactive surface.
 
-When the user runs Hermes inside a code workspace (CLI, TUI, desktop app, or an
-editor over ACP), Hermes shifts into a **coding posture**. This module is the
+When the user runs opencodon inside a code workspace (CLI, TUI, desktop app, or an
+editor over ACP), opencodon shifts into a **coding posture**. This module is the
 single place that decides whether we're in that posture and what it implies,
 so the rest of the codebase never re-derives "are we coding?" on its own.
 
@@ -62,7 +62,7 @@ from typing import Any, Optional
 
 from opencodon_cli._subprocess_compat import bounded_git_probe
 
-logger = logging.getLogger("hermes.coding_context")
+logger = logging.getLogger("opencodon.coding_context")
 
 CODING_TOOLSET = "coding"
 
@@ -607,7 +607,7 @@ def is_coding_context(
     cwd: Optional[str | Path] = None,
     config: Optional[dict[str, Any]] = None,
 ) -> bool:
-    """Whether Hermes should operate in its coding posture right now."""
+    """Whether opencodon should operate in its coding posture right now."""
     return resolve_runtime_mode(platform=platform, cwd=cwd, config=config).is_coding
 
 

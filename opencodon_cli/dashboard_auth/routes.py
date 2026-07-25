@@ -69,7 +69,7 @@ def _redirect_uri(request: Request) -> str:
          Relief valve for deploys behind reverse proxies whose forwarded
          headers aren't reliable.
 
-      2. ``X-Forwarded-Prefix: /hermes`` (Mission Control deploys) — we
+      2. ``X-Forwarded-Prefix: /opencodon`` (Mission Control deploys) — we
          prepend the prefix to the path FastAPI's ``url_for`` produces
          (it doesn't natively honour this header — it isn't part of the
          Starlette/uvicorn proxy_headers set).

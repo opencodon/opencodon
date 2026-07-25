@@ -128,7 +128,7 @@ class TestWebExtractSecretExfil:
 
         for url in (
             "https://leetcode.com/problems/two-sum/?code=twosum",
-            "https://github.com/search?q=hermes&code=1",
+            "https://github.com/search?q=opencodon&code=1",
             "https://example.com/blog?session=summer",
         ):
             result = await web_extract_tool(urls=[url])

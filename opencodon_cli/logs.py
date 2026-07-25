@@ -1,4 +1,4 @@
-"""``hermes logs`` — view and filter Hermes log files.
+"""``opencodon logs`` — view and filter opencodon log files.
 
 Supports tailing, following, session filtering, level filtering,
 component filtering, and relative time ranges.  All log files live
@@ -6,17 +6,17 @@ under ``~/.opencodon/logs/``.
 
 Usage examples::
 
-    hermes logs                    # last 50 lines of agent.log
-    hermes logs -f                 # follow agent.log in real time
-    hermes logs errors             # last 50 lines of errors.log
-    hermes logs gateway -n 100    # last 100 lines of gateway.log
-    hermes logs gui -f            # follow gui.log (dashboard/pty/ws)
-    hermes logs desktop -f        # follow desktop.log (Electron app boot/backend)
-    hermes logs --level WARNING    # only WARNING+ lines
-    hermes logs --session abc123   # filter by session ID substring
-    hermes logs --component tools  # only tool-related lines
-    hermes logs --since 1h         # lines from the last hour
-    hermes logs --since 30m -f     # follow, starting 30 min ago
+    opencodon logs                    # last 50 lines of agent.log
+    opencodon logs -f                 # follow agent.log in real time
+    opencodon logs errors             # last 50 lines of errors.log
+    opencodon logs gateway -n 100    # last 100 lines of gateway.log
+    opencodon logs gui -f            # follow gui.log (dashboard/pty/ws)
+    opencodon logs desktop -f        # follow desktop.log (Electron app boot/backend)
+    opencodon logs --level WARNING    # only WARNING+ lines
+    opencodon logs --session abc123   # filter by session ID substring
+    opencodon logs --component tools  # only tool-related lines
+    opencodon logs --since 1h         # lines from the last hour
+    opencodon logs --since 30m -f     # follow, starting 30 min ago
 """
 
 import re
@@ -179,7 +179,7 @@ def tail_log(
     log_path = get_opencodon_home() / "logs" / filename
     if not log_path.exists():
         print(f"Log file not found: {log_path}")
-        print("(Logs are created when Hermes runs — try 'hermes chat' first)")
+        print("(Logs are created when opencodon runs — try 'opencodon chat' first)")
         sys.exit(1)
 
     # Parse --since into a datetime cutoff
@@ -394,4 +394,4 @@ def list_logs() -> None:
             found = True
 
     if not found:
-        print("  (no log files yet — run 'hermes chat' to generate logs)")
+        print("  (no log files yet — run 'opencodon chat' to generate logs)")

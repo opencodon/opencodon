@@ -1,18 +1,18 @@
 ---
-name: hermes-desktop-plugins
+name: opencodon-desktop-plugins
 description: Write desktop app plugins that add UI panes and commands.
 version: 1.0.0
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  opencodon:
     tags: [desktop, plugins, ui, extension]
     category: productivity
     related_skills: []
 ---
 
-# Hermes Desktop Plugins Skill
+# opencodon Desktop Plugins Skill
 
-Write plugins for the Hermes desktop app: statusbar items, layout panes,
+Write plugins for the opencodon desktop app: statusbar items, layout panes,
 command-palette commands, keybinds, routes, and themes. A plugin is a single
 plain-JavaScript ESM file the app loads at runtime — no build step, no repo
 changes. A plugin can also talk to its own Python backend namespace
@@ -30,7 +30,7 @@ Full human reference (every export, area payloads, backend, security):
 
 ## Prerequisites
 
-- The Hermes desktop app (it loads plugins; the CLI/gateway alone does not).
+- The opencodon desktop app (it loads plugins; the CLI/gateway alone does not).
 - Write access to `$OPENCODON_HOME/desktop-plugins/` (usually
   `~/.opencodon/desktop-plugins/`).
 
@@ -49,7 +49,7 @@ Full human reference (every export, area payloads, backend, security):
 
 ## Quick Reference
 
-The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
+The ONLY import surface is `@opencodon/plugin-sdk` (plus `react` /
 `react/jsx-runtime`, which resolve to the app's own React — write UI with
 `jsx()` calls, not JSX syntax; the file is not compiled).
 
@@ -149,7 +149,7 @@ The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
   blank space or blurry scaling.
 - JSX syntax will not parse — the file loads uncompiled. Use
   `jsx('div', { children: ... })` from `react/jsx-runtime`.
-- Do not import anything except `@hermes/plugin-sdk`, `react`, and
+- Do not import anything except `@opencodon/plugin-sdk`, `react`, and
   `react/jsx-runtime`; other specifiers fail to resolve.
 - Handlers must read state imperatively (`$atom.get()`), never from render
   closures — rapid events will otherwise see stale values.

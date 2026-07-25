@@ -365,7 +365,7 @@ class TestFileDedup(unittest.TestCase):
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-dedup-")
+        self._tmpdir = _make_safe_tempdir("opencodon-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "dedup_test.txt")
         with open(self._tmpfile, "w") as f:
             f.write("line one\nline two\n")
@@ -441,7 +441,7 @@ class TestFileDedup(unittest.TestCase):
     def test_write_allows_large_file_that_quotes_status_text(self, mock_ops):
         """Legitimate large content that happens to quote the status is allowed.
 
-        Hermes' own docs / SKILL.md files may legitimately mention the dedup
+        opencodon' own docs / SKILL.md files may legitimately mention the dedup
         message verbatim.  Only short, status-dominated writes are rejected —
         a normal file that contains the message as one line out of many must
         still write successfully.
@@ -833,7 +833,7 @@ class TestWriteInvalidatesDedup(unittest.TestCase):
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-write-dedup-")
+        self._tmpdir = _make_safe_tempdir("opencodon-write-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "write_dedup.txt")
         with open(self._tmpfile, "w") as f:
             f.write("original content\n")

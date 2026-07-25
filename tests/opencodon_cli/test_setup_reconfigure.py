@@ -1,10 +1,10 @@
 """Tests for the setup wizard's returning-user behavior.
 
 On an existing install:
-- Bare `hermes setup` drops straight into the full reconfigure wizard
+- Bare `opencodon setup` drops straight into the full reconfigure wizard
   (every prompt shows the current value as its default).
-- `hermes setup --quick` runs the narrower "fill in missing items" flow.
-- `hermes setup --reconfigure` is a backwards-compat alias for the
+- `opencodon setup --quick` runs the narrower "fill in missing items" flow.
+- `opencodon setup --reconfigure` is a backwards-compat alias for the
   bare-setup default.
 
 On a fresh install, all three are no-ops — fall through to first-time setup.
@@ -96,7 +96,7 @@ def _enter_fresh_install_patches(stack, **extra):
 
 
 class TestExistingInstallDefault:
-    """Bare `hermes setup` on an existing install = full reconfigure wizard."""
+    """Bare `opencodon setup` on an existing install = full reconfigure wizard."""
 
     def test_bare_setup_runs_full_reconfigure_without_menu(self, existing_install):
         """No menu, no prompt_choice — just run every section in sequence."""
@@ -129,7 +129,7 @@ class TestExistingInstallDefault:
         m["tools"].assert_called_once()
 
     def test_reconfigure_flag_is_backwards_compat_noop(self, existing_install):
-        """`hermes setup --reconfigure` behaves the same as bare `hermes setup`."""
+        """`opencodon setup --reconfigure` behaves the same as bare `opencodon setup`."""
         args = _make_setup_args(reconfigure=True)
 
         with ExitStack() as stack:
@@ -242,7 +242,7 @@ class TestArgparse:
             "opencodon_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["hermes", "setup", "--reconfigure"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "setup", "--reconfigure"])
         try:
             main()
         except SystemExit:
@@ -259,7 +259,7 @@ class TestArgparse:
             "opencodon_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["hermes", "setup", "--quick"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "setup", "--quick"])
         try:
             main()
         except SystemExit:
@@ -276,7 +276,7 @@ class TestArgparse:
             "opencodon_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["hermes", "setup"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "setup"])
         try:
             main()
         except SystemExit:

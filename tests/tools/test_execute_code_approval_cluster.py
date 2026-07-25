@@ -457,7 +457,7 @@ def test_guard_session_yolo_bypasses(gw_session):
 # 4. Env scrubbing (#27303)
 # ---------------------------------------------------------------------------
 
-def test_env_scrub_hermes_allowlist_and_secret_blocks():
+def test_env_scrub_opencodon_allowlist_and_secret_blocks():
     from tools.code_execution_tool import _scrub_child_env
 
     env = {
@@ -530,7 +530,7 @@ def test_execute_code_entry_blocks_before_spawn_when_guard_denies(monkeypatch, t
 # 6. Env-scrub diagnosability mitigation (#27303 follow-up)
 # ---------------------------------------------------------------------------
 
-def test_env_scrub_logs_dropped_hermes_vars(caplog):
+def test_env_scrub_logs_dropped_opencodon_vars(caplog):
     """Dropping a non-allowlisted, non-secret OPENCODON_* var must be diagnosable:
     the scrub emits a one-shot debug log naming the dropped vars and pointing at
     the env_passthrough opt-in, so the silent behavior change (#27303) doesn't

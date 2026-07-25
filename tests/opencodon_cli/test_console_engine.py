@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon_cli.console_engine import HermesConsoleEngine, run_console_repl
+from opencodon_cli.console_engine import OpencodonConsoleEngine, run_console_repl
 
 
 EXPECTED_CONSOLE_COMMANDS = {
@@ -201,8 +201,8 @@ MUTATING_CONFIRMATION_SMOKE_COMMANDS = [
     "mcp add demo --url https://example.com/sse",
     "mcp configure github",
     "mcp picker",
-    "backup --quick -o /tmp/hermes-console-test.zip",
-    "import /tmp/hermes-console-test.zip",
+    "backup --quick -o /tmp/opencodon-console-test.zip",
+    "import /tmp/opencodon-console-test.zip",
     "send --to telegram hello",
     "memory reset --target memory",
     "auth remove openrouter 1",
@@ -217,11 +217,11 @@ MUTATING_CONFIRMATION_SMOKE_COMMANDS = [
 ]
 
 
-def test_console_parses_bare_and_hermes_prefixed_commands(_isolate_opencodon_home):
-    engine = HermesConsoleEngine()
+def test_console_parses_bare_and_opencodon_prefixed_commands(_isolate_opencodon_home):
+    engine = OpencodonConsoleEngine()
 
     bare = engine.execute("config path")
-    prefixed = engine.execute("hermes config path")
+    prefixed = engine.execute("opencodon config path")
 
     assert bare.status == "ok"
     assert prefixed.status == "ok"
@@ -241,19 +241,19 @@ def test_console_status_hides_cli_next_step_footer(
         print()
         rule = "\u2500" * 60
         print(f"\x1b[2m{rule}\x1b[0m")
-        print("\x1b[2m  Run 'hermes doctor' for detailed diagnostics\x1b[0m")
-        print("\x1b[2m  Run 'hermes setup' to configure\x1b[0m")
+        print("\x1b[2m  Run 'opencodon doctor' for detailed diagnostics\x1b[0m")
+        print("\x1b[2m  Run 'opencodon setup' to configure\x1b[0m")
         print()
 
     monkeypatch.setattr(status_mod, "show_status", fake_show_status)
 
-    result = HermesConsoleEngine().execute("status")
+    result = OpencodonConsoleEngine().execute("status")
 
     assert result.status == "ok"
     assert "Sessions" in result.output
     assert "Active: 3 session(s)" in result.output
-    assert "hermes doctor" not in result.output
-    assert "hermes setup" not in result.output
+    assert "opencodon doctor" not in result.output
+    assert "opencodon setup" not in result.output
     assert "\u2500" not in result.output
 
 
@@ -271,36 +271,36 @@ def test_console_status_hides_osc_linked_cli_next_step_footer(
         print("Active: 3 session(s)")
         print()
         print(osc_link("\u2500" * 60))
-        print(osc_link("  Run 'hermes doctor' for detailed diagnostics"))
-        print(osc_link("  Run 'hermes setup' to configure"))
+        print(osc_link("  Run 'opencodon doctor' for detailed diagnostics"))
+        print(osc_link("  Run 'opencodon setup' to configure"))
         print()
 
     monkeypatch.setattr(status_mod, "show_status", fake_show_status)
 
-    result = HermesConsoleEngine().execute("status")
+    result = OpencodonConsoleEngine().execute("status")
 
     assert result.status == "ok"
     assert "Sessions" in result.output
     assert "Active: 3 session(s)" in result.output
-    assert "hermes doctor" not in result.output
-    assert "hermes setup" not in result.output
+    assert "opencodon doctor" not in result.output
+    assert "opencodon setup" not in result.output
     assert "https://example.test" not in result.output
     assert "\u2500" not in result.output
 
 
 def test_console_help_uses_cli_subcommand_summaries():
-    help_text = HermesConsoleEngine().help_text()
+    help_text = OpencodonConsoleEngine().help_text()
 
     assert "skills list" in help_text
     assert "List installed skills" in help_text
     assert "Show all tools and their enabled/disabled status" in help_text
     assert "Remove an MCP server" in help_text
-    assert "Run `hermes skills list`" not in help_text
-    assert "Run `hermes tools list`" not in help_text
+    assert "Run `opencodon skills list`" not in help_text
+    assert "Run `opencodon tools list`" not in help_text
 
 
 def test_console_help_table_keeps_long_summaries_compact():
-    help_text = HermesConsoleEngine().help_text()
+    help_text = OpencodonConsoleEngine().help_text()
 
     slack_line = next(
         line for line in help_text.splitlines() if line.strip().startswith("slack manifest")
@@ -311,13 +311,13 @@ def test_console_help_table_keeps_long_summaries_compact():
 
 
 def test_console_help_for_command_uses_cli_summary():
-    help_text = HermesConsoleEngine().help_text("skills list")
+    help_text = OpencodonConsoleEngine().help_text("skills list")
 
     assert help_text == "skills list\nList installed skills"
 
 
 def test_console_registry_covers_non_admin_cli_surface():
-    registered = set(HermesConsoleEngine().commands)
+    registered = set(OpencodonConsoleEngine().commands)
 
     missing = EXPECTED_CONSOLE_COMMANDS - registered
 
@@ -362,7 +362,7 @@ def test_console_registry_covers_non_admin_cli_surface():
     ],
 )
 def test_console_rejects_destructive_and_shell_like_commands(line):
-    result = HermesConsoleEngine().execute(line)
+    result = OpencodonConsoleEngine().execute(line)
 
     assert result.status == "error"
     assert result.output
@@ -370,14 +370,14 @@ def test_console_rejects_destructive_and_shell_like_commands(line):
 
 @pytest.mark.parametrize("line", MUTATING_CONFIRMATION_SMOKE_COMMANDS)
 def test_mutating_console_commands_require_confirmation(line):
-    result = HermesConsoleEngine().execute(line)
+    result = OpencodonConsoleEngine().execute(line)
 
     assert result.status == "confirm_required"
     assert result.confirmation_message
 
 
 def test_help_lists_supported_commands_and_not_full_cli():
-    result = HermesConsoleEngine().execute("help")
+    result = OpencodonConsoleEngine().execute("help")
 
     assert result.status == "ok"
     assert "sessions list" in result.output
@@ -387,7 +387,7 @@ def test_help_lists_supported_commands_and_not_full_cli():
 
 
 def test_config_set_requires_confirmation_then_writes(_isolate_opencodon_home):
-    engine = HermesConsoleEngine()
+    engine = OpencodonConsoleEngine()
 
     # Use a schema-known key path. Since #34067, `config set` refuses unknown
     # top-level keys, so this flow test must target a valid path (telegram is a
@@ -416,7 +416,7 @@ def test_sessions_list_and_stats_use_isolated_session_store(_isolate_opencodon_h
     finally:
         db.close()
 
-    engine = HermesConsoleEngine()
+    engine = OpencodonConsoleEngine()
     listed = engine.execute("sessions list --limit 10")
     stats = engine.execute("sessions stats")
 
@@ -431,7 +431,7 @@ def test_cron_pause_resume_and_run_require_confirmation(_isolate_opencodon_home)
     from cron.jobs import create_job, get_job
 
     job = create_job(prompt="say hello", schedule="every 1h", name="alpha")
-    engine = HermesConsoleEngine()
+    engine = OpencodonConsoleEngine()
 
     pending = engine.execute(f"cron pause {job['id']}")
     assert pending.status == "confirm_required"
@@ -469,8 +469,8 @@ def test_repl_runs_non_interactive_lines_without_prompts(_isolate_opencodon_home
     )
 
     assert code == 0
-    assert "Hermes Console" in stdout.getvalue()
-    assert "hermes>" not in stdout.getvalue()
+    assert "opencodon Console" in stdout.getvalue()
+    assert "opencodon>" not in stdout.getvalue()
     assert stderr.getvalue() == ""
 
 
@@ -504,4 +504,4 @@ def test_main_console_subcommand_smoke(_isolate_opencodon_home):
     )
 
     assert result.returncode == 0
-    assert "Hermes Console" in result.stdout
+    assert "opencodon Console" in result.stdout

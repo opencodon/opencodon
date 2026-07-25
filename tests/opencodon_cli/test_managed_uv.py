@@ -107,7 +107,7 @@ class TestEnsureUvUpdateBoundary:
     """``ensure_uv()`` must answer to both the single-value and the legacy
     ``(path, fresh_bootstrap)`` call conventions — **on POSIX**.
 
-    ``hermes update`` runs the call site from the old, already-imported
+    ``opencodon update`` runs the call site from the old, already-imported
     ``opencodon_cli.main`` against the freshly pulled ``managed_uv``. A release
     parked on a ``(path, fresh)`` tuple runs ``uv_bin, fresh = ensure_uv()``
     against the single-value module; the path is an iterable ``str`` so the
@@ -173,7 +173,7 @@ class TestEnsureUvWindowsSafe:
         import subprocess
         from opencodon_cli.managed_uv import _UvResult
         with pytest.raises(TypeError):
-            subprocess.list2cmdline([_UvResult("C:\\hermes\\uv.exe"), "pip"])
+            subprocess.list2cmdline([_UvResult("C:\\opencodon\\uv.exe"), "pip"])
 
     def test_windows_returns_plain_str_safe_for_subprocess(self, tmp_path):
         import subprocess

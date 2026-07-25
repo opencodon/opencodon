@@ -356,7 +356,7 @@ class TestNormalizeAuxProvider:
 
 class TestReadCodexAccessToken:
     def test_valid_auth_store(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -371,7 +371,7 @@ class TestReadCodexAccessToken:
         assert result == "tok-123"
 
     def test_pool_without_selected_entry_falls_back_to_auth_store(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -385,7 +385,7 @@ class TestReadCodexAccessToken:
         assert result == valid_jwt
 
     def test_missing_returns_none(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
@@ -394,7 +394,7 @@ class TestReadCodexAccessToken:
         assert result is None
 
     def test_empty_token_returns_none(self, tmp_path, monkeypatch):
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -436,7 +436,7 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -461,7 +461,7 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         valid_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -477,7 +477,7 @@ class TestReadCodexAccessToken:
 
     def test_non_jwt_token_passes_through(self, tmp_path, monkeypatch):
         """Non-JWT tokens (no dots) should be returned as-is."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -496,14 +496,14 @@ class TestResolveXaiOAuthForAux:
     def test_uses_pool_backed_credentials_without_singleton(self, tmp_path, monkeypatch):
         """Auxiliary xAI OAuth must see pool-only credentials.
 
-        ``hermes auth status`` already reports these as logged in; compression
+        ``opencodon auth status`` already reports these as logged in; compression
         should not fall through to "no auxiliary provider configured" just
         because the singleton auth-store entry is absent.
         """
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
         from opencodon_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -535,7 +535,7 @@ class TestResolveXaiOAuthForAux:
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
         from opencodon_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -695,7 +695,7 @@ class TestResolveProviderClientUniversalModelFallback:
 
     Aux tasks (title generation, vision, session search, etc.) routinely
     reach this function without an explicit model — the user's main
-    provider was picked via ``hermes model``, no per-task override is
+    provider was picked via ``opencodon model``, no per-task override is
     set, and the expectation is "just use my main model for side tasks
     too."  The resolver fills in ``model`` from a 3-step universal
     fallback before any provider branch runs:
@@ -851,7 +851,7 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -894,7 +894,7 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -925,7 +925,7 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -947,10 +947,10 @@ class TestExpiredCodexFallback:
                 assert client is not None
 
 
-    def test_hermes_oauth_file_sets_oauth_flag(self, monkeypatch):
+    def test_opencodon_oauth_file_sets_oauth_flag(self, monkeypatch):
         """OAuth-style tokens should get is_oauth=*** (token is not sk-ant-api-*)."""
         # Mock resolve_anthropic_token to return an OAuth-style token
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-hermes-token"), \
+        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-opencodon-token"), \
              patch("agent.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
@@ -968,7 +968,7 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         no_exp_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -989,7 +989,7 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(b"not-json-content").rstrip(b"=").decode()
         bad_jwt = f"{header}.{payload}.fakesig"
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(json.dumps({
             "version": 1,
@@ -2219,7 +2219,7 @@ class TestAuxiliaryFallbackLayering:
         )
 
     def test_fallback_entry_openai_codex_uses_oauth_pool_without_inline_key(self):
-        """Configured Codex fallback resolves through Hermes auth / credential pool."""
+        """Configured Codex fallback resolves through opencodon auth / credential pool."""
         from agent.auxiliary_client import _resolve_fallback_entry
 
         pool_entry = MagicMock()
@@ -2525,7 +2525,7 @@ class TestTransientTransportRetry:
 
 class TestAuxClientNoSdkRetries:
     """Auxiliary OpenAI clients are constructed with SDK-internal retries
-    disabled so Hermes owns the retry/timeout budget (issue #54465). The SDK
+    disabled so opencodon owns the retry/timeout budget (issue #54465). The SDK
     default (max_retries=2 → 3 attempts) silently triples the effective wall
     time of every aux call against a slow/hung endpoint.
     """
@@ -3511,7 +3511,7 @@ class TestAuxiliaryAuthRefreshRetry:
     def test_resolve_provider_client_vertex_builds_client_from_minted_token(self):
         """End-to-end: resolve_provider_client("vertex", ...) must reach the
         auth_type == "vertex" branch and build a working client, not die at
-        the PROVIDER_REGISTRY lookup (a plain HERMES_OVERLAYS-only fix would
+        the PROVIDER_REGISTRY lookup (a plain OPENCODON_OVERLAYS-only fix would
         leave this branch dead code — PROVIDER_REGISTRY is what
         resolve_provider_client actually gates on)."""
         with (
@@ -3666,9 +3666,9 @@ class TestAuxiliaryPoolRotationRetry:
 
 
 class TestAnthropicAuxiliaryReasoningTranslation:
-    """Native Anthropic aux adapters must receive normalized Hermes reasoning.
+    """Native Anthropic aux adapters must receive normalized opencodon reasoning.
 
-    MoA slot reasoning is carried through call_llm as a Hermes
+    MoA slot reasoning is carried through call_llm as a opencodon
     ``reasoning_config``. The native Anthropic Messages path cannot consume the
     generic OpenAI-style ``extra_body.reasoning`` fallback, so assert the final
     ``messages.create`` kwargs contain Anthropic's provider-aware wire shape.
@@ -4862,7 +4862,7 @@ class TestNvidiaBillingHeaders:
         assert model == "nvidia/test-model"
         call_kwargs = mock_openai.call_args[1]
         headers = call_kwargs["default_headers"]
-        assert headers["X-BILLING-INVOKE-ORIGIN"] == "HermesAgent"
+        assert headers["X-BILLING-INVOKE-ORIGIN"] == "OpencodonAgent"
 
     def test_resolve_provider_client_local_nim_skips_billing_origin_header(self, monkeypatch):
         monkeypatch.setenv("NVIDIA_API_KEY", "nvidia-key")

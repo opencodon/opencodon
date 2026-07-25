@@ -66,7 +66,7 @@ def test_hosted_callback_is_public_and_delivers_code():
         flow_id="flow-public",
         server_name="reports",
         profile=None,
-        opencodon_home="/tmp/hermes-test",
+        opencodon_home="/tmp/opencodon-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(
@@ -96,7 +96,7 @@ def test_hosted_callback_bypasses_gated_cookie_auth(monkeypatch):
         flow_id="flow-gated",
         server_name="reports",
         profile=None,
-        opencodon_home="/tmp/hermes-test",
+        opencodon_home="/tmp/opencodon-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(
@@ -125,7 +125,7 @@ def test_hosted_callback_rejects_wrong_state_before_waking_sdk():
         flow_id="flow-state-route",
         server_name="reports",
         profile=None,
-        opencodon_home="/tmp/hermes-test",
+        opencodon_home="/tmp/opencodon-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(
@@ -156,7 +156,7 @@ def test_hosted_auth_start_bounds_pending_flow_registry():
             flow_id=f"existing-{index}",
             server_name="reports",
             profile=None,
-            opencodon_home="/tmp/hermes-test",
+            opencodon_home="/tmp/opencodon-test",
             redirect_uri=f"https://agent.example/callback/{index}",
         )
         web_server._mcp_oauth_flows[flow.flow_id] = flow
@@ -239,7 +239,7 @@ def test_callback_route_supports_server_names_with_slashes():
         flow_id="flow-slash",
         server_name="github/mcp",
         profile=None,
-        opencodon_home="/tmp/hermes-test",
+        opencodon_home="/tmp/opencodon-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/github/mcp",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=slash"))
@@ -261,7 +261,7 @@ def test_flow_status_does_not_expose_authorization_code():
         flow_id="flow-status",
         server_name="reports",
         profile=None,
-        opencodon_home="/tmp/hermes-test",
+        opencodon_home="/tmp/opencodon-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/flow-status",
     )
     flow.authorization_url = "https://idp.example/authorize"

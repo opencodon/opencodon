@@ -1,4 +1,4 @@
-"""CLI subcommand parser builders for ``hermes <subcommand>``.
+"""CLI subcommand parser builders for ``opencodon <subcommand>``.
 
 ``opencodon_cli/main.py:main()`` historically built the entire argparse tree
 inline — 179 ``add_parser`` calls across ~26 subcommand groups, all wedged

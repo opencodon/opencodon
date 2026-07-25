@@ -6,10 +6,10 @@ Exposes an HTTP server with endpoints:
 - POST /v1/responses               — OpenAI Responses API format (stateful via previous_response_id; X-Hermes-Session-Key supported)
 - GET  /v1/responses/{response_id} — Retrieve a stored response
 - DELETE /v1/responses/{response_id} — Delete a stored response
-- GET  /v1/models                  — lists hermes-agent and any configured model_routes aliases
+- GET  /v1/models                  — lists opencodon and any configured model_routes aliases
 - GET  /v1/capabilities            — machine-readable API capabilities for external UIs
-- GET  /api/sessions               — list client-visible Hermes sessions
-- POST /api/sessions               — create an empty Hermes session
+- GET  /api/sessions               — list client-visible opencodon sessions
+- POST /api/sessions               — create an empty opencodon session
 - GET/PATCH/DELETE /api/sessions/{session_id} — read/update/delete a session
 - GET  /api/sessions/{session_id}/messages — read session message history
 - POST /api/sessions/{session_id}/fork — branch a session using SessionDB lineage
@@ -23,7 +23,7 @@ Exposes an HTTP server with endpoints:
 - GET  /health/detailed            — rich status for cross-container dashboard probing
 
 Any OpenAI-compatible frontend (Open WebUI, LobeChat, LibreChat,
-AnythingLLM, NextChat, ChatBox, etc.) can connect to hermes-agent
+AnythingLLM, NextChat, ChatBox, etc.) can connect to opencodon
 through this adapter by pointing at http://localhost:8642/v1 and
 authenticating with API_SERVER_KEY.
 
@@ -95,13 +95,13 @@ from gateway.readiness import collect_runtime_readiness
 logger = logging.getLogger(__name__)
 
 
-def _hermes_version() -> str:
-    """Return the canonical Hermes Agent version string.
+def _opencodon_version() -> str:
+    """Return the canonical opencodon version string.
 
     ``opencodon_cli.__version__`` is the runtime source of truth used by the CLI,
     dashboard, portal tags, and release script. Prefer it over installed
     distribution metadata because editable/source checkouts can retain stale
-    ``hermes_agent-*.dist-info`` after a source update until the environment is
+    ``opencodon_agent-*.dist-info`` after a source update until the environment is
     reinstalled. Never raises — a version probe must not be able to break the
     health endpoint.
     """
@@ -928,7 +928,7 @@ def _derive_chat_session_id(
     conversation history with every request.  The system prompt and first user
     message are constant across all turns of the same conversation, so hashing
     them produces a deterministic session ID that lets the API server reuse
-    the same Hermes session (and therefore the same Docker container sandbox
+    the same opencodon session (and therefore the same Docker container sandbox
     directory) across turns.
     """
     seed = f"{system_prompt or ''}\n{first_user_message}"
@@ -988,7 +988,7 @@ class APIServerAdapter(BasePlatformAdapter):
     OpenAI-compatible HTTP API server adapter.
 
     Runs an aiohttp web server that accepts OpenAI-format requests
-    and routes them through hermes-agent's AIAgent.
+    and routes them through opencodon's AIAgent.
     """
 
     # Stateless request/response: every route (the OpenAI-spec
@@ -1688,7 +1688,7 @@ class APIServerAdapter(BasePlatformAdapter):
     def _ensure_session_db(self):
         """Lazily initialise and return the SessionDB for the active profile home.
 
-        Sessions are persisted to ``state.db`` so that ``hermes sessions list``
+        Sessions are persisted to ``state.db`` so that ``opencodon sessions list``
         shows API-server conversations alongside CLI and gateway ones.
 
         Under multiplex ``/p/<profile>/`` requests the profile runtime scope
@@ -1956,7 +1956,7 @@ class APIServerAdapter(BasePlatformAdapter):
     async def _handle_health(self, request: "web.Request") -> "web.Response":
         """GET /health — simple health check."""
         return web.json_response(
-            {"status": "ok", "platform": "opencodon", "version": _hermes_version()}
+            {"status": "ok", "platform": "opencodon", "version": _opencodon_version()}
         )
 
     async def _handle_health_detailed(self, request: "web.Request") -> "web.Response":
@@ -1998,7 +1998,7 @@ class APIServerAdapter(BasePlatformAdapter):
             "status": readiness["status"],
             "readiness": readiness,
             "platform": "opencodon",
-            "version": _hermes_version(),
+            "version": _opencodon_version(),
             "gateway_state": gw_state,
             "platforms": runtime.get("platforms", {}),
             "active_agents": gw_active,
@@ -2019,7 +2019,7 @@ class APIServerAdapter(BasePlatformAdapter):
         })
 
     async def _handle_models(self, request: "web.Request") -> "web.Response":
-        """GET /v1/models — list hermes-agent and any configured model_routes aliases.
+        """GET /v1/models — list opencodon and any configured model_routes aliases.
 
         Under ``/p/<profile>/v1/models`` (multiplex on) the advertised primary
         model id follows that profile's name/config, not the default adapter's
@@ -2042,7 +2042,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 "id": model_name,
                 "object": "model",
                 "created": now,
-                "owned_by": "hermes",
+                "owned_by": "opencodon",
                 "permission": [],
                 "root": model_name,
                 "parent": None,
@@ -2058,7 +2058,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 "id": alias,
                 "object": "model",
                 "created": now,
-                "owned_by": "hermes",
+                "owned_by": "opencodon",
                 "permission": [],
                 "root": route_cfg.get("model", alias),
                 "parent": model_name,
@@ -2071,14 +2071,14 @@ class APIServerAdapter(BasePlatformAdapter):
 
         External UIs and orchestrators use this endpoint to discover the API
         server's plugin-safe contract without scraping docs or assuming that
-        every Hermes version exposes the same endpoints.
+        every opencodon version exposes the same endpoints.
         """
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
 
         return web.json_response({
-            "object": "hermes.api_server.capabilities",
+            "object": "opencodon.api_server.capabilities",
             "platform": "opencodon",
             "model": self._model_name,
             "auth": {
@@ -2090,7 +2090,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 "tool_execution": "server",
                 "split_runtime": False,
                 "description": (
-                    "The API server creates a server-side Hermes AIAgent; "
+                    "The API server creates a server-side opencodon AIAgent; "
                     "tools execute on the API-server host unless a future "
                     "explicit split-runtime mode is enabled."
                 ),
@@ -2307,7 +2307,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return []
 
     async def _handle_list_sessions(self, request: "web.Request") -> "web.Response":
-        """GET /api/sessions — list persisted Hermes sessions."""
+        """GET /api/sessions — list persisted opencodon sessions."""
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
@@ -2336,7 +2336,7 @@ class APIServerAdapter(BasePlatformAdapter):
         })
 
     async def _handle_create_session(self, request: "web.Request") -> "web.Response":
-        """POST /api/sessions -- create an empty Hermes session row.
+        """POST /api/sessions -- create an empty opencodon session row.
 
         The existence check, insert, title handling, and invalid-title
         rollback run as a single off-loop operation to avoid a TOCTOU
@@ -2839,7 +2839,7 @@ class APIServerAdapter(BasePlatformAdapter):
         else:
             # Derive a stable session ID from the conversation fingerprint so
             # that consecutive messages from the same Open WebUI (or similar)
-            # conversation map to the same Hermes session.  The first user
+            # conversation map to the same opencodon session.  The first user
             # message + system prompt are constant across all turns.
             first_user = ""
             for cm in conversation_messages:
@@ -2880,7 +2880,7 @@ class APIServerAdapter(BasePlatformAdapter):
             _started_tool_call_ids: set[str] = set()
 
             def _on_tool_start(tool_call_id, function_name, function_args):
-                """Emit ``hermes.tool.progress`` with ``status: running``.
+                """Emit ``opencodon.tool.progress`` with ``status: running``.
 
                 Replaces the old ``tool_progress_callback("tool.started",
                 ...)`` emit so SSE consumers receive a single event per
@@ -3016,18 +3016,18 @@ class APIServerAdapter(BasePlatformAdapter):
                 err_type="server_error",
                 code="agent_incomplete",
             )
-            err_body["error"]["hermes"] = {
+            err_body["error"]["opencodon"] = {
                 "completed": completed,
                 "partial": is_partial,
                 "failed": is_failed,
             }
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-opencodon-Completed"] = "false"
+            response_headers["X-opencodon-Partial"] = "true" if is_partial else "false"
             return web.json_response(err_body, status=502, headers=response_headers)
 
         # Soft-partial path: we have *some* text but the run did not complete
         # (e.g. truncation with partial buffered output). Still 200 but signal
-        # truncation via finish_reason="length" + Hermes-specific extras.
+        # truncation via finish_reason="length" + opencodon-specific extras.
         response_data = {
             "id": completion_id,
             "object": "chat.completion",
@@ -3050,17 +3050,17 @@ class APIServerAdapter(BasePlatformAdapter):
             },
         }
         if is_partial or is_failed or not completed:
-            response_data["hermes"] = {
+            response_data["opencodon"] = {
                 "completed": completed,
                 "partial": is_partial,
                 "failed": is_failed,
                 "error": err_msg,
                 "error_code": "output_truncated" if finish_reason == "length" else "agent_error",
             }
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-opencodon-Completed"] = "false"
+            response_headers["X-opencodon-Partial"] = "true" if is_partial else "false"
             if err_msg:
-                response_headers["X-Hermes-Error"] = _redact_api_error_text(err_msg, limit=200)
+                response_headers["X-opencodon-Error"] = _redact_api_error_text(err_msg, limit=200)
 
         return web.json_response(response_data, headers=response_headers)
 
@@ -3113,7 +3113,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
                 Plain strings are sent as normal ``delta.content`` chunks.
                 Tagged tuples ``("__tool_progress__", payload)`` are sent
-                as a custom ``event: hermes.tool.progress`` SSE event so
+                as a custom ``event: opencodon.tool.progress`` SSE event so
                 frontends can display them without storing the markers in
                 conversation history.  See #6972 for the original event,
                 #16588 for the ``toolCallId``/``status`` lifecycle fields.
@@ -3121,7 +3121,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 if isinstance(item, tuple) and len(item) == 2 and item[0] == "__tool_progress__":
                     event_data = json.dumps(item[1])
                     await response.write(
-                        f"event: hermes.tool.progress\ndata: {event_data}\n\n".encode()
+                        f"event: opencodon.tool.progress\ndata: {event_data}\n\n".encode()
                     )
                 else:
                     content_chunk = {
@@ -3215,7 +3215,7 @@ class APIServerAdapter(BasePlatformAdapter):
                         "message": err_msg,
                         "type": type(agent_error).__name__ if agent_error else "agent_error",
                     }
-                finish_chunk["hermes"] = {
+                finish_chunk["opencodon"] = {
                     "completed": completed,
                     "partial": is_partial,
                     "failed": is_failed,
@@ -4775,7 +4775,7 @@ class APIServerAdapter(BasePlatformAdapter):
         now = time.time()
         current = self._run_statuses.get(run_id, {})
         current.update({
-            "object": "hermes.run",
+            "object": "opencodon.run",
             "run_id": run_id,
             "status": status,
             "updated_at": now,
@@ -5328,7 +5328,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 pass
 
         return web.json_response({
-            "object": "hermes.run.approval_response",
+            "object": "opencodon.run.approval_response",
             "run_id": run_id,
             "choice": choice,
             "resolved": resolved,
@@ -5465,7 +5465,7 @@ class APIServerAdapter(BasePlatformAdapter):
             for method, path, handler in self._http_route_table():
                 self._app.router.add_route(method, path, handler)
                 self._app.router.add_route(method, f"/p/{{profile}}{path}", handler)
-            # Store the adapter after native routes are registered. Local Hermes-Relay
+            # Store the adapter after native routes are registered. Local opencodon-Relay
             # bootstrap shims use this key as a feature-detection hook; registering
             # native routes first lets those shims no-op instead of shadowing the
             # upstream session-control handlers.
@@ -5485,7 +5485,7 @@ class APIServerAdapter(BasePlatformAdapter):
             # Loud warning when a network-accessible API server runs against an
             # unsandboxed local terminal backend. The API server can drive the
             # agent's terminal/file tools as the host user; on a public bind
-            # that is the exact surface the hermes-0day campaign abused to write
+            # that is the exact surface the opencodon-0day campaign abused to write
             # ~/.opencodon/config.yaml and plant persistence. Sandboxing (Docker /
             # remote backend) contains the blast radius. Warn, don't refuse —
             # the operator may have an external firewall / strong key.

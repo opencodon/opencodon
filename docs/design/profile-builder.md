@@ -2,11 +2,11 @@
 
 Status: design proposal (not yet implemented)
 Author: drafted for Teknium
-Supersedes: PR #31781 (prompt_toolkit `hermes profile wizard`)
+Supersedes: PR #31781 (prompt_toolkit `opencodon profile wizard`)
 
 ## Why this, not the CLI wizard
 
-PR #31781 added a keyboard-driven `hermes profile wizard` in the terminal.
+PR #31781 added a keyboard-driven `opencodon profile wizard` in the terminal.
 The decision is to **not** build the profile-creation experience in the CLI.
 The dashboard already owns mature, separate pages for every element a profile
 needs, and a profile is just a OPENCODON_HOME directory — so the dashboard is the
@@ -48,12 +48,12 @@ retroactively rebind that already-imported module global. So a data-layer wrap
 of hub install would write into the dashboard's *own* active profile, not the
 new one.
 
-The correct mechanism is the existing subprocess path: `_spawn_hermes_action`
+The correct mechanism is the existing subprocess path: `_spawn_opencodon_action`
 runs `python -m opencodon_cli.main <subcommand>`, and `_apply_profile_override()`
 re-reads `sys.argv` at import in the fresh child. Prepend `-p <profile>`:
 
 ```python
-_spawn_hermes_action(["-p", profile, "skills", "install", identifier], "skills-install")
+_spawn_opencodon_action(["-p", profile, "skills", "install", identifier], "skills-install")
 ```
 
 A fresh subprocess re-imports `skills_hub` with the profile's OPENCODON_HOME bound
@@ -64,14 +64,14 @@ construction.
 
 Built-in/optional skill enabling and MCP writes are **synchronous config ops**
 and can be part of the create call. Hub installs are long-running git fetches
-spawned detached (`_spawn_hermes_action` returns a PID immediately). So the
+spawned detached (`_spawn_opencodon_action` returns a PID immediately). So the
 create flow is:
 
 1. `create_profile()` — make the dir (synchronous)
 2. write model (synchronous, OPENCODON_HOME override)
 3. write selected MCP servers (synchronous, OPENCODON_HOME override)
 4. seed/enable selected built-in + optional skills (synchronous)
-5. spawn `hermes -p <profile> skills install <id>` per hub skill (async, returns PIDs)
+5. spawn `opencodon -p <profile> skills install <id>` per hub skill (async, returns PIDs)
 
 Steps 1–4 commit before the response; step 5 returns a list of action PIDs the
 UI polls (same pattern as today's SkillsPage hub install). The builder's

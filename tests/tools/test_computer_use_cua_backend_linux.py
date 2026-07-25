@@ -26,7 +26,7 @@ ISSUE_58026_WINDOWS = [
         "app_name": "",
         "pid": 1877178,
         "window_id": 84043449,
-        "title": "xr@10:~/hermes",
+        "title": "xr@10:~/opencodon",
         "is_on_screen": True,
         "z_index": 0,
     },
@@ -34,7 +34,7 @@ ISSUE_58026_WINDOWS = [
         "app_name": "",
         "pid": 1877178,
         "window_id": 84065715,
-        "title": "HERMES-CU",
+        "title": "OPENCODON-CU",
         "is_on_screen": True,
         "z_index": 0,
     },
@@ -79,7 +79,7 @@ def test_default_capture_prefers_x11_active_window_when_z_index_tied():
     ):
         target = _select_capture_target(windows, app_requested=False)
 
-    assert target["title"] == "xr@10:~/hermes"
+    assert target["title"] == "xr@10:~/opencodon"
     assert target["window_id"] == 84043449
 
 

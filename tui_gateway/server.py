@@ -24,9 +24,9 @@ from opencodon_constants import (
     reset_opencodon_home_override,
     set_opencodon_home_override,
 )
-from opencodon_cli.env_loader import load_hermes_dotenv
+from opencodon_cli.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
-from tools.environments.local import hermes_subprocess_env
+from tools.environments.local import opencodon_subprocess_env
 from agent.replay_cleanup import sanitize_replay_history
 from tui_gateway import git_probe
 from tui_gateway.transport import (
@@ -40,7 +40,7 @@ from tui_gateway.transport import (
 logger = logging.getLogger(__name__)
 
 _opencodon_home = get_opencodon_home()
-load_hermes_dotenv(
+load_opencodon_dotenv(
     opencodon_home=_opencodon_home, project_env=Path(__file__).parent.parent / ".env"
 )
 
@@ -294,7 +294,7 @@ _detached_ws_transport = _DropTransport()
 
 
 class _SlashWorker:
-    """Persistent HermesCLI subprocess for slash commands."""
+    """Persistent OpencodonCLI subprocess for slash commands."""
 
     def __init__(self, session_key: str, model: str, profile_home: str | None = None):
         self._lock = threading.Lock()
@@ -315,9 +315,9 @@ class _SlashWorker:
         self._closed = False
         from opencodon_cli._subprocess_compat import windows_hide_flags
 
-        # slash_worker runs the Hermes agent → needs provider credentials.
+        # slash_worker runs the opencodon agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
-        env = hermes_subprocess_env(inherit_credentials=True)
+        env = opencodon_subprocess_env(inherit_credentials=True)
         if profile_home:
             # Global-remote / multi-profile sessions: the worker must resolve
             # config/skills/state against the session's profile home, not the
@@ -881,7 +881,7 @@ def _close_sessions_for_transport(
         else:
             # Point detached sessions at the drop sentinel (NOT real stdio) so
             # _ws_session_is_orphaned recognizes them and the grace-reap can
-            # actually fire; a standalone `hermes --tui` keeps real _stdio.
+            # actually fire; a standalone `opencodon --tui` keeps real _stdio.
             session["transport"] = _detached_ws_transport
             detached += 1
             try:
@@ -912,7 +912,7 @@ _REAPER_SCAN_S = 300.0
 def _transport_is_dead(transport) -> bool:
     # _detached_ws_transport is the post-WS-disconnect drop sentinel; a session
     # parked on it has no live client. _stdio_transport is the REAL transport
-    # for a standalone `hermes --tui`, so it must NOT count as dead here (doing
+    # for a standalone `opencodon --tui`, so it must NOT count as dead here (doing
     # so let the idle reaper evict healthy standalone TUI sessions).
     if transport is _detached_ws_transport:
         return True
@@ -1134,7 +1134,7 @@ def _launch_configured_cwd() -> str | None:
     process's in-memory TUI gateway. The Node PTY child receives a bridged
     ``TERMINAL_CWD`` env var, but this in-memory process does not — so reading
     the process env alone leaves a fresh chat starting in ``os.getcwd()``
-    (wherever ``hermes dashboard`` was launched) instead of the configured
+    (wherever ``opencodon dashboard`` was launched) instead of the configured
     ``terminal.cwd``. Read config directly so changing ``terminal.cwd`` affects
     new in-memory TUI sessions too.
     """
@@ -1572,7 +1572,7 @@ def _wait_agent(session: dict, rid: str, timeout: float = 30.0) -> dict | None:
 def _start_agent_build(sid: str, session: dict) -> None:
     """Start building the real AIAgent for a TUI session, once.
 
-    Classic `hermes` shows the prompt before constructing AIAgent; the TUI used
+    Classic `opencodon` shows the prompt before constructing AIAgent; the TUI used
     to eagerly build it during session.create, making startup feel blocked on
     tool discovery/model metadata even though the composer was visible.  Keep
     the shell responsive by deferring this work until the first prompt (or any
@@ -2496,7 +2496,7 @@ def _note_skin_broadcast() -> None:
 
 def _broadcast_skin_if_changed() -> None:
     """Emit ``skin.changed`` when the active skin moved — the agent switched it
-    (``hermes config set display.skin``) OR edited the active skin's colors in
+    (``opencodon config set display.skin``) OR edited the active skin's colors in
     place ("I don't like that coral" → tweak the YAML).
 
     Routes through the SAME live path as ``/skin`` so every surface (TUI + desktop)
@@ -2522,7 +2522,7 @@ _skin_watcher_started = False
 
 def _ensure_skin_watcher() -> None:
     """Poll the config for skin changes and broadcast ``skin.changed`` — so a skin
-    Hermes activates (``hermes config set display.skin``) or recolors goes live on
+    opencodon activates (``opencodon config set display.skin``) or recolors goes live on
     every surface within ~half a second, on its own, with no tool-hook or slash
     command in the loop. Idempotent; started at gateway.ready."""
     global _skin_watcher_started
@@ -2536,7 +2536,7 @@ def _ensure_skin_watcher() -> None:
             time.sleep(0.5)
             _broadcast_skin_if_changed()
 
-    threading.Thread(target=_loop, name="hermes-skin-watcher", daemon=True).start()
+    threading.Thread(target=_loop, name="opencodon-skin-watcher", daemon=True).start()
 
 
 def _resolve_model() -> str:
@@ -2575,11 +2575,11 @@ def _resolve_session_platform() -> str:
       * ``OPENCODON_DESKTOP=1`` and ``OPENCODON_DESKTOP_TERMINAL`` unset → "desktop"
         (the chat-panel backend — a graphical React surface, not a terminal).
       * ``OPENCODON_DESKTOP_TERMINAL=1`` → "tui"
-        (``hermes --tui`` running in the desktop's embedded terminal pane;
+        (``opencodon --tui`` running in the desktop's embedded terminal pane;
         it IS a TUI, just embedded. The clarifier attached to the tui hint
         in system_prompt.py tells the agent about the embedding.)
       * neither set → "tui"
-        (standalone ``hermes --tui``.)
+        (standalone ``opencodon --tui``.)
     """
     if is_truthy_value(os.environ.get("OPENCODON_DESKTOP")) and not is_truthy_value(
         os.environ.get("OPENCODON_DESKTOP_TERMINAL")
@@ -2610,7 +2610,7 @@ def _config_model_target() -> tuple[str, str]:
 
     Unlike `_resolve_model()`, this never reads OPENCODON_MODEL /
     OPENCODON_INFERENCE_MODEL. Those env vars are a launch-scoped seed
-    (`hermes --tui -m <model>`, hosted-instance provisioning); if they
+    (`opencodon --tui -m <model>`, hosted-instance provisioning); if they
     fed the per-turn sync, the seed would be replayed as a /model switch
     and persisted globally, or would pin the session so dashboard/CLI
     model changes never reach an open chat.
@@ -2626,7 +2626,7 @@ def _config_model_target() -> tuple[str, str]:
     elif isinstance(cfg_model, str):
         model = cfg_model.strip()
     # No fallback to _resolve_model() here: that reads OPENCODON_MODEL /
-    # OPENCODON_INFERENCE_MODEL, which `hermes --tui -m <model>` sets as a
+    # OPENCODON_INFERENCE_MODEL, which `opencodon --tui -m <model>` sets as a
     # session-scoped seed for THIS launch. When config.yaml has no
     # model.default (custom-provider-only setups), falling back to the env
     # seed made the per-turn sync treat the -m flag as "the configured
@@ -3098,9 +3098,9 @@ def _load_enabled_toolsets() -> list[str] | None:
     cfg = None
     fallback_notice = None
 
-    # Coding posture (base Hermes): with no explicit pin, collapse to the
+    # Coding posture (base opencodon): with no explicit pin, collapse to the
     # coding toolset (+ enabled MCP servers) when sitting in a code workspace.
-    # The desktop app and `hermes --tui` both land here. See
+    # The desktop app and `opencodon --tui` both land here. See
     # agent/coding_context.py. No config is loaded yet at this point, so we let
     # coding_selection() load it lazily (cli.py passes its already-resolved
     # CLI_CONFIG instead, purely to avoid a redundant read).
@@ -3585,7 +3585,7 @@ def _sync_agent_model_with_config(sid: str, session: dict) -> None:
             # This sync ADOPTS a config.yaml change into the live session; it
             # must never write config back. Without this, the flag/config
             # default (persist_switch_by_default=True) re-persisted whatever
-            # target the sync computed — the path that leaked `hermes --tui -m`
+            # target the sync computed — the path that leaked `opencodon --tui -m`
             # into config.yaml as the permanent global model.
             persist_override=False,
         )
@@ -4758,7 +4758,7 @@ def _load_fallback_model():
     """Return the configured fallback chain for TUI-created agents.
 
     Delegates to the shared ``get_fallback_chain`` helper so the TUI path
-    stays in parity with ``HermesCLI.__init__`` and ``gateway/run.py``:
+    stays in parity with ``OpencodonCLI.__init__`` and ``gateway/run.py``:
     ``fallback_providers`` is the primary source of truth and keeps its
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
@@ -7032,7 +7032,7 @@ def _(rid, params: dict) -> dict:
     # filter on ``transport is _detached_ws_transport`` (the WS-detached drop
     # sentinel): a detached session is still attachable via a quick reconnect /
     # session.resume until the grace-reap finalizes it, and a standalone
-    # ``hermes --tui`` session legitimately rides the real stdio transport and
+    # ``opencodon --tui`` session legitimately rides the real stdio transport and
     # must stay visible.
     # Keep the natural creation/insertion order from ``_sessions``.  The
     # frontend marks the focused session with ``current``; it should not jump to
@@ -7279,7 +7279,7 @@ def _(rid, params: dict) -> dict:
 
     Desktop parity with the CLI ``/handoff`` command: we only write
     ``handoff_state='pending'`` onto the persisted session row. The actual
-    transfer is performed by the separate ``hermes gateway`` process, whose
+    transfer is performed by the separate ``opencodon gateway`` process, whose
     ``_handoff_watcher`` claims the row, re-binds the session to the platform's
     home channel, and forges a synthetic turn. The desktop then polls
     ``handoff.state`` for the terminal result.
@@ -7752,7 +7752,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, result)
 
     agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the Hermes profile home
+    # Mirror the classic CLI /save: snapshot under the opencodon profile home
     # (~/.opencodon/sessions/saved/) rather than the project/workspace CWD, and
     # include the system prompt so the export matches the dashboard save.
     saved_dir = get_opencodon_home() / "sessions" / "saved"
@@ -7762,7 +7762,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5011, f"failed to create save directory {saved_dir}: {e}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = saved_dir / f"hermes_conversation_{timestamp}.json"
+    path = saved_dir / f"opencodon_conversation_{timestamp}.json"
 
     with session["history_lock"]:
         messages = list(session.get("history", []))
@@ -11124,8 +11124,8 @@ def _discover_repos_payload(
     """Merge filesystem-scanned repos (cached) with session-derived repo roots.
 
     Repo-first: the disk scan (persisted by `projects.record_repos`) surfaces
-    repos even with zero hermes sessions. Session-derived roots cover repos
-    outside the scan roots. Both are junk-filtered (hermes home subtree + bare
+    repos even with zero opencodon sessions. Session-derived roots cover repos
+    outside the scan roots. Both are junk-filtered (opencodon home subtree + bare
     home) and carry their session totals for the overview.
 
     ``conn`` reuses an already-open projects.db connection (the tree path holds
@@ -12220,7 +12220,7 @@ def _(rid, params: dict) -> dict:
             cwd=os.getcwd(),
             # cli.exec runs `python -m opencodon_cli.main` (can drive the agent) →
             # needs provider credentials. Tier-1 secrets still stripped (#29157).
-            env=hermes_subprocess_env(inherit_credentials=True),
+            env=opencodon_subprocess_env(inherit_credentials=True),
             stdin=subprocess.DEVNULL,
         )
         parts = [r.stdout or "", r.stderr or ""]
@@ -15116,7 +15116,7 @@ def _(rid, params: dict) -> dict:
 
     Returns ``frames`` (reveal 0→1) plus static legend/summary/bucket metadata,
     so Ink can render and walk the tree locally without round-tripping the
-    gateway. Shares its renderer with the ``hermes journey`` CLI.
+    gateway. Shares its renderer with the ``opencodon journey`` CLI.
     """
     try:
         cols = int(params.get("cols", 80) or 80)
@@ -15256,7 +15256,7 @@ def _(rid, params: dict) -> dict:
     """List installed plugins with activation state, or toggle one on/off.
 
     Backs the TUI Plugins Hub. Uses the same disk-discovery + enable/disable
-    primitives as ``hermes plugins`` / the dashboard, so the three surfaces
+    primitives as ``opencodon plugins`` / the dashboard, so the three surfaces
     agree on what's installed and what's enabled.
 
     Actions:

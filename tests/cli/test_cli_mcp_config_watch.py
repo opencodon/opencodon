@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_cli(tmp_path, mcp_servers=None, extra_config=None):
-    """Create a minimal HermesCLI instance with mocked config."""
+    """Create a minimal OpencodonCLI instance with mocked config."""
     import cli as cli_mod
-    obj = object.__new__(cli_mod.HermesCLI)
+    obj = object.__new__(cli_mod.OpencodonCLI)
     cfg = {"mcp_servers": mcp_servers or {}}
     if extra_config:
         cfg.update(extra_config)

@@ -254,12 +254,12 @@ def test_asyncio_create_subprocess_shell_systemctl_blocked():
 # ──────────────────── pkill / killall / taskkill ───────────────
 
 
-def test_subprocess_pkill_hermes_blocked():
+def test_subprocess_pkill_opencodon_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["pkill", "-f", "hermes"])
+        subprocess.run(["pkill", "-f", "opencodon"])
 
 
-def test_subprocess_pkill_hermes_gateway_blocked():
+def test_subprocess_pkill_opencodon_gateway_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
         subprocess.run(["pkill", "-f", "opencodon-gateway"])
 
@@ -270,9 +270,9 @@ def test_subprocess_pkill_python_dash_f_blocked():
         subprocess.run(["pkill", "-f", "python"])
 
 
-def test_subprocess_killall_hermes_blocked():
+def test_subprocess_killall_opencodon_blocked():
     with pytest.raises(RuntimeError, match="live-system guard"):
-        subprocess.run(["killall", "hermes"])
+        subprocess.run(["killall", "opencodon"])
 
 
 # ──────────────────── pass-through cases (must NOT raise) ──────
@@ -311,7 +311,7 @@ def test_systemctl_list_units_passes_through():
 
 
 def test_systemctl_unrelated_unit_passes_through():
-    """systemctl restart of a non-hermes unit is allowed (we only protect hermes)."""
+    """systemctl restart of a non-opencodon unit is allowed (we only protect opencodon)."""
     # Use --dry-run so we don't actually try to restart anything; just
     # verify the guard doesn't block the call. systemctl supports
     # --dry-run via the privileged API; on user scope it usually fails
@@ -337,7 +337,7 @@ def test_kill_own_subtree_passes_through():
 
 
 def test_subprocess_pkill_with_unrelated_pattern_passes_through():
-    """``pkill -f some-unrelated-pattern`` (no hermes/python) is fine."""
+    """``pkill -f some-unrelated-pattern`` (no opencodon/python) is fine."""
     # We don't actually run pkill — just verify the guard would let it
     # through by inspecting the matcher. Re-implementing the check here
     # would duplicate the guard; instead spawn a noop to confirm no raise.

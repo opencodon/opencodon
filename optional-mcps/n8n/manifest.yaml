@@ -5,8 +5,8 @@
 manifest_version: 1
 
 name: n8n
-description: Manage and inspect n8n workflows from Hermes (stdio bridge, no public port).
-source: https://github.com/CyberSamuraiX/hermes-n8n-mcp
+description: Manage and inspect n8n workflows from opencodon (stdio bridge, no public port).
+source: https://github.com/CyberSamuraiX/opencodon-n8n-mcp
 
 # How to launch the server once installed. The keys here map 1:1 to the
 # `mcp_servers.<name>` block written into ~/.opencodon/config.yaml by the
@@ -15,7 +15,7 @@ transport:
   type: stdio
   # For git-installed servers, ${INSTALL_DIR} is substituted at install time
   # with the path the catalog cloned the repo into. The catalog never
-  # auto-updates: the user re-runs `hermes mcp install official/n8n` to
+  # auto-updates: the user re-runs `opencodon mcp install official/n8n` to
   # refresh.
   command: "${INSTALL_DIR}/.venv/bin/python"
   args:
@@ -26,11 +26,11 @@ transport:
 # + dependency install.
 install:
   type: git
-  url: https://github.com/CyberSamuraiX/hermes-n8n-mcp.git
+  url: https://github.com/CyberSamuraiX/opencodon-n8n-mcp.git
   # Pinned per catalog dependency policy: full commit SHA (branches and tags
   # can be moved; SHAs cannot), and the pinned commit must be at least
   # 2 weeks old at pin time — same supply-chain rules as pyproject
-  # dependencies. This SHA is "feat: add local n8n MCP bridge for Hermes"
+  # dependencies. This SHA is "feat: add local n8n MCP bridge for opencodon"
   # (2026-05-23). Bumping the pin is a PR to this manifest.
   ref: 7a9ae00795593aa1fdb4e61ecd640e8bfd0c3841
   # Bootstrap commands run inside the cloned directory after clone.
@@ -78,4 +78,4 @@ post_install: |
   Workflow activate/deactivate calls are real mutations against your live n8n.
   Treat them carefully.
 
-  Start a new Hermes session to load the n8n tools.
+  Start a new opencodon session to load the n8n tools.

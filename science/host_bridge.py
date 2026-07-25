@@ -15,7 +15,7 @@ Methods:
   auxiliary-client seam (config task ``science_llm``; falls back to the
   default auxiliary provider).
 - ``llm_batch(prompts, max_concurrency?)`` — parallel fan-out, one log row.
-- ``tool(name, args)`` — invoke a hermes tool, gated by the
+- ``tool(name, args)`` — invoke a opencodon tool, gated by the
   ``science.host_tools`` allowlist in config.yaml (empty by default: no
   tool is reachable from the kernel unless the user opts in).
 - ``models()`` — the resolved default model, so kernel code can route.
@@ -70,7 +70,7 @@ class HostBridge:
         # temp dir keyed by a workspace hash instead of inside the workspace.
         digest = hashlib.sha256(str(self._workspace).encode()).hexdigest()[:16]
         self._sock_path = os.path.join(
-            tempfile.gettempdir(), f"hermes-science-{digest}.sock"
+            tempfile.gettempdir(), f"opencodon-science-{digest}.sock"
         )
         self._server: Optional[socket.socket] = None
         self._thread: Optional[threading.Thread] = None
@@ -213,7 +213,7 @@ class HostBridge:
         if client is None:
             raise RuntimeError(
                 "no auxiliary model provider is configured (set one up with "
-                "`hermes setup`, or pin auxiliary.science_llm in config.yaml)"
+                "`opencodon setup`, or pin auxiliary.science_llm in config.yaml)"
             )
         return client, (model or default_model)
 

@@ -61,7 +61,7 @@ def get_provider_env(name: str) -> str:
 
     Resolves *name* via :func:`opencodon_cli.config.get_env_value` (checks
     ``os.environ`` first, then ``~/.opencodon/.env``) so credentials set
-    through Hermes' config layer are visible even when they were never
+    through opencodon' config layer are visible even when they were never
     exported into the process environment — gateway sessions, delegate
     children, and subprocess agent runs (issue #40190). Falls back to a
     bare ``os.getenv`` when the config module is unavailable (stripped
@@ -110,7 +110,7 @@ class WebSearchProvider(abc.ABC):
 
     @property
     def display_name(self) -> str:
-        """Human-readable label shown in ``hermes tools``. Defaults to ``name``."""
+        """Human-readable label shown in ``opencodon tools``. Defaults to ``name``."""
         return self.name
 
     @abc.abstractmethod
@@ -119,7 +119,7 @@ class WebSearchProvider(abc.ABC):
 
         Typically a cheap check (env var present, optional Python dep
         importable, instance URL set). Must NOT make network calls — this
-        runs at tool-registration time and on every ``hermes tools`` paint.
+        runs at tool-registration time and on every ``opencodon tools`` paint.
         """
 
     def supports_search(self) -> bool:
@@ -184,7 +184,7 @@ class WebSearchProvider(abc.ABC):
         )
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        """Return provider metadata for the ``hermes tools`` picker.
+        """Return provider metadata for the ``opencodon tools`` picker.
 
         Used by ``opencodon_cli/tools_config.py`` to inject this provider as a
         row in the Web Search / Web Extract picker. Shape::

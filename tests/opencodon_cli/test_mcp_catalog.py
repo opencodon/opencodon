@@ -48,7 +48,7 @@ def catalog_dir(tmp_path, monkeypatch):
 @pytest.fixture(autouse=True)
 def _isolate_opencodon_home(tmp_path, monkeypatch):
     """Redirect all config I/O to a temp OPENCODON_HOME."""
-    hh = tmp_path / "hermes-home"
+    hh = tmp_path / "opencodon-home"
     hh.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(hh))
     monkeypatch.setattr(
@@ -606,7 +606,7 @@ class TestCatalogDiagnostics:
 
     def test_picker_surfaces_future_manifest_warning(self, catalog_dir, capsys, monkeypatch):
         """The text-dump path should print a warning line for future-manifest
-        entries so users running headless or after `hermes setup` know to update."""
+        entries so users running headless or after `opencodon setup` know to update."""
         body = _basic_manifest()
         body["manifest_version"] = 999
         _write_manifest(catalog_dir, "futuristic", body)
@@ -619,7 +619,7 @@ class TestCatalogDiagnostics:
         show_catalog()
         out = capsys.readouterr().out
         assert "futuristic" in out
-        assert "requires a newer Hermes" in out
+        assert "requires a newer opencodon" in out
 
 
 # ---------------------------------------------------------------------------
@@ -842,7 +842,7 @@ class TestShippedCatalog:
 
     def test_all_shipped_manifests_are_version_locked(self, monkeypatch):
         """Contract: catalog entries follow the same supply-chain rules as
-        pyproject dependencies — everything Hermes fetches/launches is pinned
+        pyproject dependencies — everything opencodon fetches/launches is pinned
         to an exact version.
 
         - git installs must pin a full 40-char commit SHA (branches and tags

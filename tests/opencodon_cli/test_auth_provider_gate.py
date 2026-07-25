@@ -5,14 +5,14 @@ import pytest
 
 
 def _write_config(tmp_path, config: dict) -> None:
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir(parents=True, exist_ok=True)
     import yaml
     (opencodon_home / "config.yaml").write_text(yaml.dump(config))
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir(parents=True, exist_ok=True)
     (opencodon_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
@@ -25,15 +25,15 @@ def _clean_anthropic_env(monkeypatch):
 
 
 def test_returns_false_when_no_config(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+    (tmp_path / "opencodon").mkdir(parents=True, exist_ok=True)
 
     from opencodon_cli.auth import is_provider_explicitly_configured
     assert is_provider_explicitly_configured("anthropic") is False
 
 
 def test_returns_true_when_active_provider_matches(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, {
         "version": 1,
         "providers": {},
@@ -45,7 +45,7 @@ def test_returns_true_when_active_provider_matches(tmp_path, monkeypatch):
 
 
 def test_returns_true_when_config_provider_matches(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_config(tmp_path, {"model": {"provider": "anthropic", "default": "claude-sonnet-4-6"}})
 
     from opencodon_cli.auth import is_provider_explicitly_configured
@@ -53,7 +53,7 @@ def test_returns_true_when_config_provider_matches(tmp_path, monkeypatch):
 
 
 def test_returns_false_when_config_provider_is_different(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_config(tmp_path, {"model": {"provider": "kimi-coding", "default": "kimi-k2"}})
     _write_auth_store(tmp_path, {
         "version": 1,
@@ -66,9 +66,9 @@ def test_returns_false_when_config_provider_is_different(tmp_path, monkeypatch):
 
 
 def test_returns_true_when_anthropic_env_var_set(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-realkey")
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "opencodon").mkdir(parents=True, exist_ok=True)
 
     from opencodon_cli.auth import is_provider_explicitly_configured
     assert is_provider_explicitly_configured("anthropic") is True
@@ -76,9 +76,9 @@ def test_returns_true_when_anthropic_env_var_set(tmp_path, monkeypatch):
 
 def test_claude_code_oauth_token_does_not_count_as_explicit(tmp_path, monkeypatch):
     """CLAUDE_CODE_OAUTH_TOKEN is set by Claude Code, not the user — must not gate."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-auto-token")
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "opencodon").mkdir(parents=True, exist_ok=True)
 
     from opencodon_cli.auth import is_provider_explicitly_configured
     assert is_provider_explicitly_configured("anthropic") is False
@@ -86,7 +86,7 @@ def test_claude_code_oauth_token_does_not_count_as_explicit(tmp_path, monkeypatc
 
 def test_ambient_pool_source_does_not_count_as_explicit(tmp_path, monkeypatch):
     """gh_cli-seeded Copilot pool entries are ambient, not explicit config (#56974)."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
@@ -109,8 +109,8 @@ def test_ambient_pool_source_does_not_count_as_explicit(tmp_path, monkeypatch):
 
 
 def test_explicit_pool_source_counts_as_explicit(tmp_path, monkeypatch):
-    """manual / device_code / PKCE pool entries reflect explicit Hermes flows."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    """manual / device_code / PKCE pool entries reflect explicit opencodon flows."""
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, {
         "version": 1,
         "providers": {},
@@ -133,7 +133,7 @@ def test_stale_env_pool_entry_does_not_count_when_var_unset(tmp_path, monkeypatc
     """An env-seeded pool entry left in auth.json after the env var was removed
     must not mark the provider configured (#55790): the picker showed removed
     providers forever because the record existed even though no secret resolves."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     _write_auth_store(tmp_path, {
         "version": 1,
@@ -154,7 +154,7 @@ def test_stale_env_pool_entry_does_not_count_when_var_unset(tmp_path, monkeypatc
 
 def test_env_pool_entry_counts_when_var_still_resolves(tmp_path, monkeypatch):
     """The same env-seeded pool entry IS explicit while the var still resolves."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-deepseek-realkey-123456")
     _write_auth_store(tmp_path, {
         "version": 1,
@@ -183,10 +183,10 @@ def test_provider_not_in_registry_but_in_models_dev(tmp_path, monkeypatch):
     hiding them from the desktop model picker even when their API key was
     set in .env.
     """
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-key-12345678")
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "opencodon").mkdir(parents=True, exist_ok=True)
 
     from opencodon_cli.auth import is_provider_explicitly_configured
     assert is_provider_explicitly_configured("openrouter") is True

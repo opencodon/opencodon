@@ -1,30 +1,30 @@
 ---
-name: hermes-agent-skill-authoring
+name: opencodon-skill-authoring
 description: "Author in-repo SKILL.md: frontmatter, validator, structure, and writing-quality principles."
 version: 1.1.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
-    tags: [skills, authoring, hermes-agent, conventions, skill-md]
+  opencodon:
+    tags: [skills, authoring, opencodon, conventions, skill-md]
     related_skills: [plan, requesting-code-review]
 ---
 
-# Authoring Hermes-Agent Skills (in-repo)
+# Authoring opencodon-Agent Skills (in-repo)
 
 ## Overview
 
 There are two places a SKILL.md can live:
 
 1. **User-local:** `~/.opencodon/skills/<maybe-category>/<name>/SKILL.md` — personal, not shared. Created via `skill_manage(action='create')`.
-2. **In-repo (this skill is about this case):** `/home/bb/hermes-agent/skills/<category>/<name>/SKILL.md` — committed, shipped with the package. Use `write_file` + `git add`. `skill_manage(action='create')` does NOT target this tree.
+2. **In-repo (this skill is about this case):** `/home/bb/opencodon/skills/<category>/<name>/SKILL.md` — committed, shipped with the package. Use `write_file` + `git add`. `skill_manage(action='create')` does NOT target this tree.
 
 ## When to Use
 
 - User asks you to add a skill "in this branch / repo / commit"
-- You're committing a reusable workflow that should ship with hermes-agent
-- You're editing an existing skill under `/home/bb/hermes-agent/skills/` (use `patch` for small edits, `write_file` for rewrites; `skill_manage` still works for patch on in-repo skills, but not for `create`)
+- You're committing a reusable workflow that should ship with opencodon
+- You're editing an existing skill under `/home/bb/opencodon/skills/` (use `patch` for small edits, `write_file` for rewrites; `skill_manage` still works for patch on in-repo skills, but not for `create`)
 
 ## Required Frontmatter
 
@@ -44,10 +44,10 @@ Peer-matched shape used by every skill under `skills/software-development/`:
 name: my-skill-name               # lowercase, hyphens, ≤64 chars (MAX_NAME_LENGTH)
 description: Use when <trigger>. <one-line behavior>.
 version: 1.1.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 metadata:
-  hermes:
+  opencodon:
     tags: [short, descriptive, tags]
     related_skills: [other-skill, another-skill]
 ---
@@ -68,7 +68,7 @@ A skill exists to make the agent's process more predictable. Predictability does
 Use these quality checks when writing or editing any skill:
 
 1. **Optimize for process predictability.** Ask: what behavior should change when this skill loads? If a line does not change behavior, cut it.
-2. **Choose the right context load.** A model-invoked Hermes skill pays for its description every turn. Keep descriptions focused on trigger classes and the skill's distinctive behavior. Put details in the body or linked references.
+2. **Choose the right context load.** A model-invoked opencodon skill pays for its description every turn. Keep descriptions focused on trigger classes and the skill's distinctive behavior. Put details in the body or linked references.
 3. **Use an information hierarchy.** Put always-needed steps in `SKILL.md`; put branch-specific or bulky reference material in `references/`, `templates/`, or `scripts/` and point to it only when needed.
 4. **End steps with completion criteria.** Each ordered step should say how the agent knows it is done. Good criteria are checkable and, when it matters, exhaustive: "every modified file accounted for" beats "summarize changes."
 5. **Co-locate rules with the concept they govern.** Avoid scattering one idea across the file. Keep definition, caveats, examples, and verification near each other.
@@ -101,7 +101,7 @@ One or two paragraphs: what and why.
 ## <Topic sections specific to the skill>
 - Quick-reference tables are common
 - Code blocks with exact commands
-- Hermes-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
+- opencodon-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
 
 ## Common Pitfalls
 Numbered list of mistakes and their fixes.

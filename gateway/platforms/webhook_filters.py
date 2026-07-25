@@ -296,7 +296,7 @@ class WebhookRouteProcessor:
             return False, None
         if (
             transformed.get("[SILENT]") is True
-            or transformed.get("__hermes_ignore__") is True
+            or transformed.get("__opencodon_ignore__") is True
         ):
             return False, None
         return True, transformed

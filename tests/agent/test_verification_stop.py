@@ -108,7 +108,7 @@ def test_verify_on_stop_auto_messaging_platform_is_case_insensitive(clear_verify
     assert verify_on_stop_enabled({"agent": {"verify_on_stop": "auto"}}) is False
 
 
-def test_verify_on_stop_auto_uses_hermes_platform_override(clear_verify_env):
+def test_verify_on_stop_auto_uses_opencodon_platform_override(clear_verify_env):
     # OPENCODON_PLATFORM mirrors the sibling platform resolution and also flags a
     # messaging surface under the "auto" sentinel.
     clear_verify_env.setenv("OPENCODON_PLATFORM", "discord")
@@ -301,7 +301,7 @@ def test_ad_hoc_pass_satisfies_no_suite_stop_loop(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     changed = str(tmp_path / "src" / "app.ts")
-    script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-stop-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"opencodon-ad-hoc-stop-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         record_terminal_result(

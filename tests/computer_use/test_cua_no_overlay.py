@@ -1,7 +1,7 @@
 """Tests for the cua-driver --no-overlay policy.
 
 cua-driver's cursor overlay rendering loop can consume CPU indefinitely when
-idle (#28152, #47032). Hermes passes ``--no-overlay`` to suppress it when the
+idle (#28152, #47032). opencodon passes ``--no-overlay`` to suppress it when the
 ``computer_use.no_overlay`` config is enabled (or auto-detected on macOS and
 headless Linux / WSL2).
 

@@ -1622,7 +1622,7 @@ class GatewayStreamConsumer:
         """Return True when the adapter would rather finalize a streamed reply
         by sending a fresh message and deleting the preview than by editing the
         preview in place — e.g. Telegram, whose ``sendRichMessage`` send path
-        currently renders richer markdown than Hermes' MarkdownV2 edit path.
+        currently renders richer markdown than opencodon' MarkdownV2 edit path.
 
         Returns False when there is no real preview to replace (no message id,
         or the ``__no_edit__`` sentinel), when the adapter doesn't expose the

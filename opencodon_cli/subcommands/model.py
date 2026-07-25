@@ -1,4 +1,4 @@
-"""``hermes model`` subcommand parser.
+"""``opencodon model`` subcommand parser.
 
 Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.

@@ -30,7 +30,7 @@ def test_main_version_prints_without_starting_server(monkeypatch, capsys):
 
     output = capsys.readouterr().out.strip()
     assert output
-    assert "Starting hermes-agent ACP adapter" not in output
+    assert "Starting opencodon ACP adapter" not in output
 
 
 def test_main_check_prints_ok_without_starting_server(monkeypatch, capsys):
@@ -38,16 +38,16 @@ def test_main_check_prints_ok_without_starting_server(monkeypatch, capsys):
 
     entry.main(["--check"])
 
-    assert capsys.readouterr().out.strip() == "Hermes ACP check OK"
+    assert capsys.readouterr().out.strip() == "opencodon ACP check OK"
 
 
 def test_main_setup_runs_model_configuration(monkeypatch):
     calls = {}
 
-    def fake_hermes_main():
+    def fake_opencodon_main():
         calls["argv"] = sys.argv[:]
 
-    monkeypatch.setattr("opencodon_cli.main.main", fake_hermes_main)
+    monkeypatch.setattr("opencodon_cli.main.main", fake_opencodon_main)
     # Pretend stdin is not a TTY so the follow-up browser prompt is skipped.
     # That keeps this test focused on the model-setup wiring; the
     # browser-prompt path has its own test below.

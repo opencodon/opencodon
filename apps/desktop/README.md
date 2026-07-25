@@ -1,4 +1,4 @@
-# Hermes Desktop ☤
+# opencodon Desktop ☤
 
 <p align="center">
   <a href="https://github.com/opencodon/opencodon/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
@@ -10,10 +10,10 @@
 **The native desktop app for [opencodon](../../README.md) — the self-improving AI agent.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
 
 <table>
-<tr><td><b>Chat with the full agent</b></td><td>Streaming responses, live tool activity, structured tool summaries, and the same conversation history as every other Hermes surface.</td></tr>
+<tr><td><b>Chat with the full agent</b></td><td>Streaming responses, live tool activity, structured tool summaries, and the same conversation history as every other opencodon surface.</td></tr>
 <tr><td><b>Side-by-side previews</b></td><td>Render web pages, files, and tool outputs in a right-hand pane while you keep chatting.</td></tr>
 <tr><td><b>File browser</b></td><td>Explore and preview the working directory without leaving the app.</td></tr>
-<tr><td><b>Voice</b></td><td>Talk to Hermes and hear it back.</td></tr>
+<tr><td><b>Voice</b></td><td>Talk to opencodon and hear it back.</td></tr>
 <tr><td><b>Settings & onboarding</b></td><td>Manage providers, models, tools, and credentials from a real UI. First-run setup gets you to your first message in seconds.</td></tr>
 <tr><td><b>Stays current</b></td><td>Built-in updates pull the latest agent and rebuild the app in place.</td></tr>
 </table>
@@ -22,19 +22,19 @@
 
 ## Install
 
-### Install with Hermes (recommended)
+### Install with opencodon (recommended)
 
-Already have the Hermes CLI? Just run:
+Already have the opencodon CLI? Just run:
 
 ```bash
-hermes desktop
+opencodon desktop
 ```
 
-It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. On first launch Hermes walks you through picking a provider and model; nothing else to configure.
+It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. On first launch opencodon walks you through picking a provider and model; nothing else to configure.
 
 ### Prebuilt installers
 
-Prebuilt installers are built and distributed via [the Hermes Desktop website.](https://github.com/opencodon/opencodon/).
+Prebuilt installers are built and distributed via [the opencodon Desktop website.](https://github.com/opencodon/opencodon/).
 
 ---
 
@@ -43,7 +43,7 @@ Prebuilt installers are built and distributed via [the Hermes Desktop website.](
 The app checks for updates in the background and offers a one-click update when one is ready. You can also update any time from the CLI:
 
 ```bash
-hermes update
+opencodon update
 ```
 
 ---
@@ -88,8 +88,8 @@ Installers are built and uploaded to GitHub Releases manually. macOS/Windows sig
 ### How it works
 
 The packaged app ships the Electron shell and a native React chat surface. On
-first launch it can install the Hermes Agent runtime into `OPENCODON_HOME`
-(`~/.opencodon`, or `%LOCALAPPDATA%\hermes` on Windows), using the same layout as a
+first launch it can install opencodon runtime into `OPENCODON_HOME`
+(`~/.opencodon`, or `%LOCALAPPDATA%\opencodon` on Windows), using the same layout as a
 CLI install.
 
 The app has three boundaries:
@@ -98,7 +98,7 @@ The app has three boundaries:
   filesystem/git/window capabilities, and exposes a narrow preload bridge.
 - **React** owns the Desktop routes, panes, interaction state, and
   `@assistant-ui/react` transcript.
-- **Hermes Agent** runs as a headless `hermes serve` process and exposes the
+- **opencodon** runs as a headless `opencodon serve` process and exposes the
   `tui_gateway` JSON-RPC/WebSocket API. The renderer connects through
   [`apps/shared`](../shared/), which is also used by the browser dashboard.
 
@@ -107,8 +107,8 @@ Backend resolution is an ordered ladder:
 1. `OPENCODON_DESKTOP_OPENCODON_ROOT`
 2. the current source checkout during development
 3. a completed managed install
-4. `OPENCODON_DESKTOP_HERMES`, or `hermes` on `PATH`
-5. a system Python that can import the Hermes runtime
+4. `OPENCODON_DESKTOP_OPENCODON`, or `opencodon` on `PATH`
+5. a system Python that can import the opencodon runtime
 6. the first-launch bootstrap installer
 
 Candidates are probed before use; an existing shim or interpreter is not enough.
@@ -130,7 +130,7 @@ Before changing the app, read:
 
 ### Connections, projects, and switching
 
-Desktop supports a managed local backend, explicit remote gateways, and Hermes
+Desktop supports a managed local backend, explicit remote gateways, and opencodon
 Cloud connections. Remote and cloud modes use the same remote-capability path;
 authentication and discovery differ, not the renderer feature model.
 
@@ -179,12 +179,12 @@ tccutil reset Microphone ai.opencodon.desktop
 
 ```powershell
 # Force a clean first-launch setup
-Remove-Item "$env:LOCALAPPDATA\hermes\hermes-agent\.opencodon-bootstrap-complete"
+Remove-Item "$env:LOCALAPPDATA\opencodon\opencodon\.opencodon-bootstrap-complete"
 # Rebuild a broken Python venv
-Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes\hermes-agent\venv"
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\opencodon\opencodon\venv"
 ```
 
-> The default Hermes home on Windows is `%LOCALAPPDATA%\hermes`. Set the `OPENCODON_HOME` env var if you've relocated it.
+> The default opencodon home on Windows is `%LOCALAPPDATA%\opencodon`. Set the `OPENCODON_HOME` env var if you've relocated it.
 
 ---
 

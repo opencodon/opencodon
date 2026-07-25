@@ -549,7 +549,7 @@ export async function setupPackagedApp(): Promise<PackagedAppFixture> {
   // Clear dev-server + opencodon-root overrides — the packaged binary
   // should use its own bundled renderer, not the dev checkout.
   delete (env as Record<string, string | undefined>).OPENCODON_DESKTOP_DEV_SERVER
-  delete (env as Record<string, string | undefined>).OPENCODON_DESKTOP_HERMES
+  delete (env as Record<string, string | undefined>).OPENCODON_DESKTOP_OPENCODON
   delete (env as Record<string, string | undefined>).OPENCODON_DESKTOP_OPENCODON_ROOT
 
   const app = await _electron.launch({

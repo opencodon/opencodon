@@ -55,19 +55,19 @@ _PROVIDER_PATHS = (
 
 _BUGFIX_SUBJECT = re.compile(r"^(fix|bugfix|hotfix)\b|\bfix(es|ed)?\b", re.IGNORECASE)
 
-# Upstream kept hermes module names; the fork renamed them. Translate upstream
+# Upstream kept opencodon module names; the fork renamed them. Translate upstream
 # paths into fork paths before matching against our tracked tree, otherwise
 # every upstream commit touching a renamed module misclassifies as N/A. Keep
 # in sync with future renames; git cherry-pick still resolves the rest via
 # rename detection.
 _UPSTREAM_RENAMES = (
-    ("hermes_cli", "opencodon_cli"),
-    ("hermes_state", "opencodon_state"),
-    ("hermes_bootstrap", "opencodon_bootstrap"),
-    ("hermes_constants", "opencodon_constants"),
-    ("hermes_logging", "opencodon_logging"),
-    ("hermes_time", "opencodon_time"),
-    ("hermes_tools_mcp_server", "opencodon_tools_mcp_server"),
+    ("opencodon_cli", "opencodon_cli"),
+    ("opencodon_state", "opencodon_state"),
+    ("opencodon_bootstrap", "opencodon_bootstrap"),
+    ("opencodon_constants", "opencodon_constants"),
+    ("opencodon_logging", "opencodon_logging"),
+    ("opencodon_time", "opencodon_time"),
+    ("opencodon_tools_mcp_server", "opencodon_tools_mcp_server"),
 )
 
 

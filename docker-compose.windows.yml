@@ -12,7 +12,7 @@
 services:
   gateway:
     image: opencodon/opencodon:latest
-    container_name: hermes
+    container_name: opencodon
     restart: unless-stopped
     volumes:
       - ${USERPROFILE}/.opencodon:/opt/data
@@ -23,7 +23,7 @@ services:
 
   dashboard:
     image: opencodon/opencodon:latest
-    container_name: hermes-dashboard
+    container_name: opencodon-dashboard
     restart: unless-stopped
     depends_on:
       - gateway

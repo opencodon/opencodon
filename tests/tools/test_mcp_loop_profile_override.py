@@ -57,7 +57,7 @@ def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
 
 
 def test_oauth_token_paths_follow_override(tmp_path, monkeypatch, mcp_loop):
-    """The actual symptom path: HermesTokenStorage resolving inside the
+    """The actual symptom path: OpencodonTokenStorage resolving inside the
     probe's MCP-loop coroutine must land in the selected profile's
     mcp-tokens dir, not the process home's."""
     from opencodon_constants import (
@@ -72,9 +72,9 @@ def test_oauth_token_paths_follow_override(tmp_path, monkeypatch, mcp_loop):
     monkeypatch.setenv("OPENCODON_HOME", str(process_home))
 
     async def token_path():
-        from tools.mcp_oauth import HermesTokenStorage
+        from tools.mcp_oauth import OpencodonTokenStorage
 
-        return str(HermesTokenStorage("probe-srv")._tokens_path())
+        return str(OpencodonTokenStorage("probe-srv")._tokens_path())
 
     token = set_opencodon_home_override(str(profile_home))
     try:

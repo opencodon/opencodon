@@ -173,7 +173,7 @@ class TestPlatformHintResolutionInStablePrompt:
 
 
 class TestEmbeddedTuiPaneClarifier:
-    """When ``OPENCODON_DESKTOP_TERMINAL=1``, a standalone ``hermes --tui`` is
+    """When ``OPENCODON_DESKTOP_TERMINAL=1``, a standalone ``opencodon --tui`` is
     running inside the desktop's embedded terminal pane. The user can
     ⌥-drag-select its output and ⌘/Ctrl+L to send it to the chat composer.
     That clarifier must be appended to the ``tui`` platform hint at the
@@ -225,8 +225,8 @@ class TestEmbeddedTuiPaneClarifier:
 
 class TestContradictionGone:
     """The original contradiction: a single assembled system prompt
-    contained both ``You are running in the Hermes terminal UI (TUI).`` and
-    ``Runtime surface: you're running inside the Hermes desktop GUI app.``.
+    contained both ``You are running in the opencodon terminal UI (TUI).`` and
+    ``Runtime surface: you're running inside the opencodon desktop GUI app.``.
     After the fix, no single session's prompt can carry both."""
 
     def test_desktop_chat_session_has_no_tui_framing(self, monkeypatch):

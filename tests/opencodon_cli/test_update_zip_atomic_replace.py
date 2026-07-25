@@ -3,7 +3,7 @@
 Issue #49145: on Windows the ZIP-update path did ``rmtree(dst); copytree(...)``.
 A copy that failed partway (file locks / flaky I/O — the very conditions the ZIP
 path exists to work around) left the directory deleted with nothing copied back,
-which broke ``hermes --tui`` because ``ui-tui/`` had vanished.
+which broke ``opencodon --tui`` because ``ui-tui/`` had vanished.
 
 ``_atomic_replace_dir`` stages the new copy first and only swaps it in on full
 success, so a mid-copy failure leaves the original directory intact.

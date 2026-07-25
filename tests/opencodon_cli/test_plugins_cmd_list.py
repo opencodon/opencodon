@@ -97,12 +97,12 @@ def test_discover_all_plugins_includes_entrypoint_plugins(monkeypatch, tmp_path)
 
     dist = SimpleNamespace(
         version="0.1.0",
-        metadata={"Summary": "Karpathy-style LLM Wikis for Hermes"},
+        metadata={"Summary": "Karpathy-style LLM Wikis for opencodon"},
     )
     entry_point = SimpleNamespace(
         name="wiki",
         value="adapters.opencodon.cli_plugin",
-        group="hermes_agent.plugins",
+        group="opencodon_agent.plugins",
         dist=dist,
     )
 
@@ -123,7 +123,7 @@ def test_discover_all_plugins_includes_entrypoint_plugins(monkeypatch, tmp_path)
         (
             "wiki",
             "0.1.0",
-            "Karpathy-style LLM Wikis for Hermes",
+            "Karpathy-style LLM Wikis for opencodon",
             "entrypoint",
             "adapters.opencodon.cli_plugin",
             "wiki",
@@ -136,7 +136,7 @@ def test_cmd_list_json_output_includes_entrypoint_source(monkeypatch, capsys):
         (
             "wiki",
             "0.1.0",
-            "Karpathy-style LLM Wikis for Hermes",
+            "Karpathy-style LLM Wikis for opencodon",
             "entrypoint",
             "adapters.opencodon.cli_plugin",
             "wiki",
@@ -154,7 +154,7 @@ def test_cmd_list_json_output_includes_entrypoint_source(monkeypatch, capsys):
             "name": "wiki",
             "status": "enabled",
             "version": "0.1.0",
-            "description": "Karpathy-style LLM Wikis for Hermes",
+            "description": "Karpathy-style LLM Wikis for opencodon",
             "source": "entrypoint",
         }
     ]

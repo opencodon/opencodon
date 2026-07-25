@@ -76,7 +76,7 @@ class TestDoctorToolAvailabilitySummary:
 
 
 class TestDoctorEnvFileEncoding:
-    """Regression for #18637 (bug 3): `hermes doctor` crashed on Windows
+    """Regression for #18637 (bug 3): `opencodon doctor` crashed on Windows
     Chinese locale (GBK) because `.env` was read with Path.read_text() which
     defaults to the system locale encoding, not UTF-8."""
 
@@ -382,7 +382,7 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
         ("nvidia", "qwen/qwen3.5-122b-a10b"),
     ],
 )
-def test_run_doctor_accepts_hermes_provider_ids_that_catalog_aliases(
+def test_run_doctor_accepts_opencodon_provider_ids_that_catalog_aliases(
     monkeypatch, tmp_path, provider, default_model
 ):
     home = tmp_path / ".opencodon"
@@ -1274,7 +1274,7 @@ class TestDoctorStaleMaxIterationsDrift:
 
 
 def test_npm_audit_fix_hint_avoids_crashing_workspace_flag(monkeypatch, tmp_path):
-    """`hermes doctor` must not hand users `npm audit fix --workspace <name>`:
+    """`opencodon doctor` must not hand users `npm audit fix --workspace <name>`:
     that exact form crashes npm with "Cannot read properties of null (reading
     'edgesOut')" (an arborist bug with workspace-filtered audit fix).
 
@@ -1336,7 +1336,7 @@ def test_npm_audit_fix_hint_avoids_crashing_workspace_flag(monkeypatch, tmp_path
     assert "npm audit fix" not in out
     # ... and explains the workspace advisories are build-time tooling whose
     # manual remediation may hit a known npm arborist crash, so the user isn't
-    # left thinking a crashing command means a broken Hermes install.
+    # left thinking a crashing command means a broken opencodon install.
     assert "build-time tooling" in out
     assert "known npm bug" in out
     assert "lockfile bump" in out

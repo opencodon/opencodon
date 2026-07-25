@@ -62,10 +62,10 @@ class TestResolutionOrder:
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
                 with patch("opencodon_cli.profiles.profile_exists", return_value=True):
-                    mock_get_dir.return_value = Path("/hermes/profiles/from-source")
+                    mock_get_dir.return_value = Path("/opencodon/profiles/from-source")
                     result = mock_runner._resolve_profile_home_for_source(discord_source)
                     
-                    assert result == Path("/hermes/profiles/from-source")
+                    assert result == Path("/opencodon/profiles/from-source")
                     mock_get_dir.assert_called_once_with("from-source")
     
     def test_routing_wins_over_active_profile(self, mock_runner, discord_source):
@@ -76,14 +76,14 @@ class TestResolutionOrder:
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
                 with patch("opencodon_cli.profiles.profile_exists", return_value=True):
-                    mock_get_dir.return_value = Path("/hermes/profiles/routed")
+                    mock_get_dir.return_value = Path("/opencodon/profiles/routed")
                     
                     # Manually set routing to return a profile
                     mock_runner._profile_name_for_source = MagicMock(return_value="routed")
                     
                     result = mock_runner._resolve_profile_home_for_source(discord_source)
                     
-                    assert result == Path("/hermes/profiles/routed")
+                    assert result == Path("/opencodon/profiles/routed")
                     mock_get_dir.assert_called_once_with("routed")
     
     def test_active_profile_fallback(self, mock_runner, discord_source):
@@ -92,14 +92,14 @@ class TestResolutionOrder:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/active")
+                mock_get_dir.return_value = Path("/opencodon/profiles/active")
                 
                 # No routing match
                 mock_runner._profile_name_for_source = MagicMock(return_value=None)
                 
                 result = mock_runner._resolve_profile_home_for_source(discord_source)
                 
-                assert result == Path("/hermes/profiles/active")
+                assert result == Path("/opencodon/profiles/active")
                 mock_get_dir.assert_called_once_with("active")
     
     def test_default_fallback_when_no_active(self, mock_runner, discord_source):
@@ -108,13 +108,13 @@ class TestResolutionOrder:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value=None):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes")
+                mock_get_dir.return_value = Path("/opencodon")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value=None)
                 
                 result = mock_runner._resolve_profile_home_for_source(discord_source)
                 
-                assert result == Path("/hermes")
+                assert result == Path("/opencodon")
                 mock_get_dir.assert_called_once_with("default")
 
 
@@ -127,14 +127,14 @@ class TestMissingProfileWarning:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/nonexistent")
+                mock_get_dir.return_value = Path("/opencodon/profiles/nonexistent")
                 with patch("opencodon_cli.profiles.profile_exists", return_value=False):
-                    with patch("opencodon_constants.get_opencodon_home", return_value=Path("/hermes")):
+                    with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                         with caplog.at_level(logging.WARNING):
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
                             
                             # Should fall back to global OPENCODON_HOME
-                            assert result == Path("/hermes")
+                            assert result == Path("/opencodon")
                             
                             # Should have logged a warning
                             assert len(caplog.records) == 1
@@ -150,9 +150,9 @@ class TestMissingProfileWarning:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/routed")
+                mock_get_dir.return_value = Path("/opencodon/profiles/routed")
                 with patch("opencodon_cli.profiles.profile_exists", return_value=False):
-                    with patch("opencodon_constants.get_opencodon_home", return_value=Path("/hermes")):
+                    with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                         # Routing returns a profile that doesn't exist
                         mock_runner._profile_name_for_source = MagicMock(return_value="routed")
                         
@@ -160,7 +160,7 @@ class TestMissingProfileWarning:
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
                             
                             # Should fall back to global OPENCODON_HOME
-                            assert result == Path("/hermes")
+                            assert result == Path("/opencodon")
                             
                             # Should have logged a warning
                             assert len(caplog.records) == 1
@@ -172,7 +172,7 @@ class TestMissingProfileWarning:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/active")
+                mock_get_dir.return_value = Path("/opencodon/profiles/active")
                 with patch("opencodon_cli.profiles.profile_exists", return_value=True):
                     with caplog.at_level(logging.WARNING):
                         mock_runner._profile_name_for_source = MagicMock(return_value=None)
@@ -180,7 +180,7 @@ class TestMissingProfileWarning:
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
                         # Should use active profile
-                        assert result == Path("/hermes/profiles/active")
+                        assert result == Path("/opencodon/profiles/active")
                         
                         # No warnings (active profile exists)
                         assert not any(r.levelname == "WARNING" for r in caplog.records)
@@ -191,12 +191,12 @@ class TestMissingProfileWarning:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/existing")
+                mock_get_dir.return_value = Path("/opencodon/profiles/existing")
                 with patch("opencodon_cli.profiles.profile_exists", return_value=True):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
-                        assert result == Path("/hermes/profiles/existing")
+                        assert result == Path("/opencodon/profiles/existing")
                         
                         # No warnings
                         assert not any(r.levelname == "WARNING" for r in caplog.records)
@@ -211,12 +211,12 @@ class TestExceptionHandling:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
-                with patch("opencodon_constants.get_opencodon_home", return_value=Path("/hermes")):
+                with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
                         # Should fall back to global OPENCODON_HOME
-                        assert result == Path("/hermes")
+                        assert result == Path("/opencodon")
                         
                         # Should have logged a warning with exception info
                         assert len(caplog.records) == 1
@@ -230,13 +230,13 @@ class TestExceptionHandling:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value=None):
             with patch("opencodon_cli.profiles.get_profile_dir", side_effect=RuntimeError("Filesystem error")):
-                with patch("opencodon_constants.get_opencodon_home", return_value=Path("/hermes")):
+                with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                     mock_runner._profile_name_for_source = MagicMock(return_value=None)
                     
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
-                        assert result == Path("/hermes")
+                        assert result == Path("/opencodon")
                         
                         # Warning should mention "(no profile)"
                         assert "(no profile)" in caplog.records[0].message
@@ -251,7 +251,7 @@ class TestRoutingConsultation:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/routed")
+                mock_get_dir.return_value = Path("/opencodon/profiles/routed")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value="routed")
                 
@@ -266,7 +266,7 @@ class TestRoutingConsultation:
         
         with patch("opencodon_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("opencodon_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/from-source")
+                mock_get_dir.return_value = Path("/opencodon/profiles/from-source")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value="routed")
                 

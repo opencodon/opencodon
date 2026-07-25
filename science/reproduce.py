@@ -4,7 +4,7 @@ Simplified port of the donor's ReproductionRunner, graded honestly:
 
 - The replay prefix is every cell of the producing session in the same
   language up to (and including) the producing cell, in cell_index order —
-  an approximation of the donor's kernel-epoch prefix (hermes does not
+  an approximation of the donor's kernel-epoch prefix (opencodon does not
   persist epochs; a restart mid-history makes the prefix a superset).
 - Each replayed cell re-declares the *exact historical inputs* its original
   recorded via ``artifact.load`` host calls, so lineage is honored, not

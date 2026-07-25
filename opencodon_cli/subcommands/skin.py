@@ -1,4 +1,4 @@
-"""``hermes skin`` subcommand parser."""
+"""``opencodon skin`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ def build_skin_parser(subparsers, *, cmd_skin: Callable) -> None:
     skin_parser = subparsers.add_parser(
         "skin",
         help="List, switch, and tweak skins",
-        description="Manage Hermes skins. `set` tweaks one color of the active skin in place.",
+        description="Manage opencodon skins. `set` tweaks one color of the active skin in place.",
     )
     skin_subparsers = skin_parser.add_subparsers(dest="skin_command")
 

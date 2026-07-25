@@ -3525,7 +3525,7 @@ function resolveOpencodonBackend(backendArgs) {
   //    OPENCODON_DESKTOP_IGNORE_EXISTING=1 forces the bootstrap path for testing.
   if (process.env.OPENCODON_DESKTOP_IGNORE_EXISTING !== '1') {
     let opencodonCommand = null
-    const opencodonOverride = process.env.OPENCODON_DESKTOP_HERMES
+    const opencodonOverride = process.env.OPENCODON_DESKTOP_OPENCODON
 
     if (opencodonOverride) {
       const resolvedOverride = findOnPath(opencodonOverride)
@@ -3564,7 +3564,7 @@ function resolveOpencodonBackend(backendArgs) {
       // and lets the resolver fall through to step 6 / bootstrap.
       const shellForProbe = isCommandScript(opencodonCommand)
 
-      // OPENCODON_DESKTOP_HERMES is an explicit deployment override (used by
+      // OPENCODON_DESKTOP_OPENCODON is an explicit deployment override (used by
       // the Nix wrapper), not a discovered PATH candidate. It must not fall
       // through to the install-script bootstrap if the optional probe times
       // out under load; the pinned backend is the only valid runtime there.

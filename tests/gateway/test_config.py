@@ -465,7 +465,7 @@ class TestLoadGatewayConfig:
         auto-reset sessions.
 
         Installers (scripts/install.sh, scripts/install.ps1,
-        docker/stage2-hook.sh, hermes doctor) copy the template verbatim to
+        docker/stage2-hook.sh, opencodon doctor) copy the template verbatim to
         ~/.opencodon/config.yaml, so whatever ``session_reset.mode`` the template
         ships becomes an EXPLICIT user setting that overrides the code
         default. After #60194 flipped the default to "none", the template
@@ -547,7 +547,7 @@ class TestLoadGatewayConfig:
     def test_typing_status_text_from_toplevel_platform_block(self, tmp_path, monkeypatch):
         """A top-level ``slack:`` block reaches PlatformConfig via the
         shared-key bridge (bridged into extra, then the from_dict extra
-        fallback) — the route a bare ``hermes config set``-style YAML uses."""
+        fallback) — the route a bare ``opencodon config set``-style YAML uses."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "config.yaml").write_text(
@@ -585,7 +585,7 @@ class TestLoadGatewayConfig:
 
     def test_multiplex_profiles_from_nested_gateway_section(self, tmp_path, monkeypatch):
         """``gateway.multiplex_profiles: true`` (the nested form written by
-        ``hermes config set gateway.multiplex_profiles true``) must enable
+        ``opencodon config set gateway.multiplex_profiles true``) must enable
         multiplexing when loaded via load_gateway_config().
 
         Regression: load_gateway_config() only surfaced the *top-level*
@@ -1815,7 +1815,7 @@ class TestMultiplexProfilesConfig:
         assert config.multiplex_profiles is True
 
     def test_multiplex_profiles_nested_under_gateway(self, tmp_path, monkeypatch):
-        """gateway.multiplex_profiles (the form written by `hermes config set
+        """gateway.multiplex_profiles (the form written by `opencodon config set
         gateway.multiplex_profiles true`) must be honored. Regression test for
         the silent-fallback bug where the loader only forwarded the top-level
         key, so users who wrote it under gateway: got multiplex_profiles=False

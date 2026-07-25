@@ -61,7 +61,7 @@ agent:
 
     from opencodon_cli import kanban_db as kb
 
-    monkeypatch.setattr(kb, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kb, "_resolve_opencodon_argv", lambda: ["opencodon"])
 
     captured = {}
 
@@ -103,7 +103,7 @@ def test_default_spawn_never_boots_the_tui(monkeypatch, tmp_path):
 
     from opencodon_cli import kanban_db as kb
 
-    monkeypatch.setattr(kb, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kb, "_resolve_opencodon_argv", lambda: ["opencodon"])
 
     captured = {}
 
@@ -140,7 +140,7 @@ def test_default_spawn_model_override_survives_real_cli_parse(monkeypatch, tmp_p
     from opencodon_cli import kanban_db as kb
     from opencodon_cli._parser import build_top_level_parser
 
-    monkeypatch.setattr(kb, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kb, "_resolve_opencodon_argv", lambda: ["opencodon"])
     captured = {}
 
     class FakeProc:

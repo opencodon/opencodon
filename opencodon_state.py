@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SQLite State Store for Hermes Agent.
+SQLite State Store for opencodon.
 
 Provides persistent session storage with FTS5 full-text search, replacing
 the per-session JSONL file approach. Stores session metadata, full message
@@ -159,7 +159,7 @@ SCHEMA_VERSION = 23
 # state_meta key ``fts_storage_version``. The main schema version advances
 # freely on open (so future migrations always land); the FTS *layout* only
 # reaches the current version when a DB is either born fresh or explicitly
-# optimized via ``hermes sessions optimize-storage``. A legacy DB sits at
+# optimized via ``opencodon sessions optimize-storage``. A legacy DB sits at
 # layout 0 (marker absent) with a working inline index until the user opts in.
 #   1 = v23 external-content layout (content/tool_name/tool_calls,
 #       tool-row-excluded trigram)
@@ -660,7 +660,7 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
         # best-effort — if the messages/sessions tables don't exist yet (brand
         # new file mid-init) the OperationalError is treated as "not yet a
         # populated DB", not corruption.
-        probe_session_id = f"_hermes_fts_health_probe_{time.time_ns()}"
+        probe_session_id = f"_opencodon_fts_health_probe_{time.time_ns()}"
         try:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute(
@@ -1229,7 +1229,7 @@ END;
 # (``~/.opencodon/lib/libfts5_cjk.so``, built by ``native/fts5_cjk/build.sh``).
 # A process that cannot load it self-heals by dropping the cjk triggers
 # (message writes keep working; the index goes stale and is rebuilt by the
-# next ``hermes sessions optimize-storage`` on a capable host).
+# next ``opencodon sessions optimize-storage`` on a capable host).
 #
 # Split DDL: the table/view part is safe to ensure any time; the triggers
 # are created ONLY while the index is complete-or-marker-gated. A stale
@@ -1304,7 +1304,7 @@ _FTS_CJK_TRIGGERS = (
 # state_meta breadcrumb set when a tokenizer-less process had to drop the
 # cjk triggers to keep message writes alive: rows written from that moment
 # on are missing from the cjk index, so it must not serve reads until
-# `hermes sessions optimize-storage` rebuilds it on a capable host.
+# `opencodon sessions optimize-storage` rebuilds it on a capable host.
 FTS_CJK_STALE_KEY = "fts_cjk_stale"
 
 
@@ -1351,7 +1351,7 @@ def load_fts5_cjk_extension(conn: sqlite3.Connection) -> bool:
 
 # ── Legacy (v22 / inline-content) FTS DDL ──────────────────────────────
 # Used ONLY to keep an existing pre-v23 install's search working and its
-# triggers repairable UNTIL the user opts into `hermes db optimize`. This is
+# triggers repairable UNTIL the user opts into `opencodon db optimize`. This is
 # the exact inline shape v11..v22 shipped: each virtual table stores its own
 # copy of ``content || tool_name || tool_calls`` and the trigram table indexes
 # every row (including role='tool'). We never CREATE these on a fresh install —
@@ -1421,7 +1421,7 @@ class SessionDB:
     """
 
     # ── Write-contention tuning ──
-    # With multiple hermes processes (gateway + CLI sessions + worktree agents)
+    # With multiple opencodon processes (gateway + CLI sessions + worktree agents)
     # all sharing one state.db, WAL write-lock contention causes visible TUI
     # freezes.  SQLite's built-in busy handler uses a deterministic sleep
     # schedule that causes convoy effects under high concurrency.
@@ -1543,7 +1543,7 @@ class SessionDB:
                     raise
                 _connect_and_init()
 
-            # NOTE: the v23 FTS optimization is OPT-IN (`hermes db optimize`),
+            # NOTE: the v23 FTS optimization is OPT-IN (`opencodon db optimize`),
             # never auto-started on open. Legacy installs keep their working
             # v22 inline FTS untouched here; only the explicit foreground
             # command demotes + rebuilds. This avoids a background worker
@@ -1645,7 +1645,7 @@ class SessionDB:
         self._fts_unavailable_warned = True
         logger.warning(
             "SQLite FTS5 unavailable for %s; full-text session search "
-            "disabled. Run `hermes update` to rebuild the venv with a "
+            "disabled. Run `opencodon update` to rebuild the venv with a "
             "current Python (managed uv guarantees FTS5). "
             "(underlying error: %s)",
             self.db_path,
@@ -1654,8 +1654,8 @@ class SessionDB:
 
     def _sqlite_supports_fts5(self, cursor: sqlite3.Cursor) -> bool:
         try:
-            cursor.execute("CREATE VIRTUAL TABLE temp._hermes_fts5_probe USING fts5(x)")
-            cursor.execute("DROP TABLE temp._hermes_fts5_probe")
+            cursor.execute("CREATE VIRTUAL TABLE temp._opencodon_fts5_probe USING fts5(x)")
+            cursor.execute("DROP TABLE temp._opencodon_fts5_probe")
             return True
         except sqlite3.OperationalError as exc:
             if not self._is_fts5_unavailable_error(exc):
@@ -1710,7 +1710,7 @@ class SessionDB:
                         "cjk_unicode61 tokenizer is unavailable (%s) — "
                         "dropping the cjk triggers so message writes keep "
                         "working. CJK search falls back to trigram/LIKE; "
-                        "run `hermes sessions optimize-storage` on a host "
+                        "run `opencodon sessions optimize-storage` on a host "
                         "with the extension to rebuild.",
                         fts5_cjk_so_path(),
                     )
@@ -2098,7 +2098,7 @@ class SessionDB:
 
     # ── Chunked FTS rebuild engine (v23 opt-in optimize) ──
     #
-    # `optimize_fts_storage()` (the `hermes sessions optimize-storage`
+    # `optimize_fts_storage()` (the `opencodon sessions optimize-storage`
     # command) drops the legacy inline FTS indexes and backfills the new
     # external-content ones. A single blocking rebuild measured ~16 minutes
     # of held write lock on a real 25 GB DB, so the backfill runs in small
@@ -2435,7 +2435,7 @@ class SessionDB:
                 self._ensure_fts_cjk_schema(self._conn)
                 self._conn.commit()
 
-    # ── Opt-in v23 FTS storage optimization (`hermes sessions optimize-storage`) ──
+    # ── Opt-in v23 FTS storage optimization (`opencodon sessions optimize-storage`) ──
     #
     # This is the ONLY path that migrates an existing legacy (v22 inline) DB
     # to the v23 external-content schema. It is deliberately foreground and
@@ -3083,7 +3083,7 @@ class SessionDB:
                 # enough — is the wrong default. So on an EXISTING install we
                 # touch nothing here: the v22 inline FTS keeps working exactly
                 # as before, and we only record a flag advertising that the
-                # optimization is available. `hermes sessions optimize-storage`
+                # optimization is available. `opencodon sessions optimize-storage`
                 # performs the whole transition as one deliberate, disk-checked,
                 # progress-reported foreground operation.
                 #
@@ -3178,7 +3178,7 @@ class SessionDB:
             # an earlier no-FTS5 runtime.
             #
             # OPT-IN v23 boundary: a legacy v22 install (inline-content FTS,
-            # not yet opted into `hermes db optimize`) must keep its EXISTING
+            # not yet opted into `opencodon db optimize`) must keep its EXISTING
             # inline schema + triggers. Running the v23 external-content DDL
             # here would create the trigram source VIEW and leave the DB in a
             # mixed inline/external state. So for a legacy DB we only ensure
@@ -7668,7 +7668,7 @@ class SessionDB:
         """Search surfaced sessions by exact/prefix/substring session id.
 
         Desktop search uses this alongside FTS message search so users can paste
-        a session id from logs, CLI output, or another Hermes surface and jump
+        a session id from logs, CLI output, or another opencodon surface and jump
         straight to that conversation.  Matching also checks ``_lineage_root_id``
         for projected compression-chain tips, so an old root id still resolves to
         the live continuation row.
@@ -8426,7 +8426,7 @@ class SessionDB:
         A session is considered empty when it has no messages and no
         user-assigned title. Used by CLI exit / session-rotation paths so
         immediately-started-and-quit sessions don't pile up in ``/resume``
-        and ``hermes sessions list`` output. (Pattern ported from
+        and ``opencodon sessions list`` output. (Pattern ported from
         google-gemini/gemini-cli#27770.)
 
         The emptiness check and delete run in one transaction, so a message
@@ -8923,7 +8923,7 @@ class SessionDB:
         """Create Telegram DM topic-mode tables on explicit /topic opt-in.
 
         This migration is deliberately not part of automatic SessionDB startup
-        reconciliation. Operators must be able to upgrade Hermes, keep the old
+        reconciliation. Operators must be able to upgrade opencodon, keep the old
         Telegram bot behavior running, and only mutate topic-mode state when the
         user executes /topic to opt into the feature.
 
@@ -9271,9 +9271,9 @@ class SessionDB:
         session_id: str,
         managed_mode: str = "auto",
     ) -> None:
-        """Bind one Telegram DM topic thread to one Hermes session.
+        """Bind one Telegram DM topic thread to one opencodon session.
 
-        A Hermes session may only be linked to one Telegram topic in MVP.
+        A opencodon session may only be linked to one Telegram topic in MVP.
         Rebinding the same topic to the same session is idempotent; trying to
         link the same session to a different topic raises ValueError.
         """
@@ -9326,7 +9326,7 @@ class SessionDB:
         self._execute_write(_do)
 
     def is_telegram_session_linked_to_topic(self, *, session_id: str) -> bool:
-        """Return True if a Hermes session is already bound to any Telegram DM topic.
+        """Return True if a opencodon session is already bound to any Telegram DM topic.
 
         Read-only: does NOT trigger the telegram-topic migration. If the
         topic-mode tables have not been created yet (i.e. nobody has run

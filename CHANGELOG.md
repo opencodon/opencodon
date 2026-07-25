@@ -43,10 +43,10 @@ security fixes are triaged weekly and cherry-picked (see `FORK-PLAN.md`).
 ### Changed
 
 - Rebranded end to end: package and CLI `opencodon`, home directory
-  `~/.opencodon` (with one-time migration from `~/.hermes`), env vars
+  `~/.opencodon` (with one-time migration from `~/.opencodon`), env vars
   `OPENCODON_*`, service `opencodon-gateway`.
-- One-release compatibility shims, to be removed in 0.2.0: `hermes` CLI
-  alias, `HERMES_*` env fallback, legacy toolset aliases, legacy gateway
+- One-release compatibility shims, to be removed in 0.2.0: `opencodon` CLI
+  alias, `OPENCODON_*` env fallback, legacy toolset aliases, legacy gateway
   unit/kind names.
 
 ### Security

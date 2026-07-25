@@ -1,4 +1,4 @@
-"""Relay/connector support package for the Hermes gateway.
+"""Relay/connector support package for the opencodon gateway.
 
 EXPERIMENTAL. This package implements the gateway side of the "Gateway Gateway"
 relay design: a generic ``RelayAdapter`` plus the wire-serializable
@@ -125,7 +125,7 @@ def relay_platform_identity() -> tuple[str, str]:
 def relay_connection_auth() -> tuple[Optional[str], Optional[str]]:
     """The (gateway_id, upgrade_secret) this gateway authenticates the WS upgrade with.
 
-    Both come from enrollment (``hermes gateway enroll`` writes them to
+    Both come from enrollment (``opencodon gateway enroll`` writes them to
     ``~/.opencodon/.env``): ``GATEWAY_RELAY_ID`` identifies the enrolled instance,
     ``GATEWAY_RELAY_SECRET`` is the per-gateway signing secret. Either absent ->
     ``(None, None)`` and the transport dials unauthenticated (dev/test, or a
@@ -234,7 +234,7 @@ def relay_wake_url() -> Optional[str]:
     delivery-leg backlog. The value's *source* differs by deployment but the code
     path is uniform: a managed/NAS container has ``GATEWAY_RELAY_WAKE_URL`` stamped
     in (NAS knows the Fly autostart / dashboard hostname); a self-hosted operator
-    sets it explicitly (or passes ``--wake-url`` to ``hermes gateway enroll``).
+    sets it explicitly (or passes ``--wake-url`` to ``opencodon gateway enroll``).
 
     Gateway-asserted but safely scoped: the org/tenant stays token-verified, so a
     dishonest gateway can only register a wake target for ITS OWN instance — the
@@ -448,7 +448,7 @@ def _resolve_relay_identity_token() -> str:
     """Resolve the caller-identity bearer token the connector introspects to a tenant.
 
     Canonical resolver shared by the runtime self-provision path and the
-    ``hermes gateway enroll`` CLI.
+    ``opencodon gateway enroll`` CLI.
 
     **Generic OIDC client-credentials**: when ``gateway.idp.token_url`` (or
     ``GATEWAY_RELAY_IDP_TOKEN_URL``) is configured, obtain a workload access
@@ -536,7 +536,7 @@ def self_provision_relay() -> bool:
 
       - A hosted agent: has ``GATEWAY_RELAY_URL``, no pinned secret, and a
         resolvable workload identity -> self-provisions.
-      - A self-hosted operator who ran ``hermes gateway enroll``: has a PINNED
+      - A self-hosted operator who ran ``opencodon gateway enroll``: has a PINNED
         ``GATEWAY_RELAY_SECRET`` -> skipped (the secret-present guard below).
       - A box with a relay URL but no configured IdP:
         ``_resolve_relay_identity_token()`` fails -> graceful no-op.
@@ -583,7 +583,7 @@ def self_provision_relay() -> bool:
         host = socket.gethostname().strip()
     except Exception:  # noqa: BLE001
         host = ""
-    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'hermes'}"
+    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'opencodon'}"
     endpoint = relay_endpoint()
     route_keys = relay_route_keys()
     instance_id = relay_instance_id()

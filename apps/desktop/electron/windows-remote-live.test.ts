@@ -9,10 +9,10 @@ import { connectWindowsRemote } from './windows-remote-lifecycle'
 // your test rig; skipped everywhere else (CI, other machines).
 //   OPENCODON_WIN_SSH_HOST   ssh alias/host of the Windows box
 //   OPENCODON_WIN_SSH_USER   remote user
-//   OPENCODON_WIN_SSH_HERMES absolute path to the remote opencodon.exe under test
+//   OPENCODON_WIN_SSH_OPENCODON absolute path to the remote opencodon.exe under test
 const liveHost = process.env.OPENCODON_WIN_SSH_HOST || ''
 const liveUser = process.env.OPENCODON_WIN_SSH_USER || ''
-const configuredOpencodon = process.env.OPENCODON_WIN_SSH_HERMES || ''
+const configuredOpencodon = process.env.OPENCODON_WIN_SSH_OPENCODON || ''
 const ownershipId = '89abcdef0123456789abcdef01234567'
 
 function fetchJson(url, token, path) {

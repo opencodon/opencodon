@@ -44,7 +44,7 @@ def test_no_backend_message_mentions_fal_signup_and_plugins(monkeypatch):
     assert "FAL_KEY" in msg
     assert "https://fal.ai" in msg
     # Plugin pointer so users on a stale image_gen.provider know where to look.
-    assert "hermes tools" in msg or "hermes plugins" in msg
+    assert "opencodon tools" in msg or "opencodon plugins" in msg
 
 
 def test_image_generate_tool_returns_actionable_error_when_no_backend(monkeypatch):

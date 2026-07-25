@@ -106,7 +106,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
             )
 
         session_data = response.json()
-        session_name = f"hermes_{task_id}_{uuid.uuid4().hex[:8]}"
+        session_name = f"opencodon_{task_id}_{uuid.uuid4().hex[:8]}"
         external_call_id = None
 
         logger.info("Created Browser Use session %s", session_name)
