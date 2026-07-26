@@ -176,9 +176,9 @@ def check_env_vars():
 
     # Load .env
     try:
-        from opencodon_cli.env_loader import load_hermes_dotenv
+        from opencodon_cli.env_loader import load_opencodon_dotenv
 
-        load_hermes_dotenv(
+        load_opencodon_dotenv(
             opencodon_home=ENV_FILE.parent,
             project_env=PROJECT_ROOT / ".env",
         )
@@ -235,7 +235,7 @@ def check_env_vars():
 
 
 def check_config(groq_key, eleven_key):
-    """Check hermes config.yaml."""
+    """Check opencodon config.yaml."""
     section("Configuration")
 
     config_path = OPENCODON_HOME / "config.yaml"

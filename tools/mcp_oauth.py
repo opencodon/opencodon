@@ -11,7 +11,7 @@ which handles discovery, dynamic client registration, PKCE, token exchange,
 refresh, and step-up authorization automatically.
 
 This module provides the glue:
-    - ``HermesTokenStorage``: persists tokens/client-info to disk so they
+    - ``OpencodonTokenStorage``: persists tokens/client-info to disk so they
       survive across process restarts.
     - Callback server: ephemeral localhost HTTP server to capture the OAuth
       redirect with the authorization code.
@@ -31,7 +31,7 @@ Configuration in config.yaml::
           redirect_port: 0                      # 0 = auto-pick free port
           redirect_uri: "https://proxy/callback"  # default: loopback callback
           redirect_host: "localhost"            # loopback hostname (WAF-safe)
-          client_name: "My Custom Client"       # default: "Hermes Agent"
+          client_name: "My Custom Client"       # default: "opencodon"
 """
 
 import asyncio
@@ -123,7 +123,7 @@ _SKIP_TOKENS = frozenset({"skip", "cancel", "s", "n", "no", "q", "quit"})
 # _wait_for_callback maps this to OAuthNonInteractiveError ("user_skipped")
 # so the MCP setup path treats it as a non-fatal "continue without this
 # server" rather than a hard failure.
-_USER_SKIPPED_SENTINEL = "__hermes_user_skipped__"
+_USER_SKIPPED_SENTINEL = "__opencodon_user_skipped__"
 
 
 # ---------------------------------------------------------------------------
@@ -194,11 +194,11 @@ def _reserve_callback_port() -> int:
     return port
 
 
-def _cached_redirect_port(storage: "HermesTokenStorage | None") -> int | None:
+def _cached_redirect_port(storage: "OpencodonTokenStorage | None") -> int | None:
     """Return the loopback callback port from cached client registration.
 
     OAuth providers bind a dynamically-registered ``client_id`` to the exact
-    redirect URI that was registered with it. If Hermes restarts and chooses a
+    redirect URI that was registered with it. If opencodon restarts and chooses a
     new random callback port while reusing the stored ``client_id``, providers
     such as Summ reject the authorization request with ``redirect_uri does not
     match any registered URIs``. Reusing the cached redirect port keeps the
@@ -229,7 +229,7 @@ def _cached_redirect_port(storage: "HermesTokenStorage | None") -> int | None:
     return None
 
 
-def _cached_redirect_uri(storage: "HermesTokenStorage | None") -> str | None:
+def _cached_redirect_uri(storage: "OpencodonTokenStorage | None") -> str | None:
     """Return a cached non-loopback redirect URI, if one was registered."""
     if storage is None:
         return None
@@ -263,13 +263,13 @@ def _raise_if_non_interactive(lead: str) -> None:
     """Raise ``OAuthNonInteractiveError`` unless an interactive session exists.
 
     ``lead`` is the boundary-specific first sentence; this helper appends the
-    shared, actionable ``hermes mcp login`` next-step so the guidance wording
+    shared, actionable ``opencodon mcp login`` next-step so the guidance wording
     lives in one place across every non-interactive OAuth boundary (#57836).
     """
     if not _is_interactive():
         raise OAuthNonInteractiveError(
             f"{lead} "
-            "Run `hermes mcp login <server>` interactively to (re)authorize, "
+            "Run `opencodon mcp login <server>` interactively to (re)authorize, "
             "then restart or reload the gateway."
         )
 
@@ -374,11 +374,11 @@ def _write_json(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# HermesTokenStorage -- persistent token/client-info on disk
+# OpencodonTokenStorage -- persistent token/client-info on disk
 # ---------------------------------------------------------------------------
 
 
-class HermesTokenStorage:
+class OpencodonTokenStorage:
     """Persist OAuth tokens and client registration to JSON files.
 
     File layout::
@@ -407,7 +407,7 @@ class HermesTokenStorage:
         data = _read_json(self._tokens_path())
         if data is None:
             return None
-        # Hermes records an absolute wall-clock ``expires_at`` alongside the
+        # opencodon records an absolute wall-clock ``expires_at`` alongside the
         # SDK's serialized token (see ``set_tokens``). On read we rewrite
         # ``expires_in`` to the remaining seconds so the SDK's downstream
         # ``update_token_expiry`` computes the correct absolute time and
@@ -619,7 +619,7 @@ def _make_callback_handler() -> tuple[type, dict]:
 
             body = (
                 "<html><body><h2>Authorization Successful</h2>"
-                "<p>You can close this tab and return to Hermes.</p></body></html>"
+                "<p>You can close this tab and return to opencodon.</p></body></html>"
             ) if code else (
                 "<html><body><h2>Authorization Failed</h2>"
                 f"<p>Error: {error or 'unknown'}</p></body></html>"
@@ -718,7 +718,7 @@ def _make_redirect_handler(port: int, redirect_uri: str | None = None):
                 f"         ssh -N -L {port}:127.0.0.1:{port} <user>@<this-host>\n"
                 f"       then open the URL above and let it redirect normally.\n"
                 f"\n"
-                f"  See: https://hermes-agent.nousresearch.com/docs/guides/oauth-over-ssh\n",
+                f"  See: https://github.com/opencodon/opencodon/tree/main/docs\n",
                 file=sys.stderr,
             )
 
@@ -924,7 +924,7 @@ def _paste_callback_reader(result: dict) -> None:
             return
         result["error"] = _USER_SKIPPED_SENTINEL
         print(
-            "  OAuth skipped. Run `hermes mcp login <server>` later to "
+            "  OAuth skipped. Run `opencodon mcp login <server>` later to "
             "authenticate, or set ``enabled: false`` on that server in "
             "config.yaml to disable persistently.",
             file=sys.stderr,
@@ -981,7 +981,7 @@ def remove_oauth_tokens(
     opencodon_home: str | Path | None = None,
 ) -> None:
     """Delete stored OAuth tokens and client info for a server."""
-    storage = HermesTokenStorage(server_name, opencodon_home=opencodon_home)
+    storage = OpencodonTokenStorage(server_name, opencodon_home=opencodon_home)
     storage.remove()
     logger.info("OAuth tokens removed for '%s'", server_name)
 
@@ -997,7 +997,7 @@ def remove_oauth_tokens(
 
 def _configure_callback_port(
     cfg: dict,
-    storage: "HermesTokenStorage | None" = None,
+    storage: "OpencodonTokenStorage | None" = None,
 ) -> int:
     """Pick or validate the OAuth callback port.
 
@@ -1079,7 +1079,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
         raise ValueError(
             "_configure_callback_port() must be called before _build_client_metadata()"
         )
-    client_name = cfg.get("client_name", "Hermes Agent")
+    client_name = cfg.get("client_name", "opencodon")
     scope = cfg.get("scope")
     redirect_uri = _resolve_redirect_uri(cfg, port)
 
@@ -1099,7 +1099,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 
 
 def _maybe_preregister_client(
-    storage: "HermesTokenStorage",
+    storage: "OpencodonTokenStorage",
     cfg: dict,
     client_metadata: "OAuthClientMetadata",
 ) -> None:
@@ -1158,14 +1158,14 @@ def build_oauth_auth(
         return None
 
     cfg = dict(oauth_config or {})  # copy — we mutate _resolved_port
-    storage = HermesTokenStorage(server_name)
+    storage = OpencodonTokenStorage(server_name)
 
     if not _is_interactive() and not storage.has_cached_tokens():
         raise OAuthNonInteractiveError(
             "MCP OAuth for "
             f"'{server_name}': non-interactive environment and no cached tokens "
             "found. The OAuth flow requires browser authorization. Run "
-            f"`hermes mcp login {server_name}` interactively first to complete "
+            f"`opencodon mcp login {server_name}` interactively first to complete "
             "initial authorization, then cached tokens will be reused."
         )
 

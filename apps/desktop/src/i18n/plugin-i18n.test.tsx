@@ -57,12 +57,13 @@ describe('plugin locale registry', () => {
 
   it('ctx.i18n.t reads the app runtime locale', () => {
     const i18n = createPluginI18n('runtime-plugin', noopTrack)
+    // A plugin may ship bundles for languages the app cannot select; only the
+    // app's active locale ever resolves, and unknown keys fall back to the key.
     i18n.register({ en: { greet: 'hello' }, ja: { greet: 'こんにちは' } })
 
+    setRuntimeI18nLocale('en')
     expect(i18n.t('greet')).toBe('hello')
-
-    setRuntimeI18nLocale('ja')
-    expect(i18n.t('greet')).toBe('こんにちは')
+    expect(i18n.t('absent')).toBe('absent')
   })
 })
 
@@ -72,39 +73,7 @@ function Probe({ pluginId }: { pluginId: string }) {
   return <p data-testid="copy">{t('greet')}</p>
 }
 
-function SwitchToJa() {
-  const { setLocale } = useI18n()
-
-  return (
-    <button onClick={() => void setLocale('ja')} type="button">
-      to ja
-    </button>
-  )
-}
-
 describe('usePluginI18n', () => {
-  it('re-renders on a locale switch', () => {
-    const dispose = registerPluginLocales('hooked', {
-      en: { greet: 'hello' },
-      ja: { greet: 'こんにちは' }
-    })
-
-    render(
-      <I18nProvider configClient={null}>
-        <SwitchToJa />
-        <Probe pluginId="hooked" />
-      </I18nProvider>
-    )
-
-    expect(screen.getByTestId('copy').textContent).toBe('hello')
-
-    fireEvent.click(screen.getByRole('button'))
-
-    expect(screen.getByTestId('copy').textContent).toBe('こんにちは')
-
-    dispose()
-  })
-
   it('picks up a bundle registered after mount', () => {
     render(
       <I18nProvider configClient={null}>

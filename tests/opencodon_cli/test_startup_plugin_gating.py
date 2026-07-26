@@ -2,8 +2,8 @@
 
 ``opencodon_cli.main`` skips eager plugin discovery at argparse-setup time
 when the invocation is clearly targeting a known built-in subcommand.
-This saves 500-650ms on ``hermes --help``, ``hermes version``,
-``hermes logs``, etc., by not importing ``google.cloud.pubsub_v1``,
+This saves 500-650ms on ``opencodon --help``, ``opencodon version``,
+``opencodon logs``, etc., by not importing ``google.cloud.pubsub_v1``,
 ``aiohttp``, ``grpc``, and friends.
 
 Two invariants:
@@ -39,7 +39,7 @@ from opencodon_cli.main import (
 
 
 def _live_subcommand_names() -> set[str]:
-    """Run ``hermes --help`` in-process and parse the subcommand block.
+    """Run ``opencodon --help`` in-process and parse the subcommand block.
 
     We patch ``_plugin_cli_discovery_needed`` to always return False so
     plugin-registered commands aren't included — we're validating the
@@ -48,7 +48,7 @@ def _live_subcommand_names() -> set[str]:
     from opencodon_cli import main as _main
 
     argv_backup = sys.argv[:]
-    sys.argv = ["hermes", "--help"]
+    sys.argv = ["opencodon", "--help"]
     buf = io.StringIO()
     try:
         with patch.object(_main, "_plugin_cli_discovery_needed", return_value=False):
@@ -71,32 +71,32 @@ def _live_subcommand_names() -> set[str]:
 @pytest.mark.parametrize(
     "argv,expected",
     [
-        (["hermes"], None),
-        (["hermes", "--help"], None),
-        (["hermes", "-h"], None),
-        (["hermes", "--version"], None),
-        (["hermes", "-w"], None),
+        (["opencodon"], None),
+        (["opencodon", "--help"], None),
+        (["opencodon", "-h"], None),
+        (["opencodon", "--version"], None),
+        (["opencodon", "-w"], None),
         # -p / --profile is stripped from sys.argv by
         # _apply_profile_override() at import time, so it never reaches
         # _first_positional_argv. We test with just -w / --tui here.
-        (["hermes", "-w", "--tui"], None),
-        (["hermes", "version"], "version"),
-        (["hermes", "--tui", "chat"], "chat"),
-        (["hermes", "-w", "logs"], "logs"),
-        (["hermes", "chat", "hello world"], "chat"),
-        (["hermes", "gateway", "run"], "gateway"),
+        (["opencodon", "-w", "--tui"], None),
+        (["opencodon", "version"], "version"),
+        (["opencodon", "--tui", "chat"], "chat"),
+        (["opencodon", "-w", "logs"], "logs"),
+        (["opencodon", "chat", "hello world"], "chat"),
+        (["opencodon", "gateway", "run"], "gateway"),
         # Top-level value-taking flags: the value should be skipped.
-        (["hermes", "-m", "gpt5", "chat"], "chat"),
-        (["hermes", "--model", "gpt5", "chat", "hi"], "chat"),
-        (["hermes", "-m", "gpt5", "--provider", "openai", "chat"], "chat"),
-        (["hermes", "-z", "hello world"], None),
-        (["hermes", "-z", "hello", "chat"], "chat"),
-        (["hermes", "--model=gpt5", "chat"], "chat"),     # inline form
-        (["hermes", "--", "chat"], "chat"),               # -- terminator
-        (["hermes", "-w", "--"], None),
+        (["opencodon", "-m", "gpt5", "chat"], "chat"),
+        (["opencodon", "--model", "gpt5", "chat", "hi"], "chat"),
+        (["opencodon", "-m", "gpt5", "--provider", "openai", "chat"], "chat"),
+        (["opencodon", "-z", "hello world"], None),
+        (["opencodon", "-z", "hello", "chat"], "chat"),
+        (["opencodon", "--model=gpt5", "chat"], "chat"),     # inline form
+        (["opencodon", "--", "chat"], "chat"),               # -- terminator
+        (["opencodon", "-w", "--"], None),
         # Unknown positional after skipped flags → plugin-cmd candidate.
-        (["hermes", "some-plugin-cmd"], "some-plugin-cmd"),
-        (["hermes", "-m", "gpt5", "some-plugin-cmd"], "some-plugin-cmd"),
+        (["opencodon", "some-plugin-cmd"], "some-plugin-cmd"),
+        (["opencodon", "-m", "gpt5", "some-plugin-cmd"], "some-plugin-cmd"),
     ],
 )
 def test_first_positional_argv(argv, expected):
@@ -110,17 +110,17 @@ def test_first_positional_argv(argv, expected):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["hermes"],                          # bare → chat
-        ["hermes", "--help"],                # top-level help
-        ["hermes", "-h"],
-        ["hermes", "version"],               # known built-in
-        ["hermes", "logs"],
-        ["hermes", "gateway", "run"],
-        ["hermes", "--tui"],
-        ["hermes", "-w", "--tui"],
-        ["hermes", "chat", "hi"],
-        ["hermes", "help"],                  # accepted built-in-ish
-        ["hermes", "-m", "gpt5", "chat"],    # flag-value-skipping
+        ["opencodon"],                          # bare → chat
+        ["opencodon", "--help"],                # top-level help
+        ["opencodon", "-h"],
+        ["opencodon", "version"],               # known built-in
+        ["opencodon", "logs"],
+        ["opencodon", "gateway", "run"],
+        ["opencodon", "--tui"],
+        ["opencodon", "-w", "--tui"],
+        ["opencodon", "chat", "hi"],
+        ["opencodon", "help"],                  # accepted built-in-ish
+        ["opencodon", "-m", "gpt5", "chat"],    # flag-value-skipping
     ],
 )
 def test_discovery_skipped_for_builtins(argv):
@@ -131,9 +131,9 @@ def test_discovery_skipped_for_builtins(argv):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["hermes", "meet", "join"],          # potential google_meet plugin
-        ["hermes", "honcho", "status"],      # potential memory plugin
-        ["hermes", "unknown-subcmd"],
+        ["opencodon", "meet", "join"],          # potential google_meet plugin
+        ["opencodon", "extmem", "status"],      # potential memory plugin
+        ["opencodon", "unknown-subcmd"],
     ],
 )
 def test_discovery_runs_for_unknown_positional(argv):
@@ -152,7 +152,7 @@ def test_builtin_set_covers_every_registered_subcommand():
     """
     live = _live_subcommand_names()
     # "help" is synthetic — an argparse-implicit convenience we include
-    # in the set so ``hermes help <cmd>`` skips discovery; it won't show
+    # in the set so ``opencodon help <cmd>`` skips discovery; it won't show
     # up as a subparser in the --help output.
     declared = _BUILTIN_SUBCOMMANDS - {"help"}
     missing_from_declaration = live - declared

@@ -308,7 +308,7 @@ class TestAutoTitleSession:
         with patch(
             "agent.title_generator._auto_title_session",
             side_effect=ImportError(
-                "cannot import name 'set_conversation_context' from 'agent.portal_tags'"
+                "cannot import name 'set_conversation_context' from 'agent.some_module'"
             ),
         ):
             auto_title_session(db, "sess-1", "hi", "hello")  # must not raise

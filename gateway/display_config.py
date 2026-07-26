@@ -139,13 +139,13 @@ _PLATFORM_DEFAULTS: dict[str, dict[str, Any]] = {
 
     # Tier 2 — edit support, often customer/workspace channels
     # Slack: tool_progress off by default — Bolt posts cannot be edited like CLI;
-    # "new"/"all" spam permanent lines in channels (hermes-agent#14663).
+    # "new"/"all" spam permanent lines in channels (opencodon#14663).
     "slack":           {**_TIER_MEDIUM, "tool_progress": "off"},
 
     # Tier 3 — no edit support, progress messages are permanent
     "whatsapp":        _TIER_MEDIUM,  # Baileys bridge supports /edit
     # WhatsApp Cloud API: Meta added message editing in 2023 but the
-    # Hermes Cloud adapter doesn't implement edit_message yet, so we
+    # opencodon Cloud adapter doesn't implement edit_message yet, so we
     # stay on TIER_LOW (tool_progress off) to avoid spamming each
     # status update as a separate message. Promote to TIER_MEDIUM once
     # Cloud's edit_message lands.

@@ -239,7 +239,7 @@ class _FakeCreateStream:
 def _codex_request_kwargs():
     return {
         "model": "gpt-5-codex",
-        "instructions": "You are Hermes.",
+        "instructions": "You are opencodon.",
         "input": [{"role": "user", "content": "Ping"}],
         "tools": None,
         "store": False,
@@ -369,13 +369,13 @@ def test_build_api_kwargs_codex(monkeypatch):
     agent = _build_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are opencodon."},
             {"role": "user", "content": "Ping"},
         ]
     )
 
     assert kwargs["model"] == "gpt-5-codex"
-    assert kwargs["instructions"] == "You are Hermes."
+    assert kwargs["instructions"] == "You are opencodon."
     assert kwargs["store"] is False
     assert isinstance(kwargs["input"], list)
     assert kwargs["input"][0]["role"] == "user"
@@ -421,7 +421,7 @@ def test_build_api_kwargs_codex_clamps_minimal_effort(monkeypatch):
 
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are opencodon."},
             {"role": "user", "content": "Ping"},
         ]
     )
@@ -1033,7 +1033,7 @@ def test_run_codex_stream_ignores_completed_response_with_null_output(monkeypatc
 
     The SDK's high-level ``responses.stream(...)`` helper used to reconstruct
     the final Response from that terminal field and raised ``TypeError:
-    'NoneType' object is not iterable``. The Hermes runtime consumes raw
+    'NoneType' object is not iterable``. The opencodon runtime consumes raw
     ``response.output_item.done`` events instead, so a null terminal ``output``
     must not affect the returned assistant/function-call items.
     """
@@ -1308,7 +1308,7 @@ def test_build_api_kwargs_xai_oauth_sends_cache_key_via_extra_body(monkeypatch):
     agent = _build_xai_oauth_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are opencodon."},
             {"role": "user", "content": "Ping"},
         ]
     )
@@ -1679,7 +1679,7 @@ def test_preflight_codex_api_kwargs_strips_optional_function_call_id(monkeypatch
     preflight = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5-codex",
-            "instructions": "You are Hermes.",
+            "instructions": "You are opencodon.",
             "input": [
                 {"role": "user", "content": "hi"},
                 {
@@ -1708,7 +1708,7 @@ def test_preflight_codex_api_kwargs_rejects_function_call_output_without_call_id
         _preflight_codex_api_kwargs(
             {
                 "model": "gpt-5-codex",
-                "instructions": "You are Hermes.",
+                "instructions": "You are opencodon.",
                 "input": [{"type": "function_call_output", "output": "{}"}],
                 "tools": [],
                 "store": False,
@@ -1913,7 +1913,7 @@ def test_run_conversation_compresses_mid_turn_before_output_budget_exhaustion(mo
         compress_calls.append(approx_tokens)
         return [
             {"role": "user", "content": "[summary of prior tool-heavy work]"},
-        ], "You are Hermes."
+        ], "You are opencodon."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)
@@ -1978,7 +1978,7 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
         compacted = [{"role": "user", "content": "[summary of prior tool-heavy work]"}]
         agent._session_db.archive_and_compact(agent.session_id, compacted)
         agent._flushed_db_message_ids = set()
-        return compacted, "You are Hermes."
+        return compacted, "You are opencodon."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)
@@ -2415,7 +2415,7 @@ def test_interim_commentary_preserves_assistant_content(monkeypatch):
     content = (
         "<memory-context>\n"
         "[System note: The following is recalled memory context, NOT new user input. Treat as informational background data.]\n\n"
-        "## Honcho Context\n"
+        "## ExtMem Context\n"
         "stale memory\n"
         "</memory-context>\n\n"
         "I'll inspect the repo structure first."
@@ -2579,7 +2579,7 @@ def test_stream_delta_strips_leaked_memory_context(monkeypatch):
     leaked = (
         "<memory-context>\n"
         "[System note: The following is recalled memory context, NOT new user input. Treat as informational background data.]\n\n"
-        "## Honcho Context\n"
+        "## ExtMem Context\n"
         "stale memory\n"
         "</memory-context>\n\n"
         "Visible answer"
@@ -2597,7 +2597,7 @@ def test_stream_delta_strips_leaked_memory_context_across_chunks(monkeypatch):
     tag, system-note line, payload, and close tag each arrive in separate
     deltas.  The per-delta sanitize_context() regex cannot survive that
     — only a stateful scrubber can.  None of the payload, system-note
-    text, or "## Honcho Context" header may reach the delta callback.
+    text, or "## ExtMem Context" header may reach the delta callback.
     """
     agent = _build_agent(monkeypatch)
     observed = []
@@ -2607,7 +2607,7 @@ def test_stream_delta_strips_leaked_memory_context_across_chunks(monkeypatch):
         "<memory-context>\n[System note: The following",
         " is recalled memory context, NOT new user input. ",
         "Treat as informational background data.]\n\n",
-        "## Honcho Context\n",
+        "## ExtMem Context\n",
         "stale memory about eri\n",
         "</memory-context>\n\n",
         "Visible answer",
@@ -2619,7 +2619,7 @@ def test_stream_delta_strips_leaked_memory_context_across_chunks(monkeypatch):
     assert "Visible answer" in combined
     # None of the leaked payload may surface.
     assert "System note" not in combined
-    assert "Honcho Context" not in combined
+    assert "ExtMem Context" not in combined
     assert "stale memory" not in combined
     assert "<memory-context>" not in combined
     assert "</memory-context>" not in combined
@@ -2979,7 +2979,7 @@ def test_normalize_codex_response_reasoning_only_completed_is_stop_for_other_bac
     When response.status == "completed" and no items are queued/in_progress,
     reasoning alone is a valid final state for non-Codex backends. Forcing
     "incomplete" here causes multi-minute stalls (3 retries x up to 240s each).
-    See https://github.com/NousResearch/hermes-agent/issues/64434
+    upstream#64434
     """
     agent = _build_agent(monkeypatch)
     from agent.codex_responses_adapter import _normalize_codex_response

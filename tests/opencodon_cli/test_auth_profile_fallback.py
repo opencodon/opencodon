@@ -284,7 +284,7 @@ def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
 # ``resolve_nous_access_token``) call ``_load_provider_state`` directly with
 # a profile-loaded auth store rather than going through
 # ``get_provider_auth_state``. Without the fallback wired into
-# ``_load_provider_state`` itself, those helpers raise ``"Hermes is not
+# ``_load_provider_state`` itself, those helpers raise ``"opencodon is not
 # logged into Nous Portal"`` even though the user has a valid global Nous
 # login. These tests pin the per-provider shadowing into the helper.
 # ---------------------------------------------------------------------------
@@ -404,7 +404,7 @@ def test_classic_mode_does_not_double_read_same_file(tmp_path, monkeypatch):
     from opencodon_cli.auth import read_credential_pool, _global_auth_file_path
 
     # Classic mode: OPENCODON_HOME is set to a custom path that is NOT under
-    # ~/.opencodon/profiles/ — get_default_hermes_root() returns OPENCODON_HOME
+    # ~/.opencodon/profiles/ — get_default_opencodon_root() returns OPENCODON_HOME
     # itself, so the profile root and global root are the same directory,
     # and the helper correctly returns None (no fallback).
     assert _global_auth_file_path() is None
@@ -529,14 +529,14 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
 
 @pytest.fixture()
 def classic_env(tmp_path, monkeypatch):
-    """Classic single-root layout (OPENCODON_HOME != ~/.hermes, no profiles)."""
+    """Classic single-root layout (OPENCODON_HOME != ~/.opencodon, no profiles)."""
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
-    hermes_home = tmp_path / "classic"
-    hermes_home.mkdir()
-    monkeypatch.setenv("OPENCODON_HOME", str(hermes_home))
-    return hermes_home
+    opencodon_home = tmp_path / "classic"
+    opencodon_home.mkdir()
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+    return opencodon_home
 
 
 def _pool_entry(**overrides) -> dict:

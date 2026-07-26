@@ -436,7 +436,7 @@ def test_gateway_pid_scan_hides_wmic_and_powershell_windows(monkeypatch):
         captured.append((cmd, kwargs))
         if cmd[0] == "wmic":
             return _Completed(stdout="", returncode=1)
-        return _Completed(stdout="CommandLine=hermes gateway\nProcessId=123\n")
+        return _Completed(stdout="CommandLine=opencodon gateway\nProcessId=123\n")
 
     monkeypatch.setattr(gateway, "is_windows", lambda: True)
     monkeypatch.setattr(gateway.shutil, "which", lambda name: name)
@@ -473,7 +473,7 @@ def test_stale_dashboard_windows_scan_hides_wmic(monkeypatch):
 
     def fake_run(cmd, **kwargs):
         captured.append((cmd, kwargs))
-        return _Completed(stdout="CommandLine=hermes dashboard\nProcessId=123\n")
+        return _Completed(stdout="CommandLine=opencodon dashboard\nProcessId=123\n")
 
     monkeypatch.setattr(main.sys, "platform", "win32")
     monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)

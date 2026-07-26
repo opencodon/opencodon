@@ -2,7 +2,7 @@
 
 We never hit GitHub or Bitwarden in tests — subprocess + urllib are
 mocked so the suite stays fast and offline-safe.  The "live" pull and
-binary download are exercised manually by `hermes secrets bitwarden
+binary download are exercised manually by `opencodon secrets bitwarden
 setup` outside of pytest.
 """
 
@@ -40,7 +40,7 @@ def _reset_caches():
 
 @pytest.fixture
 def opencodon_home(tmp_path, monkeypatch):
-    """Point Hermes at an isolated home directory."""
+    """Point opencodon at an isolated home directory."""
     home = tmp_path / ".opencodon"
     home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))

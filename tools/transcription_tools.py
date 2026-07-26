@@ -39,10 +39,7 @@ from urllib.parse import urljoin
 
 from opencodon_cli._subprocess_compat import windows_hide_flags
 from utils import is_truthy_value
-from tools.managed_tool_gateway import resolve_managed_tool_gateway
 from tools.tool_backend_helpers import (
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
     resolve_openai_audio_api_key,
 )
 
@@ -671,7 +668,7 @@ def _transcribe_command_stt(
     model = model_override or config.get("model") or ""
 
     try:
-        with tempfile.TemporaryDirectory(prefix=f"hermes-cmd-stt-{provider_name}-") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix=f"opencodon-cmd-stt-{provider_name}-") as tmpdir:
             output_path = Path(tmpdir) / f"transcript.{output_format}"
             placeholders = {
                 "input_path": str(audio.resolve()),
@@ -1239,7 +1236,7 @@ def _transcribe_local_command(file_path: str, model_name: str) -> Dict[str, Any]
     normalized_model = _normalize_local_command_model(model_name)
 
     try:
-        with tempfile.TemporaryDirectory(prefix="hermes-local-stt-") as output_dir:
+        with tempfile.TemporaryDirectory(prefix="opencodon-local-stt-") as output_dir:
             prepared_input, prep_error = _prepare_local_audio(file_path, output_dir)
             if prep_error:
                 return {"success": False, "transcript": "", "error": prep_error}
@@ -1478,7 +1475,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
         return {
             "success": False,
             "transcript": "",
-            "error": "No xAI credentials found. Configure xAI OAuth in `hermes model` or set XAI_API_KEY",
+            "error": "No xAI credentials found. Configure xAI OAuth in `opencodon model` or set XAI_API_KEY",
         }
 
     stt_config = _load_stt_config()
@@ -1501,7 +1498,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
 
     try:
         import requests
-        from tools.xai_http import hermes_xai_user_agent
+        from tools.xai_http import opencodon_xai_user_agent
 
         data: Dict[str, str] = {}
         if language:
@@ -1516,7 +1513,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
                 f"{base_url}/stt",
                 headers={
                     "Authorization": f"Bearer {api_key}",
-                    "User-Agent": hermes_xai_user_agent(),
+                    "User-Agent": opencodon_xai_user_agent(),
                 },
                 files={
                     "file": (Path(file_path).name, audio_file),
@@ -1860,20 +1857,9 @@ def _resolve_openai_audio_client_config() -> tuple[str, str]:
     if direct_api_key:
         return direct_api_key, OPENAI_BASE_URL
 
-    managed_gateway = resolve_managed_tool_gateway("openai-audio")
-    if managed_gateway is None:
-        message = "Neither stt.openai.api_key in config nor VOICE_TOOLS_OPENAI_KEY/OPENAI_API_KEY is set"
-        if managed_nous_tools_enabled():
-            message += (
-                ". "
-                + nous_tool_gateway_unavailable_message(
-                    "managed OpenAI audio for transcription",
-                )
-            )
-        raise ValueError(message)
-
-    return managed_gateway.nous_user_token, urljoin(
-        f"{managed_gateway.gateway_origin.rstrip('/')}/", "v1"
+    raise ValueError(
+        "Neither stt.openai.api_key in config nor "
+        "VOICE_TOOLS_OPENAI_KEY/OPENAI_API_KEY is set"
     )
 
 

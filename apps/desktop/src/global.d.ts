@@ -1,12 +1,5 @@
 import type { GatewayWsUrlResult } from '@opencodon/shared'
 
-import type {
-  PetOverlayBounds,
-  PetOverlayControl,
-  PetOverlayOpenRequest,
-  PetOverlayStatePayload
-} from './store/pet-overlay'
-
 export {}
 
 declare global {
@@ -41,20 +34,6 @@ declare global {
       // reply). Resolves true for the first window to claim a key, false for
       // peers — so N open windows don't all fire the same cue.
       claimAmbientCue: (key: string) => Promise<boolean>
-      // The pop-out pet overlay: a transparent always-on-top window hosting only
-      // the mascot. The main renderer drives it (open/close/drag + state push);
-      // the overlay sends control messages back (pop-in, composer submit).
-      petOverlay: {
-        open: (request: PetOverlayOpenRequest) => Promise<{ ok: boolean; bounds?: PetOverlayBounds }>
-        close: () => Promise<{ ok: boolean }>
-        setBounds: (bounds: PetOverlayBounds) => void
-        setIgnoreMouse: (ignore: boolean) => void
-        setFocusable: (focusable: boolean) => void
-        pushState: (payload: PetOverlayStatePayload) => void
-        control: (payload: PetOverlayControl) => void
-        onState: (callback: (payload: PetOverlayStatePayload) => void) => () => void
-        onControl: (callback: (payload: PetOverlayControl) => void) => () => void
-      }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>
       saveConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionConfig>

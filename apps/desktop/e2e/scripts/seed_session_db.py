@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed a Hermes state.db with a session exported from a real conversation.
+"""Seed a opencodon state.db with a session exported from a real conversation.
 
 Usage: seed_session_db.py <state_db_path> <fixture_json_path>
 

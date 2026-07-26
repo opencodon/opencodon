@@ -1,8 +1,8 @@
 """Tests for /save — the conversation snapshot slash command.
 
-Regression: the old implementation wrote ``hermes_conversation_<ts>.json``
+Regression: the old implementation wrote ``opencodon_conversation_<ts>.json``
 to the current working directory (CWD). Users who ran /save expected the
-file to be discoverable via ``hermes sessions browse``, but CWD-resident
+file to be discoverable via ``opencodon sessions browse``, but CWD-resident
 snapshots are not indexed in the state DB and are generally invisible.
 The fix writes snapshots under ``~/.opencodon/sessions/saved/`` and prints
 the absolute path plus the resume hint for the live session.
@@ -61,16 +61,16 @@ def test_save_conversation_writes_under_opencodon_home(opencodon_home, tmp_path,
     ])
 
     # Call the unbound method against our stub.
-    cli.HermesCLI.save_conversation(stub)
+    cli.OpencodonCLI.save_conversation(stub)
 
     # File must NOT be in CWD
-    cwd_leak = list(work.glob("hermes_conversation_*.json"))
+    cwd_leak = list(work.glob("opencodon_conversation_*.json"))
     assert not cwd_leak, f"snapshot leaked to CWD: {cwd_leak}"
 
     # File MUST be under ~/.opencodon/sessions/saved/
     saved_dir = opencodon_home / "sessions" / "saved"
     assert saved_dir.is_dir(), "expected saved/ subdirectory to be created"
-    files = list(saved_dir.glob("hermes_conversation_*.json"))
+    files = list(saved_dir.glob("opencodon_conversation_*.json"))
     assert len(files) == 1, files
 
     payload = json.loads(files[0].read_text())
@@ -84,7 +84,7 @@ def test_save_conversation_writes_under_opencodon_home(opencodon_home, tmp_path,
     # User-facing message must include the absolute path AND the resume hint.
     out = capsys.readouterr().out
     assert str(files[0]) in out, out
-    assert "hermes --resume 20260101_120000_abc123" in out, out
+    assert "opencodon --resume 20260101_120000_abc123" in out, out
 
 
 def test_save_conversation_empty_history_does_nothing(opencodon_home, capsys):
@@ -93,7 +93,7 @@ def test_save_conversation_empty_history_does_nothing(opencodon_home, capsys):
     import cli
 
     stub = _make_stub_cli([])
-    cli.HermesCLI.save_conversation(stub)
+    cli.OpencodonCLI.save_conversation(stub)
 
     saved_dir = opencodon_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())

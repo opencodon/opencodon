@@ -26,7 +26,7 @@ name: morning-brief
 description: Summarize unread email and calendar every morning.
 version: 1.0.0
 metadata:
-  hermes:
+  opencodon:
     tags: [blueprint, email]
     blueprint:
       schedule: "0 8 * * *"
@@ -43,7 +43,7 @@ PLAIN_SKILL = """---
 name: not-a-blueprint
 description: Just a regular skill.
 metadata:
-  hermes:
+  opencodon:
     tags: [misc]
 ---
 
@@ -54,7 +54,7 @@ MALFORMED_BLUEPRINT = """---
 name: broken
 description: Blueprint with no schedule.
 metadata:
-  hermes:
+  opencodon:
     blueprint:
       deliver: origin
 ---
@@ -83,13 +83,13 @@ class TestParseBlueprint:
             parse_blueprint(MALFORMED_BLUEPRINT)
 
     def test_blueprint_not_mapping_raises(self):
-        bad = "---\nname: x\nmetadata:\n  hermes:\n    blueprint: not-a-dict\n---\n\nbody"
+        bad = "---\nname: x\nmetadata:\n  opencodon:\n    blueprint: not-a-dict\n---\n\nbody"
         with pytest.raises(BlueprintError):
             parse_blueprint(bad)
 
     def test_deliver_defaults_to_origin(self):
         skill = (
-            "---\nname: r\ndescription: d\nmetadata:\n  hermes:\n"
+            "---\nname: r\ndescription: d\nmetadata:\n  opencodon:\n"
             '    blueprint:\n      schedule: "every 1h"\n---\n\nbody'
         )
         spec = parse_blueprint(skill)

@@ -4,7 +4,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 from acp.schema import TextContentBlock
 
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import OpencodonACPAgent
 from acp_adapter.session import SessionManager
 
 
@@ -66,7 +66,7 @@ class NoopDb:
 def make_agent_and_state():
     fake = FakeAgent()
     manager = SessionManager(agent_factory=lambda **kwargs: fake, db=NoopDb())
-    acp_agent = HermesACPAgent(session_manager=manager)
+    acp_agent = OpencodonACPAgent(session_manager=manager)
     state = manager.create_session(cwd=".")
     conn = CaptureConn()
     acp_agent.on_connect(conn)

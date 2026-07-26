@@ -2,11 +2,11 @@
 name: github-auth
 description: "GitHub auth setup: HTTPS tokens, SSH keys, gh CLI login."
 version: 1.1.0
-author: Hermes Agent
+author: opencodon
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  opencodon:
     tags: [GitHub, Authentication, Git, gh-cli, SSH, Setup]
     related_skills: [github-pr-workflow, github-code-review, github-issues, github-repo-management]
 ---
@@ -131,7 +131,7 @@ cat ~/.ssh/id_ed25519.pub
 Tell the user to add the public key at: **https://github.com/settings/keys**
 - Click "New SSH key"
 - Paste the public key content
-- Give it a title like "hermes-agent-<machine-name>"
+- Give it a title like "opencodon-<machine-name>"
 
 **Step 3: Test the connection**
 
@@ -220,8 +220,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
   echo "AUTH_METHOD=gh"
 elif [ -n "$GITHUB_TOKEN" ]; then
   echo "AUTH_METHOD=curl"
-elif _hermes_env="${OPENCODON_HOME:-$HOME/.opencodon}/.env"; [ -f "$_hermes_env" ] && grep -q "^GITHUB_TOKEN=" "$_hermes_env"; then
-  export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_hermes_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
+elif _opencodon_env="${OPENCODON_HOME:-$HOME/.opencodon}/.env"; [ -f "$_opencodon_env" ] && grep -q "^GITHUB_TOKEN=" "$_opencodon_env"; then
+  export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_opencodon_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
   echo "AUTH_METHOD=curl"
 elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
   export GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')

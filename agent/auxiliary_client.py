@@ -8,7 +8,6 @@ Resolution order for text tasks (auto mode):
   1. User's main provider + main model (used regardless of provider type —
      aggregators, direct API-key providers, native Anthropic, Codex, etc.)
   2. OpenRouter  (OPENROUTER_API_KEY)
-  3. Nous Portal (~/.opencodon/auth.json active provider)
   4. Custom endpoint (config.yaml model.base_url + OPENAI_API_KEY)
   5. Native Anthropic
   6. Direct API-key providers (z.ai/GLM, Kimi/Moonshot, MiniMax, MiniMax-CN)
@@ -17,7 +16,6 @@ Resolution order for text tasks (auto mode):
 Resolution order for vision/multimodal tasks (auto mode):
   1. Selected main provider, if it is one of the supported vision backends below
   2. OpenRouter
-  3. Nous Portal
   4. Native Anthropic
   5. Custom endpoint (for local vision models: Qwen-VL, LLaVA, Pixtral, etc.)
   6. None
@@ -191,7 +189,7 @@ def _openai_http_client_kwargs(
             logger.warning(
                 "agent.process_bootstrap.build_keepalive_http_client is "
                 "unavailable — mixed/stale install detected (#64333). Falling "
-                "back to the SDK default HTTP client. Run `hermes update` (or "
+                "back to the SDK default HTTP client. Run `opencodon update` (or "
                 "reinstall the Desktop app) to resync the runtime."
             )
         client = None
@@ -202,13 +200,13 @@ def _openai_http_client_kwargs(
 
 def _create_openai_client(*, api_key: str, base_url: str, **kwargs: Any) -> Any:
     kwargs = {**_openai_http_client_kwargs(base_url), **kwargs}
-    # Hermes owns auxiliary retry + provider/model fallback policy (the
+    # opencodon owns auxiliary retry + provider/model fallback policy (the
     # same-provider transient retry in call_llm plus the except-chain
     # fallback). The OpenAI SDK's own default (max_retries=2 → up to 3
     # attempts) silently multiplies the effective wall time of every aux call
     # by 3× on a slow/hung endpoint, so a 120s timeout can stall ~360s before
-    # Hermes sees a single failure (issue #54465). Disable SDK-internal retries
-    # by default and let Hermes control the budget; explicit callers can still
+    # opencodon sees a single failure (issue #54465). Disable SDK-internal retries
+    # by default and let opencodon control the budget; explicit callers can still
     # override via kwargs.
     kwargs.setdefault("max_retries", 0)
     return OpenAI(api_key=api_key, base_url=base_url, **kwargs)
@@ -441,7 +439,7 @@ def _compression_threshold_for_model(
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before Hermes triggers summarization.  Higher values delay
+    consumed before opencodon triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Per-model/route overrides:
@@ -567,7 +565,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "HTTP-Referer": "https://github.com/opencodon/opencodon",
     "X-Title": "opencodon",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
@@ -672,7 +670,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 # NVIDIA NIM cloud billing attribution.  Keep this host-gated because the
 # nvidia provider also supports local/on-prem NIM endpoints via NVIDIA_BASE_URL.
 _NVIDIA_NIM_CLOUD_HEADERS = {
-    "X-BILLING-INVOKE-ORIGIN": "HermesAgent",
+    "X-BILLING-INVOKE-ORIGIN": "OpencodonAgent",
 }
 
 
@@ -684,39 +682,8 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 
 
 
-# Nous Portal extra_body for product attribution.
-# Callers should pass this as extra_body in chat.completions.create()
-# when the auxiliary client is backed by Nous Portal.
-#
-# The tags are computed from agent.portal_tags so the client= marker stays
-# in lockstep with opencodon_cli.__version__ across every Portal call site
-# (main loop, aux, compression, web_extract). Do not inline a literal here;
-# see agent/portal_tags.py for the rationale.
-from agent.portal_tags import nous_portal_tags as _nous_portal_tags
-
-
-def _nous_extra_body() -> dict:
-    """Return a fresh Nous Portal ``extra_body`` dict.
-
-    Computed at call time so a hot-reloaded ``opencodon_cli.__version__`` is
-    reflected without restarting long-running processes.
-    """
-    return {"tags": _nous_portal_tags()}
-
-
-# Backwards-compatible module attribute. Some callers (tests, third-party
-# plugins) read ``NOUS_EXTRA_BODY`` directly; keep it as a snapshot of the
-# current tags. Callers that need the freshest value should call
-# ``_nous_extra_body()`` or import ``nous_portal_tags`` directly.
-NOUS_EXTRA_BODY = _nous_extra_body()
-
-# Set at resolve time — True if the auxiliary client points to Nous Portal
-auxiliary_is_nous: bool = False
-
 # Default auxiliary models per provider
 _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
-_NOUS_MODEL = "google/gemini-3-flash-preview"
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
 _AUTH_JSON_PATH = get_opencodon_home() / "auth.json"
 
@@ -750,7 +717,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (opencodon)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -843,7 +810,7 @@ def _pool_runtime_api_key(entry: Any) -> str:
     if entry is None:
         return ""
     # Use the PooledCredential.runtime_api_key property which handles
-    # provider-specific fallback (e.g. agent_key for nous).
+    # provider-specific fallbacks.
     key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
     return str(key or "").strip()
 
@@ -851,15 +818,7 @@ def _pool_runtime_api_key(entry: Any) -> str:
 def _pool_runtime_base_url(entry: Any, fallback: str = "") -> str:
     if entry is None:
         return str(fallback or "").strip().rstrip("/")
-    if getattr(entry, "provider", None) == "nous":
-        # Funnel through the canonical auth-layer reader so the env override
-        # shares one normalization path with the rest of the NOUS resolution.
-        from opencodon_cli.auth import _nous_inference_env_override
-
-        env_url = _nous_inference_env_override()
-        if env_url:
-            return env_url
-    # runtime_base_url handles provider-specific logic (e.g. nous prefers inference_base_url).
+    # runtime_base_url handles provider-specific logic.
     # Fall back through inference_base_url and base_url for non-PooledCredential entries.
     url = (
         getattr(entry, "runtime_base_url", None)
@@ -892,11 +851,6 @@ def _is_anthropic_compatible_host(url: str) -> bool:
         return False
 
 
-def _nous_min_key_ttl_seconds() -> int:
-    try:
-        return max(60, int(os.getenv("OPENCODON_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
-    except (TypeError, ValueError):
-        return 1800
 
 
 # ── Codex Responses → chat.completions adapter ─────────────────────────────
@@ -1376,7 +1330,7 @@ class _AnthropicCompletionsAdapter:
         #     the native ``thinking`` field above (build_anthropic_kwargs);
         #     forwarding the raw field alongside would double-specify
         #     reasoning and 400 on strict gateways.
-        #   - ``_``-prefixed keys: private Hermes plumbing (_reasoning_config
+        #   - ``_``-prefixed keys: private opencodon plumbing (_reasoning_config
         #     et al.), never wire fields.
         caller_extra_body = kwargs.get("extra_body")
         if caller_extra_body and isinstance(caller_extra_body, dict):
@@ -1678,148 +1632,14 @@ def _maybe_wrap_anthropic(
     )
 
 
-def _read_nous_auth() -> Optional[dict]:
-    """Read and validate ~/.opencodon/auth.json for an active Nous provider.
-
-    Returns the provider state dict if Nous is active with tokens,
-    otherwise None.
-    """
-    pool_present, entry = _select_pool_entry("nous")
-    if pool_present:
-        if entry is None:
-            return None
-        return {
-            "access_token": getattr(entry, "access_token", ""),
-            "refresh_token": getattr(entry, "refresh_token", None),
-            "agent_key": getattr(entry, "agent_key", None),
-            "inference_base_url": _pool_runtime_base_url(entry, _NOUS_DEFAULT_BASE_URL),
-            "portal_base_url": getattr(entry, "portal_base_url", None),
-            "client_id": getattr(entry, "client_id", None),
-            "scope": getattr(entry, "scope", None),
-            "token_type": getattr(entry, "token_type", "Bearer"),
-            "source": "pool",
-        }
-
-    try:
-        if not _AUTH_JSON_PATH.is_file():
-            return None
-        data = json.loads(_AUTH_JSON_PATH.read_text())
-        if data.get("active_provider") != "nous":
-            return None
-        provider = data.get("providers", {}).get("nous", {})
-        # Must have at least an access_token or agent_key
-        if not provider.get("agent_key") and not provider.get("access_token"):
-            return None
-        return provider
-    except Exception as exc:
-        logger.debug("Could not read Nous auth: %s", exc)
-        return None
 
 
-def _nous_api_key(provider: dict) -> str:
-    """Extract a usable Nous inference JWT from stored auth state."""
-    from opencodon_cli.auth import _nous_invoke_jwt_is_usable
-
-    for token_key, expiry_key in (
-        ("agent_key", "agent_key_expires_at"),
-        ("access_token", "expires_at"),
-    ):
-        token = provider.get(token_key)
-        if not isinstance(token, str) or not token.strip():
-            continue
-        if _nous_invoke_jwt_is_usable(
-            token,
-            scope=provider.get("scope"),
-            expires_at=provider.get(expiry_key),
-        ):
-            return token
-    return ""
 
 
-def _nous_base_url() -> str:
-    """Resolve the Nous inference base URL from env or default."""
-    return os.getenv("NOUS_INFERENCE_BASE_URL", _NOUS_DEFAULT_BASE_URL)
 
 
-def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
-    """Resolve Nous auxiliary credentials from the selected pool entry."""
-    try:
-        from opencodon_cli.auth import _agent_key_is_usable
-
-        pool = load_pool("nous")
-    except Exception as exc:
-        logger.debug("Auxiliary Nous pool credential resolution failed: %s", exc)
-        return None
-
-    if not pool or not pool.has_credentials():
-        return None
-
-    try:
-        entry = pool.select()
-    except Exception as exc:
-        logger.debug("Auxiliary Nous pool selection failed: %s", exc)
-        return None
-
-    if entry is None:
-        return None
-
-    state = {
-        "agent_key": getattr(entry, "agent_key", None),
-        "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
-        "scope": getattr(entry, "scope", None),
-    }
-    if force_refresh or not _agent_key_is_usable(state, _nous_min_key_ttl_seconds()):
-        try:
-            refreshed = pool.try_refresh_current()
-        except Exception as exc:
-            logger.debug("Auxiliary Nous pool refresh failed: %s", exc)
-            refreshed = None
-        if refreshed is None:
-            return None
-        entry = refreshed
-
-    provider = {
-        "agent_key": getattr(entry, "agent_key", None),
-        "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
-        "access_token": getattr(entry, "access_token", None),
-        "expires_at": getattr(entry, "expires_at", None),
-        "scope": getattr(entry, "scope", None),
-    }
-    api_key = _nous_api_key(provider)
-    base_url = _pool_runtime_base_url(entry, _NOUS_DEFAULT_BASE_URL)
-    if not api_key or not base_url:
-        return None
-    return api_key, base_url
 
 
-def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
-    """Return fresh Nous runtime credentials when available.
-
-    This mirrors the main agent's 401 recovery path and keeps auxiliary
-    clients aligned with the singleton auth store + JWT refresh flow instead of
-    relying only on whatever raw tokens happen to be sitting in auth.json
-    or the credential pool.
-    """
-    pooled = _resolve_nous_pool_runtime_api(force_refresh=force_refresh)
-    if pooled is not None:
-        return pooled
-
-    try:
-        from opencodon_cli.auth import resolve_nous_runtime_credentials
-
-        creds = resolve_nous_runtime_credentials(
-            timeout_seconds=env_float("OPENCODON_NOUS_TIMEOUT_SECONDS", 15),
-            force_refresh=force_refresh,
-        )
-    except Exception as exc:
-        logger.debug("Auxiliary Nous runtime credential resolution failed: %s", exc)
-        return None
-
-    api_key = str(creds.get("api_key") or "").strip()
-    base_url = str(creds.get("base_url") or "").strip().rstrip("/")
-    if not api_key or not base_url:
-        return None
-    return api_key, base_url
 
 
 def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
@@ -1828,7 +1648,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
     Prefer the credential pool, matching the main runtime/provider status
     path.  Some xAI OAuth logins live only as pool entries; falling straight
     to the singleton auth-store resolver would make auxiliary tasks such as
-    compression report "no provider configured" even though ``hermes auth
+    compression report "no provider configured" even though ``opencodon auth
     status`` shows xAI OAuth as logged in.
 
     Falls back to ``opencodon_cli.auth``'s singleton runtime resolver for older
@@ -1878,7 +1698,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from Hermes auth store.
+    """Read a valid, non-expired Codex OAuth access token from opencodon auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -2073,129 +1893,8 @@ def _describe_openrouter_unavailable() -> str:
     return "no usable OpenRouter credentials found"
 
 
-def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
-    # Check cross-session rate limit guard before attempting Nous —
-    # if another session already recorded a 429, skip Nous entirely
-    # to avoid piling more requests onto the tapped RPH bucket.
-    try:
-        from agent.nous_rate_guard import nous_rate_limit_remaining
-        _remaining = nous_rate_limit_remaining()
-        if _remaining is not None and _remaining > 0:
-            logger.debug(
-                "Auxiliary: skipping Nous Portal (rate-limited, resets in %.0fs)",
-                _remaining,
-            )
-            _mark_provider_unhealthy("nous", ttl=_remaining)
-            return None, None
-    except Exception:
-        pass
-
-    nous = _read_nous_auth()
-    runtime = _resolve_nous_runtime_api(force_refresh=False)
-    if runtime is None and not nous:
-        logger.warning(
-            "Auxiliary Nous client unavailable: no Nous authentication found "
-            "(run: hermes auth)."
-        )
-        _mark_provider_unhealthy("nous", ttl=60)
-        return None, None
-    if runtime is None and nous:
-        logger.debug(
-            "Auxiliary Nous: runtime JWT refresh failed; checking stored "
-            "auth.json token."
-        )
-    global auxiliary_is_nous
-    auxiliary_is_nous = True
-    logger.debug("Auxiliary client: Nous Portal")
-
-    # Ask the Portal which model it currently recommends for this task type.
-    # The /api/nous/recommended-models endpoint is the authoritative source:
-    # it distinguishes paid vs free tier recommendations, and get_nous_recommended_aux_model
-    # auto-detects the caller's tier via check_nous_free_tier().  Fall back to
-    # _NOUS_MODEL (google/gemini-3-flash-preview) when the Portal is unreachable
-    # or returns a null recommendation for this task type.
-    model = _NOUS_MODEL
-    try:
-        from opencodon_cli.models import get_nous_recommended_aux_model
-        recommended = get_nous_recommended_aux_model(vision=vision)
-        if recommended:
-            model = recommended
-            logger.debug(
-                "Auxiliary/%s: using Portal-recommended model %s",
-                "vision" if vision else "text", model,
-            )
-        else:
-            logger.debug(
-                "Auxiliary/%s: no Portal recommendation, falling back to %s",
-                "vision" if vision else "text", model,
-            )
-    except Exception as exc:
-        logger.debug(
-            "Auxiliary/%s: recommended-models lookup failed (%s); "
-            "falling back to %s",
-            "vision" if vision else "text", exc, model,
-        )
-
-    if runtime is not None:
-        api_key, base_url = runtime
-    else:
-        api_key = _nous_api_key(nous or {})
-        if not api_key:
-            logger.warning(
-                "Auxiliary Nous client unavailable: no usable inference JWT found "
-                "(run: hermes auth add nous)."
-            )
-            _mark_provider_unhealthy("nous", ttl=60)
-            return None, None
-        base_url = str((nous or {}).get("inference_base_url") or _nous_base_url()).rstrip("/")
-    return (
-        _create_openai_client(
-            api_key=api_key,
-            base_url=base_url,
-        ),
-        model,
-    )
 
 
-def _refresh_nous_recommended_model(
-    *, vision: bool, stale_model: Optional[str]
-) -> Optional[str]:
-    """Re-fetch the Nous Portal's recommended model after a stale-model 404.
-
-    Long-lived processes (gateway, watchers) cache the Portal's
-    ``recommended-models`` payload for 10 minutes and, in practice, can pin a
-    model for the whole process lifetime. When that model is later dropped from
-    the Nous → OpenRouter catalog, every auxiliary call 404s with
-    "model does not exist". This forces a fresh Portal fetch and returns a
-    model name to retry with:
-
-      * the Portal's current recommendation for the task, if it differs from
-        the model that just failed; otherwise
-      * ``_NOUS_MODEL`` (google/gemini-3-flash-preview), the known-good default,
-        if it too differs from the failed model.
-
-    Returns ``None`` when no usable alternative is available (e.g. the Portal
-    still recommends the exact model that just 404'd and the default also
-    matches it) — callers should then let the original error propagate.
-    """
-    stale = (stale_model or "").strip().lower()
-    fresh: Optional[str] = None
-    try:
-        from opencodon_cli.models import get_nous_recommended_aux_model
-
-        fresh = get_nous_recommended_aux_model(vision=vision, force_refresh=True)
-    except Exception as exc:
-        logger.debug(
-            "Nous recommended-model refresh failed (%s); using default %s",
-            exc, _NOUS_MODEL,
-        )
-    if fresh and fresh.strip().lower() != stale:
-        return fresh
-    # Portal recommendation unchanged or unavailable — fall back to the
-    # hardcoded known-good default, but only if it's actually different.
-    if _NOUS_MODEL.strip().lower() != stale:
-        return _NOUS_MODEL
-    return None
 
 
 def _read_main_model() -> str:
@@ -2558,7 +2257,7 @@ def _validate_base_url(base_url: str) -> None:
     except ValueError as exc:
         raise RuntimeError(
             f"Malformed custom endpoint URL: {candidate!r}. "
-            "Run `hermes setup` or `hermes model` and enter a valid http(s) base URL."
+            "Run `opencodon setup` or `opencodon model` and enter a valid http(s) base URL."
         ) from exc
 
 
@@ -2689,7 +2388,7 @@ def _try_azure_foundry(
 ) -> Tuple[Optional[Any], Optional[str]]:
     """Resolve an Azure Foundry auxiliary client via the runtime resolver.
 
-    Mirrors the ``_try_anthropic`` / ``_try_nous`` shape but delegates to
+    Mirrors the ``_try_anthropic`` shape but delegates to
     :func:`opencodon_cli.runtime_provider._resolve_azure_foundry_runtime` —
     the same resolver the main agent uses — so:
 
@@ -2859,7 +2558,6 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
 
 _AUTO_PROVIDER_LABELS = {
     "_try_openrouter": "openrouter",
-    "_try_nous": "nous",
     "_try_custom_endpoint": "local/custom",
     "_resolve_api_key_provider": "api-key",
 }
@@ -2916,7 +2614,6 @@ def _get_provider_chain() -> List[tuple]:
     """
     return [
         ("openrouter", _try_openrouter),
-        ("nous", _try_nous),
         ("local/custom", _try_custom_endpoint),
         ("api-key", _resolve_api_key_provider),
     ]
@@ -2938,7 +2635,7 @@ def _get_provider_chain() -> List[tuple]:
 # happened). Entries auto-expire so a topped-up account recovers without
 # manual intervention.
 #
-# Failure isolation: the cache is in-process only. A second hermes
+# Failure isolation: the cache is in-process only. A second opencodon
 # process won't inherit the unhealthy mark — that's intentional, since
 # the user might be running two profiles with different OpenRouter keys.
 
@@ -2951,7 +2648,6 @@ _aux_unhealthy_logged_at: Dict[str, float] = {}
 # with the alias map in _try_payment_fallback below.
 _AUX_UNHEALTHY_LABEL_ALIASES = {
     "openrouter": "openrouter",
-    "nous": "nous",
     "custom": "local/custom",
     "local/custom": "local/custom",
     "openai-codex": "openai-codex",
@@ -3024,7 +2720,7 @@ def _log_skip_unhealthy(label: str, task: Optional[str] = None) -> None:
 
 def _reset_aux_unhealthy_cache() -> None:
     """Clear the unhealthy cache. Used by tests and by a future explicit
-    user trigger (e.g. ``hermes config aux reset``)."""
+    user trigger (e.g. ``opencodon config aux reset``)."""
     _aux_unhealthy_until.clear()
     _aux_unhealthy_logged_at.clear()
 
@@ -3069,18 +2765,6 @@ def _is_payment_error(exc: Exception) -> bool:
         )):
             return True
     return False
-
-
-def _nous_portal_account_has_fresh_paid_access() -> bool:
-    """Return True only when the fresh Nous account API says paid access is allowed."""
-    try:
-        from opencodon_cli.nous_account import get_nous_portal_account_info
-
-        account_info = get_nous_portal_account_info(force_fresh=True)
-        return account_info.paid_service_access is True
-    except Exception as exc:
-        logger.debug("Auxiliary Nous paid-entitlement refresh check failed: %s", exc)
-        return False
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
@@ -3291,9 +2975,9 @@ def _is_model_not_found_error(exc: Exception) -> bool:
     """Detect "the requested model doesn't exist" errors (404 / invalid model).
 
     This fires when a resolved model name is no longer served by the endpoint
-    — most commonly when a long-lived process pinned a Portal-recommended model
-    that has since been dropped from the Nous → OpenRouter catalog. The Nous
-    proxy returns 404 with a body like::
+    — most commonly when a long-lived process pinned a model that the
+    upstream aggregator has since dropped from its catalog. Such a proxy
+    returns 404 with a body like::
 
         Model 'gpt-5.4-mini' not found. The requested model does not exist
         in our configuration or OpenRouter catalog.
@@ -3493,8 +3177,6 @@ def _recoverable_pool_provider(
         return "openai-codex"
     if base_url_host_matches(base, "openrouter.ai"):
         return "openrouter"
-    if base_url_host_matches(base, "inference-api.nousresearch.com"):
-        return "nous"
     if base_url_host_matches(base, "api.anthropic.com"):
         return "anthropic"
     if base_url_host_matches(base, "githubcopilot.com"):
@@ -3717,17 +3399,6 @@ def _refresh_provider_credentials(provider: str) -> bool:
                 return False
             _evict_cached_clients(normalized)
             return True
-        if normalized == "nous":
-            from opencodon_cli.auth import resolve_nous_runtime_credentials
-
-            creds = resolve_nous_runtime_credentials(
-                timeout_seconds=env_float("OPENCODON_NOUS_TIMEOUT_SECONDS", 15),
-                force_refresh=True,
-            )
-            if not str(creds.get("api_key", "") or "").strip():
-                return False
-            _evict_cached_clients(normalized)
-            return True
         if normalized == "anthropic":
             from agent.anthropic_adapter import read_claude_code_credentials, _refresh_oauth_token, resolve_anthropic_token
 
@@ -3790,7 +3461,7 @@ def _auth_refresh_provider_for_route(
     Auto-routed auxiliary calls keep ``resolved_provider == "auto"`` even
     after _get_cached_client() selects a concrete backend. Infer the backend
     from the selected client's base URL so auth refresh works for auto →
-    Copilot/Codex/Anthropic/Nous routes too. (#20832)
+    Copilot/Codex/Anthropic routes too. (#20832)
     """
     normalized = _normalize_aux_provider(resolved_provider)
     if normalized and normalized != "auto":
@@ -3801,8 +3472,6 @@ def _auth_refresh_provider_for_route(
         return "openai-codex"
     if base_url_host_matches(client_base_url, "api.anthropic.com"):
         return "anthropic"
-    if base_url_host_matches(client_base_url, "inference-api.nousresearch.com"):
-        return "nous"
     return normalized
 
 
@@ -4010,7 +3679,7 @@ def _try_payment_fallback(
     if main_provider and main_provider.lower() in skip:
         skip_labels.add(main_provider.lower())
     # Map common resolved_provider values back to chain labels.
-    _alias_to_label = {"openrouter": "openrouter", "nous": "nous",
+    _alias_to_label = {"openrouter": "openrouter",
                        "openai-codex": "openai-codex", "codex": "openai-codex",
                        "custom": "local/custom", "local/custom": "local/custom"}
     skip_chain_labels = {_alias_to_label.get(s, s) for s in skip_labels}
@@ -4300,7 +3969,7 @@ def _try_main_fallback_chain(
     """Try the top-level main-agent fallback chain for an auxiliary call.
 
     ``provider: auto`` auxiliary tasks should respect the user's declared
-    main fallback policy before dropping into Hermes' built-in discovery
+    main fallback policy before dropping into opencodon' built-in discovery
     chain. The top-level chain is read through ``get_fallback_chain`` so
     both modern ``fallback_providers`` and legacy ``fallback_model`` entries
     participate in the same order as the main agent.
@@ -4404,15 +4073,14 @@ def _resolve_auto(
       1. User's main provider + main model, regardless of provider type.
          This means auxiliary tasks (compression, vision, web extraction,
          session search, etc.) use the same model the user configured for
-         chat.  Users on OpenRouter/Nous get their chosen chat model; users
+         chat.  Users on OpenRouter get their chosen chat model; users
          on DeepSeek/ZAI/Alibaba get theirs; etc.  Running aux tasks on the
          user's picked model keeps behavior predictable — no surprise
          switches to a cheap fallback model for side tasks.
-      2. OpenRouter → Nous → custom → Codex → API-key providers (fallback
+      2. OpenRouter → custom → Codex → API-key providers (fallback
          chain, only used when the main provider has no working client).
     """
-    global auxiliary_is_nous, _stale_base_url_warned
-    auxiliary_is_nous = False  # Reset — _try_nous() will set True if it wins
+    global _stale_base_url_warned
     runtime = _normalize_main_runtime(main_runtime)
     runtime_provider = runtime.get("provider", "")
     runtime_model = str(runtime.get("model") or "")
@@ -4423,7 +4091,7 @@ def _resolve_auto(
 
     # ── Warn once if OPENAI_BASE_URL is set but config.yaml uses a named
     #    provider (not 'custom').  This catches the common "env poisoning"
-    #    scenario where a user switches providers via `hermes model` but the
+    #    scenario where a user switches providers via `opencodon model` but the
     #    old OPENAI_BASE_URL lingers in ~/.opencodon/.env. ──
     if not _stale_base_url_warned:
         _env_base = os.getenv("OPENAI_BASE_URL", "").strip()
@@ -4434,7 +4102,7 @@ def _resolve_auto(
             logger.warning(
                 "OPENAI_BASE_URL is set (%s) but model.provider is '%s'. "
                 "Auxiliary clients may route to the wrong endpoint. "
-                "Run: hermes model to reconfigure, or remove "
+                "Run: opencodon model to reconfigure, or remove "
                 "OPENAI_BASE_URL from ~/.opencodon/.env",
                 _env_base, _cfg_provider,
             )
@@ -4444,7 +4112,7 @@ def _resolve_auto(
     #
     # This is the primary aux backend for every user.  "auto" means
     # "use my main chat model for side tasks as well" — including users
-    # on aggregators (OpenRouter, Nous) who previously got routed to a
+    # on aggregators (OpenRouter) who previously got routed to a
     # cheap provider-side default.  Explicit per-task overrides set via
     # config.yaml (auxiliary.<task>.provider) still win over this.
     main_provider = str(runtime_provider or _read_main_provider() or "")
@@ -4663,7 +4331,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         **_openai_http_client_kwargs(sync_base_url, async_mode=True),
         **async_kwargs,
     }
-    # See _create_openai_client: disable SDK-internal retries so Hermes owns
+    # See _create_openai_client: disable SDK-internal retries so opencodon owns
     # the auxiliary retry/timeout budget (issue #54465).
     async_kwargs.setdefault("max_retries", 0)
     return AsyncOpenAI(**async_kwargs), model
@@ -4702,7 +4370,7 @@ def resolve_provider_client(
 
     Args:
         provider: Provider identifier.  One of:
-            "openrouter", "nous", "openai-codex" (or "codex"),
+            "openrouter", "openai-codex" (or "codex"),
             "zai", "kimi-coding", "minimax", "minimax-cn",
             "custom" (OPENAI_BASE_URL + OPENAI_API_KEY),
             "auto" (full auto-detection chain).
@@ -4851,23 +4519,6 @@ def resolve_provider_client(
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
                 else (client, final_model))
 
-    # ── Nous Portal (OAuth) ──────────────────────────────────────────
-    if provider == "nous":
-        # Detect vision tasks: either explicit model override from
-        # _PROVIDER_VISION_MODELS, or caller passed a known vision model.
-        _is_vision = (
-            model in _PROVIDER_VISION_MODELS.values()
-            or (model or "").strip().lower() == "mimo-v2-omni"
-        )
-        client, default = _try_nous(vision=_is_vision)
-        if client is None:
-            logger.warning("resolve_provider_client: nous requested "
-                           "but Nous Portal not configured (run: hermes auth)")
-            return None, None
-        final_model = _normalize_resolved_model(model or default, provider)
-        return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
-                else (client, final_model))
-
     # ── OpenAI Codex (OAuth → Responses API) ─────────────────────────
     if provider == "openai-codex":
         if not model:
@@ -4883,7 +4534,7 @@ def resolve_provider_client(
             codex_token = _read_codex_access_token()
             if not codex_token:
                 logger.warning("resolve_provider_client: openai-codex requested "
-                               "but no Codex OAuth token found (run: hermes model)")
+                               "but no Codex OAuth token found (run: opencodon model)")
                 return None, None
             final_model = _normalize_resolved_model(model, provider)
             raw_client = _create_openai_client(
@@ -4896,7 +4547,7 @@ def resolve_provider_client(
         client, default = _build_codex_client(model)
         if client is None:
             logger.warning("resolve_provider_client: openai-codex requested "
-                           "but no Codex OAuth token found (run: hermes model)")
+                           "but no Codex OAuth token found (run: opencodon model)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
@@ -4908,14 +4559,14 @@ def resolve_provider_client(
     # silently re-routing every auxiliary task (compression, web extract,
     # session search, curator, etc.) to whatever Step-2 fallback the user
     # has configured.  Users on xAI Grok OAuth would then see surprise
-    # OpenRouter / Nous bills for side tasks they thought were running on
+    # OpenRouter bills for side tasks they thought were running on
     # their xAI subscription.
     if provider == "xai-oauth":
         client, default = _build_xai_oauth_aux_client(model)
         if client is None:
             logger.warning(
                 "resolve_provider_client: xai-oauth requested but no xAI "
-                "OAuth token found (run: hermes model -> xAI Grok OAuth — SuperGrok / Premium+)"
+                "OAuth token found (run: opencodon model -> xAI Grok OAuth — SuperGrok / Premium+)"
             )
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
@@ -5014,7 +4665,7 @@ def resolve_provider_client(
         # name, the custom entry is the intended target — the built-in alias
         # rewriting would otherwise hijack the request.  Only preferred when
         # the raw name is an alias (not a canonical provider name) so custom
-        # entries that coincidentally match a canonical provider (e.g. ``nous``)
+        # entries that coincidentally match a canonical provider
         # still defer to the built-in per `_get_named_custom_provider`'s guard.
         custom_entry = None
         if original_provider and original_provider != provider:
@@ -5142,7 +4793,7 @@ def resolve_provider_client(
         if client is None:
             logger.warning(
                 "resolve_provider_client: azure-foundry requested but "
-                "runtime resolution failed (run: hermes doctor for "
+                "runtime resolution failed (run: opencodon doctor for "
                 "diagnostics)"
             )
             return None, None
@@ -5399,8 +5050,6 @@ def resolve_provider_client(
 
     elif pconfig.auth_type in {"oauth_device_code", "oauth_external"}:
         # OAuth providers — route through their specific try functions
-        if provider == "nous":
-            return resolve_provider_client("nous", model, async_mode)
         if provider == "openai-codex":
             return resolve_provider_client("openai-codex", model, async_mode)
         if provider == "xai-oauth":
@@ -5471,7 +5120,6 @@ def get_async_text_auxiliary_client(task: str = "", *, main_runtime: Optional[Di
 
 _VISION_AUTO_PROVIDER_ORDER = (
     "openrouter",
-    "nous",
     "deepinfra",
 )
 
@@ -5520,8 +5168,6 @@ def _resolve_strict_vision_backend(
         return resolve_provider_client("copilot", model, is_vision=True)
     if provider == "openrouter":
         return _try_openrouter(model=model)
-    if provider == "nous":
-        return _try_nous(vision=True)
     if provider == "openai-codex":
         # Route through resolve_provider_client so the caller's explicit
         # model is used.  There is no safe default Codex model (shifting
@@ -5556,7 +5202,7 @@ def _strict_vision_backend_available(provider: str) -> bool:
 def get_available_vision_backends() -> List[str]:
     """Return the currently available vision backends in auto-selection order.
 
-    Order: active provider → OpenRouter → Nous → stop.  This is the single
+    Order: active provider → OpenRouter → DeepInfra → stop.  This is the single
     source of truth for setup, tool gating, and runtime auto-routing of
     vision tasks.
     """
@@ -5571,7 +5217,7 @@ def get_available_vision_backends() -> List[str]:
             client, _ = resolve_provider_client(main_provider, _read_main_model())
             if client is not None:
                 available.append(main_provider)
-    # 2. OpenRouter, 3. Nous — skip if already covered by main provider.
+    # 2. OpenRouter — skip if already covered by main provider.
     for p in _VISION_AUTO_PROVIDER_ORDER:
         if p not in available and _strict_vision_backend_available(p):
             available.append(p)
@@ -5634,16 +5280,12 @@ def resolve_vision_provider_client(
         #      that differs from the chat model (e.g. xiaomi → mimo-v2-omni,
         #      zai → glm-5v-turbo). DeepInfra is similar but resolves its
         #      default vision model live from the catalog (see
-        #      :func:`_resolve_provider_vision_default`). Nous is the
-        #      exception: it has a dedicated strict vision backend with
-        #      tier-aware defaults, so it must not fall through to the
-        #      user's text chat model here.
+        #      :func:`_resolve_provider_vision_default`).
         #   2. OpenRouter (vision-capable aggregator fallback)
-        #   3. Nous Portal (vision-capable aggregator fallback)
-        #   4. DeepInfra   (OpenAI-compatible; vision model discovered
+        #   3. DeepInfra   (OpenAI-compatible; vision model discovered
         #                   live from the catalog — tried when
         #                   DEEPINFRA_API_KEY is set)
-        #   5. Stop
+        #   4. Stop
         main_provider = str(runtime.get("provider") or _read_main_provider())
         main_model = str(runtime.get("model") or _read_main_model())
         if main_provider and main_provider not in {"auto", ""}:
@@ -5655,17 +5297,7 @@ def resolve_vision_provider_client(
             # trusted to catch that. Only fall back to the chat model when no
             # provider default is available (catalog unreachable).
             vision_model = _resolve_provider_vision_default(main_provider) or main_model
-            if main_provider == "nous":
-                sync_client, default_model = _resolve_strict_vision_backend(
-                    main_provider, vision_model
-                )
-                if sync_client is not None:
-                    logger.info(
-                        "Vision auto-detect: using main provider %s (%s)",
-                        main_provider, default_model or resolved_model or main_model,
-                    )
-                    return _finalize(main_provider, sync_client, default_model)
-            elif main_provider in _PROVIDERS_WITHOUT_VISION:
+            if main_provider in _PROVIDERS_WITHOUT_VISION:
                 # Kimi Coding Plan's /coding endpoint (Anthropic Messages wire)
                 # does not accept image input — Kimi's own docs say "Current
                 # model does not support image input, switch to a model with
@@ -5798,11 +5430,11 @@ def resolve_vision_provider_client(
 
 def get_auxiliary_extra_body() -> dict:
     """Return extra_body kwargs for auxiliary API calls.
-    
-    Includes Nous Portal product tags when the auxiliary client is backed
-    by Nous Portal. Returns empty dict otherwise.
+
+    No provider currently needs extra_body here; kept as the single hook so
+    call sites do not have to branch.
     """
-    return _nous_extra_body() if auxiliary_is_nous else {}
+    return {}
 
 
 def auxiliary_max_tokens_param(value: int, *, model: Optional[str] = None) -> dict:
@@ -5821,7 +5453,6 @@ def auxiliary_max_tokens_param(value: int, *, model: Optional[str] = None) -> di
     # max_tokens on newer GPT-4o/o-series/GPT-5-style models.
     _custom_host = base_url_hostname(custom_base) or ""
     if (not or_key
-            and _read_nous_auth() is None
             and (
                 _custom_host == "api.openai.com"
                 or _custom_host == "api.githubcopilot.com"
@@ -5933,49 +5564,6 @@ def _store_cached_client(cache_key: tuple, client: Any, default_model: Optional[
         _client_cache[cache_key] = (client, default_model, bound_loop)
 
 
-def _refresh_nous_auxiliary_client(
-    *,
-    cache_provider: str,
-    model: Optional[str],
-    async_mode: bool,
-    base_url: Optional[str] = None,
-    api_key: Optional[str] = None,
-    api_mode: Optional[str] = None,
-    main_runtime: Optional[Dict[str, Any]] = None,
-    is_vision: bool = False,
-) -> Tuple[Optional[Any], Optional[str]]:
-    """Refresh Nous runtime creds, rebuild the client, and replace the cache entry."""
-    runtime = _resolve_nous_runtime_api(force_refresh=True)
-    if runtime is None:
-        return None, model
-
-    fresh_key, fresh_base_url = runtime
-    sync_client = _create_openai_client(api_key=fresh_key, base_url=fresh_base_url)
-    final_model = model
-
-    current_loop = None
-    if async_mode:
-        try:
-            import asyncio as _aio
-            current_loop = _aio.get_event_loop()
-        except RuntimeError:
-            pass
-        client, final_model = _to_async_client(sync_client, final_model or "", is_vision=is_vision)
-    else:
-        client = sync_client
-
-    cache_key = _client_cache_key(
-        cache_provider,
-        async_mode=async_mode,
-        base_url=base_url,
-        api_key=api_key,
-        api_mode=api_mode,
-        main_runtime=main_runtime,
-        is_vision=is_vision,
-        model=final_model,
-    )
-    _store_cached_client(cache_key, client, final_model, bound_loop=current_loop)
-    return client, final_model
 
 
 def neuter_async_httpx_del() -> None:
@@ -6323,7 +5911,6 @@ def _resolve_task_provider_model(
                 "copilot",
                 "copilot-acp",
                 "minimax-oauth",
-                "nous",
                 "openai-codex",
                 "qwen-oauth",
                 "xai-oauth",
@@ -6734,7 +6321,7 @@ def _build_call_kwargs(
     # Build provider-aware reasoning kwargs through the same profile hooks used
     # by the standard chat-completions transport. Some providers require
     # top-level controls (Kimi/custom ``reasoning_effort``), others use nested
-    # body fields (Gemini ``thinking_config``), and OpenRouter/Nous use
+    # body fields (Gemini ``thinking_config``), and OpenRouter uses
     # ``extra_body.reasoning``. Profiles are the source of truth for those wire
     # shapes. Providers without a reasoning-aware profile retain the generic
     # ``extra_body.reasoning`` fallback used by Codex-compatible adapters.
@@ -6794,13 +6381,11 @@ def _build_call_kwargs(
         else:
             effort = reasoning_config.get("effort") or "medium"
             merged_extra["reasoning"] = {"enabled": True, "effort": effort}
-    if provider == "nous" and "tags" not in merged_extra:
-        merged_extra["tags"] = _nous_portal_tags()
     if merged_extra:
         kwargs["extra_body"] = merged_extra
 
     # Native Anthropic Messages adapters do not consume ``extra_body``. Carry
-    # the normalized Hermes reasoning config through a private kwarg so the
+    # the normalized opencodon reasoning config through a private kwarg so the
     # adapter can pass it into build_anthropic_kwargs(), where provider-aware
     # thinking/output_config projection lives. Do not expose this private kwarg
     # to ordinary OpenAI-compatible SDK clients, which would reject it.
@@ -6962,7 +6547,7 @@ def call_llm(
         tools: Tool definitions (for function calling).
         timeout: Request timeout in seconds (None = read from auxiliary.{task}.timeout config).
         extra_body: Additional request body fields.
-        reasoning_config: Optional Hermes reasoning config for direct model calls
+        reasoning_config: Optional opencodon reasoning config for direct model calls
               such as MoA reference/aggregator slots.
         stream: When True, return the raw SDK streaming iterator instead of a
             validated complete response. The caller is responsible for consuming
@@ -7013,7 +6598,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: opencodon setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -7043,7 +6628,7 @@ def call_llm(
                     raise RuntimeError(
                         f"Provider '{_explicit}' is set in config.yaml but no API key "
                         f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                        f"variable, or switch to a different provider with `hermes model`."
+                        f"variable, or switch to a different provider with `opencodon model`."
                     )
             # For auto/custom with no credentials, try the full auto chain
             # rather than hardcoding OpenRouter (which may be depleted).
@@ -7057,7 +6642,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: opencodon setup")
 
     effective_timeout = _effective_aux_timeout(task, timeout)
 
@@ -7214,97 +6799,11 @@ def call_llm(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (Nous Portal recommendation drift) ───
-        # A long-lived process can pin a Portal-recommended model that has
-        # since been dropped from the Nous → OpenRouter catalog, so every
-        # auxiliary call 404s with "model does not exist". Force a fresh
-        # Portal fetch and retry once with the current recommendation (or the
-        # known-good default). Only applies to Nous-routed calls.
-        _heal_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
-        )
-        if _is_model_not_found_error(first_err) and _heal_is_nous:
-            healed_model = _refresh_nous_recommended_model(
-                vision=(task == "vision"), stale_model=kwargs.get("model"))
-            if healed_model and healed_model != kwargs.get("model"):
-                logger.warning(
-                    "Auxiliary %s: model %r no longer in Nous catalog; "
-                    "retrying with refreshed recommendation %r",
-                    task or "call", kwargs.get("model"), healed_model,
-                )
-                kwargs["model"] = healed_model
-                try:
-                    return _validate_llm_response(
-                        client.chat.completions.create(**kwargs), task)
-                except Exception as retry_err:
-                    first_err = retry_err
-
-        # ── Nous auth refresh parity with main agent ──────────────────
-        client_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
-        )
-        if (
-            _is_payment_error(first_err)
-            and client_is_nous
-            and _nous_portal_account_has_fresh_paid_access()
-        ):
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
-                model=final_model,
-                async_mode=False,
-                base_url=resolved_base_url,
-                api_key=resolved_api_key,
-                api_mode=resolved_api_mode,
-                main_runtime=main_runtime,
-                is_vision=(task == "vision"),
-            )
-            if refreshed_client is not None:
-                logger.info(
-                    "Auxiliary %s: refreshed Nous runtime credentials after paid account check, retrying",
-                    task or "call",
-                )
-                if refreshed_model and refreshed_model != kwargs.get("model"):
-                    kwargs["model"] = refreshed_model
-                try:
-                    return _validate_llm_response(
-                        refreshed_client.chat.completions.create(**kwargs), task)
-                except Exception as retry_err:
-                    if not (
-                        _is_auth_error(retry_err)
-                        or _is_payment_error(retry_err)
-                        or _is_connection_error(retry_err)
-                        or _is_rate_limit_error(retry_err)
-                    ):
-                        raise
-                    first_err = retry_err
-
-        if _is_auth_error(first_err) and client_is_nous:
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
-                model=final_model,
-                async_mode=False,
-                base_url=resolved_base_url,
-                api_key=resolved_api_key,
-                api_mode=resolved_api_mode,
-                main_runtime=main_runtime,
-                is_vision=(task == "vision"),
-            )
-            if refreshed_client is not None:
-                logger.info("Auxiliary %s: refreshed Nous runtime credentials after 401, retrying",
-                            task or "call")
-                if refreshed_model and refreshed_model != kwargs.get("model"):
-                    kwargs["model"] = refreshed_model
-                return _validate_llm_response(
-                    refreshed_client.chat.completions.create(**kwargs), task)
-
         # ── Auth refresh retry ───────────────────────────────────────
         auth_refresh_provider = _auth_refresh_provider_for_route(
             resolved_provider, _base_info)
         if (_is_auth_error(first_err)
-                and auth_refresh_provider not in {"auto", "", None}
-                and not client_is_nous):
+                and auth_refresh_provider not in {"auto", "", None}):
             if _refresh_provider_credentials(auth_refresh_provider):
                 if auth_refresh_provider != _normalize_aux_provider(resolved_provider):
                     # The stale client is cached under the route label
@@ -7406,8 +6905,8 @@ def call_llm(
         # against the same rate-limited endpoint.
         #
         # ── Auth error fallback (#21165) ─────────────────────────────
-        # When the resolved provider returns 401 and neither the Nous
-        # refresh path nor explicit provider credential refresh applies,
+        # When the resolved provider returns 401 and explicit provider
+        # credential refresh does not apply,
         # fall back to an alternative provider instead of dropping the
         # auxiliary task on the floor (silent compression failure /
         # message loss). Auth is NOT a capacity error: it only bypasses
@@ -7642,7 +7141,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: opencodon setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -7670,7 +7169,7 @@ async def async_call_llm(
                     raise RuntimeError(
                         f"Provider '{_explicit}' is set in config.yaml but no API key "
                         f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                        f"variable, or switch to a different provider with `hermes model`."
+                        f"variable, or switch to a different provider with `opencodon model`."
                     )
             if client is None and not resolved_base_url:
                 logger.info("Auxiliary %s: provider %s unavailable, trying auto-detection chain",
@@ -7679,7 +7178,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: opencodon setup")
 
     effective_timeout = _effective_aux_timeout(task, timeout)
 
@@ -7778,94 +7277,11 @@ async def async_call_llm(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (Nous Portal recommendation drift) ───
-        # See the sync call_llm() path for the rationale: a long-lived process
-        # can pin a Portal-recommended model that has since been dropped from
-        # the Nous → OpenRouter catalog, 404'ing every auxiliary call. Force a
-        # fresh Portal fetch and retry once with the current recommendation.
-        _heal_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
-        )
-        if _is_model_not_found_error(first_err) and _heal_is_nous:
-            healed_model = _refresh_nous_recommended_model(
-                vision=(task == "vision"), stale_model=kwargs.get("model"))
-            if healed_model and healed_model != kwargs.get("model"):
-                logger.warning(
-                    "Auxiliary %s (async): model %r no longer in Nous catalog; "
-                    "retrying with refreshed recommendation %r",
-                    task or "call", kwargs.get("model"), healed_model,
-                )
-                kwargs["model"] = healed_model
-                try:
-                    return _validate_llm_response(
-                        await client.chat.completions.create(**kwargs), task)
-                except Exception as retry_err:
-                    first_err = retry_err
-
-        # ── Nous auth refresh parity with main agent ──────────────────
-        client_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
-        )
-        if (
-            _is_payment_error(first_err)
-            and client_is_nous
-            and _nous_portal_account_has_fresh_paid_access()
-        ):
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
-                model=final_model,
-                async_mode=True,
-                base_url=resolved_base_url,
-                api_key=resolved_api_key,
-                api_mode=resolved_api_mode,
-                is_vision=(task == "vision"),
-            )
-            if refreshed_client is not None:
-                logger.info(
-                    "Auxiliary %s (async): refreshed Nous runtime credentials after paid account check, retrying",
-                    task or "call",
-                )
-                if refreshed_model and refreshed_model != kwargs.get("model"):
-                    kwargs["model"] = refreshed_model
-                try:
-                    return _validate_llm_response(
-                        await refreshed_client.chat.completions.create(**kwargs), task)
-                except Exception as retry_err:
-                    if not (
-                        _is_auth_error(retry_err)
-                        or _is_payment_error(retry_err)
-                        or _is_connection_error(retry_err)
-                        or _is_rate_limit_error(retry_err)
-                    ):
-                        raise
-                    first_err = retry_err
-
-        if _is_auth_error(first_err) and client_is_nous:
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
-                model=final_model,
-                async_mode=True,
-                base_url=resolved_base_url,
-                api_key=resolved_api_key,
-                api_mode=resolved_api_mode,
-                is_vision=(task == "vision"),
-            )
-            if refreshed_client is not None:
-                logger.info("Auxiliary %s (async): refreshed Nous runtime credentials after 401, retrying",
-                            task or "call")
-                if refreshed_model and refreshed_model != kwargs.get("model"):
-                    kwargs["model"] = refreshed_model
-                return _validate_llm_response(
-                    await refreshed_client.chat.completions.create(**kwargs), task)
-
         # ── Auth refresh retry (mirrors sync call_llm) ───────────────
         auth_refresh_provider = _auth_refresh_provider_for_route(
             resolved_provider, _client_base)
         if (_is_auth_error(first_err)
-                and auth_refresh_provider not in {"auto", "", None}
-                and not client_is_nous):
+                and auth_refresh_provider not in {"auto", "", None}):
             if _refresh_provider_credentials(auth_refresh_provider):
                 if auth_refresh_provider != _normalize_aux_provider(resolved_provider):
                     # The stale client is cached under the route label

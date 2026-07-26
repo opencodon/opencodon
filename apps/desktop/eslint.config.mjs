@@ -16,7 +16,7 @@ export default [
     }
   },
   {
-    // THE PLUGIN FENCE: plugins speak @hermes/plugin-sdk (+ react), never `@/…`
+    // THE PLUGIN FENCE: plugins speak @opencodon/plugin-sdk (+ react), never `@/…`
     // internals — the same isolation a runtime-fetched published plugin gets,
     // enforced on bundled ones so the SDK surface stays honest and sufficient.
     files: ['src/plugins/**/*.{ts,tsx}'],
@@ -27,7 +27,7 @@ export default [
           patterns: [
             {
               group: ['@/*', '../*', '@opencodon/shared'],
-              message: 'Plugins import only @hermes/plugin-sdk (and react). Missing something? Add it to the SDK.'
+              message: 'Plugins import only @opencodon/plugin-sdk (and react). Missing something? Add it to the SDK.'
             }
           ]
         }

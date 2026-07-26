@@ -79,7 +79,7 @@ const baseProps = streamingText => ({
     reasoningTokens: Math.ceil(streamingText.length / 4), showProgressArea: true, showStreamingArea: true,
     streamPendingTools: [], streamSegments: [], streaming: streamingText, subagents: [], toolTokens: 0, tools: [], turnTrail: [], todos: []
   },
-  status: { cwdLabel: '~/repo', goodVibesTick: 0, sessionStartedAt: Date.now(), showStickyPrompt: false, statusColor: theme.color.ok, stickyPrompt: '', turnStartedAt: Date.now(), voiceLabel: 'voice off' },
+  status: { cwdLabel: '~/repo', sessionStartedAt: Date.now(), showStickyPrompt: false, statusColor: theme.color.ok, stickyPrompt: '', turnStartedAt: Date.now(), voiceLabel: 'voice off' },
   transcript: {
     historyItems,
     scrollRef,

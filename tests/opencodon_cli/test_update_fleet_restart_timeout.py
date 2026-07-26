@@ -1,7 +1,7 @@
 """Regression for #68523 — one systemctl timeout must not abort fleet restarts.
 
 On hosts with many profile-backed ``opencodon-gateway*.service`` units,
-``hermes update`` used to wrap the entire per-scope unit loop in a single
+``opencodon update`` used to wrap the entire per-scope unit loop in a single
 ``except subprocess.TimeoutExpired``. A timeout on unit N skipped units
 N+1…, leaving later gateways on pre-update in-memory modules while the
 checkout on disk was already new (mixed-generation crashes).

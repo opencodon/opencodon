@@ -45,7 +45,7 @@ class TestClassifyContainerMirrorTarget:
         assert result is not None
         assert result["inner_path"] == inner
 
-    def test_non_hermes_path_not_flagged(self):
+    def test_non_opencodon_path_not_flagged(self):
         """/root/workspace/… is not .opencodon state and must not be blocked."""
         from agent.file_safety import classify_container_mirror_target
 

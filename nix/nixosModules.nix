@@ -1,16 +1,16 @@
-# nix/nixosModules.nix — NixOS module for hermes-agent
+# nix/nixosModules.nix — NixOS module for opencodon
 #
 # Two modes:
 #   container.enable = false (default) → native systemd service
 #   container.enable = true            → OCI container (persistent writable layer)
 #
-# Container mode: hermes runs from /nix/store bind-mounted read-only into a
+# Container mode: opencodon runs from /nix/store bind-mounted read-only into a
 # plain Ubuntu container. The writable layer (apt/pip/npm installs) persists
 # across restarts and agent updates. Only image/volume/options changes trigger
 # container recreation. Environment variables are written to $OPENCODON_HOME/.env
-# and read by hermes at startup — no container recreation needed for env changes.
+# and read by opencodon at startup — no container recreation needed for env changes.
 #
-# Tool resolution: the hermes wrapper uses --suffix PATH for nix store tools,
+# Tool resolution: the opencodon wrapper uses --suffix PATH for nix store tools,
 # so apt/uv-installed versions take priority. The container entrypoint provisions
 # extensible tools on first boot: nodejs/npm via apt, uv via curl, and a Python
 # 3.11 venv (bootstrapped entirely by uv) at ~/.venv with pip seeded. Agents get
@@ -20,7 +20,7 @@
 #   services.opencodon-agent = {
 #     enable = true;
 #     settings.model = "anthropic/claude-sonnet-4";
-#     environmentFiles = [ config.sops.secrets."hermes/env".path ];
+#     environmentFiles = [ config.sops.secrets."opencodon/env".path ];
 #   };
 #
 { inputs, ... }: {
@@ -32,18 +32,18 @@
       if cfg.extraPythonPackages == [ ] && cfg.extraDependencyGroups == [ ]
       then cfg.package
       else cfg.package.override { inherit (cfg) extraPythonPackages extraDependencyGroups; };
-    hermes-agent = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    opencodon = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
-    # Deep-merge config type (from 0xrsydn/nix-hermes-agent)
+    # Deep-merge config type (from 0xrsydn/nix-opencodon)
     deepConfigType = lib.types.mkOptionType {
-      name = "hermes-config-attrs";
-      description = "Hermes YAML config (attrset), merged deeply via lib.recursiveUpdate.";
+      name = "opencodon-config-attrs";
+      description = "opencodon YAML config (attrset), merged deeply via lib.recursiveUpdate.";
       check = builtins.isAttrs;
       merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
     };
 
     # Generate config.yaml from Nix attrset (YAML is a superset of JSON).
-    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — hermes
+    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — opencodon
     # reads it from config.yaml and bridges it to TERMINAL_CWD internally.
     # recursiveUpdate: cfg.settings wins, so an explicit
     # settings.terminal.cwd overrides the workingDirectory default.
@@ -52,7 +52,7 @@
     configJson = builtins.toJSON (
       lib.recursiveUpdate { terminal.cwd = effectiveWorkDir; } cfg.settings
     );
-    generatedConfigFile = pkgs.writeText "hermes-config.yaml" configJson;
+    generatedConfigFile = pkgs.writeText "opencodon-config.yaml" configJson;
     configFile = if cfg.configFile != null then cfg.configFile else generatedConfigFile;
 
     configMergeScript = pkgs.callPackage ./configMergeScript.nix { };
@@ -68,7 +68,7 @@
       lib.mapAttrsToList (k: v: "${k}=${v}") cfg.environment
     );
     # Build documents derivation (from 0xrsydn)
-    documentDerivation = pkgs.runCommand "hermes-documents" { } (
+    documentDerivation = pkgs.runCommand "opencodon-documents" { } (
       ''
         mkdir -p $out
       '' + lib.concatStringsSep "\n" (
@@ -82,7 +82,7 @@
 
     containerName = "opencodon";
     containerDataDir = "/data";     # stateDir mount point inside container
-    containerHomeDir = "/home/hermes";
+    containerHomeDir = "/home/opencodon";
 
     # ── Container mode helpers ──────────────────────────────────────────
     containerBin = if cfg.container.backend == "docker"
@@ -90,9 +90,9 @@
       else "${pkgs.podman}/bin/podman";
 
     # Runs as root inside the container on every start. Provisions the
-    # hermes user + sudo on first boot (writable layer persists), then
+    # opencodon user + sudo on first boot (writable layer persists), then
     # drops privileges. Supports arbitrary base images (Debian, Alpine, etc).
-    containerEntrypoint = pkgs.writeShellScript "hermes-container-entrypoint" ''
+    containerEntrypoint = pkgs.writeShellScript "opencodon-container-entrypoint" ''
       set -eu
 
       OPENCODON_UID="''${OPENCODON_UID:?OPENCODON_UID must be set}"
@@ -105,7 +105,7 @@
       if [ -n "$EXISTING_GROUP" ]; then
         GROUP_NAME="$EXISTING_GROUP"
       else
-        GROUP_NAME="hermes"
+        GROUP_NAME="opencodon"
         if command -v groupadd >/dev/null 2>&1; then
           groupadd -g "$OPENCODON_GID" "$GROUP_NAME"
         elif command -v addgroup >/dev/null 2>&1; then
@@ -119,8 +119,8 @@
         TARGET_USER=$(echo "$PASSWD_ENTRY" | cut -d: -f1)
         TARGET_HOME=$(echo "$PASSWD_ENTRY" | cut -d: -f6)
       else
-        TARGET_USER="hermes"
-        TARGET_HOME="/home/hermes"
+        TARGET_USER="opencodon"
+        TARGET_HOME="/home/opencodon"
         if command -v useradd >/dev/null 2>&1; then
           useradd -u "$OPENCODON_UID" -g "$OPENCODON_GID" -m -d "$TARGET_HOME" -s /bin/bash "$TARGET_USER"
         elif command -v adduser >/dev/null 2>&1; then
@@ -145,7 +145,7 @@
       # nodejs/npm: writable node so npm i -g works (nix store copies are read-only)
       #   Node 22 via NodeSource — Ubuntu 24.04 ships Node 18 which is EOL.
       # curl: needed for uv installer + NodeSource setup
-      if [ ! -f /var/lib/hermes-tools-provisioned ] && command -v apt-get >/dev/null 2>&1; then
+      if [ ! -f /var/lib/opencodon-tools-provisioned ] && command -v apt-get >/dev/null 2>&1; then
         echo "First boot: provisioning agent tools..."
         apt-get update -qq
         apt-get install -y -qq sudo curl ca-certificates gnupg
@@ -156,13 +156,13 @@
           > /etc/apt/sources.list.d/nodesource.list
         apt-get update -qq
         apt-get install -y -qq nodejs
-        touch /var/lib/hermes-tools-provisioned
+        touch /var/lib/opencodon-tools-provisioned
       fi
 
-      if command -v sudo >/dev/null 2>&1 && [ ! -f /etc/sudoers.d/hermes ]; then
+      if command -v sudo >/dev/null 2>&1 && [ ! -f /etc/sudoers.d/opencodon ]; then
         mkdir -p /etc/sudoers.d
-        echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/hermes
-        chmod 0440 /etc/sudoers.d/hermes
+        echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/opencodon
+        chmod 0440 /etc/sudoers.d/opencodon
       fi
 
       # uv (Python manager) — not in Ubuntu repos, retry-safe outside the sentinel
@@ -208,7 +208,7 @@
 
     identityFile = "${cfg.stateDir}/.container-identity";
 
-    # Default: /var/lib/hermes/workspace → /data/workspace.
+    # Default: /var/lib/opencodon/workspace → /data/workspace.
     # Custom paths outside stateDir pass through unchanged (user must add extraVolumes).
     containerWorkDir =
       if lib.hasPrefix "${cfg.stateDir}/" cfg.workingDirectory
@@ -217,25 +217,25 @@
 
   in {
     options.services.opencodon-agent = with lib; {
-      enable = mkEnableOption "Hermes Agent gateway service";
+      enable = mkEnableOption "opencodon gateway service";
 
       # ── Package ──────────────────────────────────────────────────────────
       package = mkOption {
         type = types.package;
-        default = hermes-agent;
-        description = "The hermes-agent package to use.";
+        default = opencodon;
+        description = "The opencodon package to use.";
       };
 
       # ── Service identity ─────────────────────────────────────────────────
       user = mkOption {
         type = types.str;
-        default = "hermes";
+        default = "opencodon";
         description = "System user running the gateway.";
       };
 
       group = mkOption {
         type = types.str;
-        default = "hermes";
+        default = "opencodon";
         description = "System group running the gateway.";
       };
 
@@ -248,7 +248,7 @@
       # ── Directories ──────────────────────────────────────────────────────
       stateDir = mkOption {
         type = types.str;
-        default = "/var/lib/hermes";
+        default = "/var/lib/opencodon";
         description = "State directory. Contains .opencodon/ subdir (OPENCODON_HOME).";
       };
 
@@ -273,7 +273,7 @@
         type = deepConfigType;
         default = { };
         description = ''
-          Declarative Hermes config (attrset). Deep-merged across module
+          Declarative opencodon config (attrset). Deep-merged across module
           definitions and rendered as config.yaml.
         '';
         example = literalExpression ''
@@ -293,7 +293,7 @@
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
           Contents are merged into $OPENCODON_HOME/.env at activation time.
-          Hermes reads this file on every startup via load_hermes_dotenv().
+          opencodon reads this file on every startup via load_opencodon_dotenv().
         '';
       };
 
@@ -469,7 +469,7 @@
       extraArgs = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Extra command-line arguments for `hermes gateway`.";
+        description = "Extra command-line arguments for `opencodon gateway`.";
       };
 
       extraPackages = mkOption {
@@ -479,7 +479,7 @@
           Extra packages available to the agent — terminal commands, skills,
           cron jobs, and the service process all see them.
 
-          Implemented via the hermes user's per-user profile
+          Implemented via the opencodon user's per-user profile
           (`/etc/profiles/per-user/${cfg.user}/bin`), which NixOS includes
           in PATH for login shells.  The packages are also added to the
           systemd service PATH for direct process access.
@@ -490,16 +490,16 @@
         type = types.listOf types.package;
         default = [ ];
         description = ''
-          Directory-based plugin packages to symlink into the hermes plugins
+          Directory-based plugin packages to symlink into the opencodon plugins
           directory. Each package should contain a plugin.yaml and __init__.py
-          at its root. Hermes discovers these automatically on startup.
+          at its root. opencodon discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
             (pkgs.fetchFromGitHub {
               owner = "stephenschoettler";
-              repo = "hermes-lcm";
-              name = "hermes-lcm";
+              repo = "opencodon-lcm";
+              name = "opencodon-lcm";
               rev = "v0.7.0";
               hash = "sha256-...";
             })
@@ -513,17 +513,17 @@
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          hermes_agent.plugins entry-point group. Each package must be built
-          with the same Python interpreter as hermes (python312).
+          opencodon_agent.plugins entry-point group. Each package must be built
+          with the same Python interpreter as opencodon (python312).
         '';
         example = literalExpression ''
           [
             (pkgs.python312Packages.buildPythonPackage {
-              pname = "rtk-hermes";
+              pname = "rtk-opencodon";
               version = "1.0.0";
               src = pkgs.fetchFromGitHub {
                 owner = "ogallotti";
-                repo = "rtk-hermes";
+                repo = "rtk-opencodon";
                 rev = "main";
                 hash = "sha256-...";
               };
@@ -540,8 +540,8 @@
           the sealed Python venv. These are resolved by uv alongside core
           dependencies — no PYTHONPATH patching or collision risk.
 
-          Use this for optional extras already declared in hermes-agent's
-          pyproject.toml (e.g. "hindsight", "honcho", "voice").
+          Use this for optional extras already declared in opencodon's
+          pyproject.toml (e.g. "voice", "science", "messaging").
           Use extraPythonPackages for external packages not in pyproject.toml.
         '';
         example = [ "hindsight" ];
@@ -563,7 +563,7 @@
         type = types.bool;
         default = false;
         description = ''
-          Add the hermes CLI to environment.systemPackages and export
+          Add the opencodon CLI to environment.systemPackages and export
           OPENCODON_HOME system-wide (via environment.variables) so interactive
           shells share state with the gateway service.
         '';
@@ -603,7 +603,7 @@
           default = [ ];
           description = ''
             Interactive users who get a ~/.opencodon symlink to the service
-            stateDir. These users are automatically added to the hermes group.
+            stateDir. These users are automatically added to the opencodon group.
           '';
           example = [ "sidbin" ];
         };
@@ -657,7 +657,7 @@
       })
 
       # ── Host CLI ──────────────────────────────────────────────────────
-      # Add the hermes CLI to system PATH and export OPENCODON_HOME system-wide
+      # Add the opencodon CLI to system PATH and export OPENCODON_HOME system-wide
       # so interactive shells share state (sessions, skills, cron) with the
       # gateway service instead of creating a separate ~/.opencodon/.
       (lib.mkIf cfg.addToSystemPackages {
@@ -684,7 +684,7 @@
 
       # ── Warnings ──────────────────────────────────────────────────────
       # ── Per-user profile for extraPackages ───────────────────────────
-      # Wire extraPackages into the hermes user's per-user profile so the
+      # Wire extraPackages into the opencodon user's per-user profile so the
       # login-shell snapshot (which rebuilds PATH from NixOS profiles) sees
       # them.  The systemd service PATH also includes them for direct access.
       (lib.mkIf (cfg.extraPackages != []) {
@@ -698,9 +698,9 @@
         warnings = [
           ''
             services.opencodon-agent: container.enable is true and container.hostUsers
-            is set, but addToSystemPackages is false. Without a host-installed hermes
+            is set, but addToSystemPackages is false. Without a host-installed opencodon
             binary, container routing will not work for interactive users.
-            Set addToSystemPackages = true or ensure hermes is on PATH.
+            Set addToSystemPackages = true or ensure opencodon is on PATH.
           ''
         ];
       })
@@ -722,7 +722,7 @@
 
       # ── Activation: link config + auth + documents ────────────────────
       {
-        system.activationScripts."hermes-agent-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
+        system.activationScripts."opencodon-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
           # Ensure directories exist (activation runs before tmpfiles)
           mkdir -p ${cfg.stateDir}/.opencodon
           mkdir -p ${cfg.stateDir}/home
@@ -749,7 +749,7 @@
           # Preserves user-added keys (skills, streaming, etc.); Nix keys win.
           # If configFile is user-provided (not generated), overwrite instead of merge.
           # Mode is configYamlMode (0660 under addToSystemPackages so interactive
-          # hermes-group users can save settings via the CLI/TUI, else 0640).
+          # opencodon-group users can save settings via the CLI/TUI, else 0640).
           ${if cfg.configFile != null then ''
             install -o ${cfg.user} -g ${cfg.group} -m ${configYamlMode} -D ${configFile} ${cfg.stateDir}/.opencodon/config.yaml
           '' else ''
@@ -772,7 +772,7 @@
     backend=${cfg.container.backend}
     container_name=${containerName}
     exec_user=${cfg.user}
-    hermes_bin=${containerDataDir}/current-package/bin/hermes
+    opencodon_bin=${containerDataDir}/current-package/bin/opencodon
     OPENCODON_CONTAINER_MODE_EOF
             chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.opencodon/.container-mode
             chmod 0644 ${cfg.stateDir}/.opencodon/.container-mode
@@ -787,7 +787,7 @@
               in ''
                 if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.opencodon" ]; then
                   rm -f "${symlinkPath}"
-                  echo "hermes-agent: removed symlink ${symlinkPath}"
+                  echo "opencodon: removed symlink ${symlinkPath}"
                 fi
               '') cfg.container.hostUsers)}
           ''}
@@ -807,7 +807,7 @@
                   # Real directory — back it up, then create symlink.
                   # (ln -sfn cannot atomically replace a directory.)
                   _backup="${symlinkPath}.bak.$(date +%s)"
-                  echo "hermes-agent: backing up existing ${symlinkPath} to $_backup"
+                  echo "opencodon: backing up existing ${symlinkPath} to $_backup"
                   mv "${symlinkPath}" "$_backup"
                 fi
                 # For everything else (existing symlink, doesn't exist, etc.)
@@ -828,7 +828,7 @@
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Hermes reads $OPENCODON_HOME/.env at startup via load_hermes_dotenv(),
+          # opencodon reads $OPENCODON_HOME/.env at startup via load_opencodon_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
             ENV_FILE="${cfg.stateDir}/.opencodon/.env"
@@ -872,7 +872,7 @@
       # ══════════════════════════════════════════════════════════════════
       (lib.mkIf (!cfg.container.enable) {
         systemd.services.opencodon-agent = {
-          description = "Hermes Agent Gateway";
+          description = "opencodon Gateway";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
@@ -891,11 +891,11 @@
             WorkingDirectory = cfg.workingDirectory;
 
             # cfg.environment and cfg.environmentFiles are written to
-            # $OPENCODON_HOME/.env by the activation script. load_hermes_dotenv()
+            # $OPENCODON_HOME/.env by the activation script. load_opencodon_dotenv()
             # reads them at Python startup — no systemd EnvironmentFile needed.
 
             ExecStart = lib.concatStringsSep " " ([
-              "${effectivePackage}/bin/hermes"
+              "${effectivePackage}/bin/opencodon"
               "gateway"
             ] ++ cfg.extraArgs);
 
@@ -903,7 +903,7 @@
             RestartSec = cfg.restartSec;
 
             # Shared-state: files created by the gateway should be group-writable
-            # so interactive users in the hermes group can read/write them.
+            # so interactive users in the opencodon group can read/write them.
             UMask = "0007";
 
             # Hardening
@@ -934,7 +934,7 @@
         virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
         systemd.services.opencodon-agent = {
-          description = "Hermes Agent Gateway (container)";
+          description = "opencodon Gateway (container)";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ]
             ++ lib.optional (cfg.container.backend == "docker") "docker.service";
@@ -981,7 +981,7 @@
                 --env HOME=${containerHomeDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \
-                ${containerDataDir}/current-package/bin/hermes gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}
+                ${containerDataDir}/current-package/bin/opencodon gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}
 
               echo "${containerIdentity}" > ${identityFile}
             fi

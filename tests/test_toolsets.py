@@ -211,8 +211,8 @@ class TestToolsetConsistency:
             for inc in ts["includes"]:
                 assert inc in TOOLSETS, f"{name} includes unknown toolset '{inc}'"
 
-    def test_hermes_platforms_share_core_tools(self):
-        """All hermes-* platform toolsets share the same core tools.
+    def test_opencodon_platforms_share_core_tools(self):
+        """All opencodon-* platform toolsets share the same core tools.
 
         Platform-specific additions (e.g. ``discord`` / ``discord_admin``
         on opencodon-discord, gated on DISCORD_BOT_TOKEN) are allowed on top —
@@ -248,10 +248,10 @@ class TestPluginToolsets:
 
 
 class TestDefaultPlatformWebSearchCoverage:
-    def test_hermes_whatsapp_toolset_includes_web_search(self):
+    def test_opencodon_whatsapp_toolset_includes_web_search(self):
         assert "web_search" in resolve_toolset("opencodon-whatsapp")
 
-    def test_hermes_api_server_toolset_includes_web_search(self):
+    def test_opencodon_api_server_toolset_includes_web_search(self):
         assert "web_search" in resolve_toolset("opencodon-api-server")
 
 

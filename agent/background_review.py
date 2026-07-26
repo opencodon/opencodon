@@ -12,7 +12,7 @@ credentials, cached system prompt) so it hits the same prefix cache and
 uses the same auth.  It runs with a tool whitelist limited to memory and
 skill management tools; everything else is denied at runtime.
 
-See the ``hermes-agent-dev`` skill (``references/self-improvement-loop.md``)
+See the ``opencodon-dev`` skill (``references/self-improvement-loop.md``)
 for invariants and PR review criteria.
 """
 
@@ -249,9 +249,9 @@ _SKILL_REVIEW_PROMPT = (
     "If you notice two existing skills that overlap, note it in your "
     "reply — the background curator handles consolidation at scale.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
-    "  • Hub-installed skills (installed via 'hermes skills install').\n"
-    "Pinned skills (marked via 'hermes curator pin') CAN be improved — "
+    "  • Bundled skills (shipped with opencodon, e.g. 'opencodon').\n"
+    "  • Hub-installed skills (installed via 'opencodon skills install').\n"
+    "Pinned skills (marked via 'opencodon curator pin') CAN be improved — "
     "pin only blocks deletion/archive/consolidation by the curator, not "
     "content updates. Patch them when a pitfall or missing step turns up, "
     "same as any other agent-created skill.\n"
@@ -335,9 +335,9 @@ _COMBINED_REVIEW_PROMPT = (
     "If you notice overlapping existing skills, mention it — the "
     "background curator handles consolidation.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
-    "  • Hub-installed skills (installed via 'hermes skills install').\n"
-    "Pinned skills (marked via 'hermes curator pin') CAN be improved — "
+    "  • Bundled skills (shipped with opencodon, e.g. 'opencodon').\n"
+    "  • Hub-installed skills (installed via 'opencodon skills install').\n"
+    "Pinned skills (marked via 'opencodon curator pin') CAN be improved — "
     "pin only blocks deletion/archive/consolidation by the curator, not "
     "content updates. Patch them when a pitfall or missing step turns up, "
     "same as any other agent-created skill.\n"
@@ -673,7 +673,7 @@ def _run_review_in_thread(
             _rt = _resolve_review_runtime(agent)
             _routed = bool(_rt.get("routed"))
             # skip_memory=True keeps the review fork from
-            # touching external memory plugins (honcho, mem0,
+            # touching external memory plugins (
             # supermemory, etc.).  Without it, the fork's
             # __init__ rebuilds its own _memory_manager from
             # config, scoped to the parent's session_id, and
@@ -766,7 +766,7 @@ def _run_review_in_thread(
             # the review fork's outbound HTTP request hits the same
             # Anthropic/OpenRouter prefix cache the parent warmed.
             # Without this, the fork rebuilds the system prompt from
-            # scratch (fresh _hermes_now() timestamp, fresh
+            # scratch (fresh _opencodon_now() timestamp, fresh
             # session_id, narrower toolset → different skills_prompt)
             # and the byte-exact prefix-cache key misses. See
             # issue #25322 and PR #17276 for the full analysis +
@@ -866,7 +866,7 @@ def _run_review_in_thread(
             review_messages = list(getattr(review_agent, "_session_messages", []))
 
             # Tear down memory providers while stdout is still
-            # redirected so background thread teardown (Honcho flush,
+            # redirected so background thread teardown (memory-provider flush,
             # Hindsight sync, etc.) stays silent.  The finally block
             # below is a safety net for the exception path.
             try:
@@ -929,7 +929,7 @@ def _run_review_in_thread(
     finally:
         # Safety-net cleanup for the exception path.  Normal completion already
         # shut down inside the thread-scoped silence above.  Re-enter the
-        # thread-scoped silence here so teardown output (Honcho flush, Hindsight
+        # thread-scoped silence here so teardown output (memory-provider flush,
         # sync, background thread joins) stays quiet even on the exception path,
         # without blanking other threads' streams.
         if review_agent is not None:

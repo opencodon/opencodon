@@ -127,7 +127,7 @@ class TestProfileScopedMessagingReads:
         payload = resp.json()
         assert payload["env_path"] == str(worker_home / ".env")
         assert payload["gateway_start_command"] == (
-            "hermes -p worker_alpha gateway start"
+            "opencodon -p worker_alpha gateway start"
         )
         telegram = _telegram(payload)
         assert telegram["state"] == "startup_failed"

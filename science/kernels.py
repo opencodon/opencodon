@@ -1,7 +1,7 @@
 """Persistent Jupyter kernels — one lazy kernel per (session, language).
 
 Ported from the opencodon donor (``execution/kernel_client.py`` +
-``execution/manager.py``), simplified for hermes:
+``execution/manager.py``), simplified for opencodon:
 
 - **KernelSession** is a thin synchronous wrapper over one Jupyter kernel.
   Every execute request is correlated by its Jupyter ``msg_id`` — never a
@@ -14,7 +14,7 @@ Ported from the opencodon donor (``execution/kernel_client.py`` +
 - Kernels are local-only for now (see implementation-design.md §5 — remote
   kernel backends wait for a deliberate extension of tools/environments/).
 
-The donor's epoch/policy record machinery is deliberately dropped: hermes
+The donor's epoch/policy record machinery is deliberately dropped: opencodon
 records each cell in ``execution_log`` (science/store.py) and a restart shows
 up as a new ``kernel_id`` there, which is the invariant that matters for
 reproducibility.
@@ -107,7 +107,7 @@ def env_snapshot_hash(snapshot: Optional[str]) -> Optional[str]:
 
 
 class PythonEnvResolver:
-    """Bind the running hermes interpreter as the local python kernel."""
+    """Bind the running opencodon interpreter as the local python kernel."""
 
     def __init__(self, interpreter_path: str = None):
         self._interpreter = interpreter_path or sys.executable
@@ -244,7 +244,7 @@ class KernelSession:
         km = KernelManager(kernel_name="python3")
         km._kernel_spec = KernelSpec(
             argv=list(self._spec.argv),
-            display_name="hermes-science-kernel",
+            display_name="opencodon-science-kernel",
             language=self._spec.language,
         )
         try:

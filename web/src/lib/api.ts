@@ -73,7 +73,6 @@ const PROFILE_SCOPED_PREFIXES = [
   "/api/env",
   "/api/mcp",
   "/api/messaging/platforms",
-  "/api/messaging/telegram/onboarding",
   "/api/messaging/whatsapp/onboarding",
   "/api/model/info",
   "/api/model/set",
@@ -835,36 +834,6 @@ export const api = {
       `/api/messaging/platforms/${encodeURIComponent(id)}/test`,
       { method: "POST" },
     ),
-  startTelegramOnboarding: (body: { bot_name?: string }) =>
-    fetchJSON<TelegramOnboardingStartResponse>(
-      "/api/messaging/telegram/onboarding/start",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
-    ),
-  getTelegramOnboardingStatus: (pairingId: string) =>
-    fetchJSON<TelegramOnboardingStatusResponse>(
-      `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}`,
-    ),
-  applyTelegramOnboarding: (
-    pairingId: string,
-    body: { allowed_user_ids: string[]; profile?: string },
-  ) =>
-    fetchJSON<TelegramOnboardingApplyResponse>(
-      `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}/apply`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
-    ),
-  cancelTelegramOnboarding: (pairingId: string) =>
-    fetchJSON<{ ok: boolean }>(
-      `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}`,
-      { method: "DELETE" },
-    ),
   startWhatsAppOnboarding: (body: {
     mode?: "bot" | "self-chat";
     allowed_users?: string;
@@ -1208,7 +1177,6 @@ export const api = {
     fetchJSON<ActionResponse>("/api/curator/run", { method: "POST" }),
 
   // ── Admin: Portal ───────────────────────────────────────────────────
-  getPortal: () => fetchJSON<PortalStatus>("/api/portal"),
 
   // ── Admin: Diagnostics (backgrounded) ───────────────────────────────
   runPromptSize: () =>
@@ -1744,20 +1712,6 @@ export interface CuratorStatus {
   archive_after_days: number | null;
 }
 
-export interface PortalFeature {
-  label: string;
-  state: string;
-}
-
-export interface PortalStatus {
-  logged_in: boolean;
-  portal_url: string | null;
-  inference_url: string | null;
-  provider: string;
-  subscription_url: string;
-  features: PortalFeature[];
-}
-
 export interface CheckpointSession {
   session: string;
   files: number;
@@ -1873,34 +1827,6 @@ export interface EnvVarInfo {
   channel_managed?: boolean;
   /** True when this key is set in .env but not in any catalog (user-added custom key). */
   custom?: boolean;
-}
-
-export interface TelegramOnboardingStartResponse {
-  pairing_id: string;
-  suggested_username: string;
-  deep_link: string;
-  qr_payload: string;
-  expires_at: string;
-}
-
-export type TelegramOnboardingStatusResponse =
-  | { status: "waiting"; expires_at: string }
-  | {
-      status: "ready";
-      bot_username: string;
-      owner_user_id?: string;
-      expires_at: string;
-    };
-
-export interface TelegramOnboardingApplyResponse {
-  ok: boolean;
-  platform: "telegram";
-  bot_username?: string;
-  needs_restart: boolean;
-  restart_started?: boolean;
-  restart_action?: string;
-  restart_pid?: number | null;
-  restart_error?: string;
 }
 
 export interface WhatsAppOnboardingStartResponse {

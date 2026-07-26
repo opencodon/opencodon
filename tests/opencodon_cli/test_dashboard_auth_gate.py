@@ -88,13 +88,13 @@ def test_loopback_host_header_validation_still_enforced(client_loopback):
     ("localhost", False, False),
     ("::1",       False, False),
     # --insecure (allow_public=True) NO LONGER bypasses the gate on a public
-    # bind (June 2026 hermes-0day hardening). Non-loopback always requires auth.
+    # bind (June 2026 opencodon-0day hardening). Non-loopback always requires auth.
     ("0.0.0.0",   True,  True),
     ("0.0.0.0",   False, True),
     ("192.168.1.5", False, True),
     ("10.0.0.1",  True,  True),     # allow_public ignored — LAN IP is public
     ("100.64.0.1", False, True),    # Tailscale CGNAT — treated as public
-    ("hermes-agent-prod-abc.fly.dev", False, True),
+    ("opencodon-prod-abc.fly.dev", False, True),
 ])
 def test_should_require_auth_truth_table(host, allow_public, expected):
     from opencodon_cli.web_server import should_require_auth
@@ -259,34 +259,6 @@ def test_start_server_gate_without_provider_fails_closed(monkeypatch):
         )
 
 
-def test_start_server_surfaces_nous_skip_reason_when_unconfigured(monkeypatch):
-    """When the bundled Nous plugin loaded but skipped registration (no
-    env vars set), the gate's fail-closed message should surface the
-    plugin's LAST_SKIP_REASON so the operator knows the config fix is
-    'set OPENCODON_DASHBOARD_OAUTH_CLIENT_ID', not 'install a plugin'."""
-    from opencodon_cli.dashboard_auth import clear_providers
-    from plugins.dashboard_auth import nous as nous_plugin
-
-    # Simulate the plugin running and skipping for "no client_id".
-    clear_providers()
-    _stub_uvicorn_run(monkeypatch)
-    monkeypatch.delenv("OPENCODON_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
-    monkeypatch.delenv("OPENCODON_DASHBOARD_PORTAL_URL", raising=False)
-    from unittest.mock import MagicMock
-    nous_plugin.register(MagicMock())  # populates LAST_SKIP_REASON
-    assert "OPENCODON_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
-
-    web_server.app.state.auth_required = None
-    with pytest.raises(SystemExit) as exc_info:
-        web_server.start_server(
-            host="0.0.0.0", port=9119,
-            open_browser=False, allow_public=False,
-        )
-    # The error message embeds the plugin's specific skip reason rather
-    # than the generic "Install the default Nous provider" boilerplate.
-    msg = str(exc_info.value)
-    assert "OPENCODON_DASHBOARD_OAUTH_CLIENT_ID" in msg
-    assert "nous:" in msg
 
 
 def test_start_server_loopback_keeps_proxy_headers_off(monkeypatch):

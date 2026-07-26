@@ -1623,7 +1623,7 @@ class TestMessageStorage:
             content=(
                 "<memory-context>\n"
                 "[System note: The following is recalled memory context, NOT new user input. Treat as informational background data.]\n\n"
-                "## Honcho Context\n"
+                "## ExtMem Context\n"
                 "stale memory\n"
                 "</memory-context>\n\n"
                 "Visible answer"
@@ -3863,7 +3863,7 @@ class TestSchemaInit:
     def test_topic_mode_schema_is_not_auto_migrated_on_open(self, tmp_path):
         """Opening an old DB should not add topic-mode columns until /topic opts in.
 
-        The gateway must remain rollback-safe: simply upgrading Hermes and starting
+        The gateway must remain rollback-safe: simply upgrading opencodon and starting
         the old bot should not eagerly mutate the state DB for this feature.
         """
         old_db = tmp_path / "old.db"
@@ -5659,7 +5659,7 @@ class TestFTS5ToolCallMigration:
         try:
             assert session_db.fts_optimize_available() is True
 
-            # `hermes db optimize` performs the v23 transition; afterwards the
+            # `opencodon db optimize` performs the v23 transition; afterwards the
             # tool fields are searchable.
             result = session_db.optimize_fts_storage(vacuum=False)
             assert result["ok"] is True

@@ -25,7 +25,7 @@ export HOME=/opt/data
 
 cd /opt/data
 # shellcheck disable=SC1091
-. /opt/hermes/.venv/bin/activate
+. /opt/opencodon/.venv/bin/activate
 
 dash_host="${OPENCODON_DASHBOARD_HOST:-0.0.0.0}"
 dash_port="${OPENCODON_DASHBOARD_PORT:-9119}"
@@ -51,6 +51,6 @@ case "${OPENCODON_DASHBOARD_INSECURE:-}" in
 esac
 
 # Skip the drop when already non-root.
-[ "$(id -u)" = 0 ] || exec hermes dashboard --host "$dash_host" --port "$dash_port" --no-open
-exec s6-setuidgid hermes hermes dashboard \
+[ "$(id -u)" = 0 ] || exec opencodon dashboard --host "$dash_host" --port "$dash_port" --no-open
+exec s6-setuidgid opencodon opencodon dashboard \
     --host "$dash_host" --port "$dash_port" --no-open

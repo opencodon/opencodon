@@ -80,7 +80,7 @@ describe('MessagingView setup-guide link', () => {
   })
 
   it('opens a real docs URL through the validated external opener', async () => {
-    const docsUrl = 'https://opencodon-agent.nousresearch.com/docs/user-guide/messaging/teams'
+    const docsUrl = 'https://github.com/opencodon/opencodon/tree/main/docs'
     getMessagingPlatforms.mockResolvedValue({ platforms: [platform({ docs_url: docsUrl })] })
 
     await renderMessaging()

@@ -167,7 +167,7 @@ export async function startIsolatedInstance({
   devPort = 5174,
   prod = false,
   coldStart = false,
-  hermesHome,
+  opencodonHome,
   userDataDir,
   seedConfig = true,
   settleMs = 2500,
@@ -183,11 +183,11 @@ export async function startIsolatedInstance({
     return dir
   }
 
-  const home = hermesHome ?? mkTemp('hermes-perf-home-')
-  const userData = userDataDir ?? mkTemp('hermes-perf-ud-')
+  const home = opencodonHome ?? mkTemp('opencodon-perf-home-')
+  const userData = userDataDir ?? mkTemp('opencodon-perf-ud-')
   const devUrl = prod ? null : `http://127.0.0.1:${devPort}`
 
-  if (seedConfig && !hermesHome) {
+  if (seedConfig && !opencodonHome) {
     seedConfigFrom(join(homedir(), '.opencodon'), home)
   }
 
@@ -339,8 +339,8 @@ export async function coldStartSamples({ runs = 3, port = 9222, devPort = 5174, 
   if (warm) {
     // Shared profile across runs: run 0 warms the V8 code cache (discarded),
     // runs 1..N are the representative warm samples.
-    const home = mkdtempSync(join(tmpdir(), 'hermes-perf-cold-home-'))
-    const userDataDir = mkdtempSync(join(tmpdir(), 'hermes-perf-cold-ud-'))
+    const home = mkdtempSync(join(tmpdir(), 'opencodon-perf-cold-home-'))
+    const userDataDir = mkdtempSync(join(tmpdir(), 'opencodon-perf-cold-ud-'))
     seedConfigFrom(join(homedir(), '.opencodon'), home)
 
     try {
@@ -350,7 +350,7 @@ export async function coldStartSamples({ runs = 3, port = 9222, devPort = 5174, 
           devPort: devPort + i,
           prod,
           coldStart: true,
-          hermesHome: home,
+          opencodonHome: home,
           userDataDir,
           seedConfig: false
         })

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from opencodon_constants import get_opencodon_home
-from tools.environments.local import hermes_subprocess_env
+from tools.environments.local import opencodon_subprocess_env
 
 logger = logging.getLogger(__name__)
 _Thread = threading.Thread
@@ -311,7 +311,7 @@ class HostSupervisor:
             raise RuntimeError("compute host respawn disabled after crash loop")
         self._hello_event.clear()
         self._hello = {}
-        env = hermes_subprocess_env(inherit_credentials=True)
+        env = opencodon_subprocess_env(inherit_credentials=True)
         env.update(os.environ)
         if self.env:
             env.update(self.env)

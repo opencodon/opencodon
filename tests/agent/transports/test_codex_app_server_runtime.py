@@ -244,7 +244,7 @@ class TestSpawnEnvIsolation:
     def test_kanban_worker_adds_only_kanban_writable_root(self, monkeypatch):
         """Codex-runtime Kanban workers need to write board state outside
         their scratch/worktree workspace, but should not fall back to
-        danger-full-access. Hermes passes a narrow app-server config override
+        danger-full-access. opencodon passes a narrow app-server config override
         for the Kanban root only.
         """
         import subprocess
@@ -298,11 +298,11 @@ class TestSpawnEnvIsolation:
 
 
 class TestSpawnEnvSecretStripping:
-    """codex app-server routes its spawn env through hermes_subprocess_env(
+    """codex app-server routes its spawn env through opencodon_subprocess_env(
     inherit_credentials=True) instead of a raw os.environ.copy().
 
     codex is a model-driving CLI executor: it legitimately needs LLM provider
-    credentials to authenticate, but it must NOT inherit Tier-1 Hermes secrets
+    credentials to authenticate, but it must NOT inherit Tier-1 opencodon secrets
     (gateway bot tokens, GitHub/infra auth, dashboard session token) or the
     dynamic-internal secrets (AUXILIARY_*_API_KEY / _BASE_URL side-LLM keys,
     GATEWAY_RELAY_* relay-auth) — a coding subprocess has no use for those and
@@ -373,7 +373,7 @@ class TestSpawnEnvSecretStripping:
         assert env.get("OPENAI_API_KEY") == "sk-codex-needs-this"
 
     def test_home_still_preserved_through_helper(self, monkeypatch):
-        """Regression guard: routing through hermes_subprocess_env must not
+        """Regression guard: routing through opencodon_subprocess_env must not
         rewrite HOME (codex's shell tool spawns gh/git/aws that need it)."""
         monkeypatch.setenv("HOME", "/users/alice")
         env = self._capture_spawn_env(monkeypatch)

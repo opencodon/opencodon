@@ -1,5 +1,5 @@
 name: "🔧 Setup / Installation Help"
-description: Having trouble installing or configuring Hermes? Ask here.
+description: Having trouble installing or configuring opencodon? Ask here.
 title: "[Setup]: "
 labels: ["setup"]
 body:
@@ -13,7 +13,7 @@ body:
         - If you're in a chat session, you can use `/debug` instead — it does the same thing
         - Try `opencodon update` to get the latest version
         - Check the [README troubleshooting section](https://github.com/opencodon/opencodon#troubleshooting)
-        - For general questions, consider the [Nous Research Discord](https://discord.gg/NousResearch) for faster help
+        - For general questions, consider the [Nous Research Discord](https://github.com/opencodon/opencodon/discussions) for faster help
 
   - type: textarea
     id: description
@@ -70,7 +70,7 @@ body:
   - type: input
     id: opencodon-version
     attributes:
-      label: Hermes Version
+      label: opencodon Version
       description: Output of `opencodon version` (if install got that far)
       placeholder: "2.1.0"
 

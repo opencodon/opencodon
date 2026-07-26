@@ -1,5 +1,5 @@
 """Tests for opencodon_cli.session_filters — CLI time/filter parsing for
-`hermes sessions prune` / `hermes sessions archive`."""
+`opencodon sessions prune` / `opencodon sessions archive`."""
 
 import time
 from argparse import Namespace

@@ -24,7 +24,7 @@ from acp.schema import (
     ToolCallStart,
 )
 
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import OpencodonACPAgent
 from acp_adapter.session import SessionManager
 from acp_adapter.tools import build_tool_start
 
@@ -41,7 +41,7 @@ def mock_manager():
 
 @pytest.fixture()
 def acp_agent(mock_manager):
-    return HermesACPAgent(session_manager=mock_manager)
+    return OpencodonACPAgent(session_manager=mock_manager)
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ class TestMcpRegistrationE2E:
 
     @pytest.mark.asyncio
     async def test_session_with_mcp_servers_registers_tools(self, acp_agent, mock_manager):
-        """new_session with mcpServers converts them to Hermes config and registers."""
+        """new_session with mcpServers converts them to opencodon config and registers."""
         servers = [
             McpServerStdio(
                 name="test-fs",

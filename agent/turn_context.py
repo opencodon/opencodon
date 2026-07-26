@@ -359,7 +359,7 @@ def build_turn_context(
     # null; rebuilding from scratch" warning and a needless first-turn prefix
     # cache miss. (Issue #45499.)
 
-    # Tag log records on this thread with the session ID for ``hermes logs``.
+    # Tag log records on this thread with the session ID for ``opencodon logs``.
     set_session_context(agent.session_id)
 
     # Bind the skill write-origin ContextVar for this thread.
@@ -715,7 +715,7 @@ def build_turn_context(
         )
         _preflight_deferred = _defer_preflight(_preflight_tokens)
         # Codex app-server threads are compacted by the codex agent itself;
-        # Hermes only initiates compaction in "hermes" mode (#36801).
+        # opencodon only initiates compaction in "opencodon" mode (#36801).
         _codex_native_auto = (
             getattr(agent, "api_mode", None) == "codex_app_server"
             and str(
@@ -758,8 +758,8 @@ def build_turn_context(
             )
         elif _codex_native_auto:
             logger.info(
-                "Skipping Hermes preflight compression for codex app-server "
-                "(mode=%s); Hermes will not start thread compaction here.",
+                "Skipping opencodon preflight compression for codex app-server "
+                "(mode=%s); opencodon will not start thread compaction here.",
                 getattr(agent, "codex_app_server_auto_compaction", "native"),
             )
         elif _compressor.should_compress(_preflight_tokens):

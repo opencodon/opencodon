@@ -79,22 +79,21 @@ def test_catalog_placeholders_match_english(lang: str):
 # ---------------------------------------------------------------------------
 
 def test_normalize_lang_accepts_supported():
-    assert i18n._normalize_lang("zh") == "zh"
+    assert i18n._normalize_lang("en") == "en"
     assert i18n._normalize_lang("EN") == "en"
 
 
 def test_normalize_lang_accepts_aliases():
-    assert i18n._normalize_lang("chinese") == "zh"
-    assert i18n._normalize_lang("zh-CN") == "zh"
-    assert i18n._normalize_lang("Deutsch") == "de"
-    assert i18n._normalize_lang("español") == "es"
-    assert i18n._normalize_lang("jp") == "ja"
-    assert i18n._normalize_lang("Ukrainian") == "uk"
-    assert i18n._normalize_lang("uk-UA") == "uk"
-    assert i18n._normalize_lang("ua") == "uk"
-    assert i18n._normalize_lang("Turkish") == "tr"
-    assert i18n._normalize_lang("tr-TR") == "tr"
-    assert i18n._normalize_lang("türkçe") == "tr"
+    assert i18n._normalize_lang("english") == "en"
+    assert i18n._normalize_lang("en-US") == "en"
+    assert i18n._normalize_lang("EN-GB") == "en"
+
+
+def test_normalize_lang_falls_back_for_unshipped_languages():
+    """Only English ships; every other tag resolves to the default."""
+    for tag in ("zh", "chinese", "Deutsch", "español", "jp", "Ukrainian",
+                "uk-UA", "ua", "Turkish", "tr-TR", "türkçe"):
+        assert i18n._normalize_lang(tag) == i18n.DEFAULT_LANGUAGE
 
 
 def test_normalize_lang_unknown_falls_back():
@@ -106,14 +105,14 @@ def test_normalize_lang_unknown_falls_back():
 def test_env_var_override(monkeypatch):
     """OPENCODON_LANGUAGE wins over config."""
     i18n.reset_language_cache()
-    monkeypatch.setenv("OPENCODON_LANGUAGE", "ja")
-    assert i18n.get_language() == "ja"
+    monkeypatch.setenv("OPENCODON_LANGUAGE", "en")
+    assert i18n.get_language() == "en"
 
 
 def test_env_var_normalized(monkeypatch):
     i18n.reset_language_cache()
-    monkeypatch.setenv("OPENCODON_LANGUAGE", "Chinese")
-    assert i18n.get_language() == "zh"
+    monkeypatch.setenv("OPENCODON_LANGUAGE", "English")
+    assert i18n.get_language() == "en"
 
 
 def test_default_when_nothing_set(monkeypatch):
@@ -131,9 +130,8 @@ def test_default_when_nothing_set(monkeypatch):
 
 def test_t_explicit_lang():
     assert i18n.t("approval.denied", lang="en").endswith("Denied")
-    assert i18n.t("approval.denied", lang="zh").endswith("已拒绝")
-    assert i18n.t("approval.denied", lang="uk").endswith("Відхилено")
-    assert i18n.t("approval.denied", lang="tr").endswith("Reddedildi")
+    # Unshipped languages fall back to the English catalog.
+    assert i18n.t("approval.denied", lang="zh").endswith("Denied")
 
 
 def test_t_formats_placeholders():

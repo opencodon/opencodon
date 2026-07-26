@@ -121,7 +121,7 @@ def reclaimer_loop(opencodon_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="hermes_reclaim_race_")
+    home = tempfile.mkdtemp(prefix="opencodon_reclaim_race_")
     os.environ["OPENCODON_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)

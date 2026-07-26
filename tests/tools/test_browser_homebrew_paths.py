@@ -263,8 +263,8 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        browser_path = "/Users/test/Library/Application Support/hermes/node_modules/.bin/agent-browser"
-        opencodon_home = str(tmp_path / "hermes-home")
+        browser_path = "/Users/test/Library/Application Support/opencodon/node_modules/.bin/agent-browser"
+        opencodon_home = str(tmp_path / "opencodon-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value=browser_path), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \
@@ -316,7 +316,7 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        opencodon_home = str(tmp_path / "hermes-home")
+        opencodon_home = str(tmp_path / "opencodon-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value="npx agent-browser"), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \

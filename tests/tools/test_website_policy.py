@@ -242,7 +242,7 @@ def test_load_website_blocklist_wraps_shared_file_read_errors(tmp_path, monkeypa
 
 
 def test_check_website_access_uses_dynamic_opencodon_home(monkeypatch, tmp_path):
-    opencodon_home = tmp_path / "hermes-home"
+    opencodon_home = tmp_path / "opencodon-home"
     opencodon_home.mkdir()
     (opencodon_home / "config.yaml").write_text(
         yaml.safe_dump(

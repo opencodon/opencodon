@@ -42,7 +42,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
     prefix: 'NOUS_',
     name: 'Nous Portal',
     description: 'Hosted Opencodon & Nous-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
+    docsUrl: 'https://github.com/opencodon/opencodon/tree/main/docs',
     priority: 0
   },
   {

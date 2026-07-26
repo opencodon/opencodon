@@ -15,7 +15,7 @@ backend supplies only its own cache-key shape and a serializer for it.
 
 Nothing in this module ever raises out to the caller's hot path: the disk
 layer is strictly best-effort (a miss just triggers a refetch), because a
-cache problem must never block Hermes startup.
+cache problem must never block opencodon startup.
 """
 
 from __future__ import annotations
@@ -75,9 +75,9 @@ class CachedFetch:
 
 
 def resolve_cache_home(home_path: Optional[Path] = None) -> Path:
-    """Resolve the Hermes home used for cache paths.
+    """Resolve the opencodon home used for cache paths.
 
-    ``home_path`` is whatever ``load_hermes_dotenv()`` already resolved;
+    ``home_path`` is whatever ``load_opencodon_dotenv()`` already resolved;
     falling back to ``$OPENCODON_HOME`` / ``~/.opencodon`` keeps direct callers
     (and tests that don't thread a home through) working.
     """

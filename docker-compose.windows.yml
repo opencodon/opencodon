@@ -11,8 +11,8 @@
 #
 services:
   gateway:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes
+    image: opencodon/opencodon:latest
+    container_name: opencodon
     restart: unless-stopped
     volumes:
       - ${USERPROFILE}/.opencodon:/opt/data
@@ -22,8 +22,8 @@ services:
     command: ["gateway", "run"]
 
   dashboard:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes-dashboard
+    image: opencodon/opencodon:latest
+    container_name: opencodon-dashboard
     restart: unless-stopped
     depends_on:
       - gateway

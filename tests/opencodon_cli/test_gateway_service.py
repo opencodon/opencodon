@@ -173,12 +173,12 @@ class TestSystemdServiceRefresh:
         assert markers == [321]
         output = capsys.readouterr().out
         assert "still stopping after 90s" in output
-        assert "hermes gateway status" in output
+        assert "opencodon gateway status" in output
 
     def test_systemd_restart_timeout_prints_status_guidance(self, monkeypatch, capsys):
-        """`hermes gateway restart` must not surface a raw TimeoutExpired traceback.
+        """`opencodon gateway restart` must not surface a raw TimeoutExpired traceback.
 
-        The dashboard spawns `hermes gateway restart` in the background; when a
+        The dashboard spawns `opencodon gateway restart` in the background; when a
         wedged adapter websocket pushes drain past the 90s CLI timeout, the
         dashboard would previously show a Python traceback (issue #19937
         follow-up: the same failure mode applies to restart, not just stop).
@@ -212,12 +212,12 @@ class TestSystemdServiceRefresh:
 
         output = capsys.readouterr().out
         assert "still restarting after 90s" in output
-        assert "hermes gateway status" in output
+        assert "opencodon gateway status" in output
 
     def test_run_gateway_refreshes_outdated_unit_on_boot(self, tmp_path, monkeypatch):
         """run_gateway() should refresh the systemd unit on boot so that
         restart settings take effect even when the process was respawned
-        via exit-code-75 (bypassing `hermes gateway restart`)."""
+        via exit-code-75 (bypassing `opencodon gateway restart`)."""
         unit_path = tmp_path / "opencodon-gateway.service"
         unit_path.write_text("old unit\n", encoding="utf-8")
 
@@ -254,7 +254,7 @@ class TestSystemdServiceRefresh:
         ``Environment=`` line. Without this guard, any test that drives
         ``run_gateway()`` end-to-end on a real Linux dev box silently
         rewrites the developer's installed gateway unit with a
-        ``/tmp/pytest-of-.../hermes_test`` OPENCODON_HOME — silently breaking
+        ``/tmp/pytest-of-.../opencodon_test`` OPENCODON_HOME — silently breaking
         their gateway on the next boot. The guard sniffs the generated
         unit body for tmpdir markers and refuses the write. Tests that
         legitimately exercise the refresh flow patch
@@ -271,7 +271,7 @@ class TestSystemdServiceRefresh:
         polluted_unit = (
             "[Service]\n"
             'Environment="OPENCODON_HOME=/tmp/pytest-of-alice/pytest-42/'
-            'popen-gw0/test_x/hermes_test"\n'
+            'popen-gw0/test_x/opencodon_test"\n'
         )
         monkeypatch.setattr(
             gateway_cli,
@@ -302,9 +302,9 @@ class TestSystemdServiceRefresh:
         self, tmp_path, monkeypatch
     ):
         """Structural guard: a manual E2E OPENCODON_HOME like
-        ``/tmp/hermes-e2e-41264`` carries none of the pytest markers but
+        ``/tmp/opencodon-e2e-41264`` carries none of the pytest markers but
         poisons the unit identically (seen live 2026-06-11 — an E2E probe ran
-        ``hermes gateway restart`` with a /tmp OPENCODON_HOME exported; the
+        ``opencodon gateway restart`` with a /tmp OPENCODON_HOME exported; the
         restart's unit refresh baked it into the production unit and the
         post-update restart produced a 7-hour zombie gateway). The refresh
         must refuse ANY temp-dir OPENCODON_HOME, not just pytest-shaped ones.
@@ -317,8 +317,8 @@ class TestSystemdServiceRefresh:
         )
         polluted_unit = (
             "[Service]\n"
-            'Environment="OPENCODON_HOME=/tmp/hermes-e2e-41264"\n'
-            "WorkingDirectory=/tmp/hermes-e2e-41264\n"
+            'Environment="OPENCODON_HOME=/tmp/opencodon-e2e-41264"\n'
+            "WorkingDirectory=/tmp/opencodon-e2e-41264\n"
         )
         monkeypatch.setattr(
             gateway_cli,
@@ -349,31 +349,31 @@ class TestTempHomeServiceDefinitionGuard:
     """_temp_home_in_service_definition() — structural temp-dir detection."""
 
     def test_detects_tmp_home_in_systemd_unit(self):
-        unit = '[Service]\nEnvironment="OPENCODON_HOME=/tmp/hermes-e2e-41264"\n'
+        unit = '[Service]\nEnvironment="OPENCODON_HOME=/tmp/opencodon-e2e-41264"\n'
         assert (
             gateway_cli._temp_home_in_service_definition(unit)
-            == "/tmp/hermes-e2e-41264"
+            == "/tmp/opencodon-e2e-41264"
         )
 
     def test_detects_var_tmp_home(self):
-        unit = '[Service]\nEnvironment="OPENCODON_HOME=/var/tmp/hermes-x"\n'
+        unit = '[Service]\nEnvironment="OPENCODON_HOME=/var/tmp/opencodon-x"\n'
         assert gateway_cli._temp_home_in_service_definition(unit) is not None
 
     def test_detects_tempdir_env_home(self, monkeypatch, tmp_path):
         import tempfile as _tempfile
 
         monkeypatch.setattr(_tempfile, "gettempdir", lambda: str(tmp_path))
-        unit = f'[Service]\nEnvironment="OPENCODON_HOME={tmp_path}/hermes-home"\n'
+        unit = f'[Service]\nEnvironment="OPENCODON_HOME={tmp_path}/opencodon-home"\n'
         assert gateway_cli._temp_home_in_service_definition(unit) is not None
 
     def test_detects_tmp_home_in_launchd_plist(self):
         plist = (
             "<dict>\n  <key>OPENCODON_HOME</key>\n"
-            "  <string>/tmp/hermes-e2e-99999</string>\n</dict>\n"
+            "  <string>/tmp/opencodon-e2e-99999</string>\n</dict>\n"
         )
         assert (
             gateway_cli._temp_home_in_service_definition(plist)
-            == "/tmp/hermes-e2e-99999"
+            == "/tmp/opencodon-e2e-99999"
         )
 
     def test_accepts_real_home(self):
@@ -409,7 +409,7 @@ class TestRequireServiceInstalled:
         assert exc_info.value.code == 1
         out = capsys.readouterr().out
         assert "not installed" in out
-        assert "hermes gateway install" in out
+        assert "opencodon gateway install" in out
 
     def test_passes_when_unit_exists(self, tmp_path, monkeypatch):
         unit_path = tmp_path / "opencodon-gateway.service"
@@ -1199,7 +1199,7 @@ class TestLaunchdServiceRecovery:
             gateway_cli._launchd_fallback_to_detached("test reason")
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "nohup hermes gateway run" in out
+        assert "nohup opencodon gateway run" in out
         # Marker is still written so status knows launchd is unavailable
         assert gateway_cli._launchd_unsupported_marker_exists()
 
@@ -1736,7 +1736,6 @@ class TestGatewaySystemServiceRouting:
         monkeypatch.setattr(gateway_cli, "_select_systemd_scope", lambda system=False: False)
         monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: unit)
         monkeypatch.setattr(gateway_cli, "has_conflicting_systemd_units", lambda: False)
-        monkeypatch.setattr(gateway_cli, "has_legacy_hermes_units", lambda: False)
         monkeypatch.setattr(gateway_cli, "systemd_unit_is_current", lambda system=False: True)
         monkeypatch.setattr(gateway_cli, "_runtime_health_lines", lambda: ["⚠ Last shutdown reason: Gateway restart requested"])
         monkeypatch.setattr(gateway_cli, "get_systemd_linger_status", lambda: (True, ""))
@@ -1817,7 +1816,7 @@ class TestGatewaySystemServiceRouting:
 
         out = capsys.readouterr().out
         assert "not supported on Termux" in out
-        assert "Run manually: hermes gateway" in out
+        assert "Run manually: opencodon gateway" in out
 
     def test_gateway_status_prefers_system_service_when_only_system_unit_exists(self, monkeypatch):
         user_unit = SimpleNamespace(exists=lambda: False)
@@ -1890,7 +1889,7 @@ class TestGatewaySystemServiceRouting:
 
         out = capsys.readouterr().out
         assert "Gateway is not running" in out
-        assert "nohup hermes gateway" in out
+        assert "nohup opencodon gateway" in out
         assert "install as user service" not in out
 
     def test_gateway_restart_does_not_fallback_to_foreground_when_launchd_restart_fails(self, tmp_path, monkeypatch):
@@ -1981,7 +1980,7 @@ class TestDetectVenvDir:
         assert result is None
 
 
-class TestSystemUnitHermesHome:
+class TestSystemUnitOpencodonHome:
     """OPENCODON_HOME in system units must reference the target user, not root."""
 
     def test_system_unit_uses_target_user_home_not_calling_user(self, monkeypatch):
@@ -2023,7 +2022,7 @@ class TestSystemUnitHermesHome:
     def test_system_unit_preserves_custom_opencodon_home(self, monkeypatch):
         # Custom OPENCODON_HOME not under any user's home — keep as-is
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/root")))
-        monkeypatch.setenv("OPENCODON_HOME", "/opt/hermes-shared")
+        monkeypatch.setenv("OPENCODON_HOME", "/opt/opencodon-shared")
         monkeypatch.setattr(
             gateway_cli, "_system_service_identity",
             lambda run_as_user=None: ("alice", "alice", "/home/alice"),
@@ -2035,7 +2034,7 @@ class TestSystemUnitHermesHome:
 
         unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="alice")
 
-        assert 'OPENCODON_HOME=/opt/hermes-shared' in unit
+        assert 'OPENCODON_HOME=/opt/opencodon-shared' in unit
 
     def test_user_unit_unaffected_by_change(self):
         # User-scope units should still use the calling user's OPENCODON_HOME
@@ -2045,20 +2044,20 @@ class TestSystemUnitHermesHome:
         assert f'OPENCODON_HOME={opencodon_home}' in unit
 
 
-class TestSystemUnitRefreshSyncsHermesHome:
+class TestSystemUnitRefreshSyncsOpencodonHome:
     """sudo system refresh must not flip TimeoutStopSec via /root/.opencodon."""
 
     def test_refresh_adopts_unit_opencodon_home_before_rewriting(self, tmp_path, monkeypatch):
         root_home = tmp_path / "root"
         alice_home = tmp_path / "alice"
-        root_hermes = root_home / ".opencodon"
-        alice_hermes = alice_home / ".opencodon"
-        root_hermes.mkdir(parents=True)
-        alice_hermes.mkdir(parents=True)
-        (root_hermes / "config.yaml").write_text(
+        root_opencodon = root_home / ".opencodon"
+        alice_opencodon = alice_home / ".opencodon"
+        root_opencodon.mkdir(parents=True)
+        alice_opencodon.mkdir(parents=True)
+        (root_opencodon / "config.yaml").write_text(
             "agent:\n  restart_drain_timeout: 60\n", encoding="utf-8"
         )
-        (alice_hermes / "config.yaml").write_text(
+        (alice_opencodon / "config.yaml").write_text(
             "agent:\n  restart_drain_timeout: 180\n", encoding="utf-8"
         )
 
@@ -2078,16 +2077,16 @@ class TestSystemUnitRefreshSyncsHermesHome:
         monkeypatch.delenv("OPENCODON_RESTART_DRAIN_TIMEOUT", raising=False)
 
         # Correct installed unit (operator's OPENCODON_HOME + drain timeout).
-        monkeypatch.setenv("OPENCODON_HOME", str(alice_hermes))
+        monkeypatch.setenv("OPENCODON_HOME", str(alice_opencodon))
         good_unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="alice")
         assert "TimeoutStopSec=210" in good_unit
         unit_path.write_text(good_unit, encoding="utf-8")
 
         # Simulate sudo without inherited OPENCODON_HOME (falls back to root).
-        monkeypatch.setenv("OPENCODON_HOME", str(root_hermes))
+        monkeypatch.setenv("OPENCODON_HOME", str(root_opencodon))
         assert gateway_cli.refresh_systemd_unit_if_needed(system=True) is False
         assert unit_path.read_text(encoding="utf-8") == good_unit
-        assert os.environ["OPENCODON_HOME"] == str(alice_hermes)
+        assert os.environ["OPENCODON_HOME"] == str(alice_opencodon)
         assert gateway_cli.systemd_unit_is_current(system=True) is True
 
     def test_is_current_syncs_before_reading_unit(self, tmp_path, monkeypatch):
@@ -2176,7 +2175,7 @@ class TestSystemUnitRefreshSyncsHermesHome:
             )
 
 
-class TestHermesHomeForTargetUser:
+class TestOpencodonHomeForTargetUser:
     """Unit tests for _opencodon_home_for_target_user()."""
 
     def test_remaps_default_home(self, monkeypatch):
@@ -2195,10 +2194,10 @@ class TestHermesHomeForTargetUser:
 
     def test_keeps_custom_path(self, monkeypatch):
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/root")))
-        monkeypatch.setenv("OPENCODON_HOME", "/opt/hermes")
+        monkeypatch.setenv("OPENCODON_HOME", "/opt/opencodon")
 
         result = gateway_cli._opencodon_home_for_target_user("/home/alice")
-        assert result == "/opt/hermes"
+        assert result == "/opt/opencodon"
 
     def test_noop_when_same_user(self, monkeypatch):
         monkeypatch.setattr(Path, "home", staticmethod(lambda: Path("/home/alice")))
@@ -2411,7 +2410,7 @@ class TestPreflightUserSystemd:
 
         msg = str(exc_info.value)
         assert "sudo loginctl enable-linger" in msg
-        assert "hermes gateway run" in msg  # foreground fallback mentioned
+        assert "opencodon gateway run" in msg  # foreground fallback mentioned
         assert "Interactive authentication required" in msg
 
     def test_raises_when_loginctl_missing(self, monkeypatch):
@@ -2524,7 +2523,7 @@ class TestProfileArg:
 
     def test_hash_path_returns_empty(self, tmp_path, monkeypatch):
         """Arbitrary non-profile OPENCODON_HOME should return empty string."""
-        custom_home = tmp_path / "custom" / "hermes"
+        custom_home = tmp_path / "custom" / "opencodon"
         custom_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
@@ -2639,8 +2638,8 @@ class TestRemapPathForUser:
     def test_keeps_system_path_unchanged(self, monkeypatch, tmp_path):
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "root")
         (tmp_path / "root").mkdir()
-        result = gateway_cli._remap_path_for_user("/opt/hermes", str(tmp_path / "alice"))
-        assert result == "/opt/hermes"
+        result = gateway_cli._remap_path_for_user("/opt/opencodon", str(tmp_path / "alice"))
+        assert result == "/opt/opencodon"
 
     def test_noop_when_same_user(self, monkeypatch, tmp_path):
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "alice")
@@ -2720,7 +2719,7 @@ class TestDockerAwareGateway:
         assert "status" in calls[0]
 
     def test_install_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway install' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway install' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_managed", lambda: False)
@@ -2740,7 +2739,7 @@ class TestDockerAwareGateway:
         assert "restart" in out.lower()
 
     def test_uninstall_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway uninstall' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway uninstall' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_managed", lambda: False)
@@ -2758,7 +2757,7 @@ class TestDockerAwareGateway:
         assert "docker" in out.lower()
 
     def test_start_in_container_prints_docker_guidance(self, monkeypatch, capsys):
-        """'hermes gateway start' inside Docker exits 0 with container guidance."""
+        """'opencodon gateway start' inside Docker exits 0 with container guidance."""
         import pytest
 
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
@@ -2774,399 +2773,13 @@ class TestDockerAwareGateway:
         assert exc_info.value.code == 0
         out = capsys.readouterr().out
         assert "docker" in out.lower()
-        assert "hermes gateway run" in out
+        assert "opencodon gateway run" in out
 
 
-class TestLegacyHermesUnitDetection:
-    """Tests for _find_legacy_hermes_units / has_legacy_hermes_units.
 
-    These guard against the scenario that tripped Luis in April 2026: an
-    older install left a ``hermes.service`` unit behind when the service was
-    renamed to ``opencodon-gateway.service``. After PR #5646 (signal recovery
-    via systemd), the two services began SIGTERM-flapping over the same
-    Telegram bot token in a 30-second cycle.
 
-    The detector must flag ``hermes.service`` ONLY when it actually runs our
-    gateway, and must NEVER flag profile units
-    (``opencodon-gateway-<profile>.service``) or unrelated third-party services.
-    """
 
-    # Minimal ExecStart that looks like our gateway
-    _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
-        "ExecStart=/usr/bin/python -m opencodon_cli.main gateway run --replace\n"
-    )
 
-    @staticmethod
-    def _setup_search_paths(tmp_path, monkeypatch):
-        """Redirect the legacy search to user_dir + system_dir under tmp_path."""
-        user_dir = tmp_path / "user"
-        system_dir = tmp_path / "system"
-        user_dir.mkdir()
-        system_dir.mkdir()
-        monkeypatch.setattr(
-            gateway_cli,
-            "_legacy_unit_search_paths",
-            lambda: [(False, user_dir), (True, system_dir)],
-        )
-        return user_dir, system_dir
-
-    def test_detects_legacy_hermes_service_in_user_scope(self, tmp_path, monkeypatch):
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        legacy = user_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert len(results) == 1
-        name, path, is_system = results[0]
-        assert name == "hermes.service"
-        assert path == legacy
-        assert is_system is False
-        assert gateway_cli.has_legacy_hermes_units() is True
-
-    def test_detects_legacy_hermes_service_in_system_scope(self, tmp_path, monkeypatch):
-        _, system_dir = self._setup_search_paths(tmp_path, monkeypatch)
-        legacy = system_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert len(results) == 1
-        name, path, is_system = results[0]
-        assert name == "hermes.service"
-        assert path == legacy
-        assert is_system is True
-
-    def test_ignores_profile_unit_hermes_gateway_coder(self, tmp_path, monkeypatch):
-        """CRITICAL: profile units must NOT be flagged as legacy.
-
-        Teknium's concern — ``opencodon-gateway-coder.service`` is our standard
-        naming for the ``coder`` profile. The legacy detector is an explicit
-        allowlist, not a glob, so profile units are safe.
-        """
-        user_dir, system_dir = self._setup_search_paths(tmp_path, monkeypatch)
-        # Drop profile units in BOTH scopes with our ExecStart
-        for base in (user_dir, system_dir):
-            (base / "opencodon-gateway-coder.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-            (base / "opencodon-gateway-orcha.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-            (base / "opencodon-gateway.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert results == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-
-    def test_ignores_unrelated_hermes_service(self, tmp_path, monkeypatch):
-        """Third-party ``hermes.service`` that isn't ours stays untouched.
-
-        If a user has some other package named ``hermes`` installed as a
-        service, we must not flag it.
-        """
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        (user_dir / "hermes.service").write_text(
-            "[Unit]\nDescription=Some Other Hermes\n[Service]\n"
-            "ExecStart=/opt/other-hermes/bin/daemon --foreground\n",
-            encoding="utf-8",
-        )
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert results == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-
-    def test_returns_empty_when_no_legacy_files_exist(self, tmp_path, monkeypatch):
-        self._setup_search_paths(tmp_path, monkeypatch)
-
-        assert gateway_cli._find_legacy_hermes_units() == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-
-    def test_detects_both_scopes_simultaneously(self, tmp_path, monkeypatch):
-        """When a user has BOTH user-scope and system-scope legacy units,
-        both are reported so the migration step can remove them together."""
-        user_dir, system_dir = self._setup_search_paths(tmp_path, monkeypatch)
-        (user_dir / "hermes.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-        (system_dir / "hermes.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        scopes = sorted(is_system for _, _, is_system in results)
-        assert scopes == [False, True]
-
-    def test_accepts_alternate_execstart_formats(self, tmp_path, monkeypatch):
-        """Older installs may have used different python invocations.
-
-        ExecStart variants we've seen in the wild:
-          - python -m opencodon_cli.main gateway run
-          - python path/to/opencodon_cli/main.py gateway run
-          - hermes gateway run   (direct binary)
-          - python path/to/gateway/run.py
-        """
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        variants = [
-            "ExecStart=/venv/bin/python -m opencodon_cli.main gateway run --replace",
-            "ExecStart=/venv/bin/python /opt/hermes/opencodon_cli/main.py gateway run",
-            "ExecStart=/usr/local/bin/hermes gateway run --replace",
-            "ExecStart=/venv/bin/python /opt/hermes/gateway/run.py",
-        ]
-        for i, execstart in enumerate(variants):
-            name = "hermes.service" if i == 0 else "hermes.service"  # same name
-            # Test each variant fresh
-            (user_dir / "hermes.service").write_text(
-                f"[Unit]\nDescription=Old Hermes\n[Service]\n{execstart}\n",
-                encoding="utf-8",
-            )
-            results = gateway_cli._find_legacy_hermes_units()
-            assert len(results) == 1, f"Variant {i} not detected: {execstart!r}"
-
-    def test_print_legacy_unit_warning_is_noop_when_empty(self, tmp_path, monkeypatch, capsys):
-        self._setup_search_paths(tmp_path, monkeypatch)
-
-        gateway_cli.print_legacy_unit_warning()
-        out = capsys.readouterr().out
-
-        assert out == ""
-
-    def test_print_legacy_unit_warning_shows_migration_hint(self, tmp_path, monkeypatch, capsys):
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        (user_dir / "hermes.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        gateway_cli.print_legacy_unit_warning()
-        out = capsys.readouterr().out
-
-        assert "Legacy" in out
-        assert "hermes.service" in out
-        assert "hermes gateway migrate-legacy" in out
-
-    def test_handles_unreadable_unit_file_gracefully(self, tmp_path, monkeypatch):
-        """A permission error reading a unit file must not crash detection."""
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        unreadable = user_dir / "hermes.service"
-        unreadable.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-        # Simulate a read failure — monkeypatch Path.read_text to raise
-        original_read_text = gateway_cli.Path.read_text
-
-        def raising_read_text(self, *args, **kwargs):
-            if self == unreadable:
-                raise PermissionError("simulated")
-            return original_read_text(self, *args, **kwargs)
-
-        monkeypatch.setattr(gateway_cli.Path, "read_text", raising_read_text)
-
-        # Should not raise
-        results = gateway_cli._find_legacy_hermes_units()
-        assert results == []
-
-
-class TestRemoveLegacyHermesUnits:
-    """Tests for remove_legacy_hermes_units (the migration action)."""
-
-    _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
-        "ExecStart=/usr/bin/python -m opencodon_cli.main gateway run --replace\n"
-    )
-
-    @staticmethod
-    def _setup(tmp_path, monkeypatch, as_root=False):
-        user_dir = tmp_path / "user"
-        system_dir = tmp_path / "system"
-        user_dir.mkdir()
-        system_dir.mkdir()
-        monkeypatch.setattr(
-            gateway_cli,
-            "_legacy_unit_search_paths",
-            lambda: [(False, user_dir), (True, system_dir)],
-        )
-        # Mock systemctl — return success for everything
-        systemctl_calls: list[list[str]] = []
-
-        def fake_run(cmd, **kwargs):
-            systemctl_calls.append(cmd)
-            return SimpleNamespace(returncode=0, stdout="", stderr="")
-
-        monkeypatch.setattr(gateway_cli.subprocess, "run", fake_run)
-        monkeypatch.setattr(gateway_cli.os, "geteuid", lambda: 0 if as_root else 1000)
-        return user_dir, system_dir, systemctl_calls
-
-    def test_returns_zero_when_no_legacy_units(self, tmp_path, monkeypatch, capsys):
-        self._setup(tmp_path, monkeypatch)
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 0
-        assert remaining == []
-        assert "No legacy" in capsys.readouterr().out
-
-    def test_dry_run_lists_without_removing(self, tmp_path, monkeypatch, capsys):
-        user_dir, _, calls = self._setup(tmp_path, monkeypatch)
-        legacy = user_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(
-            interactive=False, dry_run=True
-        )
-
-        assert removed == 0
-        assert remaining == [legacy]
-        assert legacy.exists()  # Not removed
-        assert calls == []  # No systemctl invocations
-        out = capsys.readouterr().out
-        assert "dry-run" in out
-
-    def test_removes_user_scope_legacy_unit(self, tmp_path, monkeypatch, capsys):
-        user_dir, _, calls = self._setup(tmp_path, monkeypatch)
-        legacy = user_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 1
-        assert remaining == []
-        assert not legacy.exists()
-        # Must have invoked stop → disable → daemon-reload on user scope
-        cmds_joined = [" ".join(c) for c in calls]
-        assert any("--user stop hermes.service" in c for c in cmds_joined)
-        assert any("--user disable hermes.service" in c for c in cmds_joined)
-        assert any("--user daemon-reload" in c for c in cmds_joined)
-
-    def test_system_scope_without_root_defers_removal(self, tmp_path, monkeypatch, capsys):
-        _, system_dir, calls = self._setup(tmp_path, monkeypatch, as_root=False)
-        legacy = system_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 0
-        assert remaining == [legacy]
-        assert legacy.exists()  # Not removed — requires sudo
-        out = capsys.readouterr().out
-        assert "sudo hermes gateway migrate-legacy" in out
-
-    def test_system_scope_with_root_removes(self, tmp_path, monkeypatch, capsys):
-        _, system_dir, calls = self._setup(tmp_path, monkeypatch, as_root=True)
-        legacy = system_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 1
-        assert remaining == []
-        assert not legacy.exists()
-        cmds_joined = [" ".join(c) for c in calls]
-        # System-scope uses plain "systemctl" (no --user)
-        assert any(
-            c.startswith("systemctl stop hermes.service") for c in cmds_joined
-        )
-        assert any(
-            c.startswith("systemctl disable hermes.service") for c in cmds_joined
-        )
-
-    def test_removes_both_scopes_with_root(self, tmp_path, monkeypatch, capsys):
-        user_dir, system_dir, _ = self._setup(tmp_path, monkeypatch, as_root=True)
-        user_legacy = user_dir / "hermes.service"
-        system_legacy = system_dir / "hermes.service"
-        user_legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-        system_legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 2
-        assert remaining == []
-        assert not user_legacy.exists()
-        assert not system_legacy.exists()
-
-    def test_does_not_touch_profile_units_during_migration(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        """Teknium's constraint: profile units (opencodon-gateway-coder.service)
-        must survive a migration call, even if we somehow include them in the
-        search dir."""
-        user_dir, _, _ = self._setup(tmp_path, monkeypatch, as_root=True)
-        profile_unit = user_dir / "opencodon-gateway-coder.service"
-        profile_unit.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-        default_unit = user_dir / "opencodon-gateway.service"
-        default_unit.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=False)
-
-        assert removed == 0
-        assert remaining == []
-        # Both the profile unit and the current default unit must survive
-        assert profile_unit.exists()
-        assert default_unit.exists()
-
-    def test_interactive_prompt_no_skips_removal(self, tmp_path, monkeypatch, capsys):
-        """When interactive=True and user answers no, no removal happens."""
-        user_dir, _, _ = self._setup(tmp_path, monkeypatch)
-        legacy = user_dir / "hermes.service"
-        legacy.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
-
-        monkeypatch.setattr(gateway_cli, "prompt_yes_no", lambda *a, **k: False)
-
-        removed, remaining = gateway_cli.remove_legacy_hermes_units(interactive=True)
-
-        assert removed == 0
-        assert remaining == [legacy]
-        assert legacy.exists()
-
-
-class TestMigrateLegacyCommand:
-    """Tests for the `hermes gateway migrate-legacy` subcommand dispatch."""
-
-    def test_migrate_legacy_subparser_accepts_dry_run_and_yes(self):
-        """Verify the argparse subparser is registered and parses flags."""
-        import opencodon_cli.main as cli_main
-
-        parser = cli_main.build_parser() if hasattr(cli_main, "build_parser") else None
-        # Fall back to calling main's setup helper if direct access isn't exposed
-        # The key thing: the subparser must exist. We verify by constructing
-        # a namespace through argparse directly — but if build_parser isn't
-        # public, just confirm that `hermes gateway --help` shows it.
-        import subprocess
-        import sys
-
-        project_root = cli_main.PROJECT_ROOT if hasattr(cli_main, "PROJECT_ROOT") else None
-        if project_root is None:
-            import opencodon_cli.gateway as gw
-            project_root = gw.PROJECT_ROOT
-
-        result = subprocess.run(
-            [sys.executable, "-m", "opencodon_cli.main", "gateway", "--help"],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        assert result.returncode == 0
-        assert "migrate-legacy" in result.stdout
-
-    def test_gateway_command_migrate_legacy_dispatches(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        """gateway_command(args) with subcmd='migrate-legacy' calls the helper."""
-        called = {}
-
-        def fake_remove(interactive=True, dry_run=False):
-            called["interactive"] = interactive
-            called["dry_run"] = dry_run
-            return 0, []
-
-        monkeypatch.setattr(gateway_cli, "remove_legacy_hermes_units", fake_remove)
-        monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: True)
-        monkeypatch.setattr(gateway_cli, "is_macos", lambda: False)
-
-        args = SimpleNamespace(
-            gateway_command="migrate-legacy", dry_run=False, yes=True
-        )
-        gateway_cli.gateway_command(args)
-
-        assert called == {"interactive": False, "dry_run": False}
 
 
 class TestGatewayStatusParser:
@@ -3185,166 +2798,9 @@ class TestGatewayStatusParser:
         assert result.returncode == 0
         assert "unrecognized arguments" not in result.stderr
 
-    def test_gateway_command_migrate_legacy_dry_run_passes_through(
-        self, monkeypatch
-    ):
-        called = {}
-
-        def fake_remove(interactive=True, dry_run=False):
-            called["interactive"] = interactive
-            called["dry_run"] = dry_run
-            return 0, []
-
-        monkeypatch.setattr(gateway_cli, "remove_legacy_hermes_units", fake_remove)
-        monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: True)
-        monkeypatch.setattr(gateway_cli, "is_macos", lambda: False)
-
-        args = SimpleNamespace(
-            gateway_command="migrate-legacy", dry_run=True, yes=False
-        )
-        gateway_cli.gateway_command(args)
-
-        assert called == {"interactive": True, "dry_run": True}
-
-    def test_migrate_legacy_on_unsupported_platform_prints_message(
-        self, monkeypatch, capsys
-    ):
-        monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: False)
-        monkeypatch.setattr(gateway_cli, "is_macos", lambda: False)
-
-        args = SimpleNamespace(
-            gateway_command="migrate-legacy", dry_run=False, yes=True
-        )
-        gateway_cli.gateway_command(args)
-
-        out = capsys.readouterr().out
-        assert "only applies to systemd" in out
 
 
-class TestSystemdInstallOffersLegacyRemoval:
-    """Verify that systemd_install prompts to remove legacy units first."""
 
-    def test_install_offers_removal_when_legacy_detected(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        """When legacy units exist, install flow should call the removal
-        helper before writing the new unit."""
-        remove_called = {}
-
-        def fake_remove(interactive=True, dry_run=False):
-            remove_called["invoked"] = True
-            remove_called["interactive"] = interactive
-            return 1, []
-
-        # has_legacy_hermes_units must return True
-        monkeypatch.setattr(gateway_cli, "has_legacy_hermes_units", lambda: True)
-        monkeypatch.setattr(gateway_cli, "remove_legacy_hermes_units", fake_remove)
-        monkeypatch.setattr(gateway_cli, "print_legacy_unit_warning", lambda: None)
-        # Answer "yes" to the legacy-removal prompt
-        monkeypatch.setattr(gateway_cli, "prompt_yes_no", lambda *a, **k: True)
-
-        # Mock the rest of the install flow
-        unit_path = tmp_path / "opencodon-gateway.service"
-        monkeypatch.setattr(
-            gateway_cli, "get_systemd_unit_path", lambda system=False: unit_path
-        )
-        monkeypatch.setattr(
-            gateway_cli,
-            "generate_systemd_unit",
-            lambda system=False, run_as_user=None: "unit text\n",
-        )
-        monkeypatch.setattr(
-            gateway_cli.subprocess,
-            "run",
-            lambda cmd, **kw: SimpleNamespace(returncode=0, stdout="", stderr=""),
-        )
-        monkeypatch.setattr(gateway_cli, "_ensure_linger_enabled", lambda: None)
-
-        gateway_cli.systemd_install()
-
-        assert remove_called.get("invoked") is True
-        assert remove_called.get("interactive") is False  # prompted elsewhere
-
-    def test_install_declines_legacy_removal_when_user_says_no(
-        self, tmp_path, monkeypatch
-    ):
-        """When legacy units exist and user declines, install still proceeds
-        but doesn't touch them."""
-        remove_called = {"invoked": False}
-
-        def fake_remove(interactive=True, dry_run=False):
-            remove_called["invoked"] = True
-            return 0, []
-
-        monkeypatch.setattr(gateway_cli, "has_legacy_hermes_units", lambda: True)
-        monkeypatch.setattr(gateway_cli, "remove_legacy_hermes_units", fake_remove)
-        monkeypatch.setattr(gateway_cli, "print_legacy_unit_warning", lambda: None)
-        monkeypatch.setattr(gateway_cli, "prompt_yes_no", lambda *a, **k: False)
-
-        unit_path = tmp_path / "opencodon-gateway.service"
-        monkeypatch.setattr(
-            gateway_cli, "get_systemd_unit_path", lambda system=False: unit_path
-        )
-        monkeypatch.setattr(
-            gateway_cli,
-            "generate_systemd_unit",
-            lambda system=False, run_as_user=None: "unit text\n",
-        )
-        monkeypatch.setattr(
-            gateway_cli.subprocess,
-            "run",
-            lambda cmd, **kw: SimpleNamespace(returncode=0, stdout="", stderr=""),
-        )
-        monkeypatch.setattr(gateway_cli, "_ensure_linger_enabled", lambda: None)
-
-        gateway_cli.systemd_install()
-
-        # Helper must NOT have been called
-        assert remove_called["invoked"] is False
-        # New unit should still have been written
-        assert unit_path.exists()
-        assert unit_path.read_text() == "unit text\n"
-
-    def test_install_skips_legacy_check_when_none_present(
-        self, tmp_path, monkeypatch
-    ):
-        """No legacy → no prompt, no helper call."""
-        prompt_called = {"count": 0}
-
-        def counting_prompt(*a, **k):
-            prompt_called["count"] += 1
-            return True
-
-        remove_called = {"invoked": False}
-
-        def fake_remove(interactive=True, dry_run=False):
-            remove_called["invoked"] = True
-            return 0, []
-
-        monkeypatch.setattr(gateway_cli, "has_legacy_hermes_units", lambda: False)
-        monkeypatch.setattr(gateway_cli, "remove_legacy_hermes_units", fake_remove)
-        monkeypatch.setattr(gateway_cli, "prompt_yes_no", counting_prompt)
-
-        unit_path = tmp_path / "opencodon-gateway.service"
-        monkeypatch.setattr(
-            gateway_cli, "get_systemd_unit_path", lambda system=False: unit_path
-        )
-        monkeypatch.setattr(
-            gateway_cli,
-            "generate_systemd_unit",
-            lambda system=False, run_as_user=None: "unit text\n",
-        )
-        monkeypatch.setattr(
-            gateway_cli.subprocess,
-            "run",
-            lambda cmd, **kw: SimpleNamespace(returncode=0, stdout="", stderr=""),
-        )
-        monkeypatch.setattr(gateway_cli, "_ensure_linger_enabled", lambda: None)
-
-        gateway_cli.systemd_install()
-
-        assert prompt_called["count"] == 0
-        assert remove_called["invoked"] is False
 
 
 class TestSystemScopeRequiresRootError:
@@ -3437,7 +2893,7 @@ class TestSystemScopeWizardPreCheck:
         assert gateway_cli._system_scope_wizard_would_need_root() is False
 
     def test_non_root_with_explicit_system_arg_returns_true(self, tmp_path, monkeypatch):
-        # Caller passed system=True explicitly (e.g. ``hermes gateway start --system``).
+        # Caller passed system=True explicitly (e.g. ``opencodon gateway start --system``).
         self._setup_units(tmp_path, monkeypatch, system_present=False, user_present=False)
         monkeypatch.setattr(gateway_cli.os, "geteuid", lambda: 1000)
 
@@ -3458,8 +2914,8 @@ class TestSystemScopeRemediationOutput:
         assert "system-wide service" in out
         assert "start requires root" in out
         assert "sudo systemctl start opencodon-gateway" in out
-        assert "sudo hermes gateway uninstall --system" in out
-        assert "hermes gateway install" in out
+        assert "sudo opencodon gateway uninstall --system" in out
+        assert "opencodon gateway install" in out
 
     def test_restart_remediation_uses_systemctl_restart(self, capsys, monkeypatch):
         monkeypatch.setattr(gateway_cli, "get_service_name", lambda: "opencodon-gateway")
@@ -3481,7 +2937,7 @@ class TestSystemScopeRemediationOutput:
 
 
 class TestGatewayCommandCatchesSystemScopeError:
-    """The direct CLI path (``hermes gateway start --system`` etc.) must
+    """The direct CLI path (``opencodon gateway start --system`` etc.) must
     still exit 1 with a clean message when non-root. The top-level
     ``gateway_command`` catches ``SystemScopeRequiresRootError`` and
     converts it back to ``sys.exit(1)``, preserving existing CLI behavior.

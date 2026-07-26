@@ -1,4 +1,4 @@
-"""Regression tests for the codex_app_server → Hermes UI event bridge.
+"""Regression tests for the codex_app_server → opencodon UI event bridge.
 
 Pin the translation of codex JSON-RPC notifications into agent callbacks
 (`tool_progress_callback`, `_fire_stream_delta`, `_fire_reasoning_delta`,
@@ -80,15 +80,15 @@ class TestCodexItemToToolName:
         ) == "web_search"
 
     def test_opencodon_tools_mcp_server_emits_bare_tool_name(self):
-        """The hermes-tools MCP server wraps Hermes' own tools for codex;
+        """The opencodon-tools MCP server wraps opencodon' own tools for codex;
         the inner dispatch subprocess can't fire native progress events,
         so the codex-level event IS the display event — shown without the
         mcp.opencodon-tools.* namespacing (from #26541 by @simpolism)."""
         assert _codex_item_to_tool_name(
-            {"type": "mcpToolCall", "server": "hermes-tools", "tool": "web_search"}
+            {"type": "mcpToolCall", "server": "opencodon-tools", "tool": "web_search"}
         ) == "web_search"
         assert _codex_item_to_tool_name(
-            {"type": "mcpToolCall", "server": "hermes-tools", "tool": "browser_navigate"}
+            {"type": "mcpToolCall", "server": "opencodon-tools", "tool": "browser_navigate"}
         ) == "browser_navigate"
 
     def test_web_search_builtin_maps_to_web_search(self):
@@ -367,7 +367,7 @@ class TestToolProgressDispatch:
             "type": "dynamicToolCall",
             "id": "dyn-1",
             "tool": "web_search",
-            "arguments": {"query": "hermes"},
+            "arguments": {"query": "opencodon"},
         }))
         bridge(_item_completed({
             "type": "dynamicToolCall",
@@ -392,18 +392,18 @@ class TestToolProgressDispatch:
         bridge(_item_started({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "hermes agent docs",
+            "query": "opencodon agent docs",
         }))
         bridge(_item_completed({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "hermes agent docs",
+            "query": "opencodon agent docs",
         }))
         calls = agent.tool_progress_callback.call_args_list
         assert [c.args[0] for c in calls] == ["tool.started", "tool.completed"]
         assert calls[0].args[1] == "web_search"
-        assert calls[0].args[2] == "hermes agent docs"
-        assert calls[0].args[3] == {"query": "hermes agent docs"}
+        assert calls[0].args[2] == "opencodon agent docs"
+        assert calls[0].args[3] == {"query": "opencodon agent docs"}
 
     def test_duration_falls_back_to_wall_time_when_codex_missing_ms(self):
         agent = _make_stub_agent()

@@ -35,12 +35,12 @@ describe('settings helpers', () => {
     // config schema (merged per-request); enumOptionsFor must return undefined
     // so config-field consumes schema.options instead of a stale static list.
     expect(enumOptionsFor('memory.provider', '', {})).toBeUndefined()
-    expect(enumOptionsFor('memory.provider', 'honcho', {})).toBeUndefined()
+    expect(enumOptionsFor('memory.provider', 'extmem', {})).toBeUndefined()
   })
 
   describe('isExternalMemoryProvider', () => {
     it('treats only real plugin names as external providers', () => {
-      expect(isExternalMemoryProvider('honcho')).toBe(true)
+      expect(isExternalMemoryProvider('extmem')).toBe(true)
       expect(isExternalMemoryProvider('hindsight')).toBe(true)
     })
 
@@ -330,13 +330,13 @@ describe('settings helpers', () => {
     })
 
     it('prefers the backend schema entry over inference when both exist', () => {
-      const schema = { 'memory.provider': { type: 'select' as const, options: ['honcho'] } }
-      const config: OpencodonConfigRecord = { memory: { provider: 'honcho' } }
+      const schema = { 'memory.provider': { type: 'select' as const, options: ['extmem'] } }
+      const config: OpencodonConfigRecord = { memory: { provider: 'extmem' } }
 
       const field = new Map(sectionFieldEntries(schema, config).get('memory') ?? []).get('memory.provider')
 
       expect(field?.type).toBe('select')
-      expect(field?.options).toEqual(['honcho'])
+      expect(field?.options).toEqual(['extmem'])
     })
 
     it('hides declared keys absent from both schema and config', () => {

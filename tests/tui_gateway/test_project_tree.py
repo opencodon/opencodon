@@ -142,7 +142,7 @@ def test_user_worktree_under_dotworktrees_is_its_own_lane_not_kanban():
     )
     sessions = [
         _session("/repo", branch="main"),
-        _session("/repo/.worktrees/test-gui-stuff", branch="hermes/test-gui-stuff"),
+        _session("/repo/.worktrees/test-gui-stuff", branch="opencodon/test-gui-stuff"),
     ]
 
     tree = pt.build_tree([], sessions, [], resolve, hydrate=True)

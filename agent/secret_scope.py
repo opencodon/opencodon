@@ -95,10 +95,10 @@ def current_secret_scope() -> Optional[Mapping[str, str]]:
 # Membership test is by exact name OR prefix (see _is_global_env). Keep this
 # list tight: when in doubt a value is a profile secret, not a global.
 _GLOBAL_ENV_EXACT = frozenset({
-    # Hermes runtime / deployment
+    # opencodon runtime / deployment
     "OPENCODON_HOME", "OPENCODON_PROFILE", "OPENCODON_GATEWAY_LOCK_DIR",
     "OPENCODON_MAX_ITERATIONS", "OPENCODON_MAX_TOKENS", "OPENCODON_API_TIMEOUT",
-    "OPENCODON_REDACT_SECRETS", "OPENCODON_NOUS_TIMEOUT_SECONDS",
+    "OPENCODON_REDACT_SECRETS",
     "_OPENCODON_GATEWAY",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",

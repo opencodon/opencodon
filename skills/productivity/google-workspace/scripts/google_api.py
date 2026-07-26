@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Google Workspace API CLI for Hermes Agent.
+"""Google Workspace API CLI for opencodon.
 
 Uses the Google Workspace CLI (`gws`) when available, but preserves the
-existing Hermes-facing JSON contract and falls back to the Python client
+existing opencodon-facing JSON contract and falls back to the Python client
 libraries if `gws` is not installed.
 
 Usage:
@@ -1052,7 +1052,7 @@ def _docs_insert_text(doc_id: str, text: str, index: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace API for Hermes Agent")
+    parser = argparse.ArgumentParser(description="Google Workspace API for opencodon")
     sub = parser.add_subparsers(dest="service", required=True)
 
     # --- Gmail ---

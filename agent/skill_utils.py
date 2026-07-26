@@ -269,7 +269,7 @@ def _detect_environment(env: str) -> bool:
         except Exception:
             result = False
     elif env == "s6":
-        # The Hermes Docker image runs s6-overlay as PID 1 (/init). s6 plants
+        # The opencodon Docker image runs s6-overlay as PID 1 (/init). s6 plants
         # its runtime scaffolding under /run/s6 and ships its admin tree under
         # /package/admin/s6-overlay. Either marker means we're inside an
         # s6-supervised container.
@@ -417,7 +417,7 @@ def _normalize_string_set(values) -> Set[str]:
 # (config_path_str, mtime_ns) -> resolved external dirs list.  Keyed by
 # mtime_ns so a config.yaml edit mid-run is picked up automatically;
 # otherwise every call would re-read + re-YAML-parse the 15KB config,
-# which becomes the dominant cost of ``hermes`` startup when ~120 skills
+# which becomes the dominant cost of ``opencodon`` startup when ~120 skills
 # each trigger a category lookup during banner construction (10+ seconds
 # of pure waste).
 _EXTERNAL_DIRS_CACHE: Dict[Tuple[str, int], List[Path]] = {}
@@ -438,7 +438,7 @@ def get_external_skills_dirs() -> List[Path]:
 
     Cached in-process, keyed on ``config.yaml`` mtime — the function is
     called once per skill during banner / tool-registry scans, and YAML
-    parsing a non-trivial config dominates ``hermes`` cold-start time
+    parsing a non-trivial config dominates ``opencodon`` cold-start time
     when the cache is absent.
     """
     config_path = get_config_path()
@@ -591,7 +591,7 @@ def _resolve_for_skill_ownership(path) -> Path:
 def is_external_skill_path(path) -> bool:
     """Return True when ``path`` lives under a configured external skills dir.
 
-    ``skills.external_dirs`` are externally owned: Hermes can discover and view
+    ``skills.external_dirs`` are externally owned: opencodon can discover and view
     their skills, and foreground user-directed tool calls may still edit them,
     but autonomous lifecycle maintenance must treat them as read-only. This
     helper centralizes the ownership boundary so curator/reporting/tool paths do
@@ -617,14 +617,14 @@ def extract_skill_conditions(frontmatter: Dict[str, Any]) -> Dict[str, List]:
     # Handle cases where metadata is not a dict (e.g., a string from malformed YAML)
     if not isinstance(metadata, dict):
         metadata = {}
-    hermes = metadata.get("hermes") or {}
-    if not isinstance(hermes, dict):
-        hermes = {}
+    opencodon = metadata.get("opencodon") or {}
+    if not isinstance(opencodon, dict):
+        opencodon = {}
     return {
-        "fallback_for_toolsets": hermes.get("fallback_for_toolsets", []),
-        "requires_toolsets": hermes.get("requires_toolsets", []),
-        "fallback_for_tools": hermes.get("fallback_for_tools", []),
-        "requires_tools": hermes.get("requires_tools", []),
+        "fallback_for_toolsets": opencodon.get("fallback_for_toolsets", []),
+        "requires_toolsets": opencodon.get("requires_toolsets", []),
+        "fallback_for_tools": opencodon.get("fallback_for_tools", []),
+        "requires_tools": opencodon.get("requires_tools", []),
     }
 
 
@@ -637,7 +637,7 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     Skills declare config.yaml settings they need via::
 
         metadata:
-          hermes:
+          opencodon:
             config:
               - key: wiki.path
                 description: Path to the LLM Wiki knowledge base directory
@@ -650,10 +650,10 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
         return []
-    hermes = metadata.get("hermes")
-    if not isinstance(hermes, dict):
+    opencodon = metadata.get("opencodon")
+    if not isinstance(opencodon, dict):
         return []
-    raw = hermes.get("config")
+    raw = opencodon.get("config")
     if not raw:
         return []
     if isinstance(raw, dict):
@@ -797,7 +797,7 @@ def extract_skill_description(frontmatter: Dict[str, Any]) -> str:
 def iter_skill_index_files(skills_dir: Path, filename: str):
     """Walk skills_dir yielding sorted paths matching *filename*.
 
-    Excludes Hermes metadata, VCS, virtualenv/dependency, cache, and skill
+    Excludes opencodon metadata, VCS, virtualenv/dependency, cache, and skill
     support directories. Support directories (references/templates/assets/
     scripts) can contain arbitrary markdown and even archived package
     ``SKILL.md`` files, but they are progressive-disclosure data loaded through

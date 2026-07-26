@@ -1,6 +1,6 @@
 """Suggested cron jobs — proposed automations the user accepts with one tap.
 
-A *suggestion* is a ready-to-run cron job spec that Hermes surfaces to the
+A *suggestion* is a ready-to-run cron job spec that opencodon surfaces to the
 user, who accepts it (creates the real cron job) or dismisses it (latched so
 it is never re-offered). This is the single surface every automation proposal
 flows through, regardless of where it came from:
@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from opencodon_constants import get_opencodon_home
-from opencodon_time import now as _hermes_now
+from opencodon_time import now as _opencodon_now
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ def _save_raw(suggestions: List[Dict[str, Any]]) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(
-                {"suggestions": suggestions, "updated_at": _hermes_now().isoformat()},
+                {"suggestions": suggestions, "updated_at": _opencodon_now().isoformat()},
                 f,
                 indent=2,
             )
@@ -170,7 +170,7 @@ def add_suggestion(
             "job_spec": job_spec,
             "dedup_key": dedup_key.strip(),
             "status": _STATUS_PENDING,
-            "created_at": _hermes_now().isoformat(),
+            "created_at": _opencodon_now().isoformat(),
         }
         suggestions.append(record)
         _save_raw(suggestions)
@@ -204,7 +204,7 @@ def _set_status(suggestion_id: str, status: str) -> bool:
         for s in suggestions:
             if s.get("id") == suggestion_id:
                 s["status"] = status
-                s["resolved_at"] = _hermes_now().isoformat()
+                s["resolved_at"] = _opencodon_now().isoformat()
                 changed = True
                 break
         if changed:

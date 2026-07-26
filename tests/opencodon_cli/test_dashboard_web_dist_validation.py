@@ -1,4 +1,4 @@
-"""Regression tests: `hermes dashboard` validates OPENCODON_WEB_DIST before serving.
+"""Regression tests: `opencodon dashboard` validates OPENCODON_WEB_DIST before serving.
 
 A custom OPENCODON_WEB_DIST without --skip-build previously skipped BOTH the
 build and any validation, so the server started and served 404s with no
@@ -256,9 +256,9 @@ def test_skip_build_custom_env_dist_missing_does_not_attempt_recovery(
 @pytest.mark.parametrize(
     "path,expected",
     [
-        ("/Applications/Hermes.app/Contents/Resources/app.asar/dist", True),
-        ("/Applications/Hermes.app/Contents/Resources/app.asar.unpacked/dist", True),
-        (r"C:\Users\u\AppData\Local\Programs\Hermes\resources\app.asar\dist", True),
+        ("/Applications/opencodon.app/Contents/Resources/app.asar/dist", True),
+        ("/Applications/opencodon.app/Contents/Resources/app.asar.unpacked/dist", True),
+        (r"C:\Users\u\AppData\Local\Programs\opencodon\resources\app.asar\dist", True),
         ("/home/u/custom-dashboard-dist", False),
         ("", False),
     ],
@@ -274,7 +274,7 @@ def test_standalone_dashboard_drops_electron_packaged_web_dist(
     is built/served instead of the desktop renderer."""
     _wire_common(main_mod, monkeypatch)
     monkeypatch.delenv("OPENCODON_DESKTOP", raising=False)
-    packaged = "/Applications/Hermes.app/Contents/Resources/app.asar/dist"
+    packaged = "/Applications/opencodon.app/Contents/Resources/app.asar/dist"
     monkeypatch.setenv("OPENCODON_WEB_DIST", packaged)
 
     started = []
@@ -385,7 +385,7 @@ def test_standalone_dashboard_clears_inherited_serve_headless(
 
 
 def test_headless_serve_reasserts_serve_headless(main_mod, monkeypatch):
-    """`hermes serve` must still set OPENCODON_SERVE_HEADLESS after the clear."""
+    """`opencodon serve` must still set OPENCODON_SERVE_HEADLESS after the clear."""
     _wire_common(main_mod, monkeypatch)
     monkeypatch.delenv("OPENCODON_DESKTOP", raising=False)
     monkeypatch.delenv("OPENCODON_WEB_DIST", raising=False)

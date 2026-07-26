@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 # Add parent directory to path for imports BEFORE repo-level imports.
-# Without this, standalone invocations (e.g. after `hermes update` reloads
+# Without this, standalone invocations (e.g. after `opencodon update` reloads
 # the module) fail with ModuleNotFoundError for opencodon_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -43,7 +43,7 @@ from opencodon_constants import get_opencodon_home
 from opencodon_cli._subprocess_compat import windows_hide_flags
 from opencodon_cli.config import load_config, _expand_env_vars
 from opencodon_cli.fallback_config import get_fallback_chain
-from opencodon_time import now as _hermes_now
+from opencodon_time import now as _opencodon_now
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +215,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
        Keeps the agent's job-scoped toolset override intact — #6130. Enabled
        MCP servers are layered on per ``_merge_mcp_into_per_job_toolsets`` so a
        native-toolset allowlist does not silently strip MCP tools.
-    2. Per-platform ``hermes tools`` config for the ``cron`` platform.
+    2. Per-platform ``opencodon tools`` config for the ``cron`` platform.
        Mirrors gateway behavior (``_get_platform_tools(cfg, platform_key)``)
        so users can gate cron toolsets globally without recreating every job.
     3. ``None`` on any lookup failure — AIAgent loads the full default set
@@ -532,7 +532,7 @@ def _interpreter_shutting_down(exc: Optional[BaseException] = None) -> bool:
     """True when the Python interpreter is finalizing.
 
     A cron tick can fire while the gateway is tearing down — SIGTERM from
-    ``hermes update`` / ``hermes gateway stop`` / systemd restart, or an
+    ``opencodon update`` / ``opencodon gateway stop`` / systemd restart, or an
     OOM-kill. Once finalization starts, ``concurrent.futures`` refuses new
     work with ``RuntimeError: cannot schedule new futures after interpreter
     shutdown`` and asyncio's default executor is gone, so *any* attempt to
@@ -565,7 +565,7 @@ _opencodon_home: Path | None = None
 
 
 def _get_opencodon_home() -> Path:
-    """Resolve Hermes home dynamically while preserving test monkeypatch hooks.
+    """Resolve opencodon home dynamically while preserving test monkeypatch hooks.
 
     Cron is per-profile by design (#4707): the in-process ticker runs inside a
     profile-scoped gateway, so resolving the active OPENCODON_HOME at call time
@@ -758,7 +758,7 @@ def _open_continuable_cron_thread(
     if not callable(create_thread) or loop is None:
         return None
     task_name = job.get("name") or job.get("id", "cron")
-    thread_name = f"Hermes — {task_name}"
+    thread_name = f"opencodon — {task_name}"
     try:
         from agent.async_utils import safe_schedule_threadsafe
 
@@ -2170,7 +2170,7 @@ def _run_job_script(script_path: str) -> tuple[bool, str]:
     (the `memory-watchdog.sh` pattern) without wrapping them in Python.
 
     Subprocess environment is passed through ``_sanitize_subprocess_env`` so
-    provider credentials and other Hermes-managed secrets are not inherited
+    provider credentials and other opencodon-managed secrets are not inherited
     (SECURITY.md §2.3), matching terminal and MCP child processes.
 
     Args:
@@ -2765,7 +2765,7 @@ def run_job(
                 except OSError:
                     pass
 
-        now_iso = _hermes_now().strftime("%Y-%m-%d %H:%M:%S")
+        now_iso = _opencodon_now().strftime("%Y-%m-%d %H:%M:%S")
 
         if not ok:
             # Script crashed / timed out / exited non-zero.  Deliver the
@@ -2914,7 +2914,7 @@ def run_job(
             silent_doc = (
                 f"# Cron Job: {job_name}\n\n"
                 f"**Job ID:** {job_id}\n"
-                f"**Run Time:** {_hermes_now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                f"**Run Time:** {_opencodon_now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
                 "Script gate returned `wakeAgent=false` — agent skipped.\n"
             )
             return True, silent_doc, SILENT_MARKER, None
@@ -2933,7 +2933,7 @@ def run_job(
         blocked_doc = (
             f"# Cron Job: {job_name}\n\n"
             f"**Job ID:** {job_id}\n"
-            f"**Run Time:** {_hermes_now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"**Run Time:** {_opencodon_now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"**Status:** BLOCKED\n\n"
             "The assembled prompt (user prompt + loaded skill content) tripped "
             "the cron injection scanner and the agent was NOT run.\n\n"
@@ -2948,7 +2948,7 @@ def run_job(
         logger.info("Job '%s': script produced no output, skipping AI call.", job_name)
         return True, "", SILENT_MARKER, None
     origin = _resolve_origin(job)
-    _cron_session_id = f"cron_{job_id}_{_hermes_now().strftime('%Y%m%d_%H%M%S')}"
+    _cron_session_id = f"cron_{job_id}_{_opencodon_now().strftime('%Y%m%d_%H%M%S')}"
 
     logger.info("Running job '%s' (ID: %s)", job_name, job_id)
     logger.info("Prompt: %s", prompt[:100])
@@ -3062,7 +3062,7 @@ def run_job(
 
         # Re-read .env and config.yaml fresh every run so provider/key
         # changes take effect without a gateway restart. Route through
-        # load_hermes_dotenv (not a bare load_dotenv) and reset the secret-
+        # load_opencodon_dotenv (not a bare load_dotenv) and reset the secret-
         # source cache first: startup already applied external secrets and
         # recorded this OPENCODON_HOME in _APPLIED_HOMES, so a naive reload would
         # re-apply only the .env placeholder and never re-resolve a Bitwarden/
@@ -3070,14 +3070,14 @@ def run_job(
         # (#33465). Clearing the cache forces the re-pull; the resolved secret
         # overrides the placeholder only when secrets.bitwarden.override_existing
         # is set (mirrors startup), and the Bitwarden value-cache keeps the
-        # forced re-pull off the network. load_hermes_dotenv also handles the
+        # forced re-pull off the network. load_opencodon_dotenv also handles the
         # utf-8/latin-1 encoding fallback internally.
         from opencodon_cli.env_loader import (
-            load_hermes_dotenv,
+            load_opencodon_dotenv,
             reset_secret_source_cache,
         )
         reset_secret_source_cache()
-        load_hermes_dotenv(opencodon_home=_get_opencodon_home())
+        load_opencodon_dotenv(opencodon_home=_get_opencodon_home())
 
         delivery_target = _resolve_delivery_target(job)
         if delivery_target:
@@ -3140,7 +3140,7 @@ def run_job(
                 "config.yaml model.default missing or empty). "
                 f"Set a per-job model via "
                 f"`cronjob action=update job_id={job_id} model=<name>` or set a "
-                "default with `hermes model <name>`."
+                "default with `opencodon model <name>`."
             )
 
         # Apply IPv4 preference if configured.
@@ -3287,7 +3287,7 @@ def run_job(
         #
         # An UNPINNED job (no explicit job["provider"]/["model"]) follows the
         # global default, which can change after the job was created — a switch
-        # to a paid PROVIDER (e.g. nous) OR a paid MODEL on the same provider
+        # to a paid PROVIDER OR a paid MODEL on the same provider
         # (e.g. claude-fable-5 on openrouter). Without a guard the job would
         # silently inherit that change and spend real money on every tick — the
         # $7.73 incident named BOTH a provider and a model.
@@ -3611,7 +3611,7 @@ def run_job(
         output = f"""# Cron Job: {job_name}
 
 **Job ID:** {job_id}
-**Run Time:** {_hermes_now().strftime('%Y-%m-%d %H:%M:%S')}
+**Run Time:** {_opencodon_now().strftime('%Y-%m-%d %H:%M:%S')}
 **Schedule:** {job.get('schedule_display', 'N/A')}
 
 ## Prompt
@@ -3633,7 +3633,7 @@ def run_job(
         output = f"""# Cron Job: {job_name} (FAILED)
 
 **Job ID:** {job_id}
-**Run Time:** {_hermes_now().strftime('%Y-%m-%d %H:%M:%S')}
+**Run Time:** {_opencodon_now().strftime('%Y-%m-%d %H:%M:%S')}
 **Schedule:** {job.get('schedule_display', 'N/A')}
 
 ## Prompt
@@ -3700,7 +3700,7 @@ def run_job(
             # except-fallback below guarantees a non-blank title (#50535).
             try:
                 _title_base = " ".join(job_name.split())[:60].strip() or f"cron {job_id}"
-                _cron_title = f"{_title_base} · {_hermes_now().strftime('%b %d %H:%M')}"
+                _cron_title = f"{_title_base} · {_opencodon_now().strftime('%b %d %H:%M')}"
                 if not _set_cron_session_title(
                     _session_db, _final_cron_session_id, _cron_title
                 ):
@@ -4003,11 +4003,11 @@ def tick(
         due_jobs = get_due_jobs()
 
         if verbose and not due_jobs:
-            logger.info("%s - No jobs due", _hermes_now().strftime('%H:%M:%S'))
+            logger.info("%s - No jobs due", _opencodon_now().strftime('%H:%M:%S'))
             return 0
 
         if verbose:
-            logger.info("%s - %s job(s) due", _hermes_now().strftime('%H:%M:%S'), len(due_jobs))
+            logger.info("%s - %s job(s) due", _opencodon_now().strftime('%H:%M:%S'), len(due_jobs))
 
         # Advance next_run_at for all recurring jobs FIRST, under the file lock,
         # before any execution begins.  This preserves at-most-once semantics.

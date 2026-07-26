@@ -1,8 +1,8 @@
 """Remote model catalog fetcher.
 
-The Hermes docs site hosts a JSON manifest of curated models for providers
-we want to update without shipping a release (currently OpenRouter and
-Nous Portal). This module fetches, validates, and caches that manifest,
+The project publishes a JSON manifest of curated models for providers
+we want to update without shipping a release (currently OpenRouter).
+This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
 
 Pipeline
@@ -13,9 +13,9 @@ Pipeline
    - Fetches the master URL if disk cache is stale or missing.
    - On any fetch failure, keeps using the stale cache (or empty dict).
 
-2. ``get_curated_openrouter_models()`` / ``get_curated_nous_models()`` —
-   thin accessors returning the shapes existing callers expect. Each
-   falls back to the in-repo hardcoded list on any lookup failure.
+2. ``get_curated_openrouter_models()`` — a thin accessor returning the
+   shape existing callers expect. Falls back to the in-repo hardcoded
+   list on any lookup failure.
 
 Schema (version 1)
 ------------------
@@ -32,8 +32,7 @@ Schema (version 1)
             {"id": "vendor/model", "description": "recommended",
              "metadata": {...}}          # free-form, model-level
           ]
-        },
-        "nous": {...}
+        }
       }
     }
 
@@ -62,17 +61,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 DEFAULT_CATALOG_URL = (
-    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json"
+    "https://raw.githubusercontent.com/opencodon/opencodon/main/catalog/model-catalog.json"
 )
-# Fallback fetch chain. The Docusaurus site is served through Vercel, which
-# occasionally returns HTTP 403 + x-vercel-mitigated: challenge for non-
-# browser clients (urllib, curl). When that happens the disk cache goes
-# stale and new model releases never reach the picker. The raw GitHub URL
-# is the same manifest published from the same repo and is not bot-gated,
-# so we fall through to it whenever the primary URL fails.
-DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/opencodon/opencodon/main/catalog/model-catalog.json",
-)
+# Fallback fetch chain, tried in order whenever the primary URL fails.
+DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = ()
 DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
@@ -151,7 +143,7 @@ def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
 def _fetch_manifest_with_fallback(
     primary_url: str,
     timeout: float,
-    fallback_urls: tuple[str, ...] = DEFAULT_CATALOG_FALLBACK_URLS,
+    fallback_urls: tuple[str, ...] | None = None,
 ) -> dict[str, Any] | None:
     """Try ``primary_url`` first, then walk ``fallback_urls``.
 
@@ -159,7 +151,13 @@ def _fetch_manifest_with_fallback(
     every URL fails. Skips fallback URLs identical to the primary so an
     operator who configured the catalog URL to point at the raw GitHub
     copy doesn't double-fetch.
+
+    ``fallback_urls`` defaults to ``DEFAULT_CATALOG_FALLBACK_URLS``, resolved
+    at call time rather than bound at definition time so the module constant
+    stays the single source of truth (and remains overridable).
     """
+    if fallback_urls is None:
+        fallback_urls = DEFAULT_CATALOG_FALLBACK_URLS
     data = _fetch_manifest(primary_url, timeout)
     if data is not None:
         return data
@@ -340,22 +338,6 @@ def get_curated_openrouter_models() -> list[tuple[str, str]] | None:
     return out or None
 
 
-def get_curated_nous_models() -> list[str] | None:
-    """Return Nous Portal's curated list of model ids from the manifest.
-
-    Returns ``None`` when the manifest is unavailable.
-    """
-    block = _get_provider_block("nous")
-    if not block:
-        return None
-    out: list[str] = []
-    for m in block.get("models", []):
-        mid = str(m.get("id") or "").strip()
-        if mid:
-            out.append(mid)
-    return out or None
-
-
 def _default_model_from_block(block: dict[str, Any] | None) -> str | None:
     """Return the id of the model entry labeled ``"default": true``, or None."""
     if not isinstance(block, dict):
@@ -372,11 +354,11 @@ def get_default_model_from_cache(provider: str) -> str | None:
     """Return the catalog's labeled default model for ``provider`` — cache only.
 
     The manifest marks exactly one model entry per provider with
-    ``"default": true``; that entry is the model Hermes silently lands on when
+    ``"default": true``; that entry is the model opencodon silently lands on when
     the user never picked one. This accessor reads ONLY the in-process copy or
     the disk cache — it NEVER triggers a network fetch, so it is safe on hot
     resolution paths (agent build, gateway session setup) that must stay
-    network-free. The cache is kept fresh by the picker/`hermes update` paths;
+    network-free. The cache is kept fresh by the picker/`opencodon update` paths;
     when no cached manifest exists (fresh install, offline), returns None and
     the caller falls back to the in-repo constant.
     """
@@ -395,7 +377,7 @@ def get_default_model_from_cache(provider: str) -> str | None:
 def seed_cache_from_checkout(project_root: "Path | str") -> bool:
     """Overwrite the disk cache with the catalog shipped in a local checkout.
 
-    ``hermes update`` pulls the latest repo, so the freshly-pulled
+    ``opencodon update`` pulls the latest repo, so the freshly-pulled
     ``catalog/model-catalog.json`` IS the newest catalog — no
     network round-trip needed. Copying it straight over the disk cache keeps
     the model picker current even when the remote manifest fetch is bot-gated
@@ -424,7 +406,7 @@ def seed_cache_from_checkout(project_root: "Path | str") -> bool:
 
 
 def reset_cache() -> None:
-    """Clear the in-process cache. Used by tests and ``hermes model --refresh``."""
+    """Clear the in-process cache. Used by tests and ``opencodon model --refresh``."""
     global _catalog_cache, _catalog_cache_source_mtime
     _catalog_cache = None
     _catalog_cache_source_mtime = 0.0

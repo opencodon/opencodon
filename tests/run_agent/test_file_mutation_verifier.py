@@ -357,7 +357,7 @@ class TestFormatFooter:
         import tempfile
         from gateway.platforms.base import BasePlatformAdapter
 
-        tmp = tempfile.mkdtemp(prefix="hermes_footer_")
+        tmp = tempfile.mkdtemp(prefix="opencodon_footer_")
         try:
             cfg = os.path.join(tmp, "config.yaml")
             with open(cfg, "w") as fh:

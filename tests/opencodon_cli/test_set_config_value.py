@@ -38,7 +38,6 @@ class TestExplicitAllowlist:
         "OPENROUTER_API_KEY",
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
-        "HONCHO_API_KEY",
         "FIRECRAWL_API_KEY",
         "BROWSERBASE_API_KEY",
         "FAL_KEY",
@@ -287,7 +286,7 @@ class TestConfigGetUnset:
 # ---------------------------------------------------------------------------
 
 class TestListNavigation:
-    """hermes config set must preserve YAML list fields when using numeric
+    """opencodon config set must preserve YAML list fields when using numeric
     indices.  Before #17876, _set_nested would silently replace the entire
     list with a dict, destroying every sibling entry.
     """
@@ -469,10 +468,10 @@ class TestSecretRedactionInDisplay:
 # ---------------------------------------------------------------------------
 
 class TestSchemaValidation:
-    """#34067: ``hermes config set`` must not report bare success for
+    """#34067: ``opencodon config set`` must not report bare success for
     unrecognized keys. The key IS written (arbitrary keys are supported —
     top-level scalars bridge into os.environ for skills/external apps), but
-    a post-write notice warns that Hermes may never read it and suggests the
+    a post-write notice warns that opencodon may never read it and suggests the
     likely-intended path. Headline case: the plausible-but-wrong
     ``gateway.discord.gateway_restart_notification`` (correct path:
     ``discord.gateway_restart_notification``).
@@ -641,7 +640,7 @@ class TestDisplaySkinTouch:
 
     The gateway's skin watcher broadcasts ``skin.changed`` on a signature move
     of (active name, skin-file mtime). Re-affirming the already-configured skin
-    (`hermes config set display.skin X` while it is already X — the recovery
+    (`opencodon config set display.skin X` while it is already X — the recovery
     path when a surface missed the original activation) moves NEITHER part, so
     without the touch the explicit apply is invisible to every live surface.
     """

@@ -1,5 +1,5 @@
 """
-Cron subcommand for hermes CLI.
+Cron subcommand for opencodon CLI.
 
 Handles standalone cron management commands like list, create, edit,
 pause/resume/run/remove, status, and tick.
@@ -91,9 +91,9 @@ def _warn_if_gateway_not_running() -> None:
         return
 
     print(color("  ⚠  Gateway is not running — jobs won't fire automatically.", Colors.YELLOW))
-    print(color("     Start it with: hermes gateway install", Colors.DIM))
-    print(color("                    sudo hermes gateway install --system  # Linux servers", Colors.DIM))
-    print(color("     Check status:  hermes cron status", Colors.DIM))
+    print(color("     Start it with: opencodon gateway install", Colors.DIM))
+    print(color("                    sudo opencodon gateway install --system  # Linux servers", Colors.DIM))
+    print(color("     Check status:  opencodon cron status", Colors.DIM))
 
 
 def cron_list(show_all: bool = False):
@@ -104,7 +104,7 @@ def cron_list(show_all: bool = False):
 
     if not jobs:
         print(color("No scheduled jobs.", Colors.DIM))
-        print(color("Create one with 'hermes cron create ...' or the /cron command in chat.", Colors.DIM))
+        print(color("Create one with 'opencodon cron create ...' or the /cron command in chat.", Colors.DIM))
         return
 
     print()
@@ -273,7 +273,7 @@ def cron_status():
                 Colors.YELLOW,
             ))
             print(f"  PID: {', '.join(map(str, pids))}")
-            print("  Cron jobs may NOT be firing. Restart: hermes gateway restart")
+            print("  Cron jobs may NOT be firing. Restart: opencodon gateway restart")
         elif hb_age is not None and ok_age is not None and ok_age > STALE_AFTER:
             # Loop is alive (fresh heartbeat) but no tick has SUCCEEDED in a
             # long time → ticks are failing every iteration.
@@ -293,9 +293,9 @@ def cron_status():
         print(color("✗ Gateway is not running — cron jobs will NOT fire", Colors.RED))
         print()
         print("  To enable automatic execution:")
-        print("    hermes gateway install    # Install as a user service")
-        print("    sudo hermes gateway install --system  # Linux servers: boot-time system service")
-        print("    hermes gateway            # Or run in foreground")
+        print("    opencodon gateway install    # Install as a user service")
+        print("    sudo opencodon gateway install --system  # Linux servers: boot-time system service")
+        print("    opencodon gateway            # Or run in foreground")
 
     print()
 
@@ -481,5 +481,5 @@ def cron_command(args):
         return _job_action("remove", args.job_id, "Removed")
 
     print(f"Unknown cron command: {subcmd}")
-    print("Usage: hermes cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
+    print("Usage: opencodon cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
     sys.exit(1)

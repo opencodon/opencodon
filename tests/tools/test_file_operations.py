@@ -85,7 +85,7 @@ class TestIsWriteDenied:
         "path",
         ["auth.json", "config.yaml", "webhook_subscriptions.json"],
     )
-    def test_hermes_control_files_requested_writable(self, path):
+    def test_opencodon_control_files_requested_writable(self, path):
         from opencodon_constants import get_opencodon_home
 
         assert _is_write_denied(str(get_opencodon_home() / path)) is False
@@ -118,7 +118,7 @@ class TestIsWriteDenied:
     @pytest.mark.parametrize("name", [".anthropic_oauth.json"])
     def test_oauth_protected_in_profile_mode(self, tmp_path, monkeypatch, name):
         """Under a profile, BOTH <profile>/X and <root>/X must be denied."""
-        root = tmp_path / "hermes"
+        root = tmp_path / "opencodon"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))
@@ -131,7 +131,7 @@ class TestIsWriteDenied:
         ["auth.json", "config.yaml", "webhook_subscriptions.json"],
     )
     def test_control_files_requested_writable_in_profile_mode(self, tmp_path, monkeypatch, name):
-        root = tmp_path / "hermes"
+        root = tmp_path / "opencodon"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))
@@ -141,7 +141,7 @@ class TestIsWriteDenied:
 
     def test_mcp_tokens_dir_protected_in_profile_mode(self, tmp_path, monkeypatch):
         """mcp-tokens/ under profile AND under root must both be denied."""
-        root = tmp_path / "hermes"
+        root = tmp_path / "opencodon"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))
@@ -160,7 +160,7 @@ class TestIsWriteDenied:
         gateway access without going through the pairing code flow — the same
         threat class that motivated protecting webhook_subscriptions.json.
         """
-        root = tmp_path / "hermes"
+        root = tmp_path / "opencodon"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setenv("OPENCODON_HOME", str(profile))

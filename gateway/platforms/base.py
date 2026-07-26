@@ -25,7 +25,7 @@ from utils import normalize_proxy_url
 
 logger = logging.getLogger(__name__)
 
-# Audio file extensions Hermes recognizes for native audio delivery.
+# Audio file extensions opencodon recognizes for native audio delivery.
 # Kept in sync with tools/send_message_tool.py and cron/scheduler.py via
 # should_send_media_as_audio() below.
 _AUDIO_EXTS = frozenset({'.ogg', '.opus', '.mp3', '.wav', '.m4a', '.flac'})
@@ -57,7 +57,7 @@ def _thread_metadata_for_source(source, reply_to_message_id: str | None = None) 
     """Build platform-aware thread metadata for adapter sends.
 
     Most platforms route threaded sends with a generic ``thread_id`` metadata
-    value. Telegram private-chat topics created through Hermes' DM-topic helper
+    value. Telegram private-chat topics created through opencodon' DM-topic helper
     are exposed in updates as ``message_thread_id`` plus a reply anchor. Live
     user-message replies route with ``message_thread_id`` + ``reply_to_message_id``;
     synthetic/resumed sends that have no reply anchor fall back to Telegram's
@@ -97,7 +97,7 @@ def _reply_anchor_for_event(event) -> str | None:
     """Return reply_to id for platforms that need reply semantics.
 
     Telegram forum/supergroup topics should be routed by topic metadata, not by
-    replying to the triggering message. Hermes-created Telegram private-chat
+    replying to the triggering message. opencodon-created Telegram private-chat
     topic lanes prefer replying to the triggering user message so the answer
     stays attached to the active lane; synthetic/resumed sends fall back to
     ``direct_messages_topic_id`` metadata when no message id is available.
@@ -501,7 +501,7 @@ sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
 
 from gateway.config import Platform, PlatformConfig
 from gateway.session import SessionSource, build_session_key
-from opencodon_constants import get_default_hermes_root, get_hermes_dir, get_opencodon_home
+from opencodon_constants import get_default_opencodon_root, get_opencodon_dir, get_opencodon_home
 
 
 GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE = (
@@ -574,13 +574,13 @@ async def _ssrf_redirect_guard(response):
 
 # Import-time default. Tests monkeypatch this; the get_*_cache_dir() getters
 # re-resolve per call so the active profile override is honored.
-IMAGE_CACHE_DIR = get_hermes_dir("cache/images", "image_cache")
+IMAGE_CACHE_DIR = get_opencodon_dir("cache/images", "image_cache")
 
 
 def _resolve_cache_dir(constant_name: str, new_subpath: str, old_name: str) -> Path:
-    """Resolve fresh via get_hermes_dir (active profile), unless a test has
+    """Resolve fresh via get_opencodon_dir (active profile), unless a test has
     monkeypatched the constant away from its import-time default."""
-    fresh = get_hermes_dir(new_subpath, old_name)
+    fresh = get_opencodon_dir(new_subpath, old_name)
     current = globals().get(constant_name)
     default = _CACHE_DIR_IMPORT_DEFAULTS.get(constant_name)
     if current is not None and default is not None and current != default:
@@ -822,7 +822,7 @@ def cleanup_image_cache(max_age_hours: int = 24) -> int:
 # here so the STT tool (OpenAI Whisper) can transcribe them from local files.
 # ---------------------------------------------------------------------------
 
-AUDIO_CACHE_DIR = get_hermes_dir("cache/audio", "audio_cache")
+AUDIO_CACHE_DIR = get_opencodon_dir("cache/audio", "audio_cache")
 
 
 def get_audio_cache_dir() -> Path:
@@ -921,7 +921,7 @@ async def cache_audio_from_url(url: str, ext: str = ".ogg", retries: int = 2) ->
 # here so the agent can reference them by local file path.
 # ---------------------------------------------------------------------------
 
-VIDEO_CACHE_DIR = get_hermes_dir("cache/videos", "video_cache")
+VIDEO_CACHE_DIR = get_opencodon_dir("cache/videos", "video_cache")
 
 SUPPORTED_VIDEO_TYPES = {
     ".mp4": "video/mp4",
@@ -956,8 +956,8 @@ def cache_video_from_bytes(data: bytes, ext: str = ".mp4") -> str:
 # here so the agent can reference them by local file path.
 # ---------------------------------------------------------------------------
 
-DOCUMENT_CACHE_DIR = get_hermes_dir("cache/documents", "document_cache")
-SCREENSHOT_CACHE_DIR = get_hermes_dir("cache/screenshots", "browser_screenshots")
+DOCUMENT_CACHE_DIR = get_opencodon_dir("cache/documents", "document_cache")
+SCREENSHOT_CACHE_DIR = get_opencodon_dir("cache/screenshots", "browser_screenshots")
 
 # Import-time defaults; _resolve_cache_dir compares against these to tell a
 # test monkeypatch from an unmodified constant.
@@ -970,7 +970,7 @@ _CACHE_DIR_IMPORT_DEFAULTS = {
 }
 
 _OPENCODON_HOME = get_opencodon_home()
-_OPENCODON_ROOT = get_default_hermes_root()
+_OPENCODON_ROOT = get_default_opencodon_root()
 MEDIA_DELIVERY_ALLOW_DIRS_ENV = "OPENCODON_MEDIA_ALLOW_DIRS"
 MEDIA_DELIVERY_TRUST_RECENT_ENV = "OPENCODON_MEDIA_TRUST_RECENT_FILES"
 MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "OPENCODON_MEDIA_TRUST_RECENT_SECONDS"
@@ -1057,7 +1057,7 @@ _MEDIA_DELIVERY_CACHE_SUBDIRS = (
 
 
 def _profile_cache_roots() -> List[Path]:
-    """Return per-profile canonical cache roots under the shared Hermes root.
+    """Return per-profile canonical cache roots under the shared opencodon root.
 
     Profile gateways write generated artifacts to
     ``<root>/profiles/<name>/cache/{images,audio,...}``. The static safe-roots
@@ -1159,7 +1159,7 @@ def _media_delivery_denied_paths() -> List[Path]:
     home = Path(os.path.expanduser("~"))
     for sub in _MEDIA_DELIVERY_DENIED_HOME_SUBPATHS:
         denied.append(home / sub)
-    # The active Hermes profile and shared Hermes root both contain control
+    # The active opencodon profile and shared opencodon root both contain control
     # files and credentials. Only cache subdirectories under them are
     # explicitly allowlisted above (matched BEFORE this denylist in
     # validate_media_delivery_path, so generated media still delivers).
@@ -1205,11 +1205,11 @@ def _media_delivery_denied_paths() -> List[Path]:
         "pairing",
         "mcp-tokens",
     )
-    for hermes_root in (_OPENCODON_HOME, _OPENCODON_ROOT):
+    for opencodon_root in (_OPENCODON_HOME, _OPENCODON_ROOT):
         for rel in _ROOT_CREDENTIAL_FILES:
-            denied.append(hermes_root / rel)
+            denied.append(opencodon_root / rel)
         for rel in _ROOT_CREDENTIAL_DIRS:
-            denied.append(hermes_root / rel)
+            denied.append(opencodon_root / rel)
     return denied
 
 
@@ -1221,7 +1221,7 @@ def _path_under_denied_prefix(resolved: Path) -> bool:
     denylist so that a non-root gateway can't deliver another user's home, but
     on a root-run gateway ``$HOME=/root`` and the operator's own deliverables
     (``/root/work/proposal.docx``) live directly under it. The credential
-    sub-directories inside home (``~/.ssh``, ``~/.aws``, ...) and Hermes
+    sub-directories inside home (``~/.ssh``, ``~/.aws``, ...) and opencodon
     secrets (``~/.opencodon/.env``, ``auth.json``) are *separate, more-specific*
     denied paths, so they stay blocked regardless of this exception — it can
     only un-block a plain file sitting in the running user's home tree, never a
@@ -1283,7 +1283,7 @@ def validate_media_delivery_path(path: str) -> Optional[str]:
 
     Strict mode (opt-in via ``gateway.strict`` in ``config.yaml`` or
     ``OPENCODON_MEDIA_DELIVERY_STRICT=1``): the file MUST live under a
-    Hermes-managed cache, under an operator-allowlisted root
+    opencodon-managed cache, under an operator-allowlisted root
     (``OPENCODON_MEDIA_ALLOW_DIRS``), or be freshly produced inside the
     configured recency window. Suitable for public-facing bots where
     prompt injection from one user shouldn't be able to exfiltrate the
@@ -1329,7 +1329,7 @@ def validate_media_delivery_path(path: str) -> Optional[str]:
 
     # Non-strict mode (default): accept anything not on the denylist.
     # The denylist still blocks /etc, /proc, ~/.ssh, ~/.aws, and the
-    # credential/secret stores under the Hermes root (~/.opencodon/.env,
+    # credential/secret stores under the opencodon root (~/.opencodon/.env,
     # auth.json, .anthropic_oauth.json, google_token.json, pairing/, ...) —
     # so the obvious prompt-injection / credential-exfil sites
     # (``MEDIA:/etc/passwd``, ``MEDIA:~/.ssh/id_rsa``,
@@ -1865,8 +1865,8 @@ class TextDebounceState:
 
 _PLAINTEXT_GATEWAY_RESTART_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"^(?:please\s+)?restart\s+(?:the\s+)?gateway[.!?\s]*$", re.IGNORECASE),
-    re.compile(r"^(?:please\s+)?restart\s+(?:the\s+)?hermes\s+gateway[.!?\s]*$", re.IGNORECASE),
-    re.compile(r"^(?:please\s+)?restart\s+hermes[.!?\s]*$", re.IGNORECASE),
+    re.compile(r"^(?:please\s+)?restart\s+(?:the\s+)?opencodon\s+gateway[.!?\s]*$", re.IGNORECASE),
+    re.compile(r"^(?:please\s+)?restart\s+opencodon[.!?\s]*$", re.IGNORECASE),
 )
 
 
@@ -2390,7 +2390,7 @@ class BasePlatformAdapter(ABC):
     splits_long_messages: bool = False
 
     # The command prefix users can always TYPE on this platform to reach
-    # Hermes commands.  Default "/" (most platforms deliver "/approve" etc.
+    # opencodon commands.  Default "/" (most platforms deliver "/approve" etc.
     # as plain message text).  Platforms where typing a leading "/" is
     # intercepted or restricted by the client (Slack blocks native slash
     # commands inside threads; Matrix clients reserve "/" for client-local
@@ -2627,7 +2627,7 @@ class BasePlatformAdapter(ABC):
         final-editing the preview.
 
         Some adapters can send richer final messages than their current edit
-        implementation supports. Telegram is the motivating case: Hermes sends
+        implementation supports. Telegram is the motivating case: opencodon sends
         final replies through ``sendRichMessage`` but still finalizes streamed
         previews through its existing MarkdownV2 edit path until Bot API 10.1's
         ``rich_message`` edit parameter is wired directly. Such adapters
@@ -3541,7 +3541,7 @@ class BasePlatformAdapter(ABC):
         Override in subclasses to send audio as voice bubbles (Telegram)
         or file attachments (Discord). Default falls back to a friendly
         notice — never echo the local audio_path into chat, since it is a
-        host filesystem path that would leak the Hermes home layout.
+        host filesystem path that would leak the opencodon home layout.
         """
         # audio_path is intentionally NOT included in the chat text — it is a
         # host-local path that leaks filesystem layout. The path is logged for
@@ -3591,7 +3591,7 @@ class BasePlatformAdapter(ABC):
         Override in subclasses to send videos as inline playable media.
         Default falls back to a friendly notice — never echo the local
         video_path into chat, since it is a host filesystem path that
-        would leak the Hermes home layout.
+        would leak the opencodon home layout.
         """
         # See send_voice for the rationale: do not echo host paths into chat.
         logger.warning(
@@ -3619,7 +3619,7 @@ class BasePlatformAdapter(ABC):
         Override in subclasses to send files as downloadable attachments.
         Default falls back to a friendly notice — never echo the local
         file_path into chat, since it is a host filesystem path that
-        would leak the Hermes home layout.
+        would leak the opencodon home layout.
         """
         # See send_voice for the rationale: do not echo host paths into chat.
         logger.warning(
@@ -3653,7 +3653,7 @@ class BasePlatformAdapter(ABC):
         Override in subclasses for native photo attachments. Default falls
         back to a friendly notice — never echo the local image_path into
         chat, since it is a host filesystem path that would leak the
-        Hermes home layout.
+        opencodon home layout.
         """
         # See send_voice for the rationale: do not echo host paths into chat.
         logger.warning(
@@ -5539,7 +5539,7 @@ class BasePlatformAdapter(ABC):
             # session (e.g. deferred background-review notifications).
             #
             # Snapshot the callback generation HERE (after the agent has run),
-            # not at the top of this task.  _hermes_run_generation is set on
+            # not at the top of this task.  _opencodon_run_generation is set on
             # the interrupt event by GatewayRunner._bind_adapter_run_generation
             # during _handle_message_with_agent — which happens DURING the
             # self._message_handler(event) await above.  Snapshotting earlier
@@ -5548,7 +5548,7 @@ class BasePlatformAdapter(ABC):
             # fresher run's callbacks.
             _callback_generation = getattr(
                 interrupt_event,
-                "_hermes_run_generation",
+                "_opencodon_run_generation",
                 None,
             )
             if hasattr(self, "pop_post_delivery_callback"):

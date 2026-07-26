@@ -37,7 +37,6 @@ def _make_runner():
     runner.hooks.emit = AsyncMock()
     runner.hooks.loaded_hooks = []
     runner._session_db = None
-    runner._get_or_create_gateway_honcho = lambda session_key: (None, None)
     return runner
 
 
@@ -47,7 +46,7 @@ class TestVerboseCommand:
     @pytest.mark.asyncio
     async def test_disabled_by_default(self, tmp_path, monkeypatch):
         """When tool_progress_command is false, /verbose returns an info message."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         config_path.write_text("display:\n  tool_progress: all\n", encoding="utf-8")
@@ -63,7 +62,7 @@ class TestVerboseCommand:
     @pytest.mark.asyncio
     async def test_enabled_cycles_mode(self, tmp_path, monkeypatch):
         """When enabled, /verbose cycles tool_progress mode per-platform."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         config_path.write_text(
@@ -87,7 +86,7 @@ class TestVerboseCommand:
     @pytest.mark.asyncio
     async def test_quoted_false_keeps_command_disabled(self, tmp_path, monkeypatch):
         """Quoted false must not enable the /verbose gateway command."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         config_path.write_text(
@@ -106,7 +105,7 @@ class TestVerboseCommand:
     @pytest.mark.asyncio
     async def test_cycles_through_all_modes(self, tmp_path, monkeypatch):
         """Calling /verbose repeatedly cycles through all tool-progress visibility modes."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         config_path.write_text(
@@ -134,7 +133,7 @@ class TestVerboseCommand:
         platform stays final-answer-first by default on mobile inboxes.  The
         first ``/verbose`` invocation therefore cycles ``off → new``.
         """
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         config_path.write_text(
@@ -160,7 +159,7 @@ class TestVerboseCommand:
         default — Telegram = 'off' (tier-1 inbox override), Slack = 'off'
         (quiet Slack default). Both cycle to 'new' on first /verbose.
         """
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         config_path = opencodon_home / "config.yaml"
         # No global tool_progress → built-in platform defaults apply
@@ -191,7 +190,7 @@ class TestVerboseCommand:
     @pytest.mark.asyncio
     async def test_no_config_file_returns_disabled(self, tmp_path, monkeypatch):
         """When config.yaml doesn't exist, command reports disabled."""
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
         # No config.yaml
 

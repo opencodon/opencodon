@@ -92,7 +92,7 @@ class TestAsyncDeliverySupported:
 # ---------------------------------------------------------------------------
 
 class TestDeclareStatelessChannel:
-    """``hermes -z`` and cron cannot receive a completion after their turn ends.
+    """``opencodon -z`` and cron cannot receive a completion after their turn ends.
 
     Cron clears the ``OPENCODON_SESSION_*`` routing keys, so an async delegation's
     completion event carries ``session_key=""`` and the gateway watcher drops it

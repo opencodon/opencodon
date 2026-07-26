@@ -1,4 +1,4 @@
-"""CLI subcommand: ``hermes send`` — pipe text from shell scripts to any
+"""CLI subcommand: ``opencodon send`` — pipe text from shell scripts to any
 configured messaging platform (Telegram, Discord, Slack, Signal, SMS, etc.).
 
 This is a thin wrapper around ``tools.send_message_tool.send_message_tool``
@@ -61,19 +61,19 @@ def _read_message_body(
             return Path(file_path).read_text(encoding="utf-8")
         except UnicodeDecodeError:
             print(
-                f"hermes send: {file_path} is not a text file. --file reads the "
+                f"opencodon send: {file_path} is not a text file. --file reads the "
                 "message *body* (logs, reports, markdown).\n"
                 "To send an image/document/audio file as a native attachment, "
                 "reference it with MEDIA: in the message text instead:\n"
-                f'  hermes send --to telegram "MEDIA:{file_path}"\n'
-                f'  hermes send --to telegram "optional caption MEDIA:{file_path}"\n'
+                f'  opencodon send --to telegram "MEDIA:{file_path}"\n'
+                f'  opencodon send --to telegram "optional caption MEDIA:{file_path}"\n'
                 "Add [[as_document]] to deliver an image as an uncompressed file:\n"
-                f'  hermes send --to telegram "[[as_document]] MEDIA:{file_path}"',
+                f'  opencodon send --to telegram "[[as_document]] MEDIA:{file_path}"',
                 file=sys.stderr,
             )
             sys.exit(_USAGE_EXIT)
         except OSError as exc:
-            print(f"hermes send: cannot read {file_path}: {exc}", file=sys.stderr)
+            print(f"opencodon send: cannot read {file_path}: {exc}", file=sys.stderr)
             sys.exit(_USAGE_EXIT)
 
     # Piped input: only consume stdin when it is not a TTY. Reading from a
@@ -118,7 +118,7 @@ def _emit_result(
         pass
     else:
         if payload.get("error"):
-            print(f"hermes send: {payload['error']}", file=sys.stderr)
+            print(f"opencodon send: {payload['error']}", file=sys.stderr)
         elif payload.get("success"):
             note = payload.get("note")
             if note:
@@ -153,13 +153,13 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
             load_directory,
         )
     except Exception as exc:
-        print(f"hermes send: failed to load channel directory: {exc}", file=sys.stderr)
+        print(f"opencodon send: failed to load channel directory: {exc}", file=sys.stderr)
         return _FAILURE_EXIT
 
     try:
         raw = load_directory()
     except Exception as exc:
-        print(f"hermes send: failed to read channel directory: {exc}", file=sys.stderr)
+        print(f"opencodon send: failed to read channel directory: {exc}", file=sys.stderr)
         return _FAILURE_EXIT
 
     platforms = dict(raw.get("platforms") or {})
@@ -169,7 +169,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
         filtered = {k: v for k, v in platforms.items() if k.lower() == key}
         if not filtered:
             print(
-                f"hermes send: no targets found for platform '{platform_filter}'. "
+                f"opencodon send: no targets found for platform '{platform_filter}'. "
                 f"Configured: {', '.join(sorted(platforms)) or '(none)'}",
                 file=sys.stderr,
             )
@@ -182,7 +182,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
 
     if not any(platforms.values()):
         print("No messaging platforms configured or no channels discovered yet.")
-        print("Set one up with `hermes gateway setup`, or run the gateway once so")
+        print("Set one up with `opencodon gateway setup`, or run the gateway once so")
         print("channel discovery can populate ~/.opencodon/channel_directory.json.")
         return _SUCCESS_EXIT
 
@@ -208,23 +208,23 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
     return _SUCCESS_EXIT
 
 
-def _load_hermes_env() -> None:
+def _load_opencodon_env() -> None:
     """Populate ``os.environ`` from ``~/.opencodon/.env`` AND bridge top-level
     ``config.yaml`` keys into the environment so the underlying gateway
     config loader sees platform credentials and home channel IDs.
 
     ``send_message_tool`` reads tokens and home-channel IDs via
     ``os.getenv(...)`` on each call. The gateway process does two things at
-    startup that ``hermes send`` must replicate when invoked standalone:
+    startup that ``opencodon send`` must replicate when invoked standalone:
 
     1. ``load_dotenv(~/.opencodon/.env)`` — brings bot tokens into the env.
     2. Bridge top-level simple values from ``~/.opencodon/config.yaml`` into
        ``os.environ`` (without overriding existing env vars). This is where
        ``TELEGRAM_HOME_CHANNEL`` and friends live when the user saved them
-       via ``hermes config set``.
+       via ``opencodon config set``.
 
     See ``gateway/run.py`` for the canonical version of this bridge — we
-    intentionally reimplement the minimum needed here so ``hermes send``
+    intentionally reimplement the minimum needed here so ``opencodon send``
     doesn't pull in the full gateway module just to resolve a home channel.
     """
     # Step 1: dotenv
@@ -301,7 +301,7 @@ def cmd_send(args: argparse.Namespace) -> None:
     # Bridge ~/.opencodon/.env and ~/.opencodon/config.yaml into os.environ so the
     # gateway config loader (invoked downstream by send_message_tool and by
     # the channel directory) can see platform credentials and home channels.
-    _load_hermes_env()
+    _load_opencodon_env()
 
     # --list short-circuits everything else.
     if getattr(args, "list_targets", False):
@@ -314,11 +314,11 @@ def cmd_send(args: argparse.Namespace) -> None:
     target = _resolve_target(getattr(args, "to", None))
     if not target:
         print(
-            "hermes send: --to PLATFORM[:channel[:thread]] is required\n"
+            "opencodon send: --to PLATFORM[:channel[:thread]] is required\n"
             "Examples:\n"
-            "  hermes send --to telegram \"hello\"\n"
-            "  hermes send --to discord:#ops --file report.md\n"
-            "  hermes send --list      # list available targets",
+            "  opencodon send --to telegram \"hello\"\n"
+            "  opencodon send --to discord:#ops --file report.md\n"
+            "  opencodon send --list      # list available targets",
             file=sys.stderr,
         )
         sys.exit(_USAGE_EXIT)
@@ -329,7 +329,7 @@ def cmd_send(args: argparse.Namespace) -> None:
     )
     if message is None or not message.strip():
         print(
-            "hermes send: no message provided. Pass text as a positional "
+            "opencodon send: no message provided. Pass text as a positional "
             "argument, use --file PATH, or pipe data via stdin.",
             file=sys.stderr,
         )
@@ -341,7 +341,7 @@ def cmd_send(args: argparse.Namespace) -> None:
     if subject:
         message = f"{subject}\n\n{message.lstrip()}"
 
-    # Import lazily so `hermes send --help` stays fast and does not pull in
+    # Import lazily so `opencodon send --help` stays fast and does not pull in
     # the full tool registry / gateway config stack.
     from tools.send_message_tool import send_message_tool
 
@@ -376,7 +376,7 @@ def register_send_subparser(subparsers) -> argparse.ArgumentParser:
         "send",
         help="Send a message to a configured platform (scripts, cron jobs, CI).",
         description=(
-            "Pipe text from any shell script to any messaging platform Hermes "
+            "Pipe text from any shell script to any messaging platform opencodon "
             "is already configured for. Reuses the gateway's platform "
             "credentials (~/.opencodon/.env + ~/.opencodon/config.yaml) — no LLM, "
             "no agent loop, no running gateway required for bot-token "
@@ -384,13 +384,13 @@ def register_send_subparser(subparsers) -> argparse.ArgumentParser:
         ),
         epilog=(
             "Examples:\n"
-            "  hermes send --to telegram \"deploy finished\"\n"
-            "  echo \"RAM 92%\" | hermes send --to telegram:-1001234567890\n"
-            "  hermes send --to discord:#ops --file /tmp/report.md\n"
-            "  hermes send --to slack:#eng --subject \"[CI]\" --file build.log\n"
-            "  hermes send --to telegram \"MEDIA:/tmp/chart.png\"   # send a media attachment\n"
-            "  hermes send --list                  # all platforms\n"
-            "  hermes send --list telegram         # filter by platform\n"
+            "  opencodon send --to telegram \"deploy finished\"\n"
+            "  echo \"RAM 92%\" | opencodon send --to telegram:-1001234567890\n"
+            "  opencodon send --to discord:#ops --file /tmp/report.md\n"
+            "  opencodon send --to slack:#eng --subject \"[CI]\" --file build.log\n"
+            "  opencodon send --to telegram \"MEDIA:/tmp/chart.png\"   # send a media attachment\n"
+            "  opencodon send --list                  # all platforms\n"
+            "  opencodon send --list telegram         # filter by platform\n"
             "\n"
             "Exit codes: 0 ok, 1 delivery/backend error, 2 usage error."
         ),
@@ -446,7 +446,7 @@ def register_send_subparser(subparsers) -> argparse.ArgumentParser:
         dest="list_targets",
         action="store_true",
         default=False,
-        help="List available targets. Optional positional filter: `hermes send --list telegram`.",
+        help="List available targets. Optional positional filter: `opencodon send --list telegram`.",
     )
 
     parser.add_argument(

@@ -142,7 +142,7 @@ while [[ $# -gt 0 ]]; do
             INSTALL_DIR_EXPLICIT=true
             shift 2
             ;;
-        --opencodon-home|--hermes-home)  # --hermes-home: deprecated alias, one release
+        --opencodon-home|--opencodon-home)  # --opencodon-home: deprecated alias, one release
             OPENCODON_HOME="$2"
             shift 2
             ;;
@@ -1646,22 +1646,22 @@ setup_path() {
     command_link_dir="$(get_command_link_dir)"
     command_link_display_dir="$(get_command_link_display_dir)"
 
-    # Create a user-facing shim for the opencodon command (plus a hermes alias for one release).
+    # Create a user-facing shim for the opencodon command (plus a opencodon alias for one release).
     # We intentionally clear PYTHONPATH/PYTHONHOME here so inherited env vars
     # can't make this launcher import modules from another checkout.
     mkdir -p "$command_link_dir"
     # Older installs created this path as a symlink to $OPENCODON_BIN. Without
     # the rm, `cat >` follows the symlink and overwrites the venv pip entry
     # point with this shim — making `exec "$OPENCODON_BIN"` self-recurse. (#21454)
-    rm -f "$command_link_dir/opencodon" "$command_link_dir/hermes"
+    rm -f "$command_link_dir/opencodon"
     cat > "$command_link_dir/opencodon" <<EOF
 #!/usr/bin/env bash
 unset PYTHONPATH
 unset PYTHONHOME
 exec "$OPENCODON_BIN" "\$@"
 EOF
-    chmod +x "$command_link_dir/opencodon" && cp "$command_link_dir/opencodon" "$command_link_dir/hermes" && chmod +x "$command_link_dir/hermes"  # hermes alias: one release
-    log_success "Installed opencodon launcher → $command_link_display_dir/opencodon (+ hermes alias)"
+    chmod +x "$command_link_dir/opencodon" && cp "$command_link_dir/opencodon" "$command_link_dir/opencodon" && chmod +x "$command_link_dir/opencodon"  # opencodon alias: one release
+    log_success "Installed opencodon launcher → $command_link_display_dir/opencodon (+ opencodon alias)"
 
     if [ "$DISTRO" = "termux" ]; then
         export PATH="$command_link_dir:$PATH"
@@ -1900,7 +1900,7 @@ strip_snap_browser_override() {
 
     local tmp
     tmp="$(mktemp)" || return 0
-    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# (Hermes Agent|opencodon) browser tools' "$env_file" > "$tmp"; then
+    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# (opencodon|opencodon) browser tools' "$env_file" > "$tmp"; then
         mv "$tmp" "$env_file"
         log_warn "Removed stale Snap browser override (AGENT_BROWSER_EXECUTABLE_PATH=/snap/...) from $env_file"
         log_info "opencodon will use the bundled Chromium instead."

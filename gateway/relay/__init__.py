@@ -1,4 +1,4 @@
-"""Relay/connector support package for the Hermes gateway.
+"""Relay/connector support package for the opencodon gateway.
 
 EXPERIMENTAL. This package implements the gateway side of the "Gateway Gateway"
 relay design: a generic ``RelayAdapter`` plus the wire-serializable
@@ -125,7 +125,7 @@ def relay_platform_identity() -> tuple[str, str]:
 def relay_connection_auth() -> tuple[Optional[str], Optional[str]]:
     """The (gateway_id, upgrade_secret) this gateway authenticates the WS upgrade with.
 
-    Both come from enrollment (``hermes gateway enroll`` writes them to
+    Both come from enrollment (``opencodon gateway enroll`` writes them to
     ``~/.opencodon/.env``): ``GATEWAY_RELAY_ID`` identifies the enrolled instance,
     ``GATEWAY_RELAY_SECRET`` is the per-gateway signing secret. Either absent ->
     ``(None, None)`` and the transport dials unauthenticated (dev/test, or a
@@ -234,7 +234,7 @@ def relay_wake_url() -> Optional[str]:
     delivery-leg backlog. The value's *source* differs by deployment but the code
     path is uniform: a managed/NAS container has ``GATEWAY_RELAY_WAKE_URL`` stamped
     in (NAS knows the Fly autostart / dashboard hostname); a self-hosted operator
-    sets it explicitly (or passes ``--wake-url`` to ``hermes gateway enroll``).
+    sets it explicitly (or passes ``--wake-url`` to ``opencodon gateway enroll``).
 
     Gateway-asserted but safely scoped: the org/tenant stays token-verified, so a
     dishonest gateway can only register a wake target for ITS OWN instance — the
@@ -448,16 +448,13 @@ def _resolve_relay_identity_token() -> str:
     """Resolve the caller-identity bearer token the connector introspects to a tenant.
 
     Canonical resolver shared by the runtime self-provision path and the
-    ``hermes gateway enroll`` CLI. Two modes, in precedence order:
+    ``opencodon gateway enroll`` CLI.
 
-      1. **Generic OIDC client-credentials** (air-gapped / self-hosted-IdP, NO
-         Nous Portal): when ``gateway.idp.token_url`` (or
-         ``GATEWAY_RELAY_IDP_TOKEN_URL``) is configured, obtain a workload access
-         token via the OAuth2 ``client_credentials`` grant against the operator's
-         own IdP (Entra; Authentik in the sandbox). The connector's Seam-A OIDC
-         verifier reads a claim (default ``tid``) off it as the tenant.
-      2. **Nous Portal** (default): ``resolve_nous_access_token()`` — existing
-         managed/hosted behaviour.
+    **Generic OIDC client-credentials**: when ``gateway.idp.token_url`` (or
+    ``GATEWAY_RELAY_IDP_TOKEN_URL``) is configured, obtain a workload access
+    token via the OAuth2 ``client_credentials`` grant against the operator's
+    own IdP (Entra; Authentik in the sandbox). The connector's Seam-A OIDC
+    verifier reads a claim (default ``tid``) off it as the tenant.
 
     Raises on failure; callers decide whether that's fatal (enroll CLI) or a
     graceful boot no-op (self-provision).
@@ -479,12 +476,12 @@ def _resolve_relay_identity_token() -> str:
             token_url = token_url or ""
 
     if not token_url:
-        # Mode 2 — Nous Portal (default, unchanged behaviour).
-        from opencodon_cli.auth import resolve_nous_access_token
+        raise RuntimeError(
+            "no caller identity configured: set gateway.idp.token_url "
+            "(or GATEWAY_RELAY_IDP_TOKEN_URL) plus client_id/client_secret"
+        )
 
-        return resolve_nous_access_token()
-
-    # Mode 1 — generic OAuth2 client_credentials grant.
+    # Generic OAuth2 client_credentials grant.
     import json
     import urllib.error
     import urllib.parse
@@ -522,9 +519,9 @@ def self_provision_relay() -> bool:
     """Boot-time relay self-provision: mint relay creds in-process, no human, no disk.
 
     Fires when relay is configured (``relay_url()`` set) and NO per-gateway secret
-    is already present, AND the agent can resolve its own Nous access token. In
-    that case the runtime resolves the agent's own Nous access token (the same
-    ``resolve_nous_access_token()`` the enroll CLI / dashboard register use),
+    is already present, AND the agent can resolve its own caller-identity token.
+    In that case the runtime resolves that token (the same
+    ``_resolve_relay_identity_token()`` the enroll CLI uses),
     POSTs ``/relay/provision`` asserting its own endpoint + route keys, and sets
     ``GATEWAY_RELAY_ID`` / ``GATEWAY_RELAY_SECRET`` / ``GATEWAY_RELAY_DELIVERY_KEY``
     into ``os.environ`` so the subsequent ``register_relay_adapter()`` picks them
@@ -537,12 +534,12 @@ def self_provision_relay() -> bool:
     at a connector and didn't pin a secret" — which is both NAS-independent and
     self-guarding:
 
-      - A NAS-hosted agent: has ``GATEWAY_RELAY_URL``, no pinned secret, and a
-        bootstrapped NAS token -> self-provisions.
-      - A self-hosted operator who ran ``hermes gateway enroll``: has a PINNED
+      - A hosted agent: has ``GATEWAY_RELAY_URL``, no pinned secret, and a
+        resolvable workload identity -> self-provisions.
+      - A self-hosted operator who ran ``opencodon gateway enroll``: has a PINNED
         ``GATEWAY_RELAY_SECRET`` -> skipped (the secret-present guard below).
-      - A self-hosted box with a relay URL but no NAS identity:
-        ``resolve_nous_access_token()`` fails -> graceful no-op.
+      - A box with a relay URL but no configured IdP:
+        ``_resolve_relay_identity_token()`` fails -> graceful no-op.
 
     Stateless: process-env creds don't survive a restart, so a hosted container
     re-provisions every boot; the connector's rotation window covers a still-
@@ -586,7 +583,7 @@ def self_provision_relay() -> bool:
         host = socket.gethostname().strip()
     except Exception:  # noqa: BLE001
         host = ""
-    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'hermes'}"
+    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'opencodon'}"
     endpoint = relay_endpoint()
     route_keys = relay_route_keys()
     instance_id = relay_instance_id()

@@ -1011,7 +1011,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1060,7 +1060,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1104,7 +1104,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1146,7 +1146,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1185,7 +1185,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1364,7 +1364,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1407,7 +1407,7 @@ class TestRunJobSessionPersistence:
         base = [
             patch("cron.scheduler._opencodon_home", tmp_path),
             patch("cron.scheduler._resolve_origin", return_value=None),
-            patch("opencodon_cli.env_loader.load_hermes_dotenv"),
+            patch("opencodon_cli.env_loader.load_opencodon_dotenv"),
             patch("opencodon_cli.env_loader.reset_secret_source_cache"),
             patch("opencodon_state.SessionDB", return_value=fake_db),
             patch(
@@ -1474,7 +1474,7 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_enabled_toolsets_resolves_from_platform_config_when_not_set(self, tmp_path):
         """When a job has no explicit enabled_toolsets, the scheduler now
-        resolves them from ``hermes tools`` platform config for ``cron``
+        resolves them from ``opencodon tools`` platform config for ``cron``
         (PR #14xxx — blanket fix for Norbert's surprise ``moa`` run).
 
         The legacy "pass None → AIAgent loads full default" path is still
@@ -1500,14 +1500,14 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_per_job_toolsets_win_over_platform_config(self, tmp_path):
         """Per-job enabled_toolsets (via cronjob tool) always take precedence
-        over the platform-level ``hermes tools`` config."""
+        over the platform-level ``opencodon tools`` config."""
         job = {
             "id": "override-job",
             "name": "test",
             "prompt": "hello",
             "enabled_toolsets": ["terminal"],
         }
-        # Even if the user has ``hermes tools`` configured to enable web+file
+        # Even if the user has ``opencodon tools`` configured to enable web+file
         # for cron, the per-job override wins.
         extra = [patch("opencodon_cli.tools_config._get_platform_tools", return_value={"web", "file"})]
         with self._run_job_patches(tmp_path, extra=extra) as (_fake_db, mock_agent_cls):
@@ -1531,7 +1531,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1608,7 +1608,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1648,7 +1648,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1691,7 +1691,7 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -1956,7 +1956,7 @@ class TestRunJobSessionPersistence:
         this OPENCODON_HOME in ``_APPLIED_HOMES``, so the external-secret pull
         no-ops and only the placeholder is re-applied. The scheduler must call
         ``reset_secret_source_cache()`` (forcing the re-pull) and route through
-        ``load_hermes_dotenv`` (which then re-applies external secret sources).
+        ``load_opencodon_dotenv`` (which then re-applies external secret sources).
         """
         job = {"id": "bsm-job", "name": "bsm", "prompt": "hello"}
         fake_db = MagicMock()
@@ -1972,7 +1972,7 @@ class TestRunJobSessionPersistence:
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache", _record_reset), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv", _record_load), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv", _record_load), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
                  "opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2090,7 +2090,7 @@ class TestRunJobConfigLogging:
         # (>30s wall clock) under load. See PR #33661 follow-up.
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
@@ -2125,7 +2125,7 @@ class TestRunJobConfigLogging:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
@@ -2164,7 +2164,7 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2198,7 +2198,7 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2229,7 +2229,7 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2285,7 +2285,7 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2344,7 +2344,7 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2389,7 +2389,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2414,7 +2414,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2447,7 +2447,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2471,7 +2471,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2501,7 +2501,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2528,7 +2528,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2559,7 +2559,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2584,7 +2584,7 @@ class TestRunJobModelResolution:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -2627,7 +2627,7 @@ class TestRunJobSkillBacked:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -2688,7 +2688,7 @@ class TestRunJobSkillBacked:
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("tools.credential_files._resolve_opencodon_home", return_value=tmp_path), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -2727,7 +2727,7 @@ class TestRunJobSkillBacked:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -2774,7 +2774,7 @@ class TestRunJobSkillBacked:
 
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_hermes_dotenv"), \
+             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
              patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
@@ -4463,7 +4463,7 @@ class TestCronDeliveryTargets:
 class TestHomeTargetEnvVarRegistry:
     """Regression: ``_HOME_TARGET_ENV_VARS`` must include every gateway
     platform that supports cron-driven outbound delivery. Missing an
-    entry means ``hermes cron create --deliver=<platform>`` silently
+    entry means ``opencodon cron create --deliver=<platform>`` silently
     fails to route through the platform's home channel."""
 
     def test_whatsapp_cloud_registered(self):

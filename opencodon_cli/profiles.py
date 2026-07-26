@@ -1,5 +1,5 @@
 """
-Profile management for multiple isolated Hermes instances.
+Profile management for multiple isolated opencodon instances.
 
 Each profile is a fully independent OPENCODON_HOME directory with its own
 config.yaml, .env, memory, sessions, skills, gateway, cron, and logs.
@@ -10,13 +10,13 @@ zero migration needed.
 
 Usage::
 
-    hermes profile create coder          # fresh profile + bundled skills
-    hermes profile create coder --clone  # also copy config, .env, SOUL.md, skills
-    hermes profile create coder --clone-all  # full copy of source profile
+    opencodon profile create coder          # fresh profile + bundled skills
+    opencodon profile create coder --clone  # also copy config, .env, SOUL.md, skills
+    opencodon profile create coder --clone-all  # full copy of source profile
     coder chat                           # use via wrapper alias
-    hermes -p coder chat                 # or via flag
-    hermes profile use coder             # set as sticky default
-    hermes profile delete coder          # remove profile + alias + service
+    opencodon -p coder chat                 # or via flag
+    opencodon profile use coder             # set as sticky default
+    opencodon profile delete coder          # remove profile + alias + service
 """
 
 import json
@@ -83,7 +83,7 @@ _CLONE_ALL_STRIP: list[str] = [
 # user data from a named-profile source.
 #
 # Rationale per item:
-#   hermes-agent  — git repo checkout (~84 MB source + ~3 GB venv)
+#   opencodon  — git repo checkout (~84 MB source + ~3 GB venv)
 #   .worktrees    — git worktrees
 #   profiles      — sibling named profiles (recursive copy never intended)
 #   bin           — installed binaries (tirith etc., ~10 MB) shared per-host
@@ -112,7 +112,7 @@ _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] = frozenset({
 # Rationale per item:
 #   state.db (+wal/shm) — SQLite session store (can reach many GB)
 #   sessions            — per-session transcript/data dirs
-#   backups             — `hermes backup` archives
+#   backups             — `opencodon backup` archives
 #   state-snapshots     — quick-backup snapshot trees
 #   checkpoints         — session checkpoint data
 _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
@@ -125,11 +125,11 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "checkpoints",
 })
 
-# Marker file written by `hermes profile create --no-skills`.  When present in
-# a profile's root, callers of seed_profile_skills() (fresh-create, `hermes
+# Marker file written by `opencodon profile create --no-skills`.  When present in
+# a profile's root, callers of seed_profile_skills() (fresh-create, `opencodon
 # update`'s all-profile sync, the web dashboard) skip bundled-skill seeding
 # for that profile.  The user can still install skills manually via
-# `hermes skills install` or drop SKILL.md files into the profile's skills/.
+# `opencodon skills install` or drop SKILL.md files into the profile's skills/.
 # Delete the marker file to opt back in.
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
@@ -150,7 +150,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
          history, backups, and snapshots that belong to the SOURCE profile
          and should never carry into a fresh clone.  Applies to any source.
       2. Root-level entries in ``_CLONE_ALL_DEFAULT_EXCLUDE_ROOT`` — known
-         Hermes infrastructure directories that only the default profile
+         opencodon infrastructure directories that only the default profile
          (``~/.opencodon``) ever contains.  Gated on ``source_dir`` actually
          being the default profile so a named-profile source never has its
          own data silently dropped.
@@ -227,7 +227,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
 # Allow-list for ``export_profile("default")``: when OPENCODON_HOME equals the
 # cwd (Docker/custom deployments), the default profile home is the working
 # directory and contains arbitrary user files that should NOT be bundled
-# into the export. The set below identifies the *known Hermes profile
+# into the export. The set below identifies the *known opencodon profile
 # artifacts* at the root of OPENCODON_HOME; everything else is excluded.
 # Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
 # other profiles) is intentionally *not* in this list so the export stays
@@ -245,15 +245,15 @@ _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
 
 # Names that cannot be used as profile aliases
 _RESERVED_NAMES = frozenset({
-    "hermes", "default", "test", "tmp", "root", "sudo",
+    "opencodon", "default", "test", "tmp", "root", "sudo",
 })
 
-# Hermes subcommands that cannot be used as profile names/aliases
+# opencodon subcommands that cannot be used as profile names/aliases
 _OPENCODON_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
     "mcp", "sessions", "insights", "version", "update", "uninstall",
-    "profile", "plugins", "honcho", "acp",
+    "profile", "plugins", "acp",
 })
 
 
@@ -264,7 +264,7 @@ _OPENCODON_SUBCOMMANDS = frozenset({
 def _get_profiles_root() -> Path:
     """Return the directory where named profiles are stored.
 
-    Anchored to the hermes root, NOT to the current OPENCODON_HOME
+    Anchored to the opencodon root, NOT to the current OPENCODON_HOME
     (which may itself be a profile).  This ensures ``coder profile list``
     can see all profiles.
 
@@ -282,8 +282,8 @@ def _get_default_opencodon_home() -> Path:
     In Docker/custom deployments where OPENCODON_HOME is outside ``~/.opencodon``
     (e.g. ``/opt/data``), returns OPENCODON_HOME directly.
     """
-    from opencodon_constants import get_default_hermes_root
-    return get_default_hermes_root()
+    from opencodon_constants import get_default_opencodon_root
+    return get_default_opencodon_root()
 
 
 def _get_active_profile_path() -> Path:
@@ -327,9 +327,9 @@ def validate_profile_name(name: str) -> None:
     honest about what the on-disk directory name must look like, while
     ingress-point normalization handles UX flexibility (see #18498).
 
-    Also rejects names in :data:`_RESERVED_NAMES` (``hermes``, ``test``,
+    Also rejects names in :data:`_RESERVED_NAMES` (``opencodon``, ``test``,
     ``tmp``, ``root``, ``sudo``) that would create confusing on-disk
-    collisions (a ``hermes`` profile inside ``~/.opencodon/``) or get refused
+    collisions (a ``opencodon`` profile inside ``~/.opencodon/``) or get refused
     at alias-creation time anyway. ``default`` is a special pass-through —
     it's a valid alias for the built-in root profile.
     """
@@ -343,7 +343,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the opencodon installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -387,7 +387,7 @@ def profile_exists(name: str) -> bool:
 def check_alias_collision(name: str) -> Optional[str]:
     """Return a human-readable collision message, or None if the name is safe.
 
-    Checks: alias-name validity, reserved names, hermes subcommands, existing
+    Checks: alias-name validity, reserved names, opencodon subcommands, existing
     binaries in PATH.
     """
     canon = normalize_profile_name(name)
@@ -398,7 +398,7 @@ def check_alias_collision(name: str) -> Optional[str]:
     if canon in _RESERVED_NAMES:
         return f"'{canon}' is a reserved name"
     if canon in _OPENCODON_SUBCOMMANDS:
-        return f"'{canon}' conflicts with a hermes subcommand"
+        return f"'{canon}' conflicts with a opencodon subcommand"
 
     # Check existing commands in PATH
     wrapper_dir = _get_wrapper_dir()
@@ -415,7 +415,7 @@ def check_alias_collision(name: str) -> Optional[str]:
             if existing_path == str(expected):
                 try:
                     content = expected.read_text()
-                    if "hermes -p" in content:
+                    if "opencodon -p" in content:
                         return None  # it's our wrapper, safe to overwrite
                 except Exception:
                     pass
@@ -458,7 +458,7 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     if is_windows:
         wrapper_path = wrapper_dir / f"{canon}.bat"
         try:
-            wrapper_path.write_text(f"@echo off\r\nhermes -p {profile} %*\r\n")
+            wrapper_path.write_text(f"@echo off\r\nopencodon -p {profile} %*\r\n")
             return wrapper_path
         except OSError as e:
             print(f"⚠ Could not create wrapper at {wrapper_path}: {e}")
@@ -466,8 +466,8 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     else:
         wrapper_path = wrapper_dir / canon
         try:
-            hermes_exe = shutil.which("hermes") or "hermes"
-            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(hermes_exe)} -p {profile} "$@"\n')
+            opencodon_exe = shutil.which("opencodon") or "opencodon"
+            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(opencodon_exe)} -p {profile} "$@"\n')
             wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
             return wrapper_path
         except OSError as e:
@@ -497,7 +497,7 @@ def remove_wrapper_script(name: str) -> bool:
             try:
                 # Verify it's our wrapper before removing
                 content = wrapper_path.read_text()
-                if "hermes -p" in content:
+                if "opencodon -p" in content:
                     wrapper_path.unlink()
                     return True
             except Exception:
@@ -509,7 +509,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     """Bring a copied profile config.yaml up to the current schema.
 
     Profile creation can clone a config file that predates schema tracking (no
-    ``_config_version``) or that is simply older than the running Hermes. If we
+    ``_config_version``) or that is simply older than the running opencodon. If we
     leave it untouched, the first desktop/doctor view of the new profile shows a
     scary ``v0 → latest`` warning even though we just created the profile. Scope
     the normal migration pipeline to the new profile and keep it non-interactive.
@@ -531,7 +531,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
             reset_opencodon_home_override(token)
     except Exception:
         # Profile creation should not fail because an old copied config could
-        # not be migrated. The next `hermes doctor --fix` can still surface the
+        # not be migrated. The next `opencodon doctor --fix` can still surface the
         # detailed error in the target profile.
         pass
 
@@ -540,8 +540,8 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
     """Return the alias name of the wrapper that activates *profile_name*, or None.
 
     A wrapper created by :func:`create_wrapper_script` is a file named after the
-    alias whose body invokes ``hermes -p <profile>``. When the alias name equals
-    the profile name this is trivial, but a custom alias (``hermes profile alias
+    alias whose body invokes ``opencodon -p <profile>``. When the alias name equals
+    the profile name this is trivial, but a custom alias (``opencodon profile alias
     <profile> --name <custom>``) produces a differently-named file — so the
     display side cannot assume ``wrapper == profile`` and must reverse-look-up.
 
@@ -558,7 +558,7 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
 
 
 # Cap how much of a wrapper file we read when reverse-looking-up its profile.
-# Real wrappers are a few hundred bytes of shell; the needle (``hermes -p X``)
+# Real wrappers are a few hundred bytes of shell; the needle (``opencodon -p X``)
 # sits near the top. The wrapper dir (e.g. ``~/.local/bin``) commonly also holds
 # large unrelated binaries (ffmpeg, node, …) — reading those whole, N times, was
 # the dominant cost in ``list_profiles`` (~4.5s). Reading a small head slice and
@@ -580,7 +580,7 @@ def build_alias_map() -> dict[str, str]:
     if not wrapper_dir.is_dir():
         return result
     is_windows = sys.platform == "win32"
-    prefix = "hermes -p "
+    prefix = "opencodon -p "
 
     for entry in sorted(wrapper_dir.iterdir()):
         if not entry.is_file():
@@ -657,7 +657,7 @@ def _read_distribution_meta(profile_dir: Path) -> tuple:
     if present; ``(None, None, None)`` otherwise.
 
     Failures (missing file, bad YAML) are swallowed — a bad manifest should
-    never break ``hermes profile list`` for an unrelated profile.
+    never break ``opencodon profile list`` for an unrelated profile.
     """
     mf_path = profile_dir / "distribution.yaml"
     if not mf_path.is_file():
@@ -799,7 +799,7 @@ def _count_skills(profile_dir: Path) -> int:
 # ---------------------------------------------------------------------------
 #
 # We keep this file deliberately tiny and separate from the profile's
-# ``config.yaml``. ``config.yaml`` is the user-facing Hermes config
+# ``config.yaml``. ``config.yaml`` is the user-facing opencodon config
 # (~5000 lines of defaults); ``profile.yaml`` is metadata ABOUT the
 # profile itself (its role, who described it). Mixing them makes both
 # harder to read.
@@ -818,7 +818,7 @@ def read_profile_meta(profile_dir: Path) -> dict:
     Returns ``{"description": "", "description_auto": False}`` when the
     file is missing or unreadable. Never raises — a corrupt
     profile.yaml on an unrelated profile must not break
-    ``hermes profile list``.
+    ``opencodon profile list``.
     """
     path = _profile_yaml_path(profile_dir)
     if not path.is_file():
@@ -1014,7 +1014,7 @@ def create_profile(
         If True, skip wrapper script creation.
     no_skills:
         If True, create an empty profile with no bundled skills, and write
-        a marker file so ``hermes update`` skips re-seeding this profile's
+        a marker file so ``opencodon update`` skips re-seeding this profile's
         skills. Mutually exclusive with ``clone_config``/``clone_all`` (those
         explicitly copy skills from the source).
 
@@ -1108,7 +1108,7 @@ def create_profile(
 
     # Seed an empty .env so the profile has its own credentials file from
     # day one. Without it, profile-scoped env writes (dashboard Channels /
-    # Keys pages, `hermes -p <name> auth add`) had no file until first
+    # Keys pages, `opencodon -p <name> auth add`) had no file until first
     # write, and the profile silently inherited API keys from the shell
     # environment — users reasonably read that as "the new profile reads
     # the root .env". Skipped when --clone/--clone-all already copied one.
@@ -1116,7 +1116,7 @@ def create_profile(
     if not env_path.exists():
         try:
             env_path.write_text(
-                "# Per-profile secrets for this Hermes profile.\n"
+                "# Per-profile secrets for this opencodon profile.\n"
                 "# API keys and tokens set here override the shell environment.\n"
                 "# Behavioral settings belong in config.yaml, not here.\n",
                 encoding="utf-8",
@@ -1135,20 +1135,20 @@ def create_profile(
         except Exception:
             pass  # best-effort — don't fail profile creation over this
 
-    # Write the opt-out marker so seed_profile_skills() and `hermes update`'s
+    # Write the opt-out marker so seed_profile_skills() and `opencodon update`'s
     # all-profile sync loop both skip this profile for bundled-skill seeding.
     if no_skills:
         try:
             (profile_dir / NO_BUNDLED_SKILLS_MARKER).write_text(
                 "This profile opted out of bundled-skill seeding "
-                "(`hermes profile create --no-skills`).\n"
-                "Delete this file to re-enable sync on the next `hermes update`.\n",
+                "(`opencodon profile create --no-skills`).\n"
+                "Delete this file to re-enable sync on the next `opencodon update`.\n",
                 encoding="utf-8",
             )
         except OSError:
             pass  # best-effort — the feature still works via the empty skills/ dir
 
-    # Cloned configs can be older than the running Hermes (or predate schema
+    # Cloned configs can be older than the running opencodon (or predate schema
     # tracking entirely). Migrate config-only clones immediately so
     # desktop/status surfaces don't warn that a just-created profile is
     # v0/outdated. Leave --clone-all snapshots byte-for-byte apart from the
@@ -1167,11 +1167,11 @@ def create_profile(
                 description_auto=False,
             )
         except Exception:
-            pass  # non-fatal — user can describe later with `hermes profile describe`
+            pass  # non-fatal — user can describe later with `opencodon profile describe`
 
     # Phase 4: when running inside a container under s6, register the
     # new profile's gateway as a runtime s6 service so
-    # `hermes -p <profile> gateway start` can supervise it via
+    # `opencodon -p <profile> gateway start` can supervise it via
     # `s6-svc -u` instead of spawning a bare process. On host (systemd
     # / launchd / windows) this is a no-op — the existing per-profile
     # unit-generation paths handle gateway lifecycle.
@@ -1186,7 +1186,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
     Uses subprocess because sync_skills() caches OPENCODON_HOME at module level.
     Returns the sync result dict, or None on failure.
 
-    Profiles that opted out of bundled skills (via ``hermes profile create
+    Profiles that opted out of bundled skills (via ``opencodon profile create
     --no-skills`` — which writes ``.no-bundled-skills`` to the profile root)
     are skipped and get an empty-result dict so callers can report
     "opted out" instead of "failed".
@@ -1263,7 +1263,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
                 shutil.copy2(default_env, env_path)
             else:
                 env_path.write_text(
-                    "# Per-profile secrets for this Hermes profile.\n"
+                    "# Per-profile secrets for this opencodon profile.\n"
                     "# API keys and tokens set here override the shell environment.\n"
                     "# Behavioral settings belong in config.yaml, not here.\n",
                     encoding="utf-8",
@@ -1278,14 +1278,14 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
 
 
 def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
-    """PIDs of running Hermes *backends* bound to this profile.
+    """PIDs of running opencodon *backends* bound to this profile.
 
     The ``gateway.pid`` file only tracks the messaging gateway.  A Desktop app
     spawns a headless ``serve`` (or legacy ``dashboard --no-open``) backend per
     profile that holds the profile's SQLite connection open and keeps writing
     sessions/WAL/sandbox files — the writer that makes ``rmtree`` hit
     ``ENOTEMPTY`` (and, pre-fix, resurrected the tree).  ``gateway.pid`` never
-    names it, so find it by inspection: a Hermes backend subcommand
+    names it, so find it by inspection: a opencodon backend subcommand
     (``serve``/``dashboard``/``gateway``) that is bound to *this* profile either
     by a ``--profile <canon>`` / ``-p <canon>`` selector or by a ``OPENCODON_HOME``
     that resolves to ``profile_dir``.
@@ -1305,7 +1305,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
     except OSError:
         resolved_dir = profile_dir
 
-    # Never terminate ourselves or a parent (e.g. `hermes -p <canon> profile
+    # Never terminate ourselves or a parent (e.g. `opencodon -p <canon> profile
     # delete` runs under the very profile it's deleting).
     skip: set[int] = {os.getpid()}
     try:
@@ -1322,7 +1322,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
         current_user = None
 
     backend_tokens = {"serve", "dashboard", "gateway"}
-    hermes_markers = ("opencodon_cli.main", "opencodon-gateway", "opencodon-gateway", "tui_gateway")
+    opencodon_markers = ("opencodon_cli.main", "opencodon-gateway", "opencodon-gateway", "tui_gateway")
     pids: list[int] = []
 
     for proc in psutil.process_iter(["pid", "name", "username", "cmdline"]):
@@ -1338,16 +1338,16 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             if not argv:
                 continue
 
-            # Must be a Hermes process: either an entrypoint marker in argv, or
-            # a resolved executable named `hermes`.
+            # Must be a opencodon process: either an entrypoint marker in argv, or
+            # a resolved executable named `opencodon`.
             joined = " ".join(argv)
             exe_name = os.path.basename(argv[0]).lower()
-            is_hermes = (
-                any(marker in joined for marker in hermes_markers)
-                or exe_name == "hermes"
-                or exe_name.startswith("hermes")
+            is_opencodon = (
+                any(marker in joined for marker in opencodon_markers)
+                or exe_name == "opencodon"
+                or exe_name.startswith("opencodon")
             )
-            if not is_hermes:
+            if not is_opencodon:
                 continue
 
             # Restrict to backend subcommands so we never kill an interactive
@@ -1474,7 +1474,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     if canon == "default":
         raise ValueError(
             "Cannot delete the default profile (~/.opencodon).\n"
-            "To remove everything, use: hermes uninstall"
+            "To remove everything, use: opencodon uninstall"
         )
 
     profile_dir = get_profile_dir(canon)
@@ -1814,7 +1814,7 @@ def set_active_profile(name: str) -> None:
     if canon != "default" and not profile_exists(canon):
         raise FileNotFoundError(
             f"Profile '{canon}' does not exist. "
-            f"Create it with: hermes profile create {canon}"
+            f"Create it with: opencodon profile create {canon}"
         )
 
     path = _get_active_profile_path()
@@ -1869,7 +1869,7 @@ def _default_export_ignore(root_dir: Path):
       ``_DEFAULT_EXPORT_INCLUDE_ROOT`` survive. Everything else (such as
       an unrelated ``x11-dev/`` directory in a Docker deployment where
       OPENCODON_HOME equals the cwd) is excluded. Blacklisting was tried
-      first and proved unable to anticipate every non-Hermes file the
+      first and proved unable to anticipate every non-opencodon file the
       user may have lying alongside OPENCODON_HOME (#58394).
     * **Universal exclusions at any depth** — ``__pycache__``, sockets,
       temp files; plus npm lockfiles, which may appear at the root.
@@ -1887,7 +1887,7 @@ def _default_export_ignore(root_dir: Path):
             elif entry in {"package.json", "package-lock.json"}:
                 ignored.add(entry)
         # Root-level allow-list: drop everything that isn't a known
-        # Hermes profile artifact.
+        # opencodon profile artifact.
         if Path(directory) == root_dir:
             ignored.update(
                 entry for entry in contents if entry not in _DEFAULT_EXPORT_INCLUDE_ROOT
@@ -2038,7 +2038,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if not inferred_name:
         raise ValueError(
             "Cannot determine profile name from archive. "
-            "Specify it explicitly: hermes profile import <archive> --name <name>"
+            "Specify it explicitly: opencodon profile import <archive> --name <name>"
         )
     if archive_root is None:
         raise ValueError(
@@ -2053,7 +2053,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if canon == "default":
         raise ValueError(
             "Cannot import as 'default' — that is the built-in root profile (~/.opencodon). "
-            "Specify a different name: hermes profile import <archive> --name <name>"
+            "Specify a different name: opencodon profile import <archive> --name <name>"
         )
 
     profile_dir = get_profile_dir(canon)
@@ -2063,7 +2063,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     profiles_root = _get_profiles_root()
     profiles_root.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory(prefix="hermes_profile_import_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="opencodon_profile_import_") as tmpdir:
         staging_root = Path(tmpdir)
         _safe_extract_profile_archive(archive, staging_root)
 
@@ -2086,66 +2086,6 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
 # ---------------------------------------------------------------------------
 # Rename
 # ---------------------------------------------------------------------------
-
-def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> None:
-    """Rename Honcho host blocks for a renamed profile without changing peers."""
-    old_host = f"hermes_{old_name}"
-    legacy_old_host = f"hermes.{old_name}"
-    new_host = f"hermes_{new_name}"
-
-    candidates = [
-        new_dir / "honcho.json",
-        _get_default_opencodon_home() / "honcho.json",
-        Path.home() / ".honcho" / "config.json",
-    ]
-
-    seen: set[Path] = set()
-    for path in candidates:
-        try:
-            resolved = path.resolve()
-        except OSError:
-            resolved = path
-        if resolved in seen or not path.is_file():
-            continue
-        seen.add(resolved)
-
-        try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-
-        hosts = raw.get("hosts")
-        if not isinstance(hosts, dict):
-            continue
-        source_host = old_host if old_host in hosts else legacy_old_host
-        if source_host not in hosts:
-            continue
-
-        if new_host in hosts:
-            print(f"⚠ Honcho host block not migrated: {new_host} already exists in {path}")
-            continue
-
-        block = hosts[source_host]
-        if isinstance(block, dict) and "aiPeer" not in block:
-            if source_host.startswith("hermes_"):
-                bare = source_host.split("_", 1)[1]
-            else:
-                bare = source_host.split(".", 1)[1] if "." in source_host else source_host
-            block["aiPeer"] = bare
-        hosts[new_host] = hosts.pop(source_host)
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        try:
-            tmp.write_text(json.dumps(raw, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            tmp.replace(path)
-        except OSError:
-            try:
-                tmp.unlink(missing_ok=True)
-            except OSError:
-                pass
-            continue
-
-        print(f"✓ Honcho host updated: {source_host} → {new_host}")
-
 
 def rename_profile(old_name: str, new_name: str) -> Path:
     """Rename a profile: directory, wrapper script, service, active_profile.
@@ -2179,10 +2119,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     old_dir.rename(new_dir)
     print(f"✓ Renamed {old_dir.name} → {new_dir.name}")
 
-    # 3. Update profile-scoped Honcho host blocks, preserving aiPeer identity
-    _migrate_honcho_profile_host(old_canon, new_canon, new_dir)
-
-    # 4. Update wrapper script
+    # 3. Update wrapper script
     remove_wrapper_script(old_canon)
     collision = check_alias_collision(new_canon)
     if not collision:
@@ -2209,7 +2146,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
 def resolve_profile_env(profile_name: str) -> str:
     """Resolve a profile name to a OPENCODON_HOME path string.
 
-    Called early in the CLI entry point, before any hermes modules
+    Called early in the CLI entry point, before any opencodon modules
     are imported, to set the OPENCODON_HOME environment variable.
     """
     canon = normalize_profile_name(profile_name)
@@ -2219,7 +2156,7 @@ def resolve_profile_env(profile_name: str) -> str:
     if canon != "default" and not profile_dir.is_dir():
         raise FileNotFoundError(
             f"Profile '{canon}' does not exist. "
-            f"Create it with: hermes profile create {canon}"
+            f"Create it with: opencodon profile create {canon}"
         )
 
     return str(profile_dir)

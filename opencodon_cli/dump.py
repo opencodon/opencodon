@@ -1,7 +1,7 @@
 """
-Dump command for hermes CLI.
+Dump command for opencodon CLI.
 
-Outputs a compact, plain-text summary of the user's Hermes setup
+Outputs a compact, plain-text summary of the user's opencodon setup
 that can be copy-pasted into Discord/GitHub/Telegram for support context.
 No ANSI colors, no checkmarks — just data.
 """
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from opencodon_cli.config import get_opencodon_home, get_env_path, get_project_root, load_config
-from opencodon_cli.env_loader import load_hermes_dotenv
+from opencodon_cli.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
 from agent.skill_utils import is_excluded_skill_path
 
@@ -24,7 +24,7 @@ def _dotenv_key_names() -> set[str]:
 
     The managed backends (launchd / systemd / the desktop-spawned ``serve``
     process) load credentials from this file — NOT from an interactive shell's
-    exports. ``hermes debug share`` runs in a terminal, so ``os.getenv`` reflects
+    exports. ``opencodon debug share`` runs in a terminal, so ``os.getenv`` reflects
     the shell's environment, which can include exported keys the managed backend
     never sees. Comparing against this set lets the dump flag that mismatch (the
     exact trap behind #48504-style "no web_search" reports: key exported in the
@@ -57,7 +57,7 @@ def _get_git_commit(project_root: Path) -> str:
     Source installs and dev images resolve this live via ``git rev-parse``.
     The published Docker image excludes ``.git`` from the build context, so
     that lookup always fails — we fall back to the baked-in build SHA written
-    to ``<project_root>/.hermes_build_sha`` by the Dockerfile's
+    to ``<project_root>/.opencodon_build_sha`` by the Dockerfile's
     ``OPENCODON_GIT_SHA`` build-arg (see ``opencodon_cli/build_info.py``).
     The output format is identical regardless of source.
     """
@@ -117,7 +117,7 @@ def _redact(value: str) -> str:
 
     Thin wrapper over :func:`agent.redact.mask_secret`. Returns ``""`` for
     an empty value (matches the historical behavior of this helper —
-    ``hermes dump`` formats empty values as blank, not as ``"(not set)"``).
+    ``opencodon dump`` formats empty values as blank, not as ``"(not set)"``).
     """
     from agent.redact import mask_secret
     return mask_secret(value)
@@ -268,7 +268,7 @@ def run_dump(args):
 
     # Load env from .env file so key checks work
     env_path = get_env_path()
-    load_hermes_dotenv(
+    load_opencodon_dotenv(
         opencodon_home=env_path.parent,
         project_env=get_project_root() / ".env",
     )
@@ -328,7 +328,7 @@ def run_dump(args):
     os_info = f"{platform.system()} {platform.release()} {platform.machine()}"
 
     lines = []
-    lines.append("--- hermes dump ---")
+    lines.append("--- opencodon dump ---")
     # Identify the build by commit + the date that commit was made, resolved
     # live via git.  __release_date__ (the package release date) is
     # intentionally NOT shown here — it reads like a wall-clock timestamp and
@@ -355,7 +355,6 @@ def run_dump(args):
         ("OPENAI_API_KEY", "openai"),
         ("ANTHROPIC_API_KEY", "anthropic"),
         ("ANTHROPIC_TOKEN", "anthropic_token"),
-        ("NOUS_API_KEY", "nous"),
         ("GOOGLE_API_KEY", "google/gemini"),
         ("GEMINI_API_KEY", "gemini"),
         ("GLM_API_KEY", "glm/zai"),
@@ -392,9 +391,9 @@ def run_dump(args):
         # (the actual cause of gated tools like web_search going missing).
         if val and env_var not in dotenv_keys:
             display += " (shell only — not in .env; managed/desktop backend may not see it)"
-        # A credential added via `hermes auth add openrouter` lives in the
+        # A credential added via `opencodon auth add openrouter` lives in the
         # credential pool, not as an env var — surface it so the dump doesn't
-        # misleadingly read "not set" while `hermes auth list` shows it (#42130).
+        # misleadingly read "not set" while `opencodon auth list` shows it (#42130).
         if not val and label == "openrouter":
             try:
                 from agent.credential_pool import load_pool as _load_pool

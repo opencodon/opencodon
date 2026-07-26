@@ -1,20 +1,4 @@
-export type Locale =
-  | "en"
-  | "zh"
-  | "zh-hant"
-  | "ja"
-  | "de"
-  | "es"
-  | "fr"
-  | "tr"
-  | "uk"
-  | "af"
-  | "ko"
-  | "it"
-  | "ga"
-  | "pt"
-  | "ru"
-  | "hu";
+export type Locale = "en";
 
 export interface Translations {
   // ── Common ──

@@ -92,12 +92,12 @@ class SingletonSlot(Generic[T]):
 
     Example::
 
-        _slot: SingletonSlot[Honcho] = SingletonSlot()
+        _slot: SingletonSlot[Client] = SingletonSlot()
 
-        def get_honcho_client(config=None):
-            return _slot.get(lambda: Honcho(**resolve(config)))
+        def get_client(config=None):
+            return _slot.get(lambda: Client(**resolve(config)))
 
-        def reset_honcho_client():
+        def reset_client():
             _slot.reset()
 
     The factory runs at most once even under concurrent first calls. If the

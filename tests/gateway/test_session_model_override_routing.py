@@ -59,7 +59,6 @@ def _make_runner():
     runner._pending_approvals = {}
     runner._agent_cache = {}
     runner._agent_cache_lock = threading.Lock()
-    runner._get_or_create_gateway_honcho = lambda session_key: (None, None)
     runner.hooks = MagicMock()
     runner.hooks.emit = AsyncMock()
     runner.hooks.loaded_hooks = []
@@ -189,7 +188,7 @@ fallback_providers:
     def fake_resolve_runtime_provider(*, requested=None, explicit_base_url=None, explicit_api_key=None):
         if requested in {None, "", "openai-codex"}:
             from opencodon_cli.auth import AuthError
-            raise AuthError("No Codex credentials stored. Run `hermes auth` to authenticate.")
+            raise AuthError("No Codex credentials stored. Run `opencodon auth` to authenticate.")
         assert requested == "openrouter"
         return {
             "api_key": "sk-openrouter",

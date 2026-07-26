@@ -2,7 +2,7 @@
 
 Different LLM providers expect model identifiers in different formats:
 
-- **Aggregators** (OpenRouter, Nous, AI Gateway, Kilo Code) need
+- **Aggregators** (OpenRouter, AI Gateway, Kilo Code) need
   ``vendor/model`` slugs like ``anthropic/claude-sonnet-4.6``.
 - **Anthropic** native API expects bare names with dots replaced by
   hyphens: ``claude-sonnet-4-6``.
@@ -15,7 +15,7 @@ Different LLM providers expect model identifiers in different formats:
 - **DeepSeek** accepts ``deepseek-chat`` (V3), ``deepseek-reasoner``
   (R1-family), and the first-class V-series IDs (``deepseek-v4-pro``,
   ``deepseek-v4-flash``, and any future ``deepseek-v<N>-*``).  Older
-  Hermes revisions folded every non-reasoner input into
+  opencodon revisions folded every non-reasoner input into
   ``deepseek-chat``, which on aggregators routes to V3 — so a user
   picking V4 Pro was silently downgraded.
 - **Custom** and remaining providers pass the name through as-is.
@@ -36,7 +36,7 @@ from typing import Optional
 # Vendor prefix mapping
 # ---------------------------------------------------------------------------
 # Maps the first hyphen-delimited token of a bare model name to the vendor
-# slug used by aggregator APIs (OpenRouter, Nous, etc.).
+# slug used by aggregator APIs (OpenRouter, etc.).
 #
 # Example: "claude-sonnet-4.6" -> first token "claude" -> vendor "anthropic"
 #          -> aggregator slug: "anthropic/claude-sonnet-4.6"
@@ -66,7 +66,6 @@ _VENDOR_PREFIXES: dict[str, str] = {
 # Providers whose APIs consume vendor/model slugs.
 _AGGREGATOR_PROVIDERS: frozenset[str] = frozenset({
     "openrouter",
-    "nous",
     "kilocode",
 })
 
@@ -211,7 +210,7 @@ def _dots_to_hyphens(model_name: str) -> str:
 
 
 def _normalize_provider_alias(provider_name: str) -> str:
-    """Resolve provider aliases to Hermes' canonical ids."""
+    """Resolve provider aliases to opencodon' canonical ids."""
     raw = (provider_name or "").strip().lower()
     if not raw:
         return raw
@@ -336,7 +335,7 @@ def normalize_model_for_provider(model_input: str, target_provider: str) -> str:
             Can be bare (``"claude-sonnet-4.6"``), vendor-prefixed
             (``"anthropic/claude-sonnet-4.6"``), or already in native
             format (``"claude-sonnet-4-6"``).
-        target_provider: The canonical Hermes provider id, e.g.
+        target_provider: The canonical opencodon provider id, e.g.
             ``"openrouter"``, ``"anthropic"``, ``"copilot"``,
             ``"deepseek"``, ``"custom"``.  Should already be normalised
             via ``opencodon_cli.models.normalize_provider()``.

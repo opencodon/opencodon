@@ -1,13 +1,13 @@
 """Regression tests for the /model picker's credential-discovery paths.
 
 Covers:
- - Normal path (tokens already in Hermes auth store)
+ - Normal path (tokens already in opencodon auth store)
  - Claude Code fallback (tokens only in ~/.claude/.credentials.json)
  - Negative case (no credentials anywhere)
 
-Note: auto-import from ~/.codex/auth.json was removed in #12360 — Hermes
+Note: auto-import from ~/.codex/auth.json was removed in #12360 — opencodon
 now owns its own openai-codex auth state, and users explicitly adopt
-existing Codex CLI tokens via `hermes auth openai-codex`. The old
+existing Codex CLI tokens via `opencodon auth openai-codex`. The old
 "Codex CLI shared file" discovery tests were removed with that change.
 """
 
@@ -29,8 +29,8 @@ def _make_fake_jwt(expiry_offset: int = 3600) -> str:
 
 
 @pytest.fixture()
-def hermes_auth_only_env(tmp_path, monkeypatch):
-    """Tokens already in Hermes auth store (no Codex CLI needed)."""
+def opencodon_auth_only_env(tmp_path, monkeypatch):
+    """Tokens already in opencodon auth store (no Codex CLI needed)."""
     opencodon_home = tmp_path / ".opencodon"
     opencodon_home.mkdir()
 
@@ -60,8 +60,8 @@ def hermes_auth_only_env(tmp_path, monkeypatch):
     return opencodon_home
 
 
-def test_normal_path_still_works(hermes_auth_only_env):
-    """openai-codex appears when tokens are already in Hermes auth store."""
+def test_normal_path_still_works(opencodon_auth_only_env):
+    """openai-codex appears when tokens are already in opencodon auth store."""
     from opencodon_cli.model_switch import list_authenticated_providers
 
     providers = list_authenticated_providers(
@@ -72,7 +72,7 @@ def test_normal_path_still_works(hermes_auth_only_env):
     assert "openai-codex" in slugs
 
 
-def test_codex_picker_uses_live_codex_catalog(hermes_auth_only_env, tmp_path, monkeypatch):
+def test_codex_picker_uses_live_codex_catalog(opencodon_auth_only_env, tmp_path, monkeypatch):
     """The gateway /model picker should surface Codex CLI-only listed models."""
     from opencodon_cli.model_switch import list_authenticated_providers
 
@@ -109,7 +109,7 @@ def test_codex_picker_uses_live_codex_catalog(hermes_auth_only_env, tmp_path, mo
 @pytest.fixture()
 def claude_code_only_env(tmp_path, monkeypatch):
     """Set up an environment where Anthropic credentials only exist in
-    ~/.claude/.credentials.json (Claude Code) — not in env vars or Hermes
+    ~/.claude/.credentials.json (Claude Code) — not in env vars or opencodon
     auth store."""
     opencodon_home = tmp_path / ".opencodon"
     opencodon_home.mkdir()

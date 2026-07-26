@@ -1,7 +1,7 @@
 """Slash-command handlers for the interactive CLI (god-file decomposition Phase 4).
 
 This module hosts the ``_handle_*_command`` slash-command handlers lifted out of
-``cli.py``'s ``HermesCLI`` class. ``HermesCLI`` inherits ``CLICommandsMixin`` so
+``cli.py``'s ``OpencodonCLI`` class. ``OpencodonCLI`` inherits ``CLICommandsMixin`` so
 every ``self.<handler>`` call resolves unchanged via the MRO — behavior-neutral.
 
 Import discipline (mirrors gateway/slash_commands.py, PR #41886):
@@ -45,7 +45,7 @@ class CLICommandsMixin:
 
     All methods use only ``self`` state plus the imports above and per-method
     lazy ``from cli import ...`` lines, so they compose cleanly onto
-    ``HermesCLI`` via the MRO.
+    ``OpencodonCLI`` via the MRO.
     """
 
     def _handle_rollback_command(self, command: str):
@@ -66,7 +66,7 @@ class CLICommandsMixin:
         mgr = self.agent._checkpoint_mgr
         if not mgr.enabled:
             print("  Checkpoints are not enabled.")
-            print("  Enable with: hermes --checkpoints")
+            print("  Enable with: opencodon --checkpoints")
             print("  Or in config.yaml: checkpoints: { enabled: true }")
             return
 
@@ -143,7 +143,7 @@ class CLICommandsMixin:
             print(f"  ❌ {result['error']}")
 
     def _handle_snapshot_command(self, command: str):
-        """Handle /snapshot — lightweight state snapshots for Hermes config/state.
+        """Handle /snapshot — lightweight state snapshots for opencodon config/state.
 
         Syntax:
             /snapshot                  — list recent snapshots
@@ -299,43 +299,6 @@ class CLICommandsMixin:
         agent_running = getattr(self, "_agent_running", False)
         _cprint(f"  Agent: {'running' if agent_running else 'idle'}")
 
-    def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `hermes journey`).
-
-        The read-only views (default + ``list``) render Rich color, which
-        patch_stdout would swallow as raw escapes; capture with forced ANSI and
-        re-emit through ``_cprint``. ``delete``/``edit`` are interactive
-        (confirm prompt / ``$EDITOR``) so they keep the real stdio.
-        """
-        import argparse
-        import io
-        import shlex
-        from contextlib import redirect_stdout
-
-        from cli import _cprint
-        from opencodon_cli.journey import register_cli
-
-        parser = argparse.ArgumentParser(prog="/journey", add_help=False)
-        register_cli(parser)
-        rest = cmd_original.split(None, 1)
-        try:
-            args = parser.parse_args(shlex.split(rest[1]) if len(rest) > 1 else [])
-        except SystemExit:
-            return
-
-        interactive = getattr(args, "journey_action", None) in ("delete", "edit")
-        try:
-            if interactive:
-                args.func(args)
-                return
-            args.force_color = True
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                args.func(args)
-            _cprint(buf.getvalue().rstrip("\n"))
-        except Exception as exc:
-            _cprint(f"  /journey failed: {exc}")
-
     def _handle_paste_command(self):
         """Handle /paste — explicitly check clipboard for an image.
 
@@ -424,7 +387,7 @@ class CLICommandsMixin:
         if _remainder:
             _cprint(f"  {_DIM}Now type your prompt (or use --image in single-query mode): {_remainder}{_RST}")
         elif _is_termux_environment():
-            _cprint(f"  {_DIM}Tip: type your next message, or run hermes chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
+            _cprint(f"  {_DIM}Tip: type your next message, or run opencodon chat -q --image {_termux_example_image_path(image_path.name)} \"What do you see?\"{_RST}")
 
     def _handle_tools_command(self, cmd: str):
         """Handle /tools [list|disable|enable] slash commands.
@@ -666,7 +629,7 @@ class CLICommandsMixin:
             self._session_db.fail_handoff(self.session_id, "timed out waiting for gateway")
         except Exception:
             pass
-        _cprint("  Timed out waiting for the gateway. Is `hermes gateway` running?")
+        _cprint("  Timed out waiting for the gateway. Is `opencodon gateway` running?")
         _cprint("  Your CLI session is intact.")
         return True
 
@@ -700,7 +663,7 @@ class CLICommandsMixin:
                 # #34584.
                 self._pending_resume_sessions = self._list_recent_sessions(limit=10)
                 return
-            _cprint("  Tip:   Use /history or `hermes sessions list` to find sessions.")
+            _cprint("  Tip:   Use /history or `opencodon sessions list` to find sessions.")
             return
 
         # Any explicit /resume <target> supersedes a previously-armed bare
@@ -730,7 +693,7 @@ class CLICommandsMixin:
         session_meta = self._session_db.get_session(target_id)
         if not session_meta:
             _cprint(f"  Session not found: {target}")
-            _cprint("  Use /history or `hermes sessions list` to see available sessions.")
+            _cprint("  Use /history or `opencodon sessions list` to see available sessions.")
             return
 
         # If the target is the empty head of a compression chain, redirect to
@@ -837,7 +800,7 @@ class CLICommandsMixin:
 
         # Retarget the process + tool cwd to where the session was started, so a
         # mid-chat /resume (and /sessions <id>, which delegates here) lands in the
-        # same directory as a startup `hermes -c`/`--resume`. The startup resume
+        # same directory as a startup `opencodon -c`/`--resume`. The startup resume
         # paths already call this; without it, the terminal/code-exec tools and
         # relative-path resolution keep operating in the wrong repo. Idempotent
         # and a no-op when the session recorded no cwd. See #38562.
@@ -1072,132 +1035,6 @@ class CLICommandsMixin:
             print()
             print("  Usage: /personality <name>")
             print()
-
-    def _handle_pet_command(self, cmd: str):
-        """Toggle, browse, or adopt a petdex mascot.
-
-        ``/pet`` / ``/pet toggle`` → flip ``display.pet.enabled`` on/off
-        ``/pet list``            → browse the petdex gallery
-        ``/pet scale <n>``       → resize the pet everywhere (e.g. 0.5)
-        ``/pet <slug>``          → adopt (install if needed) + make active
-        ``/pet off``             → disable (alias for toggle-off)
-
-        Writes ``display.pet.*`` to config; the CLI/TUI/desktop pet surfaces
-        pick the change up on their next poll, so the pet appears shortly.
-        """
-        from agent.pet import store
-        from agent.pet.manifest import ManifestError
-        from opencodon_cli.pets import _set_active, _set_enabled, print_pet_gallery, set_pet_scale, toggle_pet_display
-
-        parts = cmd.split(maxsplit=1)
-        arg = parts[1].strip() if len(parts) > 1 else ""
-        low = arg.lower()
-
-        if not arg or low == "toggle":
-            enabled, name, err = toggle_pet_display()
-            if err:
-                print(f"(x_x) {err}")
-                return
-            if enabled:
-                print(f"(^_^)b {name} is out — it'll pop in shortly.")
-            else:
-                print(f"(-_-)zzZ {name} put away." if name else "(-_-)zzZ Pet put away.")
-            return
-
-        if low in ("list", "gallery", "browse", "all"):
-            print_pet_gallery()
-            return
-
-        if low == "scale" or low.startswith("scale "):
-            value = arg[len("scale"):].strip()
-            if not value:
-                print("(o_o) Usage: /pet scale <factor>  (e.g. /pet scale 0.5)")
-                return
-            scale, err = set_pet_scale(value)
-            print(f"(x_x) {err}" if err else f"(^_^) Pet scale → {scale:g}.")
-            return
-
-        if low == "off":
-            _set_enabled(False)
-            print("(-_-)zzZ Pet put away.")
-            return
-
-        print(f"(o_o) Fetching '{arg}' from petdex…")
-        try:
-            pet = store.install_pet(arg)
-        except (store.PetStoreError, ManifestError) as exc:
-            print(f"(x_x) Couldn't adopt '{arg}': {exc}")
-            return
-        _set_active(arg)
-        print(f"(^_^)b {pet.display_name} is out — it'll pop in shortly.")
-
-    def _handle_hatch_command(self, cmd: str):
-        """Generate ("hatch") a brand-new petdex pet from a description.
-
-        ``/hatch <description>`` runs the full pet pipeline in-process: a base
-        look, then one grounded animation row per state, sliced + normalized into
-        a spritesheet, then adopted as the active mascot. Progress streams inline
-        (it's ~a minute of image-model calls). In the desktop app this command
-        opens the richer generate overlay instead; here we run it directly.
-        """
-        from agent.pet import store
-        from agent.pet.generate import orchestrate
-        from agent.pet.generate.imagegen import GenerationError
-        from opencodon_cli.pets import _set_active
-
-        parts = cmd.split(maxsplit=1)
-        concept = parts[1].strip() if len(parts) > 1 else ""
-
-        if not concept:
-            try:
-                concept = input("(o_o) Describe your pet: ").strip()
-            except (EOFError, KeyboardInterrupt):
-                print()
-                return
-
-        if not concept:
-            print("(o_o) Usage: /hatch <description>  (e.g. /hatch a tiny cyber fox)")
-            return
-
-        # A short, friendly display name from the first few words of the concept.
-        display_name = " ".join(w.capitalize() for w in concept.split()[:3])[:28].strip() or "Pet"
-        slug = store.slugify(display_name) or store.slugify(concept) or "pet"
-
-        print(f"(o_o) Designing '{concept}'… (a minute of image-model calls)")
-        try:
-            drafts = orchestrate.generate_base_drafts(concept, n=1)
-        except GenerationError as exc:
-            print(f"(x_x) Couldn't generate a base look: {exc}")
-            return
-
-        if not drafts:
-            print("(x_x) No base draft came back — try again.")
-            return
-
-        def _progress(event: str, detail: str) -> None:
-            if event == "row":
-                # detail is "<state>:<done>:<total>"; show the state name.
-                state = detail.split(":", 1)[0]
-                print(f"  ┊ drawing {state}…")
-            elif event == "compose":
-                print("  ┊ composing spritesheet…")
-            elif event == "save":
-                print("  ┊ saving…")
-
-        try:
-            result = orchestrate.hatch_pet(
-                base_image=drafts[0],
-                slug=slug,
-                display_name=display_name,
-                concept=concept,
-                on_progress=_progress,
-            )
-        except GenerationError as exc:
-            print(f"(x_x) Hatch failed: {exc}")
-            return
-
-        _set_active(result.slug)
-        print(f"(^_^)b {result.display_name} hatched and adopted — it'll pop in shortly!")
 
     def _handle_cron_command(self, cmd: str):
         """Handle the /cron command to manage scheduled tasks."""
@@ -1499,7 +1336,7 @@ class CLICommandsMixin:
     def _handle_curator_command(self, cmd: str):
         """Handle /curator slash command.
 
-        Delegates to opencodon_cli.curator so the CLI and the `hermes curator`
+        Delegates to opencodon_cli.curator so the CLI and the `opencodon curator`
         subcommand share the same handler set.
         """
         import shlex
@@ -1722,11 +1559,11 @@ class CLICommandsMixin:
                     try:
                         from opencodon_cli.skin_engine import get_active_skin
                         _skin = get_active_skin()
-                        label = _skin.get_branding("response_label", "⚕ Hermes")
+                        label = _skin.get_branding("response_label", "⚕ opencodon")
                         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                     except Exception:
-                        label = "⚕ Hermes"
+                        label = "⚕ opencodon"
                         _resp_color = "#CD7F32"
                         _resp_text = "#FFF8DC"
 
@@ -1777,7 +1614,7 @@ class CLICommandsMixin:
     def _handle_bundles_command(self, cmd: str) -> None:
         """In-session ``/bundles`` — show installed skill bundles.
 
-        Mirrors ``hermes bundles list`` but renders inside the running
+        Mirrors ``opencodon bundles list`` but renders inside the running
         CLI so users can discover what's available without dropping out
         of their session. Bundles are loaded via ``/<bundle-name>``.
         """
@@ -1792,7 +1629,7 @@ class CLICommandsMixin:
         if not bundles:
             _cprint("  No skill bundles installed.")
             _cprint(
-                f"  {_DIM}Create one with: hermes bundles create "
+                f"  {_DIM}Create one with: opencodon bundles create "
                 f"<name> --skill <s1> --skill <s2>{_RST}"
             )
             _cprint(f"  {_DIM}Directory: {_bundles_dir()}{_RST}")
@@ -1810,7 +1647,7 @@ class CLICommandsMixin:
                 ChatConsole().print(f"        [dim]· {_escape(s)}[/]")
         _cprint(
             f"\n  {_DIM}Invoke a bundle with /<slug>. "
-            f"Manage with `hermes bundles`.{_RST}"
+            f"Manage with `opencodon bundles`.{_RST}"
         )
 
     def _handle_browser_command(self, cmd: str):
@@ -1954,7 +1791,7 @@ class CLICommandsMixin:
                     "Your browser_navigate, browser_snapshot, browser_click, and other browser tools now "
                     "control that CDP browser. The command itself is a signal that using browser tools for "
                     "their current browser-related request is expected; do not wait for separate permission "
-                    "just because CDP is connected. This is typically a Hermes-managed isolated debug "
+                    "just because CDP is connected. This is typically a opencodon-managed isolated debug "
                     "profile, not the user's main everyday browser. It is still user-visible and may contain "
                     "pages, logged-in sessions, or cookies in that debug profile, so avoid destructive actions, "
                     "closing tabs, or navigating away unless the user's task calls for it.]"
@@ -2162,7 +1999,7 @@ class CLICommandsMixin:
         _cprint(
             f"  {_DIM}After each turn, a judge model checks if the goal is done"
             f"{' against the contract above' if state.has_contract() else ''}. "
-            f"Hermes keeps working until it is, you pause/clear it, or the budget is "
+            f"opencodon keeps working until it is, you pause/clear it, or the budget is "
             f"exhausted. Use /goal status, /goal show, /goal pause, /goal resume, /goal clear.{_RST}"
         )
         # Kick the loop off immediately so the user doesn't have to send a
@@ -2358,7 +2195,7 @@ class CLICommandsMixin:
             "#! Compose your prompt below. Lines starting with '#!' are ignored.\n"
             "#! Save and quit to send; leave empty to cancel.\n\n"
         )
-        fd, path = tempfile.mkstemp(suffix=".md", prefix="hermes_prompt_")
+        fd, path = tempfile.mkstemp(suffix=".md", prefix="opencodon_prompt_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(header)
@@ -2613,7 +2450,7 @@ class CLICommandsMixin:
             _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (this session — use --global to persist){_RST}")
 
     def _handle_busy_command(self, cmd: str):
-        """Handle /busy — control what Enter does while Hermes is working.
+        """Handle /busy — control what Enter does while opencodon is working.
 
         Usage:
             /busy               Show current busy input mode
@@ -2645,11 +2482,11 @@ class CLICommandsMixin:
         self.busy_input_mode = arg
         if save_config_value("display.busy_input_mode", arg):
             if arg == "queue":
-                behavior = "Enter will queue follow-up input while Hermes is busy."
+                behavior = "Enter will queue follow-up input while opencodon is busy."
             elif arg == "steer":
                 behavior = "Enter will steer your message into the current run (after the next tool call)."
             else:
-                behavior = "Enter will redirect the current run while Hermes is busy; /stop still cancels it."
+                behavior = "Enter will redirect the current run while opencodon is busy; /stop still cancels it."
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (saved to config){_RST}")
             _cprint(f"  {_DIM}{behavior}{_RST}")
         else:
@@ -2716,10 +2553,9 @@ class CLICommandsMixin:
         Accepts optional destination words after the command:
 
         - ``/debug``        → upload to the public paste service (default)
-        - ``/debug nous``   → upload to Nous-internal storage (private, staff-only)
         - ``/debug local``  → render the report to stdout, no upload
 
-        ``nous`` and ``local`` are mutually exclusive; if both are given,
+        ``local`` wins over the upload path; if both are given,
         ``local`` wins (it never touches the network).
         """
         from opencodon_cli.debug import run_debug_share
@@ -2727,20 +2563,19 @@ class CLICommandsMixin:
 
         words = {w.lower() for w in cmd_original.split()[1:]}
         local = "local" in words
-        nous = "nous" in words and not local
         # Typing the /debug slash command is itself the explicit consent to
         # upload, so we pass yes=True to skip run_debug_share's [y/N] prompt.
         # input() would hang inside prompt_toolkit's event loop anyway.
         args = SimpleNamespace(
-            lines=200, expire=7, local=local, nous=nous, yes=True
+            lines=200, expire=7, local=local, yes=True
         )
         run_debug_share(args)
 
     def _handle_update_command(self) -> bool:
-        """Handle /update — update Hermes Agent to the latest version.
+        """Handle /update — update opencodon to the latest version.
 
         In the classic CLI this exits the session and relaunches as
-        ``hermes update`` so the user sees update output directly and gets
+        ``opencodon update`` so the user sees update output directly and gets
         the new version on next launch.
 
         Returns ``True`` when the update was confirmed (caller should trigger
@@ -2751,7 +2586,7 @@ class CLICommandsMixin:
         from opencodon_cli.config import is_managed, format_managed_message
 
         if is_managed():
-            print(f"  ✗ {format_managed_message('update Hermes Agent')}")
+            print(f"  ✗ {format_managed_message('update opencodon')}")
             return False
 
         # Use the prompt_toolkit-native modal so the confirmation panel
@@ -2759,12 +2594,12 @@ class CLICommandsMixin:
         # with the prompt_toolkit event loop (same pattern as
         # _confirm_destructive_slash).
         choices = [
-            ("once", "Update Now", "exit the current session and update Hermes Agent"),
+            ("once", "Update Now", "exit the current session and update opencodon"),
             ("cancel", "Cancel", "keep the current session"),
         ]
         raw = self._prompt_text_input_modal(
-            title="⚕  Update Hermes Agent",
-            detail="This will exit the current session and run `hermes update`.",
+            title="⚕  Update opencodon",
+            detail="This will exit the current session and run `opencodon update`.",
             choices=choices,
         )
         if raw is None:

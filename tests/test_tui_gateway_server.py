@@ -62,7 +62,7 @@ def test_session_create_rejects_at_active_session_limit(monkeypatch, tmp_path):
 
         second = server._methods["session.create"]("r2", {"cols": 80})
         assert second["error"]["message"] == (
-            "Hermes is at the active session limit (1/1). "
+            "opencodon is at the active session limit (1/1). "
             "Try again when another session finishes."
         )
         assert list(server._sessions) == [sid]
@@ -2132,33 +2132,6 @@ def test_session_cwd_set_profile_session_updates_profile_db(monkeypatch, tmp_pat
     assert "launch_update" not in captured
 
 
-def test_stored_session_runtime_overrides_skips_bare_billing_provider():
-    """A bare billing bucket ("custom"/"auto"/"openrouter") must not be restored as the
-    provider identity on resume. A custom endpoint that never used `/model` persists only
-    `billing_provider="custom"`; restoring that broke `session.resume` with "No LLM provider
-    configured" (agent_init treats it as non-routable). A real provider, or an explicit
-    `model_config.provider`, is still restored.
-    """
-    # Bare "custom" bucket, no explicit model_config.provider: no provider override restored.
-    ov = server._stored_session_runtime_overrides({"model": "my-model", "billing_provider": "custom"})
-    assert "provider_override" not in ov
-    assert ov["model_override"]["provider"] is None
-
-    for bare in ("auto", "openrouter", "custom"):
-        ov = server._stored_session_runtime_overrides({"model": "m", "billing_provider": bare})
-        assert "provider_override" not in ov
-
-    # A real provider in billing_provider is still restored.
-    ov = server._stored_session_runtime_overrides({"model": "m", "billing_provider": "anthropic"})
-    assert ov["provider_override"] == "anthropic"
-    assert ov["model_override"]["provider"] == "anthropic"
-
-    # An explicit routable provider in model_config wins over the bare billing bucket.
-    ov = server._stored_session_runtime_overrides(
-        {"model": "m", "billing_provider": "custom", "model_config": {"provider": "custom:myendpoint"}}
-    )
-    assert ov["provider_override"] == "custom:myendpoint"
-    assert ov["model_override"]["provider"] == "custom:myendpoint"
 
 
 def test_stored_session_runtime_overrides_restores_explicit_normal_tier():
@@ -2278,10 +2251,10 @@ def test_resolve_model_strips_config_model(monkeypatch):
     monkeypatch.delenv("OPENCODON_MODEL", raising=False)
     monkeypatch.delenv("OPENCODON_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(
-        server, "_load_cfg", lambda: {"model": {"default": " nous/hermes-test "}}
+        server, "_load_cfg", lambda: {"model": {"default": " nous/opencodon-test "}}
     )
 
-    assert server._resolve_model() == "nous/hermes-test"
+    assert server._resolve_model() == "nous/opencodon-test"
 
 
 def _sync_test_session(**extra):
@@ -2443,7 +2416,7 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `hermes --tui -m <model>` sets OPENCODON_MODEL/OPENCODON_INFERENCE_MODEL as a
+    # `opencodon --tui -m <model>` sets OPENCODON_MODEL/OPENCODON_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
@@ -2515,15 +2488,15 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("OPENCODON_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("OPENCODON_MODEL", "nous/opencodon-test")
     monkeypatch.setenv("OPENCODON_TUI_PROVIDER", "nous")
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", "nous")
+    assert server._resolve_startup_runtime() == ("nous/opencodon-test", "nous")
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("OPENCODON_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("OPENCODON_MODEL", "nous/opencodon-test")
     monkeypatch.delenv("OPENCODON_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
@@ -2531,7 +2504,7 @@ def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypat
         lambda model, provider: None,
     )
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", None)
+    assert server._resolve_startup_runtime() == ("nous/opencodon-test", None)
 
 
 def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
@@ -2556,7 +2529,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
 
 
 def test_load_fallback_model_merges_chain_providers_first(monkeypatch):
-    # Parity with HermesCLI / gateway: fallback_providers stays first and keeps
+    # Parity with OpencodonCLI / gateway: fallback_providers stays first and keeps
     # its order, with any distinct legacy fallback_model entry merged in after
     # (deduped on provider/model/base_url).
     fallback_chain = [
@@ -8485,13 +8458,13 @@ def test_session_delete_success_returns_deleted_id(monkeypatch):
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `opencodon model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `opencodon model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -9042,7 +9015,7 @@ def test_session_active_list_excludes_finalized_sessions(monkeypatch):
     that window ``session.active_list`` would otherwise still report the dead
     session, which is exactly the footer "N sessions" count that only ever grew
     until a gateway restart. A live session on the real stdio transport (the
-    standalone ``hermes --tui`` case) must still be reported.
+    standalone ``opencodon --tui`` case) must still be reported.
     """
     class _DB:
         def get_session_title(self, key):
@@ -10590,11 +10563,11 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
 
 
 def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Hermes profile
+    """TUI /save (session.save RPC) must snapshot under the opencodon profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
-    Regression: the gateway handler wrote ``hermes_conversation_*.json`` to
+    Regression: the gateway handler wrote ``opencodon_conversation_*.json`` to
     ``os.path.abspath(...)`` (the workspace CWD) and only exported ``model``
     and ``messages``, so ``system_prompt`` was missing.
     """
@@ -10609,10 +10582,10 @@ def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch
 
     sid = "save-sid"
     agent = types.SimpleNamespace(
-        model="hermes-test",
+        model="opencodon-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Hermes.",
+        _cached_system_prompt="You are opencodon.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -10634,17 +10607,17 @@ def test_session_save_writes_under_opencodon_home_with_system_prompt(monkeypatch
     saved_file = Path(resp["result"]["file"])
 
     # Must NOT leak into the workspace/project CWD.
-    assert not list(work.glob("hermes_conversation_*.json"))
+    assert not list(work.glob("opencodon_conversation_*.json"))
 
     saved_dir = home / "sessions" / "saved"
     assert saved_file.parent == saved_dir
     assert saved_file.exists()
 
     payload = json.loads(saved_file.read_text())
-    assert payload["model"] == "hermes-test"
+    assert payload["model"] == "opencodon-test"
     assert payload["session_id"] == "20260101_120000_abc123"
     assert payload["session_start"] == "2026-01-01T12:00:00"
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are opencodon."
     assert payload["messages"] == history
 
 
@@ -11418,54 +11391,8 @@ def test_reset_session_agent_clears_session_overrides(monkeypatch):
     assert session["agent"] is new_agent
 
 
-@pytest.mark.parametrize(
-    "card,expected",
-    [
-        ("canonical", {"kind": "canonical"}),
-        (
-            "distinct",
-            {
-                "kind": "distinct",
-                "payment_method_id": "pm_auto",
-                "brand": None,
-                "last4": None,
-            },
-        ),
-        ("none", {"kind": "none"}),
-    ],
-)
-def test_billing_state_serializes_auto_reload_card_union(monkeypatch, card, expected):
-    from agent.billing_view import AutoReload, AutoReloadCard, BillingState
-
-    monkeypatch.setattr(server, "_usage_payload", lambda state: {"available": False})
-    auto_reload_card = AutoReloadCard(
-        kind=card,
-        payment_method_id="pm_auto" if card == "distinct" else None,
-    )
-    state = BillingState(
-        logged_in=True,
-        auto_reload=AutoReload(enabled=True, card=auto_reload_card),
-    )
-
-    result = server._serialize_billing_state(state)
-
-    assert result["auto_reload"]["card"] == expected
 
 
-def test_billing_state_serializes_server_plan_capability(monkeypatch):
-    from agent.billing_view import BillingState
-
-    monkeypatch.setattr(server, "_usage_payload", lambda state: {"available": False})
-    state = BillingState(
-        logged_in=True,
-        role="MEMBER",
-        can_change_plan_raw=True,
-    )
-
-    result = server._serialize_billing_state(state)
-
-    assert result["is_admin"] is False
-    assert result["can_change_plan"] is True
 
 
 class _BillingHeaders:
@@ -11476,38 +11403,8 @@ class _BillingHeaders:
         return self._values.get(key)
 
 
-@pytest.mark.parametrize(
-    "status,error,retry_after",
-    [
-        (503, "stripe_unavailable", 75),
-        (429, "upgrade_cap_exceeded", None),
-        (429, "rate_limited", None),
-    ],
-)
-def test_billing_error_serialization_preserves_server_code(
-    status, error, retry_after
-):
-    import opencodon_cli.nous_billing as nb
-
-    headers = _BillingHeaders({"Retry-After": str(retry_after)}) if retry_after else None
-    with pytest.raises(nb.BillingTransient) as ei:
-        nb._raise_for_error(status, {"error": error}, headers)
-
-    result = server._serialize_billing_error(ei.value)
-
-    assert result["error"] == error
-    assert ei.value.error == error
-    assert result["retry_after"] == retry_after
 
 
-def test_billing_rate_limit_without_error_defaults_wire_code():
-    import opencodon_cli.nous_billing as nb
-
-    exc = nb.BillingRateLimited("slow down", status=429, retry_after=10)
-
-    result = server._serialize_billing_error(exc)
-
-    assert result["error"] == "rate_limited"
 
 
 # ── subscription change RPCs (V3): preview + pending-change + upgrade ──
@@ -11519,138 +11416,22 @@ def _sub_rpc(method, params):
     return server.handle_request({"id": "1", "method": method, "params": params})["result"]
 
 
-def test_subscription_preview_serializes_quote(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    monkeypatch.setattr(
-        nb,
-        "post_subscription_preview",
-        lambda subscription_type_id: {
-            "effect": "charge_now",
-            "reason": None,
-            "currentTierId": "plus",
-            "currentTierName": "Plus",
-            "targetTierId": "ultra",
-            "targetTierName": "Ultra",
-            "monthlyCreditsDelta": "6000",
-            "amountDueNowCents": 1234,
-            "effectiveAt": None,
-        },
-    )
-    res = _sub_rpc("subscription.preview", {"subscription_type_id": "ultra"})
-    assert res["ok"] is True
-    assert res["effect"] == "charge_now"
-    assert res["amount_due_now_cents"] == 1234
-    assert res["target_tier_name"] == "Ultra"
-    assert res["monthly_credits_delta"] == "6000"
 
 
-def test_subscription_preview_requires_tier():
-    res = _sub_rpc("subscription.preview", {})
-    assert res["ok"] is False
-    assert res["error"] == "invalid_request"
 
 
-def test_subscription_preview_scope_error_maps_to_step_up(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    def _raise(subscription_type_id):
-        raise nb.BillingScopeRequired("billing:manage required")
-
-    monkeypatch.setattr(nb, "post_subscription_preview", _raise)
-    res = _sub_rpc("subscription.preview", {"subscription_type_id": "ultra"})
-    assert res["ok"] is False
-    assert res["error"] == "insufficient_scope"
 
 
-def test_subscription_change_cancellation(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    seen = {}
-
-    def _put(*, subscription_type_id=None, cancel=False):
-        seen["tier"] = subscription_type_id
-        seen["cancel"] = cancel
-        return {"rail": "stripe", "cancelAtPeriodEnd": True, "message": "Scheduled to cancel."}
-
-    monkeypatch.setattr(nb, "put_subscription_pending_change", _put)
-    res = _sub_rpc("subscription.change", {"cancel": True})
-    assert res["ok"] is True
-    assert seen == {"tier": None, "cancel": True}
-    assert res["message"] == "Scheduled to cancel."
 
 
-def test_subscription_change_tier_downgrade(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    seen = {}
-
-    def _put(*, subscription_type_id=None, cancel=False):
-        seen["tier"] = subscription_type_id
-        seen["cancel"] = cancel
-        return {"rail": "stripe", "changeType": "downgrade", "targetTierName": "Plus", "message": "Scheduled."}
-
-    monkeypatch.setattr(nb, "put_subscription_pending_change", _put)
-    res = _sub_rpc("subscription.change", {"subscription_type_id": "plus"})
-    assert res["ok"] is True
-    assert seen == {"tier": "plus", "cancel": False}
 
 
-def test_subscription_change_requires_tier_or_cancel():
-    res = _sub_rpc("subscription.change", {})
-    assert res["ok"] is False
-    assert res["error"] == "invalid_request"
 
 
-def test_subscription_resume(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    monkeypatch.setattr(
-        nb,
-        "delete_subscription_pending_change",
-        lambda: {"rail": "stripe", "cancelAtPeriodEnd": False, "message": "Resumed."},
-    )
-    res = _sub_rpc("subscription.resume", {})
-    assert res["ok"] is True
-    assert res["message"] == "Resumed."
 
 
-def test_subscription_upgrade_echoes_status_and_idempotency(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    seen = {}
-
-    def _upgrade(*, subscription_type_id, idempotency_key):
-        seen["key"] = idempotency_key
-        return {"status": "upgraded", "targetTierId": "ultra", "targetTierName": "Ultra"}
-
-    monkeypatch.setattr(nb, "post_subscription_upgrade", _upgrade)
-    res = _sub_rpc("subscription.upgrade", {"subscription_type_id": "ultra", "idempotency_key": "k-1"})
-    assert res["ok"] is True
-    assert res["status"] == "upgraded"
-    assert res["target_tier_name"] == "Ultra"
-    assert res["idempotency_key"] == "k-1"
-    assert seen["key"] == "k-1"
 
 
-def test_subscription_upgrade_requires_action_surfaces_recovery(monkeypatch):
-    import opencodon_cli.nous_billing as nb
-
-    monkeypatch.setattr(
-        nb,
-        "post_subscription_upgrade",
-        lambda *, subscription_type_id, idempotency_key: {
-            "status": "requires_action",
-            "reason": "authentication_required",
-            "recoveryUrl": "https://portal.example/subscription?org_id=o",
-        },
-    )
-    res = _sub_rpc("subscription.upgrade", {"subscription_type_id": "ultra"})
-    # The RPC succeeds; the CHARGE needs 3DS → status + recovery_url for the portal.
-    assert res["ok"] is True
-    assert res["status"] == "requires_action"
-    assert res["recovery_url"].startswith("https://portal.example")
-    assert res["idempotency_key"]  # minted when the caller omits one
 # ── _get_usage active_subagents (TUI status-bar ⛓ indicator) ──────────────
 # Mirrors the classic CLI status bar: _get_usage embeds a live count of
 # background/async subagents from tools.async_delegation.active_count() so the

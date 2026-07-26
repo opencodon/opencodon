@@ -4,7 +4,7 @@ Regression tests for the stale-bridge trap: ``connect()`` reused any
 already-running bridge with ``status: connected`` unconditionally, and
 ``disconnect()`` only kills bridges the adapter spawned itself.  A
 long-lived bridge process therefore survived gateway restarts AND
-``hermes update``, serving pre-update bridge.js behavior forever (e.g.
+``opencodon update``, serving pre-update bridge.js behavior forever (e.g.
 no inbound media download → images/voice notes arrive as placeholders).
 
 The fix: bridge.js reports a hash of its own source in ``/health``
@@ -252,7 +252,7 @@ class TestDepRefreshStamp:
     async def test_reinstalls_when_package_json_changed(self, tmp_path):
         bridge_dir = _setup_bridge_dir(tmp_path)
         _fresh_node_modules(bridge_dir)
-        # Simulate `hermes update` bumping the Baileys pin
+        # Simulate `opencodon update` bumping the Baileys pin
         (bridge_dir / "package.json").write_text('{"name": "bridge", "v": 2}\n')
         adapter = _make_adapter(
             bridge_script=str(bridge_dir / "bridge.js"),

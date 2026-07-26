@@ -1,9 +1,9 @@
-# nix/web.nix — Hermes Web Dashboard (Vite/React) frontend build
-{ pkgs, hermesNpmLib, ... }:
+# nix/web.nix — opencodon Web Dashboard (Vite/React) frontend build
+{ pkgs, opencodonNpmLib, ... }:
 let
   # @opencodon/shared ships as a file: workspace dep of web, so its source
   # must be in the filtered src tree too.
-  npm = hermesNpmLib.mkNpmPassthru {
+  npm = opencodonNpmLib.mkNpmPassthru {
     dirs = [
       "web"
       "apps/shared"
@@ -14,7 +14,7 @@ let
   version = packageJson.version;
 in
 pkgs.buildNpmPackage (npm // {
-  pname = "hermes-web";
+  pname = "opencodon-web";
   inherit version;
 
   doCheck = false;

@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: 💬 Nous Research Discord
-    url: https://discord.gg/NousResearch
+    url: https://github.com/opencodon/opencodon/discussions
     about: For quick questions, showcasing projects, sharing skills, and community chat.
   - name: 📖 Documentation
     url: https://github.com/opencodon/opencodon/blob/main/README.md

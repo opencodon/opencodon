@@ -3,9 +3,7 @@
 Standalone Web Tools Module
 
 This module provides generic web tools that work with multiple backend providers.
-Backend is selected during ``hermes tools`` setup (web.backend in config.yaml).
-When available, Hermes can route Firecrawl calls through a Nous-hosted tool-gateway
-for Nous Subscribers only.
+Backend is selected during ``opencodon tools`` setup (web.backend in config.yaml).
 
 Available tools:
 - web_search_tool: Search the web for information
@@ -13,7 +11,7 @@ Available tools:
 
 Backend compatibility:
 - Exa: https://exa.ai (search, extract)
-- Firecrawl: https://docs.firecrawl.dev/introduction (search, extract; direct or derived firecrawl-gateway.<domain> for Nous Subscribers)
+- Firecrawl: https://docs.firecrawl.dev/introduction (search, extract)
 - Parallel: https://docs.parallel.ai (search, extract)
 - Tavily: https://tavily.com (search, extract)
 
@@ -52,10 +50,7 @@ if TYPE_CHECKING:
     from firecrawl import Firecrawl  # noqa: F401 — type hints only
 from plugins.web.firecrawl.provider import (
     Firecrawl,  # noqa: F401  # re-exported for tests that mock.patch("tools.web_tools.Firecrawl")
-    _firecrawl_backend_help_suffix,
     _get_firecrawl_client,  # noqa: F401  # re-exported for tests that `from tools.web_tools import _get_firecrawl_client`
-    _get_firecrawl_gateway_url,
-    _is_tool_gateway_ready,
     check_firecrawl_api_key,
 )
 # Tavily helpers re-exported for backward-compat with existing unit tests
@@ -86,17 +81,6 @@ _exa_client: Optional[Any] = None
 from tools.debug_helpers import DebugSession
 # Imported solely so unit tests can monkeypatch these names on
 # tools.web_tools (the firecrawl plugin reads them via its own import chain).
-from tools.managed_tool_gateway import (  # noqa: F401 — backward-compat names for tests
-    build_vendor_gateway_url,
-    peek_nous_access_token as _peek_nous_access_token,
-    read_nous_access_token as _read_nous_access_token,
-    resolve_managed_tool_gateway,
-)
-from tools.tool_backend_helpers import (  # noqa: F401
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
-    prefers_gateway,
-)
 from tools.url_safety import async_is_safe_url, normalize_url_for_request, sensitive_query_param_name
 import sys
 
@@ -121,10 +105,10 @@ def _web_extract_url(value: Any) -> Optional[str]:
 # ─── Backend Selection ────────────────────────────────────────────────────────
 
 def _env_value(name: str) -> str:
-    """Resolve ``name`` via Hermes config-aware env, falling back to process env.
+    """Resolve ``name`` via opencodon config-aware env, falling back to process env.
 
     Mirrors the SearXNG provider's ``_searxng_url()`` so that values set
-    through Hermes' config/.env layer (``hermes config set``, ``hermes tools``)
+    through opencodon' config/.env layer (``opencodon config set``, ``opencodon tools``)
     are honored here too — not just raw process-env exports. Without this,
     a config-only ``SEARXNG_URL`` (or any provider key) leaves the backend
     auto-detect cascade and ``check_web_api_key()`` blind to it. See #34290.
@@ -223,7 +207,7 @@ def _list_registered_web_providers():
 def _get_backend() -> str:
     """Determine which web backend to use (shared fallback).
 
-    Reads ``web.backend`` from config.yaml (set by ``hermes tools``).
+    Reads ``web.backend`` from config.yaml (set by ``opencodon tools``).
     Falls back to whichever API key is present for users who configured
     keys manually without running setup.
     """
@@ -234,7 +218,7 @@ def _get_backend() -> str:
     # Fallback for manual / legacy config — pick the highest-priority
     # available backend. Explicit user credentials (TAVILY_API_KEY etc.)
     # beat the managed-tool-gateway probe so a deliberate setup is not
-    # pre-empted by a Nous OAuth token whose subscription tier may not
+    # pre-empted by an OAuth token whose tier may not
     # actually grant web-search access (the gateway then fails at runtime
     # with "no subscription" and the tool returns an error to the agent
     # without falling back). Free-tier backends trail the paid ones.
@@ -243,7 +227,6 @@ def _get_backend() -> str:
         ("exa", _has_env("EXA_API_KEY")),
         ("parallel", _has_env("PARALLEL_API_KEY")),
         ("firecrawl", _has_env("FIRECRAWL_API_KEY") or _has_env("FIRECRAWL_API_URL")),
-        ("firecrawl", _is_tool_gateway_ready()),
         ("searxng", _has_env("SEARXNG_URL")),
         ("brave-free", _has_env("BRAVE_SEARCH_API_KEY")),
         ("ddgs", _ddgs_package_importable()),
@@ -343,7 +326,7 @@ def _is_backend_available(backend: str) -> bool:
         # Cheap probe — env var OR auth.json has OAuth tokens. Must not
         # call resolve_xai_http_credentials() here because the OAuth path
         # can trigger a network token refresh, and _is_backend_available
-        # runs on every web_search dispatch + every `hermes tools` repaint.
+        # runs on every web_search dispatch + every `opencodon tools` repaint.
         try:
             from tools.xai_http import has_xai_credentials
             return has_xai_credentials()
@@ -379,14 +362,8 @@ def _ddgs_package_importable() -> bool:
 def _web_requires_env() -> list[str]:
     """Return tool metadata env vars for the currently enabled web backends.
 
-    The gateway env vars are always reported — they're metadata strings
-    used by the tool registry to light up the tool when the variable is
-    set.  Gating them on ``managed_nous_tools_enabled()`` only saved
-    string noise in the metadata list, but cost a synchronous HTTP
-    refresh against the Nous portal on every CLI startup (invoked at
-    tool-registration time).  The behavioral contract is: if the env var
-    is set, the tool sees it; if not, it doesn't.  Not-logged-in users
-    simply don't have the vars set, so the extra entries are harmless.
+    The behavioral contract is: if the env var is set, the tool sees it;
+    if not, it doesn't.
     """
     return [
         "EXA_API_KEY",
@@ -409,7 +386,7 @@ def _web_requires_env() -> list[str]:
 #   - firecrawl: plugins/web/firecrawl/provider.py
 # The names from the firecrawl plugin (Firecrawl proxy, _get_firecrawl_client,
 # _to_plain_object, _normalize_result_list, _extract_web_search_results,
-# _extract_scrape_payload, _is_tool_gateway_ready, etc.) are re-exported at
+# _extract_scrape_payload, etc.) are re-exported at
 # the top of this module for backward-compat with integration tests and
 # unit-test patches.
 
@@ -488,9 +465,9 @@ def _store_full_text(url: str, content: str) -> Optional[str]:
     try:
         import hashlib
         from urllib.parse import urlparse
-        from opencodon_constants import get_hermes_dir
+        from opencodon_constants import get_opencodon_dir
 
-        cache_dir = get_hermes_dir("cache/web", "web_cache")
+        cache_dir = get_opencodon_dir("cache/web", "web_cache")
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         host = (urlparse(url).hostname or "page").replace(":", "_")
@@ -703,7 +680,7 @@ def web_search_tool(query: str, limit: int = 5) -> str:
                     "error": (
                         f"web.search_backend is set to '{_vendor}', but its "
                         f"plugin ('{disabled_key}') is disabled in config. "
-                        f"Re-enable it with `hermes plugins enable {disabled_key}` "
+                        f"Re-enable it with `opencodon plugins enable {disabled_key}` "
                         "(or remove it from plugins.disabled)."
                     ),
                 }
@@ -712,7 +689,7 @@ def web_search_tool(query: str, limit: int = 5) -> str:
                     "success": False,
                     "error": (
                         "No web search provider configured. "
-                        "Run `hermes tools` to set one up."
+                        "Run `opencodon tools` to set one up."
                     ),
                 }
         else:
@@ -909,7 +886,7 @@ async def web_extract_tool(
                                     f"web.extract_backend is set to '{_vendor}', "
                                     f"but its plugin ('{disabled_key}') is disabled "
                                     "in config. Re-enable it with "
-                                    f"`hermes plugins enable {disabled_key}` "
+                                    f"`opencodon plugins enable {disabled_key}` "
                                     "(or remove it from plugins.disabled)."
                                 ),
                             },
@@ -1094,7 +1071,6 @@ if __name__ == "__main__":
 
     # Check if API keys are available
     web_available = check_web_api_key()
-    tool_gateway_available = _is_tool_gateway_ready()
     from opencodon_cli.config import get_env_value as _gev
     firecrawl_key_available = bool((_gev("FIRECRAWL_API_KEY") or "").strip())
     firecrawl_url_available = bool((_gev("FIRECRAWL_API_URL") or "").strip())
@@ -1118,15 +1094,12 @@ if __name__ == "__main__":
             print(f"   Using self-hosted Firecrawl: {(_gev('FIRECRAWL_API_URL') or '').strip().rstrip('/')}")
         elif firecrawl_key_available:
             print("   Using direct Firecrawl cloud API")
-        elif tool_gateway_available:
-            print(f"   Using Firecrawl tool-gateway: {_get_firecrawl_gateway_url()}")
         else:
             print("   Firecrawl backend selected but not configured")
     else:
         print("❌ No web search backend configured")
         print(
             "Set EXA_API_KEY, PARALLEL_API_KEY, TAVILY_API_KEY, FIRECRAWL_API_KEY, FIRECRAWL_API_URL"
-            f"{_firecrawl_backend_help_suffix()}"
         )
 
     if not web_available:

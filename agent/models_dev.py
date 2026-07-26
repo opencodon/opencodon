@@ -135,10 +135,10 @@ class ProviderInfo:
 
 
 # ---------------------------------------------------------------------------
-# Provider ID mapping: Hermes ↔ models.dev
+# Provider ID mapping: opencodon ↔ models.dev
 # ---------------------------------------------------------------------------
 
-# Hermes provider names → models.dev provider IDs
+# opencodon provider names → models.dev provider IDs
 PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "openrouter": "openrouter",
     "novita": "novita-ai",
@@ -179,7 +179,7 @@ PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "ollama-cloud": "ollama-cloud",
 }
 
-# Reverse mapping: models.dev → Hermes (built lazily)
+# Reverse mapping: models.dev → opencodon (built lazily)
 _MODELS_DEV_TO_PROVIDER: Optional[Dict[str, str]] = None
 
 
@@ -252,7 +252,7 @@ def fetch_models_dev(force_refresh: bool = False) -> Dict[str, Any]:
       4. Network fails → fall back to ANY available disk cache (even stale)
          with a short 5 min in-mem grace period before retrying network.
 
-    When ``force_refresh=True`` (used by ``hermes config refresh``, the
+    When ``force_refresh=True`` (used by ``opencodon config refresh``, the
     \"refresh model catalog\" code path), stages 1 and 2 are skipped. The
     function always hits the network and only falls back to disk if the
     network call fails.
@@ -411,7 +411,7 @@ class ModelCapabilities:
 
 
 def _get_provider_models(provider: str) -> Optional[Dict[str, Any]]:
-    """Resolve a Hermes provider ID to its models dict from models.dev.
+    """Resolve a opencodon provider ID to its models dict from models.dev.
 
     Returns the models dict or None if the provider is unknown or has no data.
     """
@@ -535,7 +535,7 @@ _NOISE_PATTERNS: re.Pattern = re.compile(
 )
 
 # Google's live Gemini catalogs currently include a mix of stale slugs and
-# Gemma models whose TPM quotas are too small for normal Hermes agent traffic.
+# Gemma models whose TPM quotas are too small for normal opencodon agent traffic.
 # Keep capability metadata available for direct/manual use, but hide these from
 # the Gemini model catalogs we surface in setup and model selection.
 _GOOGLE_HIDDEN_MODELS = frozenset({
@@ -674,10 +674,10 @@ def _parse_provider_info(provider_id: str, raw: Dict[str, Any]) -> ProviderInfo:
 def get_provider_info(provider_id: str) -> Optional[ProviderInfo]:
     """Get full provider metadata from models.dev.
 
-    Accepts either a Hermes provider ID (e.g. "kilocode") or a models.dev
+    Accepts either a opencodon provider ID (e.g. "kilocode") or a models.dev
     ID (e.g. "kilo").  Returns None if the provider is not in the catalog.
     """
-    # Resolve Hermes ID → models.dev ID
+    # Resolve opencodon ID → models.dev ID
     mdev_id = PROVIDER_TO_MODELS_DEV.get(provider_id, provider_id)
 
     data = fetch_models_dev()
@@ -697,7 +697,7 @@ def get_model_info(
 ) -> Optional[ModelInfo]:
     """Get full model metadata from models.dev.
 
-    Accepts Hermes or models.dev provider ID.  Tries exact match then
+    Accepts opencodon or models.dev provider ID.  Tries exact match then
     case-insensitive fallback.  Returns None if not found.
     """
     mdev_id = PROVIDER_TO_MODELS_DEV.get(provider_id, provider_id)

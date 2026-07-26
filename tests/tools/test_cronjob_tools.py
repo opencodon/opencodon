@@ -156,7 +156,7 @@ class TestScanCronSkillAssembled:
     def test_descriptive_attack_command_prose_allowed(self):
         """Security postmortems and runbooks routinely describe attack
         commands in prose — that's not a payload, it's documentation.
-        Real example: the `hermes-agent-dev` skill contains a postmortem
+        Real example: the `opencodon-dev` skill contains a postmortem
         section saying 'the attacker could just cat ~/.opencodon/.env'.
         """
         assert _scan_cron_skill_assembled(
@@ -186,7 +186,7 @@ class TestCronjobRequirements:
         monkeypatch.delenv("OPENCODON_GATEWAY_SESSION", raising=False)
         monkeypatch.delenv("OPENCODON_EXEC_ASK", raising=False)
         # Even with no crontab in PATH, the cronjob tool should be available
-        # because hermes uses an internal scheduler, not system crontab.
+        # because opencodon uses an internal scheduler, not system crontab.
         assert check_cronjob_requirements() is True
 
     def test_accepts_interactive_mode(self, monkeypatch):

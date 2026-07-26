@@ -3,7 +3,7 @@ import { dismissNotification, type NotificationInput, type NotificationKind, not
 
 /**
  * Wire shape of a `notification.show` payload — the driver-agnostic
- * `AgentNotice` spine (`agent/credits_tracker.py`) as forwarded by
+ * `AgentNotice` spine (`agent/notices.py`) as forwarded by
  * `tui_gateway/server.py`. Snake_case to match the wire.
  *
  * The `text` carries its own leading severity glyph (• ⚠ ✕ ✓) from the Python

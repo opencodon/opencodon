@@ -1,7 +1,7 @@
-"""Safe Hermes Console command engine.
+"""Safe opencodon Console command engine.
 
-This module backs ``hermes console`` and is intentionally narrower than the
-full Hermes CLI. It exposes a curated set of native adapters that can later be
+This module backs ``opencodon console`` and is intentionally narrower than the
+full opencodon CLI. It exposes a curated set of native adapters that can later be
 shared by the dashboard console websocket without becoming a raw shell.
 """
 
@@ -43,7 +43,7 @@ class ConsoleCommand:
     path: tuple[str, ...]
     usage: str
     summary: str
-    handler: Callable[["HermesConsoleEngine", list[str]], str]
+    handler: Callable[["OpencodonConsoleEngine", list[str]], str]
     mutating: bool = False
     confirmation: str = ""
 
@@ -88,8 +88,8 @@ def _strip_console_status_footer(text: str) -> str:
     last = _strip_ansi(lines[-1]).strip()
     prev = _strip_ansi(lines[-2]).strip()
     if not (
-        prev.startswith("Run 'hermes doctor'")
-        and last.startswith("Run 'hermes setup'")
+        prev.startswith("Run 'opencodon doctor'")
+        and last.startswith("Run 'opencodon setup'")
     ):
         return text.rstrip()
 
@@ -147,7 +147,7 @@ def _format_job(job: dict, action: str) -> str:
 
 
 def _parser_root() -> tuple[_ArgumentParser, argparse._SubParsersAction]:
-    parser = _ArgumentParser(prog="hermes", add_help=False)
+    parser = _ArgumentParser(prog="opencodon", add_help=False)
     subparsers = parser.add_subparsers(dest="_console_command")
     return parser, subparsers
 
@@ -177,7 +177,7 @@ def _clean_summary(text: str | None) -> str:
     summary = " ".join(str(text).split())
     if not summary:
         return ""
-    if summary.startswith("Run `hermes "):
+    if summary.startswith("Run `opencodon "):
         return ""
     return summary
 
@@ -207,7 +207,7 @@ def _noop_console_command(_args: argparse.Namespace) -> None:
 # The CLI surface these helpers reflect is process-static: they import a
 # subcommand module and build a throwaway argparse tree purely to extract help
 # summaries. Nothing about the result changes across engine instances, but the
-# dashboard opens a fresh HermesConsoleEngine per /api/console connection, so
+# dashboard opens a fresh OpencodonConsoleEngine per /api/console connection, so
 # without memoization every reconnect re-imports + re-parses the whole surface.
 # Cache by args (all hashable strings); callers only read the returned map.
 @functools.lru_cache(maxsize=None)
@@ -372,8 +372,8 @@ def _extracted_handler(
     builder_name: str,
     main_handler_name: str,
     namespace_update: Callable[[argparse.Namespace], None] | None = None,
-) -> Callable[["HermesConsoleEngine", list[str]], str]:
-    def handler(_engine: HermesConsoleEngine, args: list[str]) -> str:
+) -> Callable[["OpencodonConsoleEngine", list[str]], str]:
+    def handler(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
         return _dispatch_extracted_subcommand(
             root=root,
             fixed=fixed,
@@ -394,8 +394,8 @@ def _registered_handler(
     register_name: str,
     handler_name: str | None = None,
     namespace_update: Callable[[argparse.Namespace], None] | None = None,
-) -> Callable[["HermesConsoleEngine", list[str]], str]:
-    def handler(_engine: HermesConsoleEngine, args: list[str]) -> str:
+) -> Callable[["OpencodonConsoleEngine", list[str]], str]:
+    def handler(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
         return _dispatch_registered_subcommand(
             root=root,
             fixed=fixed,
@@ -416,8 +416,8 @@ def _builder_handler(
     builder_name: str,
     main_handler_name: str,
     namespace_update: Callable[[argparse.Namespace], None] | None = None,
-) -> Callable[["HermesConsoleEngine", list[str]], str]:
-    def handler(_engine: HermesConsoleEngine, args: list[str]) -> str:
+) -> Callable[["OpencodonConsoleEngine", list[str]], str]:
+    def handler(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
         return _dispatch_builder_subcommand(
             root=root,
             fixed=fixed,
@@ -437,8 +437,8 @@ def _adder_handler(
     module_name: str,
     add_name: str,
     namespace_update: Callable[[argparse.Namespace], None] | None = None,
-) -> Callable[["HermesConsoleEngine", list[str]], str]:
-    def handler(_engine: HermesConsoleEngine, args: list[str]) -> str:
+) -> Callable[["OpencodonConsoleEngine", list[str]], str]:
+    def handler(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
         return _dispatch_adder_subcommand(
             root=root,
             fixed=fixed,
@@ -452,11 +452,11 @@ def _adder_handler(
 
 
 def _register_command_family(
-    engine: "HermesConsoleEngine",
+    engine: "OpencodonConsoleEngine",
     *,
     root: str,
     paths: Iterable[Sequence[str]],
-    handler_factory: Callable[[Sequence[str]], Callable[["HermesConsoleEngine", list[str]], str]],
+    handler_factory: Callable[[Sequence[str]], Callable[["OpencodonConsoleEngine", list[str]], str]],
     mutating: Iterable[Sequence[str]] = (),
     summary: str = "",
     summaries: dict[tuple[str, ...], str] | None = None,
@@ -467,19 +467,19 @@ def _register_command_family(
         child_key = tuple(child_path)
         full_path = (root, *tuple(child_path))
         usage = " ".join(full_path)
-        command_summary = summary or (summaries or {}).get(full_path) or f"Run `hermes {usage}`."
+        command_summary = summary or (summaries or {}).get(full_path) or f"Run `opencodon {usage}`."
         engine.register(
             full_path,
             usage,
             command_summary,
             handler_factory(tuple(child_path)),
             mutating=child_key in mutating_paths,
-            confirmation=confirmation or f"Run `hermes {usage}`?",
+            confirmation=confirmation or f"Run `opencodon {usage}`?",
         )
 
 
-class HermesConsoleEngine:
-    """Curated line-command executor for Hermes Console."""
+class OpencodonConsoleEngine:
+    """Curated line-command executor for opencodon Console."""
 
     def __init__(self, *, output_limit: int = 20000):
         self.output_limit = output_limit
@@ -494,15 +494,15 @@ class HermesConsoleEngine:
 
         try:
             tokens = _split_line(raw_line)
-            if tokens and tokens[0] == "hermes":
+            if tokens and tokens[0] == "opencodon":
                 tokens = tokens[1:]
             if not tokens:
                 return self._help_result()
 
             if _contains_shell_syntax(raw_line, tokens):
                 raise ConsoleCommandError(
-                    "Hermes Console does not run shell syntax. Use one supported "
-                    "Hermes command at a time."
+                    "opencodon Console does not run shell syntax. Use one supported "
+                    "opencodon command at a time."
                 )
 
             builtin = self._execute_builtin(tokens)
@@ -534,7 +534,7 @@ class HermesConsoleEngine:
             return f"{command.usage}\n{command.summary}"
 
         lines = [
-            "Hermes Console",
+            "opencodon Console",
             "",
             "Supported commands:",
         ]
@@ -551,9 +551,9 @@ class HermesConsoleEngine:
         return "\n".join(lines)
 
     def _register_defaults(self) -> None:
-        self.register(("status",), "status", "Show Hermes component status.", _status)
+        self.register(("status",), "status", "Show opencodon component status.", _status)
         self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor)
-        self.register(("logs",), "logs [name] [-n N]", "Show recent Hermes logs.", _logs)
+        self.register(("logs",), "logs [name] [-n N]", "Show recent opencodon logs.", _logs)
         self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list)
         self.register(("sessions", "stats"), "sessions stats", "Show session store statistics.", _sessions_stats)
         self.register(("config", "show"), "config show", "Show current configuration.", _config_show)
@@ -564,7 +564,7 @@ class HermesConsoleEngine:
             "Set a configuration value.",
             _config_set,
             mutating=True,
-            confirmation="Update Hermes configuration?",
+            confirmation="Update opencodon configuration?",
         )
         self.register(("cron", "list"), "cron list [--all]", "List scheduled jobs.", _cron_list)
         self.register(("cron", "status"), "cron status", "Show cron scheduler status.", _cron_status)
@@ -595,7 +595,7 @@ class HermesConsoleEngine:
         self._register_broad_cli_surface()
 
     def _register_broad_cli_surface(self) -> None:
-        """Register non-admin CLI commands that are safe for Hermes Console."""
+        """Register non-admin CLI commands that are safe for opencodon Console."""
 
         extracted = {
             "version": (
@@ -859,7 +859,7 @@ class HermesConsoleEngine:
             "Update config with new options.",
             _config_migrate,
             mutating=True,
-            confirmation="Update Hermes configuration with missing defaults?",
+            confirmation="Update opencodon configuration with missing defaults?",
         )
         self.register(
             ("sessions", "export"),
@@ -907,20 +907,6 @@ class HermesConsoleEngine:
             _adder_handler("send", (), "opencodon_cli.send_cmd", "register_send_subparser"),
             mutating=True,
             confirmation="Send this message?",
-        )
-
-        portal_paths = [("info",), ("tools",)]
-        _register_command_family(
-            self,
-            root="portal",
-            paths=portal_paths,
-            summaries=_adder_summaries("opencodon_cli.portal_cli", "add_parser"),
-            handler_factory=lambda fixed: _adder_handler(
-                "portal",
-                fixed,
-                "opencodon_cli.portal_cli",
-                "add_parser",
-            ),
         )
 
         _register_command_family(
@@ -1075,13 +1061,6 @@ class HermesConsoleEngine:
                     ("rollback",),
                 },
             ),
-            "pets": (
-                "opencodon_cli.pets",
-                "register_cli",
-                None,
-                [("list",), ("install",), ("select",), ("show",), ("off",), ("scale",), ("remove",), ("doctor",)],
-                {("install",), ("select",), ("off",), ("scale",), ("remove",)},
-            ),
         }
         for root, (module, register, handler_name, paths, mutating) in registered.items():
             summaries = _registered_summaries(root, module, register)
@@ -1106,7 +1085,7 @@ class HermesConsoleEngine:
         path: Iterable[str],
         usage: str,
         summary: str,
-        handler: Callable[["HermesConsoleEngine", list[str]], str],
+        handler: Callable[["OpencodonConsoleEngine", list[str]], str],
         *,
         mutating: bool = False,
         confirmation: str = "",
@@ -1154,16 +1133,15 @@ class HermesConsoleEngine:
         probe = " ".join(tokens[:2]) if len(tokens) > 1 else tokens[0]
         suggestions = difflib.get_close_matches(probe, available, n=3, cutoff=0.45)
         suffix = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-        raise ConsoleCommandError(f"Unsupported Hermes Console command: {probe}.{suffix}")
+        raise ConsoleCommandError(f"Unsupported opencodon Console command: {probe}.{suffix}")
 
     def _rejection_for(self, tokens: Sequence[str]) -> str:
         first = tokens[0]
         if first.startswith("-"):
-            return f"{first} is not available in Hermes Console."
+            return f"{first} is not available in opencodon Console."
         blocked_top = {
             "acp",
             "chat",
-            "claw",
             "completion",
             "dashboard",
             "desktop",
@@ -1185,30 +1163,28 @@ class HermesConsoleEngine:
             "whatsapp-cloud",
         }
         if first in blocked_top:
-            return f"`hermes {first}` is not available in Hermes Console."
+            return f"`opencodon {first}` is not available in opencodon Console."
         blocked_pairs = {
-            ("config", "edit"): "`config edit` opens an editor and is not available in Hermes Console.",
-            ("mcp", "serve"): "`mcp serve` starts a server and is not available in Hermes Console.",
-            ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in Hermes Console.",
-            ("skills", "config"): "`skills config` is interactive and is not available in Hermes Console.",
-            ("skills", "publish"): "`skills publish` is not available in Hermes Console.",
-            ("portal", "login"): "`portal login` is interactive and is not available in Hermes Console.",
-            ("portal", "open"): "`portal open` opens a browser and is not available in Hermes Console.",
-            ("kanban", "tail"): "`kanban tail` streams output and is not available in Hermes Console.",
-            ("kanban", "watch"): "`kanban watch` streams output and is not available in Hermes Console.",
-            ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in Hermes Console.",
-            ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in Hermes Console.",
-            ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in Hermes Console.",
-            ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in Hermes Console.",
-            ("kanban", "specify"): "`kanban specify` starts agent work and is not available in Hermes Console.",
-            ("kanban", "gc"): "`kanban gc` is not available in Hermes Console.",
+            ("config", "edit"): "`config edit` opens an editor and is not available in opencodon Console.",
+            ("mcp", "serve"): "`mcp serve` starts a server and is not available in opencodon Console.",
+            ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in opencodon Console.",
+            ("skills", "config"): "`skills config` is interactive and is not available in opencodon Console.",
+            ("skills", "publish"): "`skills publish` is not available in opencodon Console.",
+            ("kanban", "tail"): "`kanban tail` streams output and is not available in opencodon Console.",
+            ("kanban", "watch"): "`kanban watch` streams output and is not available in opencodon Console.",
+            ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in opencodon Console.",
+            ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in opencodon Console.",
+            ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in opencodon Console.",
+            ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in opencodon Console.",
+            ("kanban", "specify"): "`kanban specify` starts agent work and is not available in opencodon Console.",
+            ("kanban", "gc"): "`kanban gc` is not available in opencodon Console.",
         }
         if len(tokens) >= 2:
             pair = (tokens[0], tokens[1])
             if pair in blocked_pairs:
                 return blocked_pairs[pair]
         if tuple(tokens[:2]) in {("sessions", "delete"), ("sessions", "prune")}:
-            return "`sessions delete` and `sessions prune` are not available in Hermes Console."
+            return "`sessions delete` and `sessions prune` are not available in opencodon Console."
         return ""
 
     def _help_result(self) -> ConsoleResult:
@@ -1242,7 +1218,7 @@ def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
     if getattr(args, "auth_action", None) == "add":
         auth_type = getattr(args, "auth_type", None)
         if auth_type in {"api-key", "api_key"} and not getattr(args, "api_key", None):
-            raise ConsoleCommandError("auth add --type api-key requires --api-key in Hermes Console.")
+            raise ConsoleCommandError("auth add --type api-key requires --api-key in opencodon Console.")
     if getattr(args, "import_name", None) is not None:
         # profile import has no prompt flag; leave it alone.
         return
@@ -1257,7 +1233,7 @@ def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
         setattr(args, "yes", True)
 
 
-def _status(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _status(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "status")
     from types import SimpleNamespace
 
@@ -1267,7 +1243,7 @@ def _status(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _strip_console_status_footer(output)
 
 
-def _doctor(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _doctor(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "doctor")
     from types import SimpleNamespace
 
@@ -1276,9 +1252,9 @@ def _doctor(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: run_doctor(SimpleNamespace(fix=False, ack=None)))
 
 
-def _logs(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _logs(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if "-f" in args or "--follow" in args:
-        raise ConsoleCommandError("`logs -f` is not available in Hermes Console.")
+        raise ConsoleCommandError("`logs -f` is not available in opencodon Console.")
     parser = _ArgumentParser(prog="logs", add_help=False)
     parser.add_argument("log_name", nargs="?", default="agent")
     parser.add_argument("-n", "--lines", type=int, default=50)
@@ -1307,7 +1283,7 @@ def _logs(_engine: HermesConsoleEngine, args: list[str]) -> str:
     )
 
 
-def _sessions_list(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_list(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions list", add_help=False)
     parser.add_argument("--limit", type=int, default=20)
     ns = parser.parse_args(args)
@@ -1328,7 +1304,7 @@ def _sessions_list(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _format_sessions(sessions)
 
 
-def _sessions_stats(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_stats(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions stats")
     from opencodon_state import SessionDB
 
@@ -1351,21 +1327,21 @@ def _sessions_stats(_engine: HermesConsoleEngine, args: list[str]) -> str:
         db.close()
 
 
-def _config_show(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _config_show(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config show")
     from opencodon_cli.config import show_config
 
     return _capture_output(show_config)
 
 
-def _config_path(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _config_path(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config path")
     from opencodon_cli.config import get_config_path
 
     return str(get_config_path())
 
 
-def _config_set(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _config_set(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) < 2:
         raise ConsoleCommandError("Usage: config set <key> <value>")
     key = args[0]
@@ -1375,7 +1351,7 @@ def _config_set(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: set_config_value(key, value))
 
 
-def _config_migrate(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _config_migrate(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config migrate")
 
     def _run() -> None:
@@ -1393,7 +1369,7 @@ def _config_migrate(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_export(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_export(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions export", add_help=False)
     parser.add_argument("output")
     parser.add_argument("--source")
@@ -1431,7 +1407,7 @@ def _sessions_export(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_rename(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_rename(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions rename", add_help=False)
     parser.add_argument("session_id")
     parser.add_argument("title", nargs="+")
@@ -1455,7 +1431,7 @@ def _sessions_rename(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_optimize(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_optimize(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions optimize")
 
     def _run() -> None:
@@ -1471,7 +1447,7 @@ def _sessions_optimize(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_repair(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _sessions_repair(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions repair", add_help=False)
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--no-backup", action="store_true")
@@ -1503,7 +1479,7 @@ def _sessions_repair(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _profile_status(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _profile_status(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "profile")
     return _dispatch_extracted_subcommand(
         root="profile",
@@ -1515,7 +1491,7 @@ def _profile_status(_engine: HermesConsoleEngine, args: list[str]) -> str:
     )
 
 
-def _cron_list(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _cron_list(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="cron list", add_help=False)
     parser.add_argument("--all", action="store_true")
     ns = parser.parse_args(args)
@@ -1524,20 +1500,20 @@ def _cron_list(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: cron_list(show_all=ns.all))
 
 
-def _cron_status(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _cron_status(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "cron status")
     from opencodon_cli.cron import cron_status
 
     return _capture_output(cron_status)
 
 
-def _cron_pause(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _cron_pause(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron pause <job>")
     from cron.jobs import AmbiguousJobReference, pause_job
 
     try:
-        job = pause_job(args[0], reason="paused from hermes console")
+        job = pause_job(args[0], reason="paused from opencodon console")
     except AmbiguousJobReference as exc:
         raise ConsoleCommandError(str(exc)) from exc
     if not job:
@@ -1545,7 +1521,7 @@ def _cron_pause(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _format_job(job, "Paused")
 
 
-def _cron_resume(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _cron_resume(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron resume <job>")
     from cron.jobs import AmbiguousJobReference, resume_job
@@ -1559,7 +1535,7 @@ def _cron_resume(_engine: HermesConsoleEngine, args: list[str]) -> str:
     return _format_job(job, "Resumed")
 
 
-def _cron_run(_engine: HermesConsoleEngine, args: list[str]) -> str:
+def _cron_run(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron run <job>")
     from cron.jobs import AmbiguousJobReference, trigger_job
@@ -1580,7 +1556,7 @@ def run_console_repl(
     stderr=None,
     interactive: bool | None = None,
 ) -> int:
-    """Run the local ``hermes console`` REPL."""
+    """Run the local ``opencodon console`` REPL."""
 
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
@@ -1588,13 +1564,13 @@ def run_console_repl(
     if interactive is None:
         interactive = bool(getattr(stdin, "isatty", lambda: False)())
 
-    engine = HermesConsoleEngine()
+    engine = OpencodonConsoleEngine()
     if interactive:
-        print("Hermes Console. Type `help` for commands, `exit` to quit.", file=stdout)
+        print("opencodon Console. Type `help` for commands, `exit` to quit.", file=stdout)
 
     while True:
         if interactive:
-            print("hermes> ", end="", file=stdout, flush=True)
+            print("opencodon> ", end="", file=stdout, flush=True)
         line = stdin.readline()
         if line == "":
             if interactive:

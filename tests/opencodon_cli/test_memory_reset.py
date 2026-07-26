@@ -1,4 +1,4 @@
-"""Tests for the `hermes memory reset` CLI command.
+"""Tests for the `opencodon memory reset` CLI command.
 
 Covers:
 - Reset both stores (MEMORY.md + USER.md)
@@ -21,7 +21,7 @@ def memory_env(tmp_path, monkeypatch):
 
     # Create sample memory files
     (memories / "MEMORY.md").write_text(
-        "§\nHermes repo is at ~/.opencodon/opencodon\n§\nUser prefers dark themes",
+        "§\nopencodon repo is at ~/.opencodon/opencodon\n§\nUser prefers dark themes",
         encoding="utf-8",
     )
     (memories / "USER.md").write_text(
@@ -34,7 +34,7 @@ def memory_env(tmp_path, monkeypatch):
 def _run_memory_reset(target="all", yes=False, monkeypatch=None, confirm_input="no"):
     """Invoke the memory reset logic from cmd_memory in main.py.
 
-    Simulates what happens when `hermes memory reset` is run.
+    Simulates what happens when `opencodon memory reset` is run.
     """
     from opencodon_constants import get_opencodon_home
 
@@ -60,7 +60,7 @@ def _run_memory_reset(target="all", yes=False, monkeypatch=None, confirm_input="
 
 
 class TestMemoryReset:
-    """Tests for `hermes memory reset` subcommand."""
+    """Tests for `opencodon memory reset` subcommand."""
 
     def test_reset_all_with_yes_flag(self, memory_env):
         """--yes flag should skip confirmation and delete both files."""

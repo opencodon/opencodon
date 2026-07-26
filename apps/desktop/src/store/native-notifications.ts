@@ -115,7 +115,7 @@ function isBackgrounded(): boolean {
 }
 
 function shouldFire(kind: NativeNotificationKind, sessionId?: null | string, global = false): boolean {
-  // Global notifications aren't tied to a chat session (e.g. pet generation,
+  // Global notifications aren't tied to a chat session (e.g.
   // which runs from the command center with no active conversation). They fire
   // whenever the user is away, with no session-match requirement — otherwise a
   // background run started without an open session would be silently dropped.
@@ -144,7 +144,7 @@ export interface NativeNotificationInput {
   body?: string
   sessionId?: null | string
   /**
-   * Not tied to a chat session (e.g. pet generation). Fires whenever the user
+   * Not tied to a chat session. Fires whenever the user
    * is away, bypassing the session-match gate that completion kinds normally
    * require.
    */

@@ -222,7 +222,6 @@ def make_runner(platform: Platform, session_entry: SessionEntry = None) -> "Gate
     runner._handle_message_with_agent = AsyncMock(return_value="agent-handled-default")
     runner._should_send_voice_reply = lambda *_a, **_kw: False
     runner._send_voice_reply = AsyncMock()
-    runner._capture_gateway_honcho_if_configured = lambda *a, **kw: None
     runner._emit_gateway_run_progress = AsyncMock()
 
     # Disable destructive slash confirm gate so /new executes immediately
@@ -317,7 +316,7 @@ def adapter(platform, runner):
 # ═══════════════════════════════════════════════════════════════════════════
 
 BOT_USER_ID = 99999
-BOT_USER_NAME = "HermesBot"
+BOT_USER_NAME = "OpencodonBot"
 CHANNEL_ID = 22222
 GUILD_ID = 44444
 THREAD_ID = 33333

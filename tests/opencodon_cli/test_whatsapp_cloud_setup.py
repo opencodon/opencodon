@@ -164,14 +164,14 @@ class TestWabaIdValidator:
 def isolated_home(tmp_path, monkeypatch):
     """Redirect OPENCODON_HOME so save_env_value writes into a temp .env."""
     home = tmp_path / "home"
-    hermes = home / ".opencodon"
-    hermes.mkdir(parents=True)
+    opencodon = home / ".opencodon"
+    opencodon.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setenv("OPENCODON_HOME", str(hermes))
+    monkeypatch.setenv("OPENCODON_HOME", str(opencodon))
     for key in list(os.environ):
         if key.startswith("WHATSAPP_CLOUD_"):
             monkeypatch.delenv(key, raising=False)
-    return hermes
+    return opencodon
 
 
 def _env_value(opencodon_home: Path, key: str) -> str | None:
@@ -300,7 +300,7 @@ class TestWizardFlow:
         out = buf.getvalue()
         # Required post-setup guidance
         assert "cloudflared tunnel --url http://localhost:8090" in out
-        assert "hermes gateway" in out
+        assert "opencodon gateway" in out
         assert "Verify and save" in out
         assert "messages" in out
         # The verify token should be quotable on the curl line

@@ -19,7 +19,7 @@ Features:
 
 Cloud sandbox note:
 - Persistent filesystems preserve working state across sandbox recreation
-- Persistent filesystems do NOT guarantee the same live sandbox or long-running processes survive cleanup, idle reaping, or Hermes exit
+- Persistent filesystems do NOT guarantee the same live sandbox or long-running processes survive cleanup, idle reaping, or opencodon exit
 
 Usage:
     from terminal_tool import terminal_tool
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 # long-running subprocesses immediately instead of blocking until timeout.
 # ---------------------------------------------------------------------------
 from tools.interrupt import is_interrupted, _interrupt_event  # noqa: F401 — re-exported
-# display_opencodon_home imported lazily at call site (stale-module safety during hermes update)
+# display_opencodon_home imported lazily at call site (stale-module safety during opencodon update)
 
 
 
@@ -70,8 +70,6 @@ from tools.environments.singularity import _get_scratch_dir
 from tools.tool_backend_helpers import (
     coerce_modal_mode,
     has_direct_modal_credentials,
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
     resolve_modal_backend_state,
 )
 
@@ -125,10 +123,10 @@ def _check_disk_usage_warning():
     try:
         scratch_dir = _get_scratch_dir()
 
-        # Get total size of hermes directories
+        # Get total size of opencodon directories
         total_bytes = 0
         import glob
-        for path in glob.glob(str(scratch_dir / "hermes-*")):
+        for path in glob.glob(str(scratch_dir / "opencodon-*")):
             for f in Path(path).rglob('*'):
                 if f.is_file():
                     try:
@@ -917,11 +915,11 @@ def _transform_sudo_command(command: str | None) -> tuple[str | None, str | None
     )
 
     # Local hosts with sudoers NOPASSWD should not be forced through the
-    # interactive Hermes password prompt or the sudo -S password-pipe path.
+    # interactive opencodon password prompt or the sudo -S password-pipe path.
     # Scoped to the local terminal backend so Docker/SSH/Modal/etc. can't
     # inherit host sudo state. Re-probes every call (no process-lifetime
     # cache) so an expired sudo timestamp doesn't make a later command block
-    # silently without Hermes prompting.
+    # silently without opencodon prompting.
     if not has_configured_password and not sudo_password and _sudo_nopasswd_works():
         return command, None
 
@@ -949,8 +947,6 @@ from tools.environments.singularity import SingularityEnvironment as _Singularit
 from tools.environments.ssh import SSHEnvironment as _SSHEnvironment
 from tools.environments.docker import DockerEnvironment as _DockerEnvironment
 from tools.environments.modal import ModalEnvironment as _ModalEnvironment
-from tools.environments.managed_modal import ManagedModalEnvironment as _ManagedModalEnvironment
-from tools.managed_tool_gateway import is_managed_tool_gateway_ready
 import sys
 
 
@@ -969,7 +965,7 @@ Foreground (default): Commands return INSTANTLY when done, even if the timeout i
 Background: Set background=true to get a session_id. Almost always pair with notify_on_complete=true — bg without notify runs SILENTLY and you have no way to learn it finished short of calling process(action='poll') yourself. Two legitimate uses:
   (1) Long-lived processes that never exit (servers, watchers, daemons) — silent is correct, there's no exit to notify on.
   (2) Long-running bounded tasks (tests, builds, deploys, CI pollers, batch jobs) — MUST set notify_on_complete=true. Without it you'll either forget to poll or sit blocked waiting for the user to surface the result.
-For servers/watchers, do NOT use shell-level background wrappers (nohup/disown/setsid/trailing '&') in foreground mode. Use background=true so Hermes can track lifecycle and output.
+For servers/watchers, do NOT use shell-level background wrappers (nohup/disown/setsid/trailing '&') in foreground mode. Use background=true so opencodon can track lifecycle and output.
 After starting a server, verify readiness with a health check or log signal, then run tests in a separate terminal() call. Avoid blind sleep loops.
 Use process(action="poll") for progress checks, process(action="wait") to block until done.
 Working directory: Use 'workdir' for per-command cwd.
@@ -997,9 +993,9 @@ _docker_orphan_reaper_lock = threading.Lock()
 def _maybe_reap_docker_orphans(container_config: Dict[str, Any]) -> None:
     """Run the docker orphan reaper once per process, if enabled.
 
-    Sweeps long-Exited containers labeled ``hermes-agent=1`` for the current
+    Sweeps long-Exited containers labeled ``opencodon=1`` for the current
     profile that match the issue #20561 leak class — containers left behind
-    by Hermes processes that exited without firing ``atexit`` (SIGKILL,
+    by opencodon processes that exited without firing ``atexit`` (SIGKILL,
     OOM, terminal-window-close). The reaper is conservative by default:
     only Exited containers older than ``2 × lifetime_seconds`` and scoped to
     the current profile.
@@ -1008,7 +1004,7 @@ def _maybe_reap_docker_orphans(container_config: Dict[str, Any]) -> None:
 
     * ``terminal.docker_orphan_reaper: false`` disables it entirely (the
       operator opted out — usually because they're running multiple
-      Hermes processes in the same profile and don't trust the
+      opencodon processes in the same profile and don't trust the
       conservative defaults).
     * ``_docker_orphan_reaper_ran`` flag — sweep runs once per Python
       interpreter, not on every subagent / RL-rollout / parallel
@@ -1026,7 +1022,7 @@ def _maybe_reap_docker_orphans(container_config: Dict[str, Any]) -> None:
             return
         _docker_orphan_reaper_ran = True
 
-    # 2 × lifetime_seconds gives sibling Hermes processes a generous grace
+    # 2 × lifetime_seconds gives sibling opencodon processes a generous grace
     # window. Floor at 60s so an operator with TERMINAL_LIFETIME_SECONDS=0
     # doesn't get an instant-reap that races their own setup.
     # ``container_config`` only carries container_* keys, so read
@@ -1184,7 +1180,7 @@ def _resolve_container_task_id(task_id: Optional[str]) -> str:
     ``"default"`` here so subagents share the parent's long-lived container
     (one bash, one /workspace, one set of installed packages).
 
-    Exception: RL / benchmark environments (TerminalBench2, HermesSweEnv, ...)
+    Exception: RL / benchmark environments (TerminalBench2, OpencodonSweEnv, ...)
     call ``register_task_env_overrides(task_id, {...})`` to request a
     per-task Docker/Modal image. When an override is registered for a
     task_id, we honour it by returning the task_id unchanged -- those
@@ -1270,11 +1266,11 @@ _CONTAINER_BACKENDS = frozenset({"docker", "singularity", "modal", "daytona"})
 
 def _is_ssh_remote_tilde_cwd(backend: str, cwd: str) -> bool:
     """Return True when *cwd* is a tilde path that the remote SSH shell must
-    expand itself, so the Hermes host/container must NOT ``expanduser`` it.
+    expand itself, so the opencodon host/container must NOT ``expanduser`` it.
 
     SSH ``cwd`` is interpreted by the *remote* shell (``cd ~`` / ``cd ~/x``
     over ``ssh ... bash -c``). Expanding ``~`` locally would rewrite it to the
-    Hermes host HOME (often ``/opt/data`` under Docker) and inject a
+    opencodon host HOME (often ``/opt/data`` under Docker) and inject a
     nonexistent path into the remote session. Only ``~`` / ``~/...`` on the
     ``ssh`` backend qualify; absolute remote paths still pass through
     unchanged, and every other backend keeps expanding locally.
@@ -1319,7 +1315,7 @@ def _ensure_terminal_env_bridged() -> None:
     The CLI (cli.py ``env_mappings``), the gateway (gateway/run.py
     ``_terminal_env_map``), and TUI/dashboard PTY launches
     (``apply_terminal_config_to_env``) bridge ``terminal.*`` config into env
-    vars at startup — but processes that skip all of those paths (``hermes
+    vars at startup — but processes that skip all of those paths (``opencodon
     serve`` / the Desktop app backend's in-process agents, the desktop cron
     ticker, ACP) used to silently fall back to the local backend even when
     config.yaml selects ``terminal.backend: docker``, running commands on the
@@ -1462,7 +1458,7 @@ def _get_env_config() -> Dict[str, Any]:
         "docker_persist_across_processes": os.getenv(
             "TERMINAL_DOCKER_PERSIST_ACROSS_PROCESSES", "true"
         ).lower() in {"true", "1", "yes"},
-        # Startup orphan reaper for hermes-tagged containers left behind by
+        # Startup orphan reaper for opencodon-tagged containers left behind by
         # crashed / SIGKILL'd previous processes that bypassed atexit.
         # Conservative: only sweeps Exited containers older than 2× the
         # idle-reap window AND scoped to the current profile. Issue #20561.
@@ -1473,11 +1469,10 @@ def _get_env_config() -> Dict[str, Any]:
 
 
 def _get_modal_backend_state(modal_mode: object | None) -> Dict[str, Any]:
-    """Resolve direct vs managed Modal backend selection."""
+    """Resolve the Modal backend selection (direct credentials only)."""
     return resolve_modal_backend_state(
         modal_mode,
         has_direct=has_direct_modal_credentials(),
-        managed_ready=is_managed_tool_gateway_ready("modal"),
     )
 
 
@@ -1519,7 +1514,7 @@ def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
     
     elif env_type == "docker":
         # One-shot orphan reaper: clean up labeled containers left behind by
-        # prior Hermes processes that hit SIGKILL / OOM / a closed terminal
+        # prior opencodon processes that hit SIGKILL / OOM / a closed terminal
         # before the atexit cleanup hook could run.  Gated to once per
         # process so concurrent _create_environment calls (parallel
         # subagents, RL benchmarks) don't run the reaper N times.
@@ -1563,41 +1558,12 @@ def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
 
         modal_state = _get_modal_backend_state(cc.get("modal_mode"))
 
-        if modal_state["selected_backend"] == "managed":
-            return _ManagedModalEnvironment(
-                image=image, cwd=cwd, timeout=timeout,
-                modal_sandbox_kwargs=sandbox_kwargs,
-                persistent_filesystem=persistent, task_id=task_id,
-            )
-
         if modal_state["selected_backend"] != "direct":
-            if modal_state["managed_mode_blocked"]:
-                raise ValueError(
-                    "Modal backend is configured for managed mode, but "
-                    "Nous Tool Gateway access is not currently available and no direct "
-                    "Modal credentials/config were found. "
-                    + nous_tool_gateway_unavailable_message(
-                        "managed Modal execution",
-                    )
-                    + " Choose TERMINAL_MODAL_MODE=direct/auto to use direct Modal credentials."
-                )
-            if modal_state["mode"] == "managed":
-                raise ValueError(
-                    "Modal backend is configured for managed mode, but the managed tool gateway is unavailable. "
-                    + nous_tool_gateway_unavailable_message(
-                        "managed Modal execution",
-                    )
-                )
-            if modal_state["mode"] == "direct":
-                raise ValueError(
-                    "Modal backend is configured for direct mode, but no direct Modal credentials/config were found."
-                )
-            message = "Modal backend selected but no direct Modal credentials/config was found."
-            if managed_nous_tools_enabled():
-                message = (
-                    "Modal backend selected but no direct Modal credentials/config or managed tool gateway was found."
-                )
-            raise ValueError(message)
+            raise ValueError(
+                "Modal backend selected but no direct Modal "
+                "credentials/config were found. Set MODAL_TOKEN_ID and "
+                "MODAL_TOKEN_SECRET, or run `modal token new`."
+            )
 
         return _ModalEnvironment(
             image=image, cwd=cwd, timeout=timeout,
@@ -1773,7 +1739,7 @@ def cleanup_all_environments():
     # Also clean any orphaned directories
     scratch_dir = _get_scratch_dir()
     import glob
-    for path in glob.glob(str(scratch_dir / "hermes-*")):
+    for path in glob.glob(str(scratch_dir / "opencodon-*")):
         try:
             shutil.rmtree(path, ignore_errors=True)
             logger.info("Removed orphaned: %s", path)
@@ -2029,7 +1995,7 @@ def _foreground_background_guidance(command: str) -> str | None:
     if _SHELL_LEVEL_BACKGROUND_RE.search(unquoted):
         return (
             "Foreground command uses shell-level background wrappers (nohup/disown/setsid). "
-            "Use terminal(background=true) so Hermes can track the process, then run "
+            "Use terminal(background=true) so opencodon can track the process, then run "
             "readiness checks and tests in separate commands."
         )
 
@@ -2348,11 +2314,11 @@ def terminal_tool(
                 "error": "Terminal environment unavailable (creation raced cleanup)",
             }, ensure_ascii=False)
 
-        # Hard-block: gateway lifecycle commands (systemctl/launchctl/hermes
+        # Hard-block: gateway lifecycle commands (systemctl/launchctl/opencodon
         # restart|stop targeting opencodon-gateway) must never run inside the
         # gateway process itself. The restart would SIGTERM the gateway, which
         # kills this very subprocess before it can complete — the service may
-        # never restart. This mirrors the `hermes gateway restart` guard in
+        # never restart. This mirrors the `opencodon gateway restart` guard in
         # opencodon_cli/gateway.py and the cron-path guard in opencodon_cli/cron.py,
         # but applies unconditionally (force=True cannot help here).
         if os.environ.get("_OPENCODON_GATEWAY") == "1":
@@ -2365,7 +2331,7 @@ def terminal_tool(
                         "Blocked: cannot restart or stop the gateway from inside the "
                         "gateway process. The gateway would kill this command before "
                         "it could complete (SIGTERM propagates to child processes). "
-                        "Run `hermes gateway restart` from a separate shell outside "
+                        "Run `opencodon gateway restart` from a separate shell outside "
                         "the running gateway."
                     ),
                     "status": "error",
@@ -2527,7 +2493,7 @@ def terminal_tool(
                 # Nudge: homebrewed CI watcher built from `gh pr view`
                 # `--json statusCheckRollup` or `gh pr checks` piped through
                 # `jq` is the #1 cause of silent CI-watcher failures in
-                # hermes-agent dev work. May 2026 PRs that surfaced this
+                # opencodon dev work. May 2026 PRs that surfaced this
                 # exact failure mode: #31329, #31448, #31695, #31709, #31745,
                 # #32264, #33131. Failure modes seen:
                 #   * `gh pr view --json statusCheckRollup --jq ...` with
@@ -2575,7 +2541,7 @@ def terminal_tool(
                             "This looks like a homebrewed CI poller built from "
                             "`gh pr view --json statusCheckRollup` and/or "
                             "`gh pr checks | jq`. That shape has burned us "
-                            "repeatedly in hermes-agent dev work (PRs #31329, "
+                            "repeatedly in opencodon dev work (PRs #31329, "
                             "#31448, #31695, #31709, #31745, #32264, #33131) — "
                             "stdout buffering kills output capture, jq null-key "
                             "edge cases silently exit the loop, conclusion-vs-"
@@ -2589,7 +2555,7 @@ def terminal_tool(
                             "awk-on-tabs poller "
                             "(`awk -F\"\\t\" \"$2==\\\"pending\\\"\"`) for "
                             "sharded matrices. Load skill_view("
-                            "name='github/hermes-agent-dev', "
+                            "name='github/opencodon-dev', "
                             "file_path='references/green-ci-policy.md') for "
                             "the verbatim snippets. If you must roll a custom "
                             "loop with rich structured output, write each tick "
@@ -2625,7 +2591,7 @@ def terminal_tool(
                         result_data["notify_unsupported"] = (
                             "notify_on_complete / watch_patterns are not available in "
                             "this session — it cannot receive an async completion after "
-                            "the turn ends (a one-shot runner such as `hermes -z` or a "
+                            "the turn ends (a one-shot runner such as `opencodon -z` or a "
                             "cron job, or a stateless HTTP endpoint). The process is "
                             "running in the background; retrieve its result with "
                             "process(action='poll') or process(action='wait')."
@@ -2945,57 +2911,13 @@ def check_terminal_requirements() -> bool:
 
         elif env_type == "modal":
             modal_state = _get_modal_backend_state(config.get("modal_mode"))
-            if modal_state["selected_backend"] == "managed":
-                return True
-
             if modal_state["selected_backend"] != "direct":
-                if modal_state["managed_mode_blocked"]:
-                    logger.error(
-                        "Modal backend selected with TERMINAL_MODAL_MODE=managed, but "
-                        "Nous Tool Gateway access is not currently available and no direct "
-                        "Modal credentials/config were found. %s Choose "
-                        "TERMINAL_MODAL_MODE=direct/auto to use direct Modal credentials.",
-                        nous_tool_gateway_unavailable_message(
-                            "managed Modal execution",
-                        ),
-                    )
-                    return False
-                if modal_state["mode"] == "managed":
-                    logger.error(
-                        "Modal backend selected with TERMINAL_MODAL_MODE=managed, but the managed "
-                        "tool gateway is unavailable. %s",
-                        nous_tool_gateway_unavailable_message(
-                            "managed Modal execution",
-                        ),
-                    )
-                    return False
-                elif modal_state["mode"] == "direct":
-                    if managed_nous_tools_enabled():
-                        logger.error(
-                            "Modal backend selected with TERMINAL_MODAL_MODE=direct, but no direct "
-                            "Modal credentials/config were found. Configure Modal or choose "
-                            "TERMINAL_MODAL_MODE=managed/auto."
-                        )
-                    else:
-                        logger.error(
-                            "Modal backend selected with TERMINAL_MODAL_MODE=direct, but no direct "
-                            "Modal credentials/config were found. Configure Modal or choose "
-                            "TERMINAL_MODAL_MODE=auto."
-                        )
-                    return False
-                else:
-                    if managed_nous_tools_enabled():
-                        logger.error(
-                            "Modal backend selected but no direct Modal credentials/config or managed "
-                            "tool gateway was found. Configure Modal, set up the managed gateway, "
-                            "or choose a different TERMINAL_ENV."
-                        )
-                    else:
-                        logger.error(
-                            "Modal backend selected but no direct Modal credentials/config was found. "
-                            "Configure Modal or choose a different TERMINAL_ENV."
-                        )
-                    return False
+                logger.error(
+                    "Modal backend selected but no direct Modal credentials/config "
+                    "were found. Set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (or run "
+                    "`modal token new`), or choose a different TERMINAL_ENV."
+                )
+                return False
 
             if importlib.util.find_spec("modal") is None:
                 logger.error("modal is required for direct modal terminal backend: pip install modal")

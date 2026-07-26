@@ -80,7 +80,7 @@ def _model_switch_skew_guard() -> Optional[str]:
         error=(
             f"This gateway is running code from {boot_rev} but the checkout on "
             f"disk is now {disk_rev}. Switching models would risk a stale-module "
-            f"crash — restart the gateway to load the new code: hermes gateway restart"
+            f"crash — restart the gateway to load the new code: opencodon gateway restart"
         ),
     )
 
@@ -91,7 +91,7 @@ class GatewaySlashCommandsMixin:
     async_session_store: AsyncSessionStore
 
     def _typed_command_prefix_for(self, platform) -> str:
-        """Return the prefix users can always type to reach Hermes commands.
+        """Return the prefix users can always type to reach opencodon commands.
 
         Reads the adapter's ``typed_command_prefix`` capability flag
         (default "/"). Slack and Matrix return "!" because typed "/"
@@ -302,16 +302,9 @@ class GatewaySlashCommandsMixin:
         except Exception:
             pass
 
-        # Append a random tip to the reset message
-        try:
-            from opencodon_cli.tips import get_random_tip
-            _tip_line = t("gateway.reset.tip", tip=get_random_tip())
-        except Exception:
-            _tip_line = ""
-
         if session_info:
-            return EphemeralReply(f"{header}\n\n{session_info}{_tip_line}")
-        return EphemeralReply(f"{header}{_tip_line}")
+            return EphemeralReply(f"{header}\n\n{session_info}")
+        return EphemeralReply(header)
 
     async def _handle_profile_command(self, event: MessageEvent) -> str:
         """Handle /profile — show the profile serving this source and its home.
@@ -1204,7 +1197,7 @@ class GatewaySlashCommandsMixin:
                 return (
                     f"✓ {platform.value} paused. "
                     f"Resume with `/platform resume {platform.value}` or "
-                    f"`hermes gateway restart` to reset."
+                    f"`opencodon gateway restart` to reset."
                 )
             # action == "resume"
             if platform not in failed:
@@ -1329,7 +1322,7 @@ class GatewaySlashCommandsMixin:
         return EphemeralReply(t("gateway.restart.restarting"))
 
     async def _handle_version_command(self, event: MessageEvent) -> str:
-        """Handle /version — show the running Hermes Agent version."""
+        """Handle /version — show the running opencodon version."""
         from opencodon_cli.banner import format_banner_version_label
 
         return format_banner_version_label()
@@ -2082,7 +2075,7 @@ class GatewaySlashCommandsMixin:
             lines.append(t("gateway.model.provider_label", provider=provider_label))
 
             # Context: always resolve via the provider-aware chain so Codex OAuth,
-            # Copilot, and Nous-enforced caps win over the raw models.dev entry.
+            # Copilot-enforced caps win over the raw models.dev entry.
             mi = result.model_info
             from opencodon_cli.model_switch import resolve_display_context_length
             _sw2_config_ctx = None
@@ -2192,7 +2185,7 @@ class GatewaySlashCommandsMixin:
 
         Same surface as the CLI handler in cli.py:
             /codex-runtime                  — show current state
-            /codex-runtime auto             — Hermes default runtime
+            /codex-runtime auto             — opencodon default runtime
             /codex-runtime codex_app_server — codex subprocess runtime
             /codex-runtime on / off         — synonyms
 
@@ -3078,7 +3071,7 @@ class GatewaySlashCommandsMixin:
         ``diff`` output is truncated for chat bubbles — the full diff lives in
         the pending JSON file under ``~/.opencodon/pending/skills/``. (Note this is
         the write-approval ``diff <id>``; the CLI also has an unrelated
-        ``hermes skills diff <name>`` that diffs a bundled skill vs stock.)
+        ``opencodon skills diff <name>`` that diffs a bundled skill vs stock.)
         """
         from gateway.run import _opencodon_home
         from opencodon_cli.write_approval_commands import handle_pending_subcommand
@@ -3116,7 +3109,7 @@ class GatewaySlashCommandsMixin:
                     "(Search/install are CLI-only.)")
 
         # Chat bubbles can't hold a full skill diff — truncate and point at
-        # the real review surface. (Note: `hermes skills diff <name>` is a
+        # the real review surface. (Note: `opencodon skills diff <name>` is a
         # *different* command — it diffs a bundled skill against its stock
         # version — so we point at the pending JSON file, not that command.)
         if args and args[0].lower() == "diff" and len(out) > 3000:
@@ -4174,40 +4167,6 @@ class GatewaySlashCommandsMixin:
         key = "gateway.branch.branched_one" if msg_count == 1 else "gateway.branch.branched_many"
         return t(key, title=branch_title, count=msg_count, parent=parent_session_id, new=new_session_id)
 
-    async def _handle_topup_command(self, event: MessageEvent) -> str:
-        """Handle /topup -- show the Nous balance and hand off to the portal.
-
-        Renders the balance block + identity line + a tappable portal URL that
-        opens the billing page. Remote spending is managed on the portal: this
-        messaging command does NOT charge, confirm, or track payment here —
-        everything happens in the browser and the next /topup shows the new balance. The
-        tappable URL is the affordance and works on every platform (button-capable
-        or plain text like SMS/email). Fetched off the event loop; fail-open.
-        """
-        from agent.account_usage import build_credits_view
-
-        try:
-            view = await asyncio.to_thread(build_credits_view, markdown=True)
-        except Exception:
-            view = None
-
-        if view is None or not view.logged_in:
-            return t("gateway.credits.not_logged_in")
-
-        lines: list[str] = ["💳 **Nous balance**"]
-        for line in view.balance_lines:
-            if line.lstrip().startswith("📈"):
-                continue  # drop the helper's header; we print our own
-            lines.append(line)
-        if view.identity_line:
-            lines.append("")
-            lines.append(view.identity_line)
-        if view.topup_url:
-            lines.append("")
-            lines.append(f"Manage billing on the portal: {view.topup_url}")
-            lines.append("Top up and manage billing in the browser — your balance updates here after.")
-        return "\n".join(lines)
-
     def _context_breakdown_lines(self, agent, source) -> list[str]:
         """Render the per-category context breakdown for /usage.
 
@@ -4314,7 +4273,6 @@ class GatewaySlashCommandsMixin:
         # Fetch account usage off the event loop so slow provider APIs don't
         # block the gateway. Failures are non-fatal -- account_lines stays [].
         account_lines: list[str] = []
-        credits_lines: list[str] = []
         if provider:
             try:
                 account_snapshot = await asyncio.to_thread(
@@ -4327,21 +4285,6 @@ class GatewaySlashCommandsMixin:
                 account_snapshot = None
             if account_snapshot:
                 account_lines = render_account_usage_lines(account_snapshot, markdown=True)
-
-        # ── Nous credits magnitudes + monthly-grant % gauge ─────────────
-        # Shared with the CLI / TUI /usage block via nous_credits_lines(): a single
-        # auth-gate + portal-fetch + render path (which also honors the dev fixture).
-        # Run off the event loop. The helper gates on "a Nous account is logged in"
-        # — NOT the inference provider and NOT nested under `if provider:` — so a
-        # Nous-credentialled user running inference elsewhere (or with none resident)
-        # still sees their balance. NO recovery trigger: messaging binds no notice
-        # consumer, so /usage only displays. Fail-open: never break /usage.
-        try:
-            from agent.account_usage import nous_credits_lines
-
-            credits_lines = await asyncio.to_thread(nous_credits_lines, markdown=True)
-        except Exception:
-            credits_lines = []  # fail-open: never break /usage
 
         if agent and hasattr(agent, "session_total_tokens") and agent.session_api_calls > 0:
             lines = []
@@ -4387,9 +4330,6 @@ class GatewaySlashCommandsMixin:
             if account_lines:
                 lines.append("")
                 lines.extend(account_lines)
-            if credits_lines:
-                lines.append("")
-                lines.extend(credits_lines)
 
             return "\n".join(lines)
 
@@ -4409,18 +4349,9 @@ class GatewaySlashCommandsMixin:
             if account_lines:
                 lines.append("")
                 lines.extend(account_lines)
-            if credits_lines:
-                lines.append("")
-                lines.extend(credits_lines)
             return "\n".join(lines)
-        if account_lines or credits_lines:
-            # account-only, credits-only, or both — joined with a blank divider.
-            parts = list(account_lines)
-            if credits_lines:
-                if parts:
-                    parts.append("")
-                parts.extend(credits_lines)
-            return "\n".join(parts)
+        if account_lines:
+            return "\n".join(account_lines)
         return t("gateway.usage.no_data")
 
     async def _handle_insights_command(self, event: MessageEvent) -> str:
@@ -4653,7 +4584,7 @@ class GatewaySlashCommandsMixin:
             return (
                 "No skill bundles installed.\n"
                 "Create one on the host with:\n"
-                "  `hermes bundles create <name> --skill <s1> --skill <s2>`\n"
+                "  `opencodon bundles create <name> --skill <s1> --skill <s2>`\n"
                 f"Directory: `{_bundles_dir()}`"
             )
 
@@ -4795,7 +4726,7 @@ class GatewaySlashCommandsMixin:
 
         Gateway uploads ONLY the summary report (system info + log tails),
         NOT full log files, to protect conversation privacy.  Users who need
-        full log uploads should use ``hermes debug share`` from the CLI.
+        full log uploads should use ``opencodon debug share`` from the CLI.
         """
         import asyncio
         from opencodon_cli.debug import (
@@ -4835,14 +4766,14 @@ class GatewaySlashCommandsMixin:
         return await loop.run_in_executor(None, _collect_and_upload)
 
     async def _handle_update_command(self, event: MessageEvent) -> str:
-        """Handle /update command — update Hermes Agent to the latest version.
+        """Handle /update command — update opencodon to the latest version.
 
-        Spawns ``hermes update`` in a detached session (via ``setsid``) so it
-        survives the gateway restart that ``hermes update`` may trigger. Marker
+        Spawns ``opencodon update`` in a detached session (via ``setsid``) so it
+        survives the gateway restart that ``opencodon update`` may trigger. Marker
         files are written so either the current gateway process or the next one
         can notify the user when the update finishes.
         """
-        from gateway.run import _opencodon_home, _resolve_hermes_bin
+        from gateway.run import _opencodon_home, _resolve_opencodon_bin
         import json
         import shutil
         import subprocess
@@ -4863,7 +4794,7 @@ class GatewaySlashCommandsMixin:
                 return t("gateway.update.platform_not_messaging")
 
         if is_managed():
-            return f"✗ {format_managed_message('update Hermes Agent')}"
+            return f"✗ {format_managed_message('update opencodon')}"
 
         project_root = Path(__file__).parent.parent.resolve()
         git_dir = project_root / '.git'
@@ -4871,9 +4802,9 @@ class GatewaySlashCommandsMixin:
         if not git_dir.exists():
             return t("gateway.update.not_git_repo")
 
-        hermes_cmd = _resolve_hermes_bin()
-        if not hermes_cmd:
-            return t("gateway.update.hermes_cmd_not_found")
+        opencodon_cmd = _resolve_opencodon_bin()
+        if not opencodon_cmd:
+            return t("gateway.update.opencodon_cmd_not_found")
 
         pending_path = _opencodon_home / ".update_pending.json"
         output_path = _opencodon_home / ".update_output.txt"
@@ -4896,7 +4827,7 @@ class GatewaySlashCommandsMixin:
         _tmp_pending.replace(pending_path)
         exit_code_path.unlink(missing_ok=True)
 
-        # Spawn `hermes update --gateway` detached so it survives gateway restart.
+        # Spawn `opencodon update --gateway` detached so it survives gateway restart.
         # --gateway enables file-based IPC for interactive prompts (stash
         # restore, config migration) so the gateway can forward them to the
         # user instead of silently skipping them.
@@ -4904,7 +4835,7 @@ class GatewaySlashCommandsMixin:
         # where systemd-run --user fails due to missing D-Bus session).
         # PYTHONUNBUFFERED ensures output is flushed line-by-line so the
         # gateway can stream it to the messenger in near-real-time.
-        # Spawn `hermes update --gateway` detached so it survives gateway restart.
+        # Spawn `opencodon update --gateway` detached so it survives gateway restart.
         # --gateway enables file-based IPC for interactive prompts (stash
         # restore, config migration) so the gateway can forward them to the
         # user instead of silently skipping them.
@@ -4913,7 +4844,7 @@ class GatewaySlashCommandsMixin:
         # PYTHONUNBUFFERED ensures output is flushed line-by-line so the
         # gateway can stream it to the messenger in near-real-time.
         #
-        # Windows: no bash/setsid chain.  Run `hermes update --gateway`
+        # Windows: no bash/setsid chain.  Run `opencodon update --gateway`
         # directly via sys.executable; redirect stdout/stderr to the same
         # output files via Popen file handles; write the exit code in a
         # follow-up write.  A tiny Python watcher would be cleaner but
@@ -4925,7 +4856,7 @@ class GatewaySlashCommandsMixin:
                 import textwrap
                 from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
 
-                # hermes_cmd is a list of argv parts we can pass directly
+                # opencodon_cmd is a list of argv parts we can pass directly
                 # (no shell-quoting needed).
                 helper = textwrap.dedent(
                     """
@@ -4946,16 +4877,16 @@ class GatewaySlashCommandsMixin:
                     [
                         sys.executable, "-c", helper,
                         str(output_path), str(exit_code_path),
-                        *hermes_cmd, "update", "--gateway",
+                        *opencodon_cmd, "update", "--gateway",
                     ],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     **windows_detach_popen_kwargs(),
                 )
             else:
-                hermes_cmd_str = " ".join(shlex.quote(part) for part in hermes_cmd)
+                opencodon_cmd_str = " ".join(shlex.quote(part) for part in opencodon_cmd)
                 update_cmd = (
-                    f"PYTHONUNBUFFERED=1 {hermes_cmd_str} update --gateway"
+                    f"PYTHONUNBUFFERED=1 {opencodon_cmd_str} update --gateway"
                     f" > {shlex.quote(str(output_path))} 2>&1; "
                     # Avoid `status=$?`: `status` is a read-only special parameter
                     # in zsh, and this command string is copied/reused in macOS/zsh

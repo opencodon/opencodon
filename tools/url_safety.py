@@ -15,7 +15,7 @@ metadata hostnames (metadata.google.internal, 169.254.169.254) are
 Limitations:
   - DNS rebinding (TOCTOU): an attacker-controlled DNS server with TTL=0
     can return a public IP for the check, then a private IP for the actual
-    connection. Hermes-owned direct httpx request paths should use
+    connection. opencodon-owned direct httpx request paths should use
     ``create_ssrf_safe_client()`` / ``create_ssrf_safe_async_client()`` so the
     same policy is applied immediately before TCP connect and the client
     connects to the validated IP while preserving Host/SNI semantics.
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 def normalize_url_for_request(url: str) -> str:
-    """Return an ASCII-safe HTTP URL for Hermes-owned URL tools.
+    """Return an ASCII-safe HTTP URL for opencodon-owned URL tools.
 
     Browsers and HTTP clients expect URIs, but users and models often provide
     IRIs such as ``https://wttr.in/Köln``.  Preserve URL syntax and existing

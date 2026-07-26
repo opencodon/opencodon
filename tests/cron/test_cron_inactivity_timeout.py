@@ -304,8 +304,8 @@ class TestSysPathOrdering:
     def test_opencodon_time_importable(self):
         """opencodon_time should be importable when cron.scheduler loads."""
         # This import would fail if sys.path.insert comes after the import
-        from cron.scheduler import _hermes_now
-        assert callable(_hermes_now)
+        from cron.scheduler import _opencodon_now
+        assert callable(_opencodon_now)
 
     def test_opencodon_constants_importable(self):
         """opencodon_constants should be importable from cron context."""

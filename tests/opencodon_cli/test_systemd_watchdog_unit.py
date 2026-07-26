@@ -41,10 +41,10 @@ def test_positive_watchdog_config_generates_notify_system_unit(monkeypatch, tmp_
     monkeypatch.setattr(
         gateway_cli,
         "_system_service_identity",
-        lambda _user: ("hermes", "hermes", str(tmp_path)),
+        lambda _user: ("opencodon", "opencodon", str(tmp_path)),
     )
 
-    unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="hermes")
+    unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="opencodon")
 
     assert "Type=notify" in unit
     assert "NotifyAccess=main" in unit

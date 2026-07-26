@@ -34,7 +34,7 @@ WORKERS_RUN_DURATION_S = 8
 
 
 def run() -> int:
-    home = tempfile.mkdtemp(prefix="hermes_parent_gate_stress_")
+    home = tempfile.mkdtemp(prefix="opencodon_parent_gate_stress_")
     os.environ["OPENCODON_HOME"] = home
     os.environ["HOME"] = home
 

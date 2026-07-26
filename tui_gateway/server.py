@@ -24,9 +24,9 @@ from opencodon_constants import (
     reset_opencodon_home_override,
     set_opencodon_home_override,
 )
-from opencodon_cli.env_loader import load_hermes_dotenv
+from opencodon_cli.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
-from tools.environments.local import hermes_subprocess_env
+from tools.environments.local import opencodon_subprocess_env
 from agent.replay_cleanup import sanitize_replay_history
 from tui_gateway import git_probe
 from tui_gateway.transport import (
@@ -40,7 +40,7 @@ from tui_gateway.transport import (
 logger = logging.getLogger(__name__)
 
 _opencodon_home = get_opencodon_home()
-load_hermes_dotenv(
+load_opencodon_dotenv(
     opencodon_home=_opencodon_home, project_env=Path(__file__).parent.parent / ".env"
 )
 
@@ -212,19 +212,6 @@ _LONG_HANDLERS = frozenset(
         # prompt.submit / session.interrupt sit unread (same class as #21123),
         # and the Desktop model pill / picker block on it every open.
         "model.options",
-        # Pet RPCs hit the network (manifest fetch / spritesheet download) or do
-        # per-frame PNG decode/encode (pet.cells): inline they serialize on the
-        # reader thread, so picker previews trickle in one at a time and the
-        # animation poll stutters. On the pool they run concurrently.
-        "pet.cells",
-        "pet.gallery",
-        # Generation is the heaviest pet path by far — multiple image-model
-        # round-trips per call — so it must never block the reader thread.
-        "pet.generate",
-        "pet.hatch",
-        "pet.info",
-        "pet.select",
-        "pet.thumb",
         "learning.frames",
         "plugins.manage",
         # reload.mcp shuts down and rediscovers every MCP server — with a
@@ -307,7 +294,7 @@ _detached_ws_transport = _DropTransport()
 
 
 class _SlashWorker:
-    """Persistent HermesCLI subprocess for slash commands."""
+    """Persistent OpencodonCLI subprocess for slash commands."""
 
     def __init__(self, session_key: str, model: str, profile_home: str | None = None):
         self._lock = threading.Lock()
@@ -328,9 +315,9 @@ class _SlashWorker:
         self._closed = False
         from opencodon_cli._subprocess_compat import windows_hide_flags
 
-        # slash_worker runs the Hermes agent → needs provider credentials.
+        # slash_worker runs the opencodon agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
-        env = hermes_subprocess_env(inherit_credentials=True)
+        env = opencodon_subprocess_env(inherit_credentials=True)
         if profile_home:
             # Global-remote / multi-profile sessions: the worker must resolve
             # config/skills/state against the session's profile home, not the
@@ -894,7 +881,7 @@ def _close_sessions_for_transport(
         else:
             # Point detached sessions at the drop sentinel (NOT real stdio) so
             # _ws_session_is_orphaned recognizes them and the grace-reap can
-            # actually fire; a standalone `hermes --tui` keeps real _stdio.
+            # actually fire; a standalone `opencodon --tui` keeps real _stdio.
             session["transport"] = _detached_ws_transport
             detached += 1
             try:
@@ -925,7 +912,7 @@ _REAPER_SCAN_S = 300.0
 def _transport_is_dead(transport) -> bool:
     # _detached_ws_transport is the post-WS-disconnect drop sentinel; a session
     # parked on it has no live client. _stdio_transport is the REAL transport
-    # for a standalone `hermes --tui`, so it must NOT count as dead here (doing
+    # for a standalone `opencodon --tui`, so it must NOT count as dead here (doing
     # so let the idle reaper evict healthy standalone TUI sessions).
     if transport is _detached_ws_transport:
         return True
@@ -1092,29 +1079,6 @@ def _profile_home(profile: str | None) -> Path | None:
     return home if (home / "state.db").exists() or home.exists() else None
 
 
-def _profile_scoped(handler):
-    """Bind ``params['profile']``'s OPENCODON_HOME around a pet RPC handler.
-
-    Pets are per-profile: ``display.pet.*`` lives in the profile's config.yaml and
-    sprites install under its ``pets/`` dir (both resolve via ``get_opencodon_home``).
-    The desktop sends ``profile`` on pet calls so config + pets dir resolve to the
-    focused profile even in app-global remote mode, where one backend serves every
-    profile. No-op for the launch profile (own-profile backends already resolve it).
-    """
-
-    def wrapper(rid, params):
-        home = _profile_home(params.get("profile") if isinstance(params, dict) else None)
-        if home is None:
-            return handler(rid, params)
-        token = set_opencodon_home_override(home)
-        try:
-            return handler(rid, params)
-        finally:
-            reset_opencodon_home_override(token)
-
-    return wrapper
-
-
 # Placeholder ``terminal.cwd`` values that don't name a real directory — the
 # gateway resolves these to the home dir at runtime, so they must NOT be treated
 # as an explicit workspace (mirrors gateway/run.py's config bridge).
@@ -1170,7 +1134,7 @@ def _launch_configured_cwd() -> str | None:
     process's in-memory TUI gateway. The Node PTY child receives a bridged
     ``TERMINAL_CWD`` env var, but this in-memory process does not — so reading
     the process env alone leaves a fresh chat starting in ``os.getcwd()``
-    (wherever ``hermes dashboard`` was launched) instead of the configured
+    (wherever ``opencodon dashboard`` was launched) instead of the configured
     ``terminal.cwd``. Read config directly so changing ``terminal.cwd`` affects
     new in-memory TUI sessions too.
     """
@@ -1608,7 +1572,7 @@ def _wait_agent(session: dict, rid: str, timeout: float = 30.0) -> dict | None:
 def _start_agent_build(sid: str, session: dict) -> None:
     """Start building the real AIAgent for a TUI session, once.
 
-    Classic `hermes` shows the prompt before constructing AIAgent; the TUI used
+    Classic `opencodon` shows the prompt before constructing AIAgent; the TUI used
     to eagerly build it during session.create, making startup feel blocked on
     tool discovery/model metadata even though the composer was visible.  Keep
     the shell responsive by deferring this work until the first prompt (or any
@@ -1734,15 +1698,6 @@ def _start_agent_build(sid: str, session: dict) -> None:
                     "review.summary", _sid, {"text": str(message)}
                 )
                 agent.memory_notifications = _load_memory_notifications()
-            except Exception:
-                pass
-            # Hydrate credits notices at session OPEN (not just on the first
-            # message), so depletion / usage-band warnings show at "ready". Runs
-            # off the build thread, after the notice_callback is wired. Fail-open.
-            try:
-                from agent.credits_tracker import seed_credits_at_session_start
-
-                seed_credits_at_session_start(agent)
             except Exception:
                 pass
             with _sessions_lock:
@@ -2541,7 +2496,7 @@ def _note_skin_broadcast() -> None:
 
 def _broadcast_skin_if_changed() -> None:
     """Emit ``skin.changed`` when the active skin moved — the agent switched it
-    (``hermes config set display.skin``) OR edited the active skin's colors in
+    (``opencodon config set display.skin``) OR edited the active skin's colors in
     place ("I don't like that coral" → tweak the YAML).
 
     Routes through the SAME live path as ``/skin`` so every surface (TUI + desktop)
@@ -2567,7 +2522,7 @@ _skin_watcher_started = False
 
 def _ensure_skin_watcher() -> None:
     """Poll the config for skin changes and broadcast ``skin.changed`` — so a skin
-    Hermes activates (``hermes config set display.skin``) or recolors goes live on
+    opencodon activates (``opencodon config set display.skin``) or recolors goes live on
     every surface within ~half a second, on its own, with no tool-hook or slash
     command in the loop. Idempotent; started at gateway.ready."""
     global _skin_watcher_started
@@ -2581,7 +2536,7 @@ def _ensure_skin_watcher() -> None:
             time.sleep(0.5)
             _broadcast_skin_if_changed()
 
-    threading.Thread(target=_loop, name="hermes-skin-watcher", daemon=True).start()
+    threading.Thread(target=_loop, name="opencodon-skin-watcher", daemon=True).start()
 
 
 def _resolve_model() -> str:
@@ -2620,11 +2575,11 @@ def _resolve_session_platform() -> str:
       * ``OPENCODON_DESKTOP=1`` and ``OPENCODON_DESKTOP_TERMINAL`` unset → "desktop"
         (the chat-panel backend — a graphical React surface, not a terminal).
       * ``OPENCODON_DESKTOP_TERMINAL=1`` → "tui"
-        (``hermes --tui`` running in the desktop's embedded terminal pane;
+        (``opencodon --tui`` running in the desktop's embedded terminal pane;
         it IS a TUI, just embedded. The clarifier attached to the tui hint
         in system_prompt.py tells the agent about the embedding.)
       * neither set → "tui"
-        (standalone ``hermes --tui``.)
+        (standalone ``opencodon --tui``.)
     """
     if is_truthy_value(os.environ.get("OPENCODON_DESKTOP")) and not is_truthy_value(
         os.environ.get("OPENCODON_DESKTOP_TERMINAL")
@@ -2655,7 +2610,7 @@ def _config_model_target() -> tuple[str, str]:
 
     Unlike `_resolve_model()`, this never reads OPENCODON_MODEL /
     OPENCODON_INFERENCE_MODEL. Those env vars are a launch-scoped seed
-    (`hermes --tui -m <model>`, hosted-instance provisioning); if they
+    (`opencodon --tui -m <model>`, hosted-instance provisioning); if they
     fed the per-turn sync, the seed would be replayed as a /model switch
     and persisted globally, or would pin the session so dashboard/CLI
     model changes never reach an open chat.
@@ -2671,7 +2626,7 @@ def _config_model_target() -> tuple[str, str]:
     elif isinstance(cfg_model, str):
         model = cfg_model.strip()
     # No fallback to _resolve_model() here: that reads OPENCODON_MODEL /
-    # OPENCODON_INFERENCE_MODEL, which `hermes --tui -m <model>` sets as a
+    # OPENCODON_INFERENCE_MODEL, which `opencodon --tui -m <model>` sets as a
     # session-scoped seed for THIS launch. When config.yaml has no
     # model.default (custom-provider-only setups), falling back to the env
     # seed made the per-turn sync treat the -m flag as "the configured
@@ -3143,9 +3098,9 @@ def _load_enabled_toolsets() -> list[str] | None:
     cfg = None
     fallback_notice = None
 
-    # Coding posture (base Hermes): with no explicit pin, collapse to the
+    # Coding posture (base opencodon): with no explicit pin, collapse to the
     # coding toolset (+ enabled MCP servers) when sitting in a code workspace.
-    # The desktop app and `hermes --tui` both land here. See
+    # The desktop app and `opencodon --tui` both land here. See
     # agent/coding_context.py. No config is loaded yet at this point, so we let
     # coding_selection() load it lazily (cli.py passes its already-resolved
     # CLI_CONFIG instead, purely to avoid a redundant read).
@@ -3630,7 +3585,7 @@ def _sync_agent_model_with_config(sid: str, session: dict) -> None:
             # This sync ADOPTS a config.yaml change into the live session; it
             # must never write config back. Without this, the flag/config
             # default (persist_switch_by_default=True) re-persisted whatever
-            # target the sync computed — the path that leaked `hermes --tui -m`
+            # target the sync computed — the path that leaked `opencodon --tui -m`
             # into config.yaml as the permanent global model.
             persist_override=False,
         )
@@ -3853,15 +3808,6 @@ def _get_usage(agent) -> dict:
         usage["active_subagents"] = _async_active_count()
     except Exception:
         pass
-    # Dev-only live credits-spent readout (L0 usage-aware-credits). Gated on
-    # OPENCODON_DEV_CREDITS so the payload stays clean when the flag is off.
-    if is_truthy_value(os.environ.get("OPENCODON_DEV_CREDITS")):
-        try:
-            spent = agent.get_credits_spent_micros()
-            if spent is not None:
-                usage["dev_credits_spent_micros"] = int(spent)
-        except Exception:
-            pass
     return usage
 
 
@@ -4812,7 +4758,7 @@ def _load_fallback_model():
     """Return the configured fallback chain for TUI-created agents.
 
     Delegates to the shared ``get_fallback_chain`` helper so the TUI path
-    stays in parity with ``HermesCLI.__init__`` and ``gateway/run.py``:
+    stays in parity with ``OpencodonCLI.__init__`` and ``gateway/run.py``:
     ``fallback_providers`` is the primary source of truth and keeps its
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
@@ -7086,7 +7032,7 @@ def _(rid, params: dict) -> dict:
     # filter on ``transport is _detached_ws_transport`` (the WS-detached drop
     # sentinel): a detached session is still attachable via a quick reconnect /
     # session.resume until the grace-reap finalizes it, and a standalone
-    # ``hermes --tui`` session legitimately rides the real stdio transport and
+    # ``opencodon --tui`` session legitimately rides the real stdio transport and
     # must stay visible.
     # Keep the natural creation/insertion order from ``_sessions``.  The
     # frontend marks the focused session with ``current``; it should not jump to
@@ -7333,7 +7279,7 @@ def _(rid, params: dict) -> dict:
 
     Desktop parity with the CLI ``/handoff`` command: we only write
     ``handoff_state='pending'`` onto the persisted session row. The actual
-    transfer is performed by the separate ``hermes gateway`` process, whose
+    transfer is performed by the separate ``opencodon gateway`` process, whose
     ``_handoff_watcher`` claims the row, re-binds the session to the platform's
     home channel, and forges a synthetic turn. The desktop then polls
     ``handoff.state`` for the terminal result.
@@ -7475,18 +7421,6 @@ def _(rid, params: dict) -> dict:
     usage: dict = _session_usage_snapshot(session)
     if agent is None and not usage:
         usage = {"calls": 0, "input": 0, "output": 0, "total": 0}
-    # Nous credits block — agent-independent (a portal fetch), so it shows even
-    # with zero API calls or on a resumed session. The TUI /usage panel renders
-    # these lines regardless of `calls`. Fail-open: [] when not logged into Nous
-    # or on any portal hiccup.
-    try:
-        from agent.account_usage import nous_credits_lines
-
-        credits = nous_credits_lines()
-        if credits:
-            usage["credits_lines"] = credits
-    except Exception:
-        pass
     return _ok(rid, usage)
 
 
@@ -7518,1530 +7452,6 @@ def _(rid, params: dict) -> dict:
     except Exception as exc:
         return _err(rid, 5000, f"Could not compute context breakdown: {exc}")
     return _ok(rid, payload)
-
-
-def _pet_frame_counts(spritesheet) -> dict:
-    """Real (padding-trimmed) frame count per state, for the desktop canvas.
-
-    Fail-open: a decode hiccup returns ``{}`` and the canvas falls back to its
-    static ``framesPerState`` rather than breaking the (cosmetic) pet.
-    """
-    try:
-        from agent.pet import render
-
-        return render.state_frame_counts(str(spritesheet))
-    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
-        return {}
-
-
-_pet_payload_cache_lock = threading.Lock()
-_pet_payload_cache: dict[tuple, dict] = {}
-
-
-def _pet_sheet_revision(spritesheet) -> str:
-    """Stable revision id for one spritesheet file."""
-    try:
-        stat = spritesheet.stat()
-        return f"{stat.st_mtime_ns}:{stat.st_size}"
-    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
-        return "0:0"
-
-
-def _pet_payload_cache_key(pet, *, scale: float) -> tuple | None:
-    """Cache key for the expensive sprite payload build."""
-    try:
-        stat = pet.spritesheet.stat()
-    except Exception:  # noqa: BLE001
-        return None
-    return (
-        str(pet.spritesheet),
-        stat.st_mtime_ns,
-        stat.st_size,
-        pet.slug,
-        pet.display_name,
-        round(scale, 4),
-    )
-
-
-def _clone_pet_payload(payload: dict) -> dict:
-    """Shallow-clone cached payloads so callers can't mutate shared state."""
-    out = dict(payload)
-    if isinstance(payload.get("framesByState"), dict):
-        out["framesByState"] = dict(payload["framesByState"])
-    if isinstance(payload.get("framesByRow"), dict):
-        out["framesByRow"] = dict(payload["framesByRow"])
-    if isinstance(payload.get("stateRows"), list):
-        out["stateRows"] = list(payload["stateRows"])
-    return out
-
-
-def _pet_row_frame_counts(spritesheet) -> dict:
-    """Real frame count per concrete spritesheet row name."""
-    try:
-        from PIL import Image
-
-        from agent.pet import constants, render
-
-        with Image.open(spritesheet) as opened:
-            image = opened.convert("RGBA")
-        cols = max(1, image.width // constants.FRAME_W)
-        row_count = max(1, image.height // constants.FRAME_H)
-        rows = constants.state_rows_for_grid(row_count)
-        out: dict[str, int] = {}
-        for row_idx, name in enumerate(rows[:row_count]):
-            top = row_idx * constants.FRAME_H
-            count = 0
-            for col in range(cols):
-                left = col * constants.FRAME_W
-                frame = image.crop((left, top, left + constants.FRAME_W, top + constants.FRAME_H))
-                if render._frame_is_blank(frame):
-                    break
-                count += 1
-            out[name] = count
-        return out
-    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
-        return {}
-
-
-def _pet_config_scale() -> float:
-    """Configured ``display.pet.scale`` (or the engine default), never raises."""
-    from agent.pet import constants
-
-    try:
-        from opencodon_cli.config import load_config
-
-        cfg = load_config()
-        display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
-        pet_cfg = display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
-        return float(pet_cfg.get("scale", constants.DEFAULT_SCALE) or constants.DEFAULT_SCALE)
-    except Exception:  # noqa: BLE001
-        return constants.DEFAULT_SCALE
-
-
-def _pet_sprite_payload(pet, *, scale: float) -> dict:
-    """Build the renderer payload (spritesheet bytes + geometry) for *pet*.
-
-    Shared by ``pet.info`` (the active mascot) and ``pet.hatch`` (the unadopted
-    preview) so both feed the desktop canvas / TUI from one shape.
-    """
-    import base64
-
-    from agent.pet import constants
-
-    cache_key = _pet_payload_cache_key(pet, scale=scale)
-    if cache_key is not None:
-        with _pet_payload_cache_lock:
-            cached = _pet_payload_cache.get(cache_key)
-        if cached is not None:
-            return _clone_pet_payload(cached)
-
-    raw = pet.spritesheet.read_bytes()
-    suffix = pet.spritesheet.suffix.lower()
-    mime = "image/png" if suffix == ".png" else "image/webp"
-    payload = {
-        "slug": pet.slug,
-        "displayName": pet.display_name,
-        "mime": mime,
-        "spritesheetBase64": base64.standard_b64encode(raw).decode("ascii"),
-        "spritesheetRevision": _pet_sheet_revision(pet.spritesheet),
-        "frameW": constants.FRAME_W,
-        "frameH": constants.FRAME_H,
-        "framesPerState": constants.FRAMES_PER_STATE,
-        "framesByState": _pet_frame_counts(pet.spritesheet),
-        "framesByRow": _pet_row_frame_counts(pet.spritesheet),
-        "loopMs": constants.LOOP_MS,
-        "scale": scale,
-        "stateRows": _pet_state_rows(pet.spritesheet),
-    }
-    if cache_key is not None:
-        with _pet_payload_cache_lock:
-            _pet_payload_cache[cache_key] = payload
-            while len(_pet_payload_cache) > 8:
-                _pet_payload_cache.pop(next(iter(_pet_payload_cache)))
-    return _clone_pet_payload(payload)
-
-
-def _pet_active_selection():
-    """Resolve configured active pet + scale from config."""
-    from agent.pet import constants, store
-
-    try:
-        from opencodon_cli.config import load_config
-
-        cfg = load_config()
-        display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
-        pet_cfg = display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
-    except Exception:
-        pet_cfg = {}
-
-    enabled = bool(pet_cfg.get("enabled"))
-    configured_slug = str(pet_cfg.get("slug", "") or "")
-    pet = store.resolve_active_pet(configured_slug) if enabled else None
-    scale = float(pet_cfg.get("scale", constants.DEFAULT_SCALE) or constants.DEFAULT_SCALE)
-    return enabled, pet, scale
-
-
-def _pet_state_rows(spritesheet) -> list[str]:
-    """Row taxonomy for the concrete active pet sheet.
-
-    Hermes has to support both the legacy 8-row petdex atlas and the current
-    Codex/petdex 9-row atlas. The desktop canvas gets this list and indexes it
-    with the same `PetState` names the Python renderer uses.
-    """
-    try:
-        from PIL import Image
-
-        from agent.pet import constants
-
-        with Image.open(spritesheet) as image:
-            row_count = max(1, image.height // constants.FRAME_H)
-        return list(constants.state_rows_for_grid(row_count))
-    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
-        from agent.pet import constants
-
-        return list(constants.STATE_ROWS)
-
-
-@method("pet.info")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Return the active petdex pet for surfaces that render sprites.
-
-    Shared by the desktop (canvas) and the TUI (half-block). Carries the
-    spritesheet bytes (base64) plus the engine's frame geometry + state-row
-    taxonomy so the renderer is a thin, framework-native consumer. The
-    activity→state decision is mirrored from ``agent.pet.state`` client-side.
-
-    Agent-independent (reads config + disk), so it works on any session and
-    before the agent finishes building. Fail-open: returns ``enabled=False``
-    on any error rather than erroring the surface.
-    """
-    try:
-        enabled, pet, scale = _pet_active_selection()
-
-        if not enabled or pet is None or not pet.exists:
-            return _ok(rid, {"enabled": False})
-
-        return _ok(rid, {"enabled": True, **_pet_sprite_payload(pet, scale=scale)})
-    except Exception as exc:  # noqa: BLE001 - cosmetic, never break the surface
-        logger.debug("pet.info failed: %s", exc)
-        return _ok(rid, {"enabled": False})
-
-
-@method("pet.info.meta")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Cheap active-pet metadata used to avoid full payload refreshes."""
-    try:
-        enabled, pet, scale = _pet_active_selection()
-        if not enabled or pet is None or not pet.exists:
-            return _ok(rid, {"enabled": False})
-        return _ok(
-            rid,
-            {
-                "enabled": True,
-                "slug": pet.slug,
-                "displayName": pet.display_name,
-                "scale": scale,
-                "spritesheetRevision": _pet_sheet_revision(pet.spritesheet),
-            },
-        )
-    except Exception as exc:  # noqa: BLE001 - cosmetic, never break the surface
-        logger.debug("pet.info.meta failed: %s", exc)
-        return _ok(rid, {"enabled": False})
-
-
-@method("pet.cells")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Return half-block cell frames for one pet state (TUI renderer).
-
-    The TUI can't draw a canvas, so the engine downsamples the spritesheet to
-    a grid of half-block cells and the Ink side paints them with native color
-    props. Each cell is ``[tr,tg,tb,ta, br,bg,bb,ba]`` (top + bottom pixel).
-
-    Params: ``state`` (idle/run/review/failed/wave/jump), ``cols`` (width).
-    Fail-open: ``enabled=False`` on any problem.
-    """
-    try:
-        from agent.pet import constants, render, store
-        from agent.pet.render import PetRenderer
-
-        try:
-            from opencodon_cli.config import load_config
-
-            cfg = load_config()
-            display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
-            pet_cfg = display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
-        except Exception:
-            pet_cfg = {}
-
-        if not bool(pet_cfg.get("enabled")):
-            return _ok(rid, {"enabled": False})
-
-        pet = store.resolve_active_pet(str(pet_cfg.get("slug", "") or ""))
-        if pet is None or not pet.exists:
-            return _ok(rid, {"enabled": False})
-
-        state = str(params.get("state") or constants.PetState.IDLE.value)
-        scale = float(pet_cfg.get("scale", constants.DEFAULT_SCALE) or constants.DEFAULT_SCALE)
-        cols = int(params.get("cols") or 0) or constants.resolve_cols(scale, pet_cfg.get("unicode_cols", 0))
-
-        # Graphics path: when the TUI is attached to a real TTY (``graphics``)
-        # and the terminal speaks the kitty protocol, return a Unicode-
-        # placeholder payload for a crisp image instead of half-blocks. Env
-        # detection (KITTY_WINDOW_ID / TERM / TERM_PROGRAM) is shared with the
-        # Ink process since it spawns us; the dashboard PTY (xterm.js) has no
-        # such env, so it falls through to half-blocks automatically. Only
-        # kitty is grid-safe in Ink — iTerm/sixel stay on the fallback.
-        if params.get("graphics"):
-            configured = str(pet_cfg.get("render_mode", "auto") or "auto").lower()
-            gmode = render.detect_terminal_graphics() if configured in ("", "auto") else configured
-            if gmode == "kitty":
-                image_id = render.kitty_image_id(pet.slug)
-                # kitty sizes from scaled pixels (_cell_box), so unicode_cols is moot here.
-                payload = PetRenderer(
-                    str(pet.spritesheet), mode="kitty", scale=scale
-                ).kitty_payload(state, image_id=image_id)
-                if payload:
-                    kcount = len(payload["frames"]) or 1
-                    return _ok(
-                        rid,
-                        {
-                            "enabled": True,
-                            "slug": pet.slug,
-                            "displayName": pet.display_name,
-                            "state": state,
-                            "graphics": "kitty",
-                            "imageId": image_id,
-                            "color": render.kitty_color_hex(image_id),
-                            "cols": payload["cols"],
-                            "rows": payload["rows"],
-                            "placeholder": payload["placeholder"],
-                            "frames": payload["frames"],
-                            "frameMs": constants.LOOP_MS / max(1, kcount),
-                            "scale": scale,
-                        },
-                    )
-
-        renderer = PetRenderer(
-            str(pet.spritesheet),
-            mode="unicode",
-            scale=scale,
-            unicode_cols=cols,
-        )
-        count = renderer.frame_count(state) or 1
-        frames = []
-        for i in range(count):
-            grid = renderer.cells(state, i, cols=cols)
-            frames.append(
-                [[[*top, *bottom] for (top, bottom) in row] for row in grid]
-            )
-
-        return _ok(
-            rid,
-            {
-                "enabled": True,
-                "slug": pet.slug,
-                "displayName": pet.display_name,
-                "state": state,
-                "cols": cols,
-                "frameMs": constants.LOOP_MS / max(1, count),
-                "frames": frames,
-                "scale": scale,
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.cells failed: %s", exc)
-        return _ok(rid, {"enabled": False})
-
-
-@method("pet.gallery")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """List adoptable pets for the desktop appearance picker.
-
-    Returns the petdex gallery merged with local install state plus the
-    current config (active slug + enabled). Agent-independent. Fail-open:
-    returns whatever is installed locally if the gallery can't be reached, so
-    the picker still works offline.
-
-    Param ``localOnly`` (bool): skip the remote petdex manifest fetch and return
-    only locally-installed pets. The desktop loads this first so the user's own
-    pets render instantly instead of waiting on the (possibly slow) manifest.
-    """
-    local_only = bool(params.get("localOnly"))
-    try:
-        from agent.pet import store
-
-        try:
-            from opencodon_cli.config import load_config
-
-            cfg = load_config()
-            display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
-            pet_cfg = display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
-        except Exception:
-            pet_cfg = {}
-
-        installed = {p.slug: p for p in store.installed_pets()}
-
-        gallery: list[dict] = []
-        seen: set[str] = set()
-        try:
-            from agent.pet.manifest import fetch_manifest, prefetch
-
-            # Local-only: skip the network entirely, but kick off a background
-            # warm so the follow-up full request usually hits a cached manifest.
-            if local_only:
-                prefetch()
-
-            for entry in [] if local_only else fetch_manifest():
-                seen.add(entry.slug)
-                gallery.append(
-                    {
-                        "slug": entry.slug,
-                        "displayName": entry.display_name,
-                        "installed": entry.slug in installed,
-                        "spritesheetUrl": entry.spritesheet_url,
-                        # petdex exposes no popularity metric; "curated" (its
-                        # hand-picked/official set, identified by the asset path)
-                        # is the closest signal, so the picker can surface it first.
-                        "curated": "/curated/" in entry.spritesheet_url,
-                        "generated": entry.slug in installed and installed[entry.slug].generated,
-                    }
-                )
-        except Exception as exc:  # noqa: BLE001 - offline: fall back to installed
-            logger.debug("pet.gallery manifest fetch failed: %s", exc)
-
-        # Always include locally-installed pets even if the gallery is unreachable.
-        for slug, pet in installed.items():
-            if slug not in seen:
-                gallery.append(
-                    {
-                        "slug": slug,
-                        "displayName": pet.display_name,
-                        "installed": True,
-                        "spritesheetUrl": "",
-                        "generated": pet.generated,
-                    }
-                )
-
-        return _ok(
-            rid,
-            {
-                "enabled": bool(pet_cfg.get("enabled")),
-                "active": str(pet_cfg.get("slug", "") or ""),
-                "pets": gallery,
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.gallery failed: %s", exc)
-        return _ok(rid, {"enabled": False, "active": "", "pets": []})
-
-
-@method("pet.select")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Adopt a pet from the desktop picker: install (if needed) + activate.
-
-    Params: ``slug`` (required). Writes ``display.pet.*`` to config and returns
-    ``{ok, slug, displayName}``. The surface re-pulls ``pet.info`` to render it.
-    """
-    slug = str(params.get("slug") or "").strip()
-    if not slug:
-        return _err(rid, 4004, "missing slug")
-    try:
-        from agent.pet import store
-        from agent.pet.manifest import ManifestError
-        from opencodon_cli.pets import _set_active
-
-        try:
-            pet = store.install_pet(slug)
-        except (store.PetStoreError, ManifestError) as exc:
-            return _err(rid, 5031, f"could not adopt '{slug}': {exc}")
-        _set_active(slug)
-        return _ok(rid, {"ok": True, "slug": slug, "displayName": pet.display_name})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.select failed: %s", exc)
-        return _err(rid, 5031, f"pet.select failed: {exc}")
-
-
-@method("pet.remove")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Uninstall a pet from the desktop picker (delete its on-disk directory).
-
-    Params: ``slug`` (required). If the removed pet was the active one, the
-    display is turned off so nothing tries to render a now-missing sprite.
-    Returns ``{ok, slug}`` where ``ok`` reflects whether a directory was deleted.
-    """
-    slug = str(params.get("slug") or "").strip()
-    if not slug:
-        return _err(rid, 4004, "missing slug")
-    try:
-        from agent.pet import store
-        from opencodon_cli.pets import _clear_active_if
-
-        removed = store.remove_pet(slug)
-
-        # If that was the active pet, stop surfaces pointing at a deleted sprite.
-        try:
-            _clear_active_if(slug)
-        except Exception as exc:  # noqa: BLE001 - removal already succeeded
-            logger.debug("pet.remove config update failed: %s", exc)
-
-        return _ok(rid, {"ok": removed, "slug": slug})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.remove failed: %s", exc)
-        return _err(rid, 5031, f"pet.remove failed: {exc}")
-
-
-@method("pet.export")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Export an installed pet as a re-importable ``.zip`` (pet.json + sprite).
-
-    Params: ``slug`` (required). Returns ``{ok, filename, zipBase64}`` — the
-    client decodes the base64 and saves it. Heavy-ish (reads + zips files) but
-    small; runs inline.
-    """
-    slug = str(params.get("slug") or "").strip()
-    if not slug:
-        return _err(rid, 4004, "missing slug")
-    try:
-        import base64
-
-        from agent.pet import store
-
-        filename, data = store.export_pet(slug)
-        return _ok(
-            rid,
-            {"ok": True, "filename": filename, "zipBase64": base64.standard_b64encode(data).decode("ascii")},
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.export failed: %s", exc)
-        return _err(rid, 5031, f"pet.export failed: {exc}")
-
-
-@method("pet.rename")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Rename an installed pet's display name + realign its slug/dir.
-
-    Params: ``slug`` + ``name`` (both required). Lets the generate flow hatch
-    with a provisional name and apply the user's chosen name at adopt time.
-    Returns ``{ok, slug, displayName}`` with the (possibly new) slug.
-    """
-    slug = str(params.get("slug") or "").strip()
-    name = str(params.get("name") or "").strip()
-    if not slug:
-        return _err(rid, 4004, "missing slug")
-    if not name:
-        return _err(rid, 4004, "missing name")
-    try:
-        from agent.pet import store
-
-        new_slug = store.rename_pet(slug, name)
-        if not new_slug:
-            return _err(rid, 5031, "pet.rename failed")
-
-        # The dir may have moved; if the renamed pet was active, follow the slug
-        # in config so surfaces don't point at the old (now-missing) directory.
-        if new_slug != slug:
-            try:
-                from opencodon_cli.pets import _rename_active_if
-
-                _rename_active_if(slug, new_slug)
-            except Exception as exc:  # noqa: BLE001 - rename already succeeded
-                logger.debug("pet.rename config update failed: %s", exc)
-
-        return _ok(rid, {"ok": True, "slug": new_slug, "displayName": name})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.rename failed: %s", exc)
-        return _err(rid, 5031, f"pet.rename failed: {exc}")
-
-
-@method("pet.thumb")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Return a small idle-frame PNG (data URI) for one pet — the picker preview.
-
-    Cropped + cached server-side so the renderer gets a same-origin data URL
-    instead of a CDN ``<img>`` (which the desktop CSP / R2 hotlink rules break).
-    Params: ``slug`` (required), ``url`` (optional petdex spritesheet URL used
-    only for not-yet-installed pets). Fail-open: ``{ok: false}`` with no error.
-    """
-    slug = str(params.get("slug") or "").strip()
-    if not slug:
-        return _err(rid, 4004, "missing slug")
-    try:
-        import base64
-
-        from agent.pet import store
-
-        data = store.thumbnail_png(slug, source_url=str(params.get("url") or ""))
-        if not data:
-            return _ok(rid, {"ok": False, "slug": slug})
-
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "slug": slug,
-                "dataUri": "data:image/png;base64," + base64.standard_b64encode(data).decode("ascii"),
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.thumb failed: %s", exc)
-        return _ok(rid, {"ok": False, "slug": slug})
-
-
-@method("pet.disable")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Turn the pet off from the desktop picker (``display.pet.enabled=false``)."""
-    try:
-        from opencodon_cli.pets import _set_enabled
-
-        _set_enabled(False)
-        return _ok(rid, {"ok": True})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.disable failed: %s", exc)
-        return _err(rid, 5031, f"pet.disable failed: {exc}")
-
-
-@method("pet.scale")
-@_profile_scoped
-def _(rid, params: dict) -> dict:
-    """Persist ``display.pet.scale`` from the desktop slider. Params: ``scale``.
-
-    Clamped to the engine bounds. The renderer updates its own ``$petInfo`` for
-    instant feedback; this just makes the change durable + visible to the other
-    terminal surfaces on their next read.
-    """
-    try:
-        from opencodon_cli.pets import set_pet_scale
-
-        scale, err = set_pet_scale(params.get("scale"))
-        if err:
-            return _err(rid, 4004, err)
-        return _ok(rid, {"ok": True, "scale": scale})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.scale failed: %s", exc)
-        return _err(rid, 5031, f"pet.scale failed: {exc}")
-
-
-def _pet_gen_root():
-    """Profile-scoped staging dir for in-progress generation drafts."""
-    from opencodon_constants import get_opencodon_home
-
-    root = get_opencodon_home() / "cache" / "pet-gen"
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def _pet_gen_sweep(root, *, max_age_s: float = 3600.0) -> None:
-    """Drop stale draft staging dirs so cache never grows unbounded."""
-    import shutil
-    import time
-
-    try:
-        now = time.time()
-        for child in root.iterdir():
-            if child.is_dir() and now - child.stat().st_mtime > max_age_s:
-                shutil.rmtree(child, ignore_errors=True)
-    except Exception as exc:  # noqa: BLE001 - cleanup is best-effort
-        logger.debug("pet-gen sweep failed: %s", exc)
-
-
-def _pet_png_data_uri(path, *, max_px: int = 160) -> str:
-    """Downscaled PNG data URI for a draft image (small preview payload)."""
-    import base64
-    import io
-
-    from PIL import Image
-
-    with Image.open(path) as opened:
-        img = opened.convert("RGBA")
-    img.thumbnail((max_px, max_px), Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return "data:image/png;base64," + base64.standard_b64encode(buf.getvalue()).decode("ascii")
-
-
-# Cooperative cancellation for the heavy pet generation paths. The client's Stop
-# aborts its RPC immediately, but the worker-pool generation keeps running unless
-# told to stop — pet.cancel flips a token's flag, which generate_base_drafts /
-# hatch_pet poll between provider calls to skip work they haven't started.
-_pet_cancel_lock = threading.Lock()
-_pet_cancelled: set[str] = set()
-_PET_REFERENCE_MIME_EXT = {
-    "png": "png",
-    "jpeg": "jpg",
-    "jpg": "jpg",
-    "webp": "webp",
-    "gif": "gif",
-}
-try:
-    _PET_REFERENCE_MAX_BYTES = max(
-        1,
-        int(os.environ.get("OPENCODON_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)),
-    )
-except (TypeError, ValueError):
-    _PET_REFERENCE_MAX_BYTES = 16 * 1024 * 1024
-
-
-def _pet_reference_images_from_data_url(ref_raw: str, stage) -> list:
-    """Decode + validate a reference-image data URL into the stage dir."""
-    import base64
-    import binascii
-    import re as _re
-
-    match = _re.match(r"^data:image/([a-zA-Z0-9.+-]+);base64,(.*)$", ref_raw, _re.DOTALL)
-    if not match:
-        raise ValueError("invalid reference image format")
-
-    mime = match.group(1).lower()
-    ext = _PET_REFERENCE_MIME_EXT.get(mime)
-    if ext is None:
-        raise ValueError("unsupported reference image type")
-
-    payload = "".join(match.group(2).split())
-    approx = (len(payload) * 3) // 4
-    if approx > _PET_REFERENCE_MAX_BYTES:
-        raise ValueError("reference image too large")
-
-    try:
-        raw = base64.b64decode(payload, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise ValueError("invalid reference image data") from exc
-
-    if len(raw) > _PET_REFERENCE_MAX_BYTES:
-        raise ValueError("reference image too large")
-
-    ref_path = stage / f"reference.{ext}"
-    ref_path.write_bytes(raw)
-    return [ref_path]
-
-
-def _pet_cancel_arm(token: str) -> None:
-    """Clear a stale cancel flag at the start of a generate/hatch run."""
-    with _pet_cancel_lock:
-        _pet_cancelled.discard(token)
-
-
-def _pet_cancel_request(token: str) -> None:
-    with _pet_cancel_lock:
-        _pet_cancelled.add(token)
-
-
-def _pet_is_cancelled(token: str) -> bool:
-    with _pet_cancel_lock:
-        return token in _pet_cancelled
-
-
-def _pet_cancel_release(token: str) -> None:
-    with _pet_cancel_lock:
-        _pet_cancelled.discard(token)
-
-
-@method("pet.cancel")
-def _(rid, params: dict) -> dict:
-    """Signal an in-flight ``pet.generate``/``pet.hatch`` (by token) to stop.
-
-    Best-effort + idempotent: cancelling an unknown/finished token is a no-op.
-    Stays off the worker pool so it lands while a heavy generation is occupying
-    it. Returns ``{ok: True}``.
-    """
-    token = str(params.get("token") or "").strip()
-    if token:
-        _pet_cancel_request(token)
-    return _ok(rid, {"ok": True})
-
-
-@method("pet.generate.status")
-def _(rid, params: dict) -> dict:
-    """Whether pet generation is possible right now.
-
-    True only when a reference-capable image backend (Nous Portal / OpenRouter /
-    OpenAI gpt-image) is configured — the desktop checks this on open so it can
-    offer setup instead of a dead prompt. Cheap (config + plugin discovery).
-    """
-    try:
-        from agent.pet.generate.imagegen import (
-            GenerationError,
-            list_sprite_providers,
-            resolve_provider,
-        )
-
-        try:
-            resolve_provider(require_references=True)
-            available = True
-        except GenerationError:
-            available = False
-        try:
-            providers = list_sprite_providers()
-        except Exception as exc:  # noqa: BLE001 - picker is best-effort
-            logger.debug("pet provider list failed: %s", exc)
-            providers = []
-        return _ok(rid, {"available": available, "providers": providers})
-    except Exception as exc:  # noqa: BLE001 - never break the surface
-        logger.debug("pet.generate.status failed: %s", exc)
-        return _ok(rid, {"available": False, "providers": []})
-
-
-@method("pet.generate")
-def _(rid, params: dict) -> dict:
-    """Generate candidate base looks for a new pet (the draft/variant step).
-
-    Params: ``prompt`` (required unless ``referenceImage`` is given), ``count``
-    (default 4), ``style`` (default ``auto``), ``referenceImage`` (optional data
-    URL — a user photo/reference every draft is grounded on, e.g. to make *their*
-    pet). Returns ``{ok, token, drafts:[{index, dataUri}]}`` — the token keys the
-    staged base images for a later ``pet.hatch``. Heavy (network): worker pool.
-    """
-    prompt = str(params.get("prompt") or "").strip()
-    ref_raw = str(params.get("referenceImage") or "").strip()
-    if not prompt and not ref_raw:
-        return _err(rid, 4004, "missing prompt")
-    try:
-        count = max(1, min(4, int(params.get("count") or 4)))
-    except (TypeError, ValueError):
-        count = 4
-    style = str(params.get("style") or "auto").strip() or "auto"
-
-    try:
-        import shutil
-        import uuid
-
-        from agent.pet.generate import generate_base_drafts
-        from agent.pet.generate.imagegen import GenerationError, resolve_provider
-
-        root = _pet_gen_root()
-        _pet_gen_sweep(root)
-
-        # Token up front so each draft can be staged + streamed the moment it
-        # lands, instead of the user staring at a blank grid until all N finish.
-        token = uuid.uuid4().hex[:12]
-        _pet_cancel_arm(token)
-        stage = root / token
-        stage.mkdir(parents=True, exist_ok=True)
-
-        reference_images = None
-        if ref_raw:
-            try:
-                reference_images = _pet_reference_images_from_data_url(ref_raw, stage)
-            except ValueError as exc:
-                _pet_cancel_release(token)
-                return _err(rid, 4004, str(exc))
-
-        # Optional desktop picker override: resolve the chosen provider up front so
-        # a bad/uncredentialed pick fails fast instead of mid-fan-out.
-        provider_name = str(params.get("provider") or "").strip()
-        sprite = None
-        if provider_name:
-            try:
-                sprite = resolve_provider(require_references=bool(reference_images), prefer=provider_name)
-            except GenerationError as exc:
-                _pet_cancel_release(token)
-                return _err(rid, 5031, str(exc))
-
-        concept = prompt or "a pet based on the reference image"
-        out: list[dict] = []
-
-        # Hand the token to the client up front (token-only init event) so a Stop
-        # fired before the first draft lands can still target this run.
-        try:
-            _emit("pet.generate.progress", "", {"token": token, "count": count})
-        except Exception as exc:  # noqa: BLE001 - streaming is best-effort
-            logger.debug("pet.generate init emit failed: %s", exc)
-
-        def _on_draft(index: int, src) -> None:
-            dest = stage / f"draft-{index}.png"
-            try:
-                shutil.copyfile(src, dest)
-                data_uri = _pet_png_data_uri(dest)
-            except Exception as exc:  # noqa: BLE001 - skip a bad draft, keep the rest
-                logger.debug("pet.generate draft %d failed: %s", index, exc)
-                return
-            out.append({"index": index, "dataUri": data_uri})
-            # Stream this draft to the client so the grid fills in live. Best-
-            # effort: a transport hiccup must not abort the generation itself.
-            try:
-                _emit(
-                    "pet.generate.progress",
-                    "",
-                    {"token": token, "index": index, "dataUri": data_uri, "count": count},
-                )
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("pet.generate progress emit failed: %s", exc)
-
-        try:
-            generate_base_drafts(
-                concept,
-                n=count,
-                style=style,
-                reference_images=reference_images,
-                provider=sprite,
-                on_draft=_on_draft,
-                is_cancelled=lambda: _pet_is_cancelled(token),
-            )
-        except GenerationError as exc:
-            _pet_cancel_release(token)
-            return _err(rid, 5031, str(exc))
-
-        cancelled = _pet_is_cancelled(token)
-        _pet_cancel_release(token)
-        if cancelled:
-            return _err(rid, 5031, "generation cancelled")
-        if not out:
-            return _err(rid, 5031, "generation produced no usable drafts")
-        out.sort(key=lambda d: d["index"])
-        return _ok(rid, {"ok": True, "token": token, "drafts": out})
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.generate failed: %s", exc)
-        return _err(rid, 5031, f"pet.generate failed: {exc}")
-
-
-@method("pet.hatch")
-def _(rid, params: dict) -> dict:
-    """Turn a chosen base draft into a full pet — installed but NOT yet active.
-
-    Generation is expensive and the result varies, so hatch produces a *preview*
-    the surface plays (all frames) before the user commits: the pet is written to
-    the store (so it can be rendered + later activated) but the active pet is left
-    untouched. Adopt with ``pet.select`` or throw it away with ``pet.remove``.
-
-    Params: ``token`` + ``index`` (from ``pet.generate``), ``name`` (required),
-    ``description`` (optional), ``prompt`` (optional concept for row prompts),
-    ``style`` (optional). Returns ``{ok, slug, displayName, warnings, pet}`` where
-    ``pet`` is the renderer payload. Heavy (network + raster): worker pool.
-    """
-    token = str(params.get("token") or "").strip()
-    # Hatch cancellation rides its own key, not the generation token: hatching a
-    # draft mid-generation means pet.generate is still releasing `token`, which
-    # would otherwise wipe the arm we set here. Falls back to `token` for clients
-    # that don't send one.
-    cancel_token = str(params.get("cancelToken") or "").strip() or token
-    index = params.get("index", 0)
-    name = str(params.get("name") or "").strip()
-    if not token:
-        return _err(rid, 4004, "missing token")
-    if not name:
-        return _err(rid, 4004, "missing name")
-    try:
-        index = int(index)
-    except (TypeError, ValueError):
-        index = 0
-
-    try:
-        from agent.pet import store
-        from agent.pet.generate import hatch_pet
-        from agent.pet.generate.imagegen import GenerationError, resolve_provider
-
-        base = _pet_gen_root() / token / f"draft-{index}.png"
-        if not base.is_file():
-            return _err(rid, 4004, "draft expired — generate again")
-
-        # Optional desktop picker override (rows always need reference grounding).
-        provider_name = str(params.get("provider") or "").strip()
-        sprite = None
-        if provider_name:
-            try:
-                sprite = resolve_provider(require_references=True, prefer=provider_name)
-            except GenerationError as exc:
-                return _err(rid, 5031, str(exc))
-
-        _pet_cancel_arm(cancel_token)
-        slug = store.unique_slug(name)
-
-        def _on_progress(event: str, detail: str) -> None:
-            # Row progress is encoded as "<state>:<done>:<total>" so the egg
-            # screen can show "Drawing <state>… (n/total)"; other phases
-            # (compose, save) pass through as-is. Best-effort streaming.
-            payload: dict = {"event": event, "detail": detail}
-            if event == "row" and detail.count(":") == 2:
-                state, done, total = detail.split(":")
-                payload = {"event": "row", "state": state, "done": done, "total": total}
-            try:
-                _emit("pet.hatch.progress", "", payload)
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("pet.hatch progress emit failed: %s", exc)
-
-        try:
-            result = hatch_pet(
-                base_image=base,
-                slug=slug,
-                display_name=name,
-                description=str(params.get("description") or ""),
-                concept=str(params.get("prompt") or name),
-                style=str(params.get("style") or "auto").strip() or "auto",
-                provider=sprite,
-                on_progress=_on_progress,
-                is_cancelled=lambda: _pet_is_cancelled(cancel_token),
-            )
-        except GenerationError as exc:
-            return _err(rid, 5031, str(exc))
-        finally:
-            _pet_cancel_release(cancel_token)
-
-        pet = store.load_pet(result.slug)
-        payload = _pet_sprite_payload(pet, scale=_pet_config_scale()) if pet else {}
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "slug": result.slug,
-                "displayName": result.display_name,
-                "warnings": result.validation.get("warnings", []),
-                "pet": payload,
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.debug("pet.hatch failed: %s", exc)
-        return _err(rid, 5031, f"pet.hatch failed: {exc}")
-
-
-# ===========================================================================
-# Phase 2b Remote Spending RPC methods
-# ===========================================================================
-#
-# These return STRUCTURED success envelopes (result.ok / result.error) rather
-# than JSON-RPC-level errors, so the TUI's rpc() promise always resolves and the
-# Ink side can branch on the typed billing error code (insufficient_scope,
-# rate_limited, no_payment_method, …) to render the right affordance instead of
-# landing in a generic catch. The data-building lives in the shared core
-# (agent/billing_view.py + opencodon_cli/nous_billing.py) — same as /topup.
-
-
-def _serialize_billing_error(exc) -> dict:
-    """Map a BillingError into the result.error envelope the TUI branches on."""
-    from opencodon_cli.nous_billing import (
-        BillingRemoteSpendingRevoked,
-        BillingScopeRequired,
-        BillingSessionRevoked,
-        BillingTransient,
-    )
-
-    kind = "error"
-    if isinstance(exc, BillingRemoteSpendingRevoked):
-        kind = "remote_spending_revoked"
-    elif isinstance(exc, BillingSessionRevoked):
-        kind = "session_revoked"
-    elif isinstance(exc, BillingScopeRequired):
-        kind = "insufficient_scope"
-    elif isinstance(exc, BillingTransient):
-        kind = str(exc.error) if getattr(exc, "error", None) else "rate_limited"
-    elif getattr(exc, "error", None):
-        kind = str(exc.error)
-    return {
-        "ok": False,
-        "error": kind,
-        "message": str(exc),
-        "portal_url": getattr(exc, "portal_url", None),
-        "retry_after": getattr(exc, "retry_after", None),
-        "payload": getattr(exc, "payload", {}) or {},
-        # Remote-Spending contract extras (threaded so the TUI can render
-        # actor-aware copy + route recovery without re-parsing the message).
-        "actor": getattr(exc, "actor", None),
-        "code": getattr(exc, "code", None),
-        "recovery": getattr(exc, "recovery", None),
-    }
-
-
-def _serialize_billing_state(state) -> dict:
-    """Serialize a BillingState for the wire (Decimals → strings, money-safe)."""
-    from agent.billing_view import format_money
-
-    def _s(value):
-        return None if value is None else str(value)
-
-    card = None
-    if state.card is not None:
-        card = {
-            "brand": state.card.brand,
-            "last4": state.card.last4,
-            "masked": state.card.masked,
-            # Post-card-resolver fields (None/False on older NAS payloads):
-            # display = "Visa ····4242 — the card on your subscription";
-            # resolved_via = the raw resolution rung, for rung-gated surfaces
-            # (the /subscription confirm only shows the card when the rung
-            # matches what a subscription charge would use).
-            "display": state.card.display,
-            "resolved_via": state.card.resolved_via,
-        }
-    monthly_cap = None
-    if state.monthly_cap is not None:
-        mc = state.monthly_cap
-        monthly_cap = {
-            "limit_usd": _s(mc.limit_usd),
-            "limit_display": format_money(mc.limit_usd),
-            "spent_this_month_usd": _s(mc.spent_this_month_usd),
-            "spent_display": format_money(mc.spent_this_month_usd),
-            "is_default_ceiling": mc.is_default_ceiling,
-        }
-    auto_reload = None
-    if state.auto_reload is not None:
-        ar = state.auto_reload
-        card_out = None
-        if ar.card is not None:
-            if ar.card.kind == "distinct":
-                card_out = {
-                    "kind": "distinct",
-                    "payment_method_id": ar.card.payment_method_id,
-                    "brand": ar.card.brand,
-                    "last4": ar.card.last4,
-                }
-            else:
-                card_out = {"kind": ar.card.kind}
-        auto_reload = {
-            "enabled": ar.enabled,
-            "threshold_usd": _s(ar.threshold_usd),
-            "threshold_display": format_money(ar.threshold_usd),
-            "reload_to_usd": _s(ar.reload_to_usd),
-            "reload_to_display": format_money(ar.reload_to_usd),
-            "card": card_out,
-        }
-    return {
-        "ok": True,
-        "logged_in": state.logged_in,
-        "org_name": state.org_name,
-        "org_slug": state.org_slug,
-        "role": state.role,
-        "is_admin": state.is_admin,
-        "can_change_plan": state.can_change_plan,
-        "can_charge": state.can_charge,
-        "balance_usd": _s(state.balance_usd),
-        "balance_display": format_money(state.balance_usd),
-        "cli_billing_enabled": state.cli_billing_enabled,
-        "charge_presets": [_s(p) for p in state.charge_presets],
-        "charge_presets_display": [format_money(p) for p in state.charge_presets],
-        "min_usd": _s(state.min_usd),
-        "max_usd": _s(state.max_usd),
-        "card": card,
-        "monthly_cap": monthly_cap,
-        "auto_reload": auto_reload,
-        "portal_url": state.portal_url,
-        "error": state.error,
-        # Shared dollar usage model (two-bar view) embedded so /topup renders the
-        # same plan + top-up bars as /usage and /subscription from its single
-        # fetch. Built from the separate account-info path; fail-open when logged
-        # out or the portal is down.
-        "usage": _usage_payload(state),
-    }
-
-
-def _usage_payload(state) -> dict:
-    """Best-effort shared usage model for the /topup + /subscription overlay bars.
-
-    Only fetched when logged in; fail-open to {available:false} so the overview
-    still renders if the account-info path is down.
-    """
-    if not getattr(state, "logged_in", False):
-        return {"available": False}
-    try:
-        from agent.billing_usage import build_usage_model
-
-        return _serialize_usage_model(build_usage_model())
-    except Exception:
-        return {"available": False}
-
-
-@method("billing.state")
-def _(rid, params: dict) -> dict:
-    """GET /api/billing/state → serialized BillingState (Screen 1 + 5).
-
-    Fail-open like the other billing RPCs: a logged-out / unreachable portal yields
-    {ok:true, logged_in:false}. No scope required for this endpoint.
-    """
-    try:
-        from agent.billing_view import build_billing_state
-
-        state = build_billing_state()
-        return _ok(rid, _serialize_billing_state(state))
-    except Exception:
-        return _ok(rid, {"ok": True, "logged_in": False, "error": "could not load billing state"})
-
-
-def _serialize_usage_bar(bar) -> Optional[dict]:
-    """Serialize a UsageBar (dollar magnitudes → display strings + fractions)."""
-    if bar is None:
-        return None
-    from agent.billing_usage import _fmt_usd
-
-    return {
-        "kind": bar.kind,
-        "remaining_display": _fmt_usd(bar.remaining_usd),
-        "total_display": _fmt_usd(bar.total_usd),
-        "spent_display": _fmt_usd(bar.spent_usd),
-        "pct_used": bar.pct_used,
-        "fill_fraction": bar.fill_fraction,
-    }
-
-
-def _serialize_usage_model(model) -> dict:
-    """Serialize a UsageModel for the wire — the shared two-bar dollar view.
-
-    Dollars-only (no 'credits'); fail-open shape mirrors the other billing RPCs
-    ({ok, available:false} when logged out / unreachable).
-    """
-    from agent.billing_usage import _fmt_usd, format_renews
-
-    if model is None or not getattr(model, "available", False):
-        return {"ok": True, "available": False}
-
-    return {
-        "ok": True,
-        "available": True,
-        "status": model.status,
-        "plan_name": model.plan_name,
-        "renews_at": model.renews_at,
-        "renews_display": getattr(model, "renews_display", None) or format_renews(model.renews_at),
-        "subscription_remaining_display": (
-            None if model.subscription_remaining_usd is None else _fmt_usd(model.subscription_remaining_usd)
-        ),
-        "topup_remaining_display": (
-            None if model.topup_remaining_usd is None else _fmt_usd(model.topup_remaining_usd)
-        ),
-        "total_spendable_display": (
-            None if model.total_spendable_usd is None else _fmt_usd(model.total_spendable_usd)
-        ),
-        "has_topup": model.has_topup,
-        "plan_bar": _serialize_usage_bar(model.plan_bar),
-        "topup_bar": _serialize_usage_bar(model.topup_bar),
-    }
-
-
-@method("usage.bars")
-def _(rid, params: dict) -> dict:
-    """Shared dollar usage model (two-bar view) for /usage + /subscription.
-
-    Fail-open: logged-out / unreachable portal → {ok:true, available:false}.
-    No scope required (read-only).
-    """
-    try:
-        from agent.billing_usage import build_usage_model
-
-        return _ok(rid, _serialize_usage_model(build_usage_model()))
-    except Exception:
-        return _ok(rid, {"ok": True, "available": False})
-
-
-def _serialize_subscription_state(state) -> dict:
-    """Serialize a SubscriptionState for the wire (Decimals → strings)."""
-    from agent.billing_usage import format_renews
-    from agent.billing_view import format_money
-
-    def _s(value):
-        return None if value is None else str(value)
-
-    current = None
-    if state.current is not None:
-        c = state.current
-        current = {
-            "tier_id": c.tier_id,
-            "tier_name": c.tier_name,
-            "monthly_credits": _s(c.monthly_credits),
-            "credits_remaining": _s(c.credits_remaining),
-            "cycle_ends_at": c.cycle_ends_at,
-            "pending_downgrade_tier_name": c.pending_downgrade_tier_name,
-            "pending_downgrade_at": c.pending_downgrade_at,
-            "pending_downgrade_display": format_renews(c.pending_downgrade_at),
-            "cancel_at_period_end": c.cancel_at_period_end,
-            "cancellation_effective_at": c.cancellation_effective_at,
-            "cancellation_effective_display": format_renews(c.cancellation_effective_at),
-        }
-    # Selectable catalog for the in-terminal tier picker; price is pre-formatted
-    # ($X / $X.YY) so the TUI renders it directly.
-    tiers = [
-        {
-            "tier_id": t.tier_id,
-            "name": t.name,
-            "tier_order": t.tier_order,
-            "dollars_per_month_display": format_money(t.dollars_per_month),
-            "monthly_credits": _s(t.monthly_credits),
-            "is_current": t.is_current,
-            "is_enabled": t.is_enabled,
-        }
-        for t in state.tiers
-    ]
-    return {
-        "ok": True,
-        "logged_in": state.logged_in,
-        "is_admin": state.is_admin,
-        "can_change_plan": state.can_change_plan,
-        "org_name": state.org_name,
-        "org_id": state.org_id,
-        "role": state.role,
-        "context": state.context,
-        "current": current,
-        "tiers": tiers,
-        "portal_url": state.portal_url,
-        "error": state.error,
-        # Shared dollar usage model (two-bar view) embedded so /subscription
-        # renders the same bars as /usage from its single fetch. Built from the
-        # separate account-info path (the only source with top-up dollars);
-        # fail-open → {available:false}. Computed lazily so a logged-out state
-        # adds no cost.
-        "usage": _usage_payload(state),
-    }
-
-
-@method("subscription.state")
-def _(rid, params: dict) -> dict:
-    """GET /api/billing/subscription → serialized SubscriptionState.
-
-    Fail-open like billing.state: logged-out / unreachable portal →
-    {ok:true, logged_in:false}. No scope required (read-only).
-    """
-    try:
-        from agent.subscription_view import build_subscription_state
-
-        state = build_subscription_state()
-        return _ok(rid, _serialize_subscription_state(state))
-    except Exception:
-        return _ok(rid, {"ok": True, "logged_in": False, "error": "could not load subscription state"})
-
-
-def _serialize_subscription_preview(p) -> dict:
-    """Serialize a SubscriptionChangePreview for the wire (Decimal → string)."""
-    return {
-        "ok": True,
-        "effect": p.effect,
-        "reason": p.reason,
-        "current_tier_id": p.current_tier_id,
-        "current_tier_name": p.current_tier_name,
-        "target_tier_id": p.target_tier_id,
-        "target_tier_name": p.target_tier_name,
-        "monthly_credits_delta": (
-            None if p.monthly_credits_delta is None else str(p.monthly_credits_delta)
-        ),
-        "amount_due_now_cents": p.amount_due_now_cents,
-        "effective_at": p.effective_at,
-    }
-
-
-@method("subscription.preview")
-def _(rid, params: dict) -> dict:
-    """POST /api/billing/subscription/preview → serialized quote or typed error.
-
-    params: {subscription_type_id: str}. Chargeless effect quote. Requires
-    billing:manage (live Stripe calls + amounts), so a 403 → insufficient_scope
-    drives the device step-up exactly like the mutations.
-    """
-    from agent.subscription_view import subscription_change_preview_from_payload
-    from opencodon_cli.nous_billing import BillingError, post_subscription_preview
-
-    tier_id = params.get("subscription_type_id")
-    if not tier_id:
-        return _ok(rid, {"ok": False, "error": "invalid_request", "message": "subscription_type_id is required"})
-    try:
-        preview = subscription_change_preview_from_payload(
-            post_subscription_preview(subscription_type_id=tier_id)
-        )
-        return _ok(rid, _serialize_subscription_preview(preview))
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("subscription.change")
-def _(rid, params: dict) -> dict:
-    """PUT /api/billing/subscription/pending-change → {ok, message} or typed error.
-
-    params: {subscription_type_id?: str, cancel?: bool}. Schedules a downgrade /
-    same-price change OR a cancellation at period end (chargeless). Requires
-    billing:manage.
-    """
-    from opencodon_cli.nous_billing import BillingError, put_subscription_pending_change
-
-    cancel = bool(params.get("cancel"))
-    tier_id = params.get("subscription_type_id")
-    if not cancel and not tier_id:
-        return _ok(rid, {"ok": False, "error": "invalid_request", "message": "subscription_type_id or cancel is required"})
-    try:
-        result = put_subscription_pending_change(subscription_type_id=tier_id, cancel=cancel)
-        return _ok(rid, {"ok": True, "message": result.get("message"), "payload": result})
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("subscription.resume")
-def _(rid, params: dict) -> dict:
-    """DELETE /api/billing/subscription/pending-change → {ok, message} or typed error.
-
-    Clears a scheduled downgrade or cancellation (resume / undo). Chargeless, but it
-    re-enables recurring spend → requires billing:manage and honors the kill-switch.
-    """
-    from opencodon_cli.nous_billing import BillingError, delete_subscription_pending_change
-
-    try:
-        result = delete_subscription_pending_change()
-        return _ok(rid, {"ok": True, "message": result.get("message"), "payload": result})
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("subscription.upgrade")
-def _(rid, params: dict) -> dict:
-    """POST /api/billing/subscription/upgrade → {ok, status, ...} or typed error.
-
-    params: {subscription_type_id: str, idempotency_key?: str}. The single money
-    route: prorate + charge the card on the subscription + flip the plan. SCA /
-    decline come back as status requires_action / payment_failed with a recovery_url
-    to finish in the portal. The idempotency key is minted if absent and echoed so
-    the TUI reuses it on retry of the SAME upgrade. Requires billing:manage.
-    """
-    from agent.billing_view import new_idempotency_key
-    from opencodon_cli.nous_billing import BillingError, post_subscription_upgrade
-
-    tier_id = params.get("subscription_type_id")
-    if not tier_id:
-        return _ok(rid, {"ok": False, "error": "invalid_request", "message": "subscription_type_id is required"})
-    key = params.get("idempotency_key") or new_idempotency_key()
-    try:
-        result = post_subscription_upgrade(subscription_type_id=tier_id, idempotency_key=key)
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "status": result.get("status"),
-                "target_tier_name": result.get("targetTierName"),
-                "recovery_url": result.get("recoveryUrl"),
-                "reason": result.get("reason"),
-                "idempotency_key": key,
-            },
-        )
-    except BillingError as exc:
-        env = _serialize_billing_error(exc)
-        env["idempotency_key"] = key  # so the TUI can reuse on retry
-        return _ok(rid, env)
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc), "idempotency_key": key})
-
-
-
-@method("billing.charge")
-def _(rid, params: dict) -> dict:
-    """POST /api/billing/charge → {ok, chargeId} or a typed error envelope.
-
-    params: {amount_usd: str|number, idempotency_key?: str}. If no key is
-    supplied, the server-side core mints a fresh one and returns it so the TUI can
-    reuse it on retry of the SAME purchase.
-    """
-    from opencodon_cli.nous_billing import BillingError, post_charge
-    from agent.billing_view import new_idempotency_key
-
-    amount = params.get("amount_usd")
-    if amount is None:
-        return _ok(rid, {"ok": False, "error": "invalid_request", "message": "amount_usd is required"})
-    key = params.get("idempotency_key") or new_idempotency_key()
-    try:
-        result = post_charge(amount_usd=amount, idempotency_key=key)
-        return _ok(rid, {"ok": True, "charge_id": result.get("chargeId"), "idempotency_key": key})
-    except BillingError as exc:
-        env = _serialize_billing_error(exc)
-        env["idempotency_key"] = key  # so the TUI can reuse on retry
-        return _ok(rid, env)
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc), "idempotency_key": key})
-
-
-@method("billing.charge_status")
-def _(rid, params: dict) -> dict:
-    """GET /api/billing/charge/{id} → {ok, status, ...} or typed error.
-
-    The poll. Caller drives the 2s/5-min cadence; this is a single status read.
-    """
-    from opencodon_cli.nous_billing import BillingError, get_charge_status
-
-    charge_id = params.get("charge_id")
-    if not charge_id:
-        return _ok(rid, {"ok": False, "error": "invalid_charge_id", "message": "charge_id is required"})
-    try:
-        result = get_charge_status(charge_id)
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "status": result.get("status"),
-                "amount_usd": result.get("amountUsd"),
-                "settled_at": result.get("settledAt"),
-                "reason": result.get("reason"),
-            },
-        )
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("billing.auto_reload")
-def _(rid, params: dict) -> dict:
-    """PATCH /api/billing/auto-top-up → {ok:true} or typed error (Screen 2).
-
-    params: {enabled: bool, threshold: number, top_up_amount: number}.
-    """
-    from opencodon_cli.nous_billing import BillingError, patch_auto_top_up
-
-    try:
-        enabled = bool(params.get("enabled"))
-        threshold = params.get("threshold")
-        top_up_amount = params.get("top_up_amount")
-        if threshold is None or top_up_amount is None:
-            return _ok(rid, {"ok": False, "error": "invalid_request", "message": "threshold and top_up_amount are required"})
-        patch_auto_top_up(enabled=enabled, threshold=threshold, top_up_amount=top_up_amount)
-        return _ok(rid, {"ok": True})
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("billing.step_up")
-def _(rid, params: dict) -> dict:
-    """Run the lazy billing:manage step-up device flow → {ok, granted}.
-
-    Triggered by the TUI after a billing call returns error=insufficient_scope.
-    Returns granted:false when the server silently downscopes (non-admin / unticked).
-
-    Runs on the thread pool (in _LONG_HANDLERS): the device flow blocks for the
-    whole device-code lifetime (minutes), so it must not stall the main stdin loop.
-    The verification URL/code reach the TUI via an out-of-band ``billing.step_up.
-    verification`` event (a plain print would be dropped by the JSON-RPC stdout
-    pipe), and the browser is opened TUI-side via openExternalUrl — never with the
-    gateway's headless webbrowser.open (hence open_browser=False).
-    """
-    sid = params.get("session_id") or ""
-    try:
-        from opencodon_cli.auth import step_up_nous_billing_scope
-        from opencodon_cli.nous_billing import BillingError
-
-        def _on_verification(url: str, code: str) -> None:
-            _emit(
-                "billing.step_up.verification",
-                sid,
-                {"verification_url": url, "user_code": code},
-            )
-
-        granted = step_up_nous_billing_scope(
-            open_browser=False, on_verification=_on_verification
-        )
-        return _ok(rid, {"ok": True, "granted": bool(granted)})
-    except BillingError as exc:
-        # Route typed billing errors (e.g. session_revoked when the token expires
-        # mid-device-flow) through the shared spine like the other write handlers,
-        # so the TUI maps them to the right copy instead of a generic failure.
-        env = _serialize_billing_error(exc)
-        env["granted"] = False
-        return _ok(rid, env)
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc), "granted": False})
 
 
 @method("session.status")
@@ -9342,7 +7752,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, result)
 
     agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the Hermes profile home
+    # Mirror the classic CLI /save: snapshot under the opencodon profile home
     # (~/.opencodon/sessions/saved/) rather than the project/workspace CWD, and
     # include the system prompt so the export matches the dashboard save.
     saved_dir = get_opencodon_home() / "sessions" / "saved"
@@ -9352,7 +7762,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5011, f"failed to create save directory {saved_dir}: {e}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = saved_dir / f"hermes_conversation_{timestamp}.json"
+    path = saved_dir / f"opencodon_conversation_{timestamp}.json"
 
     with session["history_lock"]:
         messages = list(session.get("history", []))
@@ -12714,8 +11124,8 @@ def _discover_repos_payload(
     """Merge filesystem-scanned repos (cached) with session-derived repo roots.
 
     Repo-first: the disk scan (persisted by `projects.record_repos`) surfaces
-    repos even with zero hermes sessions. Session-derived roots cover repos
-    outside the scan roots. Both are junk-filtered (hermes home subtree + bare
+    repos even with zero opencodon sessions. Session-derived roots cover repos
+    outside the scan roots. Both are junk-filtered (opencodon home subtree + bare
     home) and carry their session totals for the overview.
 
     ``conn`` reuses an already-open projects.db connection (the tree path holds
@@ -13810,7 +12220,7 @@ def _(rid, params: dict) -> dict:
             cwd=os.getcwd(),
             # cli.exec runs `python -m opencodon_cli.main` (can drive the agent) →
             # needs provider credentials. Tier-1 secrets still stripped (#29157).
-            env=hermes_subprocess_env(inherit_credentials=True),
+            env=opencodon_subprocess_env(inherit_credentials=True),
             stdin=subprocess.DEVNULL,
         )
         parts = [r.stdout or "", r.stderr or ""]
@@ -16706,7 +15116,7 @@ def _(rid, params: dict) -> dict:
 
     Returns ``frames`` (reveal 0→1) plus static legend/summary/bucket metadata,
     so Ink can render and walk the tree locally without round-tripping the
-    gateway. Shares its renderer with the ``hermes journey`` CLI.
+    gateway. Shares its renderer with the ``opencodon journey`` CLI.
     """
     try:
         cols = int(params.get("cols", 80) or 80)
@@ -16846,7 +15256,7 @@ def _(rid, params: dict) -> dict:
     """List installed plugins with activation state, or toggle one on/off.
 
     Backs the TUI Plugins Hub. Uses the same disk-discovery + enable/disable
-    primitives as ``hermes plugins`` / the dashboard, so the three surfaces
+    primitives as ``opencodon plugins`` / the dashboard, so the three surfaces
     agree on what's installed and what's enabled.
 
     Actions:

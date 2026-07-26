@@ -3,38 +3,38 @@ import importlib
 import os
 import sys
 
-from opencodon_cli.env_loader import load_hermes_dotenv
+from opencodon_cli.env_loader import load_opencodon_dotenv
 
 
 def test_user_env_overrides_stale_shell_values(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     env_file.write_text("OPENAI_BASE_URL=https://new.example/v1\n", encoding="utf-8")
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENAI_BASE_URL") == "https://new.example/v1"
 
 
 def test_project_env_overrides_stale_shell_values_when_user_env_missing(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     project_env = tmp_path / ".env"
     project_env.write_text("OPENAI_BASE_URL=https://project.example/v1\n", encoding="utf-8")
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
 
-    loaded = load_hermes_dotenv(opencodon_home=home, project_env=project_env)
+    loaded = load_opencodon_dotenv(opencodon_home=home, project_env=project_env)
 
     assert loaded == [project_env]
     assert os.getenv("OPENAI_BASE_URL") == "https://project.example/v1"
 
 
 def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     project_env = tmp_path / ".env"
     project_env.write_text(
         "TELEGRAM_BOT_TOKEN=0123456789:test"
@@ -45,7 +45,7 @@ def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home, project_env=project_env)
+    loaded = load_opencodon_dotenv(opencodon_home=home, project_env=project_env)
 
     assert loaded == [project_env]
     assert os.getenv("TELEGRAM_BOT_TOKEN") == "0123456789:test"
@@ -53,7 +53,7 @@ def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
 
 
 def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     user_env = home / ".env"
     project_env = tmp_path / ".env"
@@ -63,7 +63,7 @@ def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home, project_env=project_env)
+    loaded = load_opencodon_dotenv(opencodon_home=home, project_env=project_env)
 
     assert loaded == [user_env, project_env]
     assert os.getenv("OPENAI_BASE_URL") == "https://user.example/v1"
@@ -71,7 +71,7 @@ def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
 
 
 def test_null_bytes_in_user_env_are_stripped(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     # Null bytes can be introduced when copy-pasting API keys.
@@ -80,7 +80,7 @@ def test_null_bytes_in_user_env_are_stripped(tmp_path, monkeypatch):
     monkeypatch.delenv("GLM_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("GLM_API_KEY") == "abc"
@@ -88,7 +88,7 @@ def test_null_bytes_in_user_env_are_stripped(tmp_path, monkeypatch):
 
 
 def test_main_import_applies_user_env_over_shell_values(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     (home / ".env").write_text(
         "OPENAI_BASE_URL=https://new.example/v1\nOPENCODON_INFERENCE_PROVIDER=custom\n",
@@ -130,7 +130,7 @@ def _assert_clean_utf8_env_on_disk(env_file, *, first_key: str) -> None:
 
 def test_utf16_le_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
     """Notepad 'Unicode' (UTF-16-LE + BOM): first key loads; file rewritten UTF-8."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     content = "OPENCODON_TEST_KEY=hello_utf16\nSECOND_KEY=world\n"
@@ -140,7 +140,7 @@ def test_utf16_le_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
     monkeypatch.delenv("SECOND_KEY", raising=False)
     monkeypatch.delenv("\ufffd\ufffdOPENCODON_TEST_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENCODON_TEST_KEY") == "hello_utf16"
@@ -151,7 +151,7 @@ def test_utf16_le_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
 
 def test_utf16_be_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
     """UTF-16-BE + BOM: first key loads; file rewritten as clean UTF-8."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     content = "OPENCODON_TEST_KEY=hello_utf16\nSECOND_KEY=world\n"
@@ -160,7 +160,7 @@ def test_utf16_be_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENCODON_TEST_KEY", raising=False)
     monkeypatch.delenv("SECOND_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENCODON_TEST_KEY") == "hello_utf16"
@@ -170,7 +170,7 @@ def test_utf16_be_bom_env_loads_and_rewrites_clean_utf8(tmp_path, monkeypatch):
 
 def test_utf16_le_no_bom_still_repairs_to_utf8(tmp_path, monkeypatch):
     """BOM-less UTF-16-LE: NUL-strip repair is now intentional; rewrites UTF-8."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     content = "OPENCODON_TEST_KEY=hello_utf16\nSECOND_KEY=world\n"
@@ -179,7 +179,7 @@ def test_utf16_le_no_bom_still_repairs_to_utf8(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENCODON_TEST_KEY", raising=False)
     monkeypatch.delenv("SECOND_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENCODON_TEST_KEY") == "hello_utf16"
@@ -189,7 +189,7 @@ def test_utf16_le_no_bom_still_repairs_to_utf8(tmp_path, monkeypatch):
 
 def test_utf16_be_no_bom_still_repairs_to_utf8(tmp_path, monkeypatch):
     """BOM-less UTF-16-BE: NULs are on the opposite side; still repairs."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     content = "OPENCODON_TEST_KEY=hello_utf16\nSECOND_KEY=world\n"
@@ -198,7 +198,7 @@ def test_utf16_be_no_bom_still_repairs_to_utf8(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENCODON_TEST_KEY", raising=False)
     monkeypatch.delenv("SECOND_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENCODON_TEST_KEY") == "hello_utf16"
@@ -212,7 +212,7 @@ def test_utf16_le_bom_preserves_non_ascii_values(tmp_path, monkeypatch):
     Uses non-credential var names so _sanitize_loaded_credentials does not
     strip non-ASCII from values (that path only targets *_KEY/*_TOKEN/etc.).
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     content = "GREETING=café\nCJK_LABEL=日本語\n"
@@ -221,7 +221,7 @@ def test_utf16_le_bom_preserves_non_ascii_values(tmp_path, monkeypatch):
     monkeypatch.delenv("GREETING", raising=False)
     monkeypatch.delenv("CJK_LABEL", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("GREETING") == "café"
@@ -325,7 +325,7 @@ def test_leading_replacement_char_does_not_rewrite(tmp_path):
 
 def test_plain_utf8_env_regression(tmp_path, monkeypatch):
     """Plain UTF-8 .env must keep loading after the UTF-16 sanitize changes."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     before = b"OPENAI_API_KEY=sk-plain\nSECOND_KEY=ok\n"
@@ -334,7 +334,7 @@ def test_plain_utf8_env_regression(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("SECOND_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENAI_API_KEY") == "sk-plain"
@@ -353,7 +353,7 @@ def test_cp1252_env_regression_does_not_crash(tmp_path, monkeypatch):
     errors=replace on values (original already replace-decoded equals
     sanitized), so _load_dotenv_with_fallback's latin-1 path recovers café.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     env_file = home / ".env"
     before = b"ASCII_KEY=ok\nLATIN1_VALUE=caf\xe9\n"
@@ -362,7 +362,7 @@ def test_cp1252_env_regression_does_not_crash(tmp_path, monkeypatch):
     monkeypatch.delenv("ASCII_KEY", raising=False)
     monkeypatch.delenv("LATIN1_VALUE", raising=False)
 
-    loaded = load_hermes_dotenv(opencodon_home=home)
+    loaded = load_opencodon_dotenv(opencodon_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("ASCII_KEY") == "ok"

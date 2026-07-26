@@ -26,7 +26,7 @@ try:
     import opencodon_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     # Graceful fallback when opencodon_bootstrap isn't registered in the venv
-    # yet — happens during partial ``hermes update`` where git-reset landed
+    # yet — happens during partial ``opencodon update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -69,7 +69,7 @@ def _launch_cwd_for_session(source: str) -> Optional[str]:
     """Working directory to stamp on a new session row, or None.
 
     Only local CLI sessions get a recorded cwd: the directory the process was
-    launched from is meaningful for ``hermes -c`` / ``--resume`` (relaunch
+    launched from is meaningful for ``opencodon -c`` / ``--resume`` (relaunch
     where you left off). Gateway/cron/remote-backend sessions have no stable
     host cwd to restore, so they record nothing.
 
@@ -116,7 +116,7 @@ from agent.process_bootstrap import (
 from agent.iteration_budget import IterationBudget
 
 
-from opencodon_cli.env_loader import load_hermes_dotenv
+from opencodon_cli.env_loader import load_opencodon_dotenv
 from opencodon_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
@@ -124,7 +124,7 @@ from opencodon_cli.timeouts import (
 
 _opencodon_home = get_opencodon_home()
 _project_env = Path(__file__).parent / '.env'
-_loaded_env_paths = load_hermes_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
+_loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
         logger.info("Loaded environment variables from %s", _env_path)
@@ -165,7 +165,6 @@ from agent.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock
     build_skills_system_prompt,
     build_context_files_prompt,
     build_environment_hints,
-    build_nous_subscription_prompt,
     load_soul_md,
 )
 from agent.process_bootstrap import _get_proxy_from_env  # noqa: F401
@@ -291,7 +290,7 @@ def _routermint_headers() -> dict:
     from opencodon_cli import __version__ as _OPENCODON_VERSION
 
     return {
-        "User-Agent": f"HermesAgent/{_OPENCODON_VERSION}",
+        "User-Agent": f"OpencodonAgent/{_OPENCODON_VERSION}",
     }
 
 
@@ -406,7 +405,7 @@ class AIAgent:
     """
 
     _TOOL_CALL_ARGUMENTS_CORRUPTION_MARKER = (
-        "[hermes-agent: tool call arguments were corrupted in this session and "
+        "[opencodon: tool call arguments were corrupted in this session and "
         "have been dropped to keep the conversation alive. See issue #15236.]"
     )
 
@@ -847,7 +846,7 @@ class AIAgent:
         all non-forced output is suppressed.
 
         ``suppress_status_output`` is a stricter CLI automation mode used by
-        parseable single-query flows such as ``hermes chat -q``. In that mode,
+        parseable single-query flows such as ``opencodon chat -q``. In that mode,
         all status/diagnostic prints routed through ``_vprint`` are suppressed
         so stdout stays machine-readable.
         """
@@ -1350,7 +1349,7 @@ class AIAgent:
         This helper substitutes an actionable hint into the stale-timeout
         warning when the request matches a known silent-reject pattern.
         Currently flagged: ``gpt-5.5`` family on the Codex backend.  See
-        hermes-agent #21444 for the symptom history.  The upstream backend
+        opencodon #21444 for the symptom history.  The upstream backend
         behavior has historically come and gone with ChatGPT entitlement
         changes — the heuristic stays in place as future-proofing even when
         the symptom is dormant.
@@ -1386,7 +1385,7 @@ class AIAgent:
             "Workaround: try `gpt-5.4` on the same OAuth profile, or `gpt-5.3-codex`, "
             "or switch to a different model/provider in your fallback chain. "
             "Some ChatGPT Codex accounts do not support `gpt-5.4-codex`. "
-            "See hermes-agent#21444 for symptom history."
+            "See opencodon#21444 for symptom history."
         )
 
     def _is_openrouter_url(self) -> bool:
@@ -1435,10 +1434,6 @@ class AIAgent:
     ) -> bool:
         """Return True when this provider/model pair should use Responses API."""
         normalized_provider = (provider or "").strip().lower()
-        # Nous serves GPT-5.x models via its OpenAI-compatible chat
-        # completions endpoint; its /v1/responses endpoint returns 404.
-        if normalized_provider == "nous":
-            return False
         if normalized_provider == "custom":
             # Generic custom endpoints are conservative by default. They may
             # relay GPT-5 models without full Responses semantics, so only
@@ -2191,7 +2186,7 @@ class AIAgent:
         That body covers several real causes we cannot distinguish without
         more info from xAI.  The most common (and least obvious) one is
         that **X Premium+ does NOT include API access** — only standalone
-        SuperGrok subscribers can use Hermes against xai-oauth.  Lots of
+        SuperGrok subscribers can use opencodon against xai-oauth.  Lots of
         users see Grok in their X app, assume it works here too, and hit
         this 403 with no idea why.  Lead the hint with that.
 
@@ -2823,7 +2818,7 @@ class AIAgent:
             self._pending_redirect = None
 
         # Codex app-server owns its model/tool loop and watches a private
-        # interrupt event rather than Hermes' per-thread flag.
+        # interrupt event rather than opencodon' per-thread flag.
         if getattr(self, "api_mode", None) == "codex_app_server":
             _codex_session = getattr(self, "_codex_session", None)
             _request_interrupt = getattr(_codex_session, "request_interrupt", None)
@@ -2980,7 +2975,7 @@ class AIAgent:
     def redirect(self, text: str) -> bool:
         """Redirect the active turn without converting it into a new task.
 
-        During a normal Hermes model request this cancels only that request;
+        During a normal opencodon model request this cancels only that request;
         the conversation loop retains completed messages/tool results, records
         the displayed partial reasoning as plain assistant context, appends the
         correction as a real user message, and retries. During tool execution
@@ -3414,157 +3409,6 @@ class AIAgent:
     def get_rate_limit_state(self):
         """Return the last captured RateLimitState, or None."""
         return self._rate_limit_state
-
-    def _capture_credits(self, http_response: Any) -> None:
-        """Parse x-nous-credits-* headers, cache CreditsState, fire threshold notices.
-
-        Fail-open throughout — header issues never break the agent loop. The PARSE is
-        swallowed (any error → treated as a miss → keep last-known). The notice
-        EVALUATION/EMIT is a SEPARATE block that WARNS on failure (R1-M2): a bug in the
-        depletion-notice path must not vanish silently under the parse swallow.
-        """
-        # Dev test fixture (OPENCODON_DEV_CREDITS_FIXTURE): inject a chosen notice state
-        # each turn for repeatable testing, bypassing real headers. Throwaway scaffolding.
-        try:
-            from agent.credits_tracker import dev_fixture_credits_state
-            _fixture = dev_fixture_credits_state()
-        except Exception:
-            _fixture = None
-        if _fixture is not None:
-            self._credits_state = _fixture
-            if self._credits_session_start_micros is None:
-                self._credits_session_start_micros = _fixture.remaining_micros
-            _latch = getattr(self, "_credits_latch", None)
-            if isinstance(_latch, dict):
-                _latch["seen_below_90"] = True  # let warn90 fire without a real crossing
-            _used = _fixture.used_fraction
-            logger.info(
-                "credits ▸ [FIXTURE] remaining=%d (%s) · paid=%s · denom=%s · used=%s "
-                "(real headers bypassed — `echo clear` / unset OPENCODON_DEV_CREDITS_FIXTURE to restore)",
-                _fixture.remaining_micros,
-                _fixture.remaining_usd or "?",
-                _fixture.paid_access,
-                _fixture.denominator_kind,
-                ("%.0f%%" % (_used * 100)) if _used is not None else "n/a",
-            )
-            self._emit_credits_notices()
-            return
-        if http_response is None:
-            return
-        headers = getattr(http_response, "headers", None)
-        if not headers:
-            return
-        _dev = is_truthy_value(os.environ.get("OPENCODON_DEV_CREDITS"))
-
-        # ── Parse (fail-open → miss; never overwrite good state with None) ──
-        try:
-            from agent.credits_tracker import parse_credits_headers
-            state = parse_credits_headers(headers, provider=self.provider)
-        except Exception:
-            return  # parse error → treat as a miss, keep last-known
-        if state is None:
-            if _dev:
-                logger.info(
-                    "credits ▸ response had no valid x-nous-credits-* headers "
-                    "(miss — producer off / non-Nous path / >TTL stale)"
-                )
-            return
-
-        # retain-last-known: only overwrite on a fresh valid parse
-        self._credits_state = state
-        # Latch session-start remaining the first time we ever see a header
-        if self._credits_session_start_micros is None:
-            self._credits_session_start_micros = state.remaining_micros
-        if _dev:
-            # OPENCODON_DEV_CREDITS: stream each capture to agent.log — watch live with
-            # `hermes logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
-            spent = self.get_credits_spent_micros()
-            used = state.used_fraction
-            logger.info(
-                "credits ▸ remaining=%d (%s) · paid=%s · denom=%s · used=%s "
-                "· Δspent=%s · age=%s%s",
-                state.remaining_micros,
-                state.remaining_usd or "?",
-                state.paid_access,
-                state.denominator_kind,
-                ("%.0f%%" % (used * 100)) if used is not None else "n/a",
-                ("%.1f¢" % (spent / 10000)) if spent is not None else "n/a",
-                ("%.0fs" % state.age_seconds) if state.age_seconds != float("inf") else "n/a",
-                (" · disabled=%s" % state.disabled_reason) if state.disabled_reason else "",
-            )
-
-        # Threshold notices — shared with the cold-start seed (see _emit_credits_notices).
-        self._emit_credits_notices()
-
-    def _emit_credits_notices(self) -> None:
-        """Run the threshold policy on the current credits state and emit notices.
-
-        Shared by the warm path (_capture_credits) and the L3 cold-start seed, so a
-        session that opens already depleted warns immediately — not only after the first
-        inference header. Runs only when a notice consumer is bound (messaging binds none
-        → state still cached for /usage, no policy). WARNS on failure rather than
-        swallowing (R1-M2): a depletion-path bug must not vanish silently. Emits clears
-        FIRST, then shows (so depleted lands last in a latest-wins slot).
-        """
-        if getattr(self, "notice_callback", None) is None and getattr(self, "notice_clear_callback", None) is None:
-            return
-        if not self._credits_notices_enabled():
-            return
-        state = getattr(self, "_credits_state", None)
-        if state is None:
-            return
-        try:
-            from agent.credits_tracker import evaluate_credits_notices, is_free_tier_model
-            latch = getattr(self, "_credits_latch", None)
-            if latch is None:
-                latch = self._credits_latch = {"active": set(), "seen_below_90": False, "usage_band": None}
-            # Free-model gate: a depleted account on a free model can still
-            # inference, so the depleted error banner is suppressed. Local-data
-            # only (":free" suffix + pricing-cache peek) — never a network call.
-            model_is_free = is_free_tier_model(
-                getattr(self, "model", "") or "",
-                getattr(self, "base_url", "") or "",
-            )
-            to_show, to_clear = evaluate_credits_notices(state, latch, model_is_free=model_is_free)
-            for key in to_clear:        # clears FIRST …
-                self._emit_notice_clear(key)
-            for notice in to_show:      # … then shows (depleted lands last in a latest-wins slot)
-                self._emit_notice(notice)
-        except Exception:
-            logger.warning("credits notice evaluation/emit failed", exc_info=True)
-
-    def _credits_notices_enabled(self) -> bool:
-        """Whether credits notices are enabled (config display.credits_notices).
-
-        Read once per agent and cached — the policy runs after every API
-        response, and the setting governs UI noise, not correctness, so a
-        config flip applying on the next session is fine.  Fail-open True
-        (preserve current behaviour) on any config error.
-        """
-        cached = getattr(self, "_credits_notices_enabled_cache", None)
-        if cached is not None:
-            return cached
-        enabled = True
-        try:
-            from opencodon_cli.config import load_config as _load_config
-            _cfg = _load_config() or {}
-            _display = _cfg.get("display") if isinstance(_cfg, dict) else None
-            if isinstance(_display, dict) and "credits_notices" in _display:
-                enabled = bool(_display.get("credits_notices"))
-        except Exception:
-            enabled = True
-        self._credits_notices_enabled_cache = enabled
-        return enabled
-
-    def get_credits_state(self):
-        """Return the last captured CreditsState, or None."""
-        return self._credits_state
-
-    def get_credits_spent_micros(self):
-        """Session-cumulative micros spent = first_seen_remaining - current_remaining. None if no data."""
-        if self._credits_session_start_micros is None or self._credits_state is None:
-            return None
-        return self._credits_session_start_micros - self._credits_state.remaining_micros
 
     def _check_openrouter_cache_status(self, http_response: Any) -> None:
         """Read X-OpenRouter-Cache-Status from response headers and log it.
@@ -4585,7 +4429,7 @@ class AIAgent:
         # Guard against silent account swap.
         #
         # When an agent is using a non-singleton credential — e.g. a manual
-        # pool entry (``hermes auth add xai-oauth``) whose tokens belong to
+        # pool entry (``opencodon auth add xai-oauth``) whose tokens belong to
         # a different account than the device_code singleton, or an agent
         # constructed with an explicit ``api_key=`` arg — force-refreshing
         # the singleton here and adopting its tokens silently re-routes the
@@ -4648,44 +4492,6 @@ class AIAgent:
         self._client_kwargs["base_url"] = self.base_url
 
         if not self._replace_primary_openai_client(reason=f"{self.provider}_credential_refresh"):
-            return False
-
-        return True
-
-    def _try_refresh_nous_client_credentials(
-        self,
-        *,
-        force: bool = True,
-    ) -> bool:
-        if self.api_mode != "chat_completions" or self.provider != "nous":
-            return False
-
-        try:
-            from opencodon_cli.auth import resolve_nous_runtime_credentials
-
-            creds = resolve_nous_runtime_credentials(
-                timeout_seconds=env_float("OPENCODON_NOUS_TIMEOUT_SECONDS", 15),
-                force_refresh=force,
-            )
-        except Exception as exc:
-            logger.debug("Nous credential refresh failed: %s", exc)
-            return False
-
-        api_key = creds.get("api_key")
-        base_url = creds.get("base_url")
-        if not isinstance(api_key, str) or not api_key.strip():
-            return False
-        if not isinstance(base_url, str) or not base_url.strip():
-            return False
-
-        self.api_key = api_key.strip()
-        self.base_url = base_url.strip().rstrip("/")
-        self._client_kwargs["api_key"] = self.api_key
-        self._client_kwargs["base_url"] = self.base_url
-        # Nous requests should not inherit OpenRouter-only attribution headers.
-        self._client_kwargs.pop("default_headers", None)
-
-        if not self._replace_primary_openai_client(reason="nous_credential_refresh"):
             return False
 
         return True
@@ -6022,10 +5828,8 @@ class AIAgent:
 
         OpenRouter forwards unknown extra_body fields to upstream providers.
         Some providers/routes reject `reasoning` with 400s, so gate it to
-        known reasoning-capable model families and direct Nous Portal.
+        known reasoning-capable model families.
         """
-        if base_url_host_matches(self._base_url_lower, "nousresearch.com"):
-            return True
         if (
             base_url_host_matches(self._base_url_lower, "models.github.ai")
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
@@ -6574,17 +6378,7 @@ class AIAgent:
             set_accounting_context,
         )
         from agent.conversation_loop import run_conversation
-        from agent.portal_tags import (
-            reset_conversation_context,
-            set_conversation_context,
-        )
-        # Publish the conversation id for ambient Nous Portal tagging. Every
-        # LLM call made inside this turn — main loop, compression, vision,
-        # web_extract, session_search, MoA slots, background-review forks
-        # (which copy this Context into their thread) — inherits the
-        # ``conversation=<root>`` tag with zero per-call-site plumbing.
-        token = set_conversation_context(self._conversation_root_id())
-        # Publish the session accounting handles the same way so auxiliary
+        # Publish the session accounting handles so auxiliary
         # calls record their token usage into session_model_usage (task
         # dimension) — the fix for aux spend being invisible in analytics
         # (issue #23270).
@@ -6612,7 +6406,6 @@ class AIAgent:
                 )
             finally:
                 reset_accounting_context(acct_token)
-                reset_conversation_context(token)
 
     def chat(self, message: str, stream_callback: Optional[callable] = None) -> str:
         """

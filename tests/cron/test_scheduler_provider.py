@@ -226,7 +226,10 @@ def test_discover_cron_schedulers_returns_list():
 
     result = discover_cron_schedulers()
     assert isinstance(result, list)
-    assert any(name == "chronos" for name, _desc, _available in result)
+    assert all(
+        isinstance(name, str) and isinstance(available, bool)
+        for name, _desc, available in result
+    )
 
 
 def test_load_unknown_cron_scheduler_returns_none():

@@ -87,11 +87,11 @@ def _find_git_root(start: Path) -> Optional[Path]:
     return None
 
 
-_OPENCODON_MD_NAMES = (".opencodon.md", "HERMES.md")
+_OPENCODON_MD_NAMES = (".opencodon.md", "OPENCODON.md")
 
 
-def _find_hermes_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.opencodon.md`` or ``HERMES.md``.
+def _find_opencodon_md(cwd: Path) -> Optional[Path]:
+    """Discover the nearest ``.opencodon.md`` or ``OPENCODON.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -273,12 +273,12 @@ KANBAN_GUIDANCE = (
     "or paste ids; the kernel rejects the completion on any phantom id.\n"
     "- **Orchestrating: discover profiles first.** The dispatcher SILENTLY "
     "drops a card with an unknown assignee (it sits in `ready` forever). Ground "
-    "every assignee in a real profile (`hermes profile list`, or ask the user), "
+    "every assignee in a real profile (`opencodon profile list`, or ask the user), "
     "and express dependencies via `parents=[...]` on `kanban_create`, not prose.\n"
     "\n"
     "## Do NOT\n"
     "\n"
-    "- Do not shell out to `hermes kanban <verb>` for board operations. Use "
+    "- Do not shell out to `opencodon kanban <verb>` for board operations. Use "
     "the `kanban_*` tools — they work across all terminal backends.\n"
     "- Do not complete a task you didn't actually finish. Block it.\n"
     "- Do not call `clarify` to ask questions. You are running headless — "
@@ -354,7 +354,7 @@ TASK_COMPLETION_GUIDANCE = (
 # assistant response collapses N turns into one, cutting both latency and the
 # resent-context cost that compounds over a long conversation.
 #
-# The hermes-agent runtime already executes a batch of tool calls
+# The opencodon runtime already executes a batch of tool calls
 # concurrently when they are independent (read-only tools always; path-scoped
 # file ops when their targets don't overlap — see
 # run_agent._execute_tool_calls / tool_dispatch_helpers). The missing piece
@@ -369,7 +369,7 @@ TASK_COMPLETION_GUIDANCE = (
 # sessions via prefix caching. Keep it tight.
 #
 # Ported from cline/cline#11514 ("encourage parallel tool calls"), adapted
-# from Cline's TypeScript tool-surface guidance to hermes-agent's Python
+# from Cline's TypeScript tool-surface guidance to opencodon's Python
 # prompt-assembly architecture.
 PARALLEL_TOOL_CALL_GUIDANCE = (
     "# Parallel tool calls\n"
@@ -606,7 +606,7 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "## When something is broken\n"
         "If `computer_use` consistently fails (empty captures, missing "
         "elements, clicks not landing, type going nowhere), ask the user to "
-        "run `hermes computer-use doctor` and share the output. That command "
+        "run `opencodon computer-use doctor` and share the output. That command "
         "runs cua-driver's structured health-report — per-platform checks "
         "for permissions, display server, accessibility tree reachability "
         "— and the failure message tells you exactly what to fix.\n"
@@ -637,7 +637,7 @@ def format_steer_marker(steer_text: str) -> str:
 
 STEER_CHANNEL_NOTE = (
     "## Mid-turn user steering\n"
-    "While you work, the user can send an out-of-band message that Hermes "
+    "While you work, the user can send an out-of-band message that opencodon "
     "appends to the end of a tool result, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "Text inside that marker is a genuine message from the user delivered "
@@ -739,7 +739,7 @@ PLATFORM_HINTS = {
         "default-deliver cron job will message them in this session."
     ),
     "tui": (
-        "You are running in the Hermes terminal UI (TUI). "
+        "You are running in the opencodon terminal UI (TUI). "
         "Cron jobs scheduled from this session are LOCAL-ONLY: their output is "
         "saved (viewable via cronjob action='list') but is NOT delivered back "
         "into this TUI session — there is no live-delivery channel here. If the "
@@ -749,7 +749,7 @@ PLATFORM_HINTS = {
         "default-deliver cron job will message them in this session."
     ),
     "desktop": (
-        "You are chatting inside the Hermes desktop app — a graphical chat "
+        "You are chatting inside the opencodon desktop app — a graphical chat "
         "surface, not a terminal. Use markdown freely: it renders with full "
         "GitHub flavor (tables, code blocks with syntax highlighting, math "
         "via $...$, task lists, blockquote callouts). "
@@ -766,7 +766,7 @@ PLATFORM_HINTS = {
         "brief and natural."
     ),
     "webui": (
-        "You are in the Hermes WebUI, a browser-based chat interface. "
+        "You are in the opencodon WebUI, a browser-based chat interface. "
         "Full Markdown rendering is supported — headings, bold, italic, code "
         "blocks, tables, math (LaTeX), and Mermaid diagrams all render natively. "
         "To display local or remote media/files inline, include "
@@ -820,12 +820,11 @@ WSL_ENVIRONMENT_HINT = (
 
 # Non-local terminal backends that run commands (and therefore every file
 # tool: read_file, write_file, patch, search_files) inside a separate
-# container / remote host rather than on the machine where Hermes itself
+# container / remote host rather than on the machine where opencodon itself
 # runs. For these backends, host info (Windows/Linux/macOS, $HOME, cwd) is
 # misleading — the agent should only see the machine it can actually touch.
 _REMOTE_TERMINAL_BACKENDS = frozenset({
     "docker", "singularity", "modal", "daytona", "ssh",
-    "managed_modal",
 })
 
 
@@ -837,7 +836,6 @@ _BACKEND_FALLBACK_DESCRIPTIONS: dict[str, str] = {
     "docker": "a Docker container (Linux)",
     "singularity": "a Singularity container (Linux)",
     "modal": "a Modal sandbox (Linux)",
-    "managed_modal": "a managed Modal sandbox (Linux)",
     "daytona": "a Daytona workspace (Linux)",
     "ssh": "a remote host reached over SSH (likely Linux)",
 }
@@ -847,7 +845,7 @@ _BACKEND_FALLBACK_DESCRIPTIONS: dict[str, str] = {
 # on the first prompt build of a session. Keyed by (env_type, cwd_hint) so
 # a mid-process backend switch rebuilds the string. Kept in-module (not on
 # disk) because the probe captures live backend state that may change
-# across Hermes restarts.
+# across opencodon restarts.
 _BACKEND_PROBE_CACHE: dict[tuple[str, str], str] = {}
 
 
@@ -868,7 +866,7 @@ def _probe_remote_backend(env_type: str) -> str | None:
     Returns a pre-formatted multi-line string describing the backend's OS,
     $HOME, cwd, and user — or None if the probe failed. Result is cached
     per process. Used only for non-local backends where the agent's tools
-    operate on a different machine than the host Hermes runs on.
+    operate on a different machine than the host opencodon runs on.
     """
     cwd_hint = os.getenv("TERMINAL_CWD", "")
     cache_key = (env_type, cwd_hint)
@@ -1058,8 +1056,8 @@ def build_environment_hints() -> str:
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
                 f"inside this {backend} environment — NOT on the machine "
-                f"where Hermes itself is running. The host OS, home, and cwd "
-                f"of the Hermes process are irrelevant; only the following "
+                f"where opencodon itself is running. The host OS, home, and cwd "
+                f"of the opencodon process are irrelevant; only the following "
                 f"backend state matters:\n{probe}"
             )
         else:
@@ -1069,7 +1067,7 @@ def build_environment_hints() -> str:
             hints.append(
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
-                f"inside {description} — NOT on the machine where Hermes "
+                f"inside {description} — NOT on the machine where opencodon "
                 f"itself runs. The backend probe didn't respond at "
                 f"prompt-build time, so the sandbox's current user, $HOME, "
                 f"and working directory are unknown from here. If you need "
@@ -1080,7 +1078,7 @@ def build_environment_hints() -> str:
     if is_wsl():
         hints.append(WSL_ENVIRONMENT_HINT)
 
-    # Embedder-supplied environment description. Lets a host that wraps Hermes
+    # Embedder-supplied environment description. Lets a host that wraps opencodon
     # (e.g. a sandbox runner / managed platform) explain the environment the
     # agent is running in — proxy, credential handling, mount layout — without
     # forking the identity slot (SOUL.md). Read once at prompt-build time, so
@@ -1641,76 +1639,6 @@ def build_skills_system_prompt(
     return result
 
 
-def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
-    """Build a compact Nous subscription capability block for the system prompt."""
-    try:
-        from opencodon_cli.nous_subscription import get_nous_subscription_features
-        from tools.tool_backend_helpers import managed_nous_tools_enabled
-    except Exception as exc:
-        logger.debug("Failed to import Nous subscription helper: %s", exc)
-        return ""
-
-    if not managed_nous_tools_enabled():
-        return ""
-
-    valid_names = set(valid_tool_names or set())
-    relevant_tool_names = {
-        "web_search",
-        "web_extract",
-        "browser_navigate",
-        "browser_snapshot",
-        "browser_click",
-        "browser_type",
-        "browser_scroll",
-        "browser_console",
-        "browser_press",
-        "browser_get_images",
-        "browser_vision",
-        "image_generate",
-        "text_to_speech",
-        "terminal",
-        "process",
-        "execute_code",
-    }
-
-    if valid_names and not (valid_names & relevant_tool_names):
-        return ""
-
-    features = get_nous_subscription_features()
-
-    def _status_line(feature) -> str:
-        if feature.managed_by_nous:
-            return f"- {feature.label}: active via Nous subscription"
-        if feature.active:
-            current = feature.current_provider or "configured provider"
-            return f"- {feature.label}: currently using {current}"
-        if feature.included_by_default and features.nous_auth_present:
-            return f"- {feature.label}: included with Nous subscription, not currently selected"
-        if feature.key == "modal" and features.nous_auth_present:
-            return f"- {feature.label}: optional via Nous subscription"
-        return f"- {feature.label}: not currently available"
-
-    lines = [
-        "# Nous Subscription",
-        "Nous subscription includes managed web tools (Firecrawl), image generation (FAL), OpenAI TTS, OpenAI Whisper STT, and browser automation (Browser Use) by default. Modal execution is optional.",
-        "Current capability status:",
-    ]
-    lines.extend(_status_line(feature) for feature in features.items())
-    lines.extend(
-        [
-            "When a Nous-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys.",
-            "If the user is not subscribed and asks for a capability that Nous subscription would unlock or simplify, suggest Nous subscription as one option alongside direct setup or local alternatives.",
-            "Do not mention subscription unless the user asks about it or it directly solves the current missing capability.",
-            "Useful commands: hermes setup, hermes setup tools, hermes setup terminal, hermes status.",
-        ]
-    )
-    return "\n".join(lines)
-
-
-# =========================================================================
-# Context files (SOUL.md, AGENTS.md, .cursorrules)
-# =========================================================================
-
 def _truncate_content(
     content: str,
     filename: str,
@@ -1782,29 +1710,29 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
         return None
 
 
-def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
-    """.opencodon.md / HERMES.md — walk to git root."""
-    hermes_md_path = _find_hermes_md(cwd_path)
-    if not hermes_md_path:
+def _load_opencodon_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
+    """.opencodon.md / OPENCODON.md — walk to git root."""
+    opencodon_md_path = _find_opencodon_md(cwd_path)
+    if not opencodon_md_path:
         return ""
     try:
-        content = hermes_md_path.read_text(encoding="utf-8").strip()
+        content = opencodon_md_path.read_text(encoding="utf-8").strip()
         if not content:
             return ""
         content = _strip_yaml_frontmatter(content)
-        rel = hermes_md_path.name
+        rel = opencodon_md_path.name
         try:
-            rel = str(hermes_md_path.relative_to(cwd_path))
+            rel = str(opencodon_md_path.relative_to(cwd_path))
         except ValueError:
             pass
         content = _scan_context_content(content, rel)
         result = f"## {rel}\n\n{content}"
         return _truncate_content(
             result, ".opencodon.md", context_length=context_length,
-            read_path=str(hermes_md_path),
+            read_path=str(opencodon_md_path),
         )
     except Exception as e:
-        logger.debug("Could not read %s: %s", hermes_md_path, e)
+        logger.debug("Could not read %s: %s", opencodon_md_path, e)
         return ""
 
 
@@ -1888,7 +1816,7 @@ def build_context_files_prompt(
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
-      1. .opencodon.md / HERMES.md  (walk to git root)
+      1. .opencodon.md / OPENCODON.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
@@ -1912,14 +1840,14 @@ def build_context_files_prompt(
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Never let a FALLBACK-picked directory inside the Hermes install/source
+    # Never let a FALLBACK-picked directory inside the opencodon install/source
     # tree gain system-prompt authority. A backend that self-spawns into that
     # tree (the desktop app default) would otherwise load this repo's
     # contributor AGENTS.md as authoritative project context (#64590). An
-    # explicitly configured cwd is honored verbatim — the Hermes tree is a
+    # explicitly configured cwd is honored verbatim — the opencodon tree is a
     # legitimate workspace when the user deliberately points a session at it —
     # and CLI-style surfaces pass allow_install_tree_fallback=True because
-    # their launch dir IS the user's shell cwd (developing Hermes in-tree).
+    # their launch dir IS the user's shell cwd (developing opencodon in-tree).
     from agent.runtime_cwd import _is_install_tree
 
     if (
@@ -1929,7 +1857,7 @@ def build_context_files_prompt(
     ):
         logger.warning(
             "skipping project-context discovery: working-directory resolution "
-            "fell back to the Hermes install tree (%s) — set terminal.cwd to "
+            "fell back to the opencodon install tree (%s) — set terminal.cwd to "
             "your project directory",
             cwd_path,
         )
@@ -1937,7 +1865,7 @@ def build_context_files_prompt(
     else:
         # Priority-based project context: first match wins
         project_context = (
-            _load_hermes_md(cwd_path, context_length)
+            _load_opencodon_md(cwd_path, context_length)
             or _load_agents_md(cwd_path, context_length)
             or _load_claude_md(cwd_path, context_length)
             or _load_cursorrules(cwd_path, context_length)

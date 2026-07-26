@@ -25,7 +25,7 @@ Context dict passed to ``agent:start`` / ``agent:end`` handlers:
   thread_id    -- Telegram forum-topic id / thread root id (string; empty
                   when not in a thread / topic)
   chat_type    -- "dm" | "group" | "forum" (empty if unknown)
-  session_id   -- Hermes session id
+  session_id   -- opencodon session id
   message      -- inbound message text (truncated to 500 chars)
 
 ``agent:end`` adds:
@@ -122,7 +122,7 @@ class HookRegistry:
                 # in the handler). Without this, a handler that declares a
                 # Pydantic BaseModel for webhook/event payloads fails at first
                 # dispatch with "TypeAdapter ... is not fully defined".
-                module_name = f"hermes_hook_{hook_name}"
+                module_name = f"opencodon_hook_{hook_name}"
                 spec = importlib.util.spec_from_file_location(
                     module_name, handler_path
                 )

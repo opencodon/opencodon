@@ -66,13 +66,13 @@ class TestClassify:
         )
 
     def test_upstream_module_paths_translate_to_fork_names(self):
-        """Upstream still says hermes_cli/; our tree says opencodon_cli/.
+        """Upstream still says opencodon_cli/; our tree says opencodon_cli/.
         Classification must not N/A commits touching renamed modules."""
         assert (
-            triage.classify("fix: auth retry", ["hermes_cli/auth.py"], TRACKED)
+            triage.classify("fix: auth retry", ["opencodon_cli/auth.py"], TRACKED)
             == "PROVIDER"
         )
-        assert triage.to_fork_path("tests/hermes_cli/test_auth.py") == (
+        assert triage.to_fork_path("tests/opencodon_cli/test_auth.py") == (
             "tests/opencodon_cli/test_auth.py"
         )
 

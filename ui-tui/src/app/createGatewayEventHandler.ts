@@ -28,7 +28,6 @@ import type { Msg, SubagentProgress, SubagentStatus } from '../types.js'
 import { applyDelegationStatus, getDelegationState } from './delegationStore.js'
 import type { GatewayEventHandlerContext } from './interfaces.js'
 import { getOverlayState, patchOverlayState } from './overlayStore.js'
-import { flashGoodVibes, flashPet } from './petFlashStore.js'
 import { turnController } from './turnController.js'
 import { getTurnState } from './turnStore.js'
 import { getUiState, patchUiState } from './uiStore.js'
@@ -1021,9 +1020,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'reaction':
         // Core-detected affection (ily / <3 / good bot): flash the ♥ and let the
-        // pet celebrate. Same signal drives the desktop's floating hearts.
-        flashGoodVibes()
-        flashPet('jump')
 
         return
 
@@ -1265,8 +1261,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
           const msgs: Msg[] = finalMessages.length ? finalMessages : [{ role: 'assistant', text: finalText }]
           msgs.forEach(appendMessage)
 
-          // Pet beat: celebrate a finished plan, otherwise a clean-finish wave.
-          flashPet(isTodoDone(getTurnState().todos) ? 'jump' : 'wave')
 
           if (bellOnComplete && stdout?.isTTY) {
             stdout.write('\x07')
@@ -1295,9 +1289,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
               confirmLabel: copy.confirmLabel,
               detail: copy.detail,
               onConfirm: () => {
-                if (block.is_nous) {
-                  submitRef.current('/topup')
-                } else if (block.billing_url) {
+                if (block.billing_url) {
                   openExternalUrl(block.billing_url)
                 } else {
                   submitRef.current('/model')
@@ -1313,7 +1305,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'error':
         turnController.recordError()
-        flashPet('failed')
 
         {
           const message = String(ev.payload?.message || 'unknown error')

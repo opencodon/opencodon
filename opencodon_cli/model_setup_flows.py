@@ -1,4 +1,4 @@
-"""Per-provider model-selection wizard flows for ``hermes setup`` / ``hermes model``.
+"""Per-provider model-selection wizard flows for ``opencodon setup`` / ``opencodon model``.
 
 Extracted from ``opencodon_cli/main.py`` as part of the god-file decomposition
 campaign (``~/.opencodon/plans/god-file-decomposition.md``, Phase 2 — splitting
@@ -181,7 +181,7 @@ def _model_flow_openrouter(config, current_model=""):
     # Route through _prompt_api_key so users can replace a stale/broken key
     # in-flow (K/R/C) instead of having to edit ~/.opencodon/.env by hand. The
     # previous bypass-when-key-exists branch left no way to recover from a
-    # bad paste short of re-running `hermes setup` from scratch. OpenRouter
+    # bad paste short of re-running `opencodon setup` from scratch. OpenRouter
     # isn't in PROVIDER_REGISTRY so we synthesize a minimal pconfig.
     pconfig = ProviderConfig(
         id="openrouter",
@@ -259,7 +259,7 @@ def _model_flow_moa(config, current_model=""):
     moa = normalize_moa_config(config.get("moa") if isinstance(config, dict) else {})
     presets = moa.get("presets") or {}
     if not presets:
-        print("No MoA presets configured. Run `hermes moa configure <name>` first.")
+        print("No MoA presets configured. Run `opencodon moa configure <name>` first.")
         return
 
     names = list(presets.keys())
@@ -329,231 +329,6 @@ def _model_flow_moa(config, current_model=""):
     _print_moa_preset(selected_name, preset)
 
 
-def _model_flow_nous(config, current_model="", args=None):
-    """Nous Portal provider: ensure logged in, then pick model."""
-    from opencodon_cli.auth import (
-        get_provider_auth_state,
-        _prompt_model_selection,
-        _save_model_choice,
-        _update_config_for_provider,
-        resolve_nous_runtime_credentials,
-        AuthError,
-        format_auth_error,
-        _login_nous,
-        PROVIDER_REGISTRY,
-    )
-    from opencodon_cli.config import (
-        get_env_value,
-        load_config,
-        save_config,
-        save_env_value,
-    )
-    from opencodon_cli.nous_subscription import prompt_enable_tool_gateway
-
-    state = get_provider_auth_state("nous")
-    if not state or not state.get("access_token"):
-        print("Not logged into Nous Portal. Starting login...")
-        print()
-        try:
-            mock_args = argparse.Namespace(
-                portal_url=getattr(args, "portal_url", None),
-                inference_url=getattr(args, "inference_url", None),
-                client_id=getattr(args, "client_id", None),
-                scope=getattr(args, "scope", None),
-                no_browser=bool(getattr(args, "no_browser", False)),
-                timeout=getattr(args, "timeout", None) or 15.0,
-                ca_bundle=getattr(args, "ca_bundle", None),
-                insecure=bool(getattr(args, "insecure", False)),
-            )
-            _login_nous(mock_args, PROVIDER_REGISTRY["nous"])
-            # Offer Tool Gateway enablement for paid subscribers
-            try:
-                _refreshed = load_config() or {}
-                prompt_enable_tool_gateway(_refreshed)
-            except Exception:
-                pass
-        except SystemExit:
-            print("Login cancelled or failed.")
-            return
-        except Exception as exc:
-            print(f"Login failed: {exc}")
-            return
-        # login_nous already handles model selection + config update
-        return
-
-    # Already logged in — use curated model list (same as OpenRouter defaults).
-    # The live /models endpoint returns hundreds of models; the curated list
-    # shows only agentic models users recognize from OpenRouter.
-    from opencodon_cli.models import (
-        get_curated_nous_model_ids,
-        get_pricing_for_provider,
-        check_nous_free_tier,
-        partition_nous_models_by_tier,
-        union_with_portal_free_recommendations,
-        union_with_portal_paid_recommendations,
-    )
-
-    model_ids = get_curated_nous_model_ids()
-    if not model_ids:
-        print("No curated models available for Nous Portal.")
-        return
-
-    # Verify credentials are still valid (catches expired sessions early)
-    try:
-        creds = resolve_nous_runtime_credentials()
-    except Exception as exc:
-        relogin = isinstance(exc, AuthError) and exc.relogin_required
-        msg = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
-        if relogin:
-            print(f"Session expired: {msg}")
-            print("Re-authenticating with Nous Portal...\n")
-            try:
-                mock_args = argparse.Namespace(
-                    portal_url=None,
-                    inference_url=None,
-                    client_id=None,
-                    scope=None,
-                    no_browser=False,
-                    timeout=15.0,
-                    ca_bundle=None,
-                    insecure=False,
-                )
-                _login_nous(mock_args, PROVIDER_REGISTRY["nous"])
-            except Exception as login_exc:
-                print(f"Re-login failed: {login_exc}")
-            return
-        print(f"Could not verify credentials: {msg}")
-        return
-
-    # Fetch live pricing (non-blocking — returns empty dict on failure)
-    pricing = get_pricing_for_provider("nous")
-
-    # Force fresh account data for model selection so recent credit purchases
-    # are reflected immediately.
-    free_tier = check_nous_free_tier(force_fresh=True)
-    if not free_tier:
-        try:
-            refreshed_creds = resolve_nous_runtime_credentials(
-                force_refresh=True,
-            )
-            if refreshed_creds:
-                creds = refreshed_creds
-        except Exception:
-            # Runtime inference has its own paid-entitlement recovery path; do
-            # not block model selection if this opportunistic refresh fails.
-            pass
-
-    # Resolve portal URL early — needed both for upgrade links and for the
-    # freeRecommendedModels endpoint below.
-    _nous_portal_url = ""
-    try:
-        _nous_state = get_provider_auth_state("nous")
-        if _nous_state:
-            _nous_portal_url = _nous_state.get("portal_base_url", "")
-    except Exception:
-        pass
-
-    # For free users: partition models into selectable/unavailable based on
-    # whether they are free per the Portal-reported pricing.  First augment
-    # with the Portal's freeRecommendedModels list so newly-launched free
-    # models show up even if this CLI build's hardcoded curated list and
-    # docs-hosted manifest haven't caught up yet.
-    #
-    # For paid users: mirror the same idea with paidRecommendedModels so
-    # newly-launched paid models surface in the picker too — independent
-    # of CLI release cadence.
-    unavailable_models: list[str] = []
-    unavailable_message = ""
-    if free_tier:
-        try:
-            from opencodon_cli.nous_account import (
-                format_nous_portal_entitlement_message,
-                get_nous_portal_account_info,
-            )
-
-            _account_info = get_nous_portal_account_info(force_fresh=True)
-            unavailable_message = (
-                format_nous_portal_entitlement_message(
-                    _account_info,
-                    capability="paid Nous models",
-                )
-                or ""
-            )
-        except Exception:
-            unavailable_message = ""
-        model_ids, pricing = union_with_portal_free_recommendations(
-            model_ids, pricing, _nous_portal_url,
-        )
-        model_ids, unavailable_models = partition_nous_models_by_tier(
-            model_ids, pricing, free_tier=True
-        )
-    else:
-        model_ids, pricing = union_with_portal_paid_recommendations(
-            model_ids, pricing, _nous_portal_url,
-        )
-
-    if not model_ids and not unavailable_models:
-        print("No models available for Nous Portal after filtering.")
-        return
-
-    if free_tier and not model_ids:
-        print("No free models currently available.")
-        if unavailable_models:
-            from opencodon_cli.auth import DEFAULT_NOUS_PORTAL_URL
-
-            _url = (_nous_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
-            print(unavailable_message or f"Upgrade at {_url} to access paid models.")
-        return
-
-    print(
-        f'Showing {len(model_ids)} curated models — use "Enter custom model name" for others.'
-    )
-
-    selected = _prompt_model_selection(
-        model_ids,
-        current_model=current_model,
-        pricing=pricing,
-        unavailable_models=unavailable_models,
-        portal_url=_nous_portal_url,
-        unavailable_message=unavailable_message,
-        confirm_provider="nous",
-        confirm_base_url=creds.get("base_url", ""),
-        confirm_api_key=creds.get("api_key", ""),
-    )
-    if selected:
-        _save_model_choice(selected)
-        # Reactivate Nous as the provider and update config
-        inference_url = creds.get("base_url", "")
-        _update_config_for_provider("nous", inference_url)
-        # Reload after the auth helper writes provider state. The incoming
-        # config object may still contain stale custom-provider fields.
-        config = load_config()
-        current_model_cfg = config.get("model")
-        if isinstance(current_model_cfg, dict):
-            model_cfg = dict(current_model_cfg)
-        elif isinstance(current_model_cfg, str) and current_model_cfg.strip():
-            model_cfg = {"default": current_model_cfg.strip()}
-        else:
-            model_cfg = {}
-        model_cfg["provider"] = "nous"
-        model_cfg["default"] = selected
-        if inference_url and inference_url.strip():
-            model_cfg["base_url"] = inference_url.rstrip("/")
-        else:
-            model_cfg.pop("base_url", None)
-        clear_model_endpoint_credentials(model_cfg)
-        config["model"] = model_cfg
-        # Clear any custom endpoint that might conflict
-        if get_env_value("OPENAI_BASE_URL"):
-            save_env_value("OPENAI_BASE_URL", "")
-            save_env_value("OPENAI_API_KEY", "")
-        save_config(config)
-        print(f"Default model set to: {selected} (via Nous Portal)")
-        # Offer Tool Gateway enablement for paid subscribers
-        prompt_enable_tool_gateway(config)
-    else:
-        print("No change.")
-
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
     from opencodon_cli.auth import (
@@ -609,7 +384,7 @@ def _model_flow_openai_codex(config, current_model=""):
             return
 
     _codex_token = None
-    # Prefer credential pool (where `hermes auth` stores device_code tokens),
+    # Prefer credential pool (where `opencodon auth` stores device_code tokens),
     # fall back to legacy provider state.
     try:
         _codex_status = get_codex_auth_status()
@@ -703,7 +478,7 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
 
     # Resolve a usable base URL.  ``resolve_xai_oauth_runtime_credentials``
     # only reads from the auth.json singleton — but credentials may legitimately
-    # live only in the pool (e.g. after ``hermes auth add xai-oauth``).  Fall
+    # live only in the pool (e.g. after ``opencodon auth add xai-oauth``).  Fall
     # back to the default base URL in that case so the model picker still
     # completes successfully instead of bailing out with
     # ``Could not resolve xAI OAuth credentials``.
@@ -912,7 +687,7 @@ def _model_flow_custom(config):
     else:
         print(
             f"Warning: could not verify this endpoint via {probe.get('probed_url')}. "
-            f"Hermes will still save it."
+            f"opencodon will still save it."
         )
         if probe.get("suggested_base_url"):
             suggested = probe["suggested_base_url"]
@@ -1032,7 +807,7 @@ def _model_flow_custom(config):
         else:
             _caller_model.pop("api_mode", None)
         config["model"] = _caller_model
-        print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
+        print("Endpoint saved. Use `/model` in chat or `opencodon model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
     _save_custom_provider(
@@ -1112,7 +887,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     print("=" * 50)
     print()
     print("Azure Foundry can host models with either OpenAI-style or")
-    print("Anthropic-style API endpoints.  Hermes will probe your")
+    print("Anthropic-style API endpoints.  opencodon will probe your")
     print("endpoint to auto-detect the transport and the deployed")
     print("models when possible.")
     print()
@@ -1200,7 +975,7 @@ def _model_flow_azure_foundry(config, current_model=""):
         if not has_azure_identity_installed():
             print("◐ The 'azure-identity' package is not installed yet.")
             print(
-                "  Hermes will install it now (the preflight below "
+                "  opencodon will install it now (the preflight below "
                 "triggers the lazy-install). To skip lazy installs, "
                 "run:  pip install azure-identity"
             )
@@ -1837,9 +1612,9 @@ def _model_flow_copilot_acp(config, current_model=""):
     )
     effective_base = status.get("base_url") or pconfig.inference_base_url
 
-    print("  GitHub Copilot ACP delegates Hermes turns to `copilot --acp`.")
-    print("  Hermes currently starts its own ACP subprocess for each request.")
-    print("  Hermes uses your selected model as a hint for the Copilot ACP session.")
+    print("  GitHub Copilot ACP delegates opencodon turns to `copilot --acp`.")
+    print("  opencodon currently starts its own ACP subprocess for each request.")
+    print("  opencodon uses your selected model as a hint for the Copilot ACP session.")
     print(f"  Command: {resolved_command}")
     print(f"  Backend marker: {effective_base}")
     print()
@@ -2216,7 +1991,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
 
-        # Save the API key env var name so hermes knows where to find it
+        # Save the API key env var name so opencodon knows where to find it
         save_env_value("OPENAI_API_KEY", existing_key)
         save_env_value("OPENAI_BASE_URL", mantle_base_url)
 
@@ -2658,7 +2433,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                     "(<= 250 requests/day for gemini-2.5-flash)."
                 )
                 print(
-                    "   Hermes typically makes 3-10 API calls per user turn "
+                    "   opencodon typically makes 3-10 API calls per user turn "
                     "(tool iterations + auxiliary tasks),"
                 )
                 print(
@@ -2668,7 +2443,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                 print("   an agent session.")
                 print()
                 print(
-                    "   To use Gemini with Hermes, enable billing on your "
+                    "   To use Gemini with opencodon, enable billing on your "
                     "Google Cloud project and regenerate"
                 )
                 print(
@@ -2678,7 +2453,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                 print()
                 print(
                     "   Alternatives with workable free usage: DeepSeek, "
-                    "OpenRouter (free models), Groq, Nous."
+                    "OpenRouter (free models), Groq."
                 )
                 print()
                 print("Not saving Gemini as the default provider.")
@@ -3044,7 +2819,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Update config with provider — clear base_url since
         # resolve_runtime_provider() always hardcodes Anthropic's URL.
         # Leaving a stale base_url in config can contaminate other
-        # providers if the user switches without running 'hermes model'.
+        # providers if the user switches without running 'opencodon model'.
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):

@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon_cli.nous_account import NousPortalAccountInfo
 from opencodon_cli.tools_config import (
     _DEFAULT_OFF_TOOLSETS,
     _apply_toolset_change,
@@ -62,19 +61,19 @@ def test_agent_disabled_toolsets_with_explicit_platform_config():
 
 def test_all_invalid_platform_toolsets_logs_runtime_warning(caplog):
     """#38798: an explicit platform config whose toolset names are all invalid
-    (e.g. 'hermes' instead of 'opencodon-cli') must warn at resolve time so an
+    (e.g. 'opencodon' instead of 'opencodon-cli') must warn at resolve time so an
     already-corrupted config is caught at runtime, not just during migration."""
     import opencodon_cli.tools_config as _tc
     # The runtime warning fires once per platform per process; clear the guard
     # so this test is deterministic regardless of prior resolutions.
     _tc._warned_invalid_platform_toolsets.discard("cli")
-    config = {"platform_toolsets": {"cli": ["hermes"]}}
+    config = {"platform_toolsets": {"cli": ["opencodon"]}}
 
     with caplog.at_level(logging.WARNING, logger="opencodon_cli.tools_config"):
         _get_platform_tools(config, "cli")
 
     warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
-    assert any("#38798" in m and "hermes" in m for m in warnings), warnings
+    assert any("#38798" in m and "opencodon" in m for m in warnings), warnings
 
 
 def test_invalid_platform_toolsets_runtime_warning_fires_once(caplog):
@@ -82,7 +81,7 @@ def test_invalid_platform_toolsets_runtime_warning_fires_once(caplog):
     config must not spam an identical warning on every tool resolution."""
     import opencodon_cli.tools_config as _tc
     _tc._warned_invalid_platform_toolsets.discard("cli")
-    config = {"platform_toolsets": {"cli": ["hermes"]}}
+    config = {"platform_toolsets": {"cli": ["opencodon"]}}
 
     with caplog.at_level(logging.WARNING, logger="opencodon_cli.tools_config"):
         _get_platform_tools(config, "cli")
@@ -194,7 +193,7 @@ def test_get_platform_tools_x_search_auto_enabled_when_xai_oauth_present(monkeyp
     tokens are present.
 
     The user already authenticated via SuperGrok OAuth; they shouldn't have
-    to also click through `hermes tools` → X (Twitter) Search to flip the
+    to also click through `opencodon tools` → X (Twitter) Search to flip the
     toolset on. Tool's check_fn still gates schema registration if creds
     later go missing.
     """
@@ -304,7 +303,7 @@ def test_get_platform_tools_x_search_off_when_no_xai_credentials(monkeypatch):
 
 
 def test_get_platform_tools_x_search_respects_explicit_config(monkeypatch):
-    """Once the user has saved an explicit toolset list via `hermes tools`,
+    """Once the user has saved an explicit toolset list via `opencodon tools`,
     that list is authoritative — x_search auto-enable does NOT fire even
     when xAI creds exist. The saved list represents deliberate choices."""
     monkeypatch.delenv("XAI_API_KEY", raising=False)
@@ -312,7 +311,7 @@ def test_get_platform_tools_x_search_respects_explicit_config(monkeypatch):
         "opencodon_cli.tools_config._xai_credentials_present", lambda: True
     )
 
-    # User explicitly opted into video but not x_search via `hermes tools`.
+    # User explicitly opted into video but not x_search via `opencodon tools`.
     config = {"platform_toolsets": {"cli": ["opencodon-cli", "video"]}}
     enabled = _get_platform_tools(config, "cli")
     assert "x_search" not in enabled
@@ -386,7 +385,7 @@ def test_get_platform_tools_preserves_explicit_empty_selection():
     # terminal, memory, …). Non-configurable platform toolsets that ride
     # along on the platform's default composite (e.g. `kanban`, whose tools
     # live in _OPENCODON_CORE_TOOLS but aren't user-toggleable) are still
-    # auto-recovered by _get_platform_tools so saving via `hermes tools`
+    # auto-recovered by _get_platform_tools so saving via `opencodon tools`
     # doesn't silently drop them. The contract this test guards is the
     # configurable side: nothing the user could have checked in the TUI
     # checklist should reappear here.
@@ -534,7 +533,7 @@ def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
 def test_save_platform_tools_preserves_mcp_server_names():
     """Ensure MCP server names are preserved when saving platform tools.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/1247
+    Regression test for upstream#1247
     """
     config = {
         "platform_toolsets": {
@@ -595,7 +594,7 @@ def test_save_platform_tools_does_not_preserve_platform_default_toolsets():
     (like MCP server names), causing them to be kept unconditionally.
 
     Regression test: user unchecks image_gen and homeassistant via
-    ``hermes tools``, but opencodon-cli stays in the config and re-enables
+    ``opencodon tools``, but opencodon-cli stays in the config and re-enables
     everything on the next read.
     """
     config = {
@@ -635,7 +634,7 @@ def test_save_platform_tools_does_not_preserve_platform_default_toolsets():
     assert "moa" not in saved
 
 
-def test_save_platform_tools_does_not_preserve_hermes_telegram():
+def test_save_platform_tools_does_not_preserve_opencodon_telegram():
     """Same bug for Telegram — opencodon-telegram must not be preserved."""
     config = {
         "platform_toolsets": {
@@ -688,106 +687,12 @@ def test_save_platform_tools_still_preserves_mcp_with_platform_default_present()
     assert "terminal" not in saved
 
 
-def test_visible_providers_include_nous_subscription_when_logged_in(monkeypatch):
-    config = {"model": {"provider": "nous"}}
-
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
-            logged_in=True,
-            source="jwt",
-            fresh=False,
-            paid_service_access=True,
-        ),
-    )
-
-    providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
-
-    # The managed Nous row is listed (not necessarily first — "Local Browser"
-    # sorts first so a fresh-install Enter lands on the free local backend).
-    assert any(p["name"].startswith("Nous Subscription") for p in providers)
-    # "Local Browser" must be the index-0 default so pressing Enter never
-    # walks a user into a paid Nous Portal login.
-    assert providers[0]["name"] == "Local Browser"
 
 
-def test_visible_providers_show_nous_subscription_when_logged_out(monkeypatch):
-    """Nous-managed Tool Gateway rows are always listed, even logged out.
-
-    Selecting one triggers an inline Portal login (entitlement is checked at
-    selection time, not visibility time).
-    """
-    config = {"model": {"provider": "openrouter"}}
-
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
-            logged_in=False,
-            source="none",
-            fresh=False,
-            paid_service_access=None,
-        ),
-    )
-
-    providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
-
-    assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_show_nous_subscription_when_paid_access_is_false(monkeypatch):
-    """Logged-in-but-unpaid users still see the managed rows.
-
-    The paid-access gate moved from visibility to selection time — the row is
-    shown; ``ensure_nous_portal_access`` blocks activation if still unpaid.
-    """
-    config = {"model": {"provider": "nous"}}
-
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
-                logged_in=True,
-                source="jwt",
-                fresh=False,
-                paid_service_access=False,
-            ),
-    )
-
-    providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
-
-    assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_force_fresh_shows_nous_subscription_after_upgrade(monkeypatch):
-    calls = []
-
-    def fake_subscription_features(config, *, force_fresh=False):
-        calls.append(("features", force_fresh))
-        return SimpleNamespace(
-            nous_auth_present=True,
-            account_info=NousPortalAccountInfo(
-                logged_in=True,
-                source="account_api" if force_fresh else "jwt",
-                fresh=force_fresh,
-                paid_service_access=True if force_fresh else False,
-            ),
-            features={},
-        )
-
-    monkeypatch.setattr(
-        "opencodon_cli.tools_config.get_nous_subscription_features",
-        fake_subscription_features,
-    )
-
-    providers = _visible_providers(
-        TOOL_CATEGORIES["browser"],
-        {"model": {"provider": "nous"}},
-        force_fresh=True,
-    )
-
-    # The managed Nous row reappears after the entitlement upgrade. It is no
-    # longer asserted to be first — "Local Browser" sorts first by design.
-    assert any(p["name"].startswith("Nous Subscription") for p in providers)
-    assert ("features", True) in calls
 
 
 def test_local_browser_provider_is_saved_explicitly(monkeypatch):
@@ -858,7 +763,7 @@ def test_reconfigure_lists_enabled_web_without_existing_provider_config(monkeypa
 
 
 def test_configure_all_platforms_configures_selected_tool_missing_provider(monkeypatch):
-    """Regression: `hermes tools` → Configure all platforms → Web Search
+    """Regression: `opencodon tools` → Configure all platforms → Web Search
     must enter provider/API-key setup even when Web was already enabled on all
     configured platforms, so the checklist selection itself has no diff.
     """
@@ -904,7 +809,7 @@ def test_configure_all_platforms_configures_selected_tool_missing_provider(monke
 
 
 def test_configure_single_platform_configures_selected_tool_missing_provider(monkeypatch):
-    """Regression (per-platform sibling of the global flow): `hermes tools` →
+    """Regression (per-platform sibling of the global flow): `opencodon tools` →
     Configure <platform> → Web Search must enter provider/API-key setup even
     when Web was already enabled on that platform, so the checklist selection
     itself has no diff.
@@ -949,63 +854,6 @@ def test_configure_single_platform_configures_selected_tool_missing_provider(mon
     assert config["platform_toolsets"]["cli"] == ["web"]
 
 
-def test_first_install_nous_auto_configures_managed_defaults(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
-    config = {
-        "model": {"provider": "nous"},
-        "platform_toolsets": {"cli": []},
-    }
-    for env_var in (
-        "VOICE_TOOLS_OPENAI_KEY",
-        "OPENAI_API_KEY",
-        "ELEVENLABS_API_KEY",
-        "FIRECRAWL_API_KEY",
-        "FIRECRAWL_API_URL",
-        "TAVILY_API_KEY",
-        "PARALLEL_API_KEY",
-        "BROWSERBASE_API_KEY",
-        "BROWSERBASE_PROJECT_ID",
-        "BROWSER_USE_API_KEY",
-        "FAL_KEY",
-    ):
-        monkeypatch.delenv(env_var, raising=False)
-
-    monkeypatch.setattr(
-        "opencodon_cli.tools_config._prompt_toolset_checklist",
-        lambda *args, **kwargs: {"web", "image_gen", "tts", "browser"},
-    )
-    monkeypatch.setattr("opencodon_cli.tools_config.save_config", lambda config: None)
-    # Prevent leaked platform tokens (e.g. DISCORD_BOT_TOKEN from gateway.run
-    # import) from adding extra platforms. The loop in tools_command runs
-    # apply_nous_managed_defaults per platform; a second iteration sees values
-    # set by the first as "explicit" and skips them.
-    monkeypatch.setattr(
-        "opencodon_cli.tools_config._get_enabled_platforms",
-        lambda: ["cli"],
-    )
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-        lambda *args, **kwargs: NousPortalAccountInfo(
-            logged_in=True,
-            source="jwt",
-            fresh=False,
-            paid_service_access=True,
-        ),
-    )
-
-    configured = []
-    monkeypatch.setattr(
-        "opencodon_cli.tools_config._configure_toolset",
-        lambda ts_key, config: configured.append(ts_key),
-    )
-
-    tools_command(first_install=True, config=config)
-
-    assert config["web"]["backend"] == "firecrawl"
-    assert config["tts"]["provider"] == "openai"
-    assert config["browser"]["cloud_provider"] == "browser-use"
-    assert config["image_gen"]["use_gateway"] is True
-    assert configured == []
 
 
 # ── Platform / toolset consistency ────────────────────────────────────────────
@@ -1064,7 +912,7 @@ def test_numeric_mcp_server_name_does_not_crash_sorted():
     _get_platform_tools must normalise them to str so that sorted()
     on the returned set never raises TypeError on mixed int/str.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/6901
+    Regression test for upstream#6901
     """
     config = {
         "platform_toolsets": {"cli": ["web", 12306]},
@@ -1097,7 +945,7 @@ def test_toolset_has_keys_treats_no_key_providers_as_configured():
 def test_computer_use_needs_configuration_when_cua_driver_post_setup_pending():
     """No-key providers can still need setup when their post_setup is unsatisfied.
 
-    Returning users enabling Computer Use through `hermes tools` must reach the
+    Returning users enabling Computer Use through `opencodon tools` must reach the
     cua-driver post-setup installer even though the provider has no API keys.
     """
     with patch("shutil.which", return_value=None):
@@ -1279,7 +1127,7 @@ def test_save_platform_tools_normalizes_numeric_entries():
 
 
 def test_save_platform_tools_clears_no_mcp_sentinel():
-    """`hermes tools` has no UI for no_mcp, so saving from the picker clears
+    """`opencodon tools` has no UI for no_mcp, so saving from the picker clears
     the sentinel unconditionally — otherwise a user who once set no_mcp by
     hand could never re-enable MCP servers through the UI.
     """
@@ -1328,14 +1176,14 @@ def test_get_platform_tools_recovers_non_configurable_toolsets_from_composite():
         "tools": ["_test_special_tool"],
         "includes": [],
     }
-    fake_toolsets["hermes-_test_platform"] = {
+    fake_toolsets["opencodon-_test_platform"] = {
         "description": "test composite",
         "tools": ["web_search", "web_extract", "terminal", "process", "_test_special_tool"],
         "includes": [],
     }
 
     test_platforms = {
-        "_test_platform": {"label": "Test", "default_toolset": "hermes-_test_platform"},
+        "_test_platform": {"label": "Test", "default_toolset": "opencodon-_test_platform"},
     }
 
     with mock_patch("opencodon_cli.tools_config.PLATFORMS", {**PLATFORMS, **test_platforms}):
@@ -1357,7 +1205,7 @@ def test_get_platform_tools_second_pass_skips_fully_claimed_toolsets():
 
 
 def test_get_platform_tools_discord_both_off_by_default():
-    """Both `discord` and `discord_admin` are opt-in via `hermes tools`,
+    """Both `discord` and `discord_admin` are opt-in via `opencodon tools`,
     even on the Discord platform itself.  Users shouldn't auto-inherit 19
     extra tools just because DISCORD_BOT_TOKEN is set."""
     enabled = _get_platform_tools({}, "discord")
@@ -1392,7 +1240,7 @@ def test_discord_toolsets_not_available_on_other_platforms():
 
 
 def test_discord_toolsets_user_enabled_are_honored():
-    """When the user opts in via `hermes tools`, the toolset appears."""
+    """When the user opts in via `opencodon tools`, the toolset appears."""
     config = {"platform_toolsets": {"discord": ["web", "terminal", "discord"]}}
     enabled = _get_platform_tools(config, "discord")
     assert "discord" in enabled
@@ -1415,7 +1263,7 @@ def test_save_platform_tools_strips_restricted_toolsets():
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
     """Bundled plugins may share their toolset key with the built-in
     CONFIGURABLE_TOOLSETS entry. The effective list must not list
-    them twice — otherwise `hermes tools` → "reconfigure existing" shows
+    them twice — otherwise `opencodon tools` → "reconfigure existing" shows
     the same toolset two rows in a row.
     """
     from opencodon_cli.tools_config import _get_effective_configurable_toolsets
@@ -1428,34 +1276,14 @@ def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
     )
 
 
-@pytest.mark.parametrize("provider,config_key,expected", [
-    # managed provider → use_gateway True
-    ({"name": "T", "tts_provider": "elevenlabs", "managed_nous_feature": "tts", "env_vars": []}, "tts", True),
-    ({"name": "B", "browser_provider": "browserbase", "managed_nous_feature": "browser", "env_vars": []}, "browser", True),
-    ({"name": "W", "web_backend": "tavily", "managed_nous_feature": "web", "env_vars": []}, "web", True),
-    # self-hosted provider → use_gateway False
-    ({"name": "T", "tts_provider": "elevenlabs", "env_vars": []}, "tts", False),
-    ({"name": "B", "browser_provider": "browserbase", "env_vars": []}, "browser", False),
-    ({"name": "W", "web_backend": "tavily", "env_vars": []}, "web", False),
-])
-def test_reconfigure_provider_syncs_use_gateway(monkeypatch, provider, config_key, expected):
-    # Managed providers run the inline Portal entitlement gate; treat the user
-    # as already entitled so the test exercises the use_gateway sync.
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.ensure_nous_portal_access",
-        lambda **kwargs: True,
-    )
-    config = {}
-    _reconfigure_provider(provider, config)
-    assert config[config_key]["use_gateway"] is expected
 
 
 def test_reconfigure_browser_provider_overwrites_stale_use_gateway():
-    # Switching from managed (use_gateway=True) to self-hosted must clear the stale flag.
+    # A stale use_gateway flag from an older install must be dropped.
     config = {"browser": {"cloud_provider": "managed-browser", "use_gateway": True}}
     provider = {"name": "Browserbase", "browser_provider": "browserbase", "env_vars": []}
     _reconfigure_provider(provider, config)
-    assert config["browser"]["use_gateway"] is False
+    assert "use_gateway" not in config["browser"]
 
 
 @pytest.mark.parametrize("provider_name,post_setup_key", [
@@ -1487,65 +1315,10 @@ def test_reconfigure_provider_runs_post_setup_for_env_var_providers(
 # ---------------------------------------------------------------------------
 
 
-def test_configure_managed_provider_blocks_when_not_entitled(monkeypatch):
-    """Selecting a Nous-managed backend without paid access writes no config."""
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.ensure_nous_portal_access",
-        lambda **kwargs: False,
-    )
-    provider = {
-        "name": "Nous Subscription (Firecrawl)",
-        "web_backend": "firecrawl",
-        "managed_nous_feature": "web",
-        "env_vars": [],
-    }
-    config = {}
-
-    _configure_provider(provider, config)
-
-    # No use_gateway / backend written — the gate returned before any mutation.
-    assert "web" not in config
 
 
-def test_configure_managed_provider_enables_when_entitled(monkeypatch):
-    """Once entitled, selecting the managed backend sets use_gateway=True."""
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.ensure_nous_portal_access",
-        lambda **kwargs: True,
-    )
-    provider = {
-        "name": "Nous Subscription (Firecrawl)",
-        "web_backend": "firecrawl",
-        "managed_nous_feature": "web",
-        "env_vars": [],
-    }
-    config = {}
-
-    _configure_provider(provider, config)
-
-    assert config["web"]["backend"] == "firecrawl"
-    assert config["web"]["use_gateway"] is True
 
 
-def test_configure_non_managed_provider_skips_portal_gate(monkeypatch):
-    """A self-hosted provider must never trigger the Nous Portal login gate."""
-    called = {"gate": False}
-
-    def _boom(**kwargs):
-        called["gate"] = True
-        return False
-
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.ensure_nous_portal_access", _boom
-    )
-    provider = {"name": "Tavily", "web_backend": "tavily", "env_vars": []}
-    config = {}
-
-    _configure_provider(provider, config)
-
-    assert called["gate"] is False
-    assert config["web"]["backend"] == "tavily"
-    assert config["web"]["use_gateway"] is False
 
 
 def test_apply_provider_selection_web_sets_backend():
@@ -1556,7 +1329,7 @@ def test_apply_provider_selection_web_sets_backend():
     apply_provider_selection("web", "Firecrawl Self-Hosted", config)
 
     assert config["web"]["backend"] == "firecrawl"
-    assert config["web"]["use_gateway"] is False
+    assert "use_gateway" not in config["web"]
 
 
 def test_apply_provider_selection_tts_sets_provider():
@@ -1567,7 +1340,7 @@ def test_apply_provider_selection_tts_sets_provider():
     apply_provider_selection("tts", "Microsoft Edge TTS", config)
 
     assert config["tts"]["provider"] == "edge"
-    assert config["tts"]["use_gateway"] is False
+    assert "use_gateway" not in config["tts"]
 
 
 def test_apply_provider_selection_unknown_provider_raises_keyerror():
@@ -1602,7 +1375,7 @@ def test_apply_provider_selection_does_not_prompt_or_post_setup(monkeypatch):
 
 
 # ── Checklist diff scope: non-configurable toolsets (kanban) must not be
-#    reported as added/removed by `hermes tools` ──────────────────────────
+#    reported as added/removed by `opencodon tools` ──────────────────────────
 
 
 def test_checklist_toolset_keys_excludes_kanban():
@@ -1616,7 +1389,7 @@ def test_checklist_toolset_keys_excludes_kanban():
 
 
 def test_kanban_not_reported_as_removed_in_diff():
-    """Reproduces the false-signal bug: `hermes tools` printed ``- kanban``
+    """Reproduces the false-signal bug: `opencodon tools` printed ``- kanban``
     when saving a platform that resolves kanban as enabled, even though the
     checklist never offered kanban as a toggle.
 
@@ -1659,7 +1432,7 @@ def test_vision_picker_writes_provider_and_model(tmp_path, monkeypatch):
     """Picking a provider+model persists auxiliary.vision.{provider,model}.
 
     Vision must not force OpenRouter — it offers the same any-provider surface
-    as ``hermes model`` and writes the selection to the auxiliary config keys
+    as ``opencodon model`` and writes the selection to the auxiliary config keys
     the resolver reads.
     """
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -1822,17 +1595,6 @@ def test_save_platform_tools_disabling_a_toolset_does_not_touch_disabled_toolset
 # Subscription rows and never-installed KittenTTS/Piper).
 
 
-def _fake_features(*, logged_in: bool, paid: bool = True):
-    account = (
-        NousPortalAccountInfo(
-            logged_in=True, source="jwt", fresh=False, paid_service_access=paid
-        )
-        if logged_in
-        else NousPortalAccountInfo(
-            logged_in=False, source="none", fresh=False, paid_service_access=None
-        )
-    )
-    return SimpleNamespace(nous_auth_present=logged_in, account_info=account)
 
 
 def test_provider_readiness_env_vars_gate_keys(monkeypatch):
@@ -1851,44 +1613,10 @@ def test_provider_readiness_keyless_ungated_row_is_ready():
     assert provider_readiness_status(provider, {}) == "ready"
 
 
-def test_provider_readiness_managed_nous_row_needs_auth_when_logged_out():
-    provider = {
-        "name": "Nous Subscription",
-        "env_vars": [],
-        "requires_nous_auth": True,
-        "managed_nous_feature": "tts",
-    }
-    status = provider_readiness_status(
-        provider, {}, features=_fake_features(logged_in=False)
-    )
-    assert status == "needs_auth"
 
 
-def test_provider_readiness_managed_nous_row_ready_when_entitled():
-    provider = {
-        "name": "Nous Subscription",
-        "env_vars": [],
-        "requires_nous_auth": True,
-        "managed_nous_feature": "tts",
-    }
-    status = provider_readiness_status(
-        provider, {}, features=_fake_features(logged_in=True, paid=True)
-    )
-    assert status == "ready"
 
 
-def test_provider_readiness_managed_nous_row_needs_auth_when_unentitled():
-    # Logged in but unpaid and no free tool pool → still gated.
-    provider = {
-        "name": "Nous Subscription",
-        "env_vars": [],
-        "requires_nous_auth": True,
-        "managed_nous_feature": "browser",
-    }
-    status = provider_readiness_status(
-        provider, {}, features=_fake_features(logged_in=True, paid=False)
-    )
-    assert status == "needs_auth"
 
 
 def test_provider_readiness_xai_grok_row_tracks_credentials(monkeypatch):
@@ -1933,7 +1661,7 @@ def test_provider_readiness_unknown_post_setup_falls_back_to_is_active():
 # ── Windows console-flash guard for post-setup subprocess spawns ──────────────
 #
 # The desktop GUI runs post-setup hooks through a detached, console-less
-# `hermes tools post-setup <key>` child. On Windows each console child (npm,
+# `opencodon tools post-setup <key>` child. On Windows each console child (npm,
 # npx, pip, powershell) spawned without CREATE_NO_WINDOW materializes a brand
 # new console window — the "terminal flash" reported on the Capabilities
 # browser-setup journey. `_post_setup_no_window_flags` is the single wrapper
@@ -1996,12 +1724,12 @@ def test_provider_readiness_agent_browser_tracks_local_install(monkeypatch):
     provider = {"name": "Local Browser", "env_vars": [], "post_setup": "agent_browser"}
 
     monkeypatch.setattr(
-        "opencodon_cli.nous_subscription._local_browser_runnable", lambda: False
+        "opencodon_cli.tools_config._local_browser_runnable", lambda: False
     )
     assert provider_readiness_status(provider, {}) == "needs_setup"
 
     monkeypatch.setattr(
-        "opencodon_cli.nous_subscription._local_browser_runnable", lambda: True
+        "opencodon_cli.tools_config._local_browser_runnable", lambda: True
     )
     assert provider_readiness_status(provider, {}) == "ready"
 
@@ -2012,12 +1740,12 @@ def test_provider_readiness_cloud_browser_hook_tracks_cli_only(monkeypatch):
     provider = {"name": "Browserbase", "env_vars": [], "post_setup": "browserbase"}
 
     monkeypatch.setattr(
-        "opencodon_cli.nous_subscription._has_agent_browser", lambda: False
+        "opencodon_cli.tools_config._has_agent_browser", lambda: False
     )
     assert provider_readiness_status(provider, {}) == "needs_setup"
 
     monkeypatch.setattr(
-        "opencodon_cli.nous_subscription._has_agent_browser", lambda: True
+        "opencodon_cli.tools_config._has_agent_browser", lambda: True
     )
     assert provider_readiness_status(provider, {}) == "ready"
 

@@ -1,6 +1,6 @@
 """Managed uv — one path, no guessing.
 
-Hermes owns its own uv binary at ``$OPENCODON_HOME/bin/uv`` (or ``uv.exe`` on
+opencodon owns its own uv binary at ``$OPENCODON_HOME/bin/uv`` (or ``uv.exe`` on
 Windows).  Every code path that needs uv resolves it from that single location.
 If the binary is missing, ``ensure_uv()`` bootstraps it via the official
 standalone installer with ``UV_UNMANAGED_INSTALL`` / ``UV_INSTALL_DIR`` pointed
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def managed_uv_path() -> Path:
-    """Return the path where Hermes keeps *its* uv binary.
+    """Return the path where opencodon keeps *its* uv binary.
 
     ``$OPENCODON_HOME/bin/uv`` on POSIX, ``$OPENCODON_HOME\\bin\\uv.exe`` on
     Windows.  The directory may not exist yet — callers should use
@@ -55,7 +55,7 @@ class _UvResult(str):
     """``ensure_uv()`` return value that survives an update boundary.
 
     ``ensure_uv()``'s arity has flipped between a single path string and a
-    ``(path, fresh_bootstrap)`` tuple across releases. ``hermes update`` runs
+    ``(path, fresh_bootstrap)`` tuple across releases. ``opencodon update`` runs
     the call site from the *old*, already-imported ``opencodon_cli.main`` against
     this *freshly pulled* module, so the two can disagree on how many values
     ``ensure_uv()`` returns. An install parked on a 2-tuple release runs
@@ -158,7 +158,7 @@ def ensure_uv():
 def update_managed_uv() -> Optional[str]:
     """Run ``uv self update`` on the managed uv binary.
 
-    Call this during ``hermes update`` so the managed copy stays current.
+    Call this during ``opencodon update`` so the managed copy stays current.
     Returns the managed path on success, ``None`` if uv isn't available or
     the self-update fails (non-fatal — the old version still works).
     """

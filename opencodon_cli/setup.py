@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for Hermes Agent.
+Interactive setup wizard for opencodon.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -21,8 +21,6 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from opencodon_cli.nous_subscription import get_nous_subscription_features
-from tools.tool_backend_helpers import managed_nous_tools_enabled
 from utils import base_url_hostname
 from opencodon_constants import get_optional_skills_dir
 
@@ -30,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
+_DOCS_BASE = "https://github.com/opencodon/opencodon/tree/main/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -148,7 +146,7 @@ from opencodon_cli.config import (
     get_env_value,
     ensure_opencodon_home,
 )
-# display_opencodon_home imported lazily at call sites (stale-module safety during hermes update)
+# display_opencodon_home imported lazily at call sites (stale-module safety during opencodon update)
 
 from opencodon_cli.colors import Colors, color
 
@@ -182,19 +180,19 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ opencodon Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure Hermes using environment variables or config commands:")
-    print_info("  hermes config set model.provider custom")
-    print_info("  hermes config set model.base_url http://localhost:8080/v1")
-    print_info("  hermes config set model.default your-model-name")
+    print_info("Configure opencodon using environment variables or config commands:")
+    print_info("  opencodon config set model.provider custom")
+    print_info("  opencodon config set model.base_url http://localhost:8080/v1")
+    print_info("  opencodon config set model.default your-model-name")
     print()
     print_info("Or set OPENROUTER_API_KEY / OPENAI_API_KEY in your environment.")
-    print_info("Run 'hermes setup' in an interactive terminal to use the full wizard.")
+    print_info("Run 'opencodon setup' in an interactive terminal to use the full wizard.")
     print()
 
 
@@ -389,7 +387,7 @@ def _prompt_api_key(var: dict):
         save_env_value(var["name"], value)
         print_success("  ✓ Saved")
     else:
-        print_warning("  Skipped (configure later with 'hermes setup')")
+        print_warning("  Skipped (configure later with 'opencodon setup')")
 
 
 def _print_setup_summary(config: dict, opencodon_home):
@@ -399,7 +397,6 @@ def _print_setup_summary(config: dict, opencodon_home):
     print_header("Tool Availability Summary")
 
     tool_status = []
-    subscription_features = get_nous_subscription_features(config)
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
@@ -412,25 +409,47 @@ def _print_setup_summary(config: dict, opencodon_home):
     if _vision_backends:
         tool_status.append(("Vision (image analysis)", True, None))
     else:
-        tool_status.append(("Vision (image analysis)", False, "run 'hermes setup' to configure"))
+        tool_status.append(("Vision (image analysis)", False, "run 'opencodon setup' to configure"))
 
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
-    if subscription_features.web.managed_by_nous:
-        tool_status.append(("Web Search & Extract (Nous subscription)", True, None))
-    elif subscription_features.web.available:
+    try:
+        from tools.web_tools import _get_backend as _web_backend_fn
+        from tools.web_tools import check_web_api_key as _web_available_fn
+
+        _web_available = bool(_web_available_fn())
+        _web_backend = _web_backend_fn() if _web_available else ""
+    except Exception:
+        _web_available, _web_backend = False, ""
+    if _web_available:
         label = "Web Search & Extract"
-        if subscription_features.web.current_provider:
-            label = f"Web Search & Extract ({subscription_features.web.current_provider})"
+        if _web_backend:
+            label = f"Web Search & Extract ({_web_backend})"
         tool_status.append((label, True, None))
     else:
         tool_status.append(("Web Search & Extract", False, "EXA_API_KEY, PARALLEL_API_KEY, FIRECRAWL_API_KEY/FIRECRAWL_API_URL, TAVILY_API_KEY, or SEARXNG_URL"))
 
     # Browser tools (local Chromium, Camofox, Browserbase, Browser Use, or Firecrawl)
-    browser_provider = subscription_features.browser.current_provider
-    if subscription_features.browser.managed_by_nous:
-        tool_status.append(("Browser Automation (Nous Browser Use)", True, None))
-    elif subscription_features.browser.available:
+    # Map the stored config value onto the display label the hints below and
+    # the summary line both key off.
+    _BROWSER_LABELS = {
+        "browserbase": "Browserbase",
+        "browser-use": "Browser Use",
+        "firecrawl": "Firecrawl",
+        "camofox": "Camofox",
+        "local": "Local browser",
+    }
+    _browser_cfg_value = cfg_get(config, "browser", "cloud_provider") or "local"
+    browser_provider = _BROWSER_LABELS.get(
+        _browser_cfg_value, _browser_cfg_value or "Local browser"
+    )
+    try:
+        from tools.browser_tool import check_browser_requirements as _browser_ok_fn
+
+        _browser_available = bool(_browser_ok_fn())
+    except Exception:
+        _browser_available = False
+    if _browser_available:
         label = "Browser Automation"
         if browser_provider:
             label = f"Browser Automation ({browser_provider})"
@@ -456,11 +475,14 @@ def _print_setup_summary(config: dict, opencodon_home):
             ("Browser Automation", False, missing_browser_hint)
         )
 
-    # Image generation — FAL (direct or via Nous), or any plugin-registered
-    # provider (OpenAI, etc.)
-    if subscription_features.image_gen.managed_by_nous:
-        tool_status.append(("Image Generation (Nous subscription)", True, None))
-    elif subscription_features.image_gen.available:
+    # Image generation — FAL, or any plugin-registered provider (OpenAI, etc.)
+    try:
+        from tools.image_generation_tool import check_fal_api_key as _fal_ok_fn
+
+        _fal_available = bool(_fal_ok_fn())
+    except Exception:
+        _fal_available = False
+    if _fal_available:
         tool_status.append(("Image Generation", True, None))
     else:
         # Fall back to probing plugin-registered providers so OpenAI-only
@@ -489,9 +511,7 @@ def _print_setup_summary(config: dict, opencodon_home):
 
     # TTS — show configured provider
     tts_provider = cfg_get(config, "tts", "provider", default="edge")
-    if subscription_features.tts.managed_by_nous:
-        tool_status.append(("Text-to-Speech (OpenAI via Nous subscription)", True, None))
-    elif tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
+    if tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
         tool_status.append(("Text-to-Speech (ElevenLabs)", True, None))
     elif tts_provider == "openai" and (
         get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
@@ -511,7 +531,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         if neutts_ok:
             tool_status.append(("Text-to-Speech (NeuTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'hermes setup tts'"))
+            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'opencodon setup tts'"))
     elif tts_provider == "kittentts":
         try:
             kittentts_ok = importlib.util.find_spec("kittentts") is not None
@@ -520,19 +540,17 @@ def _print_setup_summary(config: dict, opencodon_home):
         if kittentts_ok:
             tool_status.append(("Text-to-Speech (KittenTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'hermes setup tts'"))
+            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'opencodon setup tts'"))
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
-    if subscription_features.modal.managed_by_nous:
-        tool_status.append(("Modal Execution (Nous subscription)", True, None))
-    elif cfg_get(config, "terminal", "backend") == "modal":
-        if subscription_features.modal.direct_override:
+    if cfg_get(config, "terminal", "backend") == "modal":
+        from tools.tool_backend_helpers import has_direct_modal_credentials
+
+        if has_direct_modal_credentials():
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
-            tool_status.append(("Modal Execution", False, "run 'hermes setup terminal'"))
-    elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
+            tool_status.append(("Modal Execution", False, "run 'opencodon setup terminal'"))
 
     # Skills Hub
     if get_env_value("GITHUB_TOKEN"):
@@ -569,7 +587,7 @@ def _print_setup_summary(config: dict, opencodon_home):
     disabled_tools = [(name, var) for name, avail, var in tool_status if not avail]
     if disabled_tools:
         print_warning(
-            "Some tools are disabled. Run 'hermes setup tools' to configure them,"
+            "Some tools are disabled. Run 'opencodon setup tools' to configure them,"
         )
         from opencodon_constants import display_opencodon_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
@@ -609,17 +627,17 @@ def _print_setup_summary(config: dict, opencodon_home):
     print()
     print(color("📝 To edit your configuration:", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('hermes setup', Colors.GREEN)}          Re-run the full wizard")
-    print(f"   {color('hermes setup model', Colors.GREEN)}    Change model/provider")
-    print(f"   {color('hermes setup terminal', Colors.GREEN)} Change terminal backend")
-    print(f"   {color('hermes setup gateway', Colors.GREEN)}  Configure messaging")
-    print(f"   {color('hermes setup tools', Colors.GREEN)}    Configure tool providers")
+    print(f"   {color('opencodon setup', Colors.GREEN)}          Re-run the full wizard")
+    print(f"   {color('opencodon setup model', Colors.GREEN)}    Change model/provider")
+    print(f"   {color('opencodon setup terminal', Colors.GREEN)} Change terminal backend")
+    print(f"   {color('opencodon setup gateway', Colors.GREEN)}  Configure messaging")
+    print(f"   {color('opencodon setup tools', Colors.GREEN)}    Configure tool providers")
     print()
-    print(f"   {color('hermes config', Colors.GREEN)}         View current settings")
+    print(f"   {color('opencodon config', Colors.GREEN)}         View current settings")
     print(
-        f"   {color('hermes config edit', Colors.GREEN)}    Open config in your editor"
+        f"   {color('opencodon config edit', Colors.GREEN)}    Open config in your editor"
     )
-    print(f"   {color('hermes config set <key> <value>', Colors.GREEN)}")
+    print(f"   {color('opencodon config set <key> <value>', Colors.GREEN)}")
     print("                          Set a specific value")
     print()
     print("   Or edit the files directly:")
@@ -631,9 +649,9 @@ def _print_setup_summary(config: dict, opencodon_home):
     print()
     print(color("🚀 Ready to go!", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('hermes', Colors.GREEN)}              Start chatting")
-    print(f"   {color('hermes gateway', Colors.GREEN)}      Start messaging gateway")
-    print(f"   {color('hermes doctor', Colors.GREEN)}       Check for issues")
+    print(f"   {color('opencodon', Colors.GREEN)}              Start chatting")
+    print(f"   {color('opencodon gateway', Colors.GREEN)}      Start messaging gateway")
+    print(f"   {color('opencodon doctor', Colors.GREEN)}       Check for issues")
     print()
 
 
@@ -680,7 +698,7 @@ def _prompt_container_resources(config: dict):
 
 
 # Tool categories and provider config are now in tools_config.py (shared
-# between `hermes tools` and `hermes setup tools`).
+# between `opencodon tools` and `opencodon setup tools`).
 
 
 # =============================================================================
@@ -692,10 +710,10 @@ def _prompt_container_resources(config: dict):
 def setup_model_provider(config: dict, *, quick: bool = False):
     """Configure the inference provider and default model.
 
-    Delegates to ``cmd_model()`` (the same flow used by ``hermes model``)
+    Delegates to ``cmd_model()`` (the same flow used by ``opencodon model``)
     for provider selection, credential prompting, and model picking.
     This ensures a single code path for all provider setup — any new
-    provider added to ``hermes model`` is automatically available here.
+    provider added to ``opencodon model`` is automatically available here.
 
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
@@ -707,7 +725,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     print_info(f"   Guide: {_DOCS_BASE}/integrations/providers")
     print()
 
-    # Delegate to the shared hermes model flow — handles provider picker,
+    # Delegate to the shared opencodon model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
     from opencodon_cli.main import select_provider_and_model
     try:
@@ -718,7 +736,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         print_warning(f"Provider setup encountered an error: {exc}")
-        print_info("You can try again later with: hermes model")
+        print_info("You can try again later with: opencodon model")
 
     # Re-sync the wizard's config dict from what cmd_model saved to disk.
     # This is critical: cmd_model writes to disk via its own load/save cycle,
@@ -739,10 +757,9 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     # Credential rotation, vision-backend selection, and TTS provider are no
     # longer prompted here. They have safe defaults (rotation off, vision
     # auto-detected from the main provider, TTS = Edge) and are configurable
-    # on demand via `hermes auth add`, `hermes setup` vision, and
-    # `hermes setup tts`. This keeps both quick and full setup thin.
+    # on demand via `opencodon auth add`, `opencodon setup` vision, and
+    # `opencodon setup tts`. This keeps both quick and full setup thin.
 
-    # Tool Gateway prompt is already shown by _model_flow_nous() above.
     save_config(config)
 
 
@@ -847,7 +864,7 @@ def _xai_oauth_logged_in_for_setup() -> bool:
     """True iff xAI Grok OAuth credentials are already stored locally.
 
     Lets TTS / STT setup skip the API-key prompt for users who logged in
-    through ``hermes model`` -> xAI Grok OAuth (SuperGrok / Premium+).
+    through ``opencodon model`` -> xAI Grok OAuth (SuperGrok / Premium+).
     """
     try:
         from opencodon_cli.auth import get_xai_oauth_auth_status
@@ -900,7 +917,6 @@ def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
     current_provider = tts_config.get("provider", "edge")
-    subscription_features = get_nous_subscription_features(config)
 
     provider_labels = {
         "edge": "Edge TTS",
@@ -922,9 +938,6 @@ def _setup_tts_provider(config: dict):
 
     choices = []
     providers = []
-    if managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        choices.append("Nous Subscription (managed OpenAI TTS, billed to your subscription)")
-        providers.append("nous-openai")
     choices.extend(
         [
             "Edge TTS (free, cloud-based, no setup needed)",
@@ -947,14 +960,6 @@ def _setup_tts_provider(config: dict):
         return
 
     selected = providers[idx]
-    selected_via_nous = selected == "nous-openai"
-    if selected == "nous-openai":
-        selected = "openai"
-        print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
-        if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
-            print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.opencodon/.env."
-            )
 
     if selected == "neutts":
         # Check if already installed
@@ -991,7 +996,7 @@ def _setup_tts_provider(config: dict):
                 print_warning("No API key provided. Falling back to Edge TTS.")
                 selected = "edge"
 
-    elif selected == "openai" and not selected_via_nous:
+    elif selected == "openai":
         existing = get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
         if not existing:
             print()
@@ -1005,7 +1010,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the Hermes auth store) > existing XAI_API_KEY > prompt the user.
+        # via the opencodon auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1049,7 +1054,7 @@ def _setup_tts_provider(config: dict):
                     from opencodon_constants import display_opencodon_home as _dhh
                     print_warning(
                         "No xAI API key provided for TTS. Configure XAI_API_KEY "
-                        f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
+                        f"via opencodon setup model or {_dhh()}/.env to use xAI TTS. "
                         "Falling back to Edge TTS."
                     )
                     selected = "edge"
@@ -1133,7 +1138,7 @@ def _setup_tts_provider(config: dict):
 
 
 def setup_tts(config: dict):
-    """Standalone TTS setup (for 'hermes setup tts')."""
+    """Standalone TTS setup (for 'opencodon setup tts')."""
     _setup_tts_provider(config)
 
 
@@ -1146,7 +1151,7 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where Hermes runs shell commands and code.")
+    print_info("Choose where opencodon runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
     print_info(f"   Guide: {_DOCS_BASE}/user-guide/configuration#terminal-backend-configuration")
     print()
@@ -1193,7 +1198,7 @@ def setup_terminal_backend(config: dict):
         print_success("Terminal backend: Local")
         print_info("Commands run directly on this machine.")
         # Gateway working directory defaults to home; sudo stays off. Both are
-        # configurable later via `hermes setup terminal` / config.yaml.
+        # configurable later via `opencodon setup terminal` / config.yaml.
         config["terminal"].setdefault("cwd", str(Path.home()))
 
     elif selected_backend == "docker":
@@ -1207,7 +1212,7 @@ def setup_terminal_backend(config: dict):
         else:
             print_info(f"Docker found: {docker_bin}")
 
-        # Image and resource limits use defaults; tune via `hermes setup terminal`.
+        # Image and resource limits use defaults; tune via `opencodon setup terminal`.
         config["terminal"].setdefault(
             "docker_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
@@ -1225,7 +1230,7 @@ def setup_terminal_backend(config: dict):
         else:
             print_info(f"Found: {sing_bin}")
 
-        # Image and resource limits use defaults; tune via `hermes setup terminal`.
+        # Image and resource limits use defaults; tune via `opencodon setup terminal`.
         config["terminal"].setdefault(
             "singularity_image",
             "docker://nikolaik/python-nodejs:python3.11-nodejs20",
@@ -1234,80 +1239,43 @@ def setup_terminal_backend(config: dict):
     elif selected_backend == "modal":
         print_success("Terminal backend: Modal")
         print_info("Serverless cloud sandboxes. Each session gets its own container.")
-        from tools.managed_tool_gateway import is_managed_tool_gateway_ready
-        from tools.tool_backend_helpers import normalize_modal_mode
+        config["terminal"]["modal_mode"] = "direct"
+        print_info("Requires a Modal account: https://modal.com")
 
-        managed_modal_available = bool(
-            managed_nous_tools_enabled()
-            and
-            get_nous_subscription_features(config).nous_auth_present
-            and is_managed_tool_gateway_ready("modal")
-        )
-        modal_mode = normalize_modal_mode(cfg_get(config, "terminal", "modal_mode"))
-        use_managed_modal = False
-        if managed_modal_available:
-            modal_choices = [
-                "Use my Nous subscription",
-                "Use my own Modal account",
-            ]
-            if modal_mode == "managed":
-                default_modal_idx = 0
-            elif modal_mode == "direct":
-                default_modal_idx = 1
+        # Check if modal SDK is installed
+        try:
+            __import__("modal")
+        except ImportError:
+            print_info("Installing modal SDK...")
+            from opencodon_cli.tools_config import _pip_install
+
+            result = _pip_install(["modal"])
+            if result.returncode == 0:
+                print_success("modal SDK installed")
             else:
-                default_modal_idx = 1 if get_env_value("MODAL_TOKEN_ID") else 0
-            modal_mode_idx = prompt_choice(
-                "Select how Modal execution should be billed:",
-                modal_choices,
-                default_modal_idx,
-            )
-            use_managed_modal = modal_mode_idx == 0
+                print_warning("Install failed — run manually: uv pip install modal")
 
-        if use_managed_modal:
-            config["terminal"]["modal_mode"] = "managed"
-            print_info("Modal execution will use the managed Nous gateway and bill to your subscription.")
-            if get_env_value("MODAL_TOKEN_ID") or get_env_value("MODAL_TOKEN_SECRET"):
-                print_info(
-                    "Direct Modal credentials are still configured, but this backend is pinned to managed mode."
-                )
-        else:
-            config["terminal"]["modal_mode"] = "direct"
-            print_info("Requires a Modal account: https://modal.com")
-
-            # Check if modal SDK is installed
-            try:
-                __import__("modal")
-            except ImportError:
-                print_info("Installing modal SDK...")
-                from opencodon_cli.tools_config import _pip_install
-
-                result = _pip_install(["modal"])
-                if result.returncode == 0:
-                    print_success("modal SDK installed")
-                else:
-                    print_warning("Install failed — run manually: uv pip install modal")
-
-            # Modal token
-            print()
-            print_info("Modal authentication:")
-            print_info("  Get your token at: https://modal.com/settings")
-            existing_token = get_env_value("MODAL_TOKEN_ID")
-            if existing_token:
-                print_info("  Modal token: already configured")
-                if prompt_yes_no("  Update Modal credentials?", False):
-                    token_id = prompt("    Modal Token ID", password=True)
-                    token_secret = prompt("    Modal Token Secret", password=True)
-                    if token_id:
-                        save_env_value("MODAL_TOKEN_ID", token_id)
-                    if token_secret:
-                        save_env_value("MODAL_TOKEN_SECRET", token_secret)
-            else:
+        # Modal token
+        print()
+        print_info("Modal authentication:")
+        print_info("  Get your token at: https://modal.com/settings")
+        existing_token = get_env_value("MODAL_TOKEN_ID")
+        if existing_token:
+            print_info("  Modal token: already configured")
+            if prompt_yes_no("  Update Modal credentials?", False):
                 token_id = prompt("    Modal Token ID", password=True)
                 token_secret = prompt("    Modal Token Secret", password=True)
                 if token_id:
                     save_env_value("MODAL_TOKEN_ID", token_id)
                 if token_secret:
                     save_env_value("MODAL_TOKEN_SECRET", token_secret)
+        else:
+            token_id = prompt("    Modal Token ID", password=True)
+            token_secret = prompt("    Modal Token Secret", password=True)
+            if token_id:
+                save_env_value("MODAL_TOKEN_ID", token_id)
+            if token_secret:
+                save_env_value("MODAL_TOKEN_SECRET", token_secret)
 
     elif selected_backend == "daytona":
         print_success("Terminal backend: Daytona")
@@ -1346,7 +1314,7 @@ def setup_terminal_backend(config: dict):
                 save_env_value("DAYTONA_API_KEY", api_key)
                 print_success("    Configured")
 
-        # Image and resource limits use defaults; tune via `hermes setup terminal`.
+        # Image and resource limits use defaults; tune via `opencodon setup terminal`.
         config["terminal"].setdefault(
             "daytona_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
@@ -1439,7 +1407,7 @@ def _apply_default_agent_settings(config: dict):
     print_info("  Tool progress: all")
     print_info("  Compression threshold: 0.50")
     print_info("  Session reset: never (use /reset or compression)")
-    print_info("  Run `hermes setup agent` later to customize.")
+    print_info("  Run `opencodon setup agent` later to customize.")
 
 
 def setup_agent_settings(config: dict):
@@ -1627,35 +1595,6 @@ def _is_valid_telegram_bot_token(token: str) -> bool:
     return bool(_TELEGRAM_BOT_TOKEN_RE.match(token))
 
 
-def _setup_telegram_auto_result():
-    """Attempt automatic Telegram bot creation via managed QR onboarding."""
-    try:
-        from opencodon_cli.telegram_managed_bot import auto_setup_telegram_bot_result
-    except ImportError:
-        return None
-
-    profile_name: str | None = None
-    try:
-        profile_name = _profile_name_from_opencodon_home(Path(get_opencodon_home()))
-    except Exception:
-        pass
-
-    return auto_setup_telegram_bot_result(profile_name=profile_name)
-
-
-def _profile_name_from_opencodon_home(opencodon_home) -> str | None:
-    """Return the active profile name when OPENCODON_HOME is a profile dir."""
-    if opencodon_home.parent.name == "profiles":
-        return opencodon_home.name
-    return None
-
-
-def _setup_telegram_auto() -> str | None:
-    """Attempt automatic Telegram bot creation and return only the token."""
-    result = _setup_telegram_auto_result()
-    return result.token if result else None
-
-
 def _prompt_telegram_bot_token() -> str | None:
     print_info("Create a bot via @BotFather on Telegram")
     while True:
@@ -1689,37 +1628,7 @@ def _setup_telegram():
                         print_success("Telegram allowlist configured")
             return
 
-    print_info("How would you like to create your Telegram bot?")
-    print()
-    print_info("  [1] Automatic (recommended)")
-    print_info("      Scan a QR code → confirm in Telegram → done.")
-    print_info("      No token copy-paste needed.")
-    print()
-    print_info("  [2] Manual")
-    print_info("      Create a bot via @BotFather yourself and paste the token.")
-    print()
-
-    choice = prompt("Choice [1/2]", default="1")
-    token = None
-    setup_result = None
-
-    if choice.strip() == "1":
-        setup_result = _setup_telegram_auto_result()
-        if setup_result:
-            token = setup_result.token
-            if not _is_valid_telegram_bot_token(token):
-                print_error("Automatic setup returned an invalid Telegram bot token.")
-                token = None
-                setup_result = None
-        else:
-            token = None
-        if not token:
-            print()
-            print_info("Falling back to manual setup...")
-            print()
-
-    if not token:
-        token = _prompt_telegram_bot_token()
+    token = _prompt_telegram_bot_token()
     if not token:
         return
 
@@ -1733,25 +1642,9 @@ def _setup_telegram():
     print_info("   2. It will reply with your numeric ID (e.g., 123456789)")
     print()
 
-    detected_user_id = getattr(setup_result, "owner_user_id", None)
-    if detected_user_id:
-        detected_id = str(detected_user_id)
-        print_success(f"Detected your Telegram user ID: {detected_id}")
-        if prompt_yes_no("Allow this Telegram account to use the bot?", True):
-            extra = prompt("Additional allowed user IDs (comma-separated, optional)")
-            ids = [detected_id]
-            for uid in extra.replace(" ", "").split(","):
-                if uid and uid not in ids:
-                    ids.append(uid)
-            allowed_users = ",".join(ids)
-        else:
-            allowed_users = prompt(
-                "Allowed user IDs (comma-separated, leave empty for open access)"
-            )
-    else:
-        allowed_users = prompt(
-            "Allowed user IDs (comma-separated, leave empty for open access)"
-        )
+    allowed_users = prompt(
+        "Allowed user IDs (comma-separated, leave empty for open access)"
+    )
 
     if allowed_users:
         allowed_users = allowed_users.replace(" ", "")
@@ -1761,7 +1654,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Hermes delivers cron job results,")
+    print_info("📬 Home Channel: where opencodon delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -1804,7 +1697,7 @@ def _setup_webhooks():
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
-    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/")
+    print_info("   Full guide: https://github.com/opencodon/opencodon/tree/main/docs")
     print()
 
     port = prompt("Webhook port (default 8644)")
@@ -1831,10 +1724,10 @@ def _setup_webhooks():
     print_info("      http://your-server:8644/webhooks/<route-name>")
     print()
     print_info("   Route configuration guide:")
-    print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
+    print_info("   https://github.com/opencodon/opencodon/tree/main/docs")
     print()
-    print_info("   Open config in your editor:  hermes config edit")
-    print_info("   Open config in your editor:  hermes config edit")
+    print_info("   Open config in your editor:  opencodon config edit")
+    print_info("   Open config in your editor:  opencodon config edit")
 
 
 def setup_gateway(config: dict):
@@ -1842,7 +1735,7 @@ def setup_gateway(config: dict):
     from opencodon_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with Hermes from anywhere.")
+    print_info("Connect to messaging platforms to chat with opencodon from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -1860,7 +1753,7 @@ def setup_gateway(config: dict):
     selected = prompt_checklist("Select platforms to configure:", items, pre_selected)
 
     if not selected:
-        print_info("No platforms selected. Run 'hermes setup gateway' later to configure.")
+        print_info("No platforms selected. Run 'opencodon setup gateway' later to configure.")
         return
 
     for idx in selected:
@@ -1907,7 +1800,7 @@ def setup_gateway(config: dict):
             print_info("   Set one later with /set-home in your chat, or:")
             for plat in missing_home:
                 print_info(
-                    f"     hermes config set {plat.upper()}_HOME_CHANNEL <channel_id>"
+                    f"     opencodon config set {plat.upper()}_HOME_CHANNEL <channel_id>"
                 )
 
         # Offer to install the gateway as a system service
@@ -1922,10 +1815,8 @@ def setup_gateway(config: dict):
             _is_service_running,
             supports_systemd_services,
             has_conflicting_systemd_units,
-            has_legacy_hermes_units,
             install_linux_gateway_from_setup,
             print_systemd_scope_conflict_warning,
-            print_legacy_unit_warning,
             systemd_start,
             systemd_restart,
             launchd_install,
@@ -1945,10 +1836,6 @@ def setup_gateway(config: dict):
         print()
         if supports_systemd and has_conflicting_systemd_units():
             print_systemd_scope_conflict_warning()
-            print()
-
-        if supports_systemd and has_legacy_hermes_units():
-            print_legacy_unit_warning()
             print()
 
         if service_running:
@@ -2044,24 +1931,24 @@ def setup_gateway(config: dict):
                             print_error(f"  Start failed: {e}")
                 except Exception as e:
                     print_error(f"  Install failed: {e}")
-                    print_info("  You can try manually: hermes gateway install")
+                    print_info("  You can try manually: opencodon gateway install")
             else:
-                print_info("  You can install later: hermes gateway install")
+                print_info("  You can install later: opencodon gateway install")
                 if supports_systemd and os.geteuid() == 0:  # windows-footgun: ok — guarded by supports_systemd (Linux only)
-                    print_info("  Or as a boot-time service: hermes gateway install --system")
-                print_info("  Or run in foreground:  hermes gateway")
+                    print_info("  Or as a boot-time service: opencodon gateway install --system")
+                print_info("  Or run in foreground:  opencodon gateway")
         else:
             from opencodon_constants import is_container
             if is_container():
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   hermes gateway run          # Run as container main process")
+                print_info("   opencodon gateway run          # Run as container main process")
                 print_info("")
                 print_info("For automatic restarts, use a Docker restart policy:")
                 print_info("   docker run --restart unless-stopped ...")
                 print_info("   docker restart <container>  # Manual restart")
             else:
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   hermes gateway              # Run in foreground")
+                print_info("   opencodon gateway              # Run in foreground")
 
         print_info("━" * 50)
 
@@ -2074,7 +1961,7 @@ def setup_gateway(config: dict):
 def setup_tools(config: dict, first_install: bool = False):
     """Configure tools — delegates to the unified tools_command() in tools_config.py.
 
-    Both `hermes setup tools` and `hermes tools` use the same flow:
+    Both `opencodon setup tools` and `opencodon tools` use the same flow:
     platform selection → toolset toggles → provider/API key configuration.
 
     Args:
@@ -2098,7 +1985,7 @@ def _model_section_has_credentials(config: dict) -> bool:
       * ``PROVIDER_REGISTRY`` in ``opencodon_cli.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
-        external-OAuth providers (Nous, Codex, Qwen, Gemini CLI, ...).
+        external-OAuth providers (Codex, Qwen, Gemini CLI, ...).
       * The legacy OpenRouter aggregator env vars, which route generic
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
@@ -2162,7 +2049,7 @@ def _gateway_platform_short_label(label: str) -> str:
 def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]:
     """Return a short summary if a setup section is already configured, else None.
 
-    Used after OpenClaw migration to detect which sections can be skipped.
+    Used to detect which setup sections can be skipped.
     ``get_env_value`` is the module-level import from opencodon_cli.config
     so that test patches on ``setup_mod.get_env_value`` take effect.
     """
@@ -2230,261 +2117,6 @@ def _skip_configured_section(
 
 
 # =============================================================================
-# OpenClaw Migration
-# =============================================================================
-
-
-_OPENCLAW_SCRIPT = (
-    get_optional_skills_dir(PROJECT_ROOT / "optional-skills")
-    / "migration"
-    / "openclaw-migration"
-    / "scripts"
-    / "openclaw_to_hermes.py"
-)
-
-
-def _load_openclaw_migration_module():
-    """Load the openclaw_to_hermes migration script as a module.
-
-    Returns the loaded module, or None if the script can't be loaded.
-    """
-    if not _OPENCLAW_SCRIPT.exists():
-        return None
-
-    spec = importlib.util.spec_from_file_location(
-        "openclaw_to_hermes", _OPENCLAW_SCRIPT
-    )
-    if spec is None or spec.loader is None:
-        return None
-
-    mod = importlib.util.module_from_spec(spec)
-    # Register in sys.modules so @dataclass can resolve the module
-    # (Python 3.11+ requires this for dynamically loaded modules)
-    import sys as _sys
-    _sys.modules[spec.name] = mod
-    try:
-        spec.loader.exec_module(mod)
-    except Exception:
-        _sys.modules.pop(spec.name, None)
-        raise
-    return mod
-
-
-# Item kinds that represent high-impact changes warranting explicit warnings.
-# Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and Hermes.
-# Instruction/context files (.md) can contain incompatible setup procedures.
-_HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure Hermes to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point Hermes at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point Hermes at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point Hermes at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point Hermes at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Hermes equivalents",
-    "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
-    "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
-    "context": "⚠ Context file — may contain OpenClaw-specific instructions",
-}
-
-
-def _print_migration_preview(report: dict):
-    """Print a detailed dry-run preview of what migration would do.
-
-    Groups items by category and adds explicit warnings for high-impact
-    changes like gateway token takeover and config value differences.
-    """
-    items = report.get("items", [])
-    if not items:
-        print_info("Nothing to migrate.")
-        return
-
-    migrated_items = [i for i in items if i.get("status") == "migrated"]
-    conflict_items = [i for i in items if i.get("status") == "conflict"]
-    skipped_items = [i for i in items if i.get("status") == "skipped"]
-
-    warnings_shown = set()
-
-    if migrated_items:
-        print(color("  Would import:", Colors.GREEN))
-        for item in migrated_items:
-            kind = item.get("kind", "unknown")
-            dest = item.get("destination", "")
-            if dest:
-                dest_short = str(dest).replace(str(Path.home()), "~")
-                print(f"      {kind:<22s} → {dest_short}")
-            else:
-                print(f"      {kind}")
-
-            # Check for high-impact items and collect warnings
-            kind_lower = kind.lower()
-            dest_lower = str(dest).lower()
-            for keyword, warning in _HIGH_IMPACT_KIND_KEYWORDS.items():
-                if keyword in kind_lower or keyword in dest_lower:
-                    warnings_shown.add(warning)
-        print()
-
-    if conflict_items:
-        print(color("  Would overwrite (conflicts with existing Hermes config):", Colors.YELLOW))
-        for item in conflict_items:
-            kind = item.get("kind", "unknown")
-            reason = item.get("reason", "already exists")
-            print(f"      {kind:<22s}  {reason}")
-        print()
-
-    if skipped_items:
-        print(color("  Would skip:", Colors.DIM))
-        for item in skipped_items:
-            kind = item.get("kind", "unknown")
-            reason = item.get("reason", "")
-            print(f"      {kind:<22s}  {reason}")
-        print()
-
-    # Print collected warnings
-    if warnings_shown:
-        print(color("  ── Warnings ──", Colors.YELLOW))
-        for warning in sorted(warnings_shown):
-            print(color(f"    {warning}", Colors.YELLOW))
-        print()
-        print(color("  Note: OpenClaw config values may have different semantics in Hermes.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Hermes's yolo mode.", Colors.YELLOW))
-        print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
-        print()
-
-
-def _offer_openclaw_migration(opencodon_home: Path) -> bool:
-    """Detect ~/.openclaw and offer to migrate during first-time setup.
-
-    Runs a dry-run first to show the user exactly what would be imported,
-    overwritten, or taken over. Only executes after explicit confirmation.
-
-    Returns True if migration ran successfully, False otherwise.
-    """
-    openclaw_dir = Path.home() / ".openclaw"
-    if not openclaw_dir.is_dir():
-        return False
-
-    if not _OPENCLAW_SCRIPT.exists():
-        return False
-
-    print()
-    print_header("OpenClaw Installation Detected")
-    print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("Hermes can preview what would be imported before making any changes.")
-    print()
-
-    if not prompt_yes_no("Would you like to see what can be imported?", default=True):
-        print_info(
-            "Skipping migration. You can run it later with: hermes claw migrate --dry-run"
-        )
-        return False
-
-    # Ensure config.yaml exists before migration tries to read it
-    config_path = get_config_path()
-    if not config_path.exists():
-        save_config(load_config())
-
-    # Load the migration module
-    try:
-        mod = _load_openclaw_migration_module()
-        if mod is None:
-            print_warning("Could not load migration script.")
-            return False
-    except Exception as e:
-        print_warning(f"Could not load migration script: {e}")
-        logger.debug("OpenClaw migration module load error", exc_info=True)
-        return False
-
-    # ── Phase 1: Dry-run preview ──
-    try:
-        selected = mod.resolve_selected_options(None, None, preset="full")
-        dry_migrator = mod.Migrator(
-            source_root=openclaw_dir.resolve(),
-            target_root=opencodon_home.resolve(),
-            execute=False,  # dry-run — no files modified
-            workspace_target=None,
-            overwrite=True,  # show everything including conflicts
-            migrate_secrets=True,
-            output_dir=None,
-            selected_options=selected,
-            preset_name="full",
-        )
-        preview_report = dry_migrator.migrate()
-    except Exception as e:
-        print_warning(f"Migration preview failed: {e}")
-        logger.debug("OpenClaw migration preview error", exc_info=True)
-        return False
-
-    # Display the full preview
-    preview_summary = preview_report.get("summary", {})
-    preview_count = preview_summary.get("migrated", 0)
-
-    if preview_count == 0:
-        print()
-        print_info("Nothing to import from OpenClaw.")
-        return False
-
-    print()
-    print_header(f"Migration Preview — {preview_count} item(s) would be imported")
-    print_info("No changes have been made yet. Review the list below:")
-    print()
-    _print_migration_preview(preview_report)
-
-    # ── Phase 2: Confirm and execute ──
-    if not prompt_yes_no("Proceed with migration?", default=False):
-        print_info(
-            "Migration cancelled. You can run it later with: hermes claw migrate"
-        )
-        print_info(
-            "Use --dry-run to preview again, or --preset minimal for a lighter import."
-        )
-        return False
-
-    # Execute the migration — overwrite=False so existing Hermes configs are
-    # preserved. The user saw the preview; conflicts are skipped by default.
-    try:
-        migrator = mod.Migrator(
-            source_root=openclaw_dir.resolve(),
-            target_root=opencodon_home.resolve(),
-            execute=True,
-            workspace_target=None,
-            overwrite=False,  # preserve existing Hermes config
-            migrate_secrets=True,
-            output_dir=None,
-            selected_options=selected,
-            preset_name="full",
-        )
-        report = migrator.migrate()
-    except Exception as e:
-        print_warning(f"Migration failed: {e}")
-        logger.debug("OpenClaw migration error", exc_info=True)
-        return False
-
-    # Print final summary
-    summary = report.get("summary", {})
-    migrated = summary.get("migrated", 0)
-    skipped = summary.get("skipped", 0)
-    conflicts = summary.get("conflict", 0)
-    errors = summary.get("error", 0)
-
-    print()
-    if migrated:
-        print_success(f"Imported {migrated} item(s) from OpenClaw.")
-    if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use hermes claw migrate --overwrite to force).")
-    if skipped:
-        print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
-    if errors:
-        print_warning(f"{errors} item(s) had errors — check the migration report.")
-
-    output_dir = report.get("output_dir")
-    if output_dir:
-        print_info(f"Full report saved to: {output_dir}")
-
-    print_success("Migration complete! Continuing with setup...")
-    return True
-
-
-# =============================================================================
 # Main Wizard Orchestrator
 # =============================================================================
 
@@ -2498,101 +2130,18 @@ SETUP_SECTIONS = [
 ]
 
 
-def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Nous Portal setup — OAuth + model pick + provider + Tool Gateway.
-
-    Wired into ``hermes setup --portal`` and ``hermes portal``. This is the
-    Nous-Portal slice of the first-time quick setup, collapsed into a single
-    shareable command so a brand-new user goes from zero to a fully working
-    Hermes session — model selected, provider set, and web/image/tts/browser
-    tools routed via their Portal sub — without being told to run
-    ``hermes setup`` and hunt for the quick-setup option.
-
-    The login + model selection + provider switch + Tool Gateway opt-in are all
-    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
-    (``_run_first_time_quick_setup``) and the same one ``hermes model`` runs
-    when you pick Nous. Routing through it (instead of hand-rolling the auth +
-    provider write here) means ``hermes portal`` always offers a model picker,
-    and there is a single source of truth for the Nous onboarding steps.
-    """
-    from opencodon_cli.config import load_config
-
-    print()
-    print(
-        color(
-            "┌─────────────────────────────────────────────────────────┐",
-            Colors.MAGENTA,
-        )
-    )
-    print(color("│     ⚕ Hermes Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
-    print(
-        color(
-            "└─────────────────────────────────────────────────────────┘",
-            Colors.MAGENTA,
-        )
-    )
-    print()
-    print_info("  One subscription, 300+ models, plus the Tool Gateway:")
-    print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your Nous Portal sub.")
-    print()
-    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
-    print()
-
-    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
-    # which selects a model internally) and the already-logged-in path (curated
-    # Nous model picker), then offers the Tool Gateway opt-in and sets
-    # provider=nous via the login/model save. This is the same routine quick
-    # setup calls, so `hermes portal` == quick setup's Nous step.
-    try:
-        from opencodon_cli.main import _model_flow_nous
-
-        _model_flow_nous(config)
-    except (KeyboardInterrupt, EOFError, SystemExit):
-        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
-        # logged-out path inside _model_flow_nous catches it, but the
-        # expired-session re-login path only catches Exception, so a
-        # SystemExit there would otherwise escape and kill the whole CLI.
-        # Treat all of these as a graceful cancel/abort for the portal flow.
-        print()
-        print_info("  Setup cancelled.")
-        print_info("  You can retry later with `hermes portal`.")
-        return
-    except Exception as exc:
-        logger.debug("_model_flow_nous error during `hermes portal`: %s", exc)
-        print()
-        print_error(f"  Nous Portal setup encountered an error: {exc}")
-        print_info("  You can retry later with `hermes portal`.")
-        return
-
-    # Re-sync the in-memory config from disk — _model_flow_nous (and the
-    # underlying login/model save) write via their own load/save cycle, so any
-    # later save_config(config) by a caller must not clobber those values.
-    try:
-        _refreshed = load_config()
-        if isinstance(_refreshed, dict):
-            config.clear()
-            config.update(_refreshed)
-    except Exception:
-        pass
-
-    print()
-    print_success("Portal setup complete.")
-    print_info("  Run `hermes portal info` to inspect routing.")
-    print_info("  Run `hermes` to start chatting.")
-
 
 def run_setup_wizard(args):
     """Run the interactive setup wizard.
 
     Supports full, quick, and section-specific setup:
-      hermes setup           — full or quick (auto-detected)
-      hermes setup model     — just model/provider
-      hermes setup tts       — just text-to-speech
-      hermes setup terminal  — just terminal backend
-      hermes setup gateway   — just messaging platforms
-      hermes setup tools     — just tool configuration
-      hermes setup agent     — just agent settings
+      opencodon setup           — full or quick (auto-detected)
+      opencodon setup model     — just model/provider
+      opencodon setup tts       — just text-to-speech
+      opencodon setup terminal  — just terminal backend
+      opencodon setup gateway   — just messaging platforms
+      opencodon setup tools     — just tool configuration
+      opencodon setup agent     — just agent settings
     """
     from opencodon_cli.config import is_managed, managed_error
     if is_managed():
@@ -2637,11 +2186,6 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Nous Portal setup. Skips the rest of the wizard.
-    if bool(getattr(args, "portal", False)):
-        _run_portal_one_shot(config)
-        return
-
     # Check if a specific section was requested
     section = getattr(args, "section", None)
     if section:
@@ -2654,7 +2198,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ Hermes Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ opencodon Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -2690,7 +2234,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Hermes Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ opencodon Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -2701,7 +2245,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your opencodon installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -2730,11 +2274,11 @@ def run_setup_wizard(args):
 
         print()
         print_header("Reconfigure")
-        print_success("You already have Hermes configured.")
+        print_success("You already have opencodon configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
-        print_info("Tip: jump straight to a section with 'hermes setup model|terminal|")
+        print_info("Tip: jump straight to a section with 'opencodon setup model|terminal|")
         print_info("     gateway|tools|agent', or fill only missing items with --quick.")
         # Fall through to the "Full Setup — run all sections" block below.
         # --reconfigure is now the default on existing installs; the flag
@@ -2749,15 +2293,10 @@ def run_setup_wizard(args):
             print_info("No existing configuration found — running first-time setup.")
             print()
 
-        # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(opencodon_home)
-        if migration_ran:
-            config = load_config()
-
         setup_mode = prompt_choice(
-            "How would you like to set up Hermes?",
+            "How would you like to set up opencodon?",
             [
-                "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup — pick a provider and model, then terminal & messaging (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2778,7 +2317,7 @@ def run_setup_wizard(args):
     print_info(f"Data folder:  {opencodon_home}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
-    print_info("You can edit these files directly or use 'hermes config edit'")
+    print_info("You can edit these files directly or use 'opencodon config edit'")
 
     if migration_ran:
         print()
@@ -2796,7 +2335,7 @@ def run_setup_wizard(args):
 
     # Section 3: Agent Settings — no longer prompted. First installs get the
     # recommended defaults silently; existing installs keep whatever they have.
-    # Tune later with `hermes setup agent`.
+    # Tune later with `opencodon setup agent`.
     if not is_existing:
         _apply_default_agent_settings(config)
 
@@ -2818,43 +2357,16 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, opencodon_home, is_existing: bool):
-    """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup: provider & model, terminal, messaging.
 
-    Routes straight to the Nous Portal provider — runs the device-code OAuth
-    login, picks a Nous model, then configures the terminal backend and (optionally)
-    a messaging platform. Applies sensible defaults for everything else (agent
-    settings, tools); the user can customize later via ``hermes setup <section>``
-    or switch providers with ``hermes model``.
+    Runs the shared provider/model picker, then configures the terminal
+    backend and (optionally) a messaging platform. Applies sensible defaults
+    for everything else (agent settings, tools); the user can customize later
+    via ``opencodon setup <section>`` or switch providers with ``opencodon model``.
     """
-    from opencodon_cli.config import load_config
-
-    # Step 1: Nous Portal — OAuth login + model selection.
-    # _model_flow_nous() handles both the logged-out path (device-code OAuth,
-    # which selects a model internally) and the already-logged-in path (curated
-    # Nous model picker). Provider is set to "nous" by the login/model save.
-    print()
-    print_header("Nous Portal")
-    print_info("One subscription, 300+ models, plus the Tool Gateway:")
-    print_info("  web search, image generation, TTS, browser automation.")
-    print_info("Sign up: https://portal.nousresearch.com/manage-subscription")
-    print()
-    try:
-        from opencodon_cli.main import _model_flow_nous
-        _model_flow_nous(config)
-    except (KeyboardInterrupt, EOFError):
-        print()
-        print_info("Nous Portal setup cancelled.")
-    except Exception as exc:
-        logger.debug("_model_flow_nous error during quick setup: %s", exc)
-        print_warning(f"Nous Portal setup encountered an error: {exc}")
-        print_info("You can try again later with: hermes model")
-
-    # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
-    # underlying login/model save) write via their own load/save cycle, and the
-    # wizard's later save_config(config) must not clobber those values (#4172).
-    _refreshed = load_config()
-    config.clear()
-    config.update(_refreshed)
+    # Step 1: Provider & model. ``setup_model_provider`` delegates to the
+    # shared ``opencodon model`` flow and re-syncs *config* from disk itself.
+    setup_model_provider(config, quick=True)
 
     # Step 2: Terminal Backend — where commands run is a core decision
     setup_terminal_backend(config)
@@ -2870,7 +2382,7 @@ def _run_first_time_quick_setup(config: dict, opencodon_home, is_existing: bool)
         "Connect a messaging platform? (Telegram, Discord, etc.)",
         [
             "Set up messaging now (recommended)",
-            "Skip — set up later with 'hermes setup gateway'",
+            "Skip — set up later with 'opencodon setup gateway'",
         ],
         0,
     )
@@ -2882,9 +2394,9 @@ def _run_first_time_quick_setup(config: dict, opencodon_home, is_existing: bool)
     print()
     print_success("Setup complete! You're ready to go.")
     print()
-    print_info("  Configure all settings:    hermes setup")
+    print_info("  Configure all settings:    opencodon setup")
     if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  hermes setup gateway")
+        print_info("  Connect Telegram/Discord:  opencodon setup gateway")
     print()
 
     _print_setup_summary(config, opencodon_home)
@@ -2903,7 +2415,7 @@ def _blank_slate_minimal_toolsets(config: dict):
        non-configurable platform-toolset recovery that would otherwise re-add
        toolsets like ``kanban``). We list every known toolset except the two we
        keep, guaranteeing a true blank slate regardless of platform/recovery
-       quirks. The user re-enables any of them later via ``hermes tools`` (which
+       quirks. The user re-enables any of them later via ``opencodon tools`` (which
        rewrites ``platform_toolsets``) or by editing ``agent.disabled_toolsets``.
     """
     keep = {"file", "terminal"}
@@ -2919,7 +2431,7 @@ def _blank_slate_minimal_toolsets(config: dict):
         # Plain (non-composite) TOOLSETS entries — catches recovered toolsets
         # like ``kanban`` that aren't in CONFIGURABLE_TOOLSETS but get re-added.
         for k, tdef in TOOLSETS.items():
-            if k.startswith(("opencodon-", "hermes-")):
+            if k.startswith(("opencodon-", "opencodon-")):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
@@ -2941,8 +2453,8 @@ def _blank_slate_minimal_toolsets(config: dict):
 def _blank_slate_minimize_config(config: dict):
     """Turn OFF the optional config features for a Blank Slate install.
 
-    Everything here is opt-in afterwards via ``hermes setup agent`` /
-    ``hermes config set``. We keep only what's needed to run.
+    Everything here is opt-in afterwards via ``opencodon setup agent`` /
+    ``opencodon config set``. We keep only what's needed to run.
     """
     config.setdefault("agent", {})["max_turns"] = 90
 
@@ -3022,7 +2534,7 @@ def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
     if path == 0:
         save_config(config)
         # Blank Slate means no bundled skills; record the opt-out so future
-        # `hermes update` runs don't re-inject them.
+        # `opencodon update` runs don't re-inject them.
         try:
             from tools.skills_sync import set_bundled_skills_opt_out
             set_bundled_skills_opt_out(True)
@@ -3031,11 +2543,11 @@ def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
         print()
         print_success("Blank Slate setup complete — minimal agent ready.")
         print_info("Enable anything later, on demand:")
-        print_info("  Enable tools:        hermes tools")
-        print_info("  Seed skills:         hermes skills opt-in --sync")
-        print_info("  Add MCP servers:     hermes mcp add")
-        print_info("  Enable plugins:      hermes plugins")
-        print_info("  Tune agent settings: hermes setup agent")
+        print_info("  Enable tools:        opencodon tools")
+        print_info("  Seed skills:         opencodon skills opt-in --sync")
+        print_info("  Add MCP servers:     opencodon mcp add")
+        print_info("  Enable plugins:      opencodon plugins")
+        print_info("  Tune agent settings: opencodon setup agent")
         print()
         _print_setup_summary(config, opencodon_home)
         return
@@ -3067,8 +2579,8 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
         else:
             set_bundled_skills_opt_out(True)
             print_info("No skills seeded. A .no-bundled-skills marker keeps future")
-            print_info("`hermes update` runs from re-injecting them. Opt back in any")
-            print_info("time with `hermes skills opt-in --sync`.")
+            print_info("`opencodon update` runs from re-injecting them. Opt back in any")
+            print_info("time with `opencodon skills opt-in --sync`.")
     except Exception as exc:
         logger.debug("blank-slate skill handling error: %s", exc)
         print_warning(f"Skill setup step encountered an error: {exc}")
@@ -3091,23 +2603,23 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
             logger.debug("blank-slate tools_command error: %s", exc)
             print_warning(f"Tool selector encountered an error: {exc}")
     else:
-        print_info("Keeping the minimal toolset. Add tools later with `hermes tools`.")
+        print_info("Keeping the minimal toolset. Add tools later with `opencodon tools`.")
 
     # ── Built-in plugins (off unless chosen) ──
     print()
     print_header("Plugins")
     if prompt_yes_no("Review and enable built-in plugins now?", default=False):
-        print_info("Manage plugins with `hermes plugins list` / `hermes plugins install`.")
+        print_info("Manage plugins with `opencodon plugins list` / `opencodon plugins install`.")
     else:
-        print_info("No plugins enabled. Add later with `hermes plugins`.")
+        print_info("No plugins enabled. Add later with `opencodon plugins`.")
 
     # ── MCP servers (off unless chosen) ──
     print()
     print_header("MCP Servers")
     if prompt_yes_no("Add an MCP server now?", default=False):
-        print_info("Add servers with `hermes mcp add <name> --url ... | --command ...`.")
+        print_info("Add servers with `opencodon mcp add <name> --url ... | --command ...`.")
     else:
-        print_info("No MCP servers configured. Add later with `hermes mcp add`.")
+        print_info("No MCP servers configured. Add later with `opencodon mcp add`.")
 
     # ── Optional messaging gateway ──
     print()
@@ -3118,10 +2630,10 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
 
     print()
     print_success("Blank Slate setup complete — minimal agent ready.")
-    print_info("  Enable more tools:   hermes tools")
-    print_info("  Seed skills:         hermes skills opt-in --sync")
-    print_info("  Add MCP servers:     hermes mcp add")
-    print_info("  Tune agent settings: hermes setup agent")
+    print_info("  Enable more tools:   opencodon tools")
+    print_info("  Seed skills:         opencodon skills opt-in --sync")
+    print_info("  Add MCP servers:     opencodon mcp add")
+    print_info("  Tune agent settings: opencodon setup agent")
     print()
 
     _print_setup_summary(config, opencodon_home)
@@ -3158,7 +2670,7 @@ def _run_quick_setup(config: dict, opencodon_home):
     if not has_anything_missing:
         print_success("Everything is configured! Nothing to do.")
         print()
-        print_info("Run 'hermes setup' and choose 'Full Setup' to reconfigure,")
+        print_info("Run 'opencodon setup' and choose 'Full Setup' to reconfigure,")
         print_info("or pick a specific section from the menu.")
         return
 
@@ -3220,8 +2732,8 @@ def _run_quick_setup(config: dict, opencodon_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect Hermes to messaging apps to chat from anywhere.")
-        print_info("You can configure these later with 'hermes setup gateway'.")
+        print_info("Connect opencodon to messaging apps to chat from anywhere.")
+        print_info("You can configure these later with 'opencodon setup gateway'.")
 
         # Group by platform (preserving order)
         platform_order = []

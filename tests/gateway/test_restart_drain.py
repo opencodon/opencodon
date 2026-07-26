@@ -247,7 +247,7 @@ async def test_launch_detached_restart_command_uses_setsid(monkeypatch):
     popen_calls = []
 
     monkeypatch.setattr(gateway_run.sys, "platform", "linux")
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["/usr/bin/hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_opencodon_bin", lambda: ["/usr/bin/opencodon"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setenv("_OPENCODON_GATEWAY", "1")
     monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/setsid" if cmd == "setsid" else None)
@@ -270,7 +270,7 @@ async def test_launch_detached_restart_command_uses_setsid(monkeypatch):
     assert kwargs["stdout"] is subprocess.DEVNULL
     assert kwargs["stderr"] is subprocess.DEVNULL
     # The watcher must NOT inherit the gateway marker, or the CLI's
-    # self-restart loop guard refuses to run `hermes gateway restart`.
+    # self-restart loop guard refuses to run `opencodon gateway restart`.
     assert kwargs["env"].get("_OPENCODON_GATEWAY") is None
 
 
@@ -279,7 +279,7 @@ async def test_detached_restart_helper_is_idempotent(monkeypatch):
     runner, _adapter = make_restart_runner()
     popen_calls = []
 
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["/usr/bin/hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_opencodon_bin", lambda: ["/usr/bin/opencodon"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setattr(shutil, "which", lambda cmd: None)
     monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: popen_calls.append((a, k)))
@@ -322,7 +322,7 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
     site_packages.mkdir(parents=True)
 
     monkeypatch.setattr(gateway_run.sys, "platform", "win32")
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_opencodon_bin", lambda: ["opencodon"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setenv("_OPENCODON_GATEWAY", "1")
     monkeypatch.setenv("VIRTUAL_ENV", str(venv_dir))
@@ -345,7 +345,7 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
 
     assert len(popen_calls) == 1
     cmd, kwargs = popen_calls[0]
-    assert cmd[-3:] == ["hermes", "gateway", "restart"]
+    assert cmd[-3:] == ["opencodon", "gateway", "restart"]
     assert kwargs["env"].get("_OPENCODON_GATEWAY") is None
     assert kwargs["env"]["VIRTUAL_ENV"] == str(venv_dir)
     assert str(site_packages) in kwargs["env"]["PYTHONPATH"].split(gateway_run.os.pathsep)
@@ -363,7 +363,7 @@ async def test_windows_detached_restart_uses_pythonw_for_watcher(monkeypatch, tm
 
     monkeypatch.setattr(gateway_run.sys, "platform", "win32")
     monkeypatch.setattr(gateway_run.sys, "executable", r"C:\venv\Scripts\python.exe")
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_opencodon_bin", lambda: ["opencodon"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setenv("VIRTUAL_ENV", str(venv_dir))
 
@@ -392,7 +392,7 @@ async def test_windows_detached_restart_uses_pythonw_for_watcher(monkeypatch, tm
     assert len(popen_calls) == 1
     cmd, kwargs = popen_calls[0]
     assert cmd[0] == r"C:\Python311\pythonw.exe"
-    assert cmd[-3:] == ["hermes", "gateway", "restart"]
+    assert cmd[-3:] == ["opencodon", "gateway", "restart"]
     assert kwargs["creationflags"] == 0x08000008
 
 

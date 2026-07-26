@@ -858,9 +858,9 @@ class ProcessRegistry:
 
         # Run the command in the sandbox with output capture
         temp_dir = self._env_temp_dir(env)
-        log_path = f"{temp_dir}/hermes_bg_{session.id}.log"
-        pid_path = f"{temp_dir}/hermes_bg_{session.id}.pid"
-        exit_path = f"{temp_dir}/hermes_bg_{session.id}.exit"
+        log_path = f"{temp_dir}/opencodon_bg_{session.id}.log"
+        pid_path = f"{temp_dir}/opencodon_bg_{session.id}.pid"
+        exit_path = f"{temp_dir}/opencodon_bg_{session.id}.exit"
         quoted_command = shlex.quote(command)
         quoted_temp_dir = shlex.quote(temp_dir)
         quoted_log_path = shlex.quote(log_path)
@@ -1262,7 +1262,7 @@ class ProcessRegistry:
         The reader thread (`_reader_loop`) sets `session.exited = True` only
         in its `finally` block, which runs when `stdout.read()` returns EOF.
         If the direct `Popen` child has exited but a descendant process (e.g.
-        a daemon spawned by `hermes update` restarting the gateway) is still
+        a daemon spawned by `opencodon update` restarting the gateway) is still
         holding the stdout pipe open, the reader blocks forever and poll()
         keeps returning "running" indefinitely (issue #17327 — 74 polls over
         7 minutes on Feishu).
@@ -1646,7 +1646,7 @@ class ProcessRegistry:
         if sink is None:
             return {
                 "status": "error",
-                "error": "close_terminal is only available in the Hermes desktop app.",
+                "error": "close_terminal is only available in the opencodon desktop app.",
             }
         # The session may already be finished (or pruned) — the tab can still
         # linger and be closed, so a missing session is not an error here.
@@ -2209,7 +2209,7 @@ def format_process_notification(evt: dict) -> "str | None":
     if _exit in {-15, 143, "-15", "143"}:
         _signal = ", SIGTERM"
     if _reason == "killed":
-        _status = f"terminated by {_source or 'Hermes'}"
+        _status = f"terminated by {_source or 'opencodon'}"
     elif _reason == "lost":
         _status = "marked lost because the process backend disappeared"
     elif _reason == "failed_start":

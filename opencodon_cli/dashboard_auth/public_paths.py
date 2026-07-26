@@ -10,7 +10,7 @@ copies of this list:
 
 When the lists drifted, ``/api/status`` ended up public under the legacy
 gate but 401'd under the OAuth gate. That broke the portal's wildcard
-liveness probe (``nous-account-service`` ``fly-provider.ts``
+liveness probe (the orchestrator's ``fly-provider.ts``
 ``getInstanceRuntimeStatus``), which fetches ``/api/status`` without a
 cookie as its sole signal of "agent dashboard is alive": every healthy
 wildcard-subdomain agent surfaced as STARTING/down in the portal UI even
@@ -51,5 +51,4 @@ PUBLIC_API_PATHS: frozenset[str] = frozenset({
     # handler verifies as the real auth. Must bypass the dashboard auth gate so
     # the NAS relay's bearer-only callback reaches the verifier instead of a
     # 401 no_cookie. The JWT — not this allowlist — is the security boundary.
-    "/api/cron/fire",
 })

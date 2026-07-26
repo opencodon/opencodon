@@ -109,13 +109,13 @@ def test_check_for_updates_official_ssh_origin_uses_https_probe(tmp_path):
     def fake_run(cmd, **kwargs):
         calls.append(cmd)
         if cmd == ["git", "remote", "get-url", "origin"]:
-            return MagicMock(returncode=0, stdout="git@github.com:NousResearch/hermes-agent.git\n")
+            return MagicMock(returncode=0, stdout="git@github.com:opencodon/opencodon.git\n")
         if cmd == ["git", "rev-parse", "HEAD"]:
             return MagicMock(returncode=0, stdout="local-sha\n")
         if cmd == [
             "git",
             "ls-remote",
-            "https://github.com/NousResearch/hermes-agent.git",
+            "https://github.com/opencodon/opencodon.git",
             "refs/heads/main",
         ]:
             return MagicMock(returncode=0, stdout="upstream-sha\trefs/heads/main\n")
@@ -148,7 +148,7 @@ def test_check_via_local_git_shallow_clone_behind_reports_no_count(tmp_path):
     def fake_run(cmd, **kwargs):
         calls.append(cmd)
         if cmd == ["git", "remote", "get-url", "origin"]:
-            return MagicMock(returncode=0, stdout="https://github.com/NousResearch/hermes-agent.git\n")
+            return MagicMock(returncode=0, stdout="https://github.com/opencodon/opencodon.git\n")
         if cmd == ["git", "rev-parse", "--is-shallow-repository"]:
             return MagicMock(returncode=0, stdout="true\n")
         if cmd[:2] == ["git", "fetch"]:
@@ -179,7 +179,7 @@ def test_check_via_local_git_shallow_clone_up_to_date(tmp_path):
 
     def fake_run(cmd, **kwargs):
         if cmd == ["git", "remote", "get-url", "origin"]:
-            return MagicMock(returncode=0, stdout="https://github.com/NousResearch/hermes-agent.git\n")
+            return MagicMock(returncode=0, stdout="https://github.com/opencodon/opencodon.git\n")
         if cmd == ["git", "rev-parse", "--is-shallow-repository"]:
             return MagicMock(returncode=0, stdout="true\n")
         if cmd[:2] == ["git", "fetch"]:
@@ -206,7 +206,7 @@ def test_check_via_local_git_full_clone_keeps_exact_count(tmp_path):
 
     def fake_run(cmd, **kwargs):
         if cmd == ["git", "remote", "get-url", "origin"]:
-            return MagicMock(returncode=0, stdout="https://github.com/NousResearch/hermes-agent.git\n")
+            return MagicMock(returncode=0, stdout="https://github.com/opencodon/opencodon.git\n")
         if cmd == ["git", "rev-parse", "--is-shallow-repository"]:
             return MagicMock(returncode=0, stdout="false\n")
         if cmd[:2] == ["git", "fetch"]:
@@ -246,7 +246,7 @@ def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
     if not (project_root / ".git").exists():
         pytest.skip("Not running from a git checkout")
 
-    # Point OPENCODON_HOME at a temp dir with no hermes-agent/.git
+    # Point OPENCODON_HOME at a temp dir with no opencodon/.git
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon_cli.banner.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="0\n")

@@ -1,6 +1,6 @@
 """Tests for get_opencodon_home() profile-mode fallback warning.
 
-Regression test for https://github.com/NousResearch/hermes-agent/issues/18594.
+Regression test for upstream#18594
 
 When OPENCODON_HOME is unset but an active_profile file indicates a non-default
 profile is active, get_opencodon_home() should:
@@ -29,7 +29,7 @@ def fresh_constants(monkeypatch, tmp_path):
     return opencodon_constants
 
 
-class TestGetHermesHomeProfileWarning:
+class TestGetOpencodonHomeProfileWarning:
     def test_classic_mode_no_active_profile_no_warning(
         self, fresh_constants, tmp_path, capsys
     ):
@@ -42,9 +42,9 @@ class TestGetHermesHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile=default → still no warning, returns ~/.opencodon."""
-        hermes_dir = tmp_path / ".opencodon"
-        hermes_dir.mkdir()
-        (hermes_dir / "active_profile").write_text("default\n")
+        opencodon_dir = tmp_path / ".opencodon"
+        opencodon_dir.mkdir()
+        (opencodon_dir / "active_profile").write_text("default\n")
         result = fresh_constants.get_opencodon_home()
         assert result == tmp_path / ".opencodon"
         assert "OPENCODON_HOME fallback" not in capsys.readouterr().err
@@ -53,9 +53,9 @@ class TestGetHermesHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile=coder + OPENCODON_HOME unset → warn loudly, still return fallback."""
-        hermes_dir = tmp_path / ".opencodon"
-        hermes_dir.mkdir()
-        (hermes_dir / "active_profile").write_text("coder\n")
+        opencodon_dir = tmp_path / ".opencodon"
+        opencodon_dir.mkdir()
+        (opencodon_dir / "active_profile").write_text("coder\n")
 
         result = fresh_constants.get_opencodon_home()
 
@@ -91,10 +91,10 @@ class TestGetHermesHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """active_profile that can't be decoded → fall through silently."""
-        hermes_dir = tmp_path / ".opencodon"
-        hermes_dir.mkdir()
+        opencodon_dir = tmp_path / ".opencodon"
+        opencodon_dir.mkdir()
         # Write bytes that aren't valid utf-8
-        (hermes_dir / "active_profile").write_bytes(b"\xff\xfe\x00\x00")
+        (opencodon_dir / "active_profile").write_bytes(b"\xff\xfe\x00\x00")
 
         result = fresh_constants.get_opencodon_home()
 
@@ -106,9 +106,9 @@ class TestGetHermesHomeProfileWarning:
         self, fresh_constants, tmp_path, capsys
     ):
         """Empty active_profile file → treated as default, no warning."""
-        hermes_dir = tmp_path / ".opencodon"
-        hermes_dir.mkdir()
-        (hermes_dir / "active_profile").write_text("")
+        opencodon_dir = tmp_path / ".opencodon"
+        opencodon_dir.mkdir()
+        (opencodon_dir / "active_profile").write_text("")
 
         result = fresh_constants.get_opencodon_home()
 

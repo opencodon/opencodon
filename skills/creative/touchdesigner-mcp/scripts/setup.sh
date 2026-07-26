@@ -43,14 +43,14 @@ else
     fi
 fi
 
-# ── 3. Ensure Hermes config has twozero_td MCP entry ──
+# ── 3. Ensure opencodon config has twozero_td MCP entry ──
 if [[ ! -f "$OPENCODON_CFG" ]]; then
-    echo -e " ${FAIL} Hermes config not found at ${OPENCODON_CFG}"
+    echo -e " ${FAIL} opencodon config not found at ${OPENCODON_CFG}"
     manual_steps+=("Create ${OPENCODON_CFG} with twozero_td MCP server entry")
 elif grep -q 'twozero_td' "$OPENCODON_CFG" 2>/dev/null; then
-    echo -e " ${OK} twozero_td MCP entry exists in Hermes config"
+    echo -e " ${OK} twozero_td MCP entry exists in opencodon config"
 else
-    echo -e " ${WARN} Adding twozero_td MCP entry to Hermes config..."
+    echo -e " ${WARN} Adding twozero_td MCP entry to opencodon config..."
     python3 -c "
 import yaml, sys, copy
 
@@ -72,7 +72,7 @@ if 'twozero_td' not in cfg['mcp_servers']:
 " 2>/dev/null && echo -e " ${OK} twozero_td MCP entry added to config" \
               || { echo -e " ${FAIL} Could not update config (is PyYAML installed?)"; \
                    manual_steps+=("Add twozero_td MCP entry to ${OPENCODON_CFG} manually"); }
-    manual_steps+=("Restart Hermes session to pick up config change")
+    manual_steps+=("Restart opencodon session to pick up config change")
 fi
 
 # ── 4. Test if MCP port is responding ──

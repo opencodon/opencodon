@@ -97,7 +97,7 @@ def save_artifact(data_or_path, filename, content_type=None):
                 "staged_file": token})
     return token
 
-class _HermesHost(object):
+class _OpencodonHost(object):
     """host.* — parent-side calls over the host-bridge unix socket."""
 
     def _call(self, method, params):
@@ -144,13 +144,13 @@ class _HermesHost(object):
         })
 
     def tool(self, name, args=None):
-        """Invoke a whitelisted hermes tool; returns its parsed result."""
+        """Invoke a whitelisted opencodon tool; returns its parsed result."""
         return self._call("tool", {"name": name, "args": args or {}})
 
     def models(self):
         return self._call("models", {})
 
-host = _HermesHost()
+host = _OpencodonHost()
 '''
 
 

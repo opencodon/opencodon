@@ -5,7 +5,7 @@ image URL, the worker must surface that image to the model on its first
 user turn — matching the CLI/gateway behaviour for inbound images.
 
 The dispatcher spawns the worker as
-``hermes -p <profile> chat -q "work kanban task <id>"``. The task body
+``opencodon -p <profile> chat -q "work kanban task <id>"``. The task body
 itself never appears in argv; the worker has to read it from the kanban
 DB during startup. These tests cover the round-trip:
 

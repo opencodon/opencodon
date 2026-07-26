@@ -1,11 +1,11 @@
-"""Agent-construction and session-resume display methods for ``HermesCLI``.
+"""Agent-construction and session-resume display methods for ``OpencodonCLI``.
 
 Extracted from ``cli.py`` as part of the god-file decomposition campaign
 (``~/.opencodon/plans/god-file-decomposition.md``, Phase 4 step 2). This mixin holds
 the agent lifecycle/setup cluster: runtime-credential resolution, per-turn agent
 config, first-use agent construction, and resumed-session preload + history recap.
 
-Behavior-neutral: every method is lifted verbatim from ``HermesCLI``. ``self.*``
+Behavior-neutral: every method is lifted verbatim from ``OpencodonCLI``. ``self.*``
 calls resolve unchanged via the MRO. Neutral dependencies are imported at module
 top level; ``cli.py``-internal helpers/constants are imported lazily inside each
 method (``from cli import ...`` resolves at call time, when ``cli`` is fully
@@ -20,7 +20,7 @@ from rich.markup import escape as _escape
 
 
 class CLIAgentSetupMixin:
-    """Agent construction + session-resume display methods for ``HermesCLI``."""
+    """Agent construction + session-resume display methods for ``OpencodonCLI``."""
 
     def _ensure_runtime_credentials(self) -> bool:
         """
@@ -112,11 +112,11 @@ class CLIAgentSetupMixin:
                 )
             else:
                 print("\n⚠️  Provider resolver returned an empty API key. "
-                      "Set OPENROUTER_API_KEY or run: hermes setup")
+                      "Set OPENROUTER_API_KEY or run: opencodon setup")
                 return False
         if not isinstance(base_url, str) or not base_url:
             print("\n⚠️  Provider resolver returned an empty base URL. "
-                  "Check your provider config or run: hermes setup")
+                  "Check your provider config or run: opencodon setup")
             return False
 
         credentials_changed = api_key != self.api_key or base_url != self.base_url
@@ -137,7 +137,7 @@ class CLIAgentSetupMixin:
 
         # When a custom_provider entry carries an explicit `model` field,
         # use it as the effective model name.  Without this, running
-        # `hermes chat --model <provider-name>` sends the provider name
+        # `opencodon chat --model <provider-name>` sends the provider name
         # (e.g. "my-provider") as the model string to the API instead of
         # the configured model (e.g. "qwen3.6-plus"), causing 400 errors.
         runtime_model = runtime.get("model")
@@ -151,8 +151,8 @@ class CLIAgentSetupMixin:
             if should_use_runtime_model:
                 self.model = runtime_model
 
-        # If model is still empty (e.g. user ran `hermes auth add openai-codex`
-        # without `hermes model`), fall back to the provider's first catalog
+        # If model is still empty (e.g. user ran `opencodon auth add openai-codex`
+        # without `opencodon model`), fall back to the provider's first catalog
         # model so the API call doesn't fail with "model must be non-empty".
         if not self.model and resolved_provider:
             try:
@@ -260,22 +260,22 @@ class CLIAgentSetupMixin:
         # is non-empty and we skip the DB round-trip.
         if self._resumed and self._session_db and not self.conversation_history:
             session_meta = self._session_db.get_session(self.session_id)
-            # In quiet mode (`hermes chat -Q` / --quiet, surfaced via
+            # In quiet mode (`opencodon chat -Q` / --quiet, surfaced via
             # tool_progress_mode == "off"), resume status lines go to stderr
             # so stdout stays machine-readable for automation wrappers that
-            # do `$(hermes chat -Q --resume <id> -q "...")`. Without this,
+            # do `$(opencodon chat -Q --resume <id> -q "...")`. Without this,
             # the resume banner pollutes captured stdout. See #11793.
             _quiet_mode = getattr(self, "tool_progress_mode", "full") == "off"
             if not session_meta:
                 if _quiet_mode:
                     print(f"Session not found: {self.session_id}", file=sys.stderr)
                     print(
-                        "Use a session ID from a previous CLI run (hermes sessions list).",
+                        "Use a session ID from a previous CLI run (opencodon sessions list).",
                         file=sys.stderr,
                     )
                 else:
                     _cprint(f"\033[1;31mSession not found: {self.session_id}{_RST}")
-                    _cprint(f"{_DIM}Use a session ID from a previous CLI run (hermes sessions list).{_RST}")
+                    _cprint(f"{_DIM}Use a session ID from a previous CLI run (opencodon sessions list).{_RST}")
                 return False
             # If the requested session is the (empty) head of a compression
             # chain, walk to the descendant that actually holds the messages.
@@ -400,7 +400,6 @@ class CLIAgentSetupMixin:
                 tool_gen_callback=self._on_tool_gen_start if self.streaming_enabled else None,
                 notice_callback=self._on_notice,
                 notice_clear_callback=self._on_notice_clear,
-                reaction_callback=self._on_reaction,
             )
             # Store reference for atexit memory provider shutdown.
             # NOTE: this MUST write to the ``cli`` module's global, not a
@@ -416,16 +415,6 @@ class CLIAgentSetupMixin:
             # Route agent status output through prompt_toolkit so ANSI escape
             # sequences aren't garbled by patch_stdout's StdoutProxy (#2262).
             self.agent._print_fn = _cprint
-            # Hydrate credits notices at session OPEN (parity with the TUI), so a
-            # depletion / usage-band warning shows before the first message. The
-            # notice_callback is bound above → _on_notice renders the line. Idempotent
-            # + fail-open inside the helper; harmless for non-Nous providers.
-            try:
-                from agent.credits_tracker import seed_credits_at_session_start
-
-                seed_credits_at_session_start(self.agent)
-            except Exception:
-                pass
             self._active_agent_route_signature = (
                 effective_model,
                 runtime.get("provider"),
@@ -474,7 +463,7 @@ class CLIAgentSetupMixin:
             )
             self._console_print(
                 "[dim]Use a session ID from a previous CLI run "
-                "(hermes sessions list).[/]"
+                "(opencodon sessions list).[/]"
             )
             return False
 
@@ -682,13 +671,13 @@ class CLIAgentSetupMixin:
                     lines.append(f"         {ml}\n", style="dim")
             elif role == "assistant_last":
                 # Last assistant response shown in full, non-dim
-                lines.append("  ◆ Hermes: ", style=f"bold {_assistant_label_c}")
+                lines.append("  ◆ opencodon: ", style=f"bold {_assistant_label_c}")
                 msg_lines = text.splitlines()
                 lines.append(msg_lines[0] + "\n", style="")
                 for ml in msg_lines[1:]:
                     lines.append(f"            {ml}\n", style="")
             else:
-                lines.append("  ◆ Hermes: ", style=f"dim bold {_assistant_label_c}")
+                lines.append("  ◆ opencodon: ", style=f"dim bold {_assistant_label_c}")
                 msg_lines = text.splitlines()
                 lines.append(msg_lines[0] + "\n", style="dim")
                 for ml in msg_lines[1:]:

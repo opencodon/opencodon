@@ -1,9 +1,9 @@
 """SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
 
-A standards-compliant OpenID Connect Relying Party for the ``hermes dashboard``
-OAuth gate. Unlike the bundled ``nous`` provider (which encodes Nous Portal's
+A standards-compliant OpenID Connect Relying Party for the ``opencodon dashboard``
+OAuth gate. Unlike a vendor-specific provider (which would encode that
 bespoke contract — ``agent:{instance_id}`` client ids, a custom access-token
-JWT, the ``x-nous-refresh-token`` header, an ``oauth_contract_version`` claim),
+vendor's custom JWT, headers, and contract-version claims),
 this provider speaks **plain OIDC** so it works against any conformant
 self-hosted identity provider:
 
@@ -28,8 +28,8 @@ Why the ID token (not the access token)? OIDC guarantees the ID token is a
 signed JWT carrying identity claims — that is its entire purpose. The access
 token's format is opaque to the client per the spec; many IDPs issue random
 opaque strings the client cannot verify locally. Verifying the ID token is the
-only choice that is universally correct across self-hosted IDPs. (The ``nous``
-provider verifies its *access* token because Nous Portal mints a custom JWT
+only choice that is universally correct across self-hosted IDPs. (A vendor
+provider might verify its *access* token because it mints a custom JWT
 access token with the dashboard claims baked in — a non-OIDC shortcut.)
 
 Both **public** (PKCE-only) and **confidential** (PKCE + ``client_secret``)
@@ -46,15 +46,15 @@ PKCE (OAuth 2.1 / RFC 9700 keep PKCE mandatory regardless).
 
 Configuration surfaces (env wins over config.yaml when set non-empty, so a
 provisioned-but-not-populated secret can't shadow a valid config.yaml entry —
-same precedence convention as the ``nous`` plugin)::
+same precedence convention as the other auth plugins)::
 
     # config.yaml — canonical surface
     dashboard:
       oauth:
         provider: self-hosted
         self_hosted:
-          issuer: https://auth.example.com/application/o/hermes/   # required
-          client_id: hermes-dashboard                              # required
+          issuer: https://auth.example.com/application/o/opencodon/   # required
+          client_id: opencodon-dashboard                              # required
           scopes: "openid profile email"                           # optional
           # client_secret: set ONLY for a confidential client. It is a
           # credential — prefer the env var / ~/.opencodon/.env over config.yaml.
@@ -122,13 +122,13 @@ _TOKEN_ENDPOINT_TIMEOUT_SEC = 10.0
 # dashboard picks up an IDP endpoint migration within the hour.
 _DISCOVERY_CACHE_TTL_SEC = 3600
 
-# JWKS cache (PyJWKClient handles its own caching; this mirrors the nous
+# JWKS cache (PyJWKClient handles its own caching; this mirrors the other
 # provider's 5-minute lifespan so key rotation is picked up promptly).
 _JWKS_CACHE_SECONDS = 300
 
 
 # ---------------------------------------------------------------------------
-# Skip-reason channel (mirrors the nous plugin)
+# Skip-reason channel (mirrors the other auth plugins)
 # ---------------------------------------------------------------------------
 
 LAST_SKIP_REASON: str = ""
@@ -668,7 +668,7 @@ class SelfHostedOIDCProvider(DashboardAuthProvider):
 
         The verified ID token is stored in ``Session.access_token`` so the
         per-request ``verify_session`` re-verifies a real JWT. The opaque
-        OAuth access token is intentionally NOT stored — Hermes does not call
+        OAuth access token is intentionally NOT stored — opencodon does not call
         any resource API with it; the dashboard only needs identity.
         """
         user_id = str(claims.get("sub", ""))
@@ -713,7 +713,7 @@ class SelfHostedOIDCProvider(DashboardAuthProvider):
         (not just localhost) so self-hosted dashboards reached over plain HTTP —
         LAN IPs, internal hostnames, reverse proxies that terminate TLS upstream
         — are not rejected here; the IDP makes the final call on which
-        redirect_uris are permitted. Mirrors the nous provider.
+        redirect_uris are permitted.
         """
         parsed = urllib.parse.urlparse(redirect_uri)
         if parsed.scheme not in ("https", "http"):

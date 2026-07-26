@@ -1,8 +1,8 @@
-"""Tests for --ignore-user-config and --ignore-rules flags on `hermes chat`.
+"""Tests for --ignore-user-config and --ignore-rules flags on `opencodon chat`.
 
 Ported from openai/codex#18646 (`feat: add --ignore-user-config and --ignore-rules`).
 Codex's flags fully isolate a run from user-level config and exec-policy .rules
-files. In Hermes the equivalent isolation is:
+files. In opencodon the equivalent isolation is:
 
 * ``--ignore-user-config`` → skip ``~/.opencodon/config.yaml`` in ``load_cli_config()``
   (credentials in ``.env`` are still loaded).
@@ -11,7 +11,7 @@ files. In Hermes the equivalent isolation is:
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → HermesCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → OpencodonCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -114,26 +114,26 @@ class TestIgnoreUserConfigEnvGate:
 
 
 class TestIgnoreRulesEnvGate:
-    """The constructor / env var must propagate to ``HermesCLI.ignore_rules``
+    """The constructor / env var must propagate to ``OpencodonCLI.ignore_rules``
     so ``AIAgent`` is built with ``skip_context_files=True`` and
     ``skip_memory=True``.
     """
 
     def test_env_var_enables_ignore_rules(self, monkeypatch):
-        """Setting OPENCODON_IGNORE_RULES=1 flips HermesCLI.ignore_rules True."""
+        """Setting OPENCODON_IGNORE_RULES=1 flips OpencodonCLI.ignore_rules True."""
         monkeypatch.setenv("OPENCODON_IGNORE_RULES", "1")
 
-        # Import HermesCLI lazily — cli.py has heavy module-init side effects
+        # Import OpencodonCLI lazily — cli.py has heavy module-init side effects
         # that we don't want to run at test collection time.
         import cli
         importlib.reload(cli)
 
-        # Build only enough of HermesCLI to reach the ignore_rules assignment.
+        # Build only enough of OpencodonCLI to reach the ignore_rules assignment.
         # The full __init__ pulls in provider/auth/session DB, so we cheat:
         # create the object via object.__new__ and manually run the assignment
         # the same way the real constructor does.
-        obj = object.__new__(cli.HermesCLI)
-        # Replicate the exact logic from cli.py HermesCLI.__init__:
+        obj = object.__new__(cli.OpencodonCLI)
+        # Replicate the exact logic from cli.py OpencodonCLI.__init__:
         ignore_rules = False  # constructor default
         obj.ignore_rules = ignore_rules or os.environ.get("OPENCODON_IGNORE_RULES") == "1"
 
@@ -142,7 +142,7 @@ class TestIgnoreRulesEnvGate:
     def test_constructor_flag_alone_enables_ignore_rules(self, monkeypatch):
         monkeypatch.delenv("OPENCODON_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.OpencodonCLI)
         ignore_rules = True  # constructor argument
         obj.ignore_rules = ignore_rules or os.environ.get("OPENCODON_IGNORE_RULES") == "1"
         assert obj.ignore_rules is True
@@ -150,7 +150,7 @@ class TestIgnoreRulesEnvGate:
     def test_neither_flag_nor_env_leaves_rules_enabled(self, monkeypatch):
         monkeypatch.delenv("OPENCODON_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.OpencodonCLI)
         ignore_rules = False
         obj.ignore_rules = ignore_rules or os.environ.get("OPENCODON_IGNORE_RULES") == "1"
         assert obj.ignore_rules is False
@@ -219,7 +219,7 @@ class TestArgparseFlagsRegistered:
         # two flags under test. If someone removes the flag from main.py, this
         # test keeps passing in isolation — but the E2E test below catches it.
         import argparse
-        parser = argparse.ArgumentParser(prog="hermes")
+        parser = argparse.ArgumentParser(prog="opencodon")
         subs = parser.add_subparsers(dest="command")
         chat = subs.add_parser("chat")
         chat.add_argument("--ignore-user-config", action="store_true", default=False)
@@ -230,7 +230,7 @@ class TestArgparseFlagsRegistered:
         assert args.ignore_rules is True
 
     def test_main_py_registers_both_flags(self):
-        """E2E: the real hermes parser accepts both flags."""
+        """E2E: the real opencodon parser accepts both flags."""
         from opencodon_cli._parser import build_top_level_parser
 
         parser, _subparsers, chat_parser = build_top_level_parser()

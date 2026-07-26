@@ -403,12 +403,12 @@ class TestCacheDirectoryMounts:
         """Old-style dir names (e.g. document_cache) are resolved correctly.
 
         Populates the legacy dirs with a sentinel file so they count as
-        ``has content`` for ``get_hermes_dir``'s populated-legacy check
+        ``has content`` for ``get_opencodon_dir``'s populated-legacy check
         (see #27602 — empty legacy stubs are no longer honoured).
         """
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        # Use legacy dir name with content — get_hermes_dir prefers
+        # Use legacy dir name with content — get_opencodon_dir prefers
         # populated old over new.
         legacy_doc = opencodon_home / "document_cache"
         legacy_img = opencodon_home / "image_cache"

@@ -1,7 +1,7 @@
 """
-Unified tool configuration for Hermes Agent.
+Unified tool configuration for opencodon.
 
-`hermes tools` and `hermes setup tools` both enter this module.
+`opencodon tools` and `opencodon setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
@@ -24,12 +24,6 @@ from opencodon_cli.config import (
     load_config, save_config, get_env_value, save_env_value,
 )
 from opencodon_cli.colors import Colors, color
-from opencodon_cli.nous_subscription import (
-    MANAGED_FEATURE_COVERAGE_CATEGORY,
-    apply_nous_managed_defaults,
-    get_nous_subscription_features,
-)
-from opencodon_cli.nous_account import format_nous_portal_entitlement_message
 from tools.tool_backend_helpers import fal_key_is_configured
 from utils import base_url_hostname, is_truthy_value
 
@@ -40,7 +34,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
     """Win32 creationflags that stop post-setup children flashing a console.
 
     The dashboard/GUI runs post-setup hooks through a detached, console-less
-    ``hermes tools post-setup <key>`` child. On Windows, every console child
+    ``opencodon tools post-setup <key>`` child. On Windows, every console child
     (npm.cmd, npx, pip, powershell, curl) spawned from that console-less
     parent materializes a brand-new console window — the "terminal flash"
     users see when clicking "Run setup". ``CREATE_NO_WINDOW`` (via
@@ -138,7 +132,7 @@ def gui_toolset_label(label: str) -> str:
 #
 # X search is off by default for users without xAI credentials, but
 # auto-enables when SuperGrok OAuth tokens are stored OR XAI_API_KEY is
-# set. The `hermes tools` → X (Twitter) Search setup walks users through
+# set. The `opencodon tools` → X (Twitter) Search setup walks users through
 # credential setup. The tool's check_fn means the schema still won't appear to the
 # model if the credential later goes missing or expires.
 _DEFAULT_OFF_TOOLSETS = {"discord", "discord_admin", "video", "x_search"}
@@ -171,7 +165,7 @@ def _xai_credentials_present() -> bool:
         pass
     return bool(str(os.environ.get("XAI_API_KEY") or "").strip())
 
-# Platform-scoped toolsets: only appear in the `hermes tools` checklist for
+# Platform-scoped toolsets: only appear in the `opencodon tools` checklist for
 # these platforms, and only resolve/save for these platforms.  A toolset
 # absent from this map is available on every platform (current behaviour).
 #
@@ -215,7 +209,7 @@ def _get_effective_configurable_toolsets():
     already appears in ``CONFIGURABLE_TOOLSETS`` is skipped — bundled
     plugins may share their toolset key with the
     built-in entry, and we want the built-in label/description to win.
-    Without the dedupe, ``hermes tools`` → "reconfigure existing" would
+    Without the dedupe, ``opencodon tools`` → "reconfigure existing" would
     list the same toolset twice.
     """
     result = list(CONFIGURABLE_TOOLSETS)
@@ -244,7 +238,7 @@ def _get_plugin_toolset_keys() -> set:
 
 
 def _checklist_toolset_keys(platform: str) -> Set[str]:
-    """Return the toolset keys the ``hermes tools`` checklist actually offers
+    """Return the toolset keys the ``opencodon tools`` checklist actually offers
     for ``platform``.
 
     This mirrors exactly what ``_prompt_toolset_checklist`` renders:
@@ -256,7 +250,7 @@ def _checklist_toolset_keys(platform: str) -> Set[str]:
     time — ``kanban`` and other check_fn-gated toolsets, recovered platform
     composites, MCP server names — are NOT in this set because the checklist
     never shows them. Use this to scope the added/removed diff the UI prints,
-    so ``hermes tools`` never claims to add or remove a toolset the user was
+    so ``opencodon tools`` never claims to add or remove a toolset the user was
     never given a checkbox for. The underlying config is unaffected — those
     entries are preserved by ``_save_platform_tools`` regardless.
     """
@@ -293,16 +287,6 @@ TOOL_CATEGORIES = {
                 "tag": "Good quality, no API key needed",
                 "env_vars": [],
                 "tts_provider": "edge",
-            },
-            {
-                "name": "Nous Subscription",
-                "badge": "subscription",
-                "tag": "Managed OpenAI TTS billed to your subscription",
-                "env_vars": [],
-                "tts_provider": "openai",
-                "requires_nous_auth": True,
-                "managed_nous_feature": "tts",
-                "override_env_vars": ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY"],
             },
             {
                 "name": "OpenAI TTS",
@@ -384,22 +368,10 @@ TOOL_CATEGORIES = {
         # plugins.web.<vendor>.provider via _plugin_web_search_providers()
         # in _visible_providers(). Only non-provider UX setup-flow rows
         # for the firecrawl backend are listed here:
-        #   - "Nous Subscription" — managed Firecrawl billed via Nous
-        #     subscription (requires_nous_auth + override_env_vars).
         #   - "Firecrawl Self-Hosted" — points firecrawl at a private
         #     Docker instance via FIRECRAWL_API_URL only.
         # See PR #25182 for the migration rationale.
         "providers": [
-            {
-                "name": "Nous Subscription",
-                "badge": "subscription",
-                "tag": "Managed Firecrawl billed to your subscription",
-                "web_backend": "firecrawl",
-                "env_vars": [],
-                "requires_nous_auth": True,
-                "managed_nous_feature": "web",
-                "override_env_vars": ["FIRECRAWL_API_KEY", "FIRECRAWL_API_URL"],
-            },
             {
                 "name": "Firecrawl Self-Hosted",
                 "badge": "free · self-hosted",
@@ -418,30 +390,16 @@ TOOL_CATEGORIES = {
         # OpenAI Codex, and xAI are injected at runtime from each
         # ``plugins.image_gen.<vendor>`` package via
         # ``_plugin_image_gen_providers()`` in ``_visible_providers``.
-        # Only non-provider UX setup-flow rows remain here:
-        #   - "Nous Subscription" — managed FAL billed via the Nous
-        #     subscription (requires_nous_auth + override_env_vars).
-        #     Uses the fal plugin as the underlying backend but has a
-        #     distinct setup UX.
+        # Only non-provider UX setup-flow rows remain here.
         # Mirrors the shape browser ships today.
         "providers": [
-            {
-                "name": "Nous Subscription",
-                "badge": "subscription",
-                "tag": "Managed FAL image generation billed to your subscription",
-                "env_vars": [],
-                "requires_nous_auth": True,
-                "managed_nous_feature": "image_gen",
-                "override_env_vars": ["FAL_KEY"],
-                "imagegen_backend": "fal",
-            },
         ],
     },
     "x_search": {
         "name": "X (Twitter) Search",
         "setup_title": "Select xAI Credential Source",
         "setup_note": (
-            "Hermes routes X searches through xAI's built-in x_search "
+            "opencodon routes X searches through xAI's built-in x_search "
             "Responses tool. Both credential sources hit the same "
             "https://api.x.ai/v1/responses endpoint — pick whichever you "
             "already have. SuperGrok OAuth is preferred when both are set "
@@ -479,12 +437,8 @@ TOOL_CATEGORIES = {
         # non-provider UX setup-flow rows remain here. "Local Browser" is
         # listed FIRST so it is the default-highlighted (index 0) choice on a
         # fresh install — pressing Enter must land on the free, no-key local
-        # backend, never on the paid Nous Subscription gateway row:
+        # backend, never on a paid cloud row:
         #   - "Local Browser" — non-cloud option, no CloudBrowserProvider.
-        #   - "Nous Subscription (Browser Use cloud)" — managed Browser Use
-        #     billed via Nous subscription (requires_nous_auth +
-        #     override_env_vars). Uses the browser-use plugin as the
-        #     underlying backend but has a distinct setup UX.
         #   - "Camofox" — anti-detection local Firefox; short-circuits the
         #     cloud-provider dispatch path via _is_camofox_mode().
         "providers": [
@@ -494,17 +448,6 @@ TOOL_CATEGORIES = {
                 "tag": "Headless Chromium, no API key needed",
                 "env_vars": [],
                 "browser_provider": "local",
-                "post_setup": "agent_browser",
-            },
-            {
-                "name": "Nous Subscription (Browser Use cloud)",
-                "badge": "subscription",
-                "tag": "Managed Browser Use billed to your subscription",
-                "env_vars": [],
-                "browser_provider": "browser-use",
-                "requires_nous_auth": True,
-                "managed_nous_feature": "browser",
-                "override_env_vars": ["BROWSER_USE_API_KEY"],
                 "post_setup": "agent_browser",
             },
             {
@@ -577,7 +520,7 @@ TOOL_CATEGORIES = {
 # `vision` is listed here only so it registers as a *configurable* toolset
 # (the value gates the reconfigure menu + the "[no API key]" suffix). Its
 # actual setup runs through `_configure_vision_backend()` — a full
-# provider+model picker like `hermes model` — NOT this single-key prompt, so
+# provider+model picker like `opencodon model` — NOT this single-key prompt, so
 # users are never forced onto OpenRouter. `_toolset_has_keys("vision")`
 # resolves via `resolve_vision_provider_client()`, so the tuple below is never
 # prompted or read for vision; it's purely a presence marker.
@@ -602,7 +545,7 @@ def _resolved_cua_driver_cmd() -> Optional[str]:
 
 
 def _cua_driver_env() -> dict:
-    """cua-driver child env with the Hermes telemetry policy applied.
+    """cua-driver child env with the opencodon telemetry policy applied.
 
     Delegates to ``cua_backend.cua_driver_child_env`` (telemetry disabled by
     default; user opt-in via ``computer_use.cua_telemetry``). Falls back to the
@@ -744,8 +687,8 @@ def install_cua_driver(upgrade: bool = False) -> bool:
       installed, install otherwise. Used by the toolset enable flow where
       we don't want to surprise the user with a network fetch.
     * ``upgrade=True`` — always re-run the installer (or call ``cua-driver
-      update`` if the binary supports it). Used by ``hermes update`` and
-      by ``hermes computer-use install --upgrade``.
+      update`` if the binary supports it). Used by ``opencodon update`` and
+      by ``opencodon computer-use install --upgrade``.
 
     Returns True iff cua-driver is installed (or successfully refreshed)
     when the function returns. Supported on macOS, Windows, and Linux
@@ -758,7 +701,7 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     system = _plat.system()
     if system not in ("Darwin", "Windows", "Linux"):
         if upgrade:
-            # Silent on unsupported platforms — `hermes update` calls this
+            # Silent on unsupported platforms — `opencodon update` calls this
             # for every user; only macOS/Windows/Linux users care.
             return False
         _print_warning("    Computer Use (cua-driver) is unsupported on this platform; skipping.")
@@ -821,7 +764,7 @@ def install_cua_driver(upgrade: bool = False) -> bool:
             "    /Applications is not writable; skipping cua-driver refresh."
         )
         _print_info(
-            "    Run `hermes computer-use install --upgrade` from an admin account to update it."
+            "    Run `opencodon computer-use install --upgrade` from an admin account to update it."
         )
         return bool(binary)
 
@@ -1066,7 +1009,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
             proc.kill()
 
     try:
-        # When not verbose (e.g. `hermes update`'s refresh), capture the
+        # When not verbose (e.g. `opencodon update`'s refresh), capture the
         # installer's chatty "Next steps" wall instead of dumping it to the
         # terminal. The combined output is logged so a failure stays
         # debuggable. Verbose installs (interactive `computer-use install`)
@@ -1103,7 +1046,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
             result = subprocess.CompletedProcess(
                 install_cmd, proc.returncode, stdout=out, stderr=None
             )
-            # Preserve the full installer output. During `hermes update`,
+            # Preserve the full installer output. During `opencodon update`,
             # sys.stdout is the mirroring _UpdateOutputStream whose `_log`
             # handle is ~/.opencodon/logs/update.log — write straight to it so
             # the captured "Next steps" wall is kept in full (success AND
@@ -1134,7 +1077,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
                     _print_info("    IMPORTANT — grant macOS permissions now:")
                     _print_info("      System Settings > Privacy & Security > Accessibility")
                     _print_info("      System Settings > Privacy & Security > Screen Recording")
-                    _print_info("    Both must allow the terminal / Hermes process.")
+                    _print_info("    Both must allow the terminal / opencodon process.")
             return True
         _print_warning(f"    cua-driver {label.lower()} did not complete. Re-run manually:")
         _print_info(f"      {manual_hint}")
@@ -1189,7 +1132,7 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    Node.js dependencies installed")
             else:
                 from opencodon_constants import display_opencodon_home
-                _print_warning(f"    npm install failed - run manually: cd {display_opencodon_home()}/hermes-agent && npm install --workspaces=false")
+                _print_warning(f"    npm install failed - run manually: cd {display_opencodon_home()}/opencodon && npm install --workspaces=false")
                 if result.stderr:
                     _print_info(f"      {result.stderr.strip()[:200]}")
         elif node_modules.exists():
@@ -1197,7 +1140,7 @@ def _run_post_setup(post_setup_key: str):
             # the truth ("nothing to do") instead of implying a fresh install.
             _print_success("    agent-browser already installed, nothing to do")
         else:
-            _print_warning("    Node.js not found - browser tools require: npm install (in hermes-agent directory)")
+            _print_warning("    Node.js not found - browser tools require: npm install (in opencodon directory)")
             return
 
         # Step 2: only the local browser provider actually needs Chromium on
@@ -1234,7 +1177,7 @@ def _run_post_setup(post_setup_key: str):
                 "    Pull the latest image to get the bundled Chromium:"
             )
             _print_info(
-                "      docker pull ghcr.io/nousresearch/hermes-agent:latest"
+                "      docker pull ghcr.io/opencodon/opencodon:latest"
             )
             return
 
@@ -1412,9 +1355,9 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    Plugin observability/langfuse enabled")
         except Exception as exc:
             _print_warning(f"    Could not enable plugin automatically: {exc}")
-            _print_info("    Run manually: hermes plugins enable observability/langfuse")
-        _print_info("    Restart Hermes for tracing to take effect.")
-        _print_info("    Verify: hermes plugins list")
+            _print_info("    Run manually: opencodon plugins enable observability/langfuse")
+        _print_info("    Restart opencodon for tracing to take effect.")
+        _print_info("    Verify: opencodon plugins list")
 
     elif post_setup_key == "xai_grok":
         # Shared credential bootstrap for any picker entry that talks to xAI
@@ -1449,7 +1392,7 @@ def _run_post_setup(post_setup_key: str):
             from opencodon_cli.config import save_env_value
         except Exception as exc:
             _print_warning(f"    Could not load setup helpers: {exc}")
-            _print_info("    Run later: hermes auth add xai-oauth   (or set XAI_API_KEY)")
+            _print_info("    Run later: opencodon auth add xai-oauth   (or set XAI_API_KEY)")
             return
 
         idx = prompt_choice(
@@ -1457,7 +1400,7 @@ def _run_post_setup(post_setup_key: str):
             choices=[
                 "Sign in with xAI Grok OAuth (SuperGrok / Premium+) — browser login",
                 "Paste an xAI API key (console.x.ai)",
-                "Skip — configure later via `hermes auth add xai-oauth`",
+                "Skip — configure later via `opencodon auth add xai-oauth`",
             ],
             default=0,
         )
@@ -1469,7 +1412,7 @@ def _run_post_setup(post_setup_key: str):
             else:
                 _print_warning(
                     "    xAI Grok OAuth login did not complete. "
-                    "Run later: hermes auth add xai-oauth"
+                    "Run later: opencodon auth add xai-oauth"
                 )
         elif idx == 1:
             api_key = _setup_prompt("    xAI API key", password=True)
@@ -1478,7 +1421,7 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    XAI_API_KEY saved")
             else:
                 _print_warning(
-                    "    No API key provided. Run later: hermes auth add xai-oauth"
+                    "    No API key provided. Run later: opencodon auth add xai-oauth"
                 )
         else:
             _print_info("    xAI will remain inactive until credentials are configured.")
@@ -1489,7 +1432,7 @@ def valid_post_setup_keys() -> Set[str]:
 
     Collected from ``TOOL_CATEGORIES`` plus the plugin-registered web /
     image-gen / video-gen / browser providers (which can also carry a
-    ``post_setup``). This is the allowlist the ``hermes tools post-setup``
+    ``post_setup``). This is the allowlist the ``opencodon tools post-setup``
     command and the dashboard post-setup endpoint validate against, so a
     caller can't drive ``_run_post_setup`` with an arbitrary key.
     """
@@ -1516,7 +1459,7 @@ def valid_post_setup_keys() -> Set[str]:
 
 
 def run_post_setup_command(args) -> int:
-    """``hermes tools post-setup <key>`` — non-interactive post-setup runner.
+    """``opencodon tools post-setup <key>`` — non-interactive post-setup runner.
 
     Runs the install/bootstrap hook a provider declares (npm install for
     browser/Camofox, pip install for kittentts/piper/ddgs, cua-driver fetch,
@@ -1526,7 +1469,7 @@ def run_post_setup_command(args) -> int:
     """
     key = getattr(args, "post_setup_key", None)
     if not key:
-        _print_error("Usage: hermes tools post-setup <key>")
+        _print_error("Usage: opencodon tools post-setup <key>")
         return 2
     valid = valid_post_setup_keys()
     if key not in valid:
@@ -1657,7 +1600,7 @@ def _get_platform_tools(
             default_ts = plat_info["default_toolset"]
         else:
             # Plugin platform — derive toolset name from platform key
-            default_ts = f"hermes-{platform}"
+            default_ts = f"opencodon-{platform}"
         toolset_names = [default_ts]
 
     # YAML may parse bare numeric names (e.g. ``12306:``) as int.
@@ -1681,7 +1624,7 @@ def _get_platform_tools(
             if ts in configurable_keys and _toolset_allowed_for_platform(ts, platform)
         }
         # Mixed config: composite toolset alongside configurables (e.g.
-        # ``[opencodon-cli, discord]`` after enabling Discord via ``hermes
+        # ``[opencodon-cli, discord]`` after enabling Discord via ``opencodon
         # tools``). Without expansion the composite name is silently dropped,
         # leaving sessions with only the configurable opt-ins and no native
         # tools. Mirror the else-branch's subset inference, but apply
@@ -1741,7 +1684,7 @@ def _get_platform_tools(
         # ``x_search`` is its own one-tool toolset that the composite does
         # NOT include, so the subset loop never picks it up. Inject it
         # directly here: once you have working creds, you don't have to also
-        # click through ``hermes tools`` to flip the toolset on. Only fires
+        # click through ``opencodon tools`` to flip the toolset on. Only fires
         # when the user has not yet saved an explicit toolset list — once
         # they do, the saved list is authoritative.
         x_search_auto_enabled = (
@@ -1772,10 +1715,10 @@ def _get_platform_tools(
     # part of the platform's default composite but
     # absent from CONFIGURABLE_TOOLSETS, so they can't appear in the TUI
     # checklist or in a user-saved config.  Must run in BOTH branches —
-    # otherwise saving via `hermes tools` (which flips has_explicit_config
+    # otherwise saving via `opencodon tools` (which flips has_explicit_config
     # to True) silently drops them.
     _plat_info = PLATFORMS.get(platform)
-    _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
+    _default_ts = _plat_info["default_toolset"] if _plat_info else f"opencodon-{platform}"
     platform_tool_universe = set(resolve_toolset(_default_ts))
     configurable_tool_universe = set()
     for ck in configurable_keys:
@@ -1784,7 +1727,7 @@ def _get_platform_tools(
     for ts_key in enabled_toolsets:
         claimed.update(resolve_toolset(ts_key))
     skip = configurable_keys | plugin_ts_keys | platform_default_keys
-    skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
+    skip |= {k for k in TOOLSETS if k.startswith("opencodon-")}
     skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
     for ts_key, ts_def in TOOLSETS.items():
         if ts_key in skip:
@@ -1809,9 +1752,9 @@ def _get_platform_tools(
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
     # unless the toolset is in _DEFAULT_OFF_TOOLSETS (bundled plugins the
-    # user must opt in to via `hermes tools`, so we don't ship their tool
+    # user must opt in to via `opencodon tools`, so we don't ship their tool
     # schemas to users who don't use them).
-    # A plugin toolset is "known" for a platform once `hermes tools`
+    # A plugin toolset is "known" for a platform once `opencodon tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
     if plugin_ts_keys:
@@ -1825,7 +1768,7 @@ def _get_platform_tools(
                 # Opt-in plugin toolset — stay off until user picks it
                 continue
             elif pts not in known_for_platform:
-                # New plugin not yet seen by hermes tools — default enabled
+                # New plugin not yet seen by opencodon tools — default enabled
                 enabled_toolsets.add(pts)
             # else: known but not in config = user disabled it
 
@@ -1888,11 +1831,11 @@ def _get_platform_tools(
         enabled_toolsets -= disabled_set
 
     # #38798: if this platform was explicitly configured but every toolset name
-    # is invalid (e.g. a migration or hand-edit left `hermes` instead of
+    # is invalid (e.g. a migration or hand-edit left `opencodon` instead of
     # `opencodon-cli`), resolve_toolset() returns [] for each and the platform ends
     # up with no native tools — silently, with no error. Surface it at the point
     # tools are resolved for a session so an already-corrupted config is caught
-    # at runtime, not only during the next `hermes update`/`hermes doctor`.
+    # at runtime, not only during the next `opencodon update`/`opencodon doctor`.
     _explicit = platform_toolsets.get(platform)
     if isinstance(_explicit, list) and _explicit:
         from toolsets import validate_toolset
@@ -1906,7 +1849,7 @@ def _get_platform_tools(
             _warned_invalid_platform_toolsets.add(platform)
             logger.warning(
                 "platform '%s' has no valid toolsets configured (unknown "
-                "name(s): %s) - tools will be unavailable. Run `hermes tools` "
+                "name(s): %s) - tools will be unavailable. Run `opencodon tools` "
                 "to reconfigure. See issue #38798.",
                 platform,
                 ", ".join(_named),
@@ -1953,7 +1896,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
         entry for entry in existing_toolsets
         if entry not in configurable_keys and entry not in platform_default_keys
     }
-    # Opening `hermes tools` is the user's opt-in to reconfigure tools, so treat
+    # Opening `opencodon tools` is the user's opt-in to reconfigure tools, so treat
     # saving from the picker as consent to clear the "no_mcp" sentinel. The
     # picker has no checkbox for no_mcp, so without this users who once set it
     # by hand could never re-enable MCP servers through the UI.
@@ -2018,12 +1961,6 @@ def _toolset_has_keys(
             return client is not None
         except Exception:
             return False
-
-    if ts_key in {"web", "image_gen", "tts", "browser"}:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
-        feature = features.features.get(ts_key)
-        if feature and (feature.available or feature.managed_by_nous):
-            return True
 
     # Check TOOL_CATEGORIES first (provider-aware)
     cat = TOOL_CATEGORIES.get(ts_key)
@@ -2228,10 +2165,10 @@ def _plugin_image_gen_providers() -> list[dict]:
 # searxng, exa, parallel, tavily, firecrawl) live as plugins after
 # PR #25182 — this helper is the sole source of truth for the category's
 # provider rows. The hardcoded entries that used to drive the category
-# were deleted in the same PR; only the two non-provider UX rows
-# ("Nous Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
-# remain in TOOL_CATEGORIES because they describe alternative *setup
-# flows* for the firecrawl backend rather than distinct providers.
+# were deleted in the same PR; only the non-provider UX row
+# ("Firecrawl Self-Hosted") remains in TOOL_CATEGORIES because it describes
+# an alternative *setup flow* for the firecrawl backend rather than a
+# distinct provider.
 def _plugin_web_search_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered web search providers.
 
@@ -2313,8 +2250,8 @@ def web_provider_capabilities(backend: str) -> list:
 # for those three in the "Browser Automation" picker. The hardcoded
 # ``TOOL_CATEGORIES["browser"]`` entries that drove the category before
 # were deleted in the same PR; only non-provider UX setup-flow rows remain
-# ("Nous Subscription", "Local Browser", "Camofox") — see the comment block
-# in ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
+# ("Local Browser", "Camofox") — see the comment block in
+# ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
 def _plugin_browser_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered cloud browser providers.
 
@@ -2424,47 +2361,27 @@ def _visible_providers(
     *,
     force_fresh: bool = False,
 ) -> list[dict]:
-    """Return provider entries visible for the current auth/config state.
-
-    Nous-managed Tool Gateway rows (``managed_nous_feature``) are always
-    shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nous Portal
-    login + entitlement check (see ``_configure_provider``); the row only
-    *activates* the gateway once paid access is confirmed.
-    """
-    features = get_nous_subscription_features(config, force_fresh=force_fresh)
-    visible = []
-    for provider in cat.get("providers", []):
-        # Nous-managed Tool Gateway rows stay visible regardless of auth —
-        # selecting one drives an inline Portal login. A `requires_nous_auth`
-        # row that is NOT a managed gateway feature (pure pre-auth UX) is
-        # still hidden until the user is logged in.
-        if (
-            provider.get("requires_nous_auth")
-            and not provider.get("managed_nous_feature")
-            and not features.nous_auth_present
-        ):
-            continue
-        visible.append(provider)
+    """Return provider entries visible for the current auth/config state."""
+    visible = list(cat.get("providers", []))
 
     # Inject plugin-registered image_gen backends (OpenAI today, more
-    # later) so the picker lists them alongside FAL / Nous Subscription.
+    # later) so the picker lists them alongside FAL.
     if cat.get("name") == "Image Generation":
         visible.extend(_plugin_image_gen_providers())
 
     # Inject plugin-registered web search backends. After PR #25182, this
     # is the SOLE source of provider rows for the Web Search & Extract
-    # category — the per-provider hardcoded entries were deleted. The two
-    # remaining hardcoded rows ("Nous Subscription", "Firecrawl
-    # Self-Hosted") are non-provider UX setup-flow rows for firecrawl.
+    # category — the per-provider hardcoded entries were deleted. The one
+    # remaining hardcoded row ("Firecrawl Self-Hosted") is a non-provider
+    # UX setup-flow row for firecrawl.
     if cat.get("name") == "Web Search & Extract":
         visible.extend(_plugin_web_search_providers())
 
     # Inject plugin-registered cloud browser backends. After PR #25214,
     # Browserbase / Browser Use / Firecrawl are the plugin-supplied rows;
-    # the hardcoded "Nous Subscription" / "Local Browser" / "Camofox" rows
-    # stay because they're non-provider UX setup flows (subscription auth,
-    # local fallback, and the REST-API anti-detection backend respectively).
+    # the hardcoded "Local Browser" / "Camofox" rows stay because they're
+    # non-provider UX setup flows (local fallback and the REST-API
+    # anti-detection backend respectively).
     if cat.get("name") == "Browser Automation":
         visible.extend(_plugin_browser_providers())
 
@@ -2477,31 +2394,12 @@ def _visible_providers(
     return visible
 
 
-def _hidden_nous_gateway_message(
-    cat: dict,
-    config: dict,
-    capability: str,
-    *,
-    force_fresh: bool = False,
-) -> str:
-    """Deprecated: Nous Tool Gateway rows are no longer hidden.
-
-    Previously this returned a "log in / upgrade" banner shown above a
-    category when its Nous-managed rows were filtered out for unentitled
-    users. Those rows are now always listed (see ``_visible_providers``), and
-    the login + entitlement guidance happens inline when the user selects one
-    (``ensure_nous_portal_access``). Kept as a no-op so call sites stay simple;
-    always returns an empty string.
-    """
-    return ""
-
-
 _POST_SETUP_INSTALLED: dict = {
     # post_setup_key -> predicate(): True when the install side-effect
     # is already satisfied. Used by `_toolset_needs_configuration_prompt`
     # to force the provider-setup flow when a no-key provider still needs
     # a binary/dependency install (otherwise an already-configured user
-    # who toggles the toolset on via `hermes tools` gets a silent no-op
+    # who toggles the toolset on via `opencodon tools` gets a silent no-op
     # because the gate sees "no env vars to ask about" and skips the
     # provider-setup flow that would have run the post_setup hook).
     #
@@ -2537,14 +2435,54 @@ def _module_installed(module_name: str) -> bool:
         return False
 
 
+def _has_agent_browser() -> bool:
+    """True when a runnable ``agent-browser`` CLI is resolvable."""
+    import shutil
+
+    from opencodon_constants import agent_browser_runnable
+
+    # Validate the resolved binary actually runs — a dangling global symlink
+    # (issue #48521) is reported by ``which`` but fails at exec. Fall through to
+    # the local node_modules copy, which the validator also checks.
+    if agent_browser_runnable(shutil.which("agent-browser")):
+        return True
+    local_bin = PROJECT_ROOT / "node_modules" / ".bin" / "agent-browser"
+    return agent_browser_runnable(str(local_bin)) if local_bin.exists() else False
+
+
+def _local_browser_runnable() -> bool:
+    """Return True when the *local* browser backend would actually start.
+
+    The ``agent-browser`` CLI being present is necessary but not sufficient for
+    local mode: agent-browser also needs a Chromium build on disk (without one
+    it hangs on first use until the command timeout fires), unless the
+    Lightpanda engine is selected — text-only navigation needs no Chromium.
+
+    Mirrors the local-mode tail of
+    :func:`tools.browser_tool.check_browser_requirements`, so the setup/status
+    surfaces advertise local browser readiness only when the runtime would
+    actually run it. Cloud providers host their own Chromium and therefore gate
+    on :func:`_has_agent_browser` alone.
+    """
+    if not _has_agent_browser():
+        return False
+    try:
+        from tools.browser_tool import _chromium_installed, _using_lightpanda_engine
+    except Exception:
+        # If the runtime probe can't be imported, fall back to binary presence
+        # (prior behaviour) rather than crashing the setup/status surface.
+        return True
+    if _using_lightpanda_engine():
+        return True
+    return _chromium_installed()
+
+
 def _agent_browser_installed() -> bool:
     """True when everything ``_run_post_setup("agent_browser")`` installs is
     present: the agent-browser CLI *and* the Chromium build it drives (or the
     Lightpanda engine, which needs no Chromium). Mirrors the hook so "Run
     setup" flips to an installed state only when re-running it would be a
     no-op."""
-    from opencodon_cli.nous_subscription import _local_browser_runnable
-
     return _local_browser_runnable()
 
 
@@ -2577,8 +2515,6 @@ def _cloud_agent_browser_installed() -> bool:
 
     Cloud providers host their own Chromium, so their hook only installs the
     agent-browser npm package — presence of the CLI is the whole contract."""
-    from opencodon_cli.nous_subscription import _has_agent_browser
-
     return _has_agent_browser()
 
 
@@ -2586,7 +2522,6 @@ def provider_readiness_status(
     provider: dict,
     config: dict,
     *,
-    features=None,
     is_active: Optional[bool] = None,
 ) -> str:
     """Compute an honest readiness state for a provider picker row.
@@ -2595,18 +2530,16 @@ def provider_readiness_status(
 
     - ``"ready"``       — usable as-is (keys set / entitled / installed).
     - ``"needs_keys"``  — declares env vars and at least one is unset.
-    - ``"needs_auth"``  — needs a sign-in: Nous Portal login/entitlement for
-      managed Tool Gateway rows, or xAI Grok OAuth / XAI_API_KEY for
+    - ``"needs_auth"``  — needs a sign-in: xAI Grok OAuth / XAI_API_KEY for
       ``post_setup: "xai_grok"`` rows.
     - ``"needs_setup"`` — keyless row whose ``post_setup`` install hook has
       verifiably not run yet (see ``_POST_SETUP_READY``).
 
     Keyless ≠ usable: this is the server-side truth the GUI "Ready" pill
     renders from (the old client-side heuristic showed Ready for every
-    zero-env-var row, including logged-out Nous Subscription rows).
+    zero-env-var row).
 
-    ``features`` (a ``NousSubscriptionFeatures``) can be passed to avoid
-    re-fetching portal state per row. ``is_active`` is the completed-setup
+    ``is_active`` is the completed-setup
     fallback signal for post_setup hooks with no registered installed-check
     (selecting a row runs its hook, so the active row has been set up).
     """
@@ -2615,32 +2548,6 @@ def provider_readiness_status(
         if all(get_env_value(e["key"]) for e in env_vars):
             return "ready"
         return "needs_keys"
-
-    managed_feature = provider.get("managed_nous_feature")
-    if provider.get("requires_nous_auth") or managed_feature:
-        if features is None:
-            features = get_nous_subscription_features(config)
-        if not features.nous_auth_present:
-            return "needs_auth"
-        if managed_feature:
-            # Same per-category entitlement gate the CLI applies at selection
-            # time.
-            acct = features.account_info
-            category = MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature)
-            entitled = bool(
-                acct
-                and acct.logged_in
-                and (
-                    acct.tool_gateway_entitled_for(category)
-                    if category
-                    else acct.tool_gateway_entitled
-                )
-            )
-            if not entitled:
-                return "needs_auth"
-        # Signed in and entitled — fall through: a managed row may still
-        # carry a local install hook (e.g. the managed browser row needs
-        # the agent-browser CLI on this machine).
 
     post_setup = provider.get("post_setup")
     if post_setup:
@@ -2724,12 +2631,6 @@ def _configure_tool_category(
     icon = cat.get("icon", "")
     name = cat["name"]
     providers = _visible_providers(cat, config, force_fresh=force_fresh)
-    hidden_nous_message = _hidden_nous_gateway_message(
-        cat,
-        config,
-        f"the Nous Subscription provider for {name}",
-        force_fresh=force_fresh,
-    )
 
     # Check Python version requirement
     if cat.get("requires_python"):
@@ -2750,9 +2651,6 @@ def _configure_tool_category(
         # For single-provider tools, show a note if available
         if cat.get("setup_note"):
             _print_info(f"  {cat['setup_note']}")
-        if hidden_nous_message:
-            for line in hidden_nous_message.splitlines():
-                _print_warning(f"  {line}")
         _configure_provider(provider, config, force_fresh=force_fresh)
     else:
         # Multiple providers - let user choose
@@ -2762,25 +2660,9 @@ def _configure_tool_category(
         print(color(f"  --- {icon} {name} - {title} ---", Colors.CYAN))
         if cat.get("setup_note"):
             _print_info(f"  {cat['setup_note']}")
-        if hidden_nous_message:
-            for line in hidden_nous_message.splitlines():
-                _print_warning(f"  {line}")
         print()
 
         # Plain text labels only (no ANSI codes in menu items)
-        # When the user is logged into Nous, surface a marker on providers
-        # whose access is included in their subscription so it's visually
-        # obvious which options cost extra vs. cost nothing on top of Nous.
-        try:
-            _nous_logged_in = bool(
-                get_nous_subscription_features(
-                    config,
-                    force_fresh=force_fresh,
-                ).nous_auth_present
-            )
-        except Exception:
-            _nous_logged_in = False
-
         provider_choices = []
         for p in providers:
             badge = f" [{p['badge']}]" if p.get("badge") else ""
@@ -2794,18 +2676,7 @@ def _configure_tool_category(
                     configured = ""
                 else:
                     configured = " [configured]"
-            # Mark Nous-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via Nous Portal" hint so
-            # it's clear selecting the row triggers a Portal login. The rows
-            # are always shown now (see _visible_providers) — selecting one
-            # drives an inline login + entitlement check.
-            sub_marker = ""
-            if p.get("managed_nous_feature"):
-                if _nous_logged_in:
-                    sub_marker = "  ★ Included with your Nous subscription"
-                else:
-                    sub_marker = "  ★ via Nous Portal (login on select)"
-            provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
+            provider_choices.append(f"{p['name']}{badge}{tag}{configured}")
 
         # Add skip option
         provider_choices.append("Skip — keep defaults / configure later")
@@ -2838,34 +2709,6 @@ def _is_provider_active(
     if plugin_name:
         image_cfg = config.get("image_gen", {})
         return isinstance(image_cfg, dict) and image_cfg.get("provider") == plugin_name
-
-    managed_feature = provider.get("managed_nous_feature")
-    if managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
-        feature = features.features.get(managed_feature)
-        if feature is None:
-            return False
-        if managed_feature == "image_gen":
-            image_cfg = config.get("image_gen", {})
-            if isinstance(image_cfg, dict):
-                configured_provider = image_cfg.get("provider")
-                if configured_provider not in {None, "", "fal"}:
-                    return False
-                if image_cfg.get("use_gateway") is not None and not is_truthy_value(image_cfg.get("use_gateway"), default=False):
-                    return False
-            return feature.managed_by_nous
-        if provider.get("tts_provider"):
-            return (
-                feature.managed_by_nous
-                and cfg_get(config, "tts", "provider") == provider["tts_provider"]
-            )
-        if "browser_provider" in provider:
-            current = cfg_get(config, "browser", "cloud_provider")
-            return feature.managed_by_nous and provider["browser_provider"] == current
-        if provider.get("web_backend"):
-            current = cfg_get(config, "web", "backend")
-            return feature.managed_by_nous and current == provider["web_backend"]
-        return feature.managed_by_nous
 
     if provider.get("tts_provider"):
         return cfg_get(config, "tts", "provider") == provider["tts_provider"]
@@ -3144,49 +2987,41 @@ def _select_plugin_image_gen_provider(plugin_name: str, config: dict) -> None:
         _configure_xai_imagine_storage("image_gen", config)
 
 
-def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> None:
+def _write_provider_config(provider: dict, config: dict) -> None:
     """Persist the provider/backend config keys for a selected provider.
 
     This is the pure, non-interactive core of :func:`_configure_provider` —
     it writes ``tts.provider`` / ``browser.cloud_provider`` / ``web.backend``
-    and the ``use_gateway`` flags based on the provider's markers, but does
-    NOT prompt for env vars, run post-setup hooks, gate on Nous auth, or run
+    but does NOT prompt for env vars, run post-setup hooks, or run
     interactive model pickers. Both the CLI configurator and the desktop GUI
     ``PUT .../provider`` endpoint call through here so there is one code path.
     """
     # Set TTS provider in config if applicable
     if provider.get("tts_provider"):
-        tts_cfg = config.setdefault("tts", {})
-        tts_cfg["provider"] = provider["tts_provider"]
-        tts_cfg["use_gateway"] = bool(managed_feature)
+        config.setdefault("tts", {})["provider"] = provider["tts_provider"]
 
     # Set browser cloud provider in config if applicable
     if "browser_provider" in provider:
         bp = provider["browser_provider"]
-        browser_cfg = config.setdefault("browser", {})
         if bp:
-            browser_cfg["cloud_provider"] = bp
-        browser_cfg["use_gateway"] = bool(managed_feature)
+            config.setdefault("browser", {})["cloud_provider"] = bp
 
     # Set web search backend in config if applicable
     if provider.get("web_backend"):
-        web_cfg = config.setdefault("web", {})
-        web_cfg["backend"] = provider["web_backend"]
-        web_cfg["use_gateway"] = bool(managed_feature)
+        config.setdefault("web", {})["backend"] = provider["web_backend"]
 
-    # For tools without a specific config key (e.g. image_gen), still
-    # track use_gateway so the runtime knows the user's intent.
-    if managed_feature and managed_feature not in {"web", "tts", "browser"}:
-        config.setdefault(managed_feature, {})["use_gateway"] = True
-    elif not managed_feature:
-        # User picked a non-gateway provider — find which category this
-        # belongs to and clear use_gateway if it was previously set.
-        for cat_key, cat in TOOL_CATEGORIES.items():
-            if provider in cat.get("providers", []):
-                section = config.get(cat_key)
-                if isinstance(section, dict) and section.get("use_gateway"):
-                    section["use_gateway"] = False
-                break
+    # Drop any stale use_gateway flag left by an older install, both on the
+    # sections this provider writes and on its own category.
+    for _key in ("tts", "browser", "web", "image_gen", "stt"):
+        _section = config.get(_key)
+        if isinstance(_section, dict):
+            _section.pop("use_gateway", None)
+    for cat_key, cat in TOOL_CATEGORIES.items():
+        if provider in cat.get("providers", []):
+            section = config.get(cat_key)
+            if isinstance(section, dict):
+                section.pop("use_gateway", None)
+            break
 
 
 def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> None:
@@ -3196,8 +3031,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on Nous Portal auth, or run interactive model
-    pickers — those are handled separately (env endpoints, post-setup
+    post-setup hooks, or run interactive model pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
     Raises ``KeyError`` if the toolset has no category or the provider name
@@ -3212,8 +3046,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     if provider is None:
         raise KeyError(f"Unknown provider {provider_name!r} for toolset {ts_key!r}")
 
-    managed_feature = provider.get("managed_nous_feature")
-    _write_provider_config(provider, config, managed_feature=managed_feature)
+    _write_provider_config(provider, config)
 
     # Plugin-registered image/video gen backends record the provider name in
     # their own config section. Write that here (without the interactive
@@ -3226,7 +3059,6 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
             img_cfg = {}
             config["image_gen"] = img_cfg
         img_cfg["provider"] = plugin_name
-        img_cfg["use_gateway"] = bool(managed_feature)
 
     # In-tree FAL imagegen backend: keep image_gen.provider on the legacy
     # path (mirrors _configure_provider).
@@ -3244,51 +3076,11 @@ def _configure_provider(
 ):
     """Configure a single provider - prompt for API keys and set config."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nous_feature")
-
-    # Nous-managed Tool Gateway backends are always listed (see
-    # _visible_providers), but only *activate* once the user has paid Nous
-    # Portal access. Selecting one runs an inline Portal login when needed —
-    # auth + entitlement only, no inference-provider switch and no bulk
-    # "enable all tools" prompt (that lives in `hermes model`).
-    if managed_feature:
-        from opencodon_cli.nous_subscription import (
-            MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nous_portal_access,
-        )
-
-        if not ensure_nous_portal_access(
-            capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
-            coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
-        ):
-            _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
-            )
-            return
-
-    # Pure pre-auth UX rows (requires_nous_auth without a managed gateway
-    # feature) keep the old gate. Managed rows are handled by the inline
-    # login above, so don't double-check them here.
-    if provider.get("requires_nous_auth") and not managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
-        entitled = bool(
-            features.account_info and features.account_info.paid_service_access is True
-        )
-        if not features.nous_auth_present or not entitled:
-            message = format_nous_portal_entitlement_message(
-                features.account_info,
-                capability=f"{provider.get('name', 'Nous Subscription')}",
-            )
-            _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
-            )
-            return
 
     # Set TTS provider in config if applicable
     if provider.get("tts_provider"):
         tts_cfg = config.setdefault("tts", {})
         tts_cfg["provider"] = provider["tts_provider"]
-        tts_cfg["use_gateway"] = bool(managed_feature)
 
     # Set browser cloud provider in config if applicable
     if "browser_provider" in provider:
@@ -3302,17 +3094,15 @@ def _configure_provider(
     if provider.get("web_backend"):
         _print_success(f"  Web backend set to: {provider['web_backend']}")
 
-    # Persist the provider/backend config keys + use_gateway flags. Shared
-    # with the GUI provider-select endpoint via apply_provider_selection so
-    # there is a single source of truth for these writes.
-    _write_provider_config(provider, config, managed_feature=managed_feature)
+    # Persist the provider/backend config keys. Shared with the GUI
+    # provider-select endpoint via apply_provider_selection so there is a
+    # single source of truth for these writes.
+    _write_provider_config(provider, config)
 
     if not env_vars:
         if provider.get("post_setup"):
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
-        if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nous subscription.")
         # Plugin-registered image_gen provider: write image_gen.provider
         # and route model selection to the plugin's own catalog.
         plugin_name = provider.get("image_gen_plugin_name")
@@ -3333,32 +3123,6 @@ def _configure_provider(
 
     # Prompt for each required env var
     all_configured = True
-    # If this BYOK provider lives in a category that ALSO has a
-    # Nous-managed sibling, show a single dim hint so users know
-    # they can avoid the key entirely via a Portal subscription.
-    # Suppressed when the user is already authed to Nous.
-    _show_portal_hint = False
-    if env_vars and not managed_feature and not provider.get("requires_nous_auth"):
-        try:
-            _has_managed_sibling = False
-            for _cat_key, _cat in TOOL_CATEGORIES.items():
-                _providers = _cat.get("providers", [])
-                if provider in _providers and any(
-                    sib.get("managed_nous_feature") for sib in _providers
-                ):
-                    _has_managed_sibling = True
-                    break
-            if _has_managed_sibling:
-                _features = get_nous_subscription_features(
-                    config,
-                    force_fresh=force_fresh,
-                )
-                _show_portal_hint = not _features.nous_auth_present
-        except Exception:
-            _show_portal_hint = False
-
-    if _show_portal_hint:
-        _print_info("  Available through Nous Portal subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -3410,7 +3174,7 @@ def _configure_vision_backend() -> None:
     ``auxiliary.vision.{provider,model,base_url}`` in config.yaml (see
     ``agent/auxiliary_client.resolve_vision_provider_client``). Rather than
     forcing the user onto OpenRouter, let them pick any authenticated
-    provider + model — the same surface as ``hermes model`` — or point at a
+    provider + model — the same surface as ``opencodon model`` — or point at a
     custom OpenAI-compatible endpoint. "Auto" leaves the config keys empty so
     the resolver uses the main model / aggregator fallback chain.
     """
@@ -3505,7 +3269,7 @@ def _configure_vision_provider_model(config: dict, vision_cfg: dict) -> None:
     if not providers:
         _print_warning(
             "  No authenticated providers found. Configure a provider first "
-            "with `hermes model`, then re-run this."
+            "with `opencodon model`, then re-run this."
         )
         return
 
@@ -3658,27 +3422,15 @@ def _configure_tool_category_for_reconfig(
     icon = cat.get("icon", "")
     name = cat["name"]
     providers = _visible_providers(cat, config, force_fresh=force_fresh)
-    hidden_nous_message = _hidden_nous_gateway_message(
-        cat,
-        config,
-        f"the Nous Subscription provider for {name}",
-        force_fresh=force_fresh,
-    )
 
     if len(providers) == 1:
         provider = providers[0]
         print()
         print(color(f"  --- {icon} {name} ({provider['name']}) ---", Colors.CYAN))
-        if hidden_nous_message:
-            for line in hidden_nous_message.splitlines():
-                _print_warning(f"  {line}")
         _reconfigure_provider(provider, config, force_fresh=force_fresh)
     else:
         print()
         print(color(f"  --- {icon} {name} - Choose a provider ---", Colors.CYAN))
-        if hidden_nous_message:
-            for line in hidden_nous_message.splitlines():
-                _print_warning(f"  {line}")
         print()
 
         provider_choices = []
@@ -3718,46 +3470,10 @@ def _reconfigure_provider(
 ):
     """Reconfigure a provider - update API keys."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nous_feature")
-
-    # Same inline Nous Portal login + entitlement gate as _configure_provider:
-    # managed Tool Gateway backends only activate with paid Portal access.
-    if managed_feature:
-        from opencodon_cli.nous_subscription import (
-            MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nous_portal_access,
-        )
-
-        if not ensure_nous_portal_access(
-            capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
-            coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
-        ):
-            _print_warning(
-                "  Not enabled — Nous Portal access is required for this backend."
-            )
-            return
-
-    # Pure pre-auth UX rows keep the old gate; managed rows already handled
-    # by the inline login above.
-    if provider.get("requires_nous_auth") and not managed_feature:
-        features = get_nous_subscription_features(config, force_fresh=force_fresh)
-        entitled = bool(
-            features.account_info and features.account_info.paid_service_access is True
-        )
-        if not features.nous_auth_present or not entitled:
-            message = format_nous_portal_entitlement_message(
-                features.account_info,
-                capability=f"{provider.get('name', 'Nous Subscription')}",
-            )
-            _print_warning(
-                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
-            )
-            return
 
     if provider.get("tts_provider"):
         tts_cfg = config.setdefault("tts", {})
         tts_cfg["provider"] = provider["tts_provider"]
-        tts_cfg["use_gateway"] = bool(managed_feature)
         _print_success(f"  TTS provider set to: {provider['tts_provider']}")
 
     if "browser_provider" in provider:
@@ -3769,35 +3485,30 @@ def _reconfigure_provider(
         elif bp:
             browser_cfg["cloud_provider"] = bp
             _print_success(f"  Browser cloud provider set to: {bp}")
-        browser_cfg["use_gateway"] = bool(managed_feature)
 
     # Set web search backend in config if applicable
     if provider.get("web_backend"):
         web_cfg = config.setdefault("web", {})
         web_cfg["backend"] = provider["web_backend"]
-        web_cfg["use_gateway"] = bool(managed_feature)
         _print_success(f"  Web backend set to: {provider['web_backend']}")
 
-    if managed_feature and managed_feature not in {"web", "tts", "browser"}:
-        section = config.setdefault(managed_feature, {})
-        if not isinstance(section, dict):
-            section = {}
-            config[managed_feature] = section
-        section["use_gateway"] = True
-    elif not managed_feature:
-        for cat_key, cat in TOOL_CATEGORIES.items():
-            if provider in cat.get("providers", []):
-                section = config.get(cat_key)
-                if isinstance(section, dict) and section.get("use_gateway"):
-                    section["use_gateway"] = False
-                break
+    # Drop any stale use_gateway flag left by an older install, both on the
+    # sections this provider writes and on its own category.
+    for _key in ("tts", "browser", "web", "image_gen", "stt"):
+        _section = config.get(_key)
+        if isinstance(_section, dict):
+            _section.pop("use_gateway", None)
+    for cat_key, cat in TOOL_CATEGORIES.items():
+        if provider in cat.get("providers", []):
+            section = config.get(cat_key)
+            if isinstance(section, dict):
+                section.pop("use_gateway", None)
+            break
 
     if not env_vars:
         if provider.get("post_setup"):
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
-        if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nous subscription.")
         plugin_name = provider.get("image_gen_plugin_name")
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
@@ -3810,7 +3521,6 @@ def _reconfigure_provider(
                 img_cfg = config.setdefault("image_gen", {})
                 if isinstance(img_cfg, dict):
                     img_cfg["provider"] = "fal"
-                    img_cfg["use_gateway"] = False
         return
 
     for var in env_vars:
@@ -3851,7 +3561,7 @@ def _reconfigure_simple_requirements(ts_key: str):
     """Reconfigure simple env var requirements."""
     if ts_key == "vision":
         # Vision has its own provider/model picker (any provider, like
-        # `hermes model`). Run it directly so reconfigure doesn't fall back to
+        # `opencodon model`). Run it directly so reconfigure doesn't fall back to
         # the generic single-key prompt (which would re-ask for OPENROUTER_API_KEY).
         _configure_vision_backend()
         return
@@ -3881,7 +3591,7 @@ def _reconfigure_simple_requirements(ts_key: str):
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
 
 def tools_command(args=None, first_install: bool = False, config: dict = None):
-    """Entry point for `hermes tools` and `hermes setup tools`.
+    """Entry point for `opencodon tools` and `opencodon setup tools`.
 
     Args:
         first_install: When True (set by the setup wizard on fresh installs),
@@ -3916,10 +3626,10 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 print(color("    (none enabled)", Colors.DIM))
         print()
         return
-    print(color("⚕ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ opencodon Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://github.com/opencodon/opencodon/blob/main/docs/user-guide/features/tools.md", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──
@@ -3952,14 +3662,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                     label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                     print(color(f"  - {label}", Colors.RED))
 
-            auto_configured = apply_nous_managed_defaults(
-                config,
-                enabled_toolsets=new_enabled,
-                force_fresh=True,
-            )
-            for ts_key in sorted(auto_configured):
-                label = next((l for k, l, _ in CONFIGURABLE_TOOLSETS if k == ts_key), ts_key)
-                print(color(f"  ✓ {label}: using your Nous subscription defaults", Colors.GREEN))
+            auto_configured: set = set()
 
             # Walk through ALL selected tools that have provider options or
             # need API keys.  This ensures browser (Local vs Browserbase),
@@ -4200,7 +3903,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     print()
     from opencodon_constants import display_opencodon_home
     print(color(f"  Tool configuration saved to {display_opencodon_home()}/config.yaml", Colors.DIM))
-    print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
+    print(color("  Changes take effect on next 'opencodon' or gateway restart.", Colors.DIM))
     print()
 
 
@@ -4305,7 +4008,7 @@ def _configure_mcp_tools_interactive(config: dict):
             continue
 
         # Compute new include list (the chosen tools). We standardize on
-        # tools.include across the codebase (catalog installs, hermes mcp
+        # tools.include across the codebase (catalog installs, opencodon mcp
         # configure, and this UI) so a server\'s on-disk config shape doesn\'t
         # depend on which UI the user touched last.
         chosen_names = [tool_names[i] for i in sorted(chosen)]

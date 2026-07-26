@@ -1,6 +1,6 @@
 """Resolve OPENCODON_HOME for standalone skill scripts.
 
-Skill scripts may run outside the Hermes process (e.g. system Python,
+Skill scripts may run outside the opencodon process (e.g. system Python,
 nix env, CI) where ``opencodon_constants`` is not importable.  This module
 provides the same ``get_opencodon_home()`` and ``display_opencodon_home()``
 contracts as ``opencodon_constants`` without requiring it on ``sys.path``.
@@ -25,7 +25,7 @@ try:
 except (ModuleNotFoundError, ImportError):
 
     def get_opencodon_home() -> Path:
-        """Return the Hermes home directory (default: ~/.opencodon).
+        """Return the opencodon home directory (default: ~/.opencodon).
 
         Mirrors ``opencodon_constants.get_opencodon_home()``."""
         val = os.environ.get("OPENCODON_HOME", "").strip()

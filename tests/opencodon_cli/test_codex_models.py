@@ -29,7 +29,7 @@ def test_get_codex_model_ids_prioritizes_default_and_cache(tmp_path, monkeypatch
     assert "gpt-5.1-codex" in models
     assert "gpt-5.3-codex" in models
     # Codex CLI marks Spark unsupported in the public API, but the Codex
-    # backend still accepts it via the OAuth-backed CLI/Hermes route.
+    # backend still accepts it via the OAuth-backed CLI/opencodon route.
     assert "gpt-5.3-codex-spark" in models
     # Non-codex-suffixed models are included when the cache says they're available
     assert "gpt-5.4" in models
@@ -312,9 +312,9 @@ def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
 
 
 def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
-    """Create a HermesCLI with minimal mocking."""
+    """Create a OpencodonCLI with minimal mocking."""
     import cli as _cli_mod
-    from cli import HermesCLI
+    from cli import OpencodonCLI
 
     _clean_config = {
         "model": {
@@ -332,7 +332,7 @@ def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
         patch.dict("os.environ", clean_env, clear=False),
         patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
     ):
-        cli = HermesCLI(model=model, **kwargs)
+        cli = OpencodonCLI(model=model, **kwargs)
     return cli
 
 
@@ -428,8 +428,8 @@ class TestNormalizeModelForProvider:
             patch.dict("os.environ", {"LLM_MODEL": "", "OPENCODON_MAX_ITERATIONS": ""}, clear=False),
             patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
         ):
-            from cli import HermesCLI
-            cli = HermesCLI()
+            from cli import OpencodonCLI
+            cli = OpencodonCLI()
 
         assert cli._model_is_default is True
         with patch(
@@ -459,8 +459,8 @@ class TestNormalizeModelForProvider:
             patch.dict("os.environ", {"LLM_MODEL": "", "OPENCODON_MAX_ITERATIONS": ""}, clear=False),
             patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
         ):
-            from cli import HermesCLI
-            cli = HermesCLI()
+            from cli import OpencodonCLI
+            cli = OpencodonCLI()
 
         with patch(
             "opencodon_cli.codex_models.get_codex_model_ids",

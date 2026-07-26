@@ -1174,7 +1174,7 @@ def try_recover_primary_transport(
     Anthropic, OpenAI, local models) where a TCP-level hiccup does not
     mean the provider is down.
 
-    Skipped for proxy/aggregator providers (OpenRouter, Nous) which
+    Skipped for proxy/aggregator providers (e.g. OpenRouter) which
     already manage connection pools and retries server-side — if our
     retries through them are exhausted, one more rebuilt client won't help.
     """
@@ -1189,10 +1189,6 @@ def try_recover_primary_transport(
     # Skip for aggregator providers — they manage their own retry infra
     if agent._is_openrouter_url():
         return False
-    provider_lower = (agent.provider or "").strip().lower()
-    if provider_lower in {"nous", "nous-research"}:
-        return False
-
     try:
         # Close existing client to release stale connections
         if getattr(agent, "client", None) is not None:
@@ -1823,10 +1819,6 @@ def anthropic_prompt_cache_policy(
         _model_name_is_kimi_family(eff_model) or "moonshot" in model_lower
     )
     is_openrouter = base_url_host_matches(eff_base_url, "openrouter.ai")
-    # Nous Portal proxies to OpenRouter behind the scenes — identical
-    # OpenAI-wire envelope cache_control semantics. Treat it as an
-    # OpenRouter-equivalent endpoint for caching layout purposes.
-    is_nous_portal = "nousresearch" in eff_base_url.lower()
     is_anthropic_wire = eff_api_mode == "anthropic_messages"
     is_native_anthropic = (
         is_anthropic_wire
@@ -1835,16 +1827,7 @@ def anthropic_prompt_cache_policy(
 
     if is_native_anthropic:
         return True, True
-    if (is_openrouter or is_nous_portal) and (is_claude or is_kimi):
-        return True, False
-    # Nous Portal Qwen (e.g. qwen3.6-plus) takes the same envelope-layout
-    # cache_control path as Portal Claude. Portal proxies to OpenRouter
-    # and the upstream Qwen route accepts cache_control markers; without
-    # this branch the alibaba-family check below only matches
-    # provider=opencode/alibaba and Portal traffic falls through to
-    # (False, False), serving 0% cache hits and re-billing the full
-    # prompt on every turn.
-    if is_nous_portal and "qwen" in model_lower:
+    if is_openrouter and (is_claude or is_kimi):
         return True, False
     if is_anthropic_wire and is_claude:
         # Third-party Anthropic-compatible gateway.
@@ -1961,7 +1944,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
         )
         if keepalive_http is not None:
             client_kwargs["http_client"] = keepalive_http
-    # Delegate all rate-limit / 5xx retry to hermes's outer conversation loop,
+    # Delegate all rate-limit / 5xx retry to opencodon's outer conversation loop,
     # which honors Retry-After and applies adaptive/jittered backoff. The OpenAI
     # SDK default (max_retries=2) uses its own 1-2s backoff that ignores
     # Retry-After and double-retries inside our loop — the same deadlock the
@@ -2753,7 +2736,7 @@ def sanitize_api_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]
     # function_call_output, producing the gateway's HTTP 400
     # "No tool call found for function call output with call_id ...".
     #
-    # We do NOT drop the call: hermes' own dispatch loop intentionally keeps an
+    # We do NOT drop the call: opencodon' own dispatch loop intentionally keeps an
     # empty-name call paired with a synthesized anti-priming tool result
     # ("tool name was empty", see #47967) so weak models self-correct instead of
     # being fed the full tool catalog. Dropping the call here would (a) orphan

@@ -1523,7 +1523,7 @@ class TestDelegationProviderIntegration(unittest.TestCase):
         }
         parent = _make_mock_parent(depth=0)
         parent.provider = "nous"
-        parent.base_url = "https://inference-api.nousresearch.com/v1"
+        parent.base_url = "https://inference.example.com/v1"
         parent.api_key = "nous-key-abc"
 
         with patch("run_agent.AIAgent") as MockAgent:
@@ -2595,7 +2595,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
                 self.assertEqual(_load_config()["max_concurrent_children"], 8)
 
     def test_load_config_prefers_cli_config_when_user_config_ignored(self):
-        # `hermes chat --ignore-user-config` sets OPENCODON_IGNORE_USER_CONFIG=1,
+        # `opencodon chat --ignore-user-config` sets OPENCODON_IGNORE_USER_CONFIG=1,
         # which only load_cli_config() honors. The delegation loader must keep
         # CLI_CONFIG authoritative under the flag so user config.yaml
         # delegation keys stay suppressed.

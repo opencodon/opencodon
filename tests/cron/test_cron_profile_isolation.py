@@ -44,7 +44,7 @@ def test_cron_storage_anchors_at_profile_home(tmp_path, monkeypatch):
 
     # Sanity: the override is wired the way the gateway sees it.
     assert opencodon_constants.get_opencodon_home().resolve() == profile_home.resolve()
-    assert opencodon_constants.get_default_hermes_root().resolve() == root.resolve()
+    assert opencodon_constants.get_default_opencodon_root().resolve() == root.resolve()
 
     # cron/jobs.py computes OPENCODON_DIR from get_opencodon_home() at import, so a
     # fresh import under this env anchors the store at <profile>/cron.

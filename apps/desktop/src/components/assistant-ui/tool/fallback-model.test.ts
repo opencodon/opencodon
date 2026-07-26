@@ -115,28 +115,28 @@ describe('buildToolView browser_navigate title', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://opencodon-agent.nousresearch.com/docs' },
+        args: { url: 'https://github.com/opencodon/opencodon/tree/main/docs' },
         result: { success: false, error: 'Command timed out after 60 seconds' }
       }),
       ''
     )
 
     expect(view.status).toBe('error')
-    expect(view.title).toBe('Failed to open opencodon-agent.nousresearch.com/docs')
+    expect(view.title).toBe('Failed to open github.com/opencodon/opencodon/tree/main/docs')
   })
 
   it('shows opened title on success', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://opencodon-agent.nousresearch.com/docs' },
-        result: { success: true, url: 'https://opencodon-agent.nousresearch.com/docs', title: 'Docs' }
+        args: { url: 'https://github.com/opencodon/opencodon/tree/main/docs' },
+        result: { success: true, url: 'https://github.com/opencodon/opencodon/tree/main/docs', title: 'Docs' }
       }),
       ''
     )
 
     expect(view.status).toBe('success')
-    expect(view.title).toBe('Opened opencodon-agent.nousresearch.com/docs')
+    expect(view.title).toBe('Opened github.com/opencodon/opencodon/tree/main/docs')
   })
 })
 
@@ -340,21 +340,6 @@ describe('buildToolView title actions', () => {
     expect(view.titleAction).toEqual({ prefix: '', text: 'Running', suffix: ' pnpm run lint' })
   })
 
-  it('uses the runtime locale for title text and action placement', () => {
-    setRuntimeI18nLocale('ja')
-
-    const read = buildToolView(part({ args: { path: '/tmp/demo.txt' }, result: undefined, toolName: 'read_file' }), '')
-
-    const web = buildToolView(
-      part({ args: { url: 'https://example.com/docs' }, result: undefined, toolName: 'web_extract' }),
-      ''
-    )
-
-    expect(read.title).toBe('demo.txt を読み取り中')
-    expect(read.titleAction).toEqual({ prefix: 'demo.txt を', text: '読み取り中', suffix: '' })
-    expect(web.title).toBe('example.com/docs を読み取り中')
-    expect(web.titleAction).toEqual({ prefix: 'example.com/docs を', text: '読み取り中', suffix: '' })
-  })
 })
 
 describe('clampForDisplay', () => {

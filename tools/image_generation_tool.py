@@ -3,7 +3,7 @@
 Image Generation Tools Module
 
 Provides image generation via FAL.ai. Multiple FAL models are supported and
-selectable via ``hermes tools`` → Image Generation; the active model is
+selectable via ``opencodon tools`` → Image Generation; the active model is
 persisted to ``image_gen.model`` in ``config.yaml``.
 
 Architecture:
@@ -57,17 +57,9 @@ def _load_fal_client() -> Any:
 
 
 from tools.debug_helpers import DebugSession
-from tools.fal_common import (
-    _ManagedFalSyncClient,
-    _extract_http_status,
-    _normalize_fal_queue_url_format,  # noqa: F401 — re-exported for tests
-)
-from tools.managed_tool_gateway import resolve_managed_tool_gateway
+from tools.fal_common import _extract_http_status  # noqa: F401 — re-exported for tests
 from tools.tool_backend_helpers import (
     fal_key_is_configured,
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
-    prefers_gateway,
 )
 
 logger = logging.getLogger(__name__)
@@ -201,7 +193,7 @@ FAL_MODELS: Dict[str, Dict[str, Any]] = {
             "output_format": "png",
             "safety_tolerance": "5",
             # "1K" is the cheapest tier; 4K doubles the per-image cost.
-            # Users on Nous Subscription should stay at 1K for predictable billing.
+            # Stay at 1K for predictable billing.
             "resolution": "1K",
         },
         "supports": {
@@ -268,7 +260,7 @@ FAL_MODELS: Dict[str, Dict[str, Any]] = {
             "portrait": "portrait_4_3",       # 768x1024
         },
         "defaults": {
-            # Same quality pinning as gpt-image-1.5: medium keeps Nous
+            # Same quality pinning as gpt-image-1.5: medium keeps
             # Portal billing predictable. "high" is 3-4x the per-image
             # cost at the same size; "low" is too rough for production use.
             "quality": "medium",
@@ -441,87 +433,12 @@ UPSCALER_NUM_INFERENCE_STEPS = 18
 
 
 _debug = DebugSession("image_tools", env_var="IMAGE_TOOLS_DEBUG")
-_managed_fal_client = None
-_managed_fal_client_config = None
-_managed_fal_client_lock = threading.Lock()
-
-
-# ---------------------------------------------------------------------------
-# Managed FAL gateway (Nous Subscription)
-# ---------------------------------------------------------------------------
-def _resolve_managed_fal_gateway():
-    """Return managed fal-queue gateway config when the user prefers the gateway
-    or direct FAL credentials are absent."""
-    if fal_key_is_configured() and not prefers_gateway("image_gen"):
-        return None
-    return resolve_managed_tool_gateway("fal-queue")
-
-
-def _get_managed_fal_client(managed_gateway):
-    """Reuse the managed FAL client so its internal httpx.Client is not leaked per call."""
-    global _managed_fal_client, _managed_fal_client_config
-
-    client_config = (
-        managed_gateway.gateway_origin.rstrip("/"),
-        managed_gateway.nous_user_token,
-    )
-    with _managed_fal_client_lock:
-        if _managed_fal_client is not None and _managed_fal_client_config == client_config:
-            return _managed_fal_client
-
-        # Resolve fal_client on the legacy module — preserves the test
-        # pattern of monkey-patching ``image_generation_tool.fal_client``.
-        _load_fal_client()
-        _managed_fal_client = _ManagedFalSyncClient(
-            fal_client,
-            key=managed_gateway.nous_user_token,
-            queue_run_origin=managed_gateway.gateway_origin,
-        )
-        _managed_fal_client_config = client_config
-        return _managed_fal_client
-
-
 def _submit_fal_request(model: str, arguments: Dict[str, Any]):
-    """Submit a FAL request using direct credentials or the managed queue gateway."""
+    """Submit a FAL request using direct credentials."""
     # Trigger the lazy import on first call. Idempotent.
     _load_fal_client()
     request_headers = {"x-idempotency-key": str(uuid.uuid4())}
-    managed_gateway = _resolve_managed_fal_gateway()
-    if managed_gateway is None:
-        return fal_client.submit(model, arguments=arguments, headers=request_headers)
-
-    managed_client = _get_managed_fal_client(managed_gateway)
-    try:
-        return managed_client.submit(
-            model,
-            arguments=arguments,
-            headers=request_headers,
-        )
-    except Exception as exc:
-        # 4xx from the managed gateway typically means the portal doesn't
-        # currently proxy this model (allowlist miss, billing gate, etc.)
-        # — surface a clearer message with actionable remediation instead
-        # of a raw HTTP error from httpx.
-        status = _extract_http_status(exc)
-        if status is not None and 400 <= status < 500:
-            gateway_message = ""
-            if status in {401, 402, 403}:
-                gateway_message = (
-                    "\n\n"
-                    + nous_tool_gateway_unavailable_message(
-                        "managed FAL image generation",
-                        force_fresh=True,
-                    )
-                )
-            raise ValueError(
-                f"Nous Subscription gateway rejected model '{model}' "
-                f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nous Portal's FAL proxy. Either:\n"
-                f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
-                f"  • Pick a different model via `hermes tools` → Image Generation."
-                f"{gateway_message}"
-            ) from exc
-        raise
+    return fal_client.submit(model, arguments=arguments, headers=request_headers)
 
 
 # ---------------------------------------------------------------------------
@@ -765,7 +682,7 @@ def _agent_cache_base_for_env(env: Any) -> str | None:
             return "/root/.opencodon"
 
     # If no environment has been created yet, only backends with deterministic
-    # Hermes cache roots can be translated without side effects. SSH can still
+    # opencodon cache roots can be translated without side effects. SSH can still
     # use a shell-visible tilde path; its first environment sync will upload
     # the cache file before the first command runs.
     backend = (os.getenv("TERMINAL_ENV") or "local").strip().lower()
@@ -901,7 +818,7 @@ def image_generate_tool(
         if not prompt or not isinstance(prompt, str) or len(prompt.strip()) == 0:
             raise ValueError("Prompt is required and must be a non-empty string")
 
-        if not (fal_key_is_configured() or _resolve_managed_fal_gateway()):
+        if not fal_key_is_configured():
             raise ValueError(_build_no_backend_setup_message())
 
         # If the caller supplied source images but the active model has no
@@ -912,7 +829,7 @@ def image_generate_tool(
                 f"Model '{meta.get('display', model_id)}' ({model_id}) is not "
                 f"capable of image-to-image / editing. Provide a text-only "
                 f"prompt (omit image_url), or switch to an edit-capable model "
-                f"via `hermes tools` → Image Generation."
+                f"via `opencodon tools` → Image Generation."
             )
 
         aspect_lc = (aspect_ratio or DEFAULT_ASPECT_RATIO).lower().strip()
@@ -1038,46 +955,29 @@ def image_generate_tool(
 
 
 def check_fal_api_key() -> bool:
-    """True if the FAL.ai API key (direct or managed gateway) is available."""
-    return bool(fal_key_is_configured() or _resolve_managed_fal_gateway())
+    """True if the FAL.ai API key is available."""
+    return bool(fal_key_is_configured())
 
 
 def _build_no_backend_setup_message() -> str:
     """Build an actionable error string when no FAL backend is reachable.
 
-    Used by the in-tree FAL path. Mentions:
-      - FAL_KEY signup link
-      - managed-gateway status (if Nous tools are enabled)
-      - plugin alternative pointer (so users on a stale ``image_gen.provider``
-        know the registry exists and how to inspect it)
+    Used by the in-tree FAL path. Mentions the FAL_KEY signup link and a
+    pointer to the plugin registry, so users on a stale ``image_gen.provider``
+    know other backends exist and how to inspect them.
     """
     lines = ["Image generation is unavailable in this environment.", ""]
     lines.append("Missing requirements:")
-    if managed_nous_tools_enabled():
-        lines.append(
-            "  - FAL_KEY is not set and the managed FAL gateway is unreachable"
-        )
-    else:
-        lines.append("  - FAL_KEY environment variable is not set")
-        gateway_message = nous_tool_gateway_unavailable_message(
-            "managed FAL image generation",
-        )
-        if gateway_message:
-            lines.append(f"  - {gateway_message}")
+    lines.append("  - FAL_KEY environment variable is not set")
     lines.append("")
     lines.append("To enable image generation, do one of:")
     lines.append(
         "  1. Get a free API key at https://fal.ai and set "
         "FAL_KEY=<your-key> (then restart the session)"
     )
-    if managed_nous_tools_enabled():
-        lines.append(
-            "  2. Sign in to a Nous account that has the managed FAL "
-            "gateway enabled (`hermes setup`)"
-        )
     lines.append(
-        "  3. Configure a different image_gen provider via `hermes tools` "
-        "→ Image Generation (run `hermes plugins list` to see installed "
+        "  2. Configure a different image_gen provider via `opencodon tools` "
+        "→ Image Generation (run `opencodon plugins list` to see installed "
         "backends)"
     )
     return "\n".join(lines)
@@ -1315,7 +1215,7 @@ def _dispatch_to_plugin_provider(
             "image": None,
             "error": (
                 f"image_gen.provider='{configured}' is set but no plugin "
-                f"registered that name. Run `hermes plugins list` to see "
+                f"registered that name. Run `opencodon plugins list` to see "
                 f"available image gen backends."
             ),
             "error_type": "provider_not_registered",
@@ -1354,7 +1254,7 @@ def _dispatch_to_plugin_provider(
                     f"support image-to-image / editing (its generate() "
                     f"signature is out of date with the image_generate schema). "
                     f"Omit image_url for text-to-image, or pick a backend that "
-                    f"supports editing via `hermes tools` → Image Generation."
+                    f"supports editing via `opencodon tools` → Image Generation."
                 ),
                 "error_type": "modality_unsupported",
             })
@@ -1549,7 +1449,7 @@ def _handle_image_generate(args, **kw):
 # model up front ("the active model is text-to-image only — image_url will be
 # rejected") saves a wasted turn. Memoized by config.yaml mtime in
 # model_tools.get_tool_definitions(), so it rebuilds when the user switches
-# model/provider via `hermes tools` or `/skills`.
+# model/provider via `opencodon tools` or `/skills`.
 
 
 _GENERIC_IMAGE_DESCRIPTION = IMAGE_GENERATE_SCHEMA["description"]

@@ -83,8 +83,8 @@ class DaytonaEnvironment(BaseEnvironment):
             disk_gib = 10
         resources = Resources(cpu=cpu, memory=memory_gib, disk=disk_gib)
 
-        labels = {"hermes_task_id": task_id}
-        sandbox_name = f"hermes-{task_id}"
+        labels = {"opencodon_task_id": task_id}
+        sandbox_name = f"opencodon-{task_id}"
 
         if self._persistent:
             try:
@@ -184,7 +184,7 @@ class DaytonaEnvironment(BaseEnvironment):
         rel_base = f"{self._remote_home}/.opencodon".lstrip("/")
         # PID-suffixed remote temp path avoids collisions if sync_back fires
         # concurrently for the same sandbox (e.g. retry after partial failure).
-        remote_tar = f"/tmp/.hermes_sync.{os.getpid()}.tar"
+        remote_tar = f"/tmp/.opencodon_sync.{os.getpid()}.tar"
         self._sandbox.process.exec(
             f"tar cf {shlex.quote(remote_tar)} -C / {shlex.quote(rel_base)}"
         )

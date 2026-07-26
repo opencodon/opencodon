@@ -1,22 +1,22 @@
-# Implementation design — the frame architecture on hermes-agent
+# Implementation design — the frame architecture on opencodon
 
 Status: proposal, 2026-07-18. Companion to `architecture.md` (the reference frame/loop model)
 and successor to opencodon's engine-cutover direction.
 
-**Governing principle:** hermes-agent is the base. We adopt a hermes primitive wherever it
+**Governing principle:** opencodon is the base. We adopt a opencodon primitive wherever it
 satisfies the architecture's *invariant* (not its exact table names), and we build new
-components only where hermes has nothing or where its design breaks a reproducibility
+components only where opencodon has nothing or where its design breaks a reproducibility
 invariant. No rewrites for aesthetics. The opencodon repo is the parts donor, not the base —
-its science-core modules get ported onto hermes, reversing the 2026-07-11 cutover.
+its science-core modules get ported onto opencodon, reversing the 2026-07-11 cutover.
 
-Concept mapping used throughout: **frame = hermes `sessions` row; frame_messages = hermes
-`messages`**. We keep hermes's names.
+Concept mapping used throughout: **frame = opencodon `sessions` row; frame_messages = opencodon
+`messages`**. We keep opencodon's names.
 
 ---
 
 ## 1. Verdict table
 
-| Architecture subsystem | Hermes today | Verdict |
+| Architecture subsystem | opencodon today | Verdict |
 |---|---|---|
 | `frames` tree (parent/root, tokens, cost) | `sessions` (`parent_session_id`, full token/cost accounting) | **EXTEND** — add `root_session_id` (+ backfill), optionally `conversation_type` |
 | Append-only `frame_messages` | `messages` insert-only, `active`/`compacted` soft-delete, FTS | **KEEP** |
@@ -36,7 +36,7 @@ Concept mapping used throughout: **frame = hermes `sessions` row; frame_messages
 | `execution_log` / `host_call_log` | none | **BUILD** (port opencodon migrations + store invariants) |
 | Artifacts / versions / dependency edges | none (`file_state.py` is concurrency-only) | **BUILD** (port opencodon `storage/` blob+artifact modules) |
 | `content_snapshots` | `tool_result_storage.py` spills by tool_use_id | **EXTEND** — re-key spill storage by content hash |
-| In-kernel `host.llm` | none (keys deliberately scrubbed from children) | **BUILD** — on hermes's existing PTC RPC bridge, keys stay parent-side |
+| In-kernel `host.llm` | none (keys deliberately scrubbed from children) | **BUILD** — on opencodon's existing PTC RPC bridge, keys stay parent-side |
 | Reproduction (`reproduce(version_id)`) | none | **BUILD** (port opencodon `provenance/`) |
 | Result-first / collapsible-code UI | web + desktop JSON-RPC clients exist | **BUILD (last)** — new event types, client work |
 | Agent profiles (prompt+model+skills+connectors) | split across toolsets/personalities | **DEFER** — not needed for the science core |
@@ -69,7 +69,7 @@ rows must commit together (opencodon ADR-0005 enforced exactly this). Messages l
 tables go into `state.db` through `opencodon_state.py`'s existing migration machinery, keyed by
 `session_id` (+ message idx where relevant). Schemas are ported from opencodon
 `storage/migrations/0001–0003` with `frame_id → session_id` renames; drop the hash-chained
-`action_log`/`events` outbox (hermes's trajectory + ledger patterns cover the need — rebuild
+`action_log`/`events` outbox (opencodon's trajectory + ledger patterns cover the need — rebuild
 only if RO-Crate export proves it necessary).
 
 ### 2.2 Kernels: jupyter_client, one lazy kernel per (session, language)
@@ -90,12 +90,12 @@ Artifacts are the cross-language bridge (Python↔R), never shared memory.
 
 ### 2.4 Host bridge: reuse the PTC RPC design
 
-`tools/code_execution_tool.py` already runs child code that calls back into whitelisted hermes
+`tools/code_execution_tool.py` already runs child code that calls back into whitelisted opencodon
 tools over a Unix-socket RPC, with credentials kept parent-side. Generalize that bridge into
 the kernel: `host.llm(...)` (routed through `providers/` with tier selection — cheap model for
 bulk, strong for reasoning), `host.artifacts`, `host.mcp`. Each call = one `host_call_log` row
 (child of its cell), result inline or as a `data_ref` into `content_snapshots`. This preserves
-hermes's key-scrubbing policy while delivering "LLM as a data primitive."
+opencodon's key-scrubbing policy while delivering "LLM as a data primitive."
 
 ### 2.5 Convergence invariant
 
@@ -129,11 +129,11 @@ re-runs and checksums match.
 
 ## 4. Repo mechanics
 
-- **This repo (`opencodon-hermes`) is the canonical product repo.** All building happens here,
+- **This repo (`opencodon-opencodon`) is the canonical product repo.** All building happens here,
   and it replaces the `opencodon` repo once the science layer reaches parity (decided
-  2026-07-18). It is a fork tracking `NousResearch/hermes-agent`; the science layer lives in
-  **new modules** (`science/`, new tool files) and diffs to existing hermes core files stay
-  minimal, so pulling upstream hermes fixes stays cheap for as long as it's worth doing.
+  2026-07-18). It is a fork tracking `opencodon/opencodon`; the science layer lives in
+  **new modules** (`science/`, new tool files) and diffs to existing opencodon core files stay
+  minimal, so pulling upstream opencodon fixes stays cheap for as long as it's worth doing.
 - Opencodon is donor-only from now on: no new features land there, no migration of its
   experimental frame data. Port its science-core modules and keep its docs
   (SCIENCE-CORE-IMPLEMENTATION-PLAN, threat model, ADRs) as the reference for decisions
@@ -149,13 +149,13 @@ re-runs and checksums match.
   `run_agent.py`, treat it as a design smell and find the tool-call-shaped alternative.
 - **Dual maintenance.** Until opencodon is formally frozen as donor, every science feature
   risks existing twice. Freeze it explicitly when PR 2 lands.
-- **Kernel lifecycle vs hermes environments.** Persistent kernels + idle-reaping remote
+- **Kernel lifecycle vs opencodon environments.** Persistent kernels + idle-reaping remote
   backends (modal/daytona) don't mix yet; keep kernels local-only until the environments seam
   is extended deliberately.
 
 ## 6. Determinism fix for skills
 
-Hermes skill loading performs inline `` !`cmd` `` expansion and env templating at load time —
+opencodon skill loading performs inline `` !`cmd` `` expansion and env templating at load time —
 nondeterministic content entering the transcript, which breaks replay. In science sessions:
 record the expanded content hash in the transcript (cheap) or disable expansion (cheapest).
 Decide in PR 5 when replay lands.

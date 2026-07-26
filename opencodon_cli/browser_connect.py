@@ -1,4 +1,4 @@
-"""Shared helpers for attaching Hermes to a local Chromium-family CDP port."""
+"""Shared helpers for attaching opencodon to a local Chromium-family CDP port."""
 
 from __future__ import annotations
 

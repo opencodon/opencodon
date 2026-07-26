@@ -155,7 +155,7 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
         outcome = (((response.get("result") or {}).get("outcome") or {}).get("outcome"))
         self.assertEqual(outcome, "cancelled")
 
-    def test_read_text_file_blocks_internal_hermes_hub_files(self) -> None:
+    def test_read_text_file_blocks_internal_opencodon_hub_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             home = Path(tmpdir) / "home"
             blocked = home / ".opencodon" / "skills" / ".hub" / "index-cache" / "entry.json"
@@ -285,7 +285,7 @@ def _fake_popen_capture(captured):
 
 
 def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch, tmp_path):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     (opencodon_home / "home").mkdir(parents=True)
     real_home = tmp_path / "real-home"
     real_home.mkdir()

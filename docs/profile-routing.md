@@ -22,7 +22,7 @@ adapter — not just Discord.
 
 Routes live under `profile_routes` in `config.yaml`. Both the top-level and the nested
 `gateway.profile_routes` forms are accepted (the nested form is what
-`hermes config set gateway.profile_routes ...` writes).
+`opencodon config set gateway.profile_routes ...` writes).
 
 ```yaml
 profile_routes:

@@ -70,7 +70,7 @@ class BrowserProvider(abc.ABC):
 
     @property
     def display_name(self) -> str:
-        """Human-readable label shown in ``hermes tools``. Defaults to ``name``."""
+        """Human-readable label shown in ``opencodon tools``. Defaults to ``name``."""
         return self.name
 
     @abc.abstractmethod
@@ -80,7 +80,7 @@ class BrowserProvider(abc.ABC):
         Typically a cheap check (env var present, managed-gateway token
         readable, optional Python dep importable). Must NOT make network
         calls — this runs at tool-registration time and on every
-        ``hermes tools`` paint.
+        ``opencodon tools`` paint.
 
         Mirrors the legacy ``CloudBrowserProvider.is_configured()`` method;
         renamed for parity with :class:`agent.web_search_provider.WebSearchProvider`.
@@ -125,7 +125,7 @@ class BrowserProvider(abc.ABC):
         """
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        """Return provider metadata for the ``hermes tools`` picker.
+        """Return provider metadata for the ``opencodon tools`` picker.
 
         Used by :mod:`opencodon_cli.tools_config` to inject this provider as a
         row in the Browser Automation picker. Shape mirrors the existing
@@ -144,7 +144,7 @@ class BrowserProvider(abc.ABC):
             }
 
         Default: minimal entry derived from :attr:`display_name`. Override to
-        expose API key prompts, badges, managed-Nous gating, and the
+        expose API key prompts, badges, and the
         ``post_setup`` install hook.
         """
         return {

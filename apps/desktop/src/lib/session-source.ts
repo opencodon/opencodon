@@ -2,37 +2,25 @@ import { normalize } from '@/lib/text'
 
 const SOURCE_LABELS: Record<string, string> = {
   api_server: 'API',
-  bluebubbles: 'iMessage',
   cli: 'CLI',
   codex: 'Codex',
   desktop: 'Desktop',
   discord: 'Discord',
-  email: 'Email',
   gateway: 'Gateway',
   local: 'Local',
-  matrix: 'Matrix',
-  mattermost: 'Mattermost',
-  qqbot: 'QQ',
-  signal: 'Signal',
   slack: 'Slack',
-  sms: 'SMS',
   telegram: 'Telegram',
   tui: 'TUI',
   webhook: 'Webhook',
-  weixin: 'WeChat',
-  whatsapp: 'WhatsApp',
-  yuanbao: 'Yuanbao'
+  whatsapp: 'WhatsApp'
 }
 
 const SOURCE_ALIASES: Record<string, string[]> = {
-  bluebubbles: ['apple messages', 'imessage'],
   cli: ['terminal'],
   desktop: ['app', 'gui'],
   local: ['machine'],
-  qqbot: ['qq'],
   telegram: ['tg'],
   tui: ['terminal'],
-  weixin: ['wechat'],
   whatsapp: ['wa']
 }
 
@@ -50,22 +38,9 @@ export const MESSAGING_SESSION_SOURCE_IDS = [
   'telegram',
   'discord',
   'slack',
-  'mattermost',
-  'matrix',
-  'signal',
   'whatsapp',
-  'bluebubbles',
-  'homeassistant',
-  'email',
-  'sms',
   'webhook',
-  'api_server',
-  'weixin',
-  'wecom',
-  'qqbot',
-  'yuanbao',
-  'dingtalk',
-  'feishu'
+  'api_server'
 ]
 const MESSAGING_SOURCE_IDS = new Set(MESSAGING_SESSION_SOURCE_IDS)
 

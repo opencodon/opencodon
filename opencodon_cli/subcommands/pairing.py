@@ -1,4 +1,4 @@
-"""``hermes pairing`` subcommand parser.
+"""``opencodon pairing`` subcommand parser.
 
 Extracted from ``opencodon_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.

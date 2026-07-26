@@ -1,4 +1,4 @@
-"""Tests for the top-level `./hermes` launcher script."""
+"""Tests for the top-level `./opencodon` launcher script."""
 
 import runpy
 import sys
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
-    """`./hermes` should use `opencodon_cli.main`, not the legacy Fire wrapper."""
+    """`./opencodon` should use `opencodon_cli.main`, not the legacy Fire wrapper."""
     launcher_path = Path(__file__).resolve().parents[2] / "opencodon"
     called = []
 

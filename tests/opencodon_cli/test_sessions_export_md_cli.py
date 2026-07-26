@@ -36,7 +36,7 @@ def test_sessions_export_md_writes_single_session(monkeypatch, tmp_path, capsys)
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -86,7 +86,7 @@ def test_sessions_export_md_reports_unknown_session(monkeypatch, tmp_path, capsy
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -123,7 +123,7 @@ def test_sessions_export_md_supports_qmd_format(monkeypatch, tmp_path, capsys):
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--session-id",
@@ -155,7 +155,7 @@ def test_sessions_export_md_rejects_stdout_target(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "sessions", "export", "--format", "md", "--session-id", "s1", "-"],
+        ["opencodon", "sessions", "export", "--format", "md", "--session-id", "s1", "-"],
     )
 
     main_mod.main()
@@ -175,7 +175,7 @@ def test_sessions_export_jsonl_requires_output_path(monkeypatch, capsys):
             pass
 
     monkeypatch.setattr(opencodon_state, "SessionDB", lambda: FakeDB())
-    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", "export"])
+    monkeypatch.setattr(sys, "argv", ["opencodon", "sessions", "export"])
 
     main_mod.main()
 
@@ -205,7 +205,7 @@ def test_sessions_export_md_bulk_dry_run_lists_candidates(monkeypatch, tmp_path,
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -243,7 +243,7 @@ def test_sessions_export_md_bulk_requires_filter(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "sessions", "export", "--format", "md", str(tmp_path)],
+        ["opencodon", "sessions", "export", "--format", "md", str(tmp_path)],
     )
 
     main_mod.main()
@@ -270,7 +270,7 @@ def test_sessions_export_md_bulk_writes_manifest(monkeypatch, tmp_path, capsys):
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -306,7 +306,7 @@ def test_sessions_export_md_delete_after_verified_requires_yes(monkeypatch, tmp_
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -348,7 +348,7 @@ def test_sessions_export_md_delete_after_verified_deletes_after_file_check(monke
         sys,
         "argv",
         [
-            "hermes",
+            "opencodon",
             "sessions",
             "export",
             "--format",
@@ -386,7 +386,7 @@ def test_sessions_export_md_accepts_duration_age_grammar(monkeypatch, tmp_path, 
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "md",
+            "opencodon", "sessions", "export", "--format", "md",
             "--older-than", "2w", "--dry-run", str(tmp_path),
         ],
     )
@@ -416,7 +416,7 @@ def test_sessions_export_md_supports_extended_prune_filters(monkeypatch, tmp_pat
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "md",
+            "opencodon", "sessions", "export", "--format", "md",
             "--model", "sonnet", "--min-messages", "5", "--dry-run",
             str(tmp_path),
         ],
@@ -455,7 +455,7 @@ def test_sessions_export_jsonl_honors_filters(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "sessions", "export", "--source", "telegram", str(out)],
+        ["opencodon", "sessions", "export", "--source", "telegram", str(out)],
     )
 
     main_mod.main()
@@ -494,7 +494,7 @@ def test_sessions_export_redact_scrubs_secrets(monkeypatch, tmp_path):
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "md",
+            "opencodon", "sessions", "export", "--format", "md",
             "--session-id", "s1", "--redact", str(tmp_path),
         ],
     )
@@ -539,7 +539,7 @@ def test_sessions_export_trace_writes_claude_jsonl(monkeypatch, tmp_path, capsys
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "sessions", "export", "--format", "trace", "--session-id", "s1", str(out)],
+        ["opencodon", "sessions", "export", "--format", "trace", "--session-id", "s1", str(out)],
     )
 
     main_mod.main()
@@ -563,7 +563,7 @@ def test_sessions_export_trace_stdout(monkeypatch, capsys):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "sessions", "export", "--format", "trace", "--session-id", "s1", "-"],
+        ["opencodon", "sessions", "export", "--format", "trace", "--session-id", "s1", "-"],
     )
 
     main_mod.main()
@@ -591,7 +591,7 @@ def test_sessions_export_trace_upload_routes_to_uploader(monkeypatch, capsys):
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "trace",
+            "opencodon", "sessions", "export", "--format", "trace",
             "--session-id", "s1", "--upload", "--public",
         ],
     )
@@ -614,7 +614,7 @@ def test_sessions_export_trace_only_flag_rejected(monkeypatch, capsys):
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "trace",
+            "opencodon", "sessions", "export", "--format", "trace",
             "--session-id", "s1", "--only", "user-prompts", "-",
         ],
     )

@@ -1,7 +1,7 @@
 """Tests for resolve_whatsapp_bridge_dir() — read-only install tree handling.
 
 Regression coverage for #49561: in the Docker image the install tree
-(/opt/hermes/scripts/whatsapp-bridge) is read-only, so `npm install` fails
+(/opt/opencodon/scripts/whatsapp-bridge) is read-only, so `npm install` fails
 with EACCES. The resolver must detect the read-only install dir and mirror the
 bridge source into a writable OPENCODON_HOME location instead.
 """
