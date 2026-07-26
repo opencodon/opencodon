@@ -1,5 +1,5 @@
 """
-opencodon CLI - Unified command-line interface for opencodon.
+Opencodon CLI - Unified command-line interface for Opencodon.
 
 Provides subcommands for:
 - opencodon chat          - Interactive chat (same as ./opencodon)
@@ -14,8 +14,10 @@ Provides subcommands for:
 import os
 import sys
 
-__version__ = "0.19.0"
-__release_date__ = "2026.7.20"
+# Opencodon's own version line — independent of the upstream fork point.
+# Keep in sync with `version` in pyproject.toml.
+__version__ = "0.1.0"
+__release_date__ = "2026.7.25"
 
 
 def _ensure_utf8():
