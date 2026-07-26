@@ -32,6 +32,9 @@ def main_mod(monkeypatch):
     import opencodon_cli.main as mod
 
     monkeypatch.setattr(mod, "_has_any_provider_configured", lambda: True)
+    # cmd_chat's second startup guard: credentials alone aren't enough, a model
+    # has to be selected too.  These tests exercise flag forwarding, not setup.
+    monkeypatch.setattr(mod, "_has_model_configured", lambda cfg=None: True)
     # Reset the idempotency guard so each test starts fresh.
     monkeypatch.setattr(mod, "_oneshot_cleanup_done", False)
     return mod

@@ -101,6 +101,7 @@ class TestChatVerboseArg:
         monkeypatch.setitem(sys.modules, "opencodon_cli.banner", fake_banner)
         monkeypatch.setitem(sys.modules, "tools.skills_sync", fake_skills_sync)
         monkeypatch.setattr(main_mod, "_has_any_provider_configured", lambda: True)
+        monkeypatch.setattr(main_mod, "_has_model_configured", lambda cfg=None: True)
         monkeypatch.setattr(main_mod, "_pin_kanban_board_env", lambda: None)
 
         main_mod.cmd_chat(args)
