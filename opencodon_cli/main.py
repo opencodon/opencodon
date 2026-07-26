@@ -918,6 +918,54 @@ def _relative_time(ts) -> str:
     return datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
 
 
+def _configured_model_name(cfg: Optional[dict] = None) -> str:
+    """Return the model name config.yaml resolves to, or "" when unset.
+
+    Mirrors the resolution in ``AIAgent.__init__`` (cli.py): a plain string, or
+    a dict's ``default`` key falling back to ``model``.  Keep the two in sync —
+    if they drift, the first-run guards here disagree with the model the agent
+    actually boots with.
+    """
+    from opencodon_cli.config import load_config
+
+    if cfg is None:
+        cfg = load_config()
+    model_cfg = cfg.get("model")
+    if isinstance(model_cfg, dict):
+        return (model_cfg.get("default") or model_cfg.get("model") or "").strip()
+    if isinstance(model_cfg, str):
+        return model_cfg.strip()
+    return ""
+
+
+def _has_model_configured(cfg: Optional[dict] = None) -> bool:
+    """Check whether the agent will have a model to run.
+
+    Deliberately separate from :func:`_has_any_provider_configured` —
+    credentials and model selection are written by different flows
+    (``opencodon auth`` vs ``opencodon model``), so having one without the
+    other is a reachable state rather than a corrupt install.  Credentials
+    alone boots an agent whose model is the empty string, which surfaces as
+    ``unknown`` / ``ctx --`` in the status bar and fails on the first turn.
+
+    A localhost ``base_url`` counts even with no model name: cli.py
+    auto-detects the served model from local servers (vLLM, llama.cpp,
+    ollama) when the configured model is empty.
+    """
+    from opencodon_cli.config import load_config
+
+    if cfg is None:
+        cfg = load_config()
+    if _configured_model_name(cfg):
+        return True
+    model_cfg = cfg.get("model")
+    if isinstance(model_cfg, dict):
+        base_url = str(model_cfg.get("base_url") or "")
+        if "localhost" in base_url or "127.0.0.1" in base_url:
+            return True
+    return False
+
+
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
     from opencodon_cli.config import get_env_path, get_opencodon_home, load_config
@@ -932,12 +980,7 @@ def _has_any_provider_configured() -> bool:
     _DEFAULT_MODEL = DEFAULT_CONFIG.get("model", "")
     cfg = load_config()
     model_cfg = cfg.get("model")
-    if isinstance(model_cfg, dict):
-        _model_name = (model_cfg.get("default") or "").strip()
-    elif isinstance(model_cfg, str):
-        _model_name = model_cfg.strip()
-    else:
-        _model_name = ""
+    _model_name = _configured_model_name(cfg)
     _has_hermes_config = _model_name and _model_name != _DEFAULT_MODEL
 
     # Check env vars (may be set by .env or shell).
@@ -2501,10 +2544,10 @@ def cmd_chat(args):
     if not _has_any_provider_configured():
         print()
         print(
-            "It looks like Hermes isn't configured yet -- no API keys or providers found."
+            "It looks like opencodon isn't configured yet -- no API keys or providers found."
         )
         print()
-        print("  Run:  hermes setup")
+        print("  Run:  opencodon setup")
         print()
 
         from opencodon_cli.setup import (
@@ -2526,8 +2569,48 @@ def cmd_chat(args):
             cmd_setup(args)
             return
         print()
-        print("You can run 'hermes setup' at any time to configure.")
+        print("You can run 'opencodon setup' at any time to configure.")
         sys.exit(1)
+
+    # Second guard: credentials without a model.  The provider check above is
+    # satisfied by an auth.json login alone, so a config.yaml with no `model:`
+    # key sails past it and boots an agent whose model is "" — the status bar
+    # reads `unknown` / `ctx --` and the first turn fails with no useful error.
+    # Catch it here while we still have a TTY to fix it on.
+    elif not getattr(args, "model", None) and not _has_model_configured():
+        from opencodon_cli.config import get_config_path
+
+        print()
+        print("No model is selected -- opencodon is signed in, but nothing is set to run.")
+        print()
+        print("  Run:  opencodon model")
+        print()
+
+        from opencodon_cli.setup import is_interactive_stdin
+
+        if not is_interactive_stdin():
+            print(
+                "No interactive TTY detected for the model picker. Pass --model NAME, "
+                f"or set model.default in {get_config_path()}."
+            )
+            sys.exit(1)
+
+        try:
+            reply = input("Pick a model now? [Y/n] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            reply = "n"
+        if reply not in {"", "y", "yes"}:
+            print()
+            print("You can run 'opencodon model' at any time to choose one.")
+            sys.exit(1)
+
+        select_provider_and_model()
+        # load_config() is cached on the config file's (mtime_ns, size), so the
+        # picker's write is picked up here without an explicit invalidation.
+        if not _has_model_configured():
+            print()
+            print("Still no model selected -- run 'opencodon model' and pick one.")
+            sys.exit(1)
 
     # Start update check in background (runs while other init happens).
     # On Termux this imports rich/prompt_toolkit in the foreground and then
