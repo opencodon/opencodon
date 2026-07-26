@@ -47,7 +47,7 @@ def _make_tool_defs(*names: str) -> list:
 
 
 def _make_agent():
-    opencodon_home = Path(tempfile.mkdtemp(prefix="hermes-test-home-"))
+    opencodon_home = Path(tempfile.mkdtemp(prefix="opencodon-test-home-"))
     (opencodon_home / "logs").mkdir(parents=True, exist_ok=True)
     with (
         patch(

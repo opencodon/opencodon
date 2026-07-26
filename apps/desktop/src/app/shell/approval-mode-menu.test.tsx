@@ -73,17 +73,17 @@ describe('approval mode statusbar item', () => {
     })
   })
 
-  it('renders the shared trigger and menu in the active locale', async () => {
+  it('renders the shared trigger and menu', async () => {
     const response = new Promise<never>(() => undefined)
     render(
-      <I18nProvider configClient={null} initialLocale="ja">
+      <I18nProvider configClient={null} initialLocale="en">
         <Harness requestGateway={vi.fn(() => response)} />
       </I18nProvider>
     )
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'スマート' }), { button: 0 })
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Smart' }), { button: 0 })
 
-    expect(await screen.findByText('必要な場合にのみ確認します')).toBeTruthy()
-    expect(screen.getByText('承認プロンプトなしで実行します')).toBeTruthy()
+    expect(await screen.findByText('Automatically assess actions and ask when needed')).toBeTruthy()
+    expect(screen.getByText('Run without approval prompts')).toBeTruthy()
   })
 })

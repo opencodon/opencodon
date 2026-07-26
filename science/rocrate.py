@@ -92,7 +92,7 @@ def export_rocrate(root_session_id: str, out_dir: Path, *, runtime=None) -> Path
                 "@id": f"#cell-{cell_id}",
                 "@type": "CreateAction",
                 "name": f"cell {cell['cell_index']} ({cell['language']})",
-                "instrument": {"@id": "#hermes-science"},
+                "instrument": {"@id": "#opencodon-science"},
                 "description": cell["source"],
                 "actionStatus": (
                     "CompletedActionStatus"
@@ -117,14 +117,14 @@ def export_rocrate(root_session_id: str, out_dir: Path, *, runtime=None) -> Path
             {
                 "@id": "./",
                 "@type": "Dataset",
-                "name": f"hermes science session {root_session_id}",
+                "name": f"opencodon science session {root_session_id}",
                 "datePublished": _iso(time.time()),
                 "hasPart": file_ids,
             },
             {
-                "@id": "#hermes-science",
+                "@id": "#opencodon-science",
                 "@type": "SoftwareApplication",
-                "name": "hermes-agent science layer",
+                "name": "opencodon science layer",
             },
             *graph,
         ],

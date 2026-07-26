@@ -364,10 +364,10 @@ class TestGoalManager:
         from opencodon_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="cont-sid")
-        mgr.set("port goal command to hermes")
+        mgr.set("port goal command to opencodon")
         prompt = mgr.next_continuation_prompt()
         assert prompt is not None
-        assert "port goal command to hermes" in prompt
+        assert "port goal command to opencodon" in prompt
         assert prompt.strip()  # non-empty
 
 

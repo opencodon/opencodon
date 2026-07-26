@@ -1,4 +1,4 @@
-"""Tests for ``hermes debug`` CLI command and debug utilities."""
+"""Tests for ``opencodon debug`` CLI command and debug utilities."""
 
 import os
 import urllib.error
@@ -424,11 +424,11 @@ class TestCollectDebugReport:
 
         with patch("opencodon_cli.dump.run_dump") as mock_dump:
             mock_dump.side_effect = lambda args: print(
-                "--- hermes dump ---\nversion: 0.8.0\n--- end dump ---"
+                "--- opencodon dump ---\nversion: 0.8.0\n--- end dump ---"
             )
             report = collect_debug_report(log_lines=50)
 
-        assert "--- hermes dump ---" in report
+        assert "--- opencodon dump ---" in report
         assert "version: 0.8.0" in report
 
     def test_report_includes_agent_log(self, opencodon_home):
@@ -503,7 +503,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"), \
              patch("opencodon_cli.debug._sweep_expired_pastes", return_value=(0, 0)) as mock_sweep, \
@@ -522,7 +521,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"), \
              patch(
@@ -543,7 +541,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = True
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"):
             run_debug_share(args)
@@ -561,7 +558,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         call_count = [0]
         uploaded_content = []
@@ -573,7 +569,7 @@ class TestRunDebugShare:
         with patch("opencodon_cli.dump.run_dump") as mock_dump, \
              patch("opencodon_cli.debug.upload_to_pastebin",
                     side_effect=_mock_upload):
-            mock_dump.side_effect = lambda a: print("--- hermes dump ---\nversion: test\n--- end dump ---")
+            mock_dump.side_effect = lambda a: print("--- opencodon dump ---\nversion: test\n--- end dump ---")
             run_debug_share(args)
 
         out = capsys.readouterr().out
@@ -592,16 +588,16 @@ class TestRunDebugShare:
 
         # Each log paste should start with the dump header
         agent_paste = uploaded_content[1]
-        assert "--- hermes dump ---" in agent_paste
+        assert "--- opencodon dump ---" in agent_paste
         assert "--- full agent.log ---" in agent_paste
         gateway_paste = uploaded_content[2]
-        assert "--- hermes dump ---" in gateway_paste
+        assert "--- opencodon dump ---" in gateway_paste
         assert "--- full gateway.log ---" in gateway_paste
         gui_paste = uploaded_content[3]
-        assert "--- hermes dump ---" in gui_paste
+        assert "--- opencodon dump ---" in gui_paste
         assert "--- full gui.log ---" in gui_paste
         desktop_paste = uploaded_content[4]
-        assert "--- hermes dump ---" in desktop_paste
+        assert "--- opencodon dump ---" in desktop_paste
         assert "--- full desktop.log ---" in desktop_paste
 
     def test_share_keeps_report_and_full_log_on_same_snapshot(self, opencodon_home, capsys):
@@ -620,7 +616,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         uploaded_content = []
 
@@ -666,7 +661,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         call_count = [0]
         def _mock_upload(content, expiry_days=7):
@@ -691,7 +685,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         call_count = [0]
         def _mock_upload(content, expiry_days=7):
@@ -718,7 +711,6 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"), \
              patch("opencodon_cli.debug.upload_to_pastebin",
@@ -767,7 +759,6 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
         args.no_redact = False
 
         captured: list[str] = []
@@ -798,7 +789,6 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
         args.no_redact = False
 
         captured: list[str] = []
@@ -827,7 +817,6 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
         args.no_redact = True
 
         captured: list[str] = []
@@ -866,7 +855,7 @@ class TestRunDebug:
         run_debug(args)
 
         out = capsys.readouterr().out
-        assert "hermes debug" in out
+        assert "opencodon debug" in out
         assert "share" in out
         assert "delete" in out
 
@@ -878,7 +867,6 @@ class TestRunDebug:
         args.lines = 200
         args.expire = 7
         args.local = True
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"):
             run_debug(args)
@@ -947,7 +935,7 @@ class TestScheduleAutoDelete:
 
     The new implementation is stateless: it records pending deletions to
     ``~/.opencodon/pastes/pending.json`` and lets ``_sweep_expired_pastes``
-    handle the DELETE requests synchronously on the next ``hermes debug``
+    handle the DELETE requests synchronously on the next ``opencodon debug``
     invocation.
     """
 
@@ -1205,7 +1193,7 @@ class TestRunDebugSweepsOnInvocation:
 
         # Default subcommand still printed help
         out = capsys.readouterr().out
-        assert "Usage: hermes debug" in out
+        assert "Usage: opencodon debug" in out
 
 
 class TestRunDebugDelete:
@@ -1257,7 +1245,6 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"), \
              patch("opencodon_cli.debug.upload_to_pastebin",
@@ -1280,7 +1267,6 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"), \
              patch("opencodon_cli.debug.upload_to_pastebin",
@@ -1299,7 +1285,6 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = True
-        args.nous = False
 
         with patch("opencodon_cli.dump.run_dump"):
             run_debug_share(args)
@@ -1316,7 +1301,7 @@ class TestShareIncludesAutoDelete:
 class TestBuildDebugShare:
     """The shared core that returns structured paste URLs (not printed text).
 
-    Backs both ``hermes debug share`` (CLI) and ``POST /api/ops/debug-share``
+    Backs both ``opencodon debug share`` (CLI) and ``POST /api/ops/debug-share``
     (dashboard). The dashboard renders ``urls`` as real, copyable links, so the
     contract here is the return value, not stdout.
     """
@@ -1416,7 +1401,7 @@ class TestBuildDebugShare:
 
 
 # ---------------------------------------------------------------------------
-# Shared bundle collection + Nous-S3 path
+# Shared bundle collection
 # ---------------------------------------------------------------------------
 
 class TestCollectShareBundle:
@@ -1483,101 +1468,15 @@ class TestCollectShareBundle:
         assert uploaded[0] == expected
 
 
-class TestBuildNousBundle:
-    def test_envelope_shape_and_gzip(self, opencodon_home):
-        import gzip
-        import json as _json
-
-        from opencodon_cli.debug import build_nous_bundle
-
-        files = {"report": "hello", "agent.log": "log line"}
-        blob = build_nous_bundle(files, redact=True)
-
-        # It's gzip — magic bytes.
-        assert blob[:2] == b"\x1f\x8b"
-        envelope = _json.loads(gzip.decompress(blob).decode())
-        assert envelope["format"] == "hermes-debug-share/1"
-        assert envelope["redacted"] is True
-        assert envelope["files"] == files
-        assert "created" in envelope
-
-    def test_redacted_false_recorded(self):
-        import gzip
-        import json as _json
-
-        from opencodon_cli.debug import build_nous_bundle
-
-        blob = build_nous_bundle({"report": "x"}, redact=False)
-        envelope = _json.loads(gzip.decompress(blob).decode())
-        assert envelope["redacted"] is False
 
 
-class TestRunDebugShareNous:
-    def _args(self, **over):
-        class _A:
-            lines = 50
-            expire = 7
-            local = False
-            nous = True
-            no_redact = False
-            yes = True
-
-        a = _A()
-        for k, v in over.items():
-            setattr(a, k, v)
-        return a
-
-    def test_nous_success_prints_view_url(self, opencodon_home, capsys):
-        from opencodon_cli.debug import run_debug_share
-
-        res = {
-            "id": "id-1",
-            "viewUrl": "https://support.example.com/diagnostics/id-1",
-            "expiresAt": "2026-06-20T00:00:00Z",
-        }
-        with patch("opencodon_cli.dump.run_dump"), patch(
-            "opencodon_cli.diagnostics_upload.share_to_nous", return_value=res
-        ) as share:
-            run_debug_share(self._args())
-
-        out = capsys.readouterr().out
-        assert "Nous-INTERNAL" in out
-        assert "https://support.example.com/diagnostics/id-1" in out
-        assert "2026-06-20T00:00:00Z" in out
-        # The blob passed to share_to_nous must be gzip bytes.
-        blob = share.call_args[0][0]
-        assert isinstance(blob, (bytes, bytearray)) and blob[:2] == b"\x1f\x8b"
-
-    def test_nous_failure_suggests_local(self, opencodon_home, capsys):
-        from opencodon_cli.debug import run_debug_share
-
-        with patch("opencodon_cli.dump.run_dump"), patch(
-            "opencodon_cli.diagnostics_upload.share_to_nous",
-            side_effect=RuntimeError("service down"),
-        ):
-            with pytest.raises(SystemExit) as exc:
-                run_debug_share(self._args())
-        assert exc.value.code == 1
-        err = capsys.readouterr().err
-        assert "Nous upload failed" in err
-        assert "--local" in err
-
-    def test_nous_does_not_touch_pastebin(self, opencodon_home):
-        from opencodon_cli.debug import run_debug_share
-
-        res = {"id": "id-1", "viewUrl": "https://v"}
-        with patch("opencodon_cli.dump.run_dump"), patch(
-            "opencodon_cli.diagnostics_upload.share_to_nous", return_value=res
-        ), patch("opencodon_cli.debug.upload_to_pastebin") as paste:
-            run_debug_share(self._args())
-        paste.assert_not_called()
 
 
 class TestDebugSlashCommand:
-    """`/debug [nous|local]` parsing in the CLI/TUI handler.
+    """`/debug [local]` parsing in the CLI/TUI handler.
 
     The classic CLI and the TUI slash worker both dispatch through
-    ``HermesCLI.process_command`` → ``_handle_debug_command(cmd_original)``,
+    ``OpencodonCLI.process_command`` → ``_handle_debug_command(cmd_original)``,
     which parses an optional destination word and builds the args namespace
     handed to ``run_debug_share``.
     """
@@ -1602,41 +1501,31 @@ class TestDebugSlashCommand:
 
     def test_bare_debug_defaults_to_paste(self):
         c = self._captured("/debug")
-        assert c["nous"] is False and c["local"] is False
+        assert c["local"] is False
         assert c["lines"] == 200 and c["expire"] == 7
         # The slash command IS the consent action → skip the [y/N] prompt
         # (input() would hang inside prompt_toolkit's event loop).
         assert c["yes"] is True
 
-    def test_nous_word_sets_nous(self):
-        c = self._captured("/debug nous")
-        assert c["nous"] is True and c["local"] is False
 
     def test_local_word_sets_local(self):
         c = self._captured("/debug local")
-        assert c["local"] is True and c["nous"] is False
+        assert c["local"] is True
 
-    def test_word_parsing_is_case_insensitive(self):
-        c = self._captured("/debug NOUS")
-        assert c["nous"] is True
 
-    def test_local_wins_over_nous(self):
-        # local never touches the network, so it takes precedence.
-        c = self._captured("/debug nous local")
-        assert c["local"] is True and c["nous"] is False
 
     def test_unknown_word_falls_back_to_default(self):
         c = self._captured("/debug paste")
-        assert c["nous"] is False and c["local"] is False
+        assert c["local"] is False
 
     def test_no_arg_default_keyword(self):
         # Calling with no cmd_original (legacy callers) must still work.
         c = self._captured("")
-        assert c["nous"] is False and c["local"] is False
+        assert c["local"] is False
 
 
 class TestShareConsentGate:
-    """`hermes debug share` requires explicit consent before uploading.
+    """`opencodon debug share` requires explicit consent before uploading.
 
     Uses SimpleNamespace rather than MagicMock so ``args.yes`` is a real
     ``False`` — a MagicMock auto-provides a truthy ``.yes`` and would silently
@@ -1646,7 +1535,7 @@ class TestShareConsentGate:
     def _args(self, **over):
         from types import SimpleNamespace
 
-        base = dict(lines=50, expire=7, local=False, nous=False,
+        base = dict(lines=50, expire=7, local=False,
                     no_redact=False, yes=False)
         base.update(over)
         return SimpleNamespace(**base)
@@ -1733,19 +1622,6 @@ class TestShareConsentGate:
 
         assert "https://paste.rs/test" in capsys.readouterr().out
 
-    def test_nous_path_also_gated(self, opencodon_home, capsys, monkeypatch):
-        """The --nous S3 path enforces the same consent gate (sibling site)."""
-        from opencodon_cli.debug import run_debug_share
-
-        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
-        monkeypatch.setattr("builtins.input", lambda _: "n")
-
-        with patch("opencodon_cli.dump.run_dump"), \
-             patch("opencodon_cli.diagnostics_upload.share_to_nous") as mock_nous:
-            run_debug_share(self._args(nous=True))
-
-        mock_nous.assert_not_called()
-        assert "Aborted" in capsys.readouterr().out
 
     def test_local_never_prompts(self, opencodon_home, capsys, monkeypatch):
         """--local renders to stdout and must not prompt or upload."""

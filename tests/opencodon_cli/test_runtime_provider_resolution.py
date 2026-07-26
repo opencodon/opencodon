@@ -86,34 +86,6 @@ def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
     assert resolved["source"] == "manual"
 
 
-def test_resolve_runtime_provider_nous_pool_uses_env_base_url_override(monkeypatch):
-    entry = SimpleNamespace(
-        provider="nous",
-        source="device_code",
-        runtime_api_key="pool-token",
-        agent_key="pool-token",
-        agent_key_expires_at="2099-01-01T00:00:00+00:00",
-        scope="inference:invoke",
-        runtime_base_url="https://inference-api.nousresearch.com/v1",
-    )
-
-    class _Pool:
-        def has_credentials(self):
-            return True
-
-        def select(self):
-            return entry
-
-    monkeypatch.setenv("NOUS_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
-    monkeypatch.setattr(rp, "_agent_key_is_usable", lambda *a, **k: True)
-    monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-
-    resolved = rp.resolve_runtime_provider(requested="nous")
-
-    assert resolved["provider"] == "nous"
-    assert resolved["api_key"] == "pool-token"
-    assert resolved["base_url"] == "https://ai.wildebeest-newton.ts.net/v1"
 
 
 def test_resolve_runtime_provider_anthropic_pool_respects_config_base_url(monkeypatch):
@@ -1122,36 +1094,28 @@ def test_named_custom_provider_falls_back_to_openai_api_key(monkeypatch):
 
 
 def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-runtime-key")
     monkeypatch.setattr(
         rp,
         "load_config",
         lambda: {
             "custom_providers": [
                 {
-                    "name": "nous",
+                    "name": "openrouter",
                     "base_url": "http://localhost:1234/v1",
                     "api_key": "shadow-key",
                 }
             ]
         },
     )
-    monkeypatch.setattr(
-        rp,
-        "resolve_nous_runtime_credentials",
-        lambda **kwargs: {
-            "base_url": "https://inference-api.nousresearch.com/v1",
-            "api_key": "nous-runtime-key",
-            "source": "portal",
-            "expires_at": None,
-        },
-    )
 
-    resolved = rp.resolve_runtime_provider(requested="nous")
+    resolved = rp.resolve_runtime_provider(requested="openrouter")
 
-    assert resolved["provider"] == "nous"
-    assert resolved["base_url"] == "https://inference-api.nousresearch.com/v1"
-    assert resolved["api_key"] == "nous-runtime-key"
-    assert resolved["requested_provider"] == "nous"
+    assert resolved["provider"] == "openrouter"
+    # The built-in wins: neither the shadow base_url nor its key leak through.
+    assert resolved["base_url"] != "http://localhost:1234/v1"
+    assert resolved["api_key"] != "shadow-key"
+    assert resolved["requested_provider"] == "openrouter"
 
 
 def test_disabled_named_custom_provider_is_not_compatibility_fallback(monkeypatch):
@@ -1173,47 +1137,6 @@ def test_disabled_named_custom_provider_is_not_compatibility_fallback(monkeypatc
     assert rp._get_named_custom_provider("custom:route-key") is None
 
 
-def test_nous_pool_entry_refreshes_expired_agent_key(monkeypatch):
-    stale_token = _fake_invoke_jwt(ttl_seconds=-60)
-    fresh_token = _fake_invoke_jwt(ttl_seconds=3600)
-
-    class _Entry:
-        def __init__(self, token):
-            self.access_token = "pool-access-token"
-            self.agent_key = token
-            self.agent_key_expires_at = "2099-01-01T00:00:00+00:00"
-            self.scope = "inference:invoke"
-            self.base_url = "https://inference.pool.example/v1"
-            self.source = "manual:nous"
-
-        @property
-        def runtime_api_key(self):
-            return self.agent_key
-
-    class _Pool:
-        refreshed = False
-
-        def has_credentials(self):
-            return True
-
-        def select(self):
-            return _Entry(stale_token)
-
-        def try_refresh_current(self):
-            self.refreshed = True
-            return _Entry(fresh_token)
-
-    pool = _Pool()
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
-    monkeypatch.setattr(rp, "load_pool", lambda provider: pool)
-    monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "nous"})
-
-    resolved = rp.resolve_runtime_provider(requested="nous")
-
-    assert pool.refreshed is True
-    assert resolved["provider"] == "nous"
-    assert resolved["api_key"] == fresh_token
-    assert resolved["base_url"] == "https://inference.pool.example/v1"
 
 
 def test_named_custom_provider_wins_over_builtin_alias(monkeypatch):
@@ -1245,9 +1168,9 @@ def test_named_custom_provider_wins_over_builtin_alias(monkeypatch):
 
 
 def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
-    """Companion to the test above: ``nous`` is a canonical provider name
-    (``resolve_provider('nous') == 'nous'``), so a custom entry with that name
-    should NOT be returned — the built-in wins as before.
+    """Companion to the test above: ``openrouter`` is a canonical provider
+    name, so a custom entry with that name should NOT be returned — the
+    built-in wins as before.
     """
     monkeypatch.setattr(
         rp,
@@ -1255,7 +1178,7 @@ def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
         lambda: {
             "custom_providers": [
                 {
-                    "name": "nous",
+                    "name": "openrouter",
                     "base_url": "http://localhost:1234/v1",
                     "api_key": "shadow-key",
                 }
@@ -1263,7 +1186,7 @@ def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
         },
     )
 
-    entry = rp._get_named_custom_provider("nous")
+    entry = rp._get_named_custom_provider("openrouter")
 
     assert entry is None
 
@@ -1898,35 +1821,6 @@ def test_custom_provider_no_key_gets_placeholder(monkeypatch):
     assert resolved["base_url"] == "http://localhost:8080/v1"
 
 
-def test_auto_detected_nous_auth_failure_falls_through_to_openrouter(monkeypatch):
-    """When auto-detect picks Nous but credentials are revoked, fall through to OpenRouter."""
-    from opencodon_cli.auth import AuthError
-
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-    monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
-    monkeypatch.setattr(rp, "load_config", lambda: {})
-
-    # resolve_provider returns "nous" (stale active_provider in auth.json)
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
-    # load_pool returns empty pool so we hit the direct credential resolution
-    monkeypatch.setattr(rp, "load_pool", lambda p: type("P", (), {
-        "has_credentials": lambda self: False,
-    })())
-    # Nous credential resolution fails with revoked token
-    monkeypatch.setattr(
-        rp, "resolve_nous_runtime_credentials",
-        lambda **kw: (_ for _ in ()).throw(
-            AuthError("Refresh session has been revoked",
-                      provider="nous", code="invalid_grant", relogin_required=True)
-        ),
-    )
-
-    # With requested="auto", should fall through to OpenRouter
-    resolved = rp.resolve_runtime_provider(requested="auto")
-    assert resolved["provider"] == "openrouter"
-    assert resolved["api_key"] == "test-or-key"
 
 
 def test_auto_detected_codex_auth_failure_falls_through_to_openrouter(monkeypatch):
@@ -1956,29 +1850,6 @@ def test_auto_detected_codex_auth_failure_falls_through_to_openrouter(monkeypatc
     assert resolved["api_key"] == "test-or-key"
 
 
-def test_explicit_nous_auth_failure_still_raises(monkeypatch):
-    """When user explicitly requests Nous and auth fails, the error should propagate."""
-    from opencodon_cli.auth import AuthError
-    import pytest
-
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
-    monkeypatch.setattr(rp, "load_config", lambda: {})
-
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
-    monkeypatch.setattr(rp, "load_pool", lambda p: type("P", (), {
-        "has_credentials": lambda self: False,
-    })())
-    monkeypatch.setattr(
-        rp, "resolve_nous_runtime_credentials",
-        lambda **kw: (_ for _ in ()).throw(
-            AuthError("Refresh session has been revoked",
-                      provider="nous", code="invalid_grant", relogin_required=True)
-        ),
-    )
-
-    # With explicit "nous", should raise — don't silently switch providers
-    with pytest.raises(AuthError, match="Refresh session has been revoked"):
-        rp.resolve_runtime_provider(requested="nous")
 
 
 def test_openrouter_provider_not_affected_by_custom_fix(monkeypatch):

@@ -1021,7 +1021,7 @@ class TestAuthFailureAborts:
         err = RuntimeError(
             "Provider 'opencode-zen' is set in config.yaml but no API key was "
             "found. Set the OPENCODE-ZEN_API_KEY environment variable, or switch "
-            "to a different provider with hermes model."
+            "to a different provider with opencodon model."
         )
         with patch(
             "agent.context_compressor.get_model_context_length", return_value=100000

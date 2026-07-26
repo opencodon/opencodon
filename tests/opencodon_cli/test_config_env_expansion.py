@@ -96,7 +96,7 @@ class TestLoadConfigExpansion:
 
 class TestLoadConfigCacheEnvStaleness:
     """The load_config() cache must not pin expansions made against a stale
-    environment (#58514): a load before load_hermes_dotenv() runs, or an env
+    environment (#58514): a load before load_opencodon_dotenv() runs, or an env
     var rotated in-process, must not keep serving the old expansion."""
 
     def test_env_var_appearing_after_first_load_invalidates_cache(self, tmp_path, monkeypatch):
@@ -172,7 +172,7 @@ class TestLoadCliConfigExpansion:
         config_file.write_text(config_yaml)
 
         monkeypatch.setenv("TEST_VISION_KEY_XYZ", "vis-key-123")
-        # Patch the hermes home so load_cli_config finds our test config
+        # Patch the opencodon home so load_cli_config finds our test config
         monkeypatch.setattr("cli._opencodon_home", tmp_path)
 
         from cli import load_cli_config

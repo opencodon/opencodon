@@ -1,4 +1,4 @@
-"""Tests for the `hermes project` CLI dispatch (opencodon_cli/projects_cmd)."""
+"""Tests for the `opencodon project` CLI dispatch (opencodon_cli/projects_cmd)."""
 
 from __future__ import annotations
 

@@ -186,7 +186,7 @@ class InProcessCronScheduler(CronScheduler):
                 "Marked %d interrupted cron execution(s) unknown after restart",
                 recovered,
             )
-        # Heartbeat once before the first sleep so `hermes cron status` sees a
+        # Heartbeat once before the first sleep so `opencodon cron status` sees a
         # live ticker immediately after startup, not only after the first tick.
         record_ticker_heartbeat()
         while not stop_event.is_set():

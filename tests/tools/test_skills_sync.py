@@ -214,12 +214,12 @@ class TestRmtreeWritableScopeGuard:
         """``~/.opencodon/`` itself is what the #48200 wipe destroyed."""
         from tools.skills_sync import _rmtree_writable
 
-        hermes = tmp_path / "home"
-        hermes.mkdir()
-        (hermes / "skills").mkdir()
-        with patch("tools.skills_sync.SKILLS_DIR", hermes / "skills"):
+        opencodon = tmp_path / "home"
+        opencodon.mkdir()
+        (opencodon / "skills").mkdir()
+        with patch("tools.skills_sync.SKILLS_DIR", opencodon / "skills"):
             with pytest.raises(ValueError, match="refusing to rmtree"):
-                _rmtree_writable(hermes)
+                _rmtree_writable(opencodon)
 
     def test_refuses_sibling_directory(self, tmp_path):
         """A directory that is a sibling of SKILLS_DIR (e.g. a wrong
@@ -227,11 +227,11 @@ class TestRmtreeWritableScopeGuard:
         """
         from tools.skills_sync import _rmtree_writable
 
-        hermes = tmp_path / "home"
-        hermes.mkdir()
-        skills = hermes / "skills"
+        opencodon = tmp_path / "home"
+        opencodon.mkdir()
+        skills = opencodon / "skills"
         skills.mkdir()
-        not_skills = hermes / "kanban.db"  # any non-skills path
+        not_skills = opencodon / "kanban.db"  # any non-skills path
         not_skills.mkdir()
         with patch("tools.skills_sync.SKILLS_DIR", skills):
             with pytest.raises(ValueError, match="refusing to rmtree"):
@@ -717,7 +717,7 @@ class TestSyncSkills:
 
         captured = capsys.readouterr().out
         assert "new-skill" in captured
-        assert "hermes skills reset new-skill" in captured
+        assert "opencodon skills reset new-skill" in captured
 
     def test_backfills_official_optional_provenance_for_existing_identical_skill(self, tmp_path):
         bundled = self._setup_bundled(tmp_path)
@@ -1168,9 +1168,9 @@ class TestResetBundledSkill:
 class TestNoBundledSkillsOptOut:
     """The .no-bundled-skills marker makes sync_skills() a no-op.
 
-    This is what `hermes profile create --no-skills` (named profiles) and the
+    This is what `opencodon profile create --no-skills` (named profiles) and the
     installer's `--no-skills` flag (default ~/.opencodon) rely on so bundled
-    skills are never seeded at install time NOR re-injected by `hermes update`.
+    skills are never seeded at install time NOR re-injected by `opencodon update`.
     """
 
     def _setup_bundled(self, tmp_path):
@@ -1221,7 +1221,7 @@ class TestNoBundledSkillsOptOut:
 
 
 class TestOptOutToggleAndRemove:
-    """`hermes skills opt-out/opt-in` core: marker toggle + safe removal."""
+    """`opencodon skills opt-out/opt-in` core: marker toggle + safe removal."""
 
     def _setup_bundled(self, tmp_path):
         bundled = tmp_path / "bundled"

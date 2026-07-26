@@ -54,7 +54,7 @@ class WhatsAppBehaviorMixin:
     MAX_MESSAGE_LENGTH: int = 4096
     supports_code_blocks = True  # WhatsApp renders fenced code blocks (monospace)
 
-    DEFAULT_REPLY_PREFIX: str = "⚕ *Hermes Agent*\n────────────\n"
+    DEFAULT_REPLY_PREFIX: str = "⚕ *opencodon*\n────────────\n"
 
     _OUTBOUND_INVISIBLE_CHARS_RE = re.compile(r"[\u200b\u2060\u2063\ufeff]")
     _OUTBOUND_ODD_SPACE_RE = re.compile(r"[\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
@@ -464,7 +464,7 @@ class WhatsAppBehaviorMixin:
 def resolve_whatsapp_bridge_dir() -> Path:
     """Resolve the WhatsApp bridge directory, mirroring to OPENCODON_HOME if needed.
 
-    When the install tree is read-only (e.g., Docker /opt/hermes), this function
+    When the install tree is read-only (e.g., Docker /opt/opencodon), this function
     mirrors the bridge source to a writable OPENCODON_HOME location and returns that
     path. This ensures npm install works in Docker environments.
 

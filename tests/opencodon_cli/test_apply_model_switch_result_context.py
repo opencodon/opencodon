@@ -1,7 +1,7 @@
 """Regression test for the `/model` picker confirmation display.
 
 Bug (April 2026): after choosing a model from the interactive `/model` picker,
-``HermesCLI._apply_model_switch_result()`` printed ``ModelInfo.context_window``
+``OpencodonCLI._apply_model_switch_result()`` printed ``ModelInfo.context_window``
 straight from models.dev, which always reports the vendor-wide value (e.g.
 gpt-5.5 = 1,050,000 on ``openai``). That ignored provider-specific caps — in
 particular, ChatGPT Codex OAuth enforces 272K on the same slug. The sibling
@@ -50,7 +50,7 @@ def _run_display(monkeypatch, result):
     monkeypatch.setattr(cli_mod, "_cprint", lambda s, *a, **k: captured.append(str(s)))
     # Avoid writing to ~/.opencodon/config.yaml during the test.
     monkeypatch.setattr(cli_mod, "save_config_value", lambda *a, **k: None)
-    cli_mod.HermesCLI._apply_model_switch_result(_StubCLI(), result, False)
+    cli_mod.OpencodonCLI._apply_model_switch_result(_StubCLI(), result, False)
     return captured
 
 
@@ -198,6 +198,6 @@ def test_global_switch_clears_context_pin_owned_by_previous_route(monkeypatch):
         ),
         patch("opencodon_cli.config.load_config_readonly", return_value=configured),
     ):
-        cli_mod.HermesCLI._apply_model_switch_result(cli, result, True)
+        cli_mod.OpencodonCLI._apply_model_switch_result(cli, result, True)
 
     assert ("model.context_length", None) in writes

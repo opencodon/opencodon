@@ -49,8 +49,8 @@ def test_custom_key_is_password_masked(monkeypatch):
 
 def test_catalogued_key_is_not_marked_custom(monkeypatch):
     """A key present in OPTIONAL_ENV_VARS keeps its real category, not custom."""
-    rows = _env_rows(monkeypatch, {"HONCHO_API_KEY": "abc123"})
-    row = rows["HONCHO_API_KEY"]
+    rows = _env_rows(monkeypatch, {"EXA_API_KEY": "abc123"})
+    row = rows["EXA_API_KEY"]
     assert row.get("custom") is not True
     assert row["category"] == "tool"
 

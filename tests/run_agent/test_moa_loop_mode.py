@@ -291,7 +291,7 @@ def test_reference_messages_drops_system_but_renders_tools_as_text():
     from agent.moa_loop import _reference_messages
 
     messages = [
-        {"role": "system", "content": "huge hermes system prompt"},
+        {"role": "system", "content": "huge opencodon system prompt"},
         {"role": "user", "content": "do the thing"},
         {
             "role": "assistant",
@@ -308,7 +308,7 @@ def test_reference_messages_drops_system_but_renders_tools_as_text():
     assert all(m["role"] in ("user", "assistant") for m in view)
     assert all("tool_calls" not in m for m in view)
     # System prompt is gone.
-    assert all("huge hermes system prompt" not in m["content"] for m in view)
+    assert all("huge opencodon system prompt" not in m["content"] for m in view)
     # The agent's action and the tool result are PRESERVED as text.
     joined = "\n".join(m["content"] for m in view)
     assert "[called tool: f(" in joined
@@ -1115,8 +1115,8 @@ def test_reference_messages_flattens_cache_decorated_content():
     from agent.prompt_caching import apply_anthropic_cache_control
 
     plain = [
-        {"role": "system", "content": "hermes system prompt"},
-        {"role": "user", "content": "Can we get codex usage resets into hermes?"},
+        {"role": "system", "content": "opencodon system prompt"},
+        {"role": "user", "content": "Can we get codex usage resets into opencodon?"},
     ]
     decorated = apply_anthropic_cache_control(plain, native_anthropic=False)
     # Premise: decoration really converts the user turn to a content-part list.
@@ -1125,7 +1125,7 @@ def test_reference_messages_flattens_cache_decorated_content():
     view = _reference_messages(decorated)
 
     assert view == [
-        {"role": "user", "content": "Can we get codex usage resets into hermes?"}
+        {"role": "user", "content": "Can we get codex usage resets into opencodon?"}
     ]
     # Invariant: decorated and undecorated transcripts produce the SAME
     # advisory view — so decoration can never change what references see,

@@ -1,6 +1,6 @@
 """Tests for the load_env() process-level cache.
 
-The cache exists to keep `hermes tools` → "All Platforms" fast: every
+The cache exists to keep `opencodon tools` → "All Platforms" fast: every
 `get_env_value()` lookup used to re-read and re-sanitise the entire
 .env file, racking up hundreds of ms across one menu render. The
 cache is keyed on (path, mtime, size); writers (save_env_value /
@@ -182,7 +182,7 @@ def test_load_env_handles_missing_file():
 
     invalidate_env_cache()
 
-    nonexistent = Path(tempfile.gettempdir()) / "hermes-test-no-such-env-xyz123.env"
+    nonexistent = Path(tempfile.gettempdir()) / "opencodon-test-no-such-env-xyz123.env"
     nonexistent.unlink(missing_ok=True)
 
     try:

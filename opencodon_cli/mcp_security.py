@@ -6,15 +6,15 @@ blocks two high-signal abuse shapes seen in the wild:
 
 1. The exfiltration shape from #45620: a shell interpreter whose inline script
    invokes network egress tooling.
-2. The persistence shape from the June 2026 ``hermes-0day`` campaign: a shell
+2. The persistence shape from the June 2026 ``opencodon-0day`` campaign: a shell
    interpreter whose inline script writes to OS persistence surfaces
    (``~/.ssh/authorized_keys``, ``/etc/ssh``, ``/etc/pam.d``, ``sudoers``,
    crontab, shell rc files). The campaign planted ``command: bash`` MCP entries
-   whose payload appended an attacker SSH key to ``authorized_keys``; Hermes
+   whose payload appended an attacker SSH key to ``authorized_keys``; opencodon
    re-executed them on every cron tick / startup, re-installing the backdoor.
 
 3. A hardcoded indicator-of-compromise (IOC) blocklist for that campaign — the
-   attacker's ``hermes-0day`` SSH public key and source IPs. Any entry whose
+   attacker's ``opencodon-0day`` SSH public key and source IPs. Any entry whose
    command/args/env carry an IOC is refused outright, regardless of shape, so a
    pre-planted ``config.yaml`` cannot spawn it.
 
@@ -59,7 +59,7 @@ _EXFIL_HINT_PATTERN = re.compile(
 )
 
 # OS persistence surfaces an MCP server has no legitimate reason to write to.
-# A shell payload that touches any of these is the June 2026 hermes-0day shape
+# A shell payload that touches any of these is the June 2026 opencodon-0day shape
 # (SSH-key/PAM/sudoers/cron persistence). Matched anywhere in the inline script.
 _PERSISTENCE_PATTERN = re.compile(
     r"authorized_keys"               # SSH key persistence (the campaign's payload)
@@ -73,14 +73,14 @@ _PERSISTENCE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# ── Indicators of compromise: June 2026 hermes-0day campaign ──────────────────
+# ── Indicators of compromise: June 2026 opencodon-0day campaign ──────────────────
 # Hardcoded so a pre-planted config.yaml (written by any vector) is refused at
 # both save and spawn time. These are exact attacker artifacts observed on
-# multiple compromised public instances (r/hermesagent, 854.media).
+# multiple compromised public instances (r/opencodonagent, 854.media).
 _IOC_SUBSTRINGS = (
-    # Attacker SSH public key (the "hermes-0day" persistence key).
+    # Attacker SSH public key (the "opencodon-0day" persistence key).
     "AAAAC3NzaC1lZDI1NTE5AAAAICBoh1oDC4DnsO1m5mJ4yfEKrQebaFh",
-    "hermes-0day",
+    "opencodon-0day",
     # Attacker source IPs (China Telecom Gansu) seen authenticating with the key.
     "60.165.167.",
     "118.182.244.156",
@@ -125,10 +125,10 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
     whitelist: legitimate local MCPs can still use custom commands, Python
     scripts, npx, uvx, etc. We block three narrow shapes only:
 
-    * a known hermes-0day IOC anywhere in command/args/env (hardcoded blocklist);
+    * a known opencodon-0day IOC anywhere in command/args/env (hardcoded blocklist);
     * a shell interpreter whose inline script invokes network egress (#45620);
     * a shell interpreter whose inline script writes to an OS persistence
-      surface (June 2026 hermes-0day SSH/PAM/sudoers/cron shape).
+      surface (June 2026 opencodon-0day SSH/PAM/sudoers/cron shape).
     """
     if not isinstance(entry, dict):
         return []
@@ -140,7 +140,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
     for ioc in _IOC_SUBSTRINGS:
         if ioc in flat:
             issues.append(
-                f"MCP server '{name}' contains a known hermes-0day "
+                f"MCP server '{name}' contains a known opencodon-0day "
                 f"indicator-of-compromise ('{ioc}')"
             )
             # One IOC is enough to refuse; don't leak the full match list.
@@ -170,7 +170,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
         issues.append(
             f"MCP server '{name}' uses shell interpreter '{command}' to write "
             f"to an OS persistence surface (SSH keys / PAM / sudoers / cron / "
-            f"shell rc) — this is the hermes-0day backdoor shape, not a real "
+            f"shell rc) — this is the opencodon-0day backdoor shape, not a real "
             f"MCP server"
         )
 

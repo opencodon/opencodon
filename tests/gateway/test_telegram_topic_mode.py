@@ -1,7 +1,7 @@
 """Tests for Telegram private-chat topic-mode routing.
 
 Topic mode makes the root Telegram DM a system lobby while user-created
-Telegram topics act as independent Hermes session lanes.
+Telegram topics act as independent opencodon session lanes.
 """
 
 from datetime import datetime
@@ -143,7 +143,6 @@ def _make_runner(session_db=None):
     runner._set_session_env = lambda _context: None
     runner._should_send_voice_reply = lambda *_args, **_kwargs: False
     runner._send_voice_reply = AsyncMock()
-    runner._capture_gateway_honcho_if_configured = lambda *args, **kwargs: None
     runner._emit_gateway_run_progress = AsyncMock()
     runner._invalidate_session_run_generation = MagicMock()
     runner._begin_session_run_generation = MagicMock(return_value=1)
@@ -340,16 +339,9 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
-    # /new appends a random tip from opencodon_cli.tips; one tip's text contains
-    # the phrase "parallel work", which collides with the negative assertion
-    # below (observed as a 1-in-N CI flake). Pin the tip.
-    monkeypatch.setattr(
-        "opencodon_cli.tips.get_random_tip", lambda: "pinned tip for test"
-    )
-
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))
 
-    assert "Started a new Hermes session in this topic" not in result
+    assert "Started a new opencodon session in this topic" not in result
     assert "parallel work" not in result
     runner.session_store.reset_session.assert_called_once_with(group_key)
 
@@ -390,7 +382,7 @@ async def test_new_inside_telegram_topic_resets_current_topic_with_parallel_tip(
 
     result = await runner._handle_message(_make_event("/new", thread_id="17585"))
 
-    assert "Started a new Hermes session in this topic" in result
+    assert "Started a new opencodon session in this topic" in result
     assert "parallel work" in result
     assert "All Messages" in result
     runner.session_store.reset_session.assert_called_once_with(topic_key)
@@ -709,7 +701,7 @@ async def test_topic_restore_inside_topic_binds_old_session_and_returns_last_ass
     result = await runner._handle_message(_make_event("/topic old-session", thread_id="17585"))
 
     assert "Session restored: Research notes" in result
-    assert "Last Hermes message:" in result
+    assert "Last opencodon message:" in result
     assert "Here is the summary." in result
     binding = session_db.get_telegram_topic_binding(chat_id="208214988", thread_id="17585")
     assert binding is not None
@@ -875,7 +867,7 @@ async def test_topic_root_command_creates_and_pins_system_topic(tmp_path, monkey
     adapter._create_dm_topic.assert_awaited_once_with(208214988, "System")
     adapter.send.assert_awaited_once_with(
         "208214988",
-        "System topic for Hermes commands and status.",
+        "System topic for opencodon commands and status.",
         metadata={"thread_id": "4242"},
     )
     bot.pin_chat_message.assert_awaited_once_with(

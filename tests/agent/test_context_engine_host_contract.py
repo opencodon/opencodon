@@ -1,7 +1,7 @@
 """Regressions for the context-engine host contract.
 
 These tests pin the five generic host-side guarantees that external context
-engine plugins (e.g. hermes-lcm) rely on:
+engine plugins (e.g. opencodon-lcm) rely on:
 
 1. ``_transition_context_engine_session`` drives the full lifecycle
    (on_session_end → on_session_reset → on_session_start → optional
@@ -237,7 +237,7 @@ def test_update_from_response_forwards_canonical_cache_buckets():
 
 
 def test_discover_context_engines_includes_plugin_registered_engines(monkeypatch):
-    """Plugin-registered context engines appear in the ``hermes plugins`` picker."""
+    """Plugin-registered context engines appear in the ``opencodon plugins`` picker."""
     from opencodon_cli import plugins_cmd
 
     fake_repo = lambda: [("compressor", "built-in", True)]

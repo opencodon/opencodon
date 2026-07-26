@@ -468,7 +468,7 @@ def wire_env():
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()
 
-    test_home = tempfile.mkdtemp(prefix="hermes_api_content_")
+    test_home = tempfile.mkdtemp(prefix="opencodon_api_content_")
     os.makedirs(os.path.join(test_home, ".opencodon"))
     prev_home = os.environ.get("OPENCODON_HOME")
     os.environ["OPENCODON_HOME"] = os.path.join(test_home, ".opencodon")

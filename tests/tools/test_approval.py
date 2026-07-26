@@ -121,7 +121,7 @@ class TestDetectDangerousRm:
 
     def test_nonrecursive_verification_artifact_cleanup_is_not_dangerous(self):
         with mock_patch("tempfile.gettempdir", return_value="/tmp"):
-            for prefix in ("hermes-verify-", "hermes-ad-hoc-"):
+            for prefix in ("opencodon-verify-", "opencodon-ad-hoc-"):
                 assert detect_dangerous_command(f"rm -f /tmp/{prefix}example.py") == (
                     False,
                     None,
@@ -133,7 +133,7 @@ class TestDetectDangerousRm:
         real_temp.mkdir()
         linked_temp = tmp_path / "linked-temp"
         linked_temp.symlink_to(real_temp, target_is_directory=True)
-        basename = "hermes-verify-example.py"
+        basename = "opencodon-verify-example.py"
 
         with mock_patch("tempfile.gettempdir", return_value=str(linked_temp)):
             assert detect_dangerous_command(f"rm -f {linked_temp / basename}")[0] is True
@@ -145,19 +145,19 @@ class TestDetectDangerousRm:
 
     def test_verification_cleanup_exemption_rejects_broader_deletions(self):
         commands = (
-            "rm -rf /tmp/hermes-verify-example.py",
-            "rm -f /tmp/hermes-verify-example.py /tmp/other.py",
-            "rm -f /tmp/nested/hermes-verify-example.py",
-            "rm -f /tmp/nested/../hermes-verify-example.py",
-            "rm -f /tmp/./hermes-verify-example.py",
-            "rm -f /tmp//hermes-verify-example.py",
-            "rm -f /tmp/a/../../tmp/hermes-verify-example.py",
-            "rm -f /var/tmp/hermes-verify-example.py",
+            "rm -rf /tmp/opencodon-verify-example.py",
+            "rm -f /tmp/opencodon-verify-example.py /tmp/other.py",
+            "rm -f /tmp/nested/opencodon-verify-example.py",
+            "rm -f /tmp/nested/../opencodon-verify-example.py",
+            "rm -f /tmp/./opencodon-verify-example.py",
+            "rm -f /tmp//opencodon-verify-example.py",
+            "rm -f /tmp/a/../../tmp/opencodon-verify-example.py",
+            "rm -f /var/tmp/opencodon-verify-example.py",
             "rm -f /tmp/unrelated.py",
-            "rm -f /tmp/hermes-verify-*",
-            "rm -f /tmp/hermes-verify-$(touch>/tmp/pwned).py",
-            "rm -f /tmp/hermes-ad-hoc-`touch>/tmp/pwned`.py",
-            "rm -f /tmp/hermes-verify-example.py; touch /tmp/pwned",
+            "rm -f /tmp/opencodon-verify-*",
+            "rm -f /tmp/opencodon-verify-$(touch>/tmp/pwned).py",
+            "rm -f /tmp/opencodon-ad-hoc-`touch>/tmp/pwned`.py",
+            "rm -f /tmp/opencodon-verify-example.py; touch /tmp/pwned",
         )
         with mock_patch("tempfile.gettempdir", return_value="/tmp"):
             for command in commands:
@@ -170,7 +170,7 @@ class TestDetectDangerousRm:
 class TestWindowsShellDestructiveCommands:
     def test_cmd_del_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"cmd /c del /f /q C:\tmp\hermes-victim\file.txt"
+            r"cmd /c del /f /q C:\tmp\opencodon-victim\file.txt"
         )
         assert dangerous is True
         assert key is not None
@@ -178,7 +178,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_cmd_rmdir_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"cmd.exe /k rmdir /s /q C:\tmp\hermes-victim"
+            r"cmd.exe /k rmdir /s /q C:\tmp\opencodon-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -186,7 +186,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_powershell_remove_item_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"powershell -NoProfile -Command Remove-Item -Recurse -Force C:\tmp\hermes-victim"
+            r"powershell -NoProfile -Command Remove-Item -Recurse -Force C:\tmp\opencodon-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -194,7 +194,7 @@ class TestWindowsShellDestructiveCommands:
 
     def test_pwsh_rm_alias_requires_approval(self):
         dangerous, key, desc = detect_dangerous_command(
-            r"pwsh -c rm -Recurse -Force C:\tmp\hermes-victim"
+            r"pwsh -c rm -Recurse -Force C:\tmp\opencodon-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -213,7 +213,7 @@ class TestWindowsShellDestructiveCommands:
         # so `powershell Remove-Item ...` with NO explicit -Command must still
         # be gated (the original pattern required -Command and missed this).
         dangerous, key, desc = detect_dangerous_command(
-            r"powershell Remove-Item -Recurse -Force C:\tmp\hermes-victim"
+            r"powershell Remove-Item -Recurse -Force C:\tmp\opencodon-victim"
         )
         assert dangerous is True
         assert key is not None
@@ -556,7 +556,7 @@ class TestTeePattern:
         assert dangerous is True
         assert key is not None
 
-    def test_tee_hermes_env(self):
+    def test_tee_opencodon_env(self):
         dangerous, key, desc = detect_dangerous_command("echo x | tee ~/.opencodon/.env")
         assert dangerous is True
         assert key is not None
@@ -588,7 +588,7 @@ class TestTeePattern:
         assert key is None
 
 
-class TestHermesConfigWriteProtection:
+class TestOpencodonConfigWriteProtection:
     """Terminal-side pairing for the file_tools write_file/patch deny on
     ~/.opencodon/config.yaml (#14639). config.yaml IS the security policy
     (approvals.mode/yolo live there, mtime-keyed cache reloads mid-session),
@@ -617,7 +617,7 @@ class TestHermesConfigWriteProtection:
         # bypassing the redirection/tee patterns.
         dangerous, key, desc = detect_dangerous_command("sed -i 's/manual/off/' ~/.opencodon/config.yaml")
         assert dangerous is True
-        assert "hermes config" in desc.lower() or "in-place" in desc.lower()
+        assert "opencodon config" in desc.lower() or "in-place" in desc.lower()
 
     def test_sed_in_place_long_flag(self):
         dangerous, key, desc = detect_dangerous_command("sed --in-place 's/manual/off/' ~/.opencodon/config.yaml")
@@ -629,7 +629,7 @@ class TestHermesConfigWriteProtection:
             f"sed -i 's/manual/off/' {config_path}"
         )
         assert dangerous is True
-        assert "hermes config" in desc.lower() or "in-place" in desc.lower()
+        assert "opencodon config" in desc.lower() or "in-place" in desc.lower()
 
     def test_sed_in_place_absolute_opencodon_home_env(self):
         env_path = get_opencodon_home() / ".env"
@@ -637,7 +637,7 @@ class TestHermesConfigWriteProtection:
             f"sed -i 's/API_KEY=.*/API_KEY=x/' {env_path}"
         )
         assert dangerous is True
-        assert "hermes config" in desc.lower() or "in-place" in desc.lower()
+        assert "opencodon config" in desc.lower() or "in-place" in desc.lower()
 
     def test_custom_opencodon_home(self):
         dangerous, key, desc = detect_dangerous_command("echo x | tee $OPENCODON_HOME/config.yaml")
@@ -708,7 +708,7 @@ class TestHermesConfigWriteProtection:
             "perl -wne 'print' ~/.opencodon/config.yaml"
         )
         assert dangerous is True
-        assert key != "in-place edit of Hermes config/env (perl/ruby)"
+        assert key != "in-place edit of opencodon config/env (perl/ruby)"
 
     def test_read_is_safe(self):
         # Reading config is not a write — must not trip.
@@ -716,7 +716,7 @@ class TestHermesConfigWriteProtection:
         assert dangerous is False
 
     def test_normal_yaml_write_safe(self):
-        # A non-Hermes config.yaml in a project dir is handled by the project
+        # A non-opencodon config.yaml in a project dir is handled by the project
         # patterns, but a plain temp write must not false-positive.
         dangerous, key, desc = detect_dangerous_command("echo data > /tmp/scratch.txt")
         assert dangerous is False
@@ -935,7 +935,7 @@ class TestSensitiveCopyMovePattern:
         dangerous, key, desc = detect_dangerous_command("cp /tmp/e ~/.bashrc")
         assert dangerous is True
 
-    def test_cp_to_hermes_config(self):
+    def test_cp_to_opencodon_config(self):
         dangerous, key, desc = detect_dangerous_command("cp /tmp/evil.yaml ~/.opencodon/config.yaml")
         assert dangerous is True
 
@@ -985,13 +985,13 @@ class TestSensitiveInPlaceEditPattern:
 
 
 class TestWindowsAbsolutePathFolding:
-    """Windows absolute home / Hermes-home prefixes must fold to ~/ and
+    """Windows absolute home / opencodon-home prefixes must fold to ~/ and
     ~/.opencodon/ in dangerous-command detection.
 
     Regression: on native Windows the home prefix uses backslash separators
     (``C:\\Users\\alice\\.ssh\\authorized_keys``). Detection stripped backslash
     escapes *before* folding, dissolving those separators, so writes to startup,
-    SSH, and Hermes config/env files returned "safe" without an approval prompt.
+    SSH, and opencodon config/env files returned "safe" without an approval prompt.
     The OS-specific ``Path.home()`` / ``get_opencodon_home()`` tests above only
     exercise this branch on a Windows host; these monkeypatch a Windows-style
     HOME/OPENCODON_HOME so the fold is verified on the POSIX CI runner too."""
@@ -1023,7 +1023,7 @@ class TestWindowsAbsolutePathFolding:
         assert key is not None
 
     def test_windows_opencodon_home_config_folds(self, monkeypatch):
-        # Hermes home nests under the user home on Windows; it must fold before
+        # opencodon home nests under the user home on Windows; it must fold before
         # the user-home rewrite eats its prefix.
         monkeypatch.setenv("HOME", r"C:\Users\tester")
         monkeypatch.setenv("OPENCODON_HOME", r"C:\Users\tester\.opencodon")
@@ -1193,57 +1193,15 @@ class TestSmartDeniedPrompt:
         assert "[s]ession" not in rendered and "[a]lways" not in rendered
         assert prompts == ["      Choice [o/D]: "]
 
-    @pytest.mark.parametrize(
-        ("lang", "once_key", "deny_key", "once_label", "deny_label"),
-        [
-            ("tr", "b", "r", "[b]ir kez", "[r]eddet"),
-            ("fr", "o", "r", "[o]ne fois", "[r]efuser"),
-            ("ja", "o", "d", "[o]今回のみ", "[d]拒否"),
-        ],
-    )
-    def test_smart_deny_uses_locale_specific_once_deny_choices(
-        self, monkeypatch, capsys, lang, once_key, deny_key, once_label, deny_label,
-    ):
-        monkeypatch.setenv("OPENCODON_LANGUAGE", lang)
-        from agent import i18n
-        i18n.reset_language_cache()
-        prompts = []
-
-        def choose_once(prompt):
-            prompts.append(prompt)
-            return once_key
-
-        try:
-            with mock_patch("builtins.input", side_effect=choose_once):
-                result = prompt_dangerous_approval(
-                    "rm -rf /tmp/example", "recursive delete",
-                    allow_permanent=False, smart_denied=True,
-                )
-        finally:
-            i18n.reset_language_cache()
-
-        rendered = capsys.readouterr().out
-        assert result == "once"
-        assert once_label in rendered
-        assert deny_label in rendered
-        assert i18n.t("approval.choose_short", lang=lang).split("|")[1].strip() not in rendered
-        assert "/".join((once_key, deny_key.upper())) in prompts[0]
-
-    @pytest.mark.parametrize(("lang", "forbidden"), [("tr", "o"), ("fr", "s"), ("ja", "a")])
-    def test_smart_deny_rejects_localized_session_or_always_shortcuts(
-        self, monkeypatch, lang, forbidden,
-    ):
-        monkeypatch.setenv("OPENCODON_LANGUAGE", lang)
-        from agent import i18n
-        i18n.reset_language_cache()
-        try:
-            with mock_patch("builtins.input", return_value=forbidden):
-                result = prompt_dangerous_approval(
-                    "rm -rf /tmp/example", "recursive delete",
-                    allow_permanent=False, smart_denied=True,
-                )
-        finally:
-            i18n.reset_language_cache()
+    @pytest.mark.parametrize("forbidden", ["s", "a"])
+    def test_smart_deny_rejects_session_or_always_shortcuts(self, forbidden):
+        """Smart-deny offers only once/deny — the broader grants must not be
+        reachable by typing their usual accelerator."""
+        with mock_patch("builtins.input", return_value=forbidden):
+            result = prompt_dangerous_approval(
+                "rm -rf /tmp/example", "recursive delete",
+                allow_permanent=False, smart_denied=True,
+            )
         assert result == "deny"
 
 
@@ -1301,50 +1259,50 @@ class TestGatewayProtection:
         assert dangerous is True
         assert "stop/restart" in desc
 
-    def test_hermes_gateway_stop_detected(self):
-        cmd = "hermes gateway stop"
+    def test_opencodon_gateway_stop_detected(self):
+        cmd = "opencodon gateway stop"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "gateway" in desc.lower()
 
-    def test_hermes_gateway_restart_with_profile_flag_detected(self):
-        """A profile flag between `hermes` and `gateway` must not slip past
+    def test_opencodon_gateway_restart_with_profile_flag_detected(self):
+        """A profile flag between `opencodon` and `gateway` must not slip past
         the guard. See the 2026-04-11 ade-profile self-kill incident."""
-        cmd = "hermes -p ade gateway restart"
+        cmd = "opencodon -p ade gateway restart"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "gateway" in desc.lower()
 
-    def test_hermes_gateway_stop_with_long_profile_flag_detected(self):
-        cmd = "hermes --profile ade gateway stop"
+    def test_opencodon_gateway_stop_with_long_profile_flag_detected(self):
+        cmd = "opencodon --profile ade gateway stop"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_hermes_gateway_multiple_flags_detected(self):
-        cmd = "hermes -p cocoa --verbose gateway restart"
+    def test_opencodon_gateway_multiple_flags_detected(self):
+        cmd = "opencodon -p cocoa --verbose gateway restart"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_hermes_gateway_status_with_profile_flag_not_flagged(self):
+    def test_opencodon_gateway_status_with_profile_flag_not_flagged(self):
         """Read-only subcommands stay allowed even with a profile flag."""
-        cmd = "hermes -p ade gateway status"
+        cmd = "opencodon -p ade gateway status"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is False
 
-    def test_hermes_gateway_start_not_flagged(self):
-        cmd = "hermes gateway start"
+    def test_opencodon_gateway_start_not_flagged(self):
+        cmd = "opencodon gateway start"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is False
 
-    def test_pkill_hermes_detected(self):
-        """pkill targeting hermes/gateway processes must be caught."""
+    def test_pkill_opencodon_detected(self):
+        """pkill targeting opencodon/gateway processes must be caught."""
         cmd = 'pkill -f "cli.py --gateway"'
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
 
-    def test_killall_hermes_detected(self):
-        cmd = "killall hermes"
+    def test_killall_opencodon_detected(self):
+        cmd = "killall opencodon"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
@@ -1478,7 +1436,7 @@ class TestIFSWhitespaceBypass:
         assert dangerous is True
 
     def test_ifs_sed_config_dangerous(self):
-        """In-place edit of the Hermes security config via IFS must be caught."""
+        """In-place edit of the opencodon security config via IFS must be caught."""
         cmd = "sed${IFS}-i ~/.opencodon/config.yaml"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
@@ -1565,20 +1523,20 @@ class TestHeredocScriptExecution:
 
 
 class TestPgrepKillExpansion:
-    """kill -9 $(pgrep hermes) bypasses the pkill/killall name-matching
+    """kill -9 $(pgrep opencodon) bypasses the pkill/killall name-matching
     pattern because the command substitution is opaque to regex.
 
     See security audit Test 7.
     """
 
     def test_kill_dollar_pgrep_detected(self):
-        cmd = 'kill -9 $(pgrep -f "hermes.*gateway")'
+        cmd = 'kill -9 $(pgrep -f "opencodon.*gateway")'
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "pgrep" in desc.lower()
 
     def test_kill_backtick_pgrep_detected(self):
-        cmd = "kill -9 `pgrep hermes`"
+        cmd = "kill -9 `pgrep opencodon`"
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -1587,9 +1545,9 @@ class TestPgrepKillExpansion:
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_pkill_hermes_still_detected(self):
+    def test_pkill_opencodon_still_detected(self):
         """Existing pkill pattern must not regress."""
-        cmd = "pkill -9 hermes"
+        cmd = "pkill -9 opencodon"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -1600,7 +1558,7 @@ class TestPgrepKillExpansion:
         assert dangerous is False
 
     def test_kill_dollar_pidof_detected(self):
-        """`kill $(pidof hermes)` is the BSD/Linux equivalent of the
+        """`kill $(pidof opencodon)` is the BSD/Linux equivalent of the
         pgrep expansion and bypasses the pkill/killall name pattern
         in the same way. See issue #33071."""
         cmd = "kill -TERM $(pidof opencodon_cli.main)"
@@ -1609,34 +1567,34 @@ class TestPgrepKillExpansion:
         assert "pidof" in desc.lower() or "pgrep" in desc.lower()
 
     def test_kill_backtick_pidof_detected(self):
-        cmd = "kill -9 `pidof hermes`"
+        cmd = "kill -9 `pidof opencodon`"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
 
 class TestLaunchctlGatewayLifecycle:
-    """launchctl stop/kickstart/bootout/unload against the Hermes service
-    label achieves the same effect as `hermes gateway stop|restart` and
+    """launchctl stop/kickstart/bootout/unload against the opencodon service
+    label achieves the same effect as `opencodon gateway stop|restart` and
     must require the same approval. See issue #33071.
     """
 
-    def test_launchctl_stop_hermes_detected(self):
+    def test_launchctl_stop_opencodon_detected(self):
         cmd = "launchctl stop ai.opencodon.gateway"
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
-        assert "launchd" in desc.lower() or "hermes" in desc.lower()
+        assert "launchd" in desc.lower() or "opencodon" in desc.lower()
 
-    def test_launchctl_kickstart_hermes_detected(self):
+    def test_launchctl_kickstart_opencodon_detected(self):
         cmd = "launchctl kickstart -k system/ai.opencodon.gateway"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_launchctl_bootout_hermes_detected(self):
+    def test_launchctl_bootout_opencodon_detected(self):
         cmd = "launchctl bootout system/ai.opencodon.gateway"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_launchctl_unload_hermes_detected(self):
+    def test_launchctl_unload_opencodon_detected(self):
         cmd = "launchctl unload ~/Library/LaunchAgents/ai.opencodon.gateway.plist"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
@@ -1648,7 +1606,7 @@ class TestLaunchctlGatewayLifecycle:
         assert dangerous is False
 
     def test_launchctl_stop_unrelated_not_flagged(self):
-        """`launchctl stop` on a non-Hermes label is out of scope for the
+        """`launchctl stop` on a non-opencodon label is out of scope for the
         gateway-lifecycle guard."""
         cmd = "launchctl stop com.example.unrelated"
         dangerous, _, _ = detect_dangerous_command(cmd)

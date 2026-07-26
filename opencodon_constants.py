@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for opencodon.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -20,7 +20,7 @@ _OPENCODON_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
 
 
 def set_opencodon_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local opencodon home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
@@ -30,12 +30,12 @@ def set_opencodon_home_override(path: str | Path | None) -> Token:
 
 
 def reset_opencodon_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
+    """Restore the previous context-local opencodon home override."""
     _OPENCODON_HOME_OVERRIDE.reset(token)
 
 
 def get_opencodon_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
+    """Return the active context-local opencodon home override, if any."""
     override = _OPENCODON_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
@@ -43,7 +43,7 @@ def get_opencodon_home_override() -> str | None:
 
 
 def _get_platform_default_opencodon_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default opencodon home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
@@ -103,39 +103,9 @@ def _warn_profile_fallback_once() -> None:
             pass
 
 
-def legacy_hermes_home_hint() -> str | None:
-    """One-line hint when a hermes-agent home exists but no opencodon home.
-
-    Fires only when ``OPENCODON_HOME`` is unset, the default
-    ``~/.opencodon`` does not exist yet, and a legacy ``~/.hermes``
-    (or ``%LOCALAPPDATA%\\hermes``) does. We deliberately do NOT migrate
-    data automatically: the legacy home may belong to a still-running
-    hermes-agent install, and moving or copying live SQLite state under
-    it would risk corruption. Adoption is explicit via OPENCODON_HOME.
-    """
-    if os.environ.get("OPENCODON_HOME", "").strip():
-        return None
-    new_home = _get_platform_default_opencodon_home()
-    if new_home.exists():
-        return None
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        legacy = base / "hermes"
-    else:
-        legacy = Path.home() / ".hermes"
-    if not legacy.exists():
-        return None
-    return (
-        f"note: found a legacy hermes-agent home at {legacy}. opencodon uses "
-        f"{new_home} and starts fresh. To keep your existing config, "
-        f"sessions, and skills, set OPENCODON_HOME={legacy} (adopts the old "
-        f"home in place)."
-    )
-
 
 def get_opencodon_home() -> Path:
-    """Return the Hermes home directory (default: platform-native path).
+    """Return the opencodon home directory (default: platform-native path).
 
     Resolution order: context-local override (see
     :func:`set_opencodon_home_override`) → ``OPENCODON_HOME`` env var → the
@@ -150,7 +120,7 @@ def get_opencodon_home() -> Path:
     callers that import this at load time.  Subprocess spawners are
     expected to propagate ``OPENCODON_HOME`` explicitly (see the systemd
     template in ``opencodon_cli/gateway.py`` and the kanban dispatcher in
-    ``opencodon_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    ``opencodon_cli/kanban_db.py``).  upstream#18594
     """
     override = get_opencodon_home_override()
     if override:
@@ -163,7 +133,7 @@ def get_opencodon_home() -> Path:
 
 
 def get_process_opencodon_home() -> Path:
-    """Return the Hermes home for the running process, ignoring task overrides.
+    """Return the opencodon home for the running process, ignoring task overrides.
 
     Unlike :func:`get_opencodon_home`, this never follows the context-local
     override set by :func:`set_opencodon_home_override`.  It resolves only the
@@ -181,8 +151,8 @@ def get_process_opencodon_home() -> Path:
     return _opencodon_home_from_env()
 
 
-def get_default_hermes_root() -> Path:
-    """Return the root Hermes directory for profile-level operations.
+def get_default_opencodon_root() -> Path:
+    """Return the root opencodon directory for profile-level operations.
 
     In standard deployments this is the platform-native home
     (``~/.opencodon`` on POSIX, ``%LOCALAPPDATA%\\opencodon`` on native Windows).
@@ -238,7 +208,7 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
 def get_optional_mcps_dir(default: Path | None = None) -> Path:
     """Return the optional-mcps directory, honoring package-manager wrappers.
 
-    Mirrors :func:`get_optional_skills_dir` for the MCP catalog (Nous-approved
+    Mirrors :func:`get_optional_skills_dir` for the MCP catalog (curated
     Model Context Protocol servers shipped with the repo but disabled by
     default). Packaged installs may ship ``optional-mcps`` outside the Python
     package tree and expose it via ``OPENCODON_OPTIONAL_MCPS``.
@@ -267,8 +237,8 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
     return get_opencodon_home() / "skills"
 
 
-def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a Hermes subdirectory with backward compatibility.
+def get_opencodon_dir(new_subpath: str, old_name: str) -> Path:
+    """Resolve a opencodon subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
     Existing installs that already have the old path (e.g. ``image_cache``)
@@ -297,18 +267,18 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     return home / new_subpath
 
 
-def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
-    """Return Hermes-managed Node.js directories in preferred lookup order.
+def iter_opencodon_node_dirs(home: Path | None = None) -> list[Path]:
+    """Return opencodon-managed Node.js directories in preferred lookup order.
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
-    into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
+    into ``%LOCALAPPDATA%\\opencodon\\node``. POSIX installs use
     ``$OPENCODON_HOME/node/bin``. Include both shapes on every platform so mixed
     or migrated installs still work.
     """
     root = home or get_opencodon_home()
     dirs = [root / "node"]
     bin_dir = root / "node" / "bin"
-    # NOTE: keep this ordering in sync with hermesManagedNodePathEntries() in
+    # NOTE: keep this ordering in sync with opencodonManagedNodePathEntries() in
     # apps/desktop/electron/main.cjs — the Electron main process is Node and
     # cannot import this module, so the platform-ordering rule is mirrored there.
     if sys.platform == "win32":
@@ -339,11 +309,11 @@ _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "
 def node_tool_runnable(path: str | None) -> bool:
     """Return True only when *path* is a Node/npm/npx binary that actually runs.
 
-    Hermes-managed Node trees live under ``$OPENCODON_HOME/node`` (or a profile's
+    opencodon-managed Node trees live under ``$OPENCODON_HOME/node`` (or a profile's
     ``OPENCODON_HOME``). A partial upgrade or interrupted install can leave
     ``bin/npm`` behind while ``lib/cli.js`` is missing — the wrapper exists but
-    immediately throws ``MODULE_NOT_FOUND``. ``find_hermes_node_executable``
-    used to trust file presence alone, so ``hermes update`` would pick that
+    immediately throws ``MODULE_NOT_FOUND``. ``find_opencodon_node_executable``
+    used to trust file presence alone, so ``opencodon update`` would pick that
     broken npm and fail the Node refresh / web UI build.
 
     Probe with ``--version`` (same pattern as :func:`agent_browser_runnable`) so
@@ -367,7 +337,7 @@ def node_tool_runnable(path: str | None) -> bool:
             [path, "--version"],
             capture_output=True,
             timeout=10,
-            env=with_hermes_node_path(),
+            env=with_opencodon_node_path(),
             creationflags=windows_hide_flags(),
         )
     except (OSError, subprocess.TimeoutExpired, ValueError):
@@ -375,12 +345,12 @@ def node_tool_runnable(path: str | None) -> bool:
     return result.returncode == 0
 
 
-def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
-    """Return True when any Hermes-managed node/npm/npx shim exists on disk."""
+def opencodon_managed_node_tree_present(home: Path | None = None) -> bool:
+    """Return True when any opencodon-managed node/npm/npx shim exists on disk."""
     names = set()
     for command in ("node", "npm", "npx"):
         names.update(_candidate_node_command_names(command))
-    for directory in iter_hermes_node_dirs(home):
+    for directory in iter_opencodon_node_dirs(home):
         for name in names:
             candidate = directory / name
             if candidate.is_file() and (
@@ -452,8 +422,8 @@ def _heal_managed_node_windows() -> bool:
     return node_tool_runnable(str(target / "node.exe"))
 
 
-def heal_hermes_managed_node() -> bool:
-    """Redownload Hermes-managed Node when the tree exists but is broken.
+def heal_opencodon_managed_node() -> bool:
+    """Redownload opencodon-managed Node when the tree exists but is broken.
 
     Runs at most once per process. POSIX installs shell out to
     ``heal_managed_node`` in ``scripts/lib/node-bootstrap.sh``; Windows
@@ -462,7 +432,7 @@ def heal_hermes_managed_node() -> bool:
     global _managed_node_heal_attempted
     if _managed_node_heal_attempted:
         return False
-    if not hermes_managed_node_tree_present():
+    if not opencodon_managed_node_tree_present():
         return False
     _managed_node_heal_attempted = True
 
@@ -491,11 +461,11 @@ def heal_hermes_managed_node() -> bool:
     return result.returncode == 0
 
 
-def find_hermes_node_executable(command: str) -> str | None:
-    """Return a Hermes-managed Node/npm executable path, healing broken trees."""
+def find_opencodon_node_executable(command: str) -> str | None:
+    """Return a opencodon-managed Node/npm executable path, healing broken trees."""
     names = _candidate_node_command_names(command)
     broken_present = False
-    for directory in iter_hermes_node_dirs():
+    for directory in iter_opencodon_node_dirs():
         for name in names:
             candidate = directory / name
             if candidate.is_file() and (
@@ -505,8 +475,8 @@ def find_hermes_node_executable(command: str) -> str | None:
                 if node_tool_runnable(resolved):
                     return resolved
                 broken_present = True
-    if broken_present and heal_hermes_managed_node():
-        for directory in iter_hermes_node_dirs():
+    if broken_present and heal_opencodon_managed_node():
+        for directory in iter_opencodon_node_dirs():
             for name in names:
                 candidate = directory / name
                 if candidate.is_file() and (
@@ -523,7 +493,7 @@ def find_node_executable_on_path(command: str) -> str | None:
 
     ``shutil.which("npm")`` can resolve an extensionless npm shim before the
     ``.cmd`` shim on Windows. Python's CreateProcess cannot execute that shim
-    directly, so prefer the launchable variants explicitly for Hermes-owned
+    directly, so prefer the launchable variants explicitly for opencodon-owned
     subprocesses.
     """
     if sys.platform != "win32":
@@ -547,27 +517,27 @@ def find_node_executable_on_path(command: str) -> str | None:
 
 
 def find_node_executable(command: str) -> str | None:
-    """Resolve a Node.js command, preferring healthy Hermes-managed installs.
+    """Resolve a Node.js command, preferring healthy opencodon-managed installs.
 
-    This is for Hermes-owned subprocesses that should not be broken by a bad,
+    This is for opencodon-owned subprocesses that should not be broken by a bad,
     missing, or elevation-triggering system Node/npm on PATH. When a managed
     tree exists but cannot be healed, returns ``None`` instead of falling back
     to system npm on PATH.
     """
-    managed = find_hermes_node_executable(command)
+    managed = find_opencodon_node_executable(command)
     if managed:
         return managed
-    if hermes_managed_node_tree_present():
+    if opencodon_managed_node_tree_present():
         return None
     return find_node_executable_on_path(command)
 
 
-def with_hermes_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
-    """Return *env* with Hermes-managed Node directories prepended to PATH."""
+def with_opencodon_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
+    """Return *env* with opencodon-managed Node directories prepended to PATH."""
     merged = dict(os.environ if env is None else env)
     existing = merged.get("PATH", "")
     parts = [p for p in existing.split(os.pathsep) if p]
-    managed = [str(path) for path in iter_hermes_node_dirs() if path.is_dir()]
+    managed = [str(path) for path in iter_opencodon_node_dirs() if path.is_dir()]
     for entry in reversed(managed):
         if entry not in parts:
             parts.insert(0, entry)
@@ -582,7 +552,7 @@ def agent_browser_runnable(path: str | None) -> bool:
     agent-browser's npm ``postinstall`` re-points a *global* install symlink
     (e.g. ``/opt/homebrew/bin/agent-browser``) at our local
     ``node_modules/agent-browser/bin/...`` binary, which then disappears on the
-    next ``hermes update`` — leaving a **dangling symlink** that ``which`` still
+    next ``opencodon update`` — leaving a **dangling symlink** that ``which`` still
     reports but exec fails on with exit 127 (issue #48521). Callers that trust
     such a path silently break every browser tool.
 
@@ -615,7 +585,7 @@ def agent_browser_runnable(path: str | None) -> bool:
             [path, "--version"],
             capture_output=True,
             timeout=10,
-            env=with_hermes_node_path(),
+            env=with_opencodon_node_path(),
             creationflags=windows_hide_flags(),
         )
     except (OSError, subprocess.TimeoutExpired, ValueError):
@@ -679,7 +649,7 @@ def display_opencodon_home() -> str:
 
         default:  ``~/.opencodon``
         profile:  ``~/.opencodon/profiles/coder``
-        custom:   ``/opt/hermes-custom``
+        custom:   ``/opt/opencodon-custom``
 
     Use this in **user-facing** print/log messages instead of hardcoding
     ``~/.opencodon``.  For code that needs a real ``Path``, use
@@ -700,7 +670,7 @@ def secure_parent_dir(path: Path) -> None:
     prevent catastrophic host bricking when ``OPENCODON_HOME`` or other path
     env vars resolve to an unexpected location.
 
-    See https://github.com/NousResearch/hermes-agent/issues/25821.
+    upstream#25821
     """
     parent = path.parent.resolve()
     # Refuse root and its direct children (/usr, /home, /var, /tmp, …).
@@ -770,9 +740,9 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """Return the OS user's real home directory, avoiding Hermes profile HOME.
+    """Return the OS user's real home directory, avoiding opencodon profile HOME.
 
-    ``OPENCODON_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
+    ``OPENCODON_HOME`` scopes opencodon state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
     If a parent process is already running with ``HOME={OPENCODON_HOME}/home``,
     this helper repairs back to the account home when possible.
@@ -826,7 +796,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: dict[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place."""
+    """Apply opencodon' subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
         env["OPENCODON_REAL_HOME"] = real_home
@@ -1110,7 +1080,7 @@ def wsl_unc_path_to_posix(path: str) -> str | None:
 
 
 def translate_cwd_for_wsl_backend(cwd: str) -> str:
-    """Normalize a cross-boundary cwd when Hermes itself runs inside WSL.
+    """Normalize a cross-boundary cwd when opencodon itself runs inside WSL.
 
     A Windows-host UI (native picker / drive path / ``\\\\wsl.localhost\\`` UNC)
     can hand the WSL backend a path it can't ``chdir`` into. Map it to the POSIX
@@ -1144,7 +1114,7 @@ def is_container() -> bool:
 
     Result is cached for the process lifetime.  Import-safe — no heavy deps.
 
-    See: NousResearch/hermes-agent#47111
+    See: upstream#47111
     """
     global _container_detected
     if _container_detected is not None:
@@ -1231,7 +1201,7 @@ def apply_ipv4_preference(force: bool = False) -> None:
     import socket
 
     # Guard against double-patching
-    if getattr(socket.getaddrinfo, "_hermes_ipv4_patched", False):
+    if getattr(socket.getaddrinfo, "_opencodon_ipv4_patched", False):
         return
 
     _original_getaddrinfo = socket.getaddrinfo
@@ -1247,7 +1217,7 @@ def apply_ipv4_preference(force: bool = False) -> None:
                 return _original_getaddrinfo(host, port, family, type, proto, flags)
         return _original_getaddrinfo(host, port, family, type, proto, flags)
 
-    _ipv4_getaddrinfo._hermes_ipv4_patched = True  # type: ignore[attr-defined]
+    _ipv4_getaddrinfo._opencodon_ipv4_patched = True  # type: ignore[attr-defined]
     socket.getaddrinfo = _ipv4_getaddrinfo  # type: ignore[assignment]
 
 

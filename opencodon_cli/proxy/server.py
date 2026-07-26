@@ -89,7 +89,7 @@ def create_app(adapter: UpstreamAdapter) -> "web.Application":
     """Build the aiohttp application bound to a specific upstream adapter."""
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `hermes proxy`. Run `hermes setup` to install it."
+            "aiohttp is required for `opencodon proxy`. Run `opencodon setup` to install it."
         )
 
     app = web.Application(client_max_size=MAX_REQUEST_BYTES)
@@ -255,7 +255,7 @@ async def run_server(
     """
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `hermes proxy`. Run `hermes setup` to install it."
+            "aiohttp is required for `opencodon proxy`. Run `opencodon setup` to install it."
         )
 
     app = create_app(adapter)

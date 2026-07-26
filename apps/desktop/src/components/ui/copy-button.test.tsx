@@ -11,7 +11,7 @@ describe('CopyButton i18n', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses localized default labels and copied feedback', async () => {
+  it('uses default labels and copied feedback', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -19,18 +19,18 @@ describe('CopyButton i18n', () => {
     })
 
     render(
-      <I18nProvider configClient={null} initialLocale="zh">
+      <I18nProvider configClient={null} initialLocale="en">
         <CopyButton text="hello" />
       </I18nProvider>
     )
 
-    const button = screen.getByRole('button', { name: '复制' })
+    const button = screen.getByRole('button', { name: 'Copy' })
 
-    expect(button.textContent).toContain('复制')
+    expect(button.textContent).toContain('Copy')
     fireEvent.click(button)
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('hello'))
-    await waitFor(() => expect(screen.getByRole('button', { name: '已复制' })).toBeTruthy())
-    expect(screen.getByRole('button', { name: '已复制' }).textContent).toContain('已复制')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy())
+    expect(screen.getByRole('button', { name: 'Copied' }).textContent).toContain('Copied')
   })
 })

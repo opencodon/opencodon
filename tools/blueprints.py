@@ -5,7 +5,7 @@ agent loads) that additionally declares an automation schedule in its
 frontmatter:
 
     metadata:
-      hermes:
+      opencodon:
         blueprint:
           schedule: "0 9 * * *"     # presence of `blueprint:` marks it runnable
           deliver: origin            # optional (default "origin")
@@ -15,7 +15,7 @@ frontmatter:
 Because a blueprint is just a skill, it flows through the ENTIRE existing
 skills-hub pipeline for free — search, inspect, quarantine, security scan,
 install, lock-file provenance, audit log, taps, the centralized index, and
-`hermes skills publish` for sharing. No new source type, no new store, no new
+`opencodon skills publish` for sharing. No new source type, no new store, no new
 transport. This module is the thin bridge between that skill metadata and the
 existing cron `create_job()` API:
 
@@ -106,8 +106,8 @@ def parse_blueprint(skill_md_text: str) -> Optional[BlueprintSpec]:
     name = str(fm.get("name", "")).strip()
 
     meta = fm.get("metadata")
-    hermes = meta.get("hermes") if isinstance(meta, dict) else None
-    blueprint = hermes.get("blueprint") if isinstance(hermes, dict) else None
+    opencodon = meta.get("opencodon") if isinstance(meta, dict) else None
+    blueprint = opencodon.get("blueprint") if isinstance(opencodon, dict) else None
     if blueprint is None:
         return None
     if not isinstance(blueprint, dict):
@@ -248,7 +248,7 @@ def export_blueprint(job: Dict[str, Any], body: str, *, blueprint_name: Optional
 
     The inverse of ``create_blueprint_job``: take a cron job a user already built
     and emit a SKILL.md (with a ``metadata.opencodon.blueprint`` block) they can hand
-    to ``hermes skills publish`` to share. ``body`` is the plain-language
+    to ``opencodon skills publish`` to share. ``body`` is the plain-language
     description / instructions that become the SKILL.md body.
     """
     import yaml
@@ -288,7 +288,7 @@ def export_blueprint(job: Dict[str, Any], body: str, *, blueprint_name: Optional
         "version": "1.0.0",
         "license": "MIT",
         "metadata": {
-            "hermes": {
+            "opencodon": {
                 "tags": ["blueprint", "automation"],
                 "blueprint": blueprint_block,
             }

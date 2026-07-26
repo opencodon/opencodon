@@ -29,8 +29,8 @@ COMMON_OPENCODON_TOOLS = ["read_file", "search_files", "terminal", "patch", "wri
 
 
 class TestToolKindMap:
-    def test_all_hermes_tools_have_kind(self):
-        """Every common hermes tool should appear in TOOL_KIND_MAP."""
+    def test_all_opencodon_tools_have_kind(self):
+        """Every common opencodon tool should appear in TOOL_KIND_MAP."""
         for tool in COMMON_OPENCODON_TOOLS:
             assert tool in TOOL_KIND_MAP, f"{tool} missing from TOOL_KIND_MAP"
 
@@ -137,15 +137,15 @@ class TestBuildToolTitle:
         assert title == "skill view (github-pitfalls/references/api.md)"
 
     def test_execute_code_title_includes_first_code_line(self):
-        title = build_tool_title("execute_code", {"code": "\nfrom hermes_tools import terminal\nprint('done')"})
-        assert title == "python: from hermes_tools import terminal"
+        title = build_tool_title("execute_code", {"code": "\nfrom opencodon_tools import terminal\nprint('done')"})
+        assert title == "python: from opencodon_tools import terminal"
 
     def test_skill_manage_title_includes_action_and_target(self):
         title = build_tool_title(
             "skill_manage",
-            {"action": "patch", "name": "hermes-agent-operations", "file_path": "references/acp.md"},
+            {"action": "patch", "name": "opencodon-operations", "file_path": "references/acp.md"},
         )
-        assert title == "skill patch: hermes-agent-operations/references/acp.md"
+        assert title == "skill patch: opencodon-operations/references/acp.md"
 
     def test_unknown_tool_uses_name(self):
         title = build_tool_title("some_new_tool", {"foo": "bar"})
@@ -303,16 +303,16 @@ class TestBuildToolStart:
             "skill_manage",
             {
                 "action": "patch",
-                "name": "hermes-agent-operations",
+                "name": "opencodon-operations",
                 "file_path": "references/acp.md",
                 "old_string": "old advice",
                 "new_string": "new advice",
             },
         )
         assert result.kind == "edit"
-        assert result.title == "skill patch: hermes-agent-operations/references/acp.md"
+        assert result.title == "skill patch: opencodon-operations/references/acp.md"
         assert isinstance(result.content[0], FileEditToolCallContent)
-        assert result.content[0].path == "skills/hermes-agent-operations/references/acp.md"
+        assert result.content[0].path == "skills/opencodon-operations/references/acp.md"
         assert result.content[0].old_text == "old advice"
         assert result.content[0].new_text == "new advice"
         assert result.raw_input is None
@@ -454,17 +454,17 @@ class TestBuildToolComplete:
         result = build_tool_complete(
             "tc-skill-manage",
             "skill_manage",
-            '{"success":true,"message":"Patched references/opencodon-acp-zed-rendering.md in skill \'hermes-agent-operations\' (1 replacement)."}',
+            '{"success":true,"message":"Patched references/opencodon-acp-zed-rendering.md in skill \'opencodon-operations\' (1 replacement)."}',
             function_args={
                 "action": "patch",
-                "name": "hermes-agent-operations",
+                "name": "opencodon-operations",
                 "file_path": "references/opencodon-acp-zed-rendering.md",
             },
         )
         text = result.content[0].content.text
         assert "**✅ Skill updated**" in text
         assert "`patch`" in text
-        assert "`hermes-agent-operations`" in text
+        assert "`opencodon-operations`" in text
         assert "references/opencodon-acp-zed-rendering.md" in text
         assert "{\"success\"" not in text
         assert result.raw_output is None
@@ -654,13 +654,13 @@ class TestBuildToolComplete:
     def test_build_tool_complete_for_write_file_summarizes_without_repeating_diff(self, tmp_path):
         target = tmp_path / "diff-test.txt"
         snapshot = type("Snapshot", (), {"paths": [target], "before": {str(target): None}})()
-        target.write_text("hello from hermes\n", encoding="utf-8")
+        target.write_text("hello from opencodon\n", encoding="utf-8")
 
         result = build_tool_complete(
             "tc-wf1",
             "write_file",
             '{"bytes_written": 18, "dirs_created": false}',
-            function_args={"path": str(target), "content": "hello from hermes\n"},
+            function_args={"path": str(target), "content": "hello from opencodon\n"},
             snapshot=snapshot,
         )
         assert isinstance(result, ToolCallProgress)

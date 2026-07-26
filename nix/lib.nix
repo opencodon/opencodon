@@ -71,7 +71,7 @@ let
   # Python source: everything except JS/TS/docs/infra directories.
   pythonSrc = lib.cleanSourceWith {
     src = repoRoot;
-    name = "hermes-python-source";
+    name = "opencodon-python-source";
     filter =
       path: type:
       let
@@ -86,15 +86,9 @@ let
           ++ [
             # Documentation
             "docs"
-            "website"
             # CI/infra
             "docker"
             ".github"
-            # Content/examples
-            "infographic"
-            "datagen-config-examples"
-            # unused packaging infra
-            "packaging"
             # Test infrastructure
             "tests"
             # Plan/temp files
@@ -228,10 +222,10 @@ in
   # e.g. apps/desktop depends on apps/shared.
   #
   # Usage:
-  #   npm = hermesNpmLib.mkNpmPassthru { dirs = [ "ui-tui" ]; };
-  #   npm = hermesNpmLib.mkNpmPassthru { dirs = [ "apps/desktop" "apps/shared" ]; };
+  #   npm = opencodonNpmLib.mkNpmPassthru { dirs = [ "ui-tui" ]; };
+  #   npm = opencodonNpmLib.mkNpmPassthru { dirs = [ "apps/desktop" "apps/shared" ]; };
   #   pkgs.buildNpmPackage (npm // {
-  #     pname = "hermes-tui";
+  #     pname = "opencodon-tui";
   #     inherit version;
   #     buildPhase = '' ... '';
   #     installPhase = '' ... '';

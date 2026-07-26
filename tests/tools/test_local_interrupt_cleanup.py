@@ -6,7 +6,7 @@ or explicit sys.exit from some caller), the child subprocess must be killed
 before the exception propagates — otherwise the local backend's use of
 os.setsid leaves an orphan with PPID=1.
 
-The live repro that motivated this: hermes chat -q ... 'sleep 300', SIGTERM
+The live repro that motivated this: opencodon chat -q ... 'sleep 300', SIGTERM
 to the python process, sleep 300 survived with PPID=1 for the full 300 s
 because _wait_for_process never got to call _kill_process before python
 died.  See commit message for full context.
@@ -75,7 +75,7 @@ def test_kill_process_uses_cached_pgid_if_wrapper_already_exited(monkeypatch):
     env = object.__new__(LocalEnvironment)
     proc = SimpleNamespace(
         pid=12345,
-        _hermes_pgid=67890,
+        _opencodon_pgid=67890,
         poll=lambda: 0,
         kill=lambda: None,
     )

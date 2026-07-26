@@ -11,7 +11,7 @@ import tools.mcp_tool
 
 def test_display_toolset_name_strips_legacy_suffix():
     assert banner._display_toolset_name("homeassistant_tools") == "homeassistant"
-    assert banner._display_toolset_name("honcho_tools") == "honcho"
+    assert banner._display_toolset_name("extmem_tools") == "extmem"
     assert banner._display_toolset_name("web_tools") == "web"
 
 
@@ -36,7 +36,7 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
                 ["web"],
                 [
                     {"name": "homeassistant", "tools": ["ha_call_service"]},
-                    {"name": "honcho", "tools": ["honcho_conclude"]},
+                    {"name": "extmem", "tools": ["extmem_conclude"]},
                 ],
             ),
         ),
@@ -63,10 +63,10 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
 
     output = console.export_text()
     assert "homeassistant:" in output
-    assert "honcho:" in output
+    assert "extmem:" in output
     assert "web:" in output
     assert "homeassistant_tools:" not in output
-    assert "honcho_tools:" not in output
+    assert "extmem_tools:" not in output
     assert "web_tools:" not in output
 
 
@@ -79,7 +79,7 @@ def test_build_welcome_banner_title_is_hyperlinked_to_release():
     import tools.mcp_tool as _mcp
 
     _banner._latest_release_cache = None
-    tag_url = ("v2026.4.23", "https://github.com/NousResearch/hermes-agent/releases/tag/v2026.4.23")
+    tag_url = ("v2026.4.23", "https://github.com/opencodon/opencodon/releases/tag/v2026.4.23")
 
     buf = io.StringIO()
     with (

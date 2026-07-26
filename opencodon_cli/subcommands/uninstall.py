@@ -1,4 +1,4 @@
-"""``hermes uninstall`` subcommand parser.
+"""``opencodon uninstall`` subcommand parser.
 
 Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -16,8 +16,8 @@ def build_uninstall_parser(subparsers, *, cmd_uninstall: Callable) -> None:
     # =========================================================================
     uninstall_parser = subparsers.add_parser(
         "uninstall",
-        help="Uninstall Hermes Agent",
-        description="Remove Hermes Agent from your system. Can keep configs/data for reinstall.",
+        help="Uninstall opencodon",
+        description="Remove opencodon from your system. Can keep configs/data for reinstall.",
     )
     uninstall_parser.add_argument(
         "--full",

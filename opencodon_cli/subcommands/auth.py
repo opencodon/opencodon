@@ -1,4 +1,4 @@
-"""``hermes auth`` subcommand parser.
+"""``opencodon auth`` subcommand parser.
 
 Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -31,10 +31,6 @@ def build_auth_parser(subparsers, *, cmd_auth: Callable) -> None:
     auth_add.add_argument(
         "--api-key", help="API key value (otherwise prompted securely)"
     )
-    auth_add.add_argument("--portal-url", help="Nous portal base URL")
-    auth_add.add_argument("--inference-url", help="Nous inference base URL")
-    auth_add.add_argument("--client-id", help="OAuth client id")
-    auth_add.add_argument("--scope", help="OAuth scope override")
     auth_add.add_argument(
         "--no-browser",
         action="store_true",

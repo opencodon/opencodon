@@ -6,7 +6,7 @@
 # Per-service privilege drop happens inside each service's `run` script
 # (and in main-wrapper.sh) via s6-setuidgid, not here.
 #
-# Wired into the image as /etc/cont-init.d/01-hermes-setup by the
+# Wired into the image as /etc/cont-init.d/01-opencodon-setup by the
 # Dockerfile. The shim at docker/entrypoint.sh forwards to this script
 # so external references to docker/entrypoint.sh still work.
 #
@@ -18,10 +18,10 @@
 set -eu
 
 OPENCODON_HOME="${OPENCODON_HOME:-/opt/data}"
-INSTALL_DIR="/opt/hermes"
+INSTALL_DIR="/opt/opencodon"
 
-# Drop to hermes via s6-setuidgid, but skip it when already non-root.
-as_hermes() { [ "$(id -u)" = 0 ] || { "$@"; return; }; s6-setuidgid hermes "$@"; }
+# Drop to opencodon via s6-setuidgid, but skip it when already non-root.
+as_opencodon() { [ "$(id -u)" = 0 ] || { "$@"; return; }; s6-setuidgid opencodon "$@"; }
 
 # --- Reject the unsupported `docker run --user <uid>:<gid>` start ---
 # Detect the case where the container was launched with `--user` pinned to an
@@ -30,7 +30,7 @@ as_hermes() { [ "$(id -u)" = 0 ] || { "$@"; return; }; s6-setuidgid hermes "$@";
 #
 # Under s6-overlay this no longer works: the bootstrap (UID remap, data-volume
 # ownership, config seeding) requires root, and it is skipped when the container
-# starts non-root. The baked install tree under /opt/hermes is intentionally
+# starts non-root. The baked install tree under /opt/opencodon is intentionally
 # root-owned and non-writable; mutable runtime state must live under
 # $OPENCODON_HOME. An arbitrary `--user` UID therefore cannot repair or populate
 # the data volume, and startup fails with EACCES. See #34837 for the
@@ -43,17 +43,17 @@ as_hermes() { [ "$(id -u)" = 0 ] || { "$@"; return; }; s6-setuidgid hermes "$@";
 #
 # preinit runs setuid-root (euid=0) but cont-init.d hooks run with the real UID
 # the container was started as, so `id -u` here is the host UID (e.g. 1000), and
-# `id -u hermes` is the unremapped build UID (10000) because no root-only remap
+# `id -u opencodon` is the unremapped build UID (10000) because no root-only remap
 # could run. root starts (id -u = 0) and the normal supervised drop to the
-# hermes UID are both unaffected.
+# opencodon UID are both unaffected.
 cur_uid="$(id -u)"
-if [ "$cur_uid" != 0 ] && [ "$cur_uid" != "$(id -u hermes)" ]; then
+if [ "$cur_uid" != 0 ] && [ "$cur_uid" != "$(id -u opencodon)" ]; then
     cat >&2 <<EOF
-[stage2] ERROR: container started with --user $cur_uid (an arbitrary, non-hermes UID).
+[stage2] ERROR: container started with --user $cur_uid (an arbitrary, non-opencodon UID).
 
 This is not supported under the s6-overlay image. The container bootstrap
 (UID remap, data-volume ownership, config seeding) needs to start as root,
-and the baked /opt/hermes install tree is intentionally root-owned and
+and the baked /opt/opencodon install tree is intentionally root-owned and
 non-writable, so a pinned --user UID cannot repair startup state — startup
 will fail.
 
@@ -66,7 +66,7 @@ NAS users (Synology / unRAID / UGOS) can use the PUID/PGID aliases:
 
     docker run -e PUID=\$(id -u) -e PGID=\$(id -g) ...
 
-The image remaps the hermes user to that UID/GID at boot and chowns the data
+The image remaps the opencodon user to that UID/GID at boot and chowns the data
 volume accordingly, so files land owned by your host user — the same outcome
 --user was being used for, without breaking the supervision tree.
 EOF
@@ -76,9 +76,9 @@ fi
 # --- Bootstrap OPENCODON_HOME as root ---
 # Create the directory (and any missing parents) while we still have root
 # privileges so the chown checks below see real metadata and the later
-# `s6-setuidgid hermes mkdir -p` block doesn't EACCES on root-owned
+# `s6-setuidgid opencodon mkdir -p` block doesn't EACCES on root-owned
 # ancestors. Without this, custom OPENCODON_HOME paths whose parents only
-# root can create (e.g. `OPENCODON_HOME=/home/hermes/.opencodon` in a Compose
+# root can create (e.g. `OPENCODON_HOME=/home/opencodon/.opencodon` in a Compose
 # file, or any path under a fresh / not pre-populated by the image)
 # fail on first boot with `mkdir: cannot create directory '/...': Permission
 # denied` and the cont-init hook exits non-zero. Idempotent — `mkdir -p`
@@ -104,22 +104,22 @@ validate_uid_gid() {
 OPENCODON_UID="${OPENCODON_UID:-${PUID:-}}"
 OPENCODON_GID="${OPENCODON_GID:-${PGID:-}}"
 
-if [ -n "${OPENCODON_UID:-}" ] && validate_uid_gid "$OPENCODON_UID" && [ "$OPENCODON_UID" != "$(id -u hermes)" ]; then
-    echo "[stage2] Changing hermes UID to $OPENCODON_UID"
-    usermod -u "$OPENCODON_UID" hermes
+if [ -n "${OPENCODON_UID:-}" ] && validate_uid_gid "$OPENCODON_UID" && [ "$OPENCODON_UID" != "$(id -u opencodon)" ]; then
+    echo "[stage2] Changing opencodon UID to $OPENCODON_UID"
+    usermod -u "$OPENCODON_UID" opencodon
 fi
-if [ -n "${OPENCODON_GID:-}" ] && validate_uid_gid "$OPENCODON_GID" && [ "$OPENCODON_GID" != "$(id -g hermes)" ]; then
-    echo "[stage2] Changing hermes GID to $OPENCODON_GID"
+if [ -n "${OPENCODON_GID:-}" ] && validate_uid_gid "$OPENCODON_GID" && [ "$OPENCODON_GID" != "$(id -g opencodon)" ]; then
+    echo "[stage2] Changing opencodon GID to $OPENCODON_GID"
     # -o allows non-unique GID (e.g. macOS GID 20 "staff" may already
     # exist as "dialout" in the Debian-based container image).
-    groupmod -o -g "$OPENCODON_GID" hermes 2>/dev/null || true
+    groupmod -o -g "$OPENCODON_GID" opencodon 2>/dev/null || true
 fi
 
 # --- Docker socket group membership (docker-in-docker / DooD) ---
 # When the user bind-mounts the host Docker daemon socket
 # (`-v /var/run/docker.sock:/var/run/docker.sock`) to use the `docker`
 # terminal backend from inside the container, the socket is owned by the
-# host's `docker` group (or root). The supervised hermes user (UID 10000)
+# host's `docker` group (or root). The supervised opencodon user (UID 10000)
 # is not a member of any group that matches the socket's GID, so every
 # `docker` invocation EACCES'es and `check_terminal_requirements()` fails.
 # See #16703.
@@ -131,26 +131,26 @@ fi
 # /etc/group entry whose GID matches the socket, the kernel-granted
 # supp group is silently wiped between PID 1 and the dropped process.
 # Confirmed empirically: `--group-add 998` alone leaves the dropped
-# hermes process with `Groups: 10000` (998 gone); after this hook adds
+# opencodon process with `Groups: 10000` (998 gone); after this hook adds
 # the entry, the dropped process has `Groups: 998 10000` as expected.
 #
 # Fix: detect the socket's GID at boot and ensure /etc/group has a
-# matching entry that includes hermes. Idempotent across container
+# matching entry that includes opencodon. Idempotent across container
 # restarts. Skipped silently when no socket is bind-mounted.
 #
 # Handles the awkward corner cases:
 #   - socket owned by GID 0 (root) — some Podman setups; usermod -aG root
 #   - socket GID already used by a known container group (e.g. tty=5):
 #     reuse that group's name rather than creating a duplicate
-#   - hermes is already a member of the right group (idempotent restart)
+#   - opencodon is already a member of the right group (idempotent restart)
 #   - chown/groupadd failures under rootless containers — non-fatal
 for sock in /var/run/docker.sock /run/docker.sock; do
     [ -S "$sock" ] || continue
     sock_gid=$(stat -c '%g' "$sock" 2>/dev/null) || continue
     [ -n "$sock_gid" ] || continue
     # Already a member? Nothing to do.
-    if id -G hermes 2>/dev/null | tr ' ' '\n' | grep -qx "$sock_gid"; then
-        echo "[stage2] hermes already in group $sock_gid for $sock"
+    if id -G opencodon 2>/dev/null | tr ' ' '\n' | grep -qx "$sock_gid"; then
+        echo "[stage2] opencodon already in group $sock_gid for $sock"
         break
     fi
     # Resolve or create a group name for this GID.
@@ -163,24 +163,24 @@ for sock in /var/run/docker.sock /run/docker.sock; do
         fi
         echo "[stage2] Created group $sock_group (GID $sock_gid) for Docker socket"
     fi
-    if usermod -aG "$sock_group" hermes 2>/dev/null; then
-        echo "[stage2] Added hermes to group $sock_group (GID $sock_gid) for $sock"
+    if usermod -aG "$sock_group" opencodon 2>/dev/null; then
+        echo "[stage2] Added opencodon to group $sock_group (GID $sock_gid) for $sock"
     else
-        echo "[stage2] Warning: usermod -aG $sock_group hermes failed; docker backend may fail with EACCES"
+        echo "[stage2] Warning: usermod -aG $sock_group opencodon failed; docker backend may fail with EACCES"
     fi
     break
 done
 
 # --- Fix ownership of data volume ---
 # When OPENCODON_UID is remapped or the top-level $OPENCODON_HOME isn't owned by
-# the runtime hermes UID, restore ownership to hermes — but ONLY for the
-# directories hermes actually writes to. The full $OPENCODON_HOME may be a
+# the runtime opencodon UID, restore ownership to opencodon — but ONLY for the
+# directories opencodon actually writes to. The full $OPENCODON_HOME may be a
 # host-mounted bind containing unrelated user files; `chown -R` would
 # silently destroy host ownership of those (see issue #19788).
 #
-# The canonical list of hermes-owned subdirs is the same one the s6-setuidgid
+# The canonical list of opencodon-owned subdirs is the same one the s6-setuidgid
 # mkdir -p block below seeds. Keep them in sync if the seed list changes.
-actual_hermes_uid=$(id -u hermes)
+actual_opencodon_uid=$(id -u opencodon)
 
 path_has_symlink_component() {
     path="$1"
@@ -211,49 +211,49 @@ refuse_symlinked_path() {
     return 1
 }
 
-chown_hermes_tree() {
+chown_opencodon_tree() {
     target="$1"
     if refuse_symlinked_path "recursive chown" "$target"; then
         return 0
     fi
-    chown -R hermes:hermes "$target" 2>/dev/null || \
+    chown -R opencodon:opencodon "$target" 2>/dev/null || \
         echo "[stage2] Warning: chown $target failed (rootless container?) — continuing"
 }
 
 needs_chown=false
-if [ "$(stat -c %u "$OPENCODON_HOME" 2>/dev/null)" != "$actual_hermes_uid" ]; then
+if [ "$(stat -c %u "$OPENCODON_HOME" 2>/dev/null)" != "$actual_opencodon_uid" ]; then
     needs_chown=true
 fi
 if [ "$needs_chown" = true ]; then
-    echo "[stage2] Fixing ownership of $OPENCODON_HOME (targeted) to hermes ($actual_hermes_uid)"
+    echo "[stage2] Fixing ownership of $OPENCODON_HOME (targeted) to opencodon ($actual_opencodon_uid)"
     # In rootless Podman the container's "root" is mapped to an
     # unprivileged host UID — chown will fail. That's fine: the volume
     # is already owned by the mapped user on the host side.
     #
     # Top-level $OPENCODON_HOME: chown the directory itself (not its contents)
-    # so hermes can mkdir new subdirs but bind-mounted host files keep
+    # so opencodon can mkdir new subdirs but bind-mounted host files keep
     # their existing ownership.
     if refuse_symlinked_path "chown" "$OPENCODON_HOME"; then
         :
     else
-        chown hermes:hermes "$OPENCODON_HOME" 2>/dev/null || \
+        chown opencodon:opencodon "$OPENCODON_HOME" 2>/dev/null || \
             echo "[stage2] Warning: chown $OPENCODON_HOME failed (rootless container?) — continuing"
     fi
-    # Hermes-owned subdirs: recursive chown is safe here because these are
-    # created and managed exclusively by hermes (see the s6-setuidgid mkdir
+    # opencodon-owned subdirs: recursive chown is safe here because these are
+    # created and managed exclusively by opencodon (see the s6-setuidgid mkdir
     # -p block below for the canonical list).
     for sub in cron sessions logs hooks memories skills skins plans workspace home profiles pairing platforms/pairing lazy-packages; do
         if [ -e "$OPENCODON_HOME/$sub" ]; then
-            chown_hermes_tree "$OPENCODON_HOME/$sub"
+            chown_opencodon_tree "$OPENCODON_HOME/$sub"
         fi
     done
 fi
 
 # --- Immutable install tree ---
 # Do not chown runtime code or dependency trees under $INSTALL_DIR back to the
-# hermes user. Hosted/container instances keep mutable state under
+# opencodon user. Hosted/container instances keep mutable state under
 # $OPENCODON_HOME (/opt/data) and run with PYTHONDONTWRITEBYTECODE plus
-# OPENCODON_DISABLE_LAZY_INSTALLS=1. Keeping /opt/hermes root-owned and
+# OPENCODON_DISABLE_LAZY_INSTALLS=1. Keeping /opt/opencodon root-owned and
 # non-writable prevents an agent session from self-modifying the installed
 # source, venv, TUI bundle, or node_modules and bricking the gateway.
 #
@@ -263,53 +263,53 @@ fi
 # OPENCODON_LAZY_INSTALL_TARGET). That dir is appended to the END of sys.path,
 # so a package installed there can only ADD modules — it can never shadow or
 # break a core module, which is what keeps the sealed-venv guarantee intact
-# even though installs are re-enabled. The dir is seeded + chowned to hermes
+# even though installs are re-enabled. The dir is seeded + chowned to opencodon
 # in the mkdir/chown blocks above so first-use installs succeed as the
 # unprivileged runtime user, and it persists across container recreates /
 # image updates (an ABI stamp wipes it if a rebuild bumps the interpreter).
 
-# Always reset ownership of $OPENCODON_HOME/profiles to hermes on every
+# Always reset ownership of $OPENCODON_HOME/profiles to opencodon on every
 # boot. Profile dirs and files can land owned by root when commands
-# are invoked via `docker exec <container> hermes …` (which defaults
+# are invoked via `docker exec <container> opencodon …` (which defaults
 # to root unless `-u` is passed), and that breaks the cont-init
-# reconciler (02-reconcile-profiles) which runs as hermes and walks
+# reconciler (02-reconcile-profiles) which runs as opencodon and walks
 # the profiles dir. Idempotent; skipped on rootless containers where
 # chown would fail.
 if [ -d "$OPENCODON_HOME/profiles" ]; then
-    chown_hermes_tree "$OPENCODON_HOME/profiles"
+    chown_opencodon_tree "$OPENCODON_HOME/profiles"
 fi
 
 # Always reset ownership of $OPENCODON_HOME/cron on every boot for the same
 # docker-exec/root-write reason as profiles/. The cron scheduler state
-# (jobs.json) must stay readable by the unprivileged hermes runtime even
+# (jobs.json) must stay readable by the unprivileged opencodon runtime even
 # after root-context maintenance commands or scheduler writes.
 if [ -d "$OPENCODON_HOME/cron" ]; then
-    chown_hermes_tree "$OPENCODON_HOME/cron"
+    chown_opencodon_tree "$OPENCODON_HOME/cron"
 fi
 
 # Always reset ownership of pairing data on every boot, same docker-exec/
 # root-write reason as profiles/ and cron/. `docker exec <container>
-# hermes pairing approve …` defaults to uid=0 and writes 0600 root-owned
-# approval files that the unprivileged hermes gateway cannot read,
+# opencodon pairing approve …` defaults to uid=0 and writes 0600 root-owned
+# approval files that the unprivileged opencodon gateway cannot read,
 # silently leaving the approved user unauthorized (#10270). The targeted
 # data-volume chown above only runs when the top-level $OPENCODON_HOME is
 # mis-owned, so warm boots skip it — this block makes a container restart
 # self-heal. Tiny directory (a handful of small JSON files), so the cost
 # is negligible.
 if [ -d "$OPENCODON_HOME/platforms/pairing" ]; then
-    chown_hermes_tree "$OPENCODON_HOME/platforms/pairing"
+    chown_opencodon_tree "$OPENCODON_HOME/platforms/pairing"
 fi
 # Legacy location (pre-consolidated layout).
 if [ -d "$OPENCODON_HOME/pairing" ]; then
-    chown_hermes_tree "$OPENCODON_HOME/pairing"
+    chown_opencodon_tree "$OPENCODON_HOME/pairing"
 fi
 
-# Reset ownership of hermes-owned top-level state files on every boot.
-# The targeted data-volume chown above only covers hermes-owned
+# Reset ownership of opencodon-owned top-level state files on every boot.
+# The targeted data-volume chown above only covers opencodon-owned
 # *subdirectories*; loose state files living directly under $OPENCODON_HOME
 # are missed. When those files are created or rewritten by
-# `docker exec <container> hermes …` (root unless `-u` is passed) they
-# land root-owned, and the unprivileged hermes runtime then hits
+# `docker exec <container> opencodon …` (root unless `-u` is passed) they
+# land root-owned, and the unprivileged opencodon runtime then hits
 # PermissionError on next startup (e.g. gateway.lock / state.db /
 # auth.json), producing a gateway restart loop.
 #
@@ -330,31 +330,31 @@ for f in \
         if refuse_symlinked_path "chown" "$OPENCODON_HOME/$f"; then
             :
         else
-            chown hermes:hermes "$OPENCODON_HOME/$f" 2>/dev/null || true
+            chown opencodon:opencodon "$OPENCODON_HOME/$f" 2>/dev/null || true
         fi
     fi
 done
 
 # --- config.yaml permissions ---
-# Ensure config.yaml is readable by the hermes runtime user even if it
+# Ensure config.yaml is readable by the opencodon runtime user even if it
 # was edited on the host after initial ownership setup.
 if [ -f "$OPENCODON_HOME/config.yaml" ]; then
     if refuse_symlinked_path "chown/chmod" "$OPENCODON_HOME/config.yaml"; then
         :
     else
-        chown hermes:hermes "$OPENCODON_HOME/config.yaml" 2>/dev/null || true
+        chown opencodon:opencodon "$OPENCODON_HOME/config.yaml" 2>/dev/null || true
         chmod 640 "$OPENCODON_HOME/config.yaml" 2>/dev/null || true
     fi
 fi
 
-# --- Seed directory structure as hermes user ---
-# Run as hermes via s6-setuidgid so dirs end up owned correctly (matters
+# --- Seed directory structure as opencodon user ---
+# Run as opencodon via s6-setuidgid so dirs end up owned correctly (matters
 # under rootless Podman where chown back to root would fail).
 #
 # Use direct `mkdir -p` invocation (no `sh -c "..."` wrapper) so the
 # shell isn't a second interpreter — defends against $OPENCODON_HOME values
 # containing shell metacharacters. PR #30136 review item O2.
-as_hermes mkdir -p \
+as_opencodon mkdir -p \
     "$OPENCODON_HOME/backups" \
     "$OPENCODON_HOME/cron" \
     "$OPENCODON_HOME/sessions" \
@@ -373,17 +373,17 @@ as_hermes mkdir -p \
 
 # --- Install-method stamp ---
 # The 'docker' stamp is baked into the immutable install tree at
-# /opt/hermes/.install_method (see Dockerfile), NOT written here into
+# /opt/opencodon/.install_method (see Dockerfile), NOT written here into
 # $OPENCODON_HOME. detect_install_method() reads the code-scoped stamp first.
 #
 # Why we no longer stamp $OPENCODON_HOME: it is a shared DATA volume, commonly
 # bind-mounted from the host (~/.opencodon:/opt/data) and sometimes shared with a
 # host-side Desktop/CLI install. Stamping 'docker' here clobbered that host
 # install's marker, so its in-app updater read 'docker' and refused to run
-# 'hermes update'. To heal homes already poisoned by older images, remove a
+# 'opencodon update'. To heal homes already poisoned by older images, remove a
 # stale 'docker' stamp from $OPENCODON_HOME if one is present (the host install's
 # own installer re-creates its code-scoped stamp; a genuine container relies on
-# the baked /opt/hermes stamp, so deleting the data-dir copy is safe).
+# the baked /opt/opencodon stamp, so deleting the data-dir copy is safe).
 if [ -f "$OPENCODON_HOME/.install_method" ]; then
     stamped="$(tr -d '[:space:]' < "$OPENCODON_HOME/.install_method" 2>/dev/null || true)"
     if [ "$stamped" = "docker" ]; then
@@ -399,7 +399,7 @@ seed_one() {
         if refuse_symlinked_path "seed" "$OPENCODON_HOME/$dest"; then
             :
         else
-            as_hermes cp "$INSTALL_DIR/$src" "$OPENCODON_HOME/$dest"
+            as_opencodon cp "$INSTALL_DIR/$src" "$OPENCODON_HOME/$dest"
         fi
     fi
 }
@@ -414,7 +414,7 @@ if [ -f "$OPENCODON_HOME/.env" ]; then
     if refuse_symlinked_path "chown/chmod" "$OPENCODON_HOME/.env"; then
         :
     else
-        chown hermes:hermes "$OPENCODON_HOME/.env" 2>/dev/null || true
+        chown opencodon:opencodon "$OPENCODON_HOME/.env" 2>/dev/null || true
         chmod 600 "$OPENCODON_HOME/.env" 2>/dev/null || true
     fi
 fi
@@ -422,11 +422,11 @@ fi
 # --- Migrate persisted config schema ---
 # Docker image upgrades replace the code under $INSTALL_DIR but preserve
 # $OPENCODON_HOME on the mounted volume. Run the same safe, non-interactive
-# config-schema migrations that `hermes update` runs for non-Docker installs,
+# config-schema migrations that `opencodon update` runs for non-Docker installs,
 # after first-boot seeding and before supervised gateway services start.
 # Set OPENCODON_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
 if [ -f "$OPENCODON_HOME/config.yaml" ]; then
-    s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/scripts/docker_config_migrate.py" \
+    s6-setuidgid opencodon "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/scripts/docker_config_migrate.py" \
         || echo "[stage2] Warning: docker_config_migrate.py failed; continuing"
 fi
 
@@ -438,7 +438,7 @@ if [ ! -f "$OPENCODON_HOME/auth.json" ] && [ -n "${OPENCODON_AUTH_JSON_BOOTSTRAP
         :
     else
         printf '%s' "$OPENCODON_AUTH_JSON_BOOTSTRAP" > "$OPENCODON_HOME/auth.json"
-        chown hermes:hermes "$OPENCODON_HOME/auth.json" 2>/dev/null || true
+        chown opencodon:opencodon "$OPENCODON_HOME/auth.json" 2>/dev/null || true
         chmod 600 "$OPENCODON_HOME/auth.json"
     fi
 fi
@@ -462,7 +462,7 @@ if [ -f "$OPENCODON_HOME/auth.json" ] && [ -n "${OPENCODON_AUTH_JSON_REBOOTSTRAP
     if refuse_symlinked_path "reseed" "$OPENCODON_HOME/auth.json"; then
         :
     else
-        s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" \
+        s6-setuidgid opencodon "$INSTALL_DIR/.venv/bin/python" \
             "$INSTALL_DIR/scripts/docker_rebootstrap_nous_session.py" \
             "$OPENCODON_HOME/auth.json" \
             || echo "[stage2] Warning: docker_rebootstrap_nous_session.py failed; continuing"
@@ -500,7 +500,7 @@ if [ ! -f "$OPENCODON_HOME/gateway_state.json" ] && \
         :
     else
         printf '{"gateway_state":"running"}\n' > "$OPENCODON_HOME/gateway_state.json"
-        chown hermes:hermes "$OPENCODON_HOME/gateway_state.json" 2>/dev/null || true
+        chown opencodon:opencodon "$OPENCODON_HOME/gateway_state.json" 2>/dev/null || true
         chmod 644 "$OPENCODON_HOME/gateway_state.json"
     fi
 fi
@@ -512,22 +512,22 @@ fi
 # the python binary's own bin-stub already sets up (sys.path is rooted
 # at the venv's site-packages by virtue of running .venv/bin/python).
 if [ -d "$INSTALL_DIR/skills" ]; then
-    as_hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
+    as_opencodon "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
 
 # --- Discover agent-browser's Chromium binary ---
 # The image's Dockerfile runs `npx playwright install chromium`, which
-# populates ``$PLAYWRIGHT_BROWSERS_PATH`` (=/opt/hermes/.playwright) with
+# populates ``$PLAYWRIGHT_BROWSERS_PATH`` (=/opt/opencodon/.playwright) with
 # a ``chromium_headless_shell-<build>/chrome-headless-shell-linux64/``
-# directory. agent-browser (the runtime CLI Hermes spawns for the
+# directory. agent-browser (the runtime CLI opencodon spawns for the
 # browser tool) doesn't recognise this layout in its own cache scan and
 # fails with "Auto-launch failed: Chrome not found" — even though the
 # binary is right there (#15697).
 #
 # Fix: locate the binary at boot and export ``AGENT_BROWSER_EXECUTABLE_PATH``
 # via /run/s6/container_environment so the `with-contenv` shebang on
-# main-wrapper.sh propagates it into the supervised ``hermes`` process
+# main-wrapper.sh propagates it into the supervised ``opencodon`` process
 # and thence to agent-browser subprocesses.
 #
 # - Skipped when the user has already set ``AGENT_BROWSER_EXECUTABLE_PATH``

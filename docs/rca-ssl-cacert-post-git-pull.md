@@ -1,15 +1,15 @@
-# RCA: SSL CA cert bundle corruption after `hermes update`
+# RCA: SSL CA cert bundle corruption after `opencodon update`
 
 **Status:** resolved by `fix(ssl): surface broken CA bundles before provider calls`
 **Severity:** P2 — degrades the agent into opaque provider/client failures until the user repairs deps or CA configuration.
 
 ## Summary
 
-A partial `hermes update`, interrupted venv repair, or stale CA-bundle environment variable can leave Python TLS configuration pointing at a missing, empty, or unloadable CA bundle. The first outbound HTTPS client creation or request can then fail with a raw `FileNotFoundError: [Errno 2] No such file or directory` or a low-level SSL error that does not name the broken CA path.
+A partial `opencodon update`, interrupted venv repair, or stale CA-bundle environment variable can leave Python TLS configuration pointing at a missing, empty, or unloadable CA bundle. The first outbound HTTPS client creation or request can then fail with a raw `FileNotFoundError: [Errno 2] No such file or directory` or a low-level SSL error that does not name the broken CA path.
 
 ## Root cause
 
-Hermes uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
+opencodon uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
 
 - `OPENCODON_CA_BUNDLE`
 - `SSL_CERT_FILE`
@@ -17,7 +17,7 @@ Hermes uses OpenAI/httpx and requests-based clients for provider calls, model me
 - `CURL_CA_BUNDLE`
 - the bundled `certifi` package's `cacert.pem`
 
-When the venv is partially refreshed, or when one of those env vars points at a file that no longer exists, provider client construction can fail before Hermes has enough context to produce a useful message.
+When the venv is partially refreshed, or when one of those env vars points at a file that no longer exists, provider client construction can fail before opencodon has enough context to produce a useful message.
 
 ## Fix
 
@@ -41,13 +41,13 @@ Repair: python -m pip install --force-reinstall certifi openai httpx
 If you configured a custom corporate CA bundle, fix or unset the broken CA bundle environment variable.
 ```
 
-For a normal corrupted Hermes venv, reinstall the affected client dependencies:
+For a normal corrupted opencodon venv, reinstall the affected client dependencies:
 
 ```bash
 python -m pip install --force-reinstall certifi openai httpx
 ```
 
-For a custom/corporate CA setup, fix the env var so it points at a real PEM bundle, or unset it if Hermes should use the bundled `certifi` store.
+For a custom/corporate CA setup, fix the env var so it points at a real PEM bundle, or unset it if opencodon should use the bundled `certifi` store.
 
 ## Environment escape hatch
 

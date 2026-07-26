@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 from toolsets import resolve_toolset, get_toolset, validate_toolset
 
 
-class TestHermesApiServerToolset:
+class TestOpencodonApiServerToolset:
     """Tests for the opencodon-api-server toolset definition."""
 
     def test_toolset_exists(self):

@@ -4,7 +4,7 @@ Vision Tools Module
 
 This module provides vision analysis tools that work with image URLs.
 Uses the centralized auxiliary vision router, which can select OpenRouter,
-Nous, Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
+Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
 
 Available tools:
 - vision_analyze_tool: Analyze images from URLs with custom prompts
@@ -41,7 +41,7 @@ from typing import Any, Awaitable, Dict, Optional
 from urllib.parse import urlparse
 import httpx
 from agent.auxiliary_client import async_call_llm, extract_content_or_reasoning
-from opencodon_constants import get_hermes_dir
+from opencodon_constants import get_opencodon_dir
 from tools.debug_helpers import DebugSession
 from tools.website_policy import check_website_access
 import sys
@@ -319,7 +319,7 @@ def _normalize_to_supported_image(
     if detected_mime in _ANTHROPIC_SUPPORTED_MEDIA_TYPES:
         return image_path, detected_mime, None
 
-    out_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+    out_dir = get_opencodon_dir("cache/vision", "temp_vision_images")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"converted_{uuid.uuid4()}.png"
 
@@ -767,7 +767,7 @@ def _supports_media_in_tool_results(provider: str, model: str) -> bool:
     Providers covered today (per spec docs verified Apr-2026):
 
       * Anthropic Messages API (``anthropic`` provider, plus aggregators that
-        proxy Claude — ``openrouter``, ``nous``, ``vertex``, ``bedrock``):
+        proxy Claude — ``openrouter``, ``vertex``, ``bedrock``):
         ``tool_result`` blocks accept ``image`` content blocks.
       * OpenAI Chat Completions: tool messages accept array content with
         ``image_url`` parts.
@@ -791,7 +791,7 @@ def _supports_media_in_tool_results(provider: str, model: str) -> bool:
     # frontier models. Falling back to text would be a regression for
     # them.
     _AGGREGATORS = {
-        "openrouter", "nous", "vertex", "bedrock", "anthropic-vertex",
+        "openrouter", "vertex", "bedrock", "anthropic-vertex",
         "google-vertex",
     }
     if p in _AGGREGATORS:
@@ -976,7 +976,7 @@ async def _vision_analyze_native(
 
         detected_mime_type = resolved.mime
         image_size_bytes = len(resolved.data)
-        temp_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        temp_dir = get_opencodon_dir("cache/vision", "temp_vision_images")
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
         await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
@@ -1146,7 +1146,7 @@ async def vision_analyze_tool(
             raise ValueError(str(exc))
 
         detected_mime_type = resolved.mime
-        temp_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        temp_dir = get_opencodon_dir("cache/vision", "temp_vision_images")
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
         await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
@@ -1365,7 +1365,7 @@ def check_vision_requirements() -> bool:
 
     Mirrors the fallback chain that ``call_llm(task="vision")`` actually uses
     at runtime: first the explicit ``auxiliary.vision.provider`` (if any),
-    and if that fails, the auto chain (main provider → openrouter → nous).
+    and if that fails, the auto chain (main provider → openrouter → deepinfra).
     Without the auto-fallback step the tool would disappear from the model's
     tool list whenever the explicit provider name was unresolvable, even
     when the auto chain would have served the request (issue #31179).
@@ -1399,7 +1399,7 @@ if __name__ == "__main__":
     
     if not api_available:
         print("❌ No auxiliary vision model available")
-        print("Configure a supported multimodal backend (OpenRouter, Nous, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
+        print("Configure a supported multimodal backend (OpenRouter, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
         sys.exit(1)
     else:
         print("✅ Vision model available")
@@ -1680,7 +1680,7 @@ async def video_analyze_tool(
             blocked = check_website_access(video_url)
             if blocked:
                 raise PermissionError(blocked["message"])
-            temp_dir = get_hermes_dir("cache/video", "temp_video_files")
+            temp_dir = get_opencodon_dir("cache/video", "temp_video_files")
             temp_video_path = temp_dir / f"temp_video_{uuid.uuid4()}.mp4"
             await _download_video(video_url, temp_video_path)
             should_cleanup = True

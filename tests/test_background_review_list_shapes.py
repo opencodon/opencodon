@@ -47,7 +47,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _isolate_opencodon_home():
-    os.environ.setdefault("OPENCODON_HOME", "/tmp/hermes-bg-review-test")
+    os.environ.setdefault("OPENCODON_HOME", "/tmp/opencodon-bg-review-test")
 
 
 def _load_module():

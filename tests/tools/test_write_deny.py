@@ -30,7 +30,7 @@ class TestWriteDenyExactPaths:
         assert _is_write_denied(path) is True
 
 
-    def test_hermes_env(self):
+    def test_opencodon_env(self):
         # ``.env`` under the active OPENCODON_HOME (profile-aware, not just
         # ``~/.opencodon``) must be write-denied. The hermetic test conftest
         # points OPENCODON_HOME at a tempdir — resolve via get_opencodon_home()
@@ -45,7 +45,7 @@ class TestWriteDenyExactPaths:
         path = get_opencodon_home() / "cache" / "bws_cache.enc.json"
         assert _is_write_denied(str(path)) is True
 
-    def test_hermes_root_env_when_running_under_profile(self, tmp_path, monkeypatch):
+    def test_opencodon_root_env_when_running_under_profile(self, tmp_path, monkeypatch):
         """Top-level ``<root>/.env`` stays write-denied even when running under
         a profile (#15981).
 
@@ -55,7 +55,7 @@ class TestWriteDenyExactPaths:
         could be silently overwritten by ``write_file`` while a profile was
         active.
         """
-        root = tmp_path / "hermes_root"
+        root = tmp_path / "opencodon_root"
         profile_home = root / "profiles" / "coder"
         profile_home.mkdir(parents=True)
         global_env = root / ".env"
@@ -64,9 +64,9 @@ class TestWriteDenyExactPaths:
         monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
 
         # Sanity check: OPENCODON_HOME does point to the profile dir, not the root.
-        from opencodon_constants import get_opencodon_home, get_default_hermes_root
+        from opencodon_constants import get_opencodon_home, get_default_opencodon_root
         assert get_opencodon_home() == profile_home
-        assert get_default_hermes_root() == root
+        assert get_default_opencodon_root() == root
 
         assert _is_write_denied(str(global_env)) is True
 
@@ -126,7 +126,7 @@ class TestWriteAllowed:
     def test_project_file(self):
         assert _is_write_denied("/home/user/project/main.py") is False
 
-    def test_hermes_control_files_requested_writable(self):
+    def test_opencodon_control_files_requested_writable(self):
         from opencodon_constants import get_opencodon_home
 
         home = get_opencodon_home()

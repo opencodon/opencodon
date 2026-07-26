@@ -230,37 +230,13 @@ def test_custom_endpoint_models_api_pricing_is_supported(monkeypatch):
     assert float(entry.output_cost_per_million) == 2.0
 
 
-def test_nous_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
-    seen = {}
-
-    def _fake_fetch_endpoint_model_metadata(base_url, api_key=None):
-        seen["base_url"] = base_url
-        return {
-            "openai/gpt-5.5-pro": {
-                "pricing": {
-                    "prompt": "0.000025",
-                    "completion": "0.000125",
-                }
-            }
-        }
-
-    monkeypatch.setattr(
-        "agent.usage_pricing.fetch_endpoint_model_metadata",
-        _fake_fetch_endpoint_model_metadata,
-    )
-
-    entry = get_pricing_entry("openai/gpt-5.5-pro", provider="nous")
-
-    assert seen["base_url"] == "https://inference-api.nousresearch.com/v1"
-    assert float(entry.input_cost_per_million) == 25.0
-    assert float(entry.output_cost_per_million) == 125.0
 
 
 def test_deepseek_v4_pro_pricing_entry_exists():
     """Regression test: deepseek-v4-pro must have a pricing entry.
 
     Before this fix, deepseek-v4-pro sessions showed as unknown cost
-    in hermes insights because the _OFFICIAL_DOCS_PRICING table had no
+    in opencodon insights because the _OFFICIAL_DOCS_PRICING table had no
     entry for that model.  See #24218.  Rates track the 2026-07 price cut
     ($1.74/$3.48 → $0.435/$0.87).
     """
@@ -571,7 +547,7 @@ def test_fireworks_plugin_fallback_models_all_have_pricing():
 
 def test_fireworks_rows_all_carry_cache_read_pricing():
     """Invariant: Fireworks publishes cached-input rates for every serverless
-    model, and Hermes prompt caching is active on Fireworks sessions — every
+    model, and opencodon prompt caching is active on Fireworks sessions — every
     snapshot row must carry a cache_read rate cheaper than fresh input."""
     from agent.usage_pricing import _OFFICIAL_DOCS_PRICING
 

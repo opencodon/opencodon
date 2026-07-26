@@ -7,13 +7,13 @@ the OpenAI-compatible ``/v1/openai/images/generations`` endpoint as an
 **Fully dynamic model discovery.** Unlike the other image-gen plugins in
 this tree (which ship a hardcoded ``_MODELS`` dict), DeepInfra publishes
 a single tagged catalog at
-``https://api.deepinfra.com/v1/openai/models?filter=true&sort_by=hermes``
+``https://api.deepinfra.com/v1/openai/models?filter=true&sort_by=opencodon``
 where each entry's ``metadata.tags`` declares its surface (``image-gen``
 here). ``list_models()`` filters that catalog via
 :func:`opencodon_cli.models._fetch_deepinfra_models_by_tag` so newly added
-models show up in ``hermes tools`` automatically. No model ids are
+models show up in ``opencodon tools`` automatically. No model ids are
 hardcoded in this file — if a model is retired upstream, it disappears
-from hermes the next time the catalog is fetched, no patch required.
+from opencodon the next time the catalog is fetched, no patch required.
 
 Model selection (first hit wins):
 
@@ -203,8 +203,8 @@ class DeepInfraImageGenProvider(ImageGenProvider):
         if not api_key:
             return error_response(
                 error=(
-                    "DEEPINFRA_API_KEY not set. Run `hermes tools` → Image "
-                    "Generation → DeepInfra to configure, or `hermes setup` "
+                    "DEEPINFRA_API_KEY not set. Run `opencodon tools` → Image "
+                    "Generation → DeepInfra to configure, or `opencodon setup` "
                     "to add the key."
                 ),
                 error_type="auth_required",

@@ -3,7 +3,7 @@
 Covers the fix from #15914 / PR #15920 and the rotation fix from #20591:
 - _seed_from_env reads API keys from ~/.opencodon/.env when not in os.environ
 - _resolve_api_key_provider_secret falls back to credential_pool when env vars are empty
-- ~/.opencodon/.env takes priority over os.environ for Hermes-managed credentials
+- ~/.opencodon/.env takes priority over os.environ for opencodon-managed credentials
   (so a deliberate rotation in .env wins over a stale shell export)
 - env / dotenv values take priority over credential pool (pool fires only when both are empty)
 """
@@ -63,7 +63,7 @@ class TestCredentialPoolSeedsFromDotEnv:
 
     This is the load-bearing behaviour for the fix: when a user adds a key to
     .env mid-session or via a non-CLI entry point that doesn't run
-    load_hermes_dotenv, the credential pool must still discover it.
+    load_opencodon_dotenv, the credential pool must still discover it.
     """
 
     def test_deepseek_key_from_dotenv_only(self, isolated_opencodon_home):

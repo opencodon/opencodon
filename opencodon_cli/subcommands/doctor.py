@@ -1,4 +1,4 @@
-"""``hermes doctor`` subcommand parser.
+"""``opencodon doctor`` subcommand parser.
 
 Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -17,7 +17,7 @@ def build_doctor_parser(subparsers, *, cmd_doctor: Callable) -> None:
     doctor_parser = subparsers.add_parser(
         "doctor",
         help="Check configuration and dependencies",
-        description="Diagnose issues with Hermes Agent setup",
+        description="Diagnose issues with opencodon setup",
     )
     doctor_parser.add_argument(
         "--fix", action="store_true", help="Attempt to fix issues automatically"
@@ -28,7 +28,7 @@ def build_doctor_parser(subparsers, *, cmd_doctor: Callable) -> None:
         default=None,
         help=(
             "Acknowledge a security advisory by ID and exit. After ack, the "
-            "advisory will no longer trigger startup banners. Run `hermes "
+            "advisory will no longer trigger startup banners. Run `opencodon "
             "doctor` first to see active advisories and their IDs."
         ),
     )

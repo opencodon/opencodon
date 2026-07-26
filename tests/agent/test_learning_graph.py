@@ -106,10 +106,10 @@ def test_malformed_frontmatter_metadata_does_not_crash(tmp_path):
     assert node.related == []
 
 
-def test_hermes_meta_tolerates_non_dict():
-    assert learning_graph._hermes_meta({"metadata": "junk"}) == {}
-    assert learning_graph._hermes_meta({"metadata": {"hermes": "junk"}}) == {}
-    assert learning_graph._hermes_meta({"metadata": {"hermes": {"category": "x"}}}) == {"category": "x"}
+def test_opencodon_meta_tolerates_non_dict():
+    assert learning_graph._opencodon_meta({"metadata": "junk"}) == {}
+    assert learning_graph._opencodon_meta({"metadata": {"opencodon": "junk"}}) == {}
+    assert learning_graph._opencodon_meta({"metadata": {"opencodon": {"category": "x"}}}) == {"category": "x"}
 
 
 def test_full_payload_shape_and_edge_integrity(tmp_path):

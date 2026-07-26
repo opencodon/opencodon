@@ -1,23 +1,23 @@
 """Path-prefix (X-Forwarded-Prefix) awareness for the dashboard-auth gate.
 
 Mission-control style deployments reverse-proxy the dashboard at a path
-prefix (e.g. ``mission-control.tilos.com/hermes/*`` -> local Caddy ->
-:9119), injecting ``X-Forwarded-Prefix: /hermes`` on every request.
+prefix (e.g. ``mission-control.tilos.com/opencodon/*`` -> local Caddy ->
+:9119), injecting ``X-Forwarded-Prefix: /opencodon`` on every request.
 
 The dashboard already honours this for the SPA bundle (rewriting asset
 URLs and the bootstrap ``__OPENCODON_BASE_PATH__``). The OAuth gate must
 honour it too:
 
   1. The gate's ``Location:`` redirect to /login (in
-     ``_unauth_response``) needs to be ``/hermes/login`` so the browser
+     ``_unauth_response``) needs to be ``/opencodon/login`` so the browser
      follows it through the proxy.
   2. The 401 JSON envelope's ``login_url`` needs the same prefix so the
      SPA's full-page navigation lands at the proxied login page.
   3. ``_redirect_uri`` (the OAuth callback URL handed to the IDP) must
      reconstruct the public URL including the prefix, otherwise the IDP
      redirects back to ``/auth/callback`` instead of
-     ``/hermes/auth/callback`` and the user gets 404.
-  4. Cookies must use ``Path=/hermes`` when behind a prefix so they
+     ``/opencodon/auth/callback`` and the user gets 404.
+  4. Cookies must use ``Path=/opencodon`` when behind a prefix so they
      don't leak to other apps on the same origin AND so they get sent
      back to the dashboard on subsequent requests under the prefix.
   5. The ``__Host-`` cookie prefix requires ``Path=/`` — when behind an
@@ -157,7 +157,7 @@ class TestGateRedirectsCarryPrefix:
     def test_html_redirect_to_login_carries_prefix(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/sessions",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         assert r.status_code == 302
@@ -167,21 +167,21 @@ class TestGateRedirectsCarryPrefix:
         # mission-control.tilos.com/auth/login (which the proxy doesn't route
         # to the dashboard). The prefix-carrying invariant is what's under
         # test; only the target path moved from /login to /auth/login.
-        assert r.headers["location"].startswith("/hermes/auth/login"), (
+        assert r.headers["location"].startswith("/opencodon/auth/login"), (
             f"Location header lost prefix: {r.headers['location']!r}"
         )
 
     def test_api_401_envelope_login_url_carries_prefix(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/api/sessions",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         assert r.status_code == 401
         body = r.json()
         # SPA does window.location.assign(body.login_url); this MUST
         # include the prefix.
-        assert body["login_url"].startswith("/hermes/login"), (
+        assert body["login_url"].startswith("/opencodon/login"), (
             f"401 envelope login_url lost prefix: {body['login_url']!r}"
         )
 
@@ -224,12 +224,12 @@ class TestOAuthRedirectUriRespectsPrefix:
         """The IDP returns the user to the redirect_uri we sent. If we
         don't include the prefix, the IDP redirects to
         ``https://mission-control.tilos.com/auth/callback`` instead of
-        ``https://mission-control.tilos.com/hermes/auth/callback`` — the
+        ``https://mission-control.tilos.com/opencodon/auth/callback`` — the
         former routes to the MC frontend, not the dashboard, so the
         user gets 404."""
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         assert r.status_code == 302
@@ -245,7 +245,7 @@ class TestOAuthRedirectUriRespectsPrefix:
         parsed = urlparse(redirect_uri)
         assert parsed.scheme == "https"
         assert parsed.netloc == "mission-control.tilos.com"
-        assert parsed.path == "/hermes/auth/callback", (
+        assert parsed.path == "/opencodon/auth/callback", (
             f"redirect_uri dropped prefix: {redirect_uri!r}"
         )
 
@@ -363,15 +363,15 @@ class TestPublicUrlOverride:
         self, gated_app_direct, patch_config, monkeypatch
     ):
         """When public_url already carries a path prefix
-        (``https://example.com/hermes``), the OAuth callback URL is
+        (``https://example.com/opencodon``), the OAuth callback URL is
         the path appended verbatim. The operator is declaring the
         whole authority; we trust them."""
         patch_config(None)
         monkeypatch.setenv(
-            "OPENCODON_DASHBOARD_PUBLIC_URL", "https://example.com/hermes",
+            "OPENCODON_DASHBOARD_PUBLIC_URL", "https://example.com/opencodon",
         )
         redirect_uri = self._redirect_uri(gated_app_direct)
-        assert redirect_uri == "https://example.com/hermes/auth/callback"
+        assert redirect_uri == "https://example.com/opencodon/auth/callback"
 
     def test_public_url_ignores_x_forwarded_prefix(
         self, gated_app_proxied, patch_config, monkeypatch
@@ -462,7 +462,7 @@ class TestPublicUrlOverride:
         # regardless of test ordering.
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
-        monkeypatch.setenv("OPENCODON_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
+        monkeypatch.setenv("OPENCODON_DASHBOARD_PUBLIC_URL", "opencodon.domain.com")
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
             result = prefix_mod.resolve_public_url()
@@ -475,7 +475,7 @@ class TestPublicUrlOverride:
         ]
         assert any(
             "OPENCODON_DASHBOARD_PUBLIC_URL" in m
-            and "hermes.domain.com" in m
+            and "opencodon.domain.com" in m
             and "scheme" in m
             for m in warnings
         ), f"expected a scheme warning, got: {warnings!r}"
@@ -492,7 +492,7 @@ class TestPublicUrlOverride:
 
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
-        monkeypatch.setenv("OPENCODON_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
+        monkeypatch.setenv("OPENCODON_DASHBOARD_PUBLIC_URL", "opencodon.domain.com")
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
             for _ in range(5):
@@ -502,7 +502,7 @@ class TestPublicUrlOverride:
             r
             for r in caplog.records
             if r.levelno == logging.WARNING
-            and "hermes.domain.com" in r.getMessage()
+            and "opencodon.domain.com" in r.getMessage()
         ]
         assert len(scheme_warnings) == 1, (
             f"expected exactly one warning across 5 calls, "
@@ -520,13 +520,13 @@ class TestPublicUrlOverride:
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
         monkeypatch.setenv(
-            "OPENCODON_DASHBOARD_PUBLIC_URL", "https://hermes.domain.com"
+            "OPENCODON_DASHBOARD_PUBLIC_URL", "https://opencodon.domain.com"
         )
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
             result = prefix_mod.resolve_public_url()
 
-        assert result == "https://hermes.domain.com"
+        assert result == "https://opencodon.domain.com"
         assert not [
             r for r in caplog.records if r.levelno == logging.WARNING
         ]
@@ -554,16 +554,16 @@ class TestCookiePathRespectsPrefix:
     def test_pkce_cookie_uses_prefix_path(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         cookies = r.headers.get_list("set-cookie")
         pkce = next(c for c in cookies if "hermes_session_pkce" in c)
         # Browser only sends cookie back if the request path is under
-        # the cookie's Path attribute, so we need /hermes here. Bare
+        # the cookie's Path attribute, so we need /opencodon here. Bare
         # /-rooted cookies would still be sent but would also be sent
         # to /billing/... etc.
-        assert "Path=/hermes" in pkce, (
+        assert "Path=/opencodon" in pkce, (
             f"PKCE cookie has wrong Path: {pkce!r}"
         )
 
@@ -576,7 +576,7 @@ class TestCookiePathRespectsPrefix:
         """
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         cookies = r.headers.get_list("set-cookie")
@@ -648,16 +648,16 @@ class TestCookiePathRespectsPrefix:
     ):
         """The end-to-end property: after a successful OAuth round
         trip via the proxy, the session-AT cookie carries the
-        __Secure- prefix AND Path=/hermes, so the next request under
+        __Secure- prefix AND Path=/opencodon, so the next request under
         the same prefix is authenticated.
 
         Note on TestClient semantics: starlette's TestClient sees the
         literal request path (``/auth/login``, ``/auth/callback``) —
         not the public path the proxy displays to the browser
-        (``/hermes/auth/login``, ``/hermes/auth/callback``). A cookie
-        set with ``Path=/hermes`` would therefore NOT be sent back on
+        (``/opencodon/auth/login``, ``/opencodon/auth/callback``). A cookie
+        set with ``Path=/opencodon`` would therefore NOT be sent back on
         the second request through TestClient even though it WOULD be
-        sent by a real browser hitting ``/hermes/auth/callback``. To
+        sent by a real browser hitting ``/opencodon/auth/callback``. To
         avoid baking that mismatch into the test, we inspect the
         ``Set-Cookie`` header on the callback's response WITHOUT
         depending on the PKCE cookie round-tripping through
@@ -667,7 +667,7 @@ class TestCookiePathRespectsPrefix:
         # /auth/login sets the PKCE cookie. Capture it from Set-Cookie.
         r1 = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/opencodon"},
             follow_redirects=False,
         )
         pkce_set = next(
@@ -679,12 +679,12 @@ class TestCookiePathRespectsPrefix:
         state = r1.headers["location"].split("state=")[1]
 
         # Round-trip the cookie by hand because TestClient's jar won't
-        # automatically send a Path=/hermes cookie to a /auth/callback
+        # automatically send a Path=/opencodon cookie to a /auth/callback
         # request path.
         r2 = gated_app_proxied.get(
             f"/auth/callback?code=stub_code&state={state}",
             headers={
-                "x-forwarded-prefix": "/hermes",
+                "x-forwarded-prefix": "/opencodon",
                 "cookie": pkce_kv,
             },
             follow_redirects=False,
@@ -693,11 +693,11 @@ class TestCookiePathRespectsPrefix:
         cookies = r2.headers.get_list("set-cookie")
         at_cookies = [
             c for c in cookies
-            if c.startswith("__Secure-hermes_session_at=")
+            if c.startswith("__Secure-opencodon_session_at=")
         ]
         assert at_cookies, (
             f"session_at missing __Secure- prefix: {cookies!r}"
         )
-        assert "Path=/hermes" in at_cookies[0]
+        assert "Path=/opencodon" in at_cookies[0]
         assert "Secure" in at_cookies[0]
         assert "HttpOnly" in at_cookies[0]

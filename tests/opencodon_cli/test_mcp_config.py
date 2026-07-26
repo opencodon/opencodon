@@ -1,5 +1,5 @@
 """
-Tests for opencodon_cli.mcp_config — ``hermes mcp`` subcommands.
+Tests for opencodon_cli.mcp_config — ``opencodon mcp`` subcommands.
 
 These tests mock the MCP server connection layer so they run without
 any actual MCP servers or API keys.
@@ -558,7 +558,7 @@ class TestEnvVarInterpolation:
 class TestProbeEnvResolution:
     """The probe path must resolve ``${ENV}`` before connecting, so the
     discovery probe behaves like runtime tool loading. Regression for #37792
-    where `hermes mcp add --auth header` sent a literal
+    where `opencodon mcp add --auth header` sent a literal
     ``Authorization: Bearer ${MCP_X_API_KEY}`` and got 401."""
 
     def test_resolve_interpolates_header(self, monkeypatch):

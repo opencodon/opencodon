@@ -863,48 +863,48 @@ def test_mention_patterns_default_no_match(monkeypatch):
 
 
 def test_mention_patterns_list_matches():
-    adapter = _make_adapter(mention_patterns=["hey hermes", "hermes,"])
-    assert adapter._slack_message_matches_mention_patterns("hey hermes, you there?") is True
+    adapter = _make_adapter(mention_patterns=["hey opencodon", "opencodon,"])
+    assert adapter._slack_message_matches_mention_patterns("hey opencodon, you there?") is True
     assert adapter._slack_message_matches_mention_patterns("just chatting") is False
 
 
 def test_mention_patterns_case_insensitive():
-    adapter = _make_adapter(mention_patterns=["hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("HEY HERMES!") is True
+    adapter = _make_adapter(mention_patterns=["hey opencodon"])
+    assert adapter._slack_message_matches_mention_patterns("HEY OPENCODON!") is True
 
 
 def test_mention_patterns_single_string():
-    adapter = _make_adapter(mention_patterns="^hermes")
-    assert adapter._slack_message_matches_mention_patterns("hermes do this") is True
-    assert adapter._slack_message_matches_mention_patterns("ok hermes") is False
+    adapter = _make_adapter(mention_patterns="^opencodon")
+    assert adapter._slack_message_matches_mention_patterns("opencodon do this") is True
+    assert adapter._slack_message_matches_mention_patterns("ok opencodon") is False
 
 
 def test_mention_patterns_invalid_regex_skipped_without_crash():
     # An invalid pattern is dropped; valid siblings still work.
-    adapter = _make_adapter(mention_patterns=["(unclosed", "hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    adapter = _make_adapter(mention_patterns=["(unclosed", "hey opencodon"])
+    assert adapter._slack_message_matches_mention_patterns("hey opencodon") is True
 
 
 def test_mention_patterns_env_var_fallback(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", '["hey hermes", "hermes,"]')
+    monkeypatch.setenv("SLACK_MENTION_PATTERNS", '["hey opencodon", "opencodon,"]')
     adapter = _make_adapter()  # no config value -> falls back to env
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    assert adapter._slack_message_matches_mention_patterns("hey opencodon") is True
 
 
 def test_mention_patterns_env_var_csv_fallback_splits_patterns(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", "hey hermes,hermes,")
+    monkeypatch.setenv("SLACK_MENTION_PATTERNS", "hey opencodon,opencodon,")
     adapter = _make_adapter()  # no config value -> falls back to env
 
     patterns = adapter._slack_mention_patterns()
 
-    assert [pattern.pattern for pattern in patterns] == ["hey hermes", "hermes"]
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    assert [pattern.pattern for pattern in patterns] == ["hey opencodon", "opencodon"]
+    assert adapter._slack_message_matches_mention_patterns("hey opencodon") is True
 
 
 def test_mention_patterns_trigger_in_channel_without_literal_mention():
     """A wake word triggers the bot in a channel even with require_mention on."""
-    adapter = _make_adapter(require_mention=True, mention_patterns=["hey hermes"])
-    assert _would_process(adapter, text="hey hermes what's the status") is True
+    adapter = _make_adapter(require_mention=True, mention_patterns=["hey opencodon"])
+    assert _would_process(adapter, text="hey opencodon what's the status") is True
     # Unrelated channel chatter is still ignored.
     assert _would_process(adapter, text="lunch anyone?") is False
 

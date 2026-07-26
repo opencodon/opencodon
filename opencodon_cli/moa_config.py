@@ -26,7 +26,7 @@ def _coerce_float_or_none(value: Any) -> float | None:
 
     Used for optional sampling params (reference_temperature /
     aggregator_temperature) where None means 'don't send the parameter —
-    provider default applies', matching how a single-model Hermes agent
+    provider default applies', matching how a single-model opencodon agent
     never sends temperature unless explicitly configured.
     """
     if value is None or value == "":
@@ -300,7 +300,7 @@ def resolve_moa_preset(config: Any, name: str | None = None) -> dict[str, Any]:
         available = ", ".join(cfg["presets"]) or "(none)"
         raise MoAPresetNotFoundError(
             f"MoA preset '{preset_name}' was not found. Available presets: "
-            f"{available}. Run `hermes moa list`."
+            f"{available}. Run `opencodon moa list`."
         )
     return deepcopy(preset)
 

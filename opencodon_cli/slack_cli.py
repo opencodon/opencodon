@@ -1,15 +1,15 @@
-"""``hermes slack ...`` CLI subcommands.
+"""``opencodon slack ...`` CLI subcommands.
 
-Today only ``hermes slack manifest`` is implemented — it generates the
+Today only ``opencodon slack manifest`` is implemented — it generates the
 Slack app manifest JSON for registering every gateway command as a native
 Slack slash (``/btw``, ``/stop``, ``/model``, …) so users get the same
 first-class slash UX Discord and Telegram already have.
 
 Typical workflow::
 
-    $ hermes slack manifest > slack-manifest.json
+    $ opencodon slack manifest > slack-manifest.json
     # or:
-    $ hermes slack manifest --write
+    $ opencodon slack manifest --write
 
 Then paste the printed JSON into the Slack app config (Features → App
 Manifest → Edit) and click Save. Slack diffs the manifest and prompts
@@ -32,12 +32,12 @@ def _build_full_manifest(
     """Build a full Slack manifest merging display info + our slash list.
 
     The slash-command list is always generated from ``COMMAND_REGISTRY`` so
-    it stays in sync with the rest of Hermes. Other manifest sections
+    it stays in sync with the rest of opencodon. Other manifest sections
     (display info, OAuth scopes, socket mode) are set to sensible defaults
-    for a Hermes deployment — users can tweak them in the Slack UI after
+    for a opencodon deployment — users can tweak them in the Slack UI after
     pasting.
 
-    By default, this keeps Hermes on Slack's older Assistant messaging
+    By default, this keeps opencodon on Slack's older Assistant messaging
     experience (``assistant_view``) for backward compatibility. Pass
     ``messaging_experience="agent"`` (``--agent-view``) to emit Slack's Agent
     messaging experience (``agent_view`` + ``app_home_opened``). Pass
@@ -99,7 +99,7 @@ def _build_full_manifest(
 
     if messaging_experience == "assistant":
         features["assistant_view"] = {
-            "assistant_description": "Chat with Hermes in threads and DMs.",
+            "assistant_description": "Chat with opencodon in threads and DMs.",
         }
         bot_scopes.append("assistant:write")
         bot_events.extend(
@@ -110,7 +110,7 @@ def _build_full_manifest(
         )
     elif messaging_experience == "agent":
         features["agent_view"] = {
-            "agent_description": "Chat with Hermes in Slack Messages.",
+            "agent_description": "Chat with opencodon in Slack Messages.",
         }
         bot_scopes.append("assistant:write")
         # Slack includes current viewing context in Agent DM events only after
@@ -128,7 +128,7 @@ def _build_full_manifest(
         },
         "display_information": {
             "name": bot_name[:35],
-            "description": (bot_description or "Your Hermes agent on Slack")[:140],
+            "description": (bot_description or "Your opencodon agent on Slack")[:140],
             "background_color": "#1a1a2e",
         },
         "features": features,
@@ -157,7 +157,7 @@ def slack_manifest_command(args) -> int:
     Flags (all parsed in ``opencodon_cli/main.py``):
       --write [PATH]  Write to file instead of stdout (default path:
                       ``$OPENCODON_HOME/slack-manifest.json``)
-      --name NAME     Override the bot display name (default: "Hermes")
+      --name NAME     Override the bot display name (default: "opencodon")
       --description DESC  Override the bot description
       --slashes-only  Emit only the ``features.slash_commands`` array (for
                       merging into an existing manifest manually)
@@ -169,8 +169,8 @@ def slack_manifest_command(args) -> int:
                       app_home_opened + message.im) instead of the legacy
                       Assistant messaging experience.
     """
-    name = getattr(args, "name", None) or "Hermes"
-    description = getattr(args, "description", None) or "Your Hermes agent on Slack"
+    name = getattr(args, "name", None) or "opencodon"
+    description = getattr(args, "description", None) or "Your opencodon agent on Slack"
     if getattr(args, "agent_view", False):
         messaging_experience = "agent"
     elif getattr(args, "no_assistant", False):
@@ -208,7 +208,7 @@ def slack_manifest_command(args) -> int:
         print(f"Slack manifest written to: {target}", file=sys.stderr)
         print(
             "\nNext steps:\n"
-            "  1. Open https://api.slack.com/apps and pick your Hermes app\n"
+            "  1. Open https://api.slack.com/apps and pick your opencodon app\n"
             "     (or create a new one: Create New App → From an app manifest).\n"
             f"  2. Features → App Manifest → paste the contents of\n"
             f"     {target}\n"
@@ -216,7 +216,7 @@ def slack_manifest_command(args) -> int:
             "     slash commands changed.\n"
             "  4. Make sure Socket Mode is enabled and you have a bot token\n"
             "     (xoxb-...) and app token (xapp-...) configured via\n"
-            "     `hermes setup`.\n",
+            "     `opencodon setup`.\n",
             file=sys.stderr,
         )
     else:

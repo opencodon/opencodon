@@ -9,7 +9,7 @@ persistent profiles, recreate the s6 service slots, and auto-start
 only those whose last recorded state was ``running``.
 
 Wired into the image as /etc/cont-init.d/02-reconcile-profiles by the
-Dockerfile (Phase 4 Task 4.0). Runs as root after 01-hermes-setup
+Dockerfile (Phase 4 Task 4.0). Runs as root after 01-opencodon-setup
 (the stage2 hook) has chowned the volume and seeded $OPENCODON_HOME, but
 before s6-rc starts user services.
 
@@ -98,8 +98,8 @@ def reconcile_profile_gateways(
     (the implicit profile that lives at the top of ``$OPENCODON_HOME``,
     not under ``profiles/``). The dispatcher in ``opencodon_cli.gateway``
     maps an empty profile suffix to ``gateway-default``, so this slot
-    is what ``hermes gateway start`` (no ``-p``) targets. Without it,
-    bare ``hermes gateway start`` inside the container would land on
+    is what ``opencodon gateway start`` (no ``-p``) targets. Without it,
+    bare ``opencodon gateway start`` inside the container would land on
     ``s6-svc -u /run/service/gateway-default`` → uncaught
     ``CalledProcessError`` → traceback to the user (PR #30136 review).
 
@@ -137,7 +137,7 @@ def reconcile_profile_gateways(
 
     # Default profile — always register, even if nothing has ever
     # populated the root profile dir. The slot exists so
-    # ``hermes gateway start`` (no ``-p``) has somewhere to land;
+    # ``opencodon gateway start`` (no ``-p``) has somewhere to land;
     # auto-up only when the prior state was "running" (same rule as
     # named profiles). If the container was launched with the legacy
     # `gateway run` command and no state exists yet, seed that intent
@@ -163,8 +163,8 @@ def reconcile_profile_gateways(
         for entry in sorted(profiles_root.iterdir()):
             if not entry.is_dir():
                 continue
-            # SOUL.md is always seeded by `hermes profile create` (config.yaml
-            # is not — that comes later via `hermes setup`). Use it as the
+            # SOUL.md is always seeded by `opencodon profile create` (config.yaml
+            # is not — that comes later via `opencodon setup`). Use it as the
             # "real profile" marker so stray dirs (backups, manual mkdir)
             # aren't picked up.
             if not (entry / "SOUL.md").exists():
@@ -173,7 +173,7 @@ def reconcile_profile_gateways(
             # profile (above) — if a user has somehow created a
             # ``profiles/default/`` directory, skip it to avoid the
             # slot collision. Their gateway would still be reachable
-            # via ``hermes -p default-named gateway start`` if they
+            # via ``opencodon -p default-named gateway start`` if they
             # rename the directory; we don't try to disambiguate here.
             if entry.name == "default":
                 log.warning(
@@ -287,15 +287,15 @@ def _read_container_argv() -> tuple[str, ...]:
 
 
 def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
-    """Strip the s6/wrapper prefix off the container argv, leaving the hermes args.
+    """Strip the s6/wrapper prefix off the container argv, leaving the opencodon args.
 
     Two container-command argv shapes are handled:
 
     * **s6-overlay v2 / tini:** PID 1 argv is
-      ``/init /opt/hermes/docker/main-wrapper.sh <subcommand> [args...]``.
+      ``/init /opt/opencodon/docker/main-wrapper.sh <subcommand> [args...]``.
     * **s6-overlay v3:** PID 1 is ``s6-svscan`` and the command lives on the
       rc.init-launched process as ``/bin/sh -e
-      /run/s6/basedir/scripts/rc.init top /opt/hermes/docker/main-wrapper.sh
+      /run/s6/basedir/scripts/rc.init top /opt/opencodon/docker/main-wrapper.sh
       <subcommand> [args...]`` (see :func:`_read_container_argv`).
 
     Rather than peel each leading token positionally (which silently breaks
@@ -303,9 +303,9 @@ def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
     in the v2→v3 bump), drop everything up to and including the
     ``main-wrapper.sh`` token: that wrapper path is the stable boundary the
     image owns, and the subcommand always follows it. Pre-s6 / direct
-    ``hermes`` invocations carry no wrapper, so fall back to peeling a bare
-    ``init`` prefix. The wrapper re-execs ``hermes <subcommand>``, so an
-    explicit leading ``hermes`` is peeled too. Shared by the legacy-gateway
+    ``opencodon`` invocations carry no wrapper, so fall back to peeling a bare
+    ``init`` prefix. The wrapper re-execs ``opencodon <subcommand>``, so an
+    explicit leading ``opencodon`` is peeled too. Shared by the legacy-gateway
     and dashboard role detectors.
     """
     args = list(argv)
@@ -323,8 +323,8 @@ def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
         # Defensive: an `init` prefix with no wrapper token in argv.
         args = args[1:]
 
-    # The wrapper re-execs `hermes <subcommand>`; peel an explicit hermes.
-    if args and Path(args[0]).name == "hermes":
+    # The wrapper re-execs `opencodon <subcommand>`; peel an explicit opencodon.
+    if args and Path(args[0]).name == "opencodon":
         args = args[1:]
     return args
 
@@ -340,7 +340,7 @@ def _is_legacy_gateway_run_request(argv: Sequence[str]) -> bool:
 def _is_dashboard_container(argv: Sequence[str]) -> bool:
     """Return True when the container's command is the dashboard.
 
-    A dashboard-only container (``hermes dashboard ...``) never spawns or
+    A dashboard-only container (``opencodon dashboard ...``) never spawns or
     supervises per-profile gateways — that is the gateway container's job.
     Reconciling profile gateway s6 slots there is not just wasted work: when
     the gateway and dashboard containers share a bind-mounted OPENCODON_HOME,
@@ -474,19 +474,19 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
 
         # The presence of a `down` file tells s6-supervise to NOT
         # start the service when s6-svscan picks it up. User brings
-        # it up explicitly with `hermes -p <profile> gateway start`
+        # it up explicitly with `opencodon -p <profile> gateway start`
         # (which routes through the Phase 4
         # _dispatch_via_service_manager_if_s6 helper to `s6-svc -u`).
         if not start:
             (tmp_dir / "down").touch()
 
-        # Pre-create the supervise/ skeleton with hermes ownership
+        # Pre-create the supervise/ skeleton with opencodon ownership
         # BEFORE we publish the slot. Mirrors the same pre-creation
         # step in S6ServiceManager.register_profile_gateway — when
         # s6-svscan picks the published slot up, the s6-supervise it
-        # spawns will EEXIST our dirs/FIFOs and inherit hermes
+        # spawns will EEXIST our dirs/FIFOs and inherit opencodon
         # ownership, so runtime s6-svc / s6-svstat / s6-svwait calls
-        # (all dispatched as the hermes user) won't hit EACCES. See
+        # (all dispatched as the opencodon user) won't hit EACCES. See
         # ``_seed_supervise_skeleton`` in service_manager.py for the
         # full rationale.
         _seed_supervise_skeleton(tmp_dir)

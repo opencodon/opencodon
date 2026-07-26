@@ -76,7 +76,7 @@ class TestGmiConfigRegistry:
         assert OPTIONAL_ENV_VARS["GMI_BASE_URL"]["password"] is False
         # ENV_VARS_BY_VERSION entries are not needed for providers added after
         # _config_version 22 (the current baseline) — users discover GMI via
-        # hermes model, not via upgrade prompts.
+        # opencodon model, not via upgrade prompts.
 
 
 class TestGmiModelCatalog:
@@ -197,7 +197,6 @@ class TestGmiDoctor:
         try:
             from opencodon_cli import auth as _auth_mod
 
-            monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         except Exception:
             pass
@@ -276,21 +275,21 @@ class TestGmiAuxiliary:
         assert model == "google/gemini-3.1-flash-lite-preview"
         assert mock_openai.call_args.kwargs["api_key"] == "gmi-test-key"
         assert mock_openai.call_args.kwargs["base_url"] == "https://api.gmi-serving.com/v1"
-        # GMI profile declares default_headers with a HermesAgent User-Agent
+        # GMI profile declares default_headers with a OpencodonAgent User-Agent
         # for traffic attribution. The generic profile-fallback branch in
         # resolve_provider_client should carry it through to the OpenAI client.
         headers = mock_openai.call_args.kwargs.get("default_headers", {})
-        assert headers.get("User-Agent", "").startswith("HermesAgent/")
+        assert headers.get("User-Agent", "").startswith("OpencodonAgent/")
 
-    def test_gmi_profile_declares_hermes_user_agent(self):
-        """The GMI plugin sets a HermesAgent/<ver> User-Agent on its profile."""
+    def test_gmi_profile_declares_opencodon_user_agent(self):
+        """The GMI plugin sets a OpencodonAgent/<ver> User-Agent on its profile."""
         from providers import get_provider_profile
 
         profile = get_provider_profile("gmi")
         assert profile is not None
         ua = profile.default_headers.get("User-Agent", "")
-        assert ua.startswith("HermesAgent/"), (
-            f"expected GMI profile User-Agent to start with 'HermesAgent/', got {ua!r}"
+        assert ua.startswith("OpencodonAgent/"), (
+            f"expected GMI profile User-Agent to start with 'OpencodonAgent/', got {ua!r}"
         )
 
     def test_resolve_provider_client_accepts_gmi_alias(self, monkeypatch):
@@ -313,7 +312,7 @@ class TestGmiMainFlow:
             "opencodon_cli.main.cmd_chat",
             lambda args: recorded.setdefault("provider", args.provider),
         )
-        monkeypatch.setattr(sys, "argv", ["hermes", "chat", "--provider", "gmi"])
+        monkeypatch.setattr(sys, "argv", ["opencodon", "chat", "--provider", "gmi"])
 
         from opencodon_cli.main import main
 

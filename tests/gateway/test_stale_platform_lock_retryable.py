@@ -83,7 +83,7 @@ def test_explicit_replace_takeover_reacquires_lock_once(adapter):
     existing = {
         "pid": 4242,
         "kind": "opencodon-gateway",
-        "argv": ["hermes", "gateway", "run"],
+        "argv": ["opencodon", "gateway", "run"],
         "start_time": 123,
     }
     acquire = MagicMock(side_effect=[(False, existing), (True, None)])
@@ -111,7 +111,7 @@ def test_normal_connect_conflict_never_attempts_takeover(adapter):
     existing = {
         "pid": 5555,
         "kind": "opencodon-gateway",
-        "argv": ["hermes", "gateway", "run"],
+        "argv": ["opencodon", "gateway", "run"],
         "start_time": 123,
     }
     with patch(
@@ -137,7 +137,7 @@ def test_failed_explicit_takeover_consumes_authority(adapter):
     existing = {
         "pid": 7777,
         "kind": "opencodon-gateway",
-        "argv": ["hermes", "gateway", "run"],
+        "argv": ["opencodon", "gateway", "run"],
         "start_time": 456,
     }
     adapter._platform_lock_takeover_allowed = True

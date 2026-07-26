@@ -1,10 +1,10 @@
 """
-Lazy dependency installer for opt-in Hermes Agent backends.
+Lazy dependency installer for opt-in opencodon backends.
 
-Many Hermes features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
+Many features (Mistral TTS, ElevenLabs TTS, Bedrock,
 Slack, etc.) require Python packages that not every user needs. The
 historical approach was to bundle them all under ``pyproject.toml`` extras
-(``hermes-agent[all]``) and install them eagerly at setup time. That has
+(``opencodon[all]``) and install them eagerly at setup time. That has
 two problems:
 
 1. **Fragility.** When one extra's transitive dependency becomes
@@ -20,7 +20,7 @@ top of their first-import path. If the deps are missing, ``ensure`` checks
 the ``security.allow_lazy_installs`` config flag (default true) and runs
 a venv-scoped pip install. If the user has explicitly disabled lazy
 installs, ``ensure`` raises :class:`FeatureUnavailable` with a clear
-remediation hint pointing at ``hermes tools`` or the manual pip command.
+remediation hint pointing at ``opencodon tools`` or the manual pip command.
 
 Security model:
 
@@ -28,7 +28,7 @@ Security model:
   active venv. We never touch the system Python.
 * **Durable-target mode (immutable images).** When the deployment seals the
   agent's own venv (the Docker image sets ``OPENCODON_DISABLE_LAZY_INSTALLS=1``
-  and makes ``/opt/hermes`` read-only), setting
+  and makes ``/opt/opencodon`` read-only), setting
   ``OPENCODON_LAZY_INSTALL_TARGET`` redirects lazy installs to a writable
   directory on the durable data volume (e.g. ``/opt/data/lazy-packages``).
   That directory is **appended to the end of ``sys.path``** — never
@@ -38,7 +38,7 @@ Security model:
   a module the core already ships. The worst a bad/incompatible backend
   package can do is fail to import and report itself unavailable — the agent
   core stays healthy. This is the structural guarantee that a lazily
-  installed package cannot brick Hermes, which is what made it safe to seal
+  installed package cannot brick opencodon, which is what made it safe to seal
   the venv in the first place. Compiled-wheel safety across image rebuilds
   is handled by an ABI/Python-version stamp on the target subdir (see
   :func:`_ensure_target_ready`).
@@ -139,7 +139,6 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     "image.fal": ("fal-client==0.13.1",),
 
     # ─── Memory providers ──────────────────────────────────────────────────
-    "memory.honcho": ("honcho-ai==2.2.0",),
 
     # ─── Messaging platforms (lazy-installable on demand) ──────────────────
     "platform.telegram": ("python-telegram-bot[webhooks]==22.6",),
@@ -177,7 +176,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     # ─── Tools ─────────────────────────────────────────────────────────────
     # ACP adapter (VS Code / Zed / JetBrains integration)
     "tool.acp": ("agent-client-protocol==0.9.0",),
-    # Dashboard (`hermes dashboard`)
+    # Dashboard (`opencodon dashboard`)
     "tool.dashboard": (
         "fastapi==0.133.1",
         "uvicorn[standard]==0.41.0",
@@ -199,7 +198,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
         "mcp==1.28.1",
         "starlette==1.3.1",  # CVE-2026-48710 + 2026-07 advisories — keep in sync with pyproject [computer-use]
     ),
-    # HF Agent Trace Viewer upload (hermes trace upload / /upload-trace).
+    # HF Agent Trace Viewer upload (opencodon trace upload / /upload-trace).
     "tool.trace_upload": ("huggingface-hub==1.2.3",),
 }
 
@@ -421,7 +420,7 @@ def _unsupported_feature_reason(feature: str) -> Optional[str]:
 
     This is a platform capability gate, not a security policy gate. It keeps
     known-impossible installs out of both first-use lazy installation and the
-    ``hermes update`` lazy-refresh pass.
+    ``opencodon update`` lazy-refresh pass.
     """
     return None
 
@@ -450,7 +449,7 @@ def _pkg_name_from_spec(spec: str) -> str:
 def _specifier_from_spec(spec: str) -> str:
     """Extract just the version-specifier portion of a pip spec.
 
-    ``"honcho-ai==2.2.0"`` → ``"==2.2.0"``
+    ``"faster-whisper==1.0.3"`` → ``"==1.0.3"``
     ``"mautrix[encryption]>=0.20,<1"`` → ``">=0.20,<1"``
     ``"package"`` → ``""`` (no version constraint)
     """
@@ -467,7 +466,7 @@ def _is_satisfied(spec: str) -> bool:
     Checks both presence AND version. If the package is installed at a
     version outside the spec's range, returns False so the caller will
     upgrade/downgrade to the pinned version. This is what makes
-    ``hermes update`` propagate pin bumps in :data:`LAZY_DEPS` to already-
+    ``opencodon update`` propagate pin bumps in :data:`LAZY_DEPS` to already-
     installed backends instead of silently leaving stale versions in place.
 
     If ``packaging`` is unavailable for any reason (it's a transitive of
@@ -564,7 +563,7 @@ def _core_constraints_file() -> Optional[Path]:
             lines.append(f"{name}=={ver}")
         if not lines:
             return None
-        fd, path = tempfile.mkstemp(prefix="hermes-core-constraints-", suffix=".txt")
+        fd, path = tempfile.mkstemp(prefix="opencodon-core-constraints-", suffix=".txt")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write("\n".join(sorted(lines)) + "\n")
         return Path(path)
@@ -611,8 +610,8 @@ def _venv_pip_install(specs: tuple[str, ...], *, timeout: int = 300) -> _Install
 
     try:
         venv_root = Path(sys.executable).parent.parent
-        from tools.environments.local import hermes_subprocess_env
-        uv_env = hermes_subprocess_env(inherit_credentials=False)
+        from tools.environments.local import opencodon_subprocess_env
+        uv_env = opencodon_subprocess_env(inherit_credentials=False)
         uv_env["VIRTUAL_ENV"] = str(venv_root)
 
         # Tier 1: uv (preferred — fast, doesn't need pip in the venv)
@@ -817,7 +816,7 @@ def active_features() -> list[str]:
     is currently installed in the venv (presence check, ignoring version).
     Features the user has never enabled stay quiet.
 
-    Used by ``hermes update`` to figure out which lazy backends need a
+    Used by ``opencodon update`` to figure out which lazy backends need a
     refresh pass when pins move in :data:`LAZY_DEPS`.
     """
     active = []
@@ -837,7 +836,7 @@ def refresh_active_features(*, prompt: bool = False) -> dict[str, str]:
                                   whether to surface it (we don't raise)
         ``"skipped: <reason>"`` — gated off (config flag, user decline)
 
-    Intended for ``hermes update``. Never raises; lazy-install failures
+    Intended for ``opencodon update``. Never raises; lazy-install failures
     here must not block the rest of the update flow.
     """
     results: dict[str, str] = {}

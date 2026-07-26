@@ -32,7 +32,7 @@ RICH_MD = "# Title\n\n- a\n  - nested\n\n---\n\nbody text"
 RICH_TABLE_MD = (
     "| Item | Status | Note |\n"
     "|---|---:|---|\n"
-    "| Hermes | ok | table |"
+    "| opencodon | ok | table |"
 )
 
 
@@ -98,7 +98,7 @@ class TestSendMessageBlocks:
         feedback = blocks[-1]
         assert feedback["type"] == "context_actions"
         assert feedback["elements"][0]["type"] == "feedback_buttons"
-        assert feedback["elements"][0]["action_id"] == "hermes_feedback"
+        assert feedback["elements"][0]["action_id"] == "opencodon_feedback"
 
     @pytest.mark.asyncio
     async def test_feedback_buttons_require_rich_blocks(self):

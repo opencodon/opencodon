@@ -135,7 +135,7 @@ async def test_session_crud_and_message_history(adapter, session_db):
         assert created["session"]["title"] == "Mobile chat"
 
         session_db.append_message(session_id, "user", "hello from phone")
-        session_db.append_message(session_id, "assistant", "hello from hermes")
+        session_db.append_message(session_id, "assistant", "hello from opencodon")
 
         list_resp = await cli.get("/api/sessions?limit=10&offset=0")
         assert list_resp.status == 200

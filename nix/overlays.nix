@@ -9,6 +9,6 @@
 { inputs, ... }:
 {
   flake.overlays.default = final: _: {
-    hermes-agent = inputs.self.packages.${final.stdenv.hostPlatform.system}.default;
+    opencodon = inputs.self.packages.${final.stdenv.hostPlatform.system}.default;
   };
 }

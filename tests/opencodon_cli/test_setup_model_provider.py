@@ -8,7 +8,6 @@ that the setup wizard correctly syncs config from disk after the call.
 from __future__ import annotations
 
 from opencodon_cli.config import load_config, save_config, save_env_value
-from opencodon_cli.nous_subscription import NousFeatureState, NousSubscriptionFeatures
 from opencodon_cli.setup import _print_setup_summary, setup_model_provider
 
 
@@ -74,7 +73,7 @@ def _write_aux_config(task="compression", provider="gemini", model_name="gemini-
 
 
 def test_setup_model_provider_preserves_auxiliary_choices_written_by_picker(tmp_path, monkeypatch):
-    """Aux choices made inside hermes setup must survive the wizard's final save."""
+    """Aux choices made inside opencodon setup must survive the wizard's final save."""
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
 
@@ -286,27 +285,16 @@ def test_setup_summary_marks_anthropic_auth_as_vision_available(tmp_path, monkey
     output = capsys.readouterr().out
 
     assert "Vision (image analysis)" in output
-    assert "missing run 'hermes setup' to configure" not in output
+    assert "missing run 'opencodon setup' to configure" not in output
 
 
 def test_setup_summary_shows_camofox_when_browser_feature_is_camofox(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
-    monkeypatch.setattr(
-        "opencodon_cli.setup.get_nous_subscription_features",
-        lambda config: NousSubscriptionFeatures(
-            subscribed=False,
-            nous_auth_present=False,
-            provider_is_nous=False,
-            features={
-                "web": NousFeatureState("web", "Web tools", True, False, False, False, False, True, ""),
-                "image_gen": NousFeatureState("image_gen", "Image generation", True, False, False, False, False, True, ""),
-                "tts": NousFeatureState("tts", "OpenAI TTS", True, False, False, False, False, True, ""),
-                "browser": NousFeatureState("browser", "Browser automation", True, True, True, False, True, True, "Camofox"),
-                "modal": NousFeatureState("modal", "Modal execution", False, False, False, False, False, True, "local"),
-            },
-        ),
-    )
+    cfg = load_config()
+    cfg.setdefault("browser", {})["cloud_provider"] = "Camofox"
+    save_config(cfg)
+    monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: True)
     monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
@@ -319,21 +307,10 @@ def test_setup_summary_does_not_mark_incomplete_browserbase_as_available(tmp_pat
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
     monkeypatch.setenv("BROWSERBASE_API_KEY", "bb-key")
-    monkeypatch.setattr(
-        "opencodon_cli.setup.get_nous_subscription_features",
-        lambda config: NousSubscriptionFeatures(
-            subscribed=False,
-            nous_auth_present=False,
-            provider_is_nous=False,
-            features={
-                "web": NousFeatureState("web", "Web tools", True, False, False, False, False, True, ""),
-                "image_gen": NousFeatureState("image_gen", "Image generation", True, False, False, False, False, True, ""),
-                "tts": NousFeatureState("tts", "OpenAI TTS", True, False, False, False, False, True, ""),
-                "browser": NousFeatureState("browser", "Browser automation", True, False, False, False, False, True, "Browserbase"),
-                "modal": NousFeatureState("modal", "Modal execution", False, False, False, False, False, True, "local"),
-            },
-        ),
-    )
+    cfg = load_config()
+    cfg.setdefault("browser", {})["cloud_provider"] = "Browserbase"
+    save_config(cfg)
+    monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: False)
     monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
@@ -351,8 +328,8 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     render as unavailable with an install hint — not a false 'available'.
 
     Unlike the mocked-feature tests above, this drives the real
-    ``get_nous_subscription_features`` so the surface stays aligned with the
-    runtime gate in ``tools.browser_tool.check_browser_requirements``.
+    real availability gate so the surface stays aligned with
+    ``tools.browser_tool.check_browser_requirements``.
     """
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
@@ -365,12 +342,8 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     browser_cfg["cloud_provider"] = "local"
     save_config(cfg)
 
-    # Only stub the readiness probes; the feature resolver itself is real.
-    monkeypatch.setattr("opencodon_cli.nous_subscription._has_agent_browser", lambda: True)
-    monkeypatch.setattr(
-        "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-        lambda *a, **k: None,
-    )
+    # Only stub the readiness probes; the availability gate itself is real.
+    monkeypatch.setattr("opencodon_cli.tools_config._has_agent_browser", lambda: True)
     monkeypatch.setattr("tools.browser_tool._chromium_installed", lambda: False)
     monkeypatch.setattr("tools.browser_tool._using_lightpanda_engine", lambda: False)
     monkeypatch.setattr(

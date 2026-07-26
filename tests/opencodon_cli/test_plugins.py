@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (opencodon_cli.plugins)."""
+"""Tests for the opencodon plugin system (opencodon_cli.plugins)."""
 
 import logging
 import sys
@@ -94,9 +94,9 @@ class TestPluginDiscovery:
 
     def test_discover_user_plugins(self, tmp_path, monkeypatch):
         """Plugins in ~/.opencodon/plugins/ are discovered."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "hello_plugin")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -105,7 +105,7 @@ class TestPluginDiscovery:
         assert mgr._plugins["hello_plugin"].enabled
 
     def test_plugin_can_register_and_invoke_middleware(self, tmp_path, monkeypatch):
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir,
             "mw_plugin",
@@ -116,7 +116,7 @@ class TestPluginDiscovery:
                 "lambda **kw: {'args': {**kw['args'], 'mw': True}})"
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -351,9 +351,9 @@ class TestPluginDiscovery:
 
     def test_discover_is_idempotent(self, tmp_path, monkeypatch):
         """Calling discover_and_load() twice does not duplicate plugins."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "once_plugin")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -375,9 +375,9 @@ class TestPluginDiscovery:
         permanently, every later call would early-return against an empty
         registry ("No web provider configured") for the process lifetime.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "retry_plugin")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
 
@@ -391,7 +391,7 @@ class TestPluginDiscovery:
 
         # A later call (with discovery healthy again) must do the real scan.
         monkeypatch.undo()
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
         mgr.discover_and_load()
         assert mgr._discovered is True
         non_bundled = {
@@ -402,9 +402,9 @@ class TestPluginDiscovery:
 
     def test_discover_skips_dir_without_manifest(self, tmp_path, monkeypatch):
         """Directories without plugin.yaml are silently skipped."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         (plugins_dir / "no_manifest").mkdir(parents=True)
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -418,7 +418,7 @@ class TestPluginDiscovery:
 
     def test_entry_points_scanned(self, tmp_path, monkeypatch):
         """Entry-point based plugins are discovered (mocked)."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         fake_module = types.ModuleType("fake_ep_plugin")
         fake_module.register = lambda ctx: None  # type: ignore[attr-defined]
@@ -493,13 +493,13 @@ class TestPluginLoading:
 
     def test_load_missing_init(self, tmp_path, monkeypatch):
         """Plugin dir without __init__.py records an error."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "bad_plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "bad_plugin"}))
         # Explicitly enable so the loader tries to import it and hits the
         # missing-init error.
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["bad_plugin"]}})
         )
@@ -516,13 +516,13 @@ class TestPluginLoading:
 
     def test_load_missing_register_fn(self, tmp_path, monkeypatch):
         """Plugin without register() function records an error."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "no_reg"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "no_reg"}))
         (plugin_dir / "__init__.py").write_text("# no register function\n")
         # Explicitly enable it so the loader actually tries to import.
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["no_reg"]}})
         )
@@ -536,18 +536,18 @@ class TestPluginLoading:
         assert "no register()" in mgr._plugins["no_reg"].error
 
     def test_load_registers_namespace_module(self, tmp_path, monkeypatch):
-        """Directory plugins are importable under hermes_plugins.<name>."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        """Directory plugins are importable under opencodon_plugins.<name>."""
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "ns_plugin")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         # Clean up any prior namespace module
-        sys.modules.pop("hermes_plugins.ns_plugin", None)
+        sys.modules.pop("opencodon_plugins.ns_plugin", None)
 
         mgr = PluginManager()
         mgr.discover_and_load()
 
-        assert "hermes_plugins.ns_plugin" in sys.modules
+        assert "opencodon_plugins.ns_plugin" in sys.modules
 
     def test_user_memory_plugin_auto_coerced_to_exclusive(self, tmp_path, monkeypatch):
         """User-installed memory plugins must NOT be loaded by the general
@@ -562,7 +562,7 @@ class TestPluginLoading:
         does not import/register() it. The real activation happens through
         ``plugins/memory/__init__.py`` via ``memory.provider`` config.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "mempalace"
         plugin_dir.mkdir(parents=True)
         # No explicit `kind:` — the heuristic should kick in.
@@ -575,7 +575,7 @@ class TestPluginLoading:
         )
         # Even if the user explicitly enables it in config, the loader
         # should still treat it as exclusive and skip general loading.
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace"]}})
         )
@@ -599,7 +599,7 @@ class TestPluginLoading:
         manifest, the memory-provider heuristic must NOT override it —
         even if the source happens to mention ``MemoryProvider``.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "not_memory"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(
@@ -609,7 +609,7 @@ class TestPluginLoading:
             "# This plugin inspects MemoryProvider docs but isn't one.\n"
             "def register(ctx):\n    pass\n"
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -637,7 +637,7 @@ class TestPluginHooks:
 
     def test_pre_gateway_dispatch_collects_action_dicts(self, tmp_path, monkeypatch):
         """pre_gateway_dispatch callbacks return action dicts (skip/rewrite/allow)."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "predispatch_plugin",
             register_body=(
@@ -645,7 +645,7 @@ class TestPluginHooks:
                 'lambda **kw: {"action": "skip", "reason": "test"})'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -661,12 +661,12 @@ class TestPluginHooks:
 
     def test_register_and_invoke_hook(self, tmp_path, monkeypatch):
         """Registered hooks are called on invoke_hook()."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "hook_plugin",
             register_body='ctx.register_hook("pre_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -676,7 +676,7 @@ class TestPluginHooks:
 
     def test_invoke_hook_adds_observer_schema_version(self, tmp_path, monkeypatch):
         """invoke_hook() supplies the observer schema version for all hooks."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir,
             "schema_plugin",
@@ -685,23 +685,23 @@ class TestPluginHooks:
                 'lambda **kw: kw.get("telemetry_schema_version"))'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
 
         assert mgr.invoke_hook("pre_tool_call", tool_name="test", args={}) == [
-            "hermes.observer.v1"
+            "opencodon.observer.v1"
         ]
 
     def test_hook_exception_does_not_propagate(self, tmp_path, monkeypatch):
         """A hook callback that raises does NOT crash the caller."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "bad_hook",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: 1/0)',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -711,7 +711,7 @@ class TestPluginHooks:
 
     def test_hook_return_values_collected(self, tmp_path, monkeypatch):
         """invoke_hook() collects non-None return values from callbacks."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "ctx_plugin",
             register_body=(
@@ -719,7 +719,7 @@ class TestPluginHooks:
                 'lambda **kw: {"context": "memory from plugin"})'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -731,12 +731,12 @@ class TestPluginHooks:
 
     def test_hook_none_returns_excluded(self, tmp_path, monkeypatch):
         """invoke_hook() excludes None returns from the result list."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "none_hook",
             register_body='ctx.register_hook("post_llm_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -746,7 +746,7 @@ class TestPluginHooks:
         assert results == []
 
     def test_request_hooks_are_invokeable(self, tmp_path, monkeypatch):
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "request_hook",
             register_body=(
@@ -755,7 +755,7 @@ class TestPluginHooks:
                 '"mc": kw.get("message_count"), "tc": kw.get("tool_count")})'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -777,7 +777,7 @@ class TestPluginHooks:
         assert results == [{"seen": 2, "mc": 5, "tc": 3}]
 
     def test_transform_terminal_output_hook_can_be_registered_and_invoked(self, tmp_path, monkeypatch):
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "transform_hook",
             register_body=(
@@ -785,7 +785,7 @@ class TestPluginHooks:
                 'lambda **kw: f"{kw[\'command\']}|{kw[\'returncode\']}|{kw[\'env_type\']}|{kw[\'task_id\']}|{len(kw[\'output\'])}")'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -802,12 +802,12 @@ class TestPluginHooks:
 
     def test_invalid_hook_name_warns(self, tmp_path, monkeypatch, caplog):
         """Registering an unknown hook name logs a warning."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "warn_plugin",
             register_body='ctx.register_hook("on_banana", lambda **kw: None)',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         with caplog.at_level(logging.WARNING, logger="opencodon_cli.plugins"):
             mgr = PluginManager()
@@ -1188,7 +1188,7 @@ class TestPluginContext:
 
     def test_register_tool_adds_to_registry(self, tmp_path, monkeypatch):
         """PluginContext.register_tool() puts the tool in the global registry."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "tool_plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "tool_plugin"}))
@@ -1201,7 +1201,7 @@ class TestPluginContext:
             '        handler=lambda args, **kw: "echo",\n'
             '    )\n'
         )
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["tool_plugin"]}})
         )
@@ -1228,7 +1228,7 @@ class TestPluginContext:
         )
         original_handler = registry._tools["shadow_target"].handler
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "opencodon_test" / "plugins"
             plugin_dir = plugins_dir / "shadow_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "shadow_plugin"}))
@@ -1241,7 +1241,7 @@ class TestPluginContext:
                 '        handler=lambda args, **kw: "plugin",\n'
                 '    )\n'
             )
-            opencodon_home = tmp_path / "hermes_test"
+            opencodon_home = tmp_path / "opencodon_test"
             (opencodon_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["shadow_plugin"]}})
             )
@@ -1270,7 +1270,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "opencodon_test" / "plugins"
             plugin_dir = plugins_dir / "override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "override_plugin"}))
@@ -1284,7 +1284,7 @@ class TestPluginContext:
                 '        override=True,\n'
                 '    )\n'
             )
-            opencodon_home = tmp_path / "hermes_test"
+            opencodon_home = tmp_path / "opencodon_test"
             (opencodon_home / "config.yaml").write_text(
                 yaml.safe_dump({
                     "plugins": {
@@ -1318,7 +1318,7 @@ class TestPluginContext:
         """override=True on a brand-new name still registers cleanly (no existing entry to replace)."""
         from tools.registry import registry
 
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "new_override_plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "new_override_plugin"}))
@@ -1332,7 +1332,7 @@ class TestPluginContext:
             '        override=True,\n'
             '    )\n'
         )
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({
                 "plugins": {
@@ -1369,7 +1369,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "opencodon_test" / "plugins"
             plugin_dir = plugins_dir / "evil_override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "evil_override_plugin"}))
@@ -1383,7 +1383,7 @@ class TestPluginContext:
                 '        override=True,\n'
                 '    )\n'
             )
-            opencodon_home = tmp_path / "hermes_test"
+            opencodon_home = tmp_path / "opencodon_test"
             # No allow_tool_override entry — plugin enabled but operator
             # has NOT opted in to letting it replace built-ins.
             (opencodon_home / "config.yaml").write_text(
@@ -1437,7 +1437,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "opencodon_test" / "plugins"
             plugin_dir = plugins_dir / "sneaky_override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "sneaky_override_plugin"}))
@@ -1452,7 +1452,7 @@ class TestPluginContext:
                 '        override=True,\n'
                 '    )\n'
             )
-            opencodon_home = tmp_path / "hermes_test"
+            opencodon_home = tmp_path / "opencodon_test"
             # Plugin enabled, but operator has NOT opted in.
             (opencodon_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["sneaky_override_plugin"]}})
@@ -1489,7 +1489,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "opencodon_test" / "plugins"
             plugin_dir = plugins_dir / "delayed_override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "delayed_override_plugin"}))
@@ -1509,7 +1509,7 @@ class TestPluginContext:
                 "def register(ctx):\n"
                 "    _pending.append(_do_override)\n"
             )
-            opencodon_home = tmp_path / "hermes_test"
+            opencodon_home = tmp_path / "opencodon_test"
             (opencodon_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["delayed_override_plugin"]}})
             )
@@ -1524,7 +1524,7 @@ class TestPluginContext:
 
             # Now fire the deferred override, simulating a post-load callback.
             import sys as _sys
-            mod = _sys.modules.get("hermes_plugins.delayed_override_plugin")
+            mod = _sys.modules.get("opencodon_plugins.delayed_override_plugin")
             assert mod is not None, "plugin module should be loaded"
             with pytest.raises(PermissionError):
                 mod._pending[0]()
@@ -1547,7 +1547,7 @@ class TestPluginToolVisibility:
         """Plugin tools are included when their toolset is in enabled_toolsets."""
         import opencodon_cli.plugins as plugins_mod
 
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "vis_plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "vis_plugin"}))
@@ -1560,7 +1560,7 @@ class TestPluginToolVisibility:
             '        handler=lambda args, **kw: "ok",\n'
             '    )\n'
         )
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         (opencodon_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["vis_plugin"]}})
         )
@@ -1601,10 +1601,10 @@ class TestPluginManagerList:
 
     def test_list_returns_sorted(self, tmp_path, monkeypatch):
         """list_plugins() returns results sorted by key."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "zulu")
         _make_plugin_dir(plugins_dir, "alpha")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1617,10 +1617,10 @@ class TestPluginManagerList:
 
     def test_list_with_plugins(self, tmp_path, monkeypatch):
         """list_plugins() returns info dicts for each discovered plugin."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(plugins_dir, "alpha")
         _make_plugin_dir(plugins_dir, "beta")
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1641,10 +1641,10 @@ class TestPluginManagerList:
         already-loaded plugins, so when a later plugin registered a hook name
         an earlier plugin had already used, the shared name was attributed to
         the first plugin only and the later plugin reported 0 hooks in
-        `hermes plugins list`. Attribution now counts what each plugin's own
+        `opencodon plugins list`. Attribution now counts what each plugin's own
         register() added (per-registration delta), so both get credit.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "first_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
@@ -1653,7 +1653,7 @@ class TestPluginManagerList:
             plugins_dir, "second_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1685,12 +1685,12 @@ class TestPreLlmCallTargetRouting:
 
     def test_context_dict_returned(self, tmp_path, monkeypatch):
         """Plugin returning a context dict is collected by invoke_hook."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         self._make_pre_llm_plugin(
             plugins_dir, "basic_plugin",
             '{"context": "basic context"}',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1705,12 +1705,12 @@ class TestPreLlmCallTargetRouting:
 
     def test_plain_string_return(self, tmp_path, monkeypatch):
         """Plain string returns are collected as-is (routing treats them as user_message)."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         self._make_pre_llm_plugin(
             plugins_dir, "str_plugin",
             '"plain string context"',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1724,7 +1724,7 @@ class TestPreLlmCallTargetRouting:
 
     def test_multiple_plugins_context_collected(self, tmp_path, monkeypatch):
         """Multiple plugins returning context are all collected."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         self._make_pre_llm_plugin(
             plugins_dir, "aaa_memory",
             '{"context": "memory context"}',
@@ -1733,7 +1733,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "bbb_guardrail",
             '{"context": "guardrail text"}',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1753,7 +1753,7 @@ class TestPreLlmCallTargetRouting:
         All plugin context — dicts and plain strings — ends up in a single
         user message context string. There is no system_prompt target.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         self._make_pre_llm_plugin(
             plugins_dir, "aaa_mem",
             '{"context": "memory A"}',
@@ -1766,7 +1766,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "ccc_plain",
             '"plain text C"',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1915,13 +1915,13 @@ class TestPluginCommands:
 
     def test_get_plugin_command_handler_discovers_plugins_lazily(self, tmp_path, monkeypatch):
         """Handler lookup should work before any explicit discover_plugins() call."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir,
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: f"ok:{a}", description="Lazy")',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         import opencodon_cli.plugins as plugins_mod
 
@@ -1932,13 +1932,13 @@ class TestPluginCommands:
 
     def test_get_plugin_commands_discovers_plugins_lazily(self, tmp_path, monkeypatch):
         """Command listing should trigger plugin discovery on first access."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir,
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: a, description="Lazy")',
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         import opencodon_cli.plugins as plugins_mod
 
@@ -1949,7 +1949,7 @@ class TestPluginCommands:
 
     def test_get_plugin_context_engine_discovers_plugins_lazily(self, tmp_path, monkeypatch):
         """Context engine lookup should work before any explicit discover_plugins() call."""
-        opencodon_home = tmp_path / "hermes_test"
+        opencodon_home = tmp_path / "opencodon_test"
         plugins_dir = opencodon_home / "plugins"
         plugin_dir = plugins_dir / "engine-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -1990,14 +1990,14 @@ class TestPluginCommands:
 
     def test_commands_tracked_on_loaded_plugin(self, tmp_path, monkeypatch):
         """Commands registered during discover_and_load() are tracked on LoadedPlugin."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "cmd-plugin",
             register_body=(
                 'ctx.register_command("mycmd", lambda a: "ok", description="Test")'
             ),
         )
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2008,10 +2008,10 @@ class TestPluginCommands:
 
     def test_commands_in_list_plugins_output(self, tmp_path, monkeypatch):
         """list_plugins() includes command count."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "opencodon_test" / "plugins"
         # Set OPENCODON_HOME BEFORE _make_plugin_dir so auto-enable targets
         # the right config.yaml.
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
         _make_plugin_dir(
             plugins_dir, "cmd-plugin",
             register_body=(

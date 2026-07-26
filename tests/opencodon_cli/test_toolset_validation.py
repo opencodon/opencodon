@@ -1,15 +1,15 @@
 """Unit tests for opencodon_cli.toolset_validation (see #38798).
 
 Pure logic — the validity predicate is injected, so these tests need neither the
-tool registry nor a running Hermes.
+tool registry nor a running opencodon.
 """
 
 import pytest
 
 from opencodon_cli.toolset_validation import validate_platform_toolsets
 
-# A representative set of real toolset names. `hermes` is deliberately absent —
-# that is the corruption #38798 reported (`opencodon-cli` rewritten to `hermes`).
+# A representative set of real toolset names. `opencodon` is deliberately absent —
+# that is the corruption #38798 reported (`opencodon-cli` rewritten to `opencodon`).
 _KNOWN = {
     "opencodon-cli",
     "opencodon-telegram",
@@ -29,9 +29,9 @@ def test_valid_config_produces_no_warnings():
 
 
 def test_38798_corruption_warns_and_suggests_correct_name():
-    # The exact reported shape: cli holds 'hermes' instead of 'opencodon-cli'.
-    warnings = validate_platform_toolsets({"cli": ["hermes"]}, _is_valid)
-    unknown = [w for w in warnings if "unknown toolset 'hermes'" in w]
+    # The exact reported shape: cli holds 'opencodon' instead of 'opencodon-cli'.
+    warnings = validate_platform_toolsets({"cli": ["opencodon"]}, _is_valid)
+    unknown = [w for w in warnings if "unknown toolset 'opencodon'" in w]
     assert len(unknown) == 1
     # Actionable: points at the valid name the entry should have been.
     assert "did you mean 'opencodon-cli'?" in unknown[0]
@@ -50,7 +50,7 @@ def test_mixed_valid_and_invalid_flags_only_the_invalid():
 
 
 def test_unknown_without_valid_platform_default_omits_suggestion():
-    # hermes-mystery is not a known toolset, so no "did you mean" hint.
+    # opencodon-mystery is not a known toolset, so no "did you mean" hint.
     warnings = validate_platform_toolsets({"mystery": ["nope"]}, _is_valid)
     unknown = [w for w in warnings if "unknown toolset 'nope'" in w]
     assert len(unknown) == 1
@@ -74,18 +74,18 @@ def test_non_string_entries_are_skipped_not_counted_invalid():
 
 
 def test_all_invalid_reports_each_and_the_zero_state():
-    cfg = {"cli": ["hermes"], "discord": ["hermes"]}
+    cfg = {"cli": ["opencodon"], "discord": ["opencodon"]}
     warnings = validate_platform_toolsets(cfg, _is_valid)
     assert sum("unknown toolset" in w for w in warnings) == 2
     assert any("zero valid toolsets" in w for w in warnings)
 
 
-def test_real_validate_toolset_treats_opencodon_cli_valid_and_hermes_invalid():
+def test_real_validate_toolset_treats_opencodon_cli_valid_and_opencodon_invalid():
     # Ties the helper to reality: the canonical registry check agrees that
-    # `opencodon-cli` is the real toolset and `hermes` is not (the #38798 crux).
+    # `opencodon-cli` is the real toolset and `opencodon` is not (the #38798 crux).
     from toolsets import validate_toolset
 
     assert validate_toolset("opencodon-cli") is True
-    assert validate_toolset("hermes") is False
-    warnings = validate_platform_toolsets({"cli": ["hermes"]}, validate_toolset)
+    assert validate_toolset("opencodon") is False
+    warnings = validate_platform_toolsets({"cli": ["opencodon"]}, validate_toolset)
     assert any("did you mean 'opencodon-cli'?" in w for w in warnings)

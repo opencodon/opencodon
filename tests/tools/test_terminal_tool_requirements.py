@@ -42,40 +42,6 @@ class TestTerminalRequirements:
         assert "terminal" in names
         assert {"read_file", "write_file", "patch", "search_files"}.issubset(names)
 
-    def test_terminal_and_execute_code_tools_resolve_for_managed_modal(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
-        monkeypatch.setattr(terminal_tool_module, "managed_nous_tools_enabled", lambda: True)
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("USERPROFILE", str(tmp_path))
-        monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
-        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
-        monkeypatch.setattr(
-            terminal_tool_module,
-            "_get_env_config",
-            lambda: {"env_type": "modal", "modal_mode": "managed"},
-        )
-        monkeypatch.setattr(
-            terminal_tool_module,
-            "is_managed_tool_gateway_ready",
-            lambda _vendor: True,
-        )
-        tools = get_tool_definitions(enabled_toolsets=["terminal", "code_execution"], quiet_mode=True)
-        names = {tool["function"]["name"] for tool in tools}
-
-        assert "terminal" in names
-        assert "execute_code" in names
-
-
-class TestCheckFnTransientFailureSuppression:
-    """The check_fn TTL cache should absorb transient probe failures.
-
-    Regression coverage for #21658 / #5304: a single flaky
-    ``check_terminal_requirements()`` (Docker daemon busy, probe timeout)
-    must not silently strip the terminal/file toolset from a subagent. After
-    a recent success, a transient False is treated as a flake; a failure with
-    no recent success — or past the grace window — is honored.
-    """
-
     @pytest.fixture(autouse=True)
     def _reset(self):
         from tools.registry import invalidate_check_fn_cache

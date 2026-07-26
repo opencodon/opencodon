@@ -2,7 +2,7 @@
 # shellcheck shell=sh
 # Container-boot reconciliation of per-profile gateway s6 services.
 #
-# Runs as root after 01-hermes-setup (the stage2 hook) has chowned
+# Runs as root after 01-opencodon-setup (the stage2 hook) has chowned
 # the volume and seeded $OPENCODON_HOME, but before s6-rc starts user
 # services. /etc/cont-init.d/* scripts run in lexicographic order,
 # so the `02-` prefix guarantees ordering.
@@ -14,22 +14,22 @@
 # and auto-starts only those whose last recorded state was
 # `running` — see opencodon_cli/container_boot.py.
 #
-# Phase 4 also needs hermes-user writes to /run/service/ (so the
+# Phase 4 also needs opencodon-user writes to /run/service/ (so the
 # profile create/delete hooks can register/unregister at runtime),
 # so we chown the scandir before invoking the reconciler. We
-# additionally chown the s6-svscan control FIFO so the hermes user
+# additionally chown the s6-svscan control FIFO so the opencodon user
 # can send rescan signals via ``s6-svscanctl -a``; without this the
 # entire runtime-registration path is inert under UID 10000 (the
 # Python wrapper catches the resulting EACCES, prints a warning,
 # and swallows the failure).
 set -e
 
-# Make the dynamic scandir hermes-writable. The directory itself
+# Make the dynamic scandir opencodon-writable. The directory itself
 # starts root-owned by s6-overlay.
-chown hermes:hermes /run/service 2>/dev/null || true
+chown opencodon:opencodon /run/service 2>/dev/null || true
 
-# Make the svscan control FIFO hermes-writable so s6-svscanctl -a
-# / -an work for the hermes user. The FIFO is created by s6-svscan
+# Make the svscan control FIFO opencodon-writable so s6-svscanctl -a
+# / -an work for the opencodon user. The FIFO is created by s6-svscan
 # at PID-1 startup, so by the time this cont-init.d script runs it
 # already exists. Both ``control`` and ``lock`` need to be writable
 # for the various svscanctl operations; the directory itself stays
@@ -37,11 +37,11 @@ chown hermes:hermes /run/service 2>/dev/null || true
 if [ -d /run/service/.s6-svscan ]; then
     for entry in control lock; do
         if [ -e "/run/service/.s6-svscan/$entry" ]; then
-            chown hermes:hermes "/run/service/.s6-svscan/$entry" 2>/dev/null || true
+            chown opencodon:opencodon "/run/service/.s6-svscan/$entry" 2>/dev/null || true
         fi
     done
 fi
 
 # Skip the drop when already non-root.
-[ "$(id -u)" = 0 ] || exec /opt/hermes/.venv/bin/python -m opencodon_cli.container_boot
-exec s6-setuidgid hermes /opt/hermes/.venv/bin/python -m opencodon_cli.container_boot
+[ "$(id -u)" = 0 ] || exec /opt/opencodon/.venv/bin/python -m opencodon_cli.container_boot
+exec s6-setuidgid opencodon /opt/opencodon/.venv/bin/python -m opencodon_cli.container_boot

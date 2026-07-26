@@ -45,7 +45,7 @@ def scenario(name):
     """
     def wrap(fn):
         def run():
-            home = tempfile.mkdtemp(prefix=f"hermes_atyp_{name}_")
+            home = tempfile.mkdtemp(prefix=f"opencodon_atyp_{name}_")
             os.environ["OPENCODON_HOME"] = home
             os.environ["HOME"] = home
             for m in list(sys.modules.keys()):
@@ -533,7 +533,7 @@ def _(home, kb):
     anyone doing string interpolation without quoting."""
     # Note: home was already created with a safe prefix. We need to
     # reset to a weird one for this test.
-    weird = tempfile.mkdtemp(prefix="hermes with spaces ")
+    weird = tempfile.mkdtemp(prefix="opencodon with spaces ")
     os.environ["OPENCODON_HOME"] = weird
     os.environ["HOME"] = weird
     kb._INITIALIZED_PATHS.clear()
@@ -558,7 +558,7 @@ def _(home, kb):
 def _(home, kb):
     """OPENCODON_HOME with non-ASCII chars."""
     # Pre-create directly since tempfile doesn't love unicode prefixes
-    weird = f"/tmp/hermes_héllo_émöji_{os.getpid()}"
+    weird = f"/tmp/opencodon_héllo_émöji_{os.getpid()}"
     os.makedirs(weird, exist_ok=True)
     os.environ["OPENCODON_HOME"] = weird
     os.environ["HOME"] = weird
@@ -581,7 +581,7 @@ def _(home, kb):
     """OPENCODON_HOME is a symlink to the real dir. _INITIALIZED_PATHS
     uses Path.resolve() — two different symlink names pointing at the
     same dir should NOT double-init."""
-    real = tempfile.mkdtemp(prefix="hermes_real_")
+    real = tempfile.mkdtemp(prefix="opencodon_real_")
     link1 = real + "_link1"
     link2 = real + "_link2"
     os.symlink(real, link1)

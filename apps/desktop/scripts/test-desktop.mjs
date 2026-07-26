@@ -261,7 +261,7 @@ function launchFresh() {
   env.OPENCODON_DESKTOP_TEST_MODE = 'fresh-install'
   env.OPENCODON_DESKTOP_USER_DATA_DIR = userDataDir
   env.OPENCODON_HOME = opencodonHome
-  delete env.OPENCODON_DESKTOP_HERMES
+  delete env.OPENCODON_DESKTOP_OPENCODON
   delete env.OPENCODON_DESKTOP_OPENCODON_ROOT
 
   const child = spawn(APP.binary, [], {

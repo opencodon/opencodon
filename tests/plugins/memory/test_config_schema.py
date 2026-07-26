@@ -19,7 +19,7 @@ def test_plugin_without_schema_is_none(monkeypatch, tmp_path):
 
 
 def test_schemas_are_cached_per_provider():
-    assert get_provider_config_schema("honcho") is get_provider_config_schema("honcho")
+    assert get_provider_config_schema("extmem") is get_provider_config_schema("extmem")
 
 
 def test_cache_keys_on_schema_path_not_name(monkeypatch, tmp_path):

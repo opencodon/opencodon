@@ -3,14 +3,14 @@
 These tools are registered into the model's schema when the agent is
 running under the dispatcher (env var ``OPENCODON_KANBAN_TASK`` set) or when
 the active profile explicitly enables the ``kanban`` toolset for
-orchestrator work. A normal ``hermes chat`` session still sees **zero**
+orchestrator work. A normal ``opencodon chat`` session still sees **zero**
 kanban tools in its schema unless configured.
 
-Why tools instead of just shelling out to ``hermes kanban``?
+Why tools instead of just shelling out to ``opencodon kanban``?
 
 1. **Backend portability.** A worker whose terminal tool points at Docker
-   / Modal / Singularity / SSH would run ``hermes kanban complete …``
-   inside the container, where ``hermes`` isn't installed and the DB
+   / Modal / Singularity / SSH would run ``opencodon kanban complete …``
+   inside the container, where ``opencodon`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
    always reach ``~/.opencodon/kanban.db`` regardless of terminal backend.
 
@@ -20,8 +20,8 @@ Why tools instead of just shelling out to ``hermes kanban``?
 3. **Better errors.** Tool-call failures return structured JSON the
    model can reason about, not stderr strings it has to parse.
 
-Humans continue to use the CLI (``hermes kanban …``), the dashboard
-(``hermes dashboard``), and the slash command (``/kanban …``) — all
+Humans continue to use the CLI (``opencodon kanban …``), the dashboard
+(``opencodon dashboard``), and the slash command (``/kanban …``) — all
 three bypass the agent entirely. The tools are for dispatcher-spawned
 worker handoffs and for configured orchestrator profiles that route work
 through the board.
@@ -69,7 +69,7 @@ def _check_kanban_mode() -> bool:
     2. The current profile has ``kanban`` in its toolsets config
        (orchestrator profiles like techlead that route work via Kanban).
 
-    Humans running ``hermes chat`` without the kanban toolset see zero
+    Humans running ``opencodon chat`` without the kanban toolset see zero
     kanban tools. Workers spawned by the kanban dispatcher (gateway-
     embedded by default) and orchestrator profiles with the kanban
     toolset enabled see the Kanban lifecycle tool surface.
@@ -173,7 +173,7 @@ def _connect(board: Optional[str] = None):
     default) preserves the legacy resolution chain
     (``OPENCODON_KANBAN_DB`` → ``OPENCODON_KANBAN_BOARD`` env → current symlink
     → ``default``). Per-tool ``board`` lets a Telegram-side agent override
-    the env-pinned active board without restarting Hermes.
+    the env-pinned active board without restarting opencodon.
     """
     from opencodon_cli import kanban_db as kb
     return kb, kb.connect(board=board)
@@ -825,7 +825,7 @@ def _handle_comment(args: dict, **kw) -> str:
     # into the next worker's system prompt by ``build_worker_context``
     # as ``**{author}** (timestamp): {body}`` — accepting an
     # ``args["author"]`` override let a worker forge a comment from
-    # an authoritative-looking name like ``hermes-system`` and poison
+    # an authoritative-looking name like ``opencodon-system`` and poison
     # the future-worker context with what reads as a system directive.
     # Cross-task commenting itself remains unrestricted (see #19713) —
     # comments are the deliberate handoff channel between tasks.
@@ -942,7 +942,7 @@ def _download_url_with_cap(url: str, max_bytes: int) -> tuple[bytes, Optional[st
         with httpx.stream(
             "GET",
             current_url,
-            headers={"User-Agent": "hermes-kanban/attach"},
+            headers={"User-Agent": "opencodon-kanban/attach"},
             timeout=30,
             follow_redirects=False,
         ) as resp:
@@ -968,7 +968,7 @@ def _download_url_with_cap(url: str, max_bytes: int) -> tuple[bytes, Optional[st
 def _handle_attach_url(args: dict, **kw) -> str:
     """Attach a file fetched server-side from a URL.
 
-    The agent passes a URL; Hermes downloads it (with the shared size cap)
+    The agent passes a URL; opencodon downloads it (with the shared size cap)
     and stores it as a real attachment. Useful when the agent has a link
     rather than the bytes. Only http/https URLs are accepted.
     """
@@ -1201,7 +1201,7 @@ def _maybe_auto_subscribe(conn: Any, task_id: str) -> bool:
     Gated by ``kanban.auto_subscribe_on_create`` in config.yaml (default
     True). Disable to mirror pre-feature behaviour, e.g. when the
     originating user/chat opted out via the per-platform notification
-    toggle (see ``hermes dashboard``).
+    toggle (see ``opencodon dashboard``).
 
     Subscription paths:
 
@@ -1670,7 +1670,7 @@ KANBAN_ATTACH_SCHEMA = {
 KANBAN_ATTACH_URL_SCHEMA = {
     "name": "kanban_attach_url",
     "description": (
-        "Attach a file to a task by URL — Hermes downloads it server-side "
+        "Attach a file to a task by URL — opencodon downloads it server-side "
         "and stores it as a real attachment (capped at 25 MB). Use when "
         "you have a link rather than the bytes. Only http/https URLs are "
         "accepted."
@@ -1892,7 +1892,7 @@ KANBAN_CREATE_SCHEMA = {
                 "type": "string",
                 "description": (
                     "Provider the 'model' belongs to (e.g. 'openrouter', "
-                    "'anthropic', 'nous'). Set this whenever the model "
+                    "'anthropic'). Set this whenever the model "
                     "is not from the assignee profile's configured "
                     "provider — a model name alone is resolved against "
                     "the profile's provider and will fail if it belongs "

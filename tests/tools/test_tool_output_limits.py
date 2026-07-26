@@ -128,7 +128,7 @@ class TestShortcuts:
 
 class TestDefaultConfigHasSection:
     """The DEFAULT_CONFIG in opencodon_cli.config must expose tool_output so
-    that ``hermes setup`` and default installs stay in sync with the
+    that ``opencodon setup`` and default installs stay in sync with the
     helpers here."""
 
     def test_default_config_contains_tool_output_section(self):

@@ -1,7 +1,7 @@
 """OpenAI Chat Completions transport.
 
 Handles the default api_mode ('chat_completions') used by ~16 OpenAI-compatible
-providers (OpenRouter, Nous, NVIDIA, Qwen, Ollama, DeepSeek, xAI, Kimi, etc.).
+providers (OpenRouter, NVIDIA, Qwen, Ollama, DeepSeek, xAI, Kimi, etc.).
 
 Messages and tools are already in OpenAI format — convert_messages and
 convert_tools are near-identity.  The complexity lives in build_kwargs
@@ -33,7 +33,7 @@ def _reasoning_config_for_model(model: str, reasoning_config: dict | None) -> di
 
 
 def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> dict | None:
-    """Translate Hermes/OpenRouter-style reasoning config to Gemini thinkingConfig."""
+    """Translate opencodon/OpenRouter-style reasoning config to Gemini thinkingConfig."""
     if reasoning_config is None or not isinstance(reasoning_config, dict):
         return None
 
@@ -60,7 +60,7 @@ def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> 
 
     thinking_config: Dict[str, Any] = {"includeThoughts": True}
 
-    # Gemini 2.5 accepts thinkingBudget; don't guess a budget from Hermes'
+    # Gemini 2.5 accepts thinkingBudget; don't guess a budget from opencodon'
     # coarse effort levels. ``includeThoughts`` alone is enough to surface
     # thought parts without risking request validation errors.
     if normalized_model.startswith("gemini-2.5-"):
@@ -70,7 +70,7 @@ def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> 
         effort = "medium"
 
     # Gemini 3 Flash documents low/medium/high thinking levels; Gemini 3 Pro
-    # is stricter (low/high). Clamp Hermes' wider effort set to what each
+    # is stricter (low/high). Clamp opencodon' wider effort set to what each
     # family accepts so we never forward an undocumented level verbatim.
     if normalized_model.startswith(("gemini-3", "gemini-3.1")):
         if "flash" in normalized_model:
@@ -163,7 +163,7 @@ class ChatCompletionsTransport(ProviderTransport):
           ``Extra inputs are not permitted, field: 'messages[N].tool_name'``.
           Permissive providers (OpenRouter, MiniMax) silently ignore the
           field, which masked the bug for months.
-        - Hermes-internal scaffolding markers — any top-level message key
+        - opencodon-internal scaffolding markers — any top-level message key
           starting with ``_`` (e.g. ``_empty_recovery_synthetic``,
           ``_empty_terminal_sentinel``, ``_thinking_prefill``). These are
           bookkeeping flags the agent loop attaches to messages so the
@@ -241,7 +241,7 @@ class ChatCompletionsTransport(ProviderTransport):
                 out_msg.pop("api_content", None)  # persist-what-you-send sidecar
 
 
-            # Drop all Hermes-internal scaffolding markers (``_``-prefixed).
+            # Drop all opencodon-internal scaffolding markers (``_``-prefixed).
             # OpenAI's message schema has no ``_``-prefixed fields, so this
             # is safe and future-proofs against new markers being added.
             internal_keys = [k for k in msg if isinstance(k, str) and k.startswith("_")]
@@ -302,7 +302,6 @@ class ChatCompletionsTransport(ProviderTransport):
             # (i.e. custom / unregistered providers). Known providers all go
             # through provider_profile.
             is_openrouter: bool
-            is_nous: bool
             is_qwen_portal: bool
             is_github_models: bool
             is_nvidia_nim: bool
@@ -324,7 +323,7 @@ class ChatCompletionsTransport(ProviderTransport):
             supports_reasoning: bool
             github_reasoning_extra: dict | None
             lmstudio_reasoning_options: list[str] | None  # raw allowed_options from /api/v1/models
-            # Claude on OpenRouter/Nous max output
+            # Claude on OpenRouter max output
             anthropic_max_output: int | None
             extra_body_additions: dict | None
         """
@@ -367,7 +366,7 @@ class ChatCompletionsTransport(ProviderTransport):
         # Tools
         if tools:
             # Moonshot/Kimi uses a stricter flavored JSON Schema.  Rewriting
-            # tool parameters here keeps aggregator routes (Nous, OpenRouter,
+            # tool parameters here keeps aggregator routes (OpenRouter,
             # etc.) compatible, in addition to direct moonshot.ai endpoints.
             if is_moonshot_model(model):
                 tools = sanitize_moonshot_tools(tools)
@@ -436,7 +435,6 @@ class ChatCompletionsTransport(ProviderTransport):
         extra_body: dict[str, Any] = {}
 
         is_openrouter = params.get("is_openrouter", False)
-        is_nous = params.get("is_nous", False)
         is_github_models = params.get("is_github_models", False)
         provider_name = str(params.get("provider_name") or "").strip().lower()
         base_url = params.get("base_url")
@@ -633,7 +631,7 @@ class ChatCompletionsTransport(ProviderTransport):
             # keys (tags, reasoning, provider, plugins, …) are unknown fields
             # there and Gemini rejects the whole request with a non-retryable
             # HTTP 400 ("Invalid JSON payload received. Unknown name 'tags'").
-            # This happens when a profile that emits extra_body (e.g. the Nous
+            # This happens when a profile that emits extra_body (e.g. an aggregator
             # profile's portal `tags`) is active but the resolved endpoint is a
             # Gemini base_url — typical when only Google credentials are set and
             # a fallback/aux call lands on Gemini. The native client only reads
@@ -728,7 +726,7 @@ class ChatCompletionsTransport(ProviderTransport):
         # OpenAI structured-refusal field. When a model declines, the SDK
         # populates ``message.refusal`` with the explanation and leaves
         # ``content`` empty. OpenAI-compatible proxies that front Anthropic /
-        # Bedrock (e.g. Nous Portal) surface a Claude refusal this way — or via
+        # Bedrock surface a Claude refusal this way — or via
         # ``finish_reason="content_filter"`` — instead of the native
         # ``stop_reason="refusal"``. Without capturing it the refusal looks
         # like an empty response, so the agent loop retries a deterministic

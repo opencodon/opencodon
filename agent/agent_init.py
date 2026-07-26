@@ -220,7 +220,7 @@ def _build_codex_gpt5_autoraise_notice(
         f"ℹ Codex {model} caps context at {cap}, so auto-compaction was raised "
         f"to {to_pct}% (from {from_pct}%) to use more of the window before "
         f"summarizing.\n"
-        f"  Opt back out: hermes config set compression.codex_gpt55_autoraise false"
+        f"  Opt back out: opencodon config set compression.codex_gpt55_autoraise false"
     )
 
 
@@ -829,15 +829,6 @@ def init_agent(
     # after each API call.  Accessed by /usage slash command.
     agent._rate_limit_state: Optional["RateLimitState"] = None
 
-    # Credits tracking (dev-only, L0 usage-aware-credits) — updated from
-    # x-nous-credits-* response headers after each API call.  Session-start
-    # remaining is latched the first time a header is ever seen so we can
-    # report cumulative micros spent.  Surfaced behind OPENCODON_DEV_CREDITS.
-    agent._credits_state = None
-    agent._credits_session_start_micros = None
-    # Threshold-notice latch (L4): active sticky-notice keys + the warn90 crossing gate.
-    agent._credits_latch = {"active": set(), "seen_below_90": False, "usage_band": None}
-
     # OpenRouter response cache hit counter — incremented when
     # X-OpenRouter-Cache-Status: HIT is seen in streaming response headers.
     agent._or_cache_hits: int = 0
@@ -1234,13 +1225,13 @@ def init_agent(
                         raise RuntimeError(
                             f"Provider '{_explicit}' is set in config.yaml but no API key "
                             f"was found. Set the {_env_hint} environment "
-                            f"variable, or switch to a different provider with `hermes model`."
+                            f"variable, or switch to a different provider with `opencodon model`."
                         )
                 if not getattr(agent, "_fallback_activated", False):
                     # No provider configured — reject with a clear message.
                     raise RuntimeError(
-                        "No LLM provider configured. Run `hermes model` to "
-                        "select a provider, or run `hermes setup` for first-time "
+                        "No LLM provider configured. Run `opencodon model` to "
+                        "select a provider, or run `opencodon setup` for first-time "
                         "configuration."
                     )
         
@@ -1537,7 +1528,7 @@ def init_agent(
         agent.show_commentary = True
 
     # LM Studio can either be explicitly preloaded through LM Studio's
-    # management API (the historical Hermes behavior) or left to LM Studio's
+    # management API (the historical opencodon behavior) or left to LM Studio's
     # just-in-time / Auto-Evict chat-completions path.  Keep the default
     # explicit for backward compatibility; users with LM Studio Auto-Evict can
     # opt into JIT via ``model.lmstudio_load_mode: jit``.
@@ -1626,7 +1617,7 @@ def init_agent(
                         _init_kwargs["warning_callback"] = agent._emit_warning
                         _init_kwargs["status_callback"] = agent._emit_status
                     # Thread session title for memory provider scoping
-                    # (e.g. honcho uses this to derive chat-scoped session keys)
+                    # (a memory provider may use this to derive chat-scoped session keys)
                     if agent._session_db:
                         try:
                             _st = agent._session_db.get_session_title(agent.session_id)
@@ -1649,7 +1640,7 @@ def init_agent(
                         _init_kwargs["chat_type"] = agent._chat_type
                     if agent._thread_id:
                         _init_kwargs["thread_id"] = agent._thread_id
-                    # Thread gateway session key for stable per-chat Honcho session isolation
+                    # Thread gateway session key for stable per-chat memory session isolation
                     if agent._gateway_session_key:
                         _init_kwargs["gateway_session_key"] = agent._gateway_session_key
                     # Profile identity for per-profile provider scoping
@@ -1657,7 +1648,7 @@ def init_agent(
                         from opencodon_cli.profiles import get_active_profile_name
                         _profile = get_active_profile_name()
                         _init_kwargs["agent_identity"] = _profile
-                        _init_kwargs["agent_workspace"] = "hermes"
+                        _init_kwargs["agent_workspace"] = "opencodon"
                     except Exception:
                         pass
                     agent._memory_manager.initialize_all(**_init_kwargs)
@@ -1723,7 +1714,7 @@ def init_agent(
             pass
 
     # Per-platform prompt-hint overrides (config.yaml → platform_hints).
-    # Lets an enterprise admin append to or replace Hermes' built-in
+    # Lets an enterprise admin append to or replace opencodon' built-in
     # platform hint for a single messaging platform (e.g. WhatsApp) without
     # affecting other platforms. Shape:
     #   platform_hints:
@@ -1877,10 +1868,10 @@ def init_agent(
     codex_app_server_auto_compaction = str(
         _compression_cfg.get("codex_app_server_auto", "native") or "native"
     ).lower()
-    if codex_app_server_auto_compaction not in {"native", "hermes", "off"}:
+    if codex_app_server_auto_compaction not in {"native", "opencodon", "off"}:
         _ra().logger.warning(
             "Invalid compression.codex_app_server_auto=%r; using 'native'. "
-            "Valid values are: native, hermes, off.",
+            "Valid values are: native, opencodon, off.",
             codex_app_server_auto_compaction,
         )
         codex_app_server_auto_compaction = "native"
@@ -2333,33 +2324,6 @@ def init_agent(
             f"model.context_length in config.yaml to the real value "
             f"(this must be at least {MINIMUM_CONTEXT_LENGTH // 1000}K)."
         )
-
-    # Nous Hermes 3/4 are chat models, not tool-call-tuned. The interactive
-    # CLI already warns via cli.py show_banner() (richer output + /model hint),
-    # so skip platform=="cli" here to avoid emitting the warning twice per
-    # startup. (Gateway/TUI/cron construct with quiet_mode=True and are already
-    # gated off by the `not agent.quiet_mode` check above; this guard's active
-    # job is the CLI dedup, and it leaves the door open for any non-quiet
-    # non-CLI surface to still surface the warning.)
-    if not agent.quiet_mode and (agent.platform or "cli") != "cli":
-        try:
-            from opencodon_cli.model_switch import _check_hermes_model_warning
-
-            _hermes_warn = _check_hermes_model_warning(agent.model or "")
-            if _hermes_warn:
-                _user_msg = (
-                    "⚠ Nous Research Hermes 3 & 4 models are NOT agentic — they "
-                    "lack reliable tool-calling for agent workflows (delegation, "
-                    "cron, proactive tools). Consider an agentic model instead "
-                    "(Claude, GPT, Gemini, Qwen-Coder, etc.)."
-                )
-                if hasattr(agent, "_emit_warning"):
-                    agent._emit_warning(_user_msg)
-                else:
-                    print(f"\n{_user_msg}\n", file=sys.stderr)
-                _ra().logger.warning(_hermes_warn)
-        except Exception:
-            pass
 
     # Inject context engine tool schemas (e.g. lcm_grep, lcm_describe, lcm_expand).
     # Skip names that are already present — the _ra().get_tool_definitions()

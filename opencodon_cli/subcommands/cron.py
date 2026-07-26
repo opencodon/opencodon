@@ -1,4 +1,4 @@
-"""``hermes cron`` subcommand parser.
+"""``opencodon cron`` subcommand parser.
 
 Extracted verbatim from ``opencodon_cli/main.py:main()`` — same arguments, same
 ``func=cmd_cron`` dispatch. The handler is injected so this module does not

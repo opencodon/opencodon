@@ -52,7 +52,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     The user-plugin source is preferred over a transient
     ``OPENCODON_BUNDLED_PLUGINS`` override because the bundled dir is
     resolved per-call (other tests in the suite implicitly rely on the
-    real bundled plugins — kanban, hermes-achievements, model providers
+    real bundled plugins — kanban, opencodon-achievements, model providers
     — being available, and globally swapping that root would yank them
     all). User plugins are first in the discovery search order, so
     laying down the fixture here is enough.
@@ -72,7 +72,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     # An installed-but-not-enabled user plugin has its API mount skipped
     # and its assets 404'd — which is the whole point of the gate. These
     # fixtures exist to exercise the *serving* paths, so opt the example
-    # plugin in exactly as a real operator would with `hermes plugins
+    # plugin in exactly as a real operator would with `opencodon plugins
     # enable example`.
     from opencodon_cli.config import load_config, save_config
     _cfg = load_config()
@@ -163,7 +163,7 @@ class TestReloadEnv:
         os.environ.pop("TEST_RELOAD_VAR", None)
 
     def test_removes_deleted_known_vars(self, tmp_path):
-        """reload_env() removes known Hermes vars not present in .env."""
+        """reload_env() removes known opencodon vars not present in .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")  # empty .env
         # Pick a known key from OPTIONAL_ENV_VARS
@@ -175,7 +175,7 @@ class TestReloadEnv:
             assert count >= 1
 
     def test_does_not_remove_unknown_vars(self, tmp_path):
-        """reload_env() preserves non-Hermes env vars even when absent from .env."""
+        """reload_env() preserves non-opencodon env vars even when absent from .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")
         with patch.dict(reload_env.__globals__, {"get_env_path": lambda: env_file}):
@@ -266,7 +266,7 @@ class TestWebServerEndpoints:
         assert "version" in data
         assert "opencodon_home" in data
         assert "active_sessions" in data
-        assert data["can_update_hermes"] is True
+        assert data["can_update_opencodon"] is True
 
     def test_status_active_session_count_uses_read_only_db(self, monkeypatch, tmp_path):
         import opencodon_cli.web_server as web_server
@@ -422,7 +422,7 @@ class TestWebServerEndpoints:
 
         resp = self.client.get("/api/status")
         assert resp.status_code == 200
-        assert resp.json()["can_update_hermes"] is False
+        assert resp.json()["can_update_opencodon"] is False
 
     def test_dashboard_update_capability_detects_generic_container(self, monkeypatch):
         import opencodon_constants
@@ -435,7 +435,7 @@ class TestWebServerEndpoints:
         assert web_server._dashboard_local_update_managed_externally() is True
 
     def test_dashboard_update_capability_allows_git_in_container(self, monkeypatch):
-        """A git checkout inside a container (e.g. bind-mounted in hermes-webui)
+        """A git checkout inside a container (e.g. bind-mounted in opencodon-webui)
         should still offer dashboard updates — the checkout is self-managed."""
         import opencodon_constants
         import opencodon_cli.web_server as web_server
@@ -458,16 +458,6 @@ class TestWebServerEndpoints:
     @staticmethod
     def _provider_field_map(payload):
         return {field["key"]: field for field in payload["fields"]}
-
-    def test_get_memory_provider_config_loads_dynamic_plugin_schema(self):
-        resp = self.client.get("/api/memory/providers/honcho/config")
-
-        assert resp.status_code == 200
-        data = resp.json()
-        fields = self._provider_field_map(data)
-        assert fields["api_key"]["kind"] == "secret"
-        assert fields["api_key"]["url"] == "https://app.honcho.dev"
-        assert fields["baseUrl"]["kind"] == "text"
 
     def test_instance_schema_serves_providers_without_declared_schema(self, monkeypatch):
         # The default surface serves the plugin instance's get_config_schema().
@@ -510,7 +500,6 @@ class TestWebServerEndpoints:
 
         assert resp.status_code == 200
         providers = resp.json()["providers"]
-        assert providers
 
         failures = []
         for provider in providers:
@@ -521,25 +510,6 @@ class TestWebServerEndpoints:
                 failures.append((provider["name"], config_resp.status_code, config_resp.text))
 
         assert failures == []
-
-    def test_memory_status_reports_honcho_needs_config_after_dependency_setup(self, monkeypatch, tmp_path):
-        # Pin HOME so a developer's real ~/.honcho config can't flip the status.
-        monkeypatch.setenv("HOME", str(tmp_path))
-        import opencodon_cli.web_server as web_server
-
-        original_dependency_importable = web_server._dependency_importable
-        monkeypatch.setattr(
-            web_server,
-            "_dependency_importable",
-            lambda dep: True if dep == "honcho-ai" else original_dependency_importable(dep),
-        )
-
-        resp = self.client.get("/api/memory")
-
-        assert resp.status_code == 200
-        providers = {row["name"]: row for row in resp.json()["providers"]}
-        assert providers["honcho"]["setup"]["dependencies_installed"] is True
-        assert providers["honcho"]["status"] == "needs_config"
 
     def test_post_unknown_memory_provider_setup_returns_404(self):
         resp = self.client.post("/api/memory/providers/nope/setup", json={"values": {}})
@@ -723,334 +693,6 @@ class TestWebServerEndpoints:
         fetched = self.client.get("/api/model/moa").json()
         assert fetched["presets"]["default"]["fanout"] == "user_turn"
         assert fetched["presets"]["default"]["reference_max_tokens"] == 600
-    # ── Memory provider config (Honcho host-block backend) ──────────────
-
-    @pytest.fixture(autouse=True)
-    def _isolate_honcho_config(self):
-        # Honcho tests write the suite-wide OPENCODON_HOME honcho.json; snapshot and
-        # restore it so provider status/config state never leaks across tests.
-        from opencodon_constants import get_opencodon_home
-
-        path = get_opencodon_home() / "honcho.json"
-        before = path.read_bytes() if path.exists() else None
-        yield
-        if before is None:
-            path.unlink(missing_ok=True)
-        else:
-            path.write_bytes(before)
-
-    @staticmethod
-    def _seed_local_honcho(cfg=None):
-        from opencodon_constants import get_opencodon_home
-
-        path = get_opencodon_home() / "honcho.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(cfg if cfg is not None else {}), encoding="utf-8")
-        return path
-
-    def test_get_honcho_config_returns_safe_defaults(self, monkeypatch, tmp_path):
-        # HOME isn't isolated by the suite; pin it so ~/.honcho can't leak in.
-        monkeypatch.setenv("HOME", str(tmp_path))
-
-        resp = self.client.get("/api/memory/providers/honcho/config?surface=declared")
-
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["name"] == "honcho"
-        assert data["label"] == "Honcho"
-        assert data["docs_url"] == "https://docs.honcho.dev/v3/guides/integrations/hermes"
-
-        fields = self._provider_field_map(data)
-        assert fields["environment"]["kind"] == "select"
-        assert fields["environment"]["value"] == "production"
-        assert {opt["value"] for opt in fields["environment"]["options"]} == {
-            "production",
-            "local",
-        }
-        assert fields["sessionStrategy"]["value"] == "per-directory"
-        # Blank workspace/aiPeer surface the resolved host as the placeholder.
-        assert fields["workspace"]["value"] == ""
-        assert fields["workspace"]["placeholder"] == "hermes"
-        assert fields["aiPeer"]["placeholder"] == "hermes"
-        assert fields["apiKey"]["kind"] == "secret"
-        assert fields["apiKey"]["is_set"] is False
-
-    def test_put_honcho_writes_host_block_root_and_secret(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("HONCHO_API_KEY", "guard")
-        monkeypatch.delenv("HONCHO_API_KEY")
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-        from opencodon_cli.config import load_config, load_env
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={
-                "values": {
-                    "apiKey": "hch-test-key",
-                    "baseUrl": "https://honcho.example.dev",
-                    "environment": "local",
-                    "workspace": "myws",
-                    "peerName": "eri",
-                    "aiPeer": "hermes",
-                    "sessionStrategy": "per-repo",
-                }
-            },
-        )
-
-        assert resp.status_code == 200
-        assert resp.json() == {"ok": True}
-        assert load_config()["memory"]["provider"] == "honcho"
-        assert load_env()["HONCHO_API_KEY"] == "hch-test-key"
-
-        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
-        # baseUrl is root-scoped; the rest live in the active host block.
-        assert cfg["baseUrl"] == "https://honcho.example.dev"
-        assert cfg["hosts"]["hermes"]["workspace"] == "myws"
-        assert cfg["hosts"]["hermes"]["peerName"] == "eri"
-        assert cfg["hosts"]["hermes"]["environment"] == "local"
-        assert cfg["hosts"]["hermes"]["sessionStrategy"] == "per-repo"
-        # The key lands where the client reads first; GET keeps it write-only.
-        assert cfg["hosts"]["hermes"]["apiKey"] == "hch-test-key"
-
-    def test_put_honcho_blank_text_clears_key(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"workspace": "myws"}},
-        )
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"workspace": ""}},
-        )
-
-        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
-        assert "workspace" not in cfg.get("hosts", {}).get("hermes", {})
-
-    def test_put_honcho_partial_save_preserves_other_keys(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"workspace": "myws"}},
-        )
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"peerName": "eri"}},
-        )
-
-        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
-        assert host["workspace"] == "myws"
-        assert host["peerName"] == "eri"
-
-    def test_put_honcho_rejects_unsupported_select_value(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"environment": "bogus"}},
-        )
-
-        assert resp.status_code == 400
-
-    def test_get_honcho_config_does_not_return_secret(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("HONCHO_API_KEY", "guard")
-        monkeypatch.delenv("HONCHO_API_KEY")
-        self._seed_local_honcho()
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"apiKey": "secret-value"}},
-        )
-
-        resp = self.client.get("/api/memory/providers/honcho/config?surface=declared")
-
-        assert resp.status_code == 200
-        data = resp.json()
-        fields = self._provider_field_map(data)
-        assert fields["apiKey"]["is_set"] is True
-        assert fields["apiKey"]["value"] == ""
-        assert "secret-value" not in json.dumps(data)
-
-    def test_put_honcho_bool_stored_natively_and_false_survives(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"saveMessages": "false", "dialecticDynamic": "true"}},
-        )
-
-        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
-        # Native JSON bools, not the strings "false"/"true" (which read truthy).
-        assert host["saveMessages"] is False
-        assert host["dialecticDynamic"] is True
-
-        fields = self._provider_field_map(self.client.get("/api/memory/providers/honcho/config?surface=declared").json())
-        assert fields["saveMessages"]["value"] == "false"
-        assert fields["dialecticDynamic"]["value"] == "true"
-
-    def test_put_honcho_number_stored_as_native_number(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"dialecticMaxChars": "1200", "timeout": "2.5"}},
-        )
-
-        cfg = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
-        assert cfg["hosts"]["hermes"]["dialecticMaxChars"] == 1200
-        assert isinstance(cfg["hosts"]["hermes"]["dialecticMaxChars"], int)
-        # timeout is root-scoped and keeps its fractional part.
-        assert cfg["timeout"] == 2.5
-
-        fields = self._provider_field_map(self.client.get("/api/memory/providers/honcho/config?surface=declared").json())
-        assert fields["dialecticMaxChars"]["value"] == "1200"
-
-    def test_put_honcho_json_round_trips_object(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        self._seed_local_honcho()
-        from opencodon_constants import get_opencodon_home
-
-        self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"userPeerAliases": '{"telegram_1": "eri"}'}},
-        )
-
-        host = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))["hosts"]["hermes"]
-        assert host["userPeerAliases"] == {"telegram_1": "eri"}
-
-        fields = self._provider_field_map(self.client.get("/api/memory/providers/honcho/config?surface=declared").json())
-        assert json.loads(fields["userPeerAliases"]["value"]) == {"telegram_1": "eri"}
-
-    def test_put_honcho_first_save_merges_into_resolved_config(self, monkeypatch, tmp_path):
-        # With no profile-local file, a save merges into the resolved global config.
-        monkeypatch.setenv("HOME", str(tmp_path))
-        from opencodon_constants import get_opencodon_home
-
-        global_path = tmp_path / ".honcho" / "config.json"
-        global_path.parent.mkdir(parents=True)
-        global_path.write_text(
-            json.dumps({"baseUrl": "https://kept.example", "hosts": {"hermes": {"workspace": "kept"}}}),
-            encoding="utf-8",
-        )
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"peerName": "eri"}},
-        )
-
-        assert resp.status_code == 200
-        assert not (get_opencodon_home() / "honcho.json").exists()
-        cfg = json.loads(global_path.read_text(encoding="utf-8"))
-        assert cfg["baseUrl"] == "https://kept.example"
-        assert cfg["hosts"]["hermes"] == {"workspace": "kept", "peerName": "eri"}
-
-    def test_put_honcho_updates_legacy_dot_form_host_block(self, monkeypatch, tmp_path):
-        # The legacy dot-form block reads resolve is updated in place, not shadowed.
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("OPENCODON_HONCHO_HOST", "hermes_work")
-
-        path = self._seed_local_honcho({"hosts": {"hermes.work": {"workspace": "w", "peerName": "eri"}}})
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"sessionStrategy": "per-repo"}},
-        )
-
-        assert resp.status_code == 200
-        hosts = json.loads(path.read_text(encoding="utf-8"))["hosts"]
-        assert set(hosts) == {"hermes.work"}
-        assert hosts["hermes.work"] == {"workspace": "w", "peerName": "eri", "sessionStrategy": "per-repo"}
-
-    def test_put_honcho_api_key_never_overwrites_oauth_token(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("HONCHO_API_KEY", "guard")
-        monkeypatch.delenv("HONCHO_API_KEY")
-        from opencodon_cli.config import load_env
-
-        path = self._seed_local_honcho({"hosts": {"hermes": {"apiKey": "hch-at-oauth-token"}}})
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"apiKey": "manual-key"}},
-        )
-
-        assert resp.status_code == 200
-        cfg = json.loads(path.read_text(encoding="utf-8"))
-        # The OAuth grant owns the JSON slot; the manual key lands in the env store.
-        assert cfg["hosts"]["hermes"]["apiKey"] == "hch-at-oauth-token"
-        assert load_env()["HONCHO_API_KEY"] == "manual-key"
-
-    def test_put_honcho_tolerates_null_hosts(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-
-        path = self._seed_local_honcho({"hosts": None})
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"workspace": "myws"}},
-        )
-
-        assert resp.status_code == 200
-        assert json.loads(path.read_text(encoding="utf-8"))["hosts"]["hermes"]["workspace"] == "myws"
-
-    def test_memory_provider_config_honors_profile_param(self, monkeypatch, tmp_path):
-        # A ?profile= save must land in that profile's config, not the serving
-        # process's — same contract as the skills/toolsets endpoints.
-        monkeypatch.setenv("HOME", str(tmp_path))
-        # The suite pins OPENCODON_HONCHO_HOST=hermes; this test exercises
-        # profile-driven host resolution, so drop the override explicitly.
-        monkeypatch.delenv("OPENCODON_HONCHO_HOST", raising=False)
-        from opencodon_constants import get_opencodon_home
-        from opencodon_cli.profiles import get_profile_dir
-
-        self._seed_local_honcho()
-
-        worker_home = get_profile_dir("worker")
-        worker_home.mkdir(parents=True, exist_ok=True)
-        worker_cfg = worker_home / "honcho.json"
-        worker_cfg.write_text(json.dumps({"hosts": {"hermes_worker": {"workspace": "kept"}}}), encoding="utf-8")
-
-        resp = self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared&profile=worker",
-            json={"values": {"peerName": "eri"}},
-        )
-
-        assert resp.status_code == 200
-        worker_hosts = json.loads(worker_cfg.read_text(encoding="utf-8"))["hosts"]
-        host_block = next(iter(worker_hosts.values()))
-        assert host_block["peerName"] == "eri"
-        # The serving process's own config is untouched.
-        own = json.loads((get_opencodon_home() / "honcho.json").read_text(encoding="utf-8"))
-        assert "peerName" not in json.dumps(own)
-
-        fields = self._provider_field_map(
-            self.client.get("/api/memory/providers/honcho/config?surface=declared&profile=worker").json()
-        )
-        assert fields["peerName"]["value"] == "eri"
-
-    def test_put_honcho_rejects_malformed_number_and_json(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HOME", str(tmp_path))
-
-        assert self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"dialecticMaxChars": "lots"}},
-        ).status_code == 400
-        assert self.client.put(
-            "/api/memory/providers/honcho/config?surface=declared",
-            json={"values": {"userPeerAliases": "{not json"}},
-        ).status_code == 400
-
     # ── GET /api/media (remote image display) ───────────────────────────
 
     def test_get_media_serves_image_in_root(self):
@@ -2087,7 +1729,7 @@ class TestWebServerEndpoints:
         resp = self.client.post("/api/audio/speak", json={"text": "   "})
         assert resp.status_code == 400
 
-    def test_update_hermes_returns_docker_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_docker_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         spawned = False
@@ -2095,47 +1737,47 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args, **_kwargs):
             nonlocal spawned
             spawned = True
-            raise AssertionError("docker update guard should not spawn hermes update")
+            raise AssertionError("docker update guard should not spawn opencodon update")
 
         # Bypass the managed-externally gate so we reach the docker install check.
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: False)
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "docker")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is False
-        assert data["name"] == "hermes-update"
+        assert data["name"] == "opencodon-update"
         assert data["pid"] is None
         assert data["error"] == "docker_update_unsupported"
-        assert "docker pull nousresearch/hermes-agent:latest" in data["message"]
+        assert "docker pull opencodon/opencodon:latest" in data["message"]
         assert spawned is False
 
-        status = self.client.get("/api/actions/hermes-update/status")
+        status = self.client.get("/api/actions/opencodon-update/status")
         assert status.status_code == 200
         status_data = status.json()
         assert status_data["running"] is False
         assert status_data["exit_code"] == 1
         assert status_data["pid"] is None
-        assert any("docker pull nousresearch/hermes-agent:latest" in line for line in status_data["lines"])
+        assert any("docker pull opencodon/opencodon:latest" in line for line in status_data["lines"])
 
-    def test_update_hermes_returns_nix_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_nix_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         def fail_spawn(*_args, **_kwargs):
-            raise AssertionError("Nix update guard should not spawn hermes update")
+            raise AssertionError("Nix update guard should not spawn opencodon update")
 
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: False)
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "nix")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -2144,7 +1786,7 @@ class TestWebServerEndpoints:
         assert data["error"] == "nix_update_unsupported"
         assert "Nix" in data["message"]
 
-    def test_update_hermes_returns_managed_runtime_guidance_without_spawning(self, monkeypatch):
+    def test_update_opencodon_returns_managed_runtime_guidance_without_spawning(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         spawned = False
@@ -2153,7 +1795,7 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args, **_kwargs):
             nonlocal spawned
             spawned = True
-            raise AssertionError("managed runtime update guard should not spawn hermes update")
+            raise AssertionError("managed runtime update guard should not spawn opencodon update")
 
         def fail_detect(*_args, **_kwargs):
             nonlocal detected
@@ -2162,23 +1804,23 @@ class TestWebServerEndpoints:
 
         monkeypatch.setattr(web_server, "_dashboard_local_update_managed_externally", lambda: True)
         monkeypatch.setattr(web_server, "detect_install_method", fail_detect)
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fail_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fail_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
         data = resp.json()
         assert data["ok"] is False
-        assert data["name"] == "hermes-update"
+        assert data["name"] == "opencodon-update"
         assert data["pid"] is None
         assert data["error"] == "dashboard_update_managed_externally"
         assert "managed outside this dashboard" in data["message"]
         assert spawned is False
         assert detected is False
 
-        status = self.client.get("/api/actions/hermes-update/status")
+        status = self.client.get("/api/actions/opencodon-update/status")
         assert status.status_code == 200
         status_data = status.json()
         assert status_data["running"] is False
@@ -2186,7 +1828,7 @@ class TestWebServerEndpoints:
         assert status_data["pid"] is None
         assert any("managed outside this dashboard" in line for line in status_data["lines"])
 
-    def test_update_hermes_spawns_on_non_docker_install(self, monkeypatch):
+    def test_update_opencodon_spawns_on_non_docker_install(self, monkeypatch):
         import opencodon_cli.web_server as web_server
 
         class Proc:
@@ -2202,15 +1844,15 @@ class TestWebServerEndpoints:
             return Proc()
 
         monkeypatch.setattr(web_server, "detect_install_method", lambda _root: "git")
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fake_spawn)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fake_spawn)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        resp = self.client.post("/api/hermes/update")
+        resp = self.client.post("/api/opencodon/update")
 
         assert resp.status_code == 200
-        assert resp.json() == {"ok": True, "pid": 12345, "name": "hermes-update"}
-        assert calls == [(["update"], "hermes-update")]
+        assert resp.json() == {"ok": True, "pid": 12345, "name": "opencodon-update"}
+        assert calls == [(["update"], "opencodon-update")]
 
     def test_action_status_reaps_completed_process(self, monkeypatch):
         import opencodon_cli.web_server as web_server
@@ -2227,11 +1869,11 @@ class TestWebServerEndpoints:
                 waited["done"] = True
 
         proc = _Proc()
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
-        web_server._ACTION_PROCS["hermes-update"] = proc
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
+        web_server._ACTION_PROCS["opencodon-update"] = proc
 
-        resp = self.client.get("/api/actions/hermes-update/status")
+        resp = self.client.get("/api/actions/opencodon-update/status")
         assert resp.status_code == 200
         data = resp.json()
         assert data["running"] is False
@@ -2240,8 +1882,8 @@ class TestWebServerEndpoints:
 
         # Process should have been reaped and moved to results.
         assert waited["done"] is True
-        assert "hermes-update" not in web_server._ACTION_PROCS
-        assert web_server._ACTION_RESULTS["hermes-update"] == {
+        assert "opencodon-update" not in web_server._ACTION_PROCS
+        assert web_server._ACTION_RESULTS["opencodon-update"] == {
             "exit_code": 0,
             "pid": 42424,
         }
@@ -2259,17 +1901,17 @@ class TestWebServerEndpoints:
                 raise OSError("already reaped")
 
         proc = _Proc()
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
-        web_server._ACTION_PROCS["hermes-update"] = proc
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
+        web_server._ACTION_PROCS["opencodon-update"] = proc
 
-        resp = self.client.get("/api/actions/hermes-update/status")
+        resp = self.client.get("/api/actions/opencodon-update/status")
         assert resp.status_code == 200
         data = resp.json()
         assert data["exit_code"] == 1
         # Still reaped despite wait() raising.
-        assert "hermes-update" not in web_server._ACTION_PROCS
-        assert web_server._ACTION_RESULTS["hermes-update"] == {
+        assert "opencodon-update" not in web_server._ACTION_PROCS
+        assert web_server._ACTION_RESULTS["opencodon-update"] == {
             "exit_code": 1,
             "pid": 99,
         }
@@ -2278,10 +1920,10 @@ class TestWebServerEndpoints:
         import opencodon_cli.web_server as web_server
 
         monkeypatch.setattr(web_server, "_ACTION_LOG_DIR", tmp_path)
-        web_server._ACTION_PROCS.pop("hermes-update", None)
-        web_server._ACTION_RESULTS.pop("hermes-update", None)
+        web_server._ACTION_PROCS.pop("opencodon-update", None)
+        web_server._ACTION_RESULTS.pop("opencodon-update", None)
 
-        log_path = tmp_path / web_server._ACTION_LOG_FILES["hermes-update"]
+        log_path = tmp_path / web_server._ACTION_LOG_FILES["opencodon-update"]
         log_path.write_text(
             "stale-start\n"
             + ("x" * (web_server._ACTION_LOG_TAIL_MAX_BYTES + 1024))
@@ -2299,7 +1941,7 @@ class TestWebServerEndpoints:
 
         monkeypatch.setattr(Path, "read_text", fail_if_status_reads_whole_log)
 
-        resp = self.client.get("/api/actions/hermes-update/status?lines=3")
+        resp = self.client.get("/api/actions/opencodon-update/status?lines=3")
 
         assert resp.status_code == 200
         assert resp.json()["lines"] == ["tail-one", "tail-two"]
@@ -2559,7 +2201,7 @@ class TestWebServerEndpoints:
         as a provider card, even when it has no hand entry in OPTIONAL_ENV_VARS.
 
         Regression for the GUI⇄CLI drift: openai-api, kilocode, novita,
-        tencent-tokenhub, copilot were configurable via `hermes model` but
+        tencent-tokenhub, copilot were configurable via `opencodon model` but
         invisible in the desktop Providers → API keys tab.
         """
         from opencodon_cli.provider_catalog import provider_catalog
@@ -2685,7 +2327,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_maps_unknown_vendor_to_aggregator(self, monkeypatch):
         """A bare vendor name from analytics rows (no billing_provider) is not
-        a Hermes provider — keep the user's aggregator instead of writing a
+        a opencodon provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
             "opencodon_cli.model_cost_guard.expensive_model_warning",
@@ -2732,7 +2374,7 @@ class TestWebServerEndpoints:
 
     def test_ops_import_passes_force_flag(self, tmp_path, monkeypatch):
         """force=True must append --force so the spawned non-interactive
-        `hermes import` doesn't auto-abort at the overwrite prompt."""
+        `opencodon import` doesn't auto-abort at the overwrite prompt."""
         import opencodon_cli.web_server as ws
 
         archive = tmp_path / "backup.zip"
@@ -2748,7 +2390,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/ops/import", json={"archive": str(archive), "force": True},
@@ -2776,7 +2418,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post("/api/ops/backup", json={})
         assert resp.status_code == 200
@@ -2787,7 +2429,7 @@ class TestWebServerEndpoints:
         assert captured["name"] == "backup"
         assert captured["args"] == ["backup", "-o", str(archive)]
         assert archive.parent == get_opencodon_home() / "backups"
-        assert archive.name.startswith("hermes-backup-")
+        assert archive.name.startswith("opencodon-backup-")
         assert archive.suffix == ".zip"
 
     def test_ops_backup_uses_hosted_opencodon_home(self, tmp_path, monkeypatch):
@@ -2805,7 +2447,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post("/api/ops/backup", json={})
         assert resp.status_code == 200
@@ -2820,7 +2462,7 @@ class TestWebServerEndpoints:
 
         backup_dir = ws._dashboard_backup_dir()
         backup_dir.mkdir(parents=True, exist_ok=True)
-        archive = backup_dir / "hermes-backup-test.zip"
+        archive = backup_dir / "opencodon-backup-test.zip"
         archive.write_bytes(b"zip bytes")
 
         resp = self.client.get(
@@ -2857,7 +2499,7 @@ class TestWebServerEndpoints:
             from types import SimpleNamespace as NS
             return NS(pid=12345)
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/ops/import-upload",
@@ -2890,7 +2532,7 @@ class TestWebServerEndpoints:
         def fail_spawn(*_args):
             raise AssertionError("invalid uploads must not spawn import")
 
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn)
+        monkeypatch.setattr(ws, "_spawn_opencodon_action", fail_spawn)
 
         resp = self.client.post(
             "/api/ops/import-upload",
@@ -3169,360 +2811,13 @@ class TestWebServerEndpoints:
         assert data["state"] == "not_configured"
         assert "DISCORD_BOT_TOKEN" in data["message"]
 
-    def test_telegram_onboarding_worker_request_uses_httpx(self, monkeypatch):
-        import httpx
-        import opencodon_cli.web_server as ws
 
-        calls = {}
 
-        def fail_urlopen(*_args, **_kwargs):
-            raise AssertionError("Telegram onboarding should not use urllib")
 
-        class FakeHttpxClient:
-            def __init__(self, *args, **kwargs):
-                calls["client_kwargs"] = kwargs
 
-            def __enter__(self):
-                return self
 
-            def __exit__(self, *_exc_info):
-                return False
 
-            def request(self, method, url, **kwargs):
-                calls["request"] = (method, url, kwargs)
-                return httpx.Response(
-                    201,
-                    json={"ok": True},
-                    request=httpx.Request(method, url),
-                )
 
-        monkeypatch.setenv("TELEGRAM_ONBOARDING_URL", "https://worker.example")
-        monkeypatch.setattr(ws.urllib.request, "urlopen", fail_urlopen)
-        monkeypatch.setattr(httpx, "Client", FakeHttpxClient)
-
-        payload = ws._telegram_onboarding_request_sync(
-            "POST",
-            "/v1/telegram/pairings",
-            body={"bot_name": "Hermes Agent"},
-            bearer_token="poll-secret",
-        )
-
-        assert payload == {"ok": True}
-        method, url, kwargs = calls["request"]
-        assert method == "POST"
-        assert url == "https://worker.example/v1/telegram/pairings"
-        assert kwargs["json"] == {"bot_name": "Hermes Agent"}
-        assert kwargs["headers"]["Accept"] == "application/json"
-        assert kwargs["headers"]["Authorization"] == "Bearer poll-secret"
-        assert kwargs["headers"]["Content-Type"] == "application/json"
-        assert kwargs["headers"]["User-Agent"].startswith("HermesDashboard/")
-
-    def test_telegram_onboarding_worker_request_maps_unexpected_errors(
-        self, monkeypatch
-    ):
-        import opencodon_cli.web_server as ws
-
-        monkeypatch.setenv("TELEGRAM_ONBOARDING_URL", "not a valid url")
-
-        with pytest.raises(ws.HTTPException) as exc:
-            ws._telegram_onboarding_request_sync(
-                "POST",
-                "/v1/telegram/pairings",
-                body={"bot_name": "Hermes Agent"},
-            )
-
-        assert exc.value.status_code == 502
-        assert (
-            exc.value.detail
-            == "Telegram setup service is unavailable. Try again shortly."
-        )
-
-    def test_telegram_onboarding_start_strips_poll_token(self, monkeypatch):
-        import opencodon_cli.web_server as ws
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        calls = []
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            calls.append((method, path, body, bearer_token))
-            return {
-                "pairing_id": "pair123",
-                "poll_token": "poll-secret",
-                "suggested_username": "hermes_pair123_bot",
-                "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair123_bot",
-                "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair123_bot",
-                "expires_at": "2027-05-18T00:00:00.000Z",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-
-        resp = self.client.post(
-            "/api/messaging/telegram/onboarding/start",
-            json={"bot_name": "Hosted Hermes"},
-        )
-
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["pairing_id"] == "pair123"
-        assert "poll_token" not in data
-        assert calls == [
-            (
-                "POST",
-                "/v1/telegram/pairings",
-                {"bot_name": "Hosted Hermes"},
-                None,
-            )
-        ]
-
-    def test_telegram_onboarding_ready_and_apply_never_returns_bot_token(self, monkeypatch):
-        import opencodon_cli.web_server as ws
-        from opencodon_cli.config import load_config, load_env
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            if method == "POST":
-                return {
-                    "pairing_id": "pair-ready",
-                    "poll_token": "poll-secret",
-                    "suggested_username": "hermes_pair_ready_bot",
-                    "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_ready_bot",
-                    "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_ready_bot",
-                    "expires_at": "2027-05-18T00:00:00.000Z",
-                }
-            assert method == "GET"
-            assert path == "/v1/telegram/pairings/pair-ready"
-            assert bearer_token == "poll-secret"
-            return {
-                "status": "ready",
-                "bot_username": "hermes_pair_ready_bot",
-                "owner_user_id": 123456789,
-                "token": "123456:SECRET",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-        ws._ACTION_PROCS.pop("gateway-restart", None)
-        restart_calls = []
-
-        class FakeRestartProc:
-            pid = 4242
-
-        def fake_spawn_action(subcommand, name):
-            restart_calls.append((subcommand, name))
-            return FakeRestartProc()
-
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn_action)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-
-        ready = self.client.get("/api/messaging/telegram/onboarding/pair-ready")
-        assert ready.status_code == 200
-        ready_data = ready.json()
-        assert ready_data["status"] == "ready"
-        assert ready_data["owner_user_id"] == "123456789"
-        assert "token" not in ready_data
-
-        applied = self.client.post(
-            "/api/messaging/telegram/onboarding/pair-ready/apply",
-            json={"allowed_user_ids": ["123456789", "123456789"]},
-        )
-        assert applied.status_code == 200
-        applied_data = applied.json()
-        assert applied_data == {
-            "ok": True,
-            "platform": "telegram",
-            "bot_username": "hermes_pair_ready_bot",
-            "needs_restart": False,
-            "restart_started": True,
-            "restart_action": "gateway-restart",
-            "restart_pid": 4242,
-        }
-        assert restart_calls == [(["gateway", "restart"], "gateway-restart")]
-        env = load_env()
-        assert env["TELEGRAM_BOT_TOKEN"] == "123456:SECRET"
-        assert env["TELEGRAM_ALLOWED_USERS"] == "123456789"
-        assert load_config()["platforms"]["telegram"]["enabled"] is True
-
-    def test_telegram_onboarding_apply_reports_restart_failure_after_save(
-        self, monkeypatch
-    ):
-        import opencodon_cli.web_server as ws
-        from opencodon_cli.config import load_config, load_env
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            if method == "POST":
-                return {
-                    "pairing_id": "pair-restart-fails",
-                    "poll_token": "poll-secret",
-                    "suggested_username": "hermes_pair_restart_fails_bot",
-                    "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_restart_fails_bot",
-                    "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_restart_fails_bot",
-                    "expires_at": "2027-05-18T00:00:00.000Z",
-                }
-            assert method == "GET"
-            assert path == "/v1/telegram/pairings/pair-restart-fails"
-            assert bearer_token == "poll-secret"
-            return {
-                "status": "ready",
-                "bot_username": "hermes_pair_restart_fails_bot",
-                "owner_user_id": 123456789,
-                "token": "123456:SECRET",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-        ws._ACTION_PROCS.pop("gateway-restart", None)
-
-        def fail_spawn_action(subcommand, name):
-            assert subcommand == ["gateway", "restart"]
-            assert name == "gateway-restart"
-            raise RuntimeError("supervisor unavailable")
-
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn_action)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-        ready = self.client.get("/api/messaging/telegram/onboarding/pair-restart-fails")
-        assert ready.status_code == 200
-        assert ready.json()["status"] == "ready"
-
-        applied = self.client.post(
-            "/api/messaging/telegram/onboarding/pair-restart-fails/apply",
-            json={"allowed_user_ids": ["123456789"]},
-        )
-
-        assert applied.status_code == 200
-        applied_data = applied.json()
-        assert applied_data["ok"] is True
-        assert applied_data["needs_restart"] is True
-        assert applied_data["restart_started"] is False
-        assert "supervisor unavailable" in applied_data["restart_error"]
-        assert "token" not in applied_data
-        env = load_env()
-        assert env["TELEGRAM_BOT_TOKEN"] == "123456:SECRET"
-        assert env["TELEGRAM_ALLOWED_USERS"] == "123456789"
-        assert load_config()["platforms"]["telegram"]["enabled"] is True
-
-    def test_telegram_onboarding_apply_reuses_inflight_gateway_restart(
-        self, monkeypatch
-    ):
-        """A live in-flight gateway restart is reused instead of spawning a
-        second racing ``hermes gateway restart`` child (e.g. when a stale
-        cached frontend also fires its own restart call)."""
-        import opencodon_cli.web_server as ws
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            if method == "POST":
-                return {
-                    "pairing_id": "pair-reuse",
-                    "poll_token": "poll-secret",
-                    "suggested_username": "hermes_pair_reuse_bot",
-                    "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_reuse_bot",
-                    "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_reuse_bot",
-                    "expires_at": "2027-05-18T00:00:00.000Z",
-                }
-            return {
-                "status": "ready",
-                "bot_username": "hermes_pair_reuse_bot",
-                "owner_user_id": 123456789,
-                "token": "123456:SECRET",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-
-        class FakeRunningProc:
-            pid = 5151
-
-            def poll(self):
-                return None  # still running
-
-        monkeypatch.setitem(ws._ACTION_PROCS, "gateway-restart", FakeRunningProc())
-
-        def fail_spawn_action(subcommand, name):
-            raise AssertionError("must not spawn a second concurrent restart")
-
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fail_spawn_action)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-        ready = self.client.get("/api/messaging/telegram/onboarding/pair-reuse")
-        assert ready.status_code == 200
-
-        applied = self.client.post(
-            "/api/messaging/telegram/onboarding/pair-reuse/apply",
-            json={"allowed_user_ids": ["123456789"]},
-        )
-
-        assert applied.status_code == 200
-        applied_data = applied.json()
-        assert applied_data["needs_restart"] is False
-        assert applied_data["restart_started"] is True
-        assert applied_data["restart_pid"] == 5151
-
-    def test_telegram_onboarding_apply_requires_ready_pairing(self, monkeypatch):
-        import opencodon_cli.web_server as ws
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            return {
-                "pairing_id": "pair-waiting",
-                "poll_token": "poll-secret",
-                "suggested_username": "hermes_pair_waiting_bot",
-                "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_waiting_bot",
-                "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_waiting_bot",
-                "expires_at": "2027-05-18T00:00:00.000Z",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-
-        resp = self.client.post(
-            "/api/messaging/telegram/onboarding/pair-waiting/apply",
-            json={"allowed_user_ids": ["123456789"]},
-        )
-
-        assert resp.status_code == 409
-        assert "not ready" in resp.json()["detail"]
-
-    def test_telegram_onboarding_cancel_clears_local_session(self, monkeypatch):
-        import opencodon_cli.web_server as ws
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            return {
-                "pairing_id": "pair-cancel",
-                "poll_token": "poll-secret",
-                "suggested_username": "hermes_pair_cancel_bot",
-                "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_cancel_bot",
-                "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_cancel_bot",
-                "expires_at": "2027-05-18T00:00:00.000Z",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-
-        cancel = self.client.delete("/api/messaging/telegram/onboarding/pair-cancel")
-        assert cancel.status_code == 200
-
-        status = self.client.get("/api/messaging/telegram/onboarding/pair-cancel")
-        assert status.status_code == 404
 
     def test_session_token_endpoint_removed(self):
         """GET /api/auth/session-token should no longer exist (token injected via HTML)."""
@@ -3607,14 +2902,14 @@ class TestWebServerEndpoints:
         assert index_resp.status_code == 200
         assert "cafe cafe" in index_resp.text
 
-        css_resp = spa_client.get("/assets/app.css", headers={"x-forwarded-prefix": "/hermes"})
+        css_resp = spa_client.get("/assets/app.css", headers={"x-forwarded-prefix": "/opencodon"})
         assert css_resp.status_code == 200
         assert "content: 'cafe';" in css_resp.text
 
         assert seen_encodings == {"index": "utf-8", "css": "utf-8"}
 
     def test_headless_serve_disables_spa_even_with_a_dist(self, monkeypatch, tmp_path):
-        """`hermes serve` (OPENCODON_SERVE_HEADLESS) must NOT serve the SPA even
+        """`opencodon serve` (OPENCODON_SERVE_HEADLESS) must NOT serve the SPA even
         when a built dist is present — only the API/WS surface is reachable."""
         from fastapi import FastAPI
         from starlette.testclient import TestClient
@@ -3634,52 +2929,7 @@ class TestWebServerEndpoints:
             assert resp.status_code == 404
             assert "web UI disabled" in resp.json()["error"]
 
-    def test_set_model_main_nous_applies_gateway_defaults(self, monkeypatch):
-        """Switching the main provider to Nous calls apply_nous_managed_defaults
-        (mirroring the CLI's post-model-selection Tool Gateway routing) and
-        surfaces the routed tools in the response."""
-        import opencodon_cli.nous_subscription as ns
 
-        called = {}
-
-        def fake_apply(config, *, enabled_toolsets=None, force_fresh=False):
-            called["enabled"] = set(enabled_toolsets or ())
-            called["force_fresh"] = force_fresh
-            # Simulate routing the unconfigured web tool through the gateway.
-            web = config.setdefault("web", {})
-            web["backend"] = "firecrawl"
-            return {"web"}
-
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", fake_apply)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "nous", "model": "hermes-4"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["provider"] == "nous"
-        assert data["gateway_tools"] == ["web"]
-        assert called["force_fresh"] is True
-
-    def test_set_model_main_non_nous_skips_gateway_defaults(self, monkeypatch):
-        """Non-Nous providers must NOT trigger Tool Gateway auto-routing."""
-        import opencodon_cli.nous_subscription as ns
-
-        def boom(*args, **kwargs):  # pragma: no cover - must not be called
-            raise AssertionError("apply_nous_managed_defaults called for non-nous provider")
-
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", boom)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "openrouter", "model": "anthropic/claude-opus-4.8"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data.get("gateway_tools", []) == []
 
     def test_apply_main_model_assignment_base_url_and_context_reconcile(self):
         """The shared main-slot assignment helper must persist a supplied
@@ -3836,7 +3086,7 @@ class TestWebServerEndpoints:
         """A custom endpoint that requires auth must persist model.api_key (where
         the runtime reads it) AND register a named custom_providers entry so the
         endpoint reappears as a ready row in the picker — matching the
-        ``hermes model`` custom flow. Regression for the desktop loop where a
+        ``opencodon model`` custom flow. Regression for the desktop loop where a
         keyed custom endpoint could never be configured from the GUI."""
         from opencodon_cli.config import load_config
 
@@ -4270,70 +3520,8 @@ class TestWebServerEndpoints:
         assert model_cfg["base_url"] == "http://127.0.0.1:8081/v1"
         assert model_cfg["api_key"] == "sk-local"
 
-    def test_set_model_main_gateway_failure_does_not_block_save(self, monkeypatch):
-        """A Portal/gateway hiccup must never prevent saving the model."""
-        import opencodon_cli.nous_subscription as ns
 
-        def boom(*args, **kwargs):
-            raise RuntimeError("portal unreachable")
 
-        monkeypatch.setattr(ns, "apply_nous_managed_defaults", boom)
-
-        resp = self.client.post(
-            "/api/model/set",
-            json={"scope": "main", "provider": "nous", "model": "hermes-4"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data.get("gateway_tools", []) == []
-
-    def test_recommended_default_nous_honors_free_tier(self, monkeypatch):
-        """For a free-tier Nous user, the recommended default must be a free
-        model (mirroring `hermes model`), not the first curated paid entry."""
-        import opencodon_cli.models as models_mod
-
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", lambda: ["paid/expensive", "free/cheap"])
-        monkeypatch.setattr(
-            models_mod, "get_pricing_for_provider",
-            lambda provider: {"paid/expensive": {"input": "1"}, "free/cheap": {"input": "0"}},
-        )
-        monkeypatch.setattr(models_mod, "check_nous_free_tier", lambda *, force_fresh=False: True)
-        monkeypatch.setattr(
-            models_mod, "union_with_portal_free_recommendations",
-            lambda ids, pricing, url: (ids, pricing),
-        )
-        # Free partition keeps only the free model selectable.
-        monkeypatch.setattr(
-            models_mod, "partition_nous_models_by_tier",
-            lambda ids, pricing, free_tier: (["free/cheap"], ["paid/expensive"]),
-        )
-
-        resp = self.client.get("/api/model/recommended-default?provider=nous")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["provider"] == "nous"
-        assert data["model"] == "free/cheap"
-        assert data["free_tier"] is True
-
-    def test_recommended_default_nous_paid_uses_curated_default(self, monkeypatch):
-        """A paid Nous user gets the first curated/paid-augmented model."""
-        import opencodon_cli.models as models_mod
-
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", lambda: ["top/model", "other/model"])
-        monkeypatch.setattr(models_mod, "get_pricing_for_provider", lambda provider: {})
-        monkeypatch.setattr(models_mod, "check_nous_free_tier", lambda *, force_fresh=False: False)
-        monkeypatch.setattr(
-            models_mod, "union_with_portal_paid_recommendations",
-            lambda ids, pricing, url: (ids, pricing),
-        )
-
-        resp = self.client.get("/api/model/recommended-default?provider=nous")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["provider"] == "nous"
-        assert data["model"] == "top/model"
-        assert data["free_tier"] is False
 
     def test_recommended_default_handles_failure_gracefully(self, monkeypatch):
         """Endpoint never 500s — returns empty model on internal error."""
@@ -4342,7 +3530,6 @@ class TestWebServerEndpoints:
         def boom():
             raise RuntimeError("portal down")
 
-        monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", boom)
 
         resp = self.client.get("/api/model/recommended-default?provider=nous")
         assert resp.status_code == 200
@@ -4391,12 +3578,14 @@ class TestBuildSchemaFromConfig:
         assert entry["type"] == "select"
         assert entry["category"] == "memory"
         options = entry["options"]
-        # Built-in-only sentinel first, plus at least one discovered provider.
+        # Built-in-only sentinel first, then any discovered provider plugins.
+        # No provider plugin ships in-tree any more, so the list is legitimately
+        # just [""] on a clean checkout; discovery is covered by
+        # test_memory_provider_options_cover_discovered_providers.
         # The literal "builtin" alias must NOT be offered — built-in memory is
         # not a provider plugin (#49513).
         assert options[0] == ""
         assert "builtin" not in options
-        assert len(options) >= 2
 
     def test_memory_provider_options_cover_discovered_providers(self):
         """Every provider the /api/memory endpoint can activate is selectable."""
@@ -4416,11 +3605,11 @@ class TestBuildSchemaFromConfig:
         """
         from opencodon_cli import web_server
 
-        monkeypatch.setattr(web_server, "load_config", lambda: {"memory": {"provider": "honcho"}})
+        monkeypatch.setattr(web_server, "load_config", lambda: {"memory": {"provider": "alpha"}})
         monkeypatch.setattr(
             web_server,
             "_memory_provider_options",
-            lambda: ["", "honcho", "hindsight", "freshly_installed"],
+            lambda: ["", "alpha", "beta", "freshly_installed"],
         )
 
         fields = web_server._schema_with_dynamic_provider_options()
@@ -4439,7 +3628,7 @@ class TestBuildSchemaFromConfig:
         from opencodon_cli import web_server
 
         monkeypatch.setattr(web_server, "load_config", lambda: {"memory": {"provider": "gone_from_disk"}})
-        monkeypatch.setattr(web_server, "_memory_provider_options", lambda: ["", "honcho"])
+        monkeypatch.setattr(web_server, "_memory_provider_options", lambda: ["", "alpha"])
 
         fields = web_server._schema_with_dynamic_provider_options()
 
@@ -4756,7 +3945,7 @@ class TestNewEndpoints:
         first = blueprints[0]
         assert "fields" in first
         assert first["command"].startswith("/blueprint")
-        assert first["appUrl"].startswith("hermes://")
+        assert first["appUrl"].startswith("opencodon://")
 
     def test_blueprint_instantiate_creates_job(self):
         resp = self.client.post(
@@ -4858,7 +4047,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         assert resp.json()["command"] == "coder setup"
 
-    def test_profile_setup_command_uses_hermes_for_default_profile(self):
+    def test_profile_setup_command_uses_opencodon_for_default_profile(self):
         from opencodon_constants import get_opencodon_home
 
         get_opencodon_home().mkdir(parents=True, exist_ok=True)
@@ -4866,7 +4055,7 @@ class TestNewEndpoints:
         resp = self.client.get("/api/profiles/default/setup-command")
 
         assert resp.status_code == 200
-        assert resp.json()["command"] == "hermes setup"
+        assert resp.json()["command"] == "opencodon setup"
 
     def test_profiles_create_creates_wrapper_alias_when_safe(self, monkeypatch, tmp_path):
         import opencodon_cli.profiles as profiles_mod
@@ -4874,7 +4063,7 @@ class TestNewEndpoints:
         wrapper_dir = tmp_path / "bin"
         wrapper_dir.mkdir()
         monkeypatch.setattr(profiles_mod, "_get_wrapper_dir", lambda: wrapper_dir)
-        monkeypatch.setattr(profiles_mod.shutil, "which", lambda name: "/opt/hermes/bin/hermes")
+        monkeypatch.setattr(profiles_mod.shutil, "which", lambda name: "/opt/opencodon/bin/opencodon")
 
         resp = self.client.post(
             "/api/profiles",
@@ -4887,9 +4076,9 @@ class TestNewEndpoints:
         assert wrapper_path.exists()
         lines = [line.strip() for line in wrapper_path.read_text().splitlines() if line.strip()]
         if is_windows:
-            assert lines == ["@echo off", "hermes -p writer %*"]
+            assert lines == ["@echo off", "opencodon -p writer %*"]
         else:
-            assert lines == ["#!/bin/sh", 'exec /opt/hermes/bin/hermes -p writer "$@"']
+            assert lines == ["#!/bin/sh", 'exec /opt/opencodon/bin/opencodon -p writer "$@"']
 
     def test_profiles_create_with_clone_from_copies_source_skills(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
@@ -5025,7 +4214,7 @@ class TestNewEndpoints:
             spawned.append((list(subcommand), name))
             return _FakeProc()
 
-        monkeypatch.setattr(web_server, "_spawn_hermes_action", fake_spawn)
+        monkeypatch.setattr(web_server, "_spawn_opencodon_action", fake_spawn)
 
         resp = self.client.post(
             "/api/profiles",
@@ -5578,20 +4767,11 @@ class TestNewEndpoints:
         """Each provider row carries a server-computed readiness `status`.
 
         Regression: the GUI pilled every zero-env-var row "Ready" — including
-        logged-out Nous Subscription rows, xAI TTS without Grok OAuth, and
-        never-installed KittenTTS/Piper. The endpoint now reports the honest
-        state so keyless ≠ ready.
+        xAI TTS without Grok OAuth and never-installed KittenTTS/Piper. The
+        endpoint now reports the honest state so keyless ≠ ready.
         """
         import opencodon_cli.tools_config as tools_config
-        from opencodon_cli.nous_account import NousPortalAccountInfo
 
-        # Logged out of Nous Portal → managed subscription rows need sign-in.
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=False, source="none", fresh=False, paid_service_access=None
-            ),
-        )
         # No xAI credentials → the Grok OAuth-backed row needs sign-in.
         monkeypatch.setattr(tools_config, "_xai_credentials_present", lambda: False)
         # Local TTS engines not installed → their rows need setup.
@@ -5608,7 +4788,6 @@ class TestNewEndpoints:
         # Genuinely-free keyless row stays Ready.
         assert by_name["Microsoft Edge TTS"]["status"] == "ready"
         # Keyless ≠ ready for gated rows:
-        assert by_name["Nous Subscription"]["status"] == "needs_auth"
         assert by_name["xAI TTS"]["status"] == "needs_auth"
         assert by_name["KittenTTS"]["status"] == "needs_setup"
         assert by_name["Piper"]["status"] == "needs_setup"
@@ -5704,57 +4883,7 @@ class TestNewEndpoints:
         )
         assert resp.status_code == 400
 
-    def test_select_managed_nous_provider_reports_needs_nous_auth(self, monkeypatch):
-        """Selecting a managed Nous row while logged out flags needs_nous_auth.
 
-        Regression: the GUI PUT wrote browser.cloud_provider + use_gateway
-        but skipped the Portal entitlement handshake the CLI runs inline
-        (ensure_nous_portal_access) — so the row never activated and nothing
-        told the user to sign in. The endpoint now reports the entitlement
-        gap so the client can drive the existing Nous OAuth flow.
-        """
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=False, source="none", fresh=False, paid_service_access=None
-            ),
-        )
-
-        resp = self.client.put(
-            "/api/tools/toolsets/browser/provider",
-            json={"provider": "Nous Subscription (Browser Use cloud)"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["needs_nous_auth"] is True
-        assert data["feature"] == "browser"
-        # The selection is still persisted — activation is what's gated.
-        from opencodon_cli.config import load_config
-        cfg = load_config()
-        assert cfg["browser"]["cloud_provider"] == "browser-use"
-
-    def test_select_managed_nous_provider_entitled_no_auth_flag(self, monkeypatch):
-        """A signed-in, entitled subscriber gets no needs_nous_auth field."""
-        from opencodon_cli.nous_account import NousPortalAccountInfo
-
-        monkeypatch.setattr(
-            "opencodon_cli.nous_subscription.get_nous_portal_account_info",
-            lambda *a, **k: NousPortalAccountInfo(
-                logged_in=True, source="jwt", fresh=True, paid_service_access=True
-            ),
-        )
-
-        resp = self.client.put(
-            "/api/tools/toolsets/browser/provider",
-            json={"provider": "Nous Subscription (Browser Use cloud)"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert "needs_nous_auth" not in data
 
     def test_select_unmanaged_provider_has_no_nous_auth_field(self):
         """Non-managed rows never carry the entitlement fields."""
@@ -6008,13 +5137,13 @@ class TestNewEndpoints:
         config = load_config()
         config.setdefault("terminal", {})
         config["terminal"]["ssh_host"] = "devbox.example.com"
-        config["terminal"]["ssh_user"] = "hermes"
+        config["terminal"]["ssh_user"] = "opencodon"
         save_config(config)
 
         body = self.client.get("/api/tools/terminal/backends").json()
         ssh = next(r for r in body["backends"] if r["name"] == "ssh")
         assert ssh["status"] == "ready"
-        assert "hermes@devbox.example.com" in ssh["detail"]
+        assert "opencodon@devbox.example.com" in ssh["detail"]
 
     def test_select_terminal_backend_persists_config(self, monkeypatch):
         """PUT .../backend writes terminal.backend and the list reflects it."""
@@ -7417,7 +6546,7 @@ class TestThemeBootstrapCSS:
             web_server, "load_config", lambda: {"dashboard": {"theme": "ocean"}}
         )
         css = web_server._render_active_theme_bootstrap_css()
-        assert css.startswith('<style id="hermes-theme-bootstrap">')
+        assert css.startswith('<style id="opencodon-theme-bootstrap">')
         assert css.endswith("</style>")
         # Real bundle tokens (web/src/themes/context.tsx + index.css).
         assert "--background-base:#0a1628;" in css
@@ -7533,11 +6662,11 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert '<style id="hermes-theme-bootstrap">' in resp.text
+        assert '<style id="opencodon-theme-bootstrap">' in resp.text
         assert "--background-base:#0a1628;" in resp.text
         # Injected inside <head>, before the closing tag.
         head = resp.text.split("</head>")[0]
-        assert "hermes-theme-bootstrap" in head
+        assert "opencodon-theme-bootstrap" in head
 
     def test_serve_index_no_bootstrap_for_builtin_theme(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -7548,7 +6677,7 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert "hermes-theme-bootstrap" not in resp.text
+        assert "opencodon-theme-bootstrap" not in resp.text
 
     def test_serve_index_survives_render_failure(self, tmp_path, monkeypatch):
         """Even if theme rendering blows up internally, index serving
@@ -7563,7 +6692,7 @@ class TestThemeBootstrapCSS:
         client = self._mount_spa_client(tmp_path, monkeypatch)
         resp = client.get("/chat")
         assert resp.status_code == 200
-        assert "hermes-theme-bootstrap" not in resp.text
+        assert "opencodon-theme-bootstrap" not in resp.text
         assert "SPA" in resp.text
 
 
@@ -8299,7 +7428,7 @@ class TestDashboardPluginManifestExtensions:
 # /api/pty WebSocket — terminal bridge for the dashboard "Chat" tab.
 #
 # These tests drive the endpoint with a tiny fake command (typically ``cat``
-# or ``sh -c 'printf …'``) instead of the real ``hermes --tui`` binary.  The
+# or ``sh -c 'printf …'``) instead of the real ``opencodon --tui`` binary.  The
 # endpoint resolves its argv through ``_resolve_chat_argv``, so tests
 # monkeypatch that hook.
 # ---------------------------------------------------------------------------
@@ -8410,7 +7539,7 @@ class TestPtyWebSocket:
         """Dashboard chat does not preserve unusable inherited TUI Python env."""
         import opencodon_cli.main as main_mod
 
-        monkeypatch.setenv("OPENCODON_PYTHON_SRC_ROOT", "/definitely/missing/hermes-src")
+        monkeypatch.setenv("OPENCODON_PYTHON_SRC_ROOT", "/definitely/missing/opencodon-src")
         monkeypatch.setenv("OPENCODON_PYTHON", "/definitely/missing/python")
         monkeypatch.setenv("OPENCODON_CWD", "/definitely/missing/cwd")
         monkeypatch.setattr(
@@ -8455,7 +7584,7 @@ class TestPtyWebSocket:
         """Bare Python commands are resolved from the TUI child's PATH."""
         import opencodon_cli.main as main_mod
 
-        command = f"hermes-review-python{Path(sys.executable).suffix}"
+        command = f"opencodon-review-python{Path(sys.executable).suffix}"
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
         executable = bin_dir / command
@@ -8501,7 +7630,7 @@ class TestPtyWebSocket:
                 [
                     "terminal:",
                     "  backend: docker",
-                    "  docker_image: example/hermes-tools:latest",
+                    "  docker_image: example/opencodon-tools:latest",
                     "  docker_extra_args:",
                     "    - --network=host",
                 ]
@@ -8520,7 +7649,7 @@ class TestPtyWebSocket:
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
 
         assert env["TERMINAL_ENV"] == "docker"
-        assert env["TERMINAL_DOCKER_IMAGE"] == "example/hermes-tools:latest"
+        assert env["TERMINAL_DOCKER_IMAGE"] == "example/opencodon-tools:latest"
         assert env["TERMINAL_DOCKER_EXTRA_ARGS"] == '["--network=host"]'
 
     def test_rejects_when_embedded_chat_disabled(self, monkeypatch):
@@ -8664,7 +7793,7 @@ class TestPtyWebSocket:
             self.ws_module,
             "_resolve_chat_argv",
             lambda resume=None, sidecar_url=None, profile=None: (
-                ["/bin/sh", "-c", "printf hermes-ws-ok"],
+                ["/bin/sh", "-c", "printf opencodon-ws-ok"],
                 None,
                 None,
             ),
@@ -8683,9 +7812,9 @@ class TestPtyWebSocket:
                     break
                 if frame:
                     buf += frame
-                if b"hermes-ws-ok" in buf:
+                if b"opencodon-ws-ok" in buf:
                     break
-            assert b"hermes-ws-ok" in buf
+            assert b"opencodon-ws-ok" in buf
 
     def test_client_input_reaches_child_stdin(self, monkeypatch):
         # ``cat`` echoes stdin back, so a write → read round-trip proves

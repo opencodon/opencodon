@@ -75,10 +75,10 @@ def test_pgpassword_preserved_verbatim(monkeypatch):
     # Force redaction ON to prove build_assistant_message bypasses it for
     # tool-call args regardless of the global toggle.
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True, raising=False)
-    args = '{"command": "PGPASSWORD=\'honchorulez\' psql -h 127.0.0.1"}'
+    args = '{"command": "PGPASSWORD=\'hunter2rulez\' psql -h 127.0.0.1"}'
     got = _build(args)
     assert got == args
-    assert "honchorulez" in got
+    assert "hunter2rulez" in got
     assert "***" not in got
 
 

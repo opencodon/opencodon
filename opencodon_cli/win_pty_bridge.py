@@ -1,4 +1,4 @@
-"""Windows ConPTY bridge for the `hermes dashboard` chat tab.
+"""Windows ConPTY bridge for the `opencodon dashboard` chat tab.
 
 Drop-in counterpart to ``opencodon_cli.pty_bridge.PtyBridge`` for native
 Windows. Mirrors the exact public surface the ``/api/pty`` WebSocket

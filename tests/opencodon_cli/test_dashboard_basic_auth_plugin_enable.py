@@ -27,7 +27,7 @@ def _reset_auth_registry():
 
 @pytest.fixture
 def opencodon_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "opencodon"
     home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     return home

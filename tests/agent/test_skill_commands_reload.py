@@ -43,7 +43,7 @@ def opencodon_home(monkeypatch):
     we monkeypatch the module-level ``OPENCODON_HOME`` / ``SKILLS_DIR``
     constants in place so the isolation is local to this fixture's scope.
     """
-    td = tempfile.mkdtemp(prefix="hermes-reload-skills-")
+    td = tempfile.mkdtemp(prefix="opencodon-reload-skills-")
     monkeypatch.setenv("OPENCODON_HOME", td)
     home = Path(td)
     (home / "skills").mkdir(parents=True, exist_ok=True)

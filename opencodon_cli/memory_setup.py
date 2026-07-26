@@ -1,4 +1,4 @@
-"""hermes memory setup|status — configure memory provider plugins.
+"""opencodon memory setup|status — configure memory provider plugins.
 
 Auto-detects installed memory providers via the plugin system.
 Interactive curses-based UI for provider selection, then walks through
@@ -19,7 +19,7 @@ _CANCELLED = -1
 
 
 # ---------------------------------------------------------------------------
-# Curses-based interactive picker (same pattern as hermes tools)
+# Curses-based interactive picker (same pattern as opencodon tools)
 # ---------------------------------------------------------------------------
 
 def _curses_select(
@@ -102,7 +102,6 @@ def _install_dependencies(provider_name: str) -> None:
 
     # pip name → import name mapping for packages where they differ
     _IMPORT_NAMES = {
-        "honcho-ai": "honcho",
     }
 
     # Check which packages are missing
@@ -206,7 +205,7 @@ def cmd_setup_provider(provider_name: str) -> None:
 
     if not match:
         print(f"\n  Memory provider '{provider_name}' not found.")
-        print("  Run 'hermes memory setup' to see available providers.\n")
+        print("  Run 'opencodon memory setup' to see available providers.\n")
         return
 
     name, _, provider = match

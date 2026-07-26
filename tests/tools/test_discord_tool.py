@@ -653,7 +653,7 @@ class TestRegistration:
 # ---------------------------------------------------------------------------
 
 class TestToolsetInclusion:
-    def test_discord_tools_in_hermes_discord_toolset(self):
+    def test_discord_tools_in_opencodon_discord_toolset(self):
         from toolsets import TOOLSETS
         assert "discord" in TOOLSETS["opencodon-discord"]["tools"]
         assert "discord_admin" in TOOLSETS["opencodon-discord"]["tools"]

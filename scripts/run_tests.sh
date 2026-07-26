@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Canonical test runner for hermes-agent. Run this instead of calling
+# Canonical test runner for opencodon. Run this instead of calling
 # `pytest` directly to guarantee your local run matches CI behavior.
 #
 # What this script enforces:
@@ -42,9 +42,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # (OPENCODON_PYTHON is exported by the devShell hook and ships [dev] extras:
 # pytest, pytest-asyncio, pytest-timeout, ruff, ty).
 VENV=""
-# The trailing legacy candidate (~/.hermes/hermes-agent/venv) covers dev
+# The trailing legacy candidate (~/.opencodon/opencodon/venv) covers dev
 # machines whose install predates the opencodon rename; drop after one release.
-for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.opencodon/opencodon/venv" "$HOME/.hermes/hermes-agent/venv"; do
+for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.opencodon/opencodon/venv" "$HOME/.opencodon/opencodon/venv"; do
   if [ -f "$candidate/bin/activate" ]; then
     VENV="$candidate"
     break
@@ -56,7 +56,7 @@ if [ -n "$VENV" ]; then
 elif [ -n "${OPENCODON_PYTHON:-}" ] && [ -x "$OPENCODON_PYTHON" ] \
     && "$OPENCODON_PYTHON" -c 'import pytest' 2>/dev/null; then
   # Guard with an import check: OPENCODON_PYTHON may point at the RELEASE
-  # venv (no pytest) when inherited from a wrapped `hermes` binary rather
+  # venv (no pytest) when inherited from a wrapped `opencodon` binary rather
   # than the devShell hook.
   PYTHON="$OPENCODON_PYTHON"
   echo "▶ no local venv — using Nix dev venv via OPENCODON_PYTHON: $PYTHON"

@@ -90,15 +90,13 @@ export function installZoomReassertOnWindowEvents(win, reassert, platform = proc
 
 /**
  * Zoom-wiring decision per window kind. Chat windows (main + session) keep
- * global UI zoom; the pet overlay opts out because it sizes its own OS window
- * to the sprite and inheriting zoom would crop it.
+ * global UI zoom; unknown kinds fall back to the chat wiring.
  *
- * Extracted so the "pet opts out, everything else opts in" contract is
- * unit-testable without booting a BrowserWindow or reading source.
+ * Extracted so the per-kind contract is unit-testable without booting a
+ * BrowserWindow or reading source.
  */
 export const ZOOM_WINDOW_CONFIG = {
-  chat: { zoom: true },
-  petOverlay: { zoom: false }
+  chat: { zoom: true }
 } as const
 
 export function zoomWiringForWindowKind(kind) {

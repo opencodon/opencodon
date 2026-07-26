@@ -9,3 +9,11 @@ remains Copyright (c) 2025 Nous Research.
 The "Hermes" model names that appear in provider catalogs (e.g.
 hermes-4) refer to Nous Research's language models and are not part of
 this project's branding.
+
+Code comments cite upstream issues as "upstream#N". These refer to
+issue N in https://github.com/NousResearch/hermes-agent, not to this
+project's issue tracker.
+
+The web dashboard depends on the third-party npm package
+"@nous-research/ui", published by Nous Research. It is an ordinary
+dependency; the package name is theirs, not a claim of affiliation.

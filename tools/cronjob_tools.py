@@ -1,5 +1,5 @@
 """
-Cron job management tools for Hermes Agent.
+Cron job management tools for opencodon.
 
 Expose a single compressed action-oriented tool to avoid schema/context bloat.
 Compatibility wrappers remain for direct Python callers and legacy tests.
@@ -60,7 +60,7 @@ def _notify_provider_jobs_changed_safe() -> None:
 #      bodies, often security docs, postmortems, runbooks discussing attack
 #      patterns in PROSE). Reusing the strict patterns here false-positives
 #      every time a skill *describes* a command — see #3968 follow-up: the
-#      `hermes-agent-dev` skill contains a security postmortem mentioning
+#      `opencodon-dev` skill contains a security postmortem mentioning
 #      `cat ~/.opencodon/.env`, which tripped `read_secrets` and silently
 #      killed all PR-scout jobs.
 #
@@ -377,7 +377,7 @@ def _resolve_model_override(model_obj: Optional[Dict[str, Any]]) -> tuple:
     """Resolve a model override object into (provider, model) for job storage.
 
     If provider is omitted, pins the current main provider from config so the
-    job doesn't drift when the user later changes their default via hermes model.
+    job doesn't drift when the user later changes their default via opencodon model.
 
     Returns (provider_str_or_none, model_str_or_none).
     """

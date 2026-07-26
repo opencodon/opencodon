@@ -33,7 +33,7 @@ from gateway.whatsapp_identity import (
     expand_whatsapp_aliases,
     normalize_whatsapp_identifier,
 )
-from opencodon_constants import get_hermes_dir, get_opencodon_home
+from opencodon_constants import get_opencodon_dir, get_opencodon_home
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ LOCKOUT_SECONDS = 3600              # Lockout duration after too many failures
 MAX_PENDING_PER_PLATFORM = 3        # Max pending codes per platform
 MAX_FAILED_ATTEMPTS = 5             # Failed approvals before lockout
 
-PAIRING_DIR = get_hermes_dir("platforms/pairing", "pairing")
+PAIRING_DIR = get_opencodon_dir("platforms/pairing", "pairing")
 
 
 # Platform value -> its per-platform allowlist env var. When an operator has
@@ -232,7 +232,7 @@ class PairingStore:
     ``<OPENCODON_HOME>/profiles/<name>/pairing/`` (per-profile, used by
     multiplexing gateways so each profile has its own whitelist).
     Without a profile, storage is the global ``<OPENCODON_HOME>/pairing/``
-    directory (backward-compat for the ``hermes pairing`` CLI).
+    directory (backward-compat for the ``opencodon pairing`` CLI).
     """
 
     def __init__(self, profile: Optional[str] = None):
@@ -275,7 +275,7 @@ class PairingStore:
             except PermissionError as e:
                 # Surface this loudly: a 0600 file owned by a different user
                 # (classic Docker symptom: `docker exec` runs as root and writes
-                # the file, then the gateway process — running as `hermes` after
+                # the file, then the gateway process — running as `opencodon` after
                 # gosu drop — can't read it) would otherwise be swallowed by
                 # the generic OSError branch below, silently leaving the user
                 # marked unauthorized. See issue #10270.
@@ -289,9 +289,9 @@ class PairingStore:
                 euid = os.geteuid() if hasattr(os, "geteuid") else "n/a"
                 logger.warning(
                     "Pairing file %s exists but is not readable as uid=%s (%s; %s). "
-                    "If you ran `docker exec <container> hermes pairing approve ...` as root, "
-                    "re-run with `docker exec -u hermes <container> ...` and "
-                    "chown the existing file to the hermes user, or restart the "
+                    "If you ran `docker exec <container> opencodon pairing approve ...` as root, "
+                    "re-run with `docker exec -u opencodon <container> ...` and "
+                    "chown the existing file to the opencodon user, or restart the "
                     "container so the entrypoint can fix ownership.",
                     path, euid, owner_info, e,
                 )

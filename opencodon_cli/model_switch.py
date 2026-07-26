@@ -174,32 +174,6 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
     )
 
 
-# ---------------------------------------------------------------------------
-# Non-agentic model warning
-# ---------------------------------------------------------------------------
-
-_OPENCODON_MODEL_WARNING = (
-    "Nous Research Hermes 3 & 4 models are NOT agentic and are not designed "
-    "for use with Hermes Agent. They lack the tool-calling capabilities "
-    "required for agent workflows. Consider using an agentic model instead "
-    "(Claude, GPT, Gemini, DeepSeek, etc.)."
-)
-
-# Match only the real Nous Research Hermes 3 / Hermes 4 chat families.
-# The previous substring check (`"hermes" in name.lower()`) false-positived on
-# unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just
-# happen to carry "hermes" in their tag but are fully tool-capable.
-#
-# Positive examples the regex must match:
-#   NousResearch/Hermes-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
-# Negative examples it must NOT match:
-#   hermes-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_NOUS_OPENCODON_NON_AGENTIC_RE = re.compile(
-    r"(?:^|[/:])hermes[-_ ]?[34](?:[-_.:]|$)",
-    re.IGNORECASE,
-)
-
-
 # Opaque internal model-ID display
 # ---------------------------------------------------------------------------
 # Some proxies (notably Palantir Foundry's LLM-proxy) identify models by
@@ -245,25 +219,6 @@ def format_model_for_display(model_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-def is_nous_hermes_non_agentic(model_name: str) -> bool:
-    """Return True if *model_name* is a real Nous Hermes 3/4 chat model.
-
-    Used to decide whether to surface the non-agentic warning at startup.
-    Callers in :mod:`cli.py` and here should go through this single helper
-    so the two sites don't drift.
-    """
-    if not model_name:
-        return False
-    return bool(_NOUS_OPENCODON_NON_AGENTIC_RE.search(model_name))
-
-
-def _check_hermes_model_warning(model_name: str) -> str:
-    """Return a warning string if *model_name* is a Nous Hermes 3/4 chat model."""
-    if is_nous_hermes_non_agentic(model_name):
-        return _OPENCODON_MODEL_WARNING
-    return ""
-
-
 # ---------------------------------------------------------------------------
 # Model aliases -- short names -> (vendor, family) with NO version numbers.
 # Resolved dynamically against the live models.dev catalog.
@@ -364,7 +319,7 @@ def _load_direct_aliases() -> dict[str, DirectAlias]:
             provider: custom
             base_url: "https://ollama.com/v1"
 
-    Also reads ``model.aliases`` (set by ``hermes config set model.aliases.xxx``)
+    Also reads ``model.aliases`` (set by ``opencodon config set model.aliases.xxx``)
     and converts simple string entries (``ds-flash: deepseek/deepseek-v4-flash``)
     into DirectAlias objects.  The provider is parsed from the ``provider/``
     prefix in the value; if no slash, the current provider is used.
@@ -819,10 +774,10 @@ def _resolve_alias_fallback(
 ) -> Optional[tuple[str, str, str]]:
     """Try to resolve an alias on the user's authenticated providers.
 
-    Falls back to ``("openrouter", "nous")`` only when no authenticated
+    Falls back to ``("openrouter",)`` only when no authenticated
     providers are supplied (backwards compat for non-interactive callers).
     """
-    providers = authenticated_providers or ("openrouter", "nous")
+    providers = authenticated_providers or ("openrouter",)
     for provider in providers:
         result = resolve_alias(raw_input, provider)
         if result is not None:
@@ -848,7 +803,7 @@ def resolve_display_context_length(
     but provider-enforced limits can be lower (e.g. Codex OAuth caps the
     same slug at 272k). The authoritative source is
     ``agent.model_metadata.get_model_context_length`` which already knows
-    about Codex OAuth, Copilot, Nous, and falls back to models.dev for the
+    about Codex OAuth and Copilot, and falls back to models.dev for the
     rest.
 
     When ``custom_providers`` is provided, per-model ``context_length``
@@ -1045,7 +1000,7 @@ def switch_model(
         if pdef is None:
             _switch_err = (
                 f"Unknown provider '{explicit_provider}'. "
-                f"Check 'hermes model' for available providers, or define it "
+                f"Check 'opencodon model' for available providers, or define it "
                 f"in config.yaml under 'providers:'."
             )
             # Check for common config issues that cause provider resolution failures
@@ -1053,7 +1008,7 @@ def switch_model(
                 from opencodon_cli.config import validate_config_structure
                 _cfg_issues = validate_config_structure()
                 if _cfg_issues:
-                    _switch_err += "\n\nRun 'hermes doctor' — config issues detected:"
+                    _switch_err += "\n\nRun 'opencodon doctor' — config issues detected:"
                     for _ci in _cfg_issues[:3]:
                         _switch_err += f"\n  • {_ci.message}"
             except Exception:
@@ -1554,9 +1509,6 @@ def switch_model(
     warnings: list[str] = []
     if validation.get("message"):
         warnings.append(validation["message"])
-    hermes_warn = _check_hermes_model_warning(new_model)
-    if hermes_warn:
-        warnings.append(hermes_warn)
 
     # --- Build result ---
     return ModelSwitchResult(
@@ -1669,7 +1621,6 @@ def list_authenticated_providers(
     user_providers: dict = None,
     custom_providers: list | None = None,
     *,
-    force_fresh_nous_tier: bool = False,
     max_models: int | None = None,
     current_model: str = "",
     refresh: bool = False,
@@ -1694,10 +1645,6 @@ def list_authenticated_providers(
       - source: str — "built-in", "models.dev", "user-config"
 
     Only includes providers that have API keys set or are user-defined endpoints.
-    ``force_fresh_nous_tier`` bypasses the short Nous tier cache for explicit
-    account-sensitive flows. UI picker opens should leave it false so they do
-    not block on fresh Portal/account checks every time.
-
     ``refresh`` busts the per-provider model-id disk cache
     (``provider_models_cache.json``) up front so every row re-fetches its
     live catalog. Use for an explicit user-triggered "refresh models" action
@@ -1724,7 +1671,7 @@ def list_authenticated_providers(
     from opencodon_cli.models import (
         OPENROUTER_MODELS, _PROVIDER_MODELS,
         _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids,
-        clear_provider_models_cache, get_curated_nous_model_ids,
+        clear_provider_models_cache,
     )
 
     # Explicit refresh: drop every provider's cached model-id list so the
@@ -1748,7 +1695,7 @@ def list_authenticated_providers(
         return bool(probe_custom_providers or (probe_current_custom_provider and row_is_current))
 
     # Normalize the excluded-providers list once for fast membership checks.
-    # Compared against hermes_id / mdev_id (section 1), pid / hermes_slug
+    # Compared against opencodon_id / mdev_id (section 1), pid / opencodon_slug
     # (section 2) and canonical slug (section 2b) so a single entry like
     # ``copilot`` hides the provider regardless of which key it surfaces under.
     _excluded: set = {str(p).strip().lower() for p in (excluded_providers or []) if p}
@@ -1825,15 +1772,9 @@ def list_authenticated_providers(
 
     data = fetch_models_dev()
 
-    # Build curated model lists keyed by hermes provider ID
+    # Build curated model lists keyed by opencodon provider ID
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
-    # "nous" pulls from the remote model-catalog manifest published at
-    # https://hermes-agent.nousresearch.com/docs/api/model-catalog.json so
-    # newly added Portal models surface in the /model picker without
-    # requiring a Hermes release. Falls back to the in-repo
-    # _PROVIDER_MODELS["nous"] snapshot when the manifest is unreachable.
-    curated["nous"] = get_curated_nous_model_ids()
     # Ollama Cloud uses dynamic discovery (no static curated list)
     if "ollama-cloud" not in curated:
         from opencodon_cli.models import fetch_ollama_cloud_models
@@ -1867,11 +1808,11 @@ def list_authenticated_providers(
             live = [current_model]
         curated["lmstudio"] = live
 
-    # --- 1. Check Hermes-mapped providers ---
+    # --- 1. Check opencodon-mapped providers ---
     from opencodon_cli.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
     from opencodon_cli.models import _PROVIDER_ALIASES as _CANON_ALIASES
     from opencodon_cli.providers import ALIASES as _PROVIDER_ALIAS_TABLE
-    for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+    for opencodon_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         # Skip vendor names that are merely aliases routing through an
         # aggregator (e.g. bare "openai" → "openrouter"). These are NOT
         # directly-routable providers: emitting them as their own picker
@@ -1880,39 +1821,39 @@ def list_authenticated_providers(
         # switching a user off their real provider onto an endpoint they
         # may have no key for (HTTP 401). The user's real provider (e.g.
         # openai-api, or a providers.openai config row) covers this vendor.
-        _alias_target = _PROVIDER_ALIAS_TABLE.get(hermes_id)
+        _alias_target = _PROVIDER_ALIAS_TABLE.get(opencodon_id)
         if (
             _alias_target
-            and _alias_target != hermes_id
+            and _alias_target != opencodon_id
             and _alias_target in _AGG_PROVIDERS
         ):
             continue
-        # Resolve the canonical provider profile name.  Skip hermes_ids
+        # Resolve the canonical provider profile name.  Skip opencodon_ids
         # that are mere aliases resolving to a different canonical profile
         # (e.g. "kimi" and "moonshot" both → "kimi-coding").  Only process
-        # entries whose hermes_id matches the canonical profile name so
+        # entries whose opencodon_id matches the canonical profile name so
         # distinct profiles (e.g. kimi-coding, kimi-coding-cn) each get
         # their own picker row.
-        _canonical = hermes_id
+        _canonical = opencodon_id
         try:
             from providers import get_provider_profile as _gpp
-            _prof = _gpp(hermes_id)
+            _prof = _gpp(opencodon_id)
             if _prof is not None:
                 _canonical = _prof.name
         except Exception:
             pass
-        if _canonical != hermes_id:
+        if _canonical != opencodon_id:
             continue
 
         # Skip duplicates: another entry with the same slug was already
         # emitted (e.g. two PROVIDER_TO_MODELS_DEV entries routing to the
-        # same hermes_id).  Distinct canonical profiles that share a
+        # same opencodon_id).  Distinct canonical profiles that share a
         # models.dev ID (e.g. kimi-coding and kimi-coding-cn → kimi-for-coding)
         # are both allowed through since they have different slugs.
-        slug = hermes_id
+        slug = opencodon_id
         if slug.lower() in seen_slugs:
             continue
-        if hermes_id.lower() in _excluded or mdev_id.lower() in _excluded:
+        if opencodon_id.lower() in _excluded or mdev_id.lower() in _excluded:
             continue
         pdata = data.get(mdev_id)
         if not isinstance(pdata, dict):
@@ -1921,16 +1862,16 @@ def list_authenticated_providers(
         # Prefer auth.py PROVIDER_REGISTRY for env var names — it's our
         # source of truth.  models.dev can have wrong mappings (e.g.
         # minimax-cn → MINIMAX_API_KEY instead of MINIMAX_CN_API_KEY).
-        pconfig = PROVIDER_REGISTRY.get(hermes_id)
+        pconfig = PROVIDER_REGISTRY.get(opencodon_id)
         # Skip non-API-key auth providers here — they are handled in
         # section 2 (OPENCODON_OVERLAYS) with proper auth store checking.
         if pconfig and pconfig.auth_type != "api_key":
             continue
-        # models.dev catalogs include providers Hermes may not route yet.
+        # models.dev catalogs include providers opencodon may not route yet.
         # Gate on runtime capability rather than registry membership: special
         # providers and plugin aliases can be routable without a registry row.
         from opencodon_cli.auth import is_runtime_provider_routable
-        if not is_runtime_provider_routable(hermes_id):
+        if not is_runtime_provider_routable(opencodon_id):
             continue
         if pconfig and pconfig.api_key_env_vars:
             env_vars = list(pconfig.api_key_env_vars)
@@ -1946,11 +1887,11 @@ def list_authenticated_providers(
                 from opencodon_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 raw_pool_present = bool(
-                    store and store.get("credential_pool", {}).get(hermes_id)
+                    store and store.get("credential_pool", {}).get(opencodon_id)
                 )
                 if raw_pool_present:
                     has_creds = _credential_pool_is_usable(
-                        hermes_id, raw_pool_present=True
+                        opencodon_id, raw_pool_present=True
                     )
             except Exception:
                 pass
@@ -1958,25 +1899,25 @@ def list_authenticated_providers(
             continue
 
         # Unified pathway: route through cached_provider_model_ids() so the
-        # /model picker sees the SAME list `hermes model` would build, with
+        # /model picker sees the SAME list `opencodon model` would build, with
         # disk caching to keep the picker open snappy. Falls back to the
         # curated static list when the live fetcher returns nothing.
-        model_ids = cached_provider_model_ids(hermes_id)
+        model_ids = cached_provider_model_ids(opencodon_id)
         if not model_ids:
-            model_ids = curated.get(hermes_id, [])
-            if hermes_id in _MODELS_DEV_PREFERRED:
-                model_ids = _merge_with_models_dev(hermes_id, model_ids)
+            model_ids = curated.get(opencodon_id, [])
+            if opencodon_id in _MODELS_DEV_PREFERRED:
+                model_ids = _merge_with_models_dev(opencodon_id, model_ids)
         # A providers.<built-in>.models block extends the provider's discovered
         # catalog. Section 3 cannot emit it later because this built-in row owns
         # the slug, so merge declarations here before applying max_models.
         configured_models: list[str] = []
         if isinstance(user_providers, dict):
-            configured = user_providers.get(hermes_id)
+            configured = user_providers.get(opencodon_id)
             if isinstance(configured, dict):
                 configured_models = _declared_model_ids(configured.get("models"))
         model_ids = list(dict.fromkeys([*configured_models, *model_ids]))
         total = len(model_ids)
-        if hermes_id in _UNCAPPED_PICKER_PROVIDERS:
+        if opencodon_id in _UNCAPPED_PICKER_PROVIDERS:
             top = model_ids  # Aggregator: show full catalog regardless of max_models
         else:
             top = model_ids[:max_models] if max_models is not None else model_ids
@@ -1989,7 +1930,7 @@ def list_authenticated_providers(
             "name": display_name,
             "is_current": (
                 slug == current_provider
-                or hermes_id == current_provider
+                or opencodon_id == current_provider
                 or mdev_id == current_provider
             ),
             "is_user_defined": False,
@@ -2000,30 +1941,30 @@ def list_authenticated_providers(
         seen_slugs.add(slug.lower())
         _record_builtin_endpoint(slug)
 
-    # --- 2. Check Hermes-only providers (nous, openai-codex, copilot, opencode-go) ---
+    # --- 2. Check agent-only providers (openai-codex, copilot, opencode-go) ---
     from opencodon_cli.providers import OPENCODON_OVERLAYS
     from opencodon_cli.auth import PROVIDER_REGISTRY as _auth_registry
 
-    # Build reverse mapping: models.dev ID → Hermes provider ID.
+    # Build reverse mapping: models.dev ID → opencodon provider ID.
     # OPENCODON_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
-    # while _PROVIDER_MODELS and config.yaml use Hermes IDs ("copilot").
-    _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
+    # while _PROVIDER_MODELS and config.yaml use opencodon IDs ("copilot").
+    _mdev_to_opencodon = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
 
     for pid, overlay in OPENCODON_OVERLAYS.items():
         if pid.lower() in seen_slugs:
             continue
 
-        # Resolve Hermes slug — e.g. "github-copilot" → "copilot"
-        hermes_slug = _mdev_to_hermes.get(pid, pid)
-        if hermes_slug.lower() in seen_slugs:
+        # Resolve opencodon slug — e.g. "github-copilot" → "copilot"
+        opencodon_slug = _mdev_to_opencodon.get(pid, pid)
+        if opencodon_slug.lower() in seen_slugs:
             continue
-        if pid.lower() in _excluded or hermes_slug.lower() in _excluded:
+        if pid.lower() in _excluded or opencodon_slug.lower() in _excluded:
             continue
 
         # Check if credentials exist
         has_creds = False
         if overlay.auth_type == "aws_sdk":
-            has_creds = _has_aws_sdk_creds_for_listing(hermes_slug)
+            has_creds = _has_aws_sdk_creds_for_listing(opencodon_slug)
         elif overlay.auth_type == "vertex":
             # Vertex authenticates via OAuth2 (service-account JSON / ADC),
             # not an API key — mirror the aws_sdk gate above, otherwise the
@@ -2038,7 +1979,7 @@ def list_authenticated_providers(
             has_creds = any(os.environ.get(ev) for ev in overlay.extra_env_vars)
         # Also check api_key_env_vars from PROVIDER_REGISTRY for api_key auth_type
         if not has_creds and overlay.auth_type == "api_key":
-            for _key in (pid, hermes_slug):
+            for _key in (pid, opencodon_slug):
                 pcfg = _auth_registry.get(_key)
                 if pcfg and pcfg.api_key_env_vars:
                     if any(os.environ.get(ev) for ev in pcfg.api_key_env_vars):
@@ -2053,7 +1994,7 @@ def list_authenticated_providers(
                 from opencodon_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 providers_store = store.get("providers", {})
-                if store and (pid in providers_store or hermes_slug in providers_store):
+                if store and (pid in providers_store or opencodon_slug in providers_store):
                     has_creds = True
             except Exception as exc:
                 logger.debug("Auth store check failed for %s: %s", pid, exc)
@@ -2063,7 +2004,7 @@ def list_authenticated_providers(
         # imports on demand but aren't in the raw auth.json yet.
         if not has_creds:
             try:
-                if _credential_pool_is_usable(hermes_slug):
+                if _credential_pool_is_usable(opencodon_slug):
                     has_creds = True
                 elif for_picker:
                     # For the interactive /model picker, also show providers
@@ -2074,13 +2015,13 @@ def list_authenticated_providers(
                     # are in cooldown.
                     try:
                         from agent.credential_pool import load_pool
-                        _pool = load_pool(hermes_slug)
+                        _pool = load_pool(opencodon_slug)
                         if _pool.has_credentials():
                             has_creds = True
                     except Exception:
                         pass
             except Exception as exc:
-                logger.debug("Credential pool check failed for %s: %s", hermes_slug, exc)
+                logger.debug("Credential pool check failed for %s: %s", opencodon_slug, exc)
         # Fallback: check external credential files directly.
         # The credential pool gates anthropic behind
         # is_provider_explicitly_configured() to prevent auxiliary tasks
@@ -2088,15 +2029,15 @@ def list_authenticated_providers(
         # But the /model picker is discovery-oriented — we WANT to show
         # providers the user can switch to, even if they aren't currently
         # configured.
-        if not has_creds and hermes_slug == "anthropic":
+        if not has_creds and opencodon_slug == "anthropic":
             try:
                 from agent.anthropic_adapter import (
                     read_claude_code_credentials,
-                    read_hermes_oauth_credentials,
+                    read_opencodon_oauth_credentials,
                 )
-                hermes_creds = read_hermes_oauth_credentials()
+                opencodon_creds = read_opencodon_oauth_credentials()
                 cc_creds = read_claude_code_credentials()
-                if (hermes_creds and hermes_creds.get("accessToken")) or \
+                if (opencodon_creds and opencodon_creds.get("accessToken")) or \
                    (cc_creds and cc_creds.get("accessToken")):
                     has_creds = True
             except Exception as exc:
@@ -2104,7 +2045,7 @@ def list_authenticated_providers(
         if not has_creds:
             continue
 
-        if hermes_slug in {"openai-codex", "copilot", "copilot-acp"}:
+        if opencodon_slug in {"openai-codex", "copilot", "copilot-acp"}:
             # Use live OAuth-backed discovery so the gateway /model picker
             # matches what the user's authenticated Codex/Copilot backend
             # actually serves — including ChatGPT-Pro-only Codex slugs
@@ -2112,84 +2053,47 @@ def list_authenticated_providers(
             # catalog. ``cached_provider_model_ids()`` falls back to the
             # curated list when the live endpoint is unreachable, so this
             # is safe for unauthenticated and offline cases too.
-            model_ids = cached_provider_model_ids(hermes_slug)
+            model_ids = cached_provider_model_ids(opencodon_slug)
         # For aws_sdk providers (bedrock), use live discovery so the list
         # reflects the active region (eu.*, ap.*) not the static us.* list.
         elif overlay.auth_type == "aws_sdk":
             try:
-                _ids = cached_provider_model_ids(hermes_slug)
-                model_ids = _ids if _ids else (curated.get(hermes_slug, []) or curated.get(pid, []))
+                _ids = cached_provider_model_ids(opencodon_slug)
+                model_ids = _ids if _ids else (curated.get(opencodon_slug, []) or curated.get(pid, []))
             except Exception:
-                model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
-        elif hermes_slug == "nous":
-            # Nous serves a large live /v1/models catalog (vendor-prefixed
-            # models from many providers, returned alphabetically). The
-            # `hermes model` picker deliberately shows ONLY the curated agentic
-            # list — augmented with the Portal's free/paid recommendations so
-            # newly-launched models surface without a CLI release — in curated
-            # order. Mirror that exactly (see _model_flow_nous in main.py) so
-            # the GUI picker matches the CLI. Was: falling through to
-            # cached_provider_model_ids, which dumped the full alphabetical
-            # catalog; then: curated-only, which dropped the 4 Portal
-            # recommendations (e.g. stepfun/step-3.7-flash:free).
-            model_ids = curated.get("nous", [])
-            try:
-                from opencodon_cli.models import (
-                    get_pricing_for_provider as _nous_pricing,
-                    check_nous_free_tier as _nous_free,
-                    union_with_portal_free_recommendations as _union_free,
-                    union_with_portal_paid_recommendations as _union_paid,
-                )
-                from opencodon_cli.auth import get_provider_auth_state as _nous_state
-
-                _pricing = _nous_pricing("nous") or {}
-                _portal = ""
-                try:
-                    _st = _nous_state("nous") or {}
-                    _portal = _st.get("portal_base_url", "") or ""
-                except Exception:
-                    _portal = ""
-                if _nous_free(force_fresh=force_fresh_nous_tier):
-                    model_ids, _ = _union_free(model_ids, _pricing, _portal)
-                else:
-                    model_ids, _ = _union_paid(model_ids, _pricing, _portal)
-            except Exception:
-                # Portal recommendation fetch failed — fall back to the
-                # curated list alone (still correct, just may lag newly
-                # launched models, exactly like an offline CLI run).
-                pass
+                model_ids = curated.get(opencodon_slug, []) or curated.get(pid, [])
         else:
             # Unified pathway — see Section 1 rationale. Fall back to the
             # curated dict (with models.dev merge for preferred providers)
             # when the live fetcher comes up empty.
-            model_ids = cached_provider_model_ids(hermes_slug)
+            model_ids = cached_provider_model_ids(opencodon_slug)
             if not model_ids:
-                model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
-                if hermes_slug in _MODELS_DEV_PREFERRED:
-                    model_ids = _merge_with_models_dev(hermes_slug, model_ids)
+                model_ids = curated.get(opencodon_slug, []) or curated.get(pid, [])
+                if opencodon_slug in _MODELS_DEV_PREFERRED:
+                    model_ids = _merge_with_models_dev(opencodon_slug, model_ids)
         total = len(model_ids)
-        if hermes_slug in _UNCAPPED_PICKER_PROVIDERS:
+        if opencodon_slug in _UNCAPPED_PICKER_PROVIDERS:
             top = model_ids  # Aggregator: show full catalog regardless of max_models
         else:
             top = model_ids[:max_models] if max_models is not None else model_ids
 
         results.append({
-            "slug": hermes_slug,
-            "name": get_label(hermes_slug),
-            "is_current": hermes_slug == current_provider or pid == current_provider,
+            "slug": opencodon_slug,
+            "name": get_label(opencodon_slug),
+            "is_current": opencodon_slug == current_provider or pid == current_provider,
             "is_user_defined": False,
             "models": top,
             "total_models": total,
-            "source": "hermes",
+            "source": "opencodon",
         })
         seen_slugs.add(pid.lower())
-        seen_slugs.add(hermes_slug.lower())
-        _record_builtin_endpoint(hermes_slug)
+        seen_slugs.add(opencodon_slug.lower())
+        _record_builtin_endpoint(opencodon_slug)
 
     # --- 2b. Cross-check canonical provider list ---
     # Catches providers that are in CANONICAL_PROVIDERS but weren't found
     # in PROVIDER_TO_MODELS_DEV or OPENCODON_OVERLAYS (keeps /model in sync
-    # with `hermes model`).
+    # with `opencodon model`).
     try:
         from opencodon_cli.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
@@ -2329,7 +2233,7 @@ def list_authenticated_providers(
             # custom_providers entries use, so accept either.
             default_model = ep_cfg.get("default_model", "") or ep_cfg.get("model", "")
             # Build models list from both default_model and full models array.
-            # Hermes writes ``models:`` as a dict keyed by model id, but older
+            # opencodon writes ``models:`` as a dict keyed by model id, but older
             # or hand-edited configs may use strings or ``[{id: ...}]`` rows —
             # _declared_model_ids() owns that contract.
             entry_models: list = []
@@ -2342,7 +2246,7 @@ def list_authenticated_providers(
             if group_key not in ep_groups:
                 # Strip per-model suffix so "Palantir Claude 4.7 Opus" becomes
                 # "Palantir Claude". Em dash and " - " are the separators
-                # Hermes's own writer uses (mirrors section-4 grouping).
+                # opencodon's own writer uses (mirrors section-4 grouping).
                 grp_display = display_name
                 for sep in ("—", " - "):
                     if sep in grp_display:
@@ -2620,7 +2524,7 @@ def list_authenticated_providers(
                     groups[group_key]["discover_models"] = False
 
             # The singular ``model:`` field only holds the currently
-            # active model. Hermes's own writer (main.py::_save_custom_provider)
+            # active model. opencodon's own writer (main.py::_save_custom_provider)
             # stores every configured model as a dict under ``models:``;
             # downstream readers (agent/models_dev.py, gateway/run.py,
             # run_agent.py, opencodon_cli/config.py) already consume that dict.

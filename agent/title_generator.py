@@ -229,9 +229,9 @@ def auto_title_session(
     Never lets an exception escape: this is a daemon-thread target, and an
     escaping exception would spray a raw traceback into the user's terminal
     via the default threading excepthook. The canonical trigger is the
-    post-``hermes update`` stale-module window, where this function's lazy
+    post-``opencodon update`` stale-module window, where this function's lazy
     imports read NEW source from disk while already-cached modules
-    (``agent.portal_tags`` etc.) are still the OLD version — the resulting
+    (``agent.aux_accounting`` etc.) are still the OLD version — the resulting
     ImportError repeats on every auto-title attempt until the long-running
     process restarts.
     """
@@ -251,7 +251,7 @@ def auto_title_session(
         # names the likely cause so "restart the process" is discoverable.
         logger.warning(
             "Auto-title failed (harmless; if this started after an update, "
-            "restart the running Hermes process): %s",
+            "restart the running opencodon process): %s",
             e,
         )
         logger.debug("Auto-title traceback", exc_info=True)
@@ -287,18 +287,16 @@ def _auto_title_session(
     # This runs on a bare daemon thread spawned AFTER the turn's ambient
     # conversation context was reset, so publish it here from the session id
     # we already hold — the title-generation LLM call then carries the same
-    # ``conversation=`` Portal tag as the turn it titles. Root-of-lineage for
+    # accounting context as the turn it titles. Root-of-lineage for
     # consistency with the agent loop (a no-op on first exchange, where
     # titling happens, but correct if this ever runs on a continuation).
     from agent.aux_accounting import set_accounting_context
-    from agent.portal_tags import set_conversation_context
 
     conversation_id = session_id
     try:
         conversation_id = session_db.get_conversation_root(session_id) or session_id
     except Exception:
         pass
-    set_conversation_context(conversation_id)
     # Same for the accounting context, so the title call's token usage is
     # recorded against this session (task='title_generation', #23270).
     set_accounting_context(session_db, session_id)

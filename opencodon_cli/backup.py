@@ -1,10 +1,10 @@
 """
-Backup and import commands for hermes CLI.
+Backup and import commands for opencodon CLI.
 
-`hermes backup` creates a zip archive of the entire ~/.opencodon/ directory
-(excluding the hermes-agent repo and transient files).
+`opencodon backup` creates a zip archive of the entire ~/.opencodon/ directory
+(excluding the opencodon repo and transient files).
 
-`hermes import` restores from a backup zip, overlaying onto the current
+`opencodon import` restores from a backup zip, overlaying onto the current
 OPENCODON_HOME root.
 """
 
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from opencodon_constants import get_default_hermes_root, get_opencodon_home, display_opencodon_home
+from opencodon_constants import get_default_opencodon_root, get_opencodon_home, display_opencodon_home
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # Directory names to skip entirely (matched against each path component)
-# The repo checkout (``opencodon``, or ``hermes-agent`` in homes created
-# before the fork rename) is special-cased to root level only in
+# The repo checkout (``opencodon``) is special-cased to root level only in
 # ``_should_exclude`` so that skill directories like
-# ``skills/autonomous-ai-agents/hermes-agent/`` are not accidentally excluded.
+# ``skills/autonomous-ai-agents/opencodon/`` are not accidentally excluded.
 #
 # The dependency/cache entries below matter for more than tidiness: without
 # them a single plugin venv, MCP-server install, or pip/uv cache living under
@@ -49,7 +48,6 @@ logger = logging.getLogger(__name__)
 # restorable user skills that must survive a backup.
 _EXCLUDED_DIRS = {
     "opencodon",        # the codebase repo — re-clone instead
-    "hermes-agent",     # pre-rename repo checkout in legacy homes
     "__pycache__",      # bytecode caches — regenerated on import
     ".git",             # nested git dirs (profiles shouldn't have these, but safety)
     "node_modules",     # js deps — reinstalled on demand
@@ -90,7 +88,7 @@ _EXCLUDED_NAMES = {
     "cron.pid",
 }
 
-# File names that ``hermes import`` must never overwrite, matched by basename so
+# File names that ``opencodon import`` must never overwrite, matched by basename so
 # they're caught for the root profile (``gateway_state.json``) and for named
 # profiles alike (``profiles/<name>/gateway_state.json``).
 #
@@ -105,7 +103,7 @@ _EXCLUDED_NAMES = {
 #     gateway whose recorded state is ``running``. A backup taken from a
 #     machine where the gateway was stopped (or carrying a stale/foreign
 #     value) overwrites the container's own state and leaves the gateway
-#     stuck "starting"/"cooking", disconnecting it from the Nous portal
+#     stuck "starting"/"cooking", disconnecting it from the portal
 #     (NS-508 / the second half of NS-501).
 #   - ``gateway.pid`` / ``cron.pid`` / ``gateway.lock`` / ``processes.json``
 #     reference PIDs and locks in the *source* machine's process namespace; a
@@ -127,7 +125,7 @@ _IMPORT_SKIP_NAMES = {
 _SECRET_FILE_NAMES = {".env", "auth.json", "state.db"}
 
 # Reserved archive subtree for provider state that lives OUTSIDE OPENCODON_HOME
-# (e.g. ~/.honcho). The active memory provider declares these via
+# outside OPENCODON_HOME. The active memory provider declares these via
 # MemoryProvider.backup_paths(); they're stored under this prefix encoded
 # relative to the user's home directory, and restored to their original
 # home-relative location on import. Anything not under home is skipped.
@@ -211,7 +209,7 @@ def _iter_external_files(base: Path) -> List[Path]:
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to hermes root) should be skipped."""
+    """Return True if *rel_path* (relative to opencodon root) should be skipped."""
     parts = rel_path.parts
 
     for part in parts:
@@ -219,8 +217,8 @@ def _should_exclude(rel_path: Path) -> bool:
             continue
         # The repo checkout names only match at the root level (first
         # component). Nested directories with the same name — e.g.
-        # ``skills/autonomous-ai-agents/hermes-agent/`` — must be preserved.
-        if part in ("opencodon", "hermes-agent") and part != parts[0]:
+        # ``skills/autonomous-ai-agents/opencodon/`` — must be preserved.
+        if part == "opencodon" and part != parts[0]:
             continue
         return True
 
@@ -299,11 +297,11 @@ def _format_size(nbytes: int) -> str:
 
 
 def run_backup(args) -> None:
-    """Create a zip backup of the Hermes home directory."""
-    hermes_root = get_default_hermes_root()
+    """Create a zip backup of the opencodon home directory."""
+    opencodon_root = get_default_opencodon_root()
 
-    if not hermes_root.is_dir():
-        print(f"Error: Hermes home directory not found at {hermes_root}")
+    if not opencodon_root.is_dir():
+        print(f"Error: opencodon home directory not found at {opencodon_root}")
         sys.exit(1)
 
     # Determine output path
@@ -312,10 +310,10 @@ def run_backup(args) -> None:
         # If user gave a directory, put the zip inside it
         if out_path.is_dir():
             stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-            out_path = out_path / f"hermes-backup-{stamp}.zip"
+            out_path = out_path / f"opencodon-backup-{stamp}.zip"
     else:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        out_path = Path.home() / f"hermes-backup-{stamp}.zip"
+        out_path = Path.home() / f"opencodon-backup-{stamp}.zip"
 
     # Ensure the suffix is .zip
     if out_path.suffix.lower() != ".zip":
@@ -329,9 +327,9 @@ def run_backup(args) -> None:
     files_to_add: list[tuple[Path, Path]] = []  # (absolute, relative)
     skipped_dirs = set()
 
-    for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
+    for dirpath, dirnames, filenames in os.walk(opencodon_root, followlinks=False):
         dp = Path(dirpath)
-        rel_dir = dp.relative_to(hermes_root)
+        rel_dir = dp.relative_to(opencodon_root)
 
         # Prune excluded directories in-place so os.walk doesn't descend
         # The repo checkout is only pruned at the root level; nested dirs
@@ -341,21 +339,21 @@ def run_backup(args) -> None:
         dirnames[:] = [
             d for d in dirnames
             if d not in _EXCLUDED_DIRS
-            or (d in ("opencodon", "hermes-agent") and not is_root)
+            or (d == "opencodon" and not is_root)
         ]
         for removed in set(orig_dirnames) - set(dirnames):
             skipped_dirs.add(str(rel_dir / removed))
 
         for fname in filenames:
             fpath = dp / fname
-            rel = fpath.relative_to(hermes_root)
+            rel = fpath.relative_to(opencodon_root)
 
             if _should_skip_backup_file(fpath, rel, out_path):
                 continue
 
             files_to_add.append((fpath, rel))
 
-    # External memory-provider state (e.g. ~/.honcho) lives
+    # External memory-provider state lives
     # outside OPENCODON_HOME, so the walk above never sees it. Ask the active
     # provider for its declared paths and stage them under the reserved
     # ``_external/`` arc prefix, encoded relative to the user's home dir.
@@ -475,7 +473,7 @@ def run_backup(args) -> None:
             print(f"  ... and {len(errors) - 10} more")
 
     if not errors:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: opencodon import {out_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -483,7 +481,7 @@ def run_backup(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
-    """Check that a zip looks like a Hermes backup.
+    """Check that a zip looks like a opencodon backup.
 
     Returns (ok, reason).
     """
@@ -491,7 +489,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
     if not names:
         return False, "zip archive is empty"
 
-    # Look for telltale files that a hermes home would have
+    # Look for telltale files that a opencodon home would have
     markers = {"config.yaml", ".env", "state.db"}
     found = set()
     for n in names:
@@ -502,7 +500,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 
     if not found:
         return False, (
-            "zip does not appear to be a Hermes backup "
+            "zip does not appear to be a opencodon backup "
             "(no config.yaml, .env, or state databases found)"
         )
 
@@ -526,15 +524,15 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     first_parts = {p[0] for p in parts_list if len(p) > 1}
     if len(first_parts) == 1:
         prefix = first_parts.pop()
-        # Only strip if it looks like a hermes dir name
-        if prefix in {".opencodon", "hermes"}:
+        # Only strip if it looks like a opencodon dir name
+        if prefix in {".opencodon", "opencodon"}:
             return prefix + "/"
 
     return ""
 
 
 def run_import(args) -> None:
-    """Restore a Hermes backup from a zip file."""
+    """Restore a opencodon backup from a zip file."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -545,7 +543,7 @@ def run_import(args) -> None:
         print(f"Error: Not a valid zip file: {zip_path}")
         sys.exit(1)
 
-    hermes_root = get_default_hermes_root()
+    opencodon_root = get_default_opencodon_root()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -565,12 +563,12 @@ def run_import(args) -> None:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (hermes_root / "config.yaml").exists()
-        has_env = (hermes_root / ".env").exists()
+        has_config = (opencodon_root / "config.yaml").exists()
+        has_env = (opencodon_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has opencodon configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -584,7 +582,7 @@ def run_import(args) -> None:
 
         # Extract
         print(f"\nImporting {file_count} files ...")
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        opencodon_root.mkdir(parents=True, exist_ok=True)
 
         errors = []
         restored = 0
@@ -596,7 +594,7 @@ def run_import(args) -> None:
         for member in members:
             # External memory-provider state captured under the reserved
             # ``_external/`` arc prefix restores to its original home-relative
-            # location (e.g. ~/.honcho/config.json), NOT under OPENCODON_HOME.
+            # location, NOT under OPENCODON_HOME.
             if member.startswith(_EXTERNAL_PREFIX):
                 ext_rel = member[len(_EXTERNAL_PREFIX):]
                 if not ext_rel:
@@ -639,17 +637,17 @@ def run_import(args) -> None:
             # namespaced to the machine/container the backup was taken on;
             # clobbering them (especially gateway_state.json) breaks the gateway
             # reconciler on the target and disconnects hosted instances from the
-            # Nous portal. Matched by basename so both the root profile and
+            # portal. Matched by basename so both the root profile and
             # named profiles (profiles/<name>/gateway_state.json) are covered.
             if Path(rel).name in _IMPORT_SKIP_NAMES:
                 skipped_runtime.append(rel)
                 continue
 
-            target = hermes_root / rel
+            target = opencodon_root / rel
 
             # Security: reject absolute paths and traversals
             try:
-                target.resolve().relative_to(hermes_root.resolve())
+                target.resolve().relative_to(opencodon_root.resolve())
             except ValueError:
                 errors.append(f"  {rel}: path traversal blocked")
                 continue
@@ -698,7 +696,7 @@ def run_import(args) -> None:
                 print(f"    ... and {len(skipped_runtime) - 10} more")
 
         # Post-import: restore profile wrapper scripts
-        profiles_dir = hermes_root / "profiles"
+        profiles_dir = opencodon_root / "profiles"
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
@@ -740,7 +738,7 @@ def run_import(args) -> None:
 
         # Guidance
         print()
-        if not (hermes_root / "opencodon").is_dir():
+        if not (opencodon_root / "opencodon").is_dir():
             print("Note: The opencodon codebase was not included in the backup.")
             print("  If this is a fresh install, run: opencodon update")
 
@@ -748,13 +746,13 @@ def run_import(args) -> None:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  hermes -p {pname} gateway install")
+                print(f"  opencodon -p {pname} gateway install")
 
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your opencodon configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
+# Quick state snapshots (used by /snapshot slash command and opencodon backup --quick)
 # ---------------------------------------------------------------------------
 
 # Critical state files to include in quick snapshots (relative to OPENCODON_HOME).
@@ -764,7 +762,7 @@ def run_import(args) -> None:
 # Entries may be individual files OR directories.  Directories are captured
 # recursively; missing entries are silently skipped.  Pairing data lives in
 # platform-specific JSON blobs outside state.db, so it's listed here explicitly
-# — `hermes update` snapshots this set before pulling so approved-user lists
+# — `opencodon update` snapshots this set before pulling so approved-user lists
 # are recoverable if anything goes wrong (issue #15733).
 _QUICK_STATE_FILES = (
     "state.db",
@@ -819,10 +817,10 @@ def create_quick_snapshot(
         max_file_size: When set, individual files larger than this many bytes
             are skipped (with a printed warning) instead of copied. Used by
             the pre-update safety snapshot so a multi-GB ``state.db`` can
-            never stall ``hermes update`` or silently eat disk — the small
+            never stall ``opencodon update`` or silently eat disk — the small
             pairing/cron/config files the snapshot exists to protect are
             always captured. ``None`` (default) copies everything, which
-            preserves manual ``/snapshot`` and ``hermes backup --quick``
+            preserves manual ``/snapshot`` and ``opencodon backup --quick``
             behavior.
 
     Returns:
@@ -1082,7 +1080,7 @@ def restore_cron_jobs_if_emptied(
     snapshot_id: str,
     opencodon_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``hermes update``.
+    """Safety net for silent cron-job loss across ``opencodon update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1103,7 +1101,7 @@ def restore_cron_jobs_if_emptied(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        opencodon_home: Override for the Hermes home directory (tests).
+        opencodon_home: Override for the opencodon home directory (tests).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1185,7 +1183,7 @@ def prune_quick_snapshots(
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for hermes backup --quick."""
+    """CLI entry point for opencodon backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
@@ -1201,8 +1199,8 @@ def run_quick_backup(args) -> None:
 # Shared full-zip backup helper
 # ---------------------------------------------------------------------------
 
-def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
-    """Write a full zip snapshot of ``hermes_root`` to ``out_path``.
+def _write_full_zip_backup(out_path: Path, opencodon_root: Path) -> Optional[Path]:
+    """Write a full zip snapshot of ``opencodon_root`` to ``out_path``.
 
     Uses the same exclusion rules and SQLite safe-copy as :func:`run_backup`.
     Returns the output path on success, None on failure (nothing to back up,
@@ -1210,7 +1208,7 @@ def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
     """
     files_to_add: list[tuple[Path, Path]] = []
     try:
-        for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
+        for dirpath, dirnames, filenames in os.walk(opencodon_root, followlinks=False):
             dp = Path(dirpath)
             # Prune excluded directories in-place so os.walk doesn't descend
             dirnames[:] = [d for d in dirnames if d not in _EXCLUDED_DIRS]
@@ -1218,7 +1216,7 @@ def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
             for fname in filenames:
                 fpath = dp / fname
                 try:
-                    rel = fpath.relative_to(hermes_root)
+                    rel = fpath.relative_to(opencodon_root)
                 except ValueError:
                     continue
 
@@ -1345,13 +1343,13 @@ def create_pre_update_backup(
 
     Returns the path to the created zip, or ``None`` if no files were
     found or the backup could not be created.  Never raises — the caller
-    (``hermes update``) should continue even if the backup fails.
+    (``opencodon update``) should continue even if the backup fails.
     """
-    hermes_root = opencodon_home or get_default_hermes_root()
-    if not hermes_root.is_dir():
+    opencodon_root = opencodon_home or get_default_opencodon_root()
+    if not opencodon_root.is_dir():
         return None
 
-    backup_dir = _pre_update_backup_dir(hermes_root)
+    backup_dir = _pre_update_backup_dir(opencodon_root)
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -1361,86 +1359,9 @@ def create_pre_update_backup(
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     out_path = backup_dir / f"{_PRE_UPDATE_PREFIX}{stamp}.zip"
 
-    result = _write_full_zip_backup(out_path, hermes_root)
+    result = _write_full_zip_backup(out_path, opencodon_root)
     if result is None:
         return None
 
     _prune_pre_update_backups(backup_dir, keep=keep)
-    return out_path
-
-
-# ---------------------------------------------------------------------------
-# Pre-migration auto-backup (used by `hermes claw migrate`)
-# ---------------------------------------------------------------------------
-
-_PRE_MIGRATION_PREFIX = "pre-migration-"
-_PRE_MIGRATION_DEFAULT_KEEP = 5
-
-
-def _prune_pre_migration_backups(backup_dir: Path, keep: int) -> int:
-    """Remove oldest pre-migration backups beyond the keep limit.
-
-    Only touches files matching ``pre-migration-*.zip`` so other backups in
-    the same directory are never touched.
-    """
-    keep = max(keep, 0)
-    if not backup_dir.exists():
-        return 0
-
-    backups = sorted(
-        (p for p in backup_dir.iterdir()
-         if p.is_file() and p.name.startswith(_PRE_MIGRATION_PREFIX) and p.suffix.lower() == ".zip"),
-        key=lambda p: p.name,
-        reverse=True,
-    )
-
-    deleted = 0
-    for p in backups[keep:]:
-        try:
-            p.unlink()
-            deleted += 1
-        except OSError as exc:
-            logger.warning("Failed to prune pre-migration backup %s: %s", p.name, exc)
-
-    return deleted
-
-
-def create_pre_migration_backup(
-    opencodon_home: Optional[Path] = None,
-    keep: int = _PRE_MIGRATION_DEFAULT_KEEP,
-) -> Optional[Path]:
-    """Create a full zip backup of OPENCODON_HOME under ``backups/`` before a
-    ``hermes claw migrate`` apply.
-
-    Shares implementation with :func:`create_pre_update_backup` via
-    ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
-    restorable with ``hermes import <archive>``.  Writes to
-    ``<OPENCODON_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
-    old pre-migration backups.
-
-    Returns the path to the created zip, or ``None`` if nothing was found
-    to back up (fresh install) or the write failed.  Never raises — the
-    caller decides whether to abort or proceed.
-    """
-    hermes_root = opencodon_home or get_default_hermes_root()
-    if not hermes_root.is_dir():
-        return None
-
-    # Reuses the shared backups/ directory so `hermes import` and the
-    # update-backup listing pick up pre-migration archives too.
-    backup_dir = _pre_update_backup_dir(hermes_root)
-    try:
-        backup_dir.mkdir(parents=True, exist_ok=True)
-    except OSError as exc:
-        logger.warning("Could not create pre-migration backup dir %s: %s", backup_dir, exc)
-        return None
-
-    stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    out_path = backup_dir / f"{_PRE_MIGRATION_PREFIX}{stamp}.zip"
-
-    result = _write_full_zip_backup(out_path, hermes_root)
-    if result is None:
-        return None
-
-    _prune_pre_migration_backups(backup_dir, keep=keep)
     return out_path

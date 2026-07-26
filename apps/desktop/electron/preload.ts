@@ -8,34 +8,6 @@ contextBridge.exposeInMainWorld('opencodonDesktop', {
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('opencodon:window:openSession', sessionId, opts),
   openWindow: () => ipcRenderer.invoke('opencodon:window:openInstance'),
   claimAmbientCue: key => ipcRenderer.invoke('opencodon:ambient:claim', key),
-  petOverlay: {
-    // Main renderer → main process: window lifecycle + drag. `request` is
-    // `{ bounds, screen }`; resolves with the screen bounds it actually used.
-    open: request => ipcRenderer.invoke('opencodon:pet-overlay:open', request),
-    close: () => ipcRenderer.invoke('opencodon:pet-overlay:close'),
-    setBounds: bounds => ipcRenderer.send('opencodon:pet-overlay:set-bounds', bounds),
-    setIgnoreMouse: ignore => ipcRenderer.send('opencodon:pet-overlay:ignore-mouse', ignore),
-    // Flip the overlay focusable (and focus it) while the composer needs keys.
-    setFocusable: focusable => ipcRenderer.send('opencodon:pet-overlay:set-focusable', focusable),
-    // Main renderer → overlay (forwarded by main): push the latest pet state.
-    pushState: payload => ipcRenderer.send('opencodon:pet-overlay:state', payload),
-    // Overlay → main renderer (forwarded by main): pop back in / composer submit.
-    control: payload => ipcRenderer.send('opencodon:pet-overlay:control', payload),
-    // Overlay subscribes to state pushes.
-    onState: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('opencodon:pet-overlay:state', listener)
-
-      return () => ipcRenderer.removeListener('opencodon:pet-overlay:state', listener)
-    },
-    // Main renderer subscribes to overlay control messages.
-    onControl: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('opencodon:pet-overlay:control', listener)
-
-      return () => ipcRenderer.removeListener('opencodon:pet-overlay:control', listener)
-    }
-  },
   getBootProgress: () => ipcRenderer.invoke('opencodon:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('opencodon:connection-config:get', profile),
   saveConnectionConfig: payload => ipcRenderer.invoke('opencodon:connection-config:save', payload),

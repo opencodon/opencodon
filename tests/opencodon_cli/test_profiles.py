@@ -125,9 +125,9 @@ class TestValidateProfileName:
         with pytest.raises(ValueError):
             validate_profile_name("")
 
-    @pytest.mark.parametrize("name", ["hermes", "test", "tmp", "root", "sudo"])
+    @pytest.mark.parametrize("name", ["opencodon", "test", "tmp", "root", "sudo"])
     def test_reserved_names_rejected(self, name):
-        """Reserved names collide with the Hermes install itself or with
+        """Reserved names collide with the opencodon install itself or with
         common system binaries — reject them at validate time so
         create/install/rename all share one gate."""
         with pytest.raises(ValueError, match="reserved"):
@@ -294,7 +294,7 @@ class TestCreateProfile:
         assert not (profile_dir / "profiles").exists()
 
     def test_clone_all_excludes_default_infrastructure(self, profile_env):
-        """--clone-all from default profile excludes hermes-agent, .worktrees,
+        """--clone-all from default profile excludes opencodon, .worktrees,
         bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
         at any depth.  Profile data (config, env, skills, logs) must be
         preserved — clone-all means "complete snapshot minus infrastructure
@@ -396,7 +396,7 @@ class TestCreateProfile:
 # ===================================================================
 
 class TestNoSkillsOptOut:
-    """Tests for `hermes profile create --no-skills` and the opt-out marker."""
+    """Tests for `opencodon profile create --no-skills` and the opt-out marker."""
 
     def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
@@ -434,7 +434,7 @@ class TestNoSkillsOptOut:
 
     def test_seed_profile_skills_respects_marker(self, profile_env):
         """seed_profile_skills() must no-op on opted-out profiles even when
-        called directly (e.g. by `hermes update`'s all-profile sync loop)."""
+        called directly (e.g. by `opencodon update`'s all-profile sync loop)."""
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
 
         # Call seed_profile_skills() directly — it should NOT invoke subprocess,
@@ -506,7 +506,7 @@ class TestNoSkillsOptOut:
 # ===================================================================
 
 class TestBackfillProfileEnvs:
-    """Tests for backfill_profile_envs() — the `hermes update` pass that
+    """Tests for backfill_profile_envs() — the `opencodon update` pass that
     gives pre-#44792 profiles (created before .env seeding) their own
     .env, copied from the default install so credentials don't break."""
 
@@ -813,7 +813,7 @@ class TestAliasCollision:
         assert result is None
 
     def test_reserved_name_returns_message(self, profile_env):
-        result = check_alias_collision("hermes")
+        result = check_alias_collision("opencodon")
         assert result is not None
         assert "reserved" in result.lower()
 
@@ -848,7 +848,7 @@ class TestAliasCollision:
         wrapper_dir = profile_env / ".local" / "bin"
         wrapper_dir.mkdir(parents=True, exist_ok=True)
         bat_path = wrapper_dir / "mybot.bat"
-        bat_path.write_text("@echo off\r\nhermes -p mybot %*\r\n")
+        bat_path.write_text("@echo off\r\nopencodon -p mybot %*\r\n")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout=str(bat_path),
@@ -874,14 +874,14 @@ class TestWrapperScript:
 
     def test_creates_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
+        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/opencodon/bin/opencodon")
         from opencodon_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.name == "mybot"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "exec /opt/hermes/bin/hermes -p mybot" in content
+        assert "exec /opt/opencodon/bin/opencodon -p mybot" in content
 
     def test_creates_bat_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
@@ -891,7 +891,7 @@ class TestWrapperScript:
         assert wrapper.name == "mybot.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p mybot" in content
+        assert "opencodon -p mybot" in content
         assert "%*" in content
 
     def test_remove_finds_bat_on_windows(self, profile_env, monkeypatch):
@@ -928,7 +928,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq"
         content = wrapper.read_text()
         assert content.startswith("#!/bin/sh")
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
 
     def test_custom_alias_target_on_windows(self, profile_env, monkeypatch):
         # Regression: custom-name aliases must still produce an executable
@@ -940,7 +940,7 @@ class TestWrapperScript:
         assert wrapper.name == "rq.bat"
         content = wrapper.read_text()
         assert "@echo off" in content
-        assert "hermes -p redqueen" in content
+        assert "opencodon -p redqueen" in content
         assert "%*" in content
         assert "#!/bin/sh" not in content
 
@@ -989,7 +989,7 @@ class TestWrapperScriptSecurity:
         wrapper = create_wrapper_script("mybot", target="coder")
         assert wrapper is not None
         assert wrapper.resolve().is_relative_to(_get_wrapper_dir().resolve())
-        assert 'hermes -p coder "$@"' in wrapper.read_text()
+        assert 'opencodon -p coder "$@"' in wrapper.read_text()
 
 
 # ===================================================================
@@ -1070,68 +1070,876 @@ class TestRenameProfile:
         assert new_dir.is_dir()
         assert new_dir == tmp_path / ".opencodon" / "profiles" / "newname"
 
-    def test_renames_root_honcho_host_without_changing_ai_peer(self, profile_env):
+    def test_default_raises_value_error(self, profile_env):
+        with pytest.raises(ValueError, match="default"):
+            create_profile("default", no_alias=True)
+
+    def test_invalid_name_raises_value_error(self, profile_env):
+        with pytest.raises(ValueError):
+            create_profile("INVALID!", no_alias=True)
+
+    def test_clone_config_copies_files(self, profile_env):
         tmp_path = profile_env
-        create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".opencodon" / "honcho.json"
-        honcho_path.write_text(json.dumps({
-            "hosts": {
-                "hermes.ssi_health": {
-                    "recallMode": "hybrid",
-                    "writeFrequency": "async",
-                    "sessionStrategy": "per-session",
-                    "saveMessages": True,
-                    "peerName": "user-peer",
-                    "aiPeer": "ssi_health",
-                    "workspace": "hermes",
-                    "enabled": True,
-                }
-            }
-        }))
+        default_home = tmp_path / ".opencodon"
+        # Create source config files in default profile
+        (default_home / "config.yaml").write_text("model: test")
+        (default_home / ".env").write_text("KEY=val")
+        (default_home / "SOUL.md").write_text("Be helpful.")
 
-        with patch("opencodon_cli.profiles.check_alias_collision", return_value="skip"):
-            rename_profile("ssi_health", "heimdall")
+        profile_dir = create_profile("coder", clone_config=True, no_alias=True)
 
-        cfg = json.loads(honcho_path.read_text())
-        assert "hermes.ssi_health" not in cfg["hosts"]
-        assert cfg["hosts"]["hermes_heimdall"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["hermes_heimdall"]["peerName"] == "user-peer"
+        cloned_config = yaml.safe_load((profile_dir / "config.yaml").read_text())
+        assert cloned_config["_config_version"] == DEFAULT_CONFIG["_config_version"]
+        assert cloned_config["model"] == "test"
+        assert (profile_dir / ".env").read_text().strip() == "KEY=val"
+        assert (profile_dir / "SOUL.md").read_text() == "Be helpful."
 
-    def test_pins_ai_peer_when_absent_on_honcho_host_rename(self, profile_env):
+    def test_clone_config_migrates_legacy_config_version(self, profile_env):
         tmp_path = profile_env
-        create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".opencodon" / "honcho.json"
-        honcho_path.write_text(json.dumps({
-            "hosts": {
-                "hermes.ssi_health": {"workspace": "hermes", "enabled": True}
-            }
-        }))
+        default_home = tmp_path / ".opencodon"
+        (default_home / "config.yaml").write_text(
+            "model:\n  provider: openrouter\n",
+            encoding="utf-8",
+        )
 
-        with patch("opencodon_cli.profiles.check_alias_collision", return_value="skip"):
-            rename_profile("ssi_health", "heimdall")
+        profile_dir = create_profile("coder", clone_config=True, no_alias=True)
+        cloned_config = yaml.safe_load((profile_dir / "config.yaml").read_text())
 
-        cfg = json.loads(honcho_path.read_text())
-        assert "hermes.ssi_health" not in cfg["hosts"]
-        assert cfg["hosts"]["hermes_heimdall"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["hermes_heimdall"]["workspace"] == "hermes"
+        assert cloned_config["_config_version"] == DEFAULT_CONFIG["_config_version"]
+        assert cloned_config["model"]["provider"] == "openrouter"
 
-    def test_does_not_overwrite_existing_honcho_host_on_rename(self, profile_env):
+    def test_clone_config_copies_source_skills(self, profile_env):
         tmp_path = profile_env
-        create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".opencodon" / "honcho.json"
-        honcho_path.write_text(json.dumps({
-            "hosts": {
-                "hermes.ssi_health": {"aiPeer": "ssi_health"},
-                "hermes_heimdall": {"aiPeer": "heimdall"},
-            }
-        }))
+        default_home = tmp_path / ".opencodon"
+        skill_dir = default_home / "skills" / "custom" / "installed-skill"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("---\nname: installed-skill\n---\n")
 
+        profile_dir = create_profile("coder", clone_config=True, no_alias=True)
+
+        assert (
+            profile_dir
+            / "skills"
+            / "custom"
+            / "installed-skill"
+            / "SKILL.md"
+        ).read_text() == "---\nname: installed-skill\n---\n"
+
+    def test_clone_all_copies_entire_tree(self, profile_env):
+        tmp_path = profile_env
+        default_home = tmp_path / ".opencodon"
+        # Populate default with some content
+        (default_home / "memories").mkdir(exist_ok=True)
+        (default_home / "memories" / "note.md").write_text("remember this")
+        (default_home / "config.yaml").write_text("model: gpt-4")
+        # Runtime files that should be stripped
+        (default_home / "gateway.pid").write_text("12345")
+        (default_home / "gateway_state.json").write_text("{}")
+        (default_home / "processes.json").write_text("[]")
+
+        profile_dir = create_profile("coder", clone_all=True, no_alias=True)
+
+        # Content should be copied
+        assert (profile_dir / "memories" / "note.md").read_text() == "remember this"
+        assert (profile_dir / "config.yaml").read_text() == "model: gpt-4"
+        # Runtime files should be stripped
+        assert not (profile_dir / "gateway.pid").exists()
+        assert not (profile_dir / "gateway_state.json").exists()
+        assert not (profile_dir / "processes.json").exists()
+
+    def test_clone_all_excludes_sibling_profiles_tree(self, profile_env):
+        """--clone-all from default ~/.opencodon must not copy profiles/* (nested explosion)."""
+        tmp_path = profile_env
+        default_home = tmp_path / ".opencodon"
+        profiles_root = default_home / "profiles"
+        profiles_root.mkdir(exist_ok=True)
+        (profiles_root / "other").mkdir(parents=True, exist_ok=True)
+        (profiles_root / "other" / "marker.txt").write_text("sibling data")
+
+        (default_home / "memories").mkdir(exist_ok=True)
+        (default_home / "memories" / "note.md").write_text("remember this")
+
+        profile_dir = create_profile("coder", clone_all=True, no_alias=True)
+
+        assert (profile_dir / "memories" / "note.md").read_text() == "remember this"
+        assert not (profile_dir / "profiles").exists()
+
+    def test_clone_all_excludes_default_infrastructure(self, profile_env):
+        """--clone-all from default profile excludes opencodon, .worktrees,
+        bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
+        at any depth.  Profile data (config, env, skills, logs) must be
+        preserved — clone-all means "complete snapshot minus infrastructure
+        and per-profile history."
+        """
+        tmp_path = profile_env
+        default_home = tmp_path / ".opencodon"
+        # Simulate infrastructure dirs that only the default profile has
+        (default_home / "opencodon" / ".git").mkdir(parents=True)
+        (default_home / "opencodon" / "venv" / "bin").mkdir(parents=True)
+        (default_home / "opencodon" / "README.md").write_text("repo")
+        (default_home / ".worktrees" / "some-tree").mkdir(parents=True)
+        (default_home / "profiles" / "other").mkdir(parents=True)
+        (default_home / "profiles" / "other" / "config.yaml").write_text("x")
+        (default_home / "bin").mkdir(exist_ok=True)
+        (default_home / "bin" / "tool").write_text("binary")
+        (default_home / "node_modules" / ".package-lock.json").mkdir(parents=True)
+        # Bytecode + temp files at nested depth (universal exclusion)
+        (default_home / "skills" / "my-skill" / "__pycache__").mkdir(parents=True)
+        (default_home / "skills" / "my-skill" / "__pycache__" / "module.cpython-311.pyc").write_text("stale")
+        (default_home / "skills" / "my-skill" / "module.pyc").write_text("stale")
+        (default_home / "skills" / "my-skill" / "module.pyo").write_text("stale")
+        (default_home / "data.sock").write_text("socket")
+        (default_home / "data.tmp").write_text("tmp")
+        # Profile data that SHOULD be copied
+        (default_home / "skills" / "my-skill").mkdir(parents=True, exist_ok=True)
+        (default_home / "skills" / "my-skill" / "SKILL.md").write_text("skill")
+        (default_home / "config.yaml").write_text("model: gpt-4")
+        (default_home / ".env").write_text("KEY=val")
+        (default_home / "logs").mkdir(exist_ok=True)
+        (default_home / "logs" / "gateway.log").write_text("log")
+
+        profile_dir = create_profile("cloned", clone_all=True, no_alias=True)
+
+        # Infrastructure must be excluded
+        assert not (profile_dir / "opencodon").exists()
+        assert not (profile_dir / ".worktrees").exists()
+        assert not (profile_dir / "profiles").exists()
+        assert not (profile_dir / "bin").exists()
+        assert not (profile_dir / "node_modules").exists()
+        # Universal exclusions at any depth
+        assert not (profile_dir / "data.sock").exists()
+        assert not (profile_dir / "data.tmp").exists()
+        assert not (profile_dir / "skills" / "my-skill" / "__pycache__").exists()
+        assert not (profile_dir / "skills" / "my-skill" / "module.pyc").exists()
+        assert not (profile_dir / "skills" / "my-skill" / "module.pyo").exists()
+        # All profile data must be present
+        assert (profile_dir / "skills" / "my-skill" / "SKILL.md").read_text() == "skill"
+        assert (profile_dir / "config.yaml").read_text() == "model: gpt-4"
+        assert (profile_dir / ".env").read_text() == "KEY=val"
+        assert (profile_dir / "logs" / "gateway.log").read_text() == "log"
+
+    def test_clone_all_excludes_history_artifacts(self, profile_env):
+        """--clone-all excludes the source's session history, backups, and
+        snapshots — a clone is a fresh workspace, and these can reach tens
+        of GB.  Applies to ANY source profile, not just default.
+        """
+        tmp_path = profile_env
+        default_home = tmp_path / ".opencodon"
+        (default_home / "state.db").write_text("sessions-data")
+        (default_home / "state.db-wal").write_text("wal")
+        (default_home / "state.db-shm").write_text("shm")
+        (default_home / "sessions" / "20260101_old").mkdir(parents=True)
+        (default_home / "backups").mkdir(exist_ok=True)
+        (default_home / "backups" / "backup.tar.gz").write_text("archive")
+        (default_home / "state-snapshots" / "snap1").mkdir(parents=True)
+        (default_home / "checkpoints" / "cp1").mkdir(parents=True)
+        # Data that should still copy
+        (default_home / "config.yaml").write_text("model: gpt-4")
+        # Nested dirs with the same names must NOT be excluded (root-only)
+        (default_home / "workspace" / "backups").mkdir(parents=True)
+        (default_home / "workspace" / "backups" / "user-data.txt").write_text("mine")
+
+        profile_dir = create_profile("fresh", clone_all=True, no_alias=True)
+
+        for history in (
+            "state.db", "state.db-wal", "state.db-shm",
+            "sessions", "backups", "state-snapshots", "checkpoints",
+        ):
+            assert not (profile_dir / history).exists(), history
+        assert (profile_dir / "config.yaml").read_text() == "model: gpt-4"
+        # Root-only: nested same-name dirs survive
+        assert (profile_dir / "workspace" / "backups" / "user-data.txt").read_text() == "mine"
+
+    def test_clone_config_missing_files_skipped(self, profile_env):
+        """Clone config gracefully skips files that don't exist in source."""
+        profile_dir = create_profile("coder", clone_config=True, no_alias=True)
+        # No error; optional files just not copied
+        assert not (profile_dir / "config.yaml").exists()
+        # .env is always seeded (placeholder) so the profile has its own
+        # credentials file even when the clone source lacked one.
+        assert (profile_dir / ".env").exists()
+        # SOUL.md is always seeded with the default even when clone source lacks it
+        assert (profile_dir / "SOUL.md").exists()
+
+
+# ===================================================================
+# TestNoSkillsOptOut
+# ===================================================================
+
+class TestNoSkillsOptOut:
+    """Tests for `opencodon profile create --no-skills` and the opt-out marker."""
+
+    def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
+        profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
+
+        # Marker file is present
+        marker = profile_dir / NO_BUNDLED_SKILLS_MARKER
+        assert marker.is_file(), "expected .no-bundled-skills marker in profile root"
+        assert "--no-skills" in marker.read_text()
+
+        # has_bundled_skills_opt_out() agrees
+        assert has_bundled_skills_opt_out(profile_dir) is True
+
+        # skills/ dir exists (profile bootstrapping still creates the dir) but
+        # contains nothing yet because create_profile itself doesn't seed.
+        assert (profile_dir / "skills").is_dir()
+        assert list((profile_dir / "skills").iterdir()) == []
+
+    def test_no_skills_conflicts_with_clone(self, profile_env):
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            create_profile(
+                "orchestrator",
+                no_alias=True,
+                no_skills=True,
+                clone_config=True,
+            )
+
+    def test_no_skills_conflicts_with_clone_all(self, profile_env):
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            create_profile(
+                "orchestrator",
+                no_alias=True,
+                no_skills=True,
+                clone_all=True,
+            )
+
+    def test_seed_profile_skills_respects_marker(self, profile_env):
+        """seed_profile_skills() must no-op on opted-out profiles even when
+        called directly (e.g. by `opencodon update`'s all-profile sync loop)."""
+        profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
+
+        # Call seed_profile_skills() directly — it should NOT invoke subprocess,
+        # NOT modify the skills/ dir, and return a dict with skipped_opt_out=True.
+        result = seed_profile_skills(profile_dir, quiet=True)
+
+        assert result is not None
+        assert result.get("skipped_opt_out") is True
+        assert result.get("copied") == []
+        # skills/ stays empty — no subprocess ran
+        assert list((profile_dir / "skills").iterdir()) == []
+
+    def test_default_profile_gets_skills_seeded(self, profile_env, monkeypatch):
+        """Sanity: without --no-skills, seed_profile_skills() runs the real
+        subprocess path. Mock the subprocess so the test is hermetic, and
+        just confirm the marker is NOT checked in the non-opt-out case."""
+        import subprocess as _sp
+
+        profile_dir = create_profile("coder", no_alias=True)
+        # No marker — not opted out
+        assert not (profile_dir / NO_BUNDLED_SKILLS_MARKER).exists()
+        assert has_bundled_skills_opt_out(profile_dir) is False
+
+        # Mock subprocess.run to avoid actually running skill sync in tests
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append(args)
+            return _sp.CompletedProcess(
+                args=args, returncode=0, stdout='{"copied": ["x"]}', stderr=""
+            )
+
+        monkeypatch.setattr("subprocess.run", fake_run)
+        result = seed_profile_skills(profile_dir, quiet=True)
+
+        # Subprocess was invoked (the opt-out branch did NOT short-circuit)
+        assert len(calls) == 1
+        assert result == {"copied": ["x"]}
+
+    def test_delete_marker_re_enables_seeding(self, profile_env, monkeypatch):
+        """Deleting .no-bundled-skills opts the profile back in."""
+        import subprocess as _sp
+
+        profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
+        assert has_bundled_skills_opt_out(profile_dir) is True
+
+        # First call: opted out, returns skipped dict without touching subprocess
+        called = []
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *a, **kw: (called.append(a), _sp.CompletedProcess(
+                args=a, returncode=0, stdout='{"copied": []}', stderr=""
+            ))[1],
+        )
+        r1 = seed_profile_skills(profile_dir, quiet=True)
+        assert r1.get("skipped_opt_out") is True
+        assert called == []
+
+        # Delete marker → next call runs the real path
+        (profile_dir / NO_BUNDLED_SKILLS_MARKER).unlink()
+        assert has_bundled_skills_opt_out(profile_dir) is False
+        r2 = seed_profile_skills(profile_dir, quiet=True)
+        assert r2 == {"copied": []}
+        assert len(called) == 1
+
+
+# ===================================================================
+# TestBackfillProfileEnvs
+# ===================================================================
+
+class TestBackfillProfileEnvs:
+    """Tests for backfill_profile_envs() — the `opencodon update` pass that
+    gives pre-#44792 profiles (created before .env seeding) their own
+    .env, copied from the default install so credentials don't break."""
+
+    def test_copies_default_env_into_envless_profiles(self, profile_env):
+        import stat
+        tmp_path = profile_env
+        (tmp_path / ".opencodon" / ".env").write_text("OPENROUTER_API_KEY=root-key\n")
+        p1 = create_profile("old1", no_alias=True)
+        p2 = create_profile("old2", no_alias=True)
+        # Simulate pre-#44792 profiles: no .env
+        (p1 / ".env").unlink()
+        (p2 / ".env").unlink()
+
+        backfilled = backfill_profile_envs(quiet=True)
+
+        assert sorted(backfilled) == ["old1", "old2"]
+        for p in (p1, p2):
+            assert (p / ".env").read_text() == "OPENROUTER_API_KEY=root-key\n"
+            assert stat.S_IMODE((p / ".env").stat().st_mode) == 0o600
+
+    def test_never_overwrites_existing_profile_env(self, profile_env):
+        tmp_path = profile_env
+        (tmp_path / ".opencodon" / ".env").write_text("KEY=root\n")
+        p = create_profile("hasenv", no_alias=True)
+        (p / ".env").write_text("KEY=mine\n")
+
+        backfilled = backfill_profile_envs(quiet=True)
+
+        assert backfilled == []
+        assert (p / ".env").read_text() == "KEY=mine\n"
+
+    def test_placeholder_when_default_has_no_env(self, profile_env):
+        p = create_profile("noroot", no_alias=True)
+        (p / ".env").unlink()
+
+        backfilled = backfill_profile_envs(quiet=True)
+
+        assert backfilled == ["noroot"]
+        content = (p / ".env").read_text(encoding="utf-8")
+        assert all(
+            line.startswith("#") or not line.strip()
+            for line in content.splitlines()
+        )
+
+    def test_no_profiles_root_is_noop(self, profile_env):
+        assert backfill_profile_envs(quiet=True) == []
+
+
+# ===================================================================
+# TestDeleteProfile
+# ===================================================================
+
+class TestDeleteProfile:
+    """Tests for delete_profile()."""
+
+    def test_removes_directory(self, profile_env):
+        profile_dir = create_profile("coder", no_alias=True)
+        assert profile_dir.is_dir()
+        # Mock gateway import to avoid real systemd/launchd interaction
+        with patch("opencodon_cli.profiles._cleanup_gateway_service"):
+            delete_profile("coder", yes=True)
+        assert not profile_dir.is_dir()
+
+    def test_default_raises_value_error(self, profile_env):
+        with pytest.raises(ValueError, match="default"):
+            delete_profile("default", yes=True)
+
+    def test_nonexistent_raises_file_not_found(self, profile_env):
+        with pytest.raises(FileNotFoundError):
+            delete_profile("nonexistent", yes=True)
+
+    def test_rmtree_failure_raises(self, profile_env):
+        profile_dir = create_profile("coder", no_alias=True)
+        set_active_profile("coder")
+
+        with patch("opencodon_cli.profiles._cleanup_gateway_service"), \
+             patch("opencodon_cli.profiles.time.sleep"), \
+             patch("opencodon_cli.profiles.shutil.rmtree", side_effect=PermissionError("locked")):
+            with pytest.raises(RuntimeError, match="Could not remove profile directory"):
+                delete_profile("coder", yes=True)
+
+        assert profile_dir.is_dir()
+        assert get_active_profile() == "default"
+
+    def test_stops_profile_bound_backends_before_removal(self, profile_env):
+        """A Desktop-spawned backend (not in gateway.pid) is stopped first."""
+        profile_dir = create_profile("coder", no_alias=True)
+
+        with patch("opencodon_cli.profiles._cleanup_gateway_service"), \
+             patch("opencodon_cli.profiles._profile_bound_backend_pids", return_value=[4242]) as pids, \
+             patch("gateway.status.terminate_pid") as terminate, \
+             patch("gateway.status._pid_exists", return_value=False):
+            delete_profile("coder", yes=True)
+
+        pids.assert_called_once()
+        terminate.assert_any_call(4242)
+        assert not profile_dir.is_dir()
+
+    def test_rmtree_retries_transient_enotempty_then_succeeds(self, profile_env):
+        """A live writer racing rmtree (ENOTEMPTY) is absorbed by a retry."""
+        profile_dir = create_profile("coder", no_alias=True)
+        real_rmtree = shutil.rmtree
+        calls = {"n": 0}
+
+        def flaky_rmtree(path, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError(66, "Directory not empty")
+            return real_rmtree(path)
+
+        with patch("opencodon_cli.profiles._cleanup_gateway_service"), \
+             patch("opencodon_cli.profiles._profile_bound_backend_pids", return_value=[]), \
+             patch("opencodon_cli.profiles.time.sleep"), \
+             patch("opencodon_cli.profiles.shutil.rmtree", side_effect=flaky_rmtree):
+            delete_profile("coder", yes=True)
+
+        assert calls["n"] == 2
+        assert not profile_dir.is_dir()
+
+    def test_backend_scan_only_matches_this_profile(self, profile_env, monkeypatch):
+        """The backend PID scan binds by --profile selector and skips self."""
+        create_profile("coder", no_alias=True)
+        profile_dir = get_profile_dir("coder")
+
+        class FakeProc:
+            def __init__(self, pid, cmdline, username="me"):
+                self.pid = pid
+                self.info = {"pid": pid, "name": "python", "username": username, "cmdline": cmdline}
+
+            def parent(self):
+                return None
+
+            def username(self):
+                return "me"
+
+            def environ(self):
+                return {}
+
+        self_pid = os.getpid()
+        procs = [
+            # Backend bound to coder → matched.
+            FakeProc(101, ["python", "-m", "opencodon_cli.main", "--profile", "coder", "serve"]),
+            # Interactive chat for coder → NOT a backend subcommand, skipped.
+            FakeProc(102, ["python", "-m", "opencodon_cli.main", "--profile", "coder", "chat"]),
+            # Backend for a different profile → skipped.
+            FakeProc(103, ["python", "-m", "opencodon_cli.main", "--profile", "other", "serve"]),
+            # This very process → skipped even if it matched.
+            FakeProc(self_pid, ["python", "-m", "opencodon_cli.main", "--profile", "coder", "serve"]),
+        ]
+
+        fake_psutil = types.SimpleNamespace(
+            process_iter=lambda attrs=None: iter(procs),
+            Process=lambda pid=None: FakeProc(self_pid, []),
+            NoSuchProcess=Exception,
+            AccessDenied=Exception,
+            ZombieProcess=Exception,
+        )
+        monkeypatch.setitem(sys.modules, "psutil", fake_psutil)
+
+        pids = profiles._profile_bound_backend_pids("coder", profile_dir)
+        assert pids == [101]
+
+
+# ===================================================================
+# TestListProfiles
+# ===================================================================
+
+class TestListProfiles:
+    """Tests for list_profiles()."""
+
+    def test_returns_default_when_no_named_profiles(self, profile_env):
+        profiles = list_profiles()
+        names = [p.name for p in profiles]
+        assert "default" in names
+
+    def test_includes_named_profiles(self, profile_env):
+        create_profile("alpha", no_alias=True)
+        create_profile("beta", no_alias=True)
+        profiles = list_profiles()
+        names = [p.name for p in profiles]
+        assert "alpha" in names
+        assert "beta" in names
+
+    def test_sorted_alphabetically(self, profile_env):
+        create_profile("zebra", no_alias=True)
+        create_profile("alpha", no_alias=True)
+        create_profile("middle", no_alias=True)
+        profiles = list_profiles()
+        named = [p.name for p in profiles if not p.is_default]
+        assert named == sorted(named)
+
+    def test_default_is_first(self, profile_env):
+        create_profile("alpha", no_alias=True)
+        profiles = list_profiles()
+        assert profiles[0].name == "default"
+        assert profiles[0].is_default is True
+
+
+# ===================================================================
+# TestActiveProfile
+# ===================================================================
+
+class TestActiveProfile:
+    """Tests for set_active_profile() / get_active_profile()."""
+
+    def test_set_and_get_roundtrip(self, profile_env):
+        create_profile("coder", no_alias=True)
+        set_active_profile("coder")
+        assert get_active_profile() == "coder"
+
+    def test_no_file_returns_default(self, profile_env):
+        assert get_active_profile() == "default"
+
+    def test_empty_file_returns_default(self, profile_env):
+        tmp_path = profile_env
+        active_path = tmp_path / ".opencodon" / "active_profile"
+        active_path.write_text("")
+        assert get_active_profile() == "default"
+
+    def test_set_to_default_removes_file(self, profile_env):
+        tmp_path = profile_env
+        create_profile("coder", no_alias=True)
+        set_active_profile("coder")
+        active_path = tmp_path / ".opencodon" / "active_profile"
+        assert active_path.exists()
+
+        set_active_profile("default")
+        assert not active_path.exists()
+
+    def test_set_nonexistent_raises(self, profile_env):
+        with pytest.raises(FileNotFoundError):
+            set_active_profile("nonexistent")
+
+
+# ===================================================================
+# TestGetActiveProfileName
+# ===================================================================
+
+class TestGetActiveProfileName:
+    """Tests for get_active_profile_name()."""
+
+    def test_default_opencodon_home_returns_default(self, profile_env):
+        # OPENCODON_HOME points to tmp_path/.opencodon which is the default
+        assert get_active_profile_name() == "default"
+
+    def test_profile_path_returns_profile_name(self, profile_env, monkeypatch):
+        tmp_path = profile_env
+        create_profile("coder", no_alias=True)
+        profile_dir = tmp_path / ".opencodon" / "profiles" / "coder"
+        monkeypatch.setenv("OPENCODON_HOME", str(profile_dir))
+        assert get_active_profile_name() == "coder"
+
+    def test_custom_path_returns_default(self, profile_env, monkeypatch):
+        """A custom OPENCODON_HOME (Docker, etc.) IS the default root."""
+        tmp_path = profile_env
+        custom = tmp_path / "some" / "other" / "path"
+        custom.mkdir(parents=True)
+        monkeypatch.setenv("OPENCODON_HOME", str(custom))
+        # With Docker-aware roots, a custom OPENCODON_HOME is the default —
+        # not "custom".  The user is on the default profile of their
+        # custom deployment.
+        assert get_active_profile_name() == "default"
+
+
+# ===================================================================
+# TestResolveProfileEnv
+# ===================================================================
+
+class TestResolveProfileEnv:
+    """Tests for resolve_profile_env()."""
+
+    def test_existing_profile_returns_path(self, profile_env):
+        tmp_path = profile_env
+        create_profile("coder", no_alias=True)
+        result = resolve_profile_env("coder")
+        assert result == str(tmp_path / ".opencodon" / "profiles" / "coder")
+
+    def test_default_returns_default_home(self, profile_env):
+        tmp_path = profile_env
+        result = resolve_profile_env("default")
+        assert result == str(tmp_path / ".opencodon")
+
+    def test_nonexistent_raises_file_not_found(self, profile_env):
+        with pytest.raises(FileNotFoundError):
+            resolve_profile_env("nonexistent")
+
+    def test_invalid_name_raises_value_error(self, profile_env):
+        with pytest.raises(ValueError):
+            resolve_profile_env("INVALID!")
+
+
+# ===================================================================
+# TestAliasCollision
+# ===================================================================
+
+class TestAliasCollision:
+    """Tests for check_alias_collision()."""
+
+    def test_normal_name_returns_none(self, profile_env):
+        # Mock 'which' to return not-found
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=1, stdout="")
+            result = check_alias_collision("mybot")
+        assert result is None
+
+    def test_reserved_name_returns_message(self, profile_env):
+        result = check_alias_collision("opencodon")
+        assert result is not None
+        assert "reserved" in result.lower()
+
+    def test_subcommand_returns_message(self, profile_env):
+        result = check_alias_collision("chat")
+        assert result is not None
+        assert "subcommand" in result.lower()
+
+    def test_default_is_reserved(self, profile_env):
+        result = check_alias_collision("default")
+        assert result is not None
+        assert "reserved" in result.lower()
+
+    def test_uses_where_on_windows(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "win32")
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=1, stdout="")
+            check_alias_collision("mybot")
+        call_args = mock_run.call_args[0][0]
+        assert call_args[0] == "where"
+
+    def test_uses_which_on_posix(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=1, stdout="")
+            check_alias_collision("mybot")
+        call_args = mock_run.call_args[0][0]
+        assert call_args[0] == "which"
+
+    def test_windows_checks_bat_extension(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "win32")
+        wrapper_dir = profile_env / ".local" / "bin"
+        wrapper_dir.mkdir(parents=True, exist_ok=True)
+        bat_path = wrapper_dir / "mybot.bat"
+        bat_path.write_text("@echo off\r\nopencodon -p mybot %*\r\n")
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout=str(bat_path),
+            )
+            result = check_alias_collision("mybot")
+        assert result is None  # our own wrapper, safe to overwrite
+
+    def test_traversal_alias_rejected_before_path_lookup(self, profile_env):
+        """A path-traversal alias is rejected without ever shelling out to which/where."""
+        with patch("subprocess.run") as mock_run:
+            result = check_alias_collision("../../.bashrc")
+        assert result is not None
+        assert "invalid alias name" in result.lower()
+        mock_run.assert_not_called()
+
+
+# ===================================================================
+# TestWrapperScript
+# ===================================================================
+
+class TestWrapperScript:
+    """Tests for create_wrapper_script() and remove_wrapper_script()."""
+
+    def test_creates_sh_on_posix(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        monkeypatch.setattr("opencodon_cli.profiles.shutil.which", lambda name: "/opt/opencodon/bin/opencodon")
+        from opencodon_cli.profiles import create_wrapper_script
+        wrapper = create_wrapper_script("mybot")
+        assert wrapper is not None
+        assert wrapper.name == "mybot"
+        content = wrapper.read_text()
+        assert content.startswith("#!/bin/sh")
+        assert "exec /opt/opencodon/bin/opencodon -p mybot" in content
+
+    def test_creates_bat_on_windows(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "win32")
+        from opencodon_cli.profiles import create_wrapper_script
+        wrapper = create_wrapper_script("mybot")
+        assert wrapper is not None
+        assert wrapper.name == "mybot.bat"
+        content = wrapper.read_text()
+        assert "@echo off" in content
+        assert "opencodon -p mybot" in content
+        assert "%*" in content
+
+    def test_remove_finds_bat_on_windows(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "win32")
+        from opencodon_cli.profiles import create_wrapper_script, remove_wrapper_script
+        wrapper = create_wrapper_script("mybot")
+        assert wrapper is not None
+        assert wrapper.exists()
+        removed = remove_wrapper_script("mybot")
+        assert removed is True
+        assert not wrapper.exists()
+
+    def test_remove_finds_sh_on_posix(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import create_wrapper_script, remove_wrapper_script
+        wrapper = create_wrapper_script("mybot")
+        assert wrapper is not None
+        assert wrapper.exists()
+        removed = remove_wrapper_script("mybot")
+        assert removed is True
+        assert not wrapper.exists()
+
+    def test_remove_returns_false_when_absent(self, profile_env):
+        from opencodon_cli.profiles import remove_wrapper_script
+        assert remove_wrapper_script("nonexistent") is False
+
+    def test_custom_alias_target_on_posix(self, profile_env, monkeypatch):
+        # Custom alias name pointing at a differently-named profile: the file
+        # is named after the alias, the -p content references the profile.
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import create_wrapper_script
+        wrapper = create_wrapper_script("rq", target="redqueen")
+        assert wrapper is not None
+        assert wrapper.name == "rq"
+        content = wrapper.read_text()
+        assert content.startswith("#!/bin/sh")
+        assert "opencodon -p redqueen" in content
+
+    def test_custom_alias_target_on_windows(self, profile_env, monkeypatch):
+        # Regression: custom-name aliases must still produce an executable
+        # .bat (not a clobbered #!/bin/sh) on Windows.
+        monkeypatch.setattr("sys.platform", "win32")
+        from opencodon_cli.profiles import create_wrapper_script
+        wrapper = create_wrapper_script("rq", target="redqueen")
+        assert wrapper is not None
+        assert wrapper.name == "rq.bat"
+        content = wrapper.read_text()
+        assert "@echo off" in content
+        assert "opencodon -p redqueen" in content
+        assert "%*" in content
+        assert "#!/bin/sh" not in content
+
+
+# ===================================================================
+# TestWrapperScriptSecurity — path-traversal hardening
+# ===================================================================
+
+class TestWrapperScriptSecurity:
+    """A crafted alias name must not escape the wrapper directory."""
+
+    def test_validate_alias_name_rejects_traversal(self):
+        with pytest.raises(ValueError, match="Invalid alias name"):
+            validate_alias_name("../../.bashrc")
+
+    def test_validate_alias_name_rejects_absolute_path(self, tmp_path):
+        with pytest.raises(ValueError, match="Invalid alias name"):
+            validate_alias_name(str(tmp_path / "evil"))
+
+    def test_validate_alias_name_accepts_safe_identifier(self):
+        validate_alias_name("mybot")  # does not raise
+
+    def test_create_wrapper_rejects_traversal(self, profile_env):
+        sentinel = profile_env / ".bashrc"
+        sentinel.write_text("keep", encoding="utf-8")
+        with pytest.raises(ValueError, match="Invalid alias name"):
+            create_wrapper_script("../../.bashrc", target="coder")
+        # The traversal target was not touched.
+        assert sentinel.read_text(encoding="utf-8") == "keep"
+
+    def test_create_wrapper_rejects_absolute_path(self, profile_env, tmp_path):
+        target = tmp_path / "abs-wrapper"
+        with pytest.raises(ValueError, match="Invalid alias name"):
+            create_wrapper_script(str(target))
+        assert not target.exists()
+
+    def test_remove_wrapper_rejects_traversal(self, profile_env):
+        sentinel = profile_env / ".bashrc"
+        sentinel.write_text("keep", encoding="utf-8")
+        assert remove_wrapper_script("../../.bashrc") is False
+        assert sentinel.read_text(encoding="utf-8") == "keep"
+
+    def test_legit_alias_stays_inside_wrapper_dir(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import _get_wrapper_dir
+        wrapper = create_wrapper_script("mybot", target="coder")
+        assert wrapper is not None
+        assert wrapper.resolve().is_relative_to(_get_wrapper_dir().resolve())
+        assert 'opencodon -p coder "$@"' in wrapper.read_text()
+
+
+# ===================================================================
+# TestFindAliasForProfile — display-side reverse lookup
+# ===================================================================
+
+class TestFindAliasForProfile:
+    """Tests for find_alias_for_profile() and alias display in list/show."""
+
+    def test_profile_named_alias(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import create_wrapper_script, find_alias_for_profile
+        create_wrapper_script("steve")
+        assert find_alias_for_profile("steve") == "steve"
+
+    def test_custom_alias_name_preferred(self, profile_env, monkeypatch):
+        # qiaobusi -> steve-jobs: the custom alias name must surface, not the
+        # profile name, because that's the command the user actually typed.
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import create_wrapper_script, find_alias_for_profile
+        create_wrapper_script("qiaobusi", target="steve")
+        assert find_alias_for_profile("steve") == "qiaobusi"
+
+    def test_no_alias_returns_none(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import find_alias_for_profile
+        assert find_alias_for_profile("steve") is None
+
+    def test_ignores_unrelated_files(self, profile_env, monkeypatch):
+        # ~/.local/bin commonly holds unrelated binaries; they must not match.
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import _get_wrapper_dir, find_alias_for_profile
+        wrapper_dir = _get_wrapper_dir()
+        wrapper_dir.mkdir(parents=True, exist_ok=True)
+        (wrapper_dir / "pip").write_text("#!/bin/sh\nexec python -m pip \"$@\"\n")
+        assert find_alias_for_profile("steve") is None
+
+    def test_custom_alias_on_windows(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "win32")
+        from opencodon_cli.profiles import create_wrapper_script, find_alias_for_profile
+        create_wrapper_script("qiaobusi", target="steve")
+        # The .bat extension must be stripped from the returned alias name.
+        assert find_alias_for_profile("steve") == "qiaobusi"
+
+    def test_list_profiles_surfaces_custom_alias(self, profile_env, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        from opencodon_cli.profiles import (
+            create_profile,
+            create_wrapper_script,
+            list_profiles,
+        )
+        create_profile("steve", no_alias=True)
+        create_wrapper_script("qiaobusi", target="steve")
+        info = next(p for p in list_profiles() if p.name == "steve")
+        assert info.alias_name == "qiaobusi"
+        assert info.alias_path is not None
+        assert info.alias_path.name == "qiaobusi"
+
+
+# ===================================================================
+# TestRenameProfile
+# ===================================================================
+
+class TestRenameProfile:
+    """Tests for rename_profile()."""
+
+    def test_renames_directory(self, profile_env):
+        tmp_path = profile_env
+        create_profile("oldname", no_alias=True)
+        old_dir = tmp_path / ".opencodon" / "profiles" / "oldname"
+        assert old_dir.is_dir()
+
+        # Mock alias collision to avoid subprocess calls
         with patch("opencodon_cli.profiles.check_alias_collision", return_value="skip"):
-            rename_profile("ssi_health", "heimdall")
+            new_dir = rename_profile("oldname", "newname")
 
-        cfg = json.loads(honcho_path.read_text())
-        assert cfg["hosts"]["hermes.ssi_health"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["hermes_heimdall"]["aiPeer"] == "heimdall"
+        assert not old_dir.is_dir()
+        assert new_dir.is_dir()
+        assert new_dir == tmp_path / ".opencodon" / "profiles" / "newname"
 
     def test_default_raises_value_error(self, profile_env):
         with pytest.raises(ValueError, match="default"):
@@ -1350,7 +2158,7 @@ class TestExportImport:
 
         # Infrastructure excluded
         excluded_prefixes = [
-            "default/hermes-agent", "default/.worktrees", "default/profiles",
+            "default/opencodon", "default/.worktrees", "default/profiles",
             "default/bin", "default/image_cache", "default/logs",
             "default/sandboxes", "default/checkpoints",
         ]
@@ -1391,7 +2199,7 @@ class TestExportImport:
         Docker/custom deployments often set OPENCODON_HOME to a working
         directory that also contains unrelated user projects (``x11-dev/``,
         etc.).  The root-level allow-list filters those out so only known
-        Hermes artifacts end up in the archive. Replaces the old
+        opencodon artifacts end up in the archive. Replaces the old
         exhaustive blacklist.
         """
         default_dir = get_profile_dir("default")
@@ -1537,7 +2345,7 @@ class TestProfileIsolation:
 
 
 # ===================================================================
-# TestGetProfilesRoot / TestGetDefaultHermesHome (internal helpers)
+# TestGetProfilesRoot / TestGetDefaultOpencodonHome (internal helpers)
 # ===================================================================
 
 class TestInternalHelpers:
@@ -1692,7 +2500,7 @@ class TestEdgeCases:
                 {
                     "pid": live_pid,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "start_time": gw_status._get_process_start_time(live_pid),
                     "gateway_state": "running",
                     "active_agents": 0,
@@ -1710,7 +2518,7 @@ class TestEdgeCases:
         # runs the gateway with no profile flag).
         with patch("gateway.status.get_running_pid", return_value=None), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes gateway run --replace",
+            return_value="opencodon gateway run --replace",
         ):
             assert _check_gateway_running(default_home) is True
 
@@ -1728,7 +2536,7 @@ class TestEdgeCases:
                 {
                     "pid": os.getpid(),
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "gateway_state": "stopped",
                 }
             ),
@@ -1740,7 +2548,7 @@ class TestEdgeCases:
 
     def test_gateway_running_check_rejects_pid_reused_by_other_profile(self, profile_env):
         """Regression (user report): the dashboard showed a NAMED profile's
-        gateway green while ``hermes -p <name> gateway status`` showed it
+        gateway green while ``opencodon -p <name> gateway status`` showed it
         stopped.
 
         Per-profile Docker supervision: a named profile (``coder``) left a
@@ -1760,7 +2568,7 @@ class TestEdgeCases:
                 {
                     "pid": 139,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "gateway_state": "running",
                     "active_agents": 0,
                 }
@@ -1775,7 +2583,7 @@ class TestEdgeCases:
             "gateway.status._pid_exists", return_value=True
         ), patch("gateway.status._get_process_start_time", return_value=None), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes gateway run --replace",
+            return_value="opencodon gateway run --replace",
         ):
             assert _check_gateway_running(coder_home) is False
 
@@ -1792,7 +2600,7 @@ class TestEdgeCases:
                 {
                     "pid": 139,
                     "kind": "opencodon-gateway",
-                    "argv": ["hermes", "gateway", "run"],
+                    "argv": ["opencodon", "gateway", "run"],
                     "start_time": 1000,
                     "gateway_state": "running",
                     "active_agents": 0,
@@ -1805,7 +2613,7 @@ class TestEdgeCases:
             "gateway.status._pid_exists", return_value=True
         ), patch("gateway.status._get_process_start_time", return_value=1000), patch(
             "gateway.status._read_process_cmdline",
-            return_value="hermes -p coder gateway run --replace",
+            return_value="opencodon -p coder gateway run --replace",
         ):
             assert _check_gateway_running(coder_home) is True
 

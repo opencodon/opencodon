@@ -173,8 +173,8 @@ def test_full_login_round_trip_unlocks_gated_api(gated_app):
     assert r2.status_code == 302
     assert r2.headers["location"] == "/"
     set_cookies = r2.headers.get_list("set-cookie")
-    assert any("hermes_session_at" in c for c in set_cookies)
-    assert any("hermes_session_rt" in c for c in set_cookies)
+    assert any("opencodon_session_at" in c for c in set_cookies)
+    assert any("opencodon_session_rt" in c for c in set_cookies)
 
     # 3) A gated API route (``/api/sessions``) now succeeds because we
     #    have a valid session cookie. (We deliberately don't probe
@@ -192,7 +192,7 @@ def _complete_stub_login(client) -> None:
     """Walk the stub OAuth round trip so ``client`` carries a valid session.
 
     TestClient persists Set-Cookie across calls, so after this returns the
-    client's cookie jar holds ``hermes_session_at`` / ``hermes_session_rt``
+    client's cookie jar holds ``opencodon_session_at`` / ``opencodon_session_rt``
     and subsequent gated requests authenticate.
     """
     r1 = client.get("/auth/login?provider=stub", follow_redirects=False)
@@ -388,11 +388,11 @@ def test_logout_clears_cookies_and_redirects_to_login(gated_app):
     assert r.headers["location"] == "/login"
     set_cookies = r.headers.get_list("set-cookie")
     assert any(
-        c.startswith("hermes_session_at=") and "Max-Age=0" in c
+        c.startswith("opencodon_session_at=") and "Max-Age=0" in c
         for c in set_cookies
     )
     assert any(
-        c.startswith("hermes_session_rt=") and "Max-Age=0" in c
+        c.startswith("opencodon_session_rt=") and "Max-Age=0" in c
         for c in set_cookies
     )
 

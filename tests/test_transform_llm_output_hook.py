@@ -50,7 +50,7 @@ def test_transform_llm_output_in_valid_hooks():
 
 def test_hook_receives_expected_kwargs(tmp_path, monkeypatch):
     """Hook callback should see response_text + session_id + model + platform."""
-    opencodon_home = tmp_path / "hermes_test"
+    opencodon_home = tmp_path / "opencodon_test"
     opencodon_home.mkdir(exist_ok=True)
     _make_enabled_plugin(
         opencodon_home, "capture_hook",
@@ -111,7 +111,7 @@ def test_hook_exception_does_not_replace_response(tmp_path, monkeypatch):
     to the results list, and the walk in run_agent.py finds nothing to
     replace with.
     """
-    opencodon_home = tmp_path / "hermes_test"
+    opencodon_home = tmp_path / "opencodon_test"
     opencodon_home.mkdir(exist_ok=True)
     _make_enabled_plugin(
         opencodon_home, "raising_hook",
@@ -145,7 +145,7 @@ def test_hook_exception_does_not_replace_response(tmp_path, monkeypatch):
 
 def test_no_plugins_returns_empty_results(tmp_path, monkeypatch):
     """With no plugins loaded, invoke_hook returns [] and the response is unchanged."""
-    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes_empty"))
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_empty"))
     plugins_mod._plugin_manager = PluginManager()
 
     mgr = plugins_mod._plugin_manager

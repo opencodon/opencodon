@@ -1,14 +1,14 @@
 """Regression for #21454: re-running install.sh on a symlinked prior install.
 
-Older versions of ``install.sh`` created ``$command_link_dir/hermes`` as a
+Older versions of ``install.sh`` created ``$command_link_dir/opencodon`` as a
 symlink to the pip-generated entry point at ``$OPENCODON_BIN`` (i.e.
-``venv/bin/hermes``). When ``setup_path()`` later switched to writing a bash
-shim with ``cat > "$command_link_dir/hermes" <<EOF``, the redirect followed
+``venv/bin/opencodon``). When ``setup_path()`` later switched to writing a bash
+shim with ``cat > "$command_link_dir/opencodon" <<EOF``, the redirect followed
 the existing symlink and overwrote the pip entry point with the shim. The
-shim's ``exec "$OPENCODON_BIN" "$@"`` then self-recursed and ``hermes`` hung on
+shim's ``exec "$OPENCODON_BIN" "$@"`` then self-recursed and ``opencodon`` hung on
 every invocation.
 
-These tests pin the fix: ``setup_path()`` must remove ``$command_link_dir/hermes``
+These tests pin the fix: ``setup_path()`` must remove ``$command_link_dir/opencodon``
 before writing through the redirect, so the shim is created as a regular file
 in ``command_link_dir`` and the venv entry point is left intact.
 """
@@ -30,7 +30,7 @@ def _extract_setup_path_shim_block() -> str:
     """Return the install.sh shim-write block used by setup_path()."""
     text = INSTALL_SH.read_text()
     match = re.search(
-        r"(?P<block>mkdir -p \"\$command_link_dir\".*?chmod \+x \"\$command_link_dir/hermes\")",
+        r"(?P<block>mkdir -p \"\$command_link_dir\".*?chmod \+x \"\$command_link_dir/opencodon\")",
         text,
         re.DOTALL,
     )
@@ -43,13 +43,13 @@ def _extract_setup_path_shim_block() -> str:
 def test_setup_path_shim_block_removes_old_link_before_writing() -> None:
     """Static guard: the rm must precede the cat heredoc, not follow it."""
     block = _extract_setup_path_shim_block()
-    rm_idx = block.find('rm -f "$command_link_dir/opencodon" "$command_link_dir/hermes"')
+    rm_idx = block.find('rm -f "$command_link_dir/opencodon"')
     cat_idx = block.find('cat > "$command_link_dir/opencodon" <<EOF')
     assert rm_idx != -1, (
-        "setup_path() must `rm -f` both $command_link_dir/opencodon and the "
-        "legacy $command_link_dir/hermes before the `cat >` heredoc, "
-        "otherwise an existing symlink (left by older installs) will be "
-        "followed and the pip entry point overwritten. See #21454."
+        "setup_path() must `rm -f` $command_link_dir/opencodon before the "
+        "`cat >` heredoc, otherwise an existing symlink (left by older "
+        "installs) will be followed and the pip entry point overwritten. "
+        "See #21454."
     )
     assert cat_idx != -1, "expected `cat >` heredoc still present"
     assert rm_idx < cat_idx, (
@@ -63,15 +63,15 @@ def test_re_running_setup_path_block_preserves_pip_entry_point(tmp_path: Path) -
     Layout mirrors a real install:
 
         tmp/
-          venv/bin/hermes        <- pip entry point (the one we must preserve)
-          local_bin/hermes       <- symlink → ../venv/bin/hermes  (old install)
+          venv/bin/opencodon        <- pip entry point (the one we must preserve)
+          local_bin/opencodon       <- symlink → ../venv/bin/opencodon  (old install)
 
     Then we run the exact shim-write block from setup_path() with
     ``OPENCODON_BIN`` and ``command_link_dir`` pointed at this fixture. The fix
     requires that, after the run:
 
-      * ``venv/bin/hermes`` still contains its original pip-script body
-      * ``local_bin/hermes`` is a regular file (not a symlink) holding the shim
+      * ``venv/bin/opencodon`` still contains its original pip-script body
+      * ``local_bin/opencodon`` is a regular file (not a symlink) holding the shim
     """
     venv_bin = tmp_path / "venv" / "bin"
     venv_bin.mkdir(parents=True)
@@ -83,11 +83,9 @@ def test_re_running_setup_path_block_preserves_pip_entry_point(tmp_path: Path) -
     command_link_dir = tmp_path / "local_bin"
     command_link_dir.mkdir()
     shim_path = command_link_dir / "opencodon"
-    legacy_alias_path = command_link_dir / "hermes"
-    # Reproduce the prior-install state: shim path is a symlink to the
-    # pip-generated entry point (and a legacy hermes link exists too).
+    # Reproduce the prior-install state: the shim path is a symlink to the
+    # pip-generated entry point.
     shim_path.symlink_to(pip_entry)
-    legacy_alias_path.symlink_to(pip_entry)
     assert shim_path.is_symlink()
 
     block = _extract_setup_path_shim_block()
@@ -110,8 +108,8 @@ def test_re_running_setup_path_block_preserves_pip_entry_point(tmp_path: Path) -
         "regression (#21454)."
     )
 
-    # The shim path (and the hermes alias copy) must now be regular files.
-    for launcher in (shim_path, legacy_alias_path):
+    # The shim path must now be a regular file.
+    for launcher in (shim_path,):
         assert launcher.exists()
         assert not launcher.is_symlink(), (
             f"{launcher.name} must be replaced with a regular file, not "

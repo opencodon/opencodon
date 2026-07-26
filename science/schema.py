@@ -22,10 +22,10 @@ Design notes:
   rows must survive that for reproducibility, so they keep the id without a
   hard constraint. Internal science relationships (call → cell,
   version → artifact, edge → version) are real FKs.
-- Timestamps are REAL epoch seconds (``time.time()``), matching hermes
+- Timestamps are REAL epoch seconds (``time.time()``), matching opencodon
   convention rather than the reference platform's integer columns.
 - The reference platform's ``conda_env`` is generalized to ``env_name`` +
-  ``env_snapshot`` — hermes environments are not conda-specific.
+  ``env_snapshot`` — opencodon environments are not conda-specific.
 
 Indexes that only reference first-version columns could live inline, but all
 science indexes are kept in ``SCIENCE_INDEX_SQL`` (executed after column

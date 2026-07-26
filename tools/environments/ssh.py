@@ -50,7 +50,7 @@ class SSHEnvironment(BaseEnvironment):
         self.port = port
         self.key_path = key_path
 
-        self.control_dir = Path(tempfile.gettempdir()) / "hermes-ssh"
+        self.control_dir = Path(tempfile.gettempdir()) / "opencodon-ssh"
         self.control_dir.mkdir(parents=True, exist_ok=True)
         # Keep the socket filename short and deterministic so the full path
         # stays under the 104-byte sun_path limit that macOS enforces on
@@ -219,7 +219,7 @@ class SSHEnvironment(BaseEnvironment):
         # OSError with winerror 1314 (privilege not held).  Catch only
         # that specific error and fall back to a plain copy; all other
         # OSErrors (e.g. disk full, bad path) are re-raised as normal.
-        with tempfile.TemporaryDirectory(prefix="hermes-ssh-bulk-") as staging:
+        with tempfile.TemporaryDirectory(prefix="opencodon-ssh-bulk-") as staging:
             for host_path, remote_path in files:
                 try:
                     rel_remote = os.path.relpath(remote_path, base)

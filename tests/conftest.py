@@ -1,4 +1,4 @@
-"""Shared fixtures for the hermes-agent test suite.
+"""Shared fixtures for the opencodon test suite.
 
 Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 
@@ -105,7 +105,6 @@ _CREDENTIAL_NAMES = frozenset({
     "TAVILY_API_KEY",
     "WANDB_API_KEY",
     "ELEVENLABS_API_KEY",
-    "HONCHO_API_KEY",
     "DAYTONA_API_KEY",
     "TWILIO_AUTH_TOKEN",
     "TELEGRAM_BOT_TOKEN",
@@ -208,10 +207,6 @@ _OPENCODON_BEHAVIORAL_VARS = frozenset({
     "OPENCODON_KANBAN_CLAIM_LOCK",
     "OPENCODON_KANBAN_DISPATCH_IN_GATEWAY",
     "OPENCODON_TENANT",
-    # Honcho host selection changes which nested config block wins. A local
-    # shell override leaked "myhost" into the full suite and flipped 20
-    # otherwise-unrelated config tests away from the default "hermes" host.
-    "OPENCODON_HONCHO_HOST",
     # Dashboard OAuth auth gate (PR #30156). When set, the bundled
     # dashboard-auth `nous` plugin auto-registers itself on plugin discovery,
     # which is triggered by any `/api/status` call. That leaks a provider
@@ -343,13 +338,6 @@ def _hermetic_environment(tmp_path, monkeypatch):
     for name in _OPENCODON_BEHAVIORAL_VARS:
         monkeypatch.delenv(name, raising=False)
 
-    # Honcho's fallback host/config resolution legitimately reads the user's
-    # global ~/.honcho/config.json. Keep HOME stable (subprocess tests depend
-    # on it), but pin the host so ordinary tests cannot inherit a developer's
-    # defaultHost and silently select the wrong nested config block. Tests of
-    # custom host resolution override/delete this explicitly.
-    monkeypatch.setenv("OPENCODON_HONCHO_HOST", "hermes")
-
     # 3. Redirect OPENCODON_HOME to a per-test tempdir. Code that reads
     #    ``~/.opencodon/*`` via ``get_opencodon_home()`` now gets the tempdir.
     #
@@ -360,7 +348,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     #    fixture. Any code in the codebase reading ``~/.opencodon/*`` via
     #    ``Path.home() / ".opencodon"`` instead of ``get_opencodon_home()``
     #    is a bug to fix at the callsite.
-    fake_opencodon_home = tmp_path / "hermes_test"
+    fake_opencodon_home = tmp_path / "opencodon_test"
     fake_opencodon_home.mkdir()
     (fake_opencodon_home / "sessions").mkdir()
     (fake_opencodon_home / "cron").mkdir()
@@ -435,7 +423,7 @@ def tmp_dir(tmp_path):
 
 @pytest.fixture()
 def mock_config():
-    """Return a minimal hermes config dict suitable for unit tests."""
+    """Return a minimal opencodon config dict suitable for unit tests."""
     return {
         "model": "test/mock-model",
         "toolsets": ["terminal", "file"],
@@ -572,7 +560,7 @@ def _live_system_guard(request, monkeypatch):
     tokens[0]), so ``bash -c "systemctl restart opencodon-gateway"``,
     ``sudo systemctl ...``, ``env systemctl ...``, ``setsid systemctl ...``
     are all caught. ``pkill``/``killall``/``taskkill`` invocations
-    targeting hermes/python patterns are also blocked.
+    targeting opencodon/python patterns are also blocked.
     """
     if request.node.get_closest_marker(_LIVE_SYSTEM_GUARD_BYPASS_MARK):
         yield
@@ -672,11 +660,11 @@ def _live_system_guard(request, monkeypatch):
     # ── Subprocess command-string inspection (whole-line) ──────────
     _OPENCODON_TOKENS = (
         "opencodon-gateway",
-        "hermes.service",
+        "opencodon.service",
         "opencodon_cli.main gateway",
         "opencodon_cli/main.py gateway",
         "gateway/run.py",
-        "hermes gateway",
+        "opencodon gateway",
     )
     _MUTATING_VERBS = (
         "restart", "start", "stop", "kill", "reload",
@@ -702,7 +690,7 @@ def _live_system_guard(request, monkeypatch):
                 return ""
         return str(cmd)
 
-    def _matches_hermes_gateway(cmd_str: str) -> bool:
+    def _matches_opencodon_gateway(cmd_str: str) -> bool:
         low = cmd_str.lower()
         return any(tok in low for tok in _OPENCODON_TOKENS)
 
@@ -710,7 +698,7 @@ def _live_system_guard(request, monkeypatch):
         cmd_str = _cmd_to_string(cmd)
         if "systemctl" not in cmd_str:
             return False
-        if not _matches_hermes_gateway(cmd_str):
+        if not _matches_opencodon_gateway(cmd_str):
             return False
         try:
             tokens = _shlex.split(cmd_str)
@@ -730,11 +718,11 @@ def _live_system_guard(request, monkeypatch):
             head = tok.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
             if head in _PROCESS_KILLERS:
                 low = cmd_str.lower()
-                # pkill -f pattern: catch hermes-themed patterns + a
+                # pkill -f pattern: catch opencodon-themed patterns + a
                 # plain "python" -f which would catch the live gateway
                 # whose cmdline contains "python -m opencodon_cli.main".
                 if (
-                    "hermes" in low
+                    "opencodon" in low
                     or "gateway" in low
                     or ("python" in low and "-f" in tokens)
                 ):
@@ -754,11 +742,11 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — process-killer command "
-                "targeting hermes/python could hit the live gateway. "
+                "targeting opencodon/python could hit the live gateway. "
                 "Mark with @pytest.mark.live_system_guard_bypass if "
                 "intentional."
             )
-        # Block any subprocess that would run `hermes update` (or the
+        # Block any subprocess that would run `opencodon update` (or the
         # equivalent `python -m opencodon_cli.main update`).  These commands
         # run `git fetch origin + git pull` against the REAL checkout,
         # overwriting files like pyproject.toml mid-test-run and corrupting
@@ -771,19 +759,19 @@ def _live_system_guard(request, monkeypatch):
         cmd_str = _cmd_to_string(cmd)
         low = cmd_str.lower()
         if "update" in low and (
-            # hermes update / hermes update --gateway / setsid bash -c ... hermes update
-            ("hermes" in low and "update" in low.split())
+            # opencodon update / opencodon update --gateway / setsid bash -c ... opencodon update
+            ("opencodon" in low and "update" in low.split())
             or
             # python -m opencodon_cli.main update --gateway
             ("opencodon_cli" in low and "update" in low.split())
             or
-            # venv/bin/hermes update  (absolute path variant used in tests)
-            (".venv/bin/hermes" in low and "update" in low)
+            # venv/bin/opencodon update  (absolute path variant used in tests)
+            (".venv/bin/opencodon" in low and "update" in low)
         ):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — this command would run "
-                "`hermes update` against the real checkout, fetching "
+                "`opencodon update` against the real checkout, fetching "
                 "from origin and overwriting repo files (e.g. "
                 "pyproject.toml) mid-test-run. This corrupts every "
                 "subsequent subprocess in the same runner. "

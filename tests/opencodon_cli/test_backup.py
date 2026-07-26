@@ -1,4 +1,4 @@
-"""Tests for hermes backup and import commands."""
+"""Tests for opencodon backup and import commands."""
 
 import json
 import os
@@ -15,7 +15,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_hermes_tree(root: Path) -> None:
+def _make_opencodon_tree(root: Path) -> None:
     """Create a realistic ~/.opencodon directory structure for testing."""
     (root / "config.yaml").write_text("model:\n  provider: openrouter\n")
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-test-123\n")
@@ -51,7 +51,7 @@ def _make_hermes_tree(root: Path) -> None:
     (root / "profiles" / "coder" / "config.yaml").write_text("model:\n  provider: anthropic\n")
     (root / "profiles" / "coder" / ".env").write_text("ANTHROPIC_API_KEY=sk-ant-123\n")
 
-    # hermes-agent repo (should be EXCLUDED)
+    # opencodon repo (should be EXCLUDED)
     (root / "opencodon").mkdir(exist_ok=True)
     (root / "opencodon" / "run_agent.py").write_text("# big file\n")
     (root / "opencodon" / ".git").mkdir()
@@ -82,10 +82,10 @@ def _symlink_file_or_skip(link: Path, target: Path) -> None:
 # ---------------------------------------------------------------------------
 
 class TestShouldExclude:
-    def test_excludes_hermes_agent(self):
+    def test_excludes_repo_checkout(self):
         from opencodon_cli.backup import _should_exclude
-        assert _should_exclude(Path("hermes-agent/run_agent.py"))
-        assert _should_exclude(Path("hermes-agent/.git/HEAD"))
+        assert _should_exclude(Path("opencodon/run_agent.py"))
+        assert _should_exclude(Path("opencodon/.git/HEAD"))
 
     def test_excludes_pycache(self):
         from opencodon_cli.backup import _should_exclude
@@ -148,12 +148,12 @@ class TestShouldExclude:
         from opencodon_cli.backup import _should_exclude
         assert not _should_exclude(Path("logs/agent.log"))
 
-    def test_includes_nested_hermes_agent_in_skills(self):
-        """skills/autonomous-ai-agents/hermes-agent/ must NOT be excluded —
-        only the root-level hermes-agent/ repo is skipped."""
+    def test_includes_nested_repo_named_dir_in_skills(self):
+        """skills/autonomous-ai-agents/opencodon/ must NOT be excluded —
+        only the root-level opencodon/ repo is skipped."""
         from opencodon_cli.backup import _should_exclude
-        assert not _should_exclude(Path("skills/autonomous-ai-agents/hermes-agent/SKILL.md"))
-        assert not _should_exclude(Path("skills/autonomous-ai-agents/hermes-agent/sub/item.txt"))
+        assert not _should_exclude(Path("skills/autonomous-ai-agents/opencodon/SKILL.md"))
+        assert not _should_exclude(Path("skills/autonomous-ai-agents/opencodon/sub/item.txt"))
 
     @pytest.mark.parametrize(
         "rel",
@@ -197,10 +197,10 @@ class TestBackup:
         """Backup creates a valid zip containing expected files."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
-        # get_default_hermes_root needs this
+        # get_default_opencodon_root needs this
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
@@ -292,7 +292,7 @@ class TestBackup:
         small tmpfs there silently drops large DBs from the backup (#35376)."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -323,7 +323,7 @@ class TestBackup:
         also stage SQLite snapshots beside its output zip, not in /tmp."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -346,11 +346,11 @@ class TestBackup:
         assert staged_dirs, "no SQLite snapshot was staged"
         assert all(d == str(out_zip.parent) for d in staged_dirs), staged_dirs
 
-    def test_excludes_hermes_agent(self, tmp_path, monkeypatch):
-        """Backup does NOT include hermes-agent/ directory."""
+    def test_excludes_repo_checkout(self, tmp_path, monkeypatch):
+        """Backup does NOT include opencodon/ directory."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -372,7 +372,7 @@ class TestBackup:
         This is the regression guard for the ballooning-backup bug."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         # Simulate the heavy regeneratable trees that ballooned the backup.
         venv_pkg = opencodon_home / "plugins" / "heavy" / ".venv" / "lib" / "site-packages" / "dep"
@@ -397,16 +397,16 @@ class TestBackup:
         assert "skills/my-skill/SKILL.md" in names
         assert "config.yaml" in names
 
-    def test_includes_nested_hermes_agent_in_skills(self, tmp_path, monkeypatch):
-        """Backup includes skills/.../hermes-agent/ but NOT root hermes-agent/."""
+    def test_includes_nested_repo_named_dir_in_skills(self, tmp_path, monkeypatch):
+        """Backup includes skills/.../opencodon/ but NOT root opencodon/."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
-        # Add a nested hermes-agent directory inside skills (like the real layout)
-        nested = opencodon_home / "skills" / "autonomous-ai-agents" / "hermes-agent"
+        # Add a nested opencodon directory inside skills (like the real layout)
+        nested = opencodon_home / "skills" / "autonomous-ai-agents" / "opencodon"
         nested.mkdir(parents=True)
-        (nested / "SKILL.md").write_text("# Hermes Agent Skill\n")
+        (nested / "SKILL.md").write_text("# opencodon Skill\n")
         (nested / "sub").mkdir()
         (nested / "sub" / "item.txt").write_text("nested content\n")
 
@@ -421,18 +421,18 @@ class TestBackup:
 
         with zipfile.ZipFile(out_zip, "r") as zf:
             names = zf.namelist()
-            # Root hermes-agent must be excluded
-            root_agent = [n for n in names if n.startswith("hermes-agent/")]
-            assert root_agent == [], f"root hermes-agent leaked: {root_agent}"
-            # Nested skill hermes-agent must be included
-            assert "skills/autonomous-ai-agents/hermes-agent/SKILL.md" in names
-            assert "skills/autonomous-ai-agents/hermes-agent/sub/item.txt" in names
+            # Root opencodon repo checkout must be excluded
+            root_agent = [n for n in names if n.startswith("opencodon/")]
+            assert root_agent == [], f"root opencodon leaked: {root_agent}"
+            # Nested skill dir must be included
+            assert "skills/autonomous-ai-agents/opencodon/SKILL.md" in names
+            assert "skills/autonomous-ai-agents/opencodon/sub/item.txt" in names
 
     def test_excludes_pycache(self, tmp_path, monkeypatch):
         """Backup does NOT include __pycache__ dirs."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -452,7 +452,7 @@ class TestBackup:
         """Backup does NOT include PID files."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -469,7 +469,7 @@ class TestBackup:
             assert pid_files == []
 
     def test_default_output_path(self, tmp_path, monkeypatch):
-        """When no output path given, zip goes to ~/hermes-backup-*.zip."""
+        """When no output path given, zip goes to ~/opencodon-backup-*.zip."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "config.yaml").write_text("model: test\n")
@@ -483,14 +483,14 @@ class TestBackup:
         run_backup(args)
 
         # Should exist in home dir
-        zips = list(tmp_path.glob("hermes-backup-*.zip"))
+        zips = list(tmp_path.glob("opencodon-backup-*.zip"))
         assert len(zips) == 1
 
     def test_skips_symlinked_files(self, tmp_path, monkeypatch):
         """Backup must not dereference symlinks and leak files outside OPENCODON_HOME."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
-        _make_hermes_tree(opencodon_home)
+        _make_opencodon_tree(opencodon_home)
         outside = tmp_path / "outside-secret.txt"
         outside.write_text("outside secret\n")
         _symlink_file_or_skip(opencodon_home / "skills" / "outside-link.txt", outside)
@@ -521,7 +521,7 @@ class TestValidateBackupZip:
                 zf.writestr(name, "dummy")
 
     def test_state_db_passes(self, tmp_path):
-        """A zip containing state.db is accepted as a valid Hermes backup."""
+        """A zip containing state.db is accepted as a valid opencodon backup."""
         from opencodon_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
@@ -563,7 +563,7 @@ class TestImport:
                     zf.writestr(name, content)
 
     def test_restores_files(self, tmp_path, monkeypatch):
-        """Import extracts files into hermes home."""
+        """Import extracts files into opencodon home."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
@@ -587,7 +587,7 @@ class TestImport:
         assert (opencodon_home / "skills" / "my-skill" / "SKILL.md").read_text() == "# My Skill\n"
         assert (opencodon_home / "profiles" / "coder" / "config.yaml").exists()
 
-    def test_strips_hermes_prefix(self, tmp_path, monkeypatch):
+    def test_strips_opencodon_prefix(self, tmp_path, monkeypatch):
         """Import strips .opencodon/ prefix if all entries share it."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
@@ -625,8 +625,8 @@ class TestImport:
         with pytest.raises(SystemExit):
             run_import(args)
 
-    def test_rejects_non_hermes_zip(self, tmp_path, monkeypatch):
-        """Import rejects a zip that doesn't look like a hermes backup."""
+    def test_rejects_non_opencodon_zip(self, tmp_path, monkeypatch):
+        """Import rejects a zip that doesn't look like a opencodon backup."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
@@ -665,7 +665,7 @@ class TestImport:
 
         # config.yaml should be restored
         assert (opencodon_home / "config.yaml").exists()
-        # traversal file should NOT exist outside hermes home
+        # traversal file should NOT exist outside opencodon home
         assert not (tmp_path / "etc" / "passwd").exists()
 
     def test_preserves_live_gateway_state(self, tmp_path, monkeypatch):
@@ -880,7 +880,7 @@ class TestRoundTrip:
         # Source
         src_home = tmp_path / "source" / ".opencodon"
         src_home.mkdir(parents=True)
-        _make_hermes_tree(src_home)
+        _make_opencodon_tree(src_home)
 
         monkeypatch.setenv("OPENCODON_HOME", str(src_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "source")
@@ -908,7 +908,7 @@ class TestRoundTrip:
         assert (dst_home / "sessions" / "abc123.json").exists()
         assert (dst_home / "logs" / "agent.log").exists()
 
-        # hermes-agent should NOT be present
+        # the repo checkout should NOT be present
         assert not (dst_home / "opencodon").exists()
         # __pycache__ should NOT be present
         assert not (dst_home / "plugins" / "__pycache__").exists()
@@ -970,7 +970,7 @@ class TestValidation:
         assert ok
 
     def test_validate_rejects_random(self):
-        """Zip without hermes markers fails validation."""
+        """Zip without opencodon markers fails validation."""
         import io
         from opencodon_cli.backup import _validate_backup_zip
 
@@ -982,7 +982,7 @@ class TestValidation:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
-    def test_detect_prefix_hermes(self):
+    def test_detect_prefix_opencodon(self):
         """Detects .opencodon/ prefix wrapping all entries."""
         import io
         from opencodon_cli.backup import _detect_prefix
@@ -1029,7 +1029,7 @@ class TestValidation:
 
 class TestBackupEdgeCases:
     def test_nonexistent_opencodon_home(self, tmp_path, monkeypatch):
-        """Backup exits when hermes home doesn't exist."""
+        """Backup exits when opencodon home doesn't exist."""
         fake_home = tmp_path / "nonexistent" / ".opencodon"
         monkeypatch.setenv("OPENCODON_HOME", str(fake_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "nonexistent")
@@ -1057,7 +1057,7 @@ class TestBackupEdgeCases:
         from opencodon_cli.backup import run_backup
         run_backup(args)
 
-        zips = list(out_dir.glob("hermes-backup-*.zip"))
+        zips = list(out_dir.glob("opencodon-backup-*.zip"))
         assert len(zips) == 1
 
     def test_output_without_zip_suffix(self, tmp_path, monkeypatch):
@@ -1079,7 +1079,7 @@ class TestBackupEdgeCases:
         assert (tmp_path / "mybackup.tar.zip").exists()
 
     def test_empty_opencodon_home(self, tmp_path, monkeypatch):
-        """Backup handles empty hermes home (no files to back up)."""
+        """Backup handles empty opencodon home (no files to back up)."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         # Only excluded dirs, no actual files
@@ -1152,8 +1152,8 @@ class TestBackupEdgeCases:
             # The pre-1980 file should be skipped, not crash the backup
             assert "ancient.txt" not in names
 
-    def test_skips_output_zip_inside_hermes(self, tmp_path, monkeypatch):
-        """Backup skips its own output zip if it's inside hermes root."""
+    def test_skips_output_zip_inside_opencodon(self, tmp_path, monkeypatch):
+        """Backup skips its own output zip if it's inside opencodon root."""
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         (opencodon_home / "config.yaml").write_text("model: test\n")
@@ -1161,7 +1161,7 @@ class TestBackupEdgeCases:
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        # Output inside hermes home
+        # Output inside opencodon home
         out_zip = opencodon_home / "backup.zip"
         args = Namespace(output=str(out_zip))
 
@@ -1327,7 +1327,7 @@ class TestProfileRestoration:
 
         # Wrappers should contain the right content
         coder_wrapper = (wrapper_dir / "coder").read_text()
-        assert "hermes -p coder" in coder_wrapper
+        assert "opencodon -p coder" in coder_wrapper
 
     def test_import_skips_profile_dirs_without_config(self, tmp_path, monkeypatch):
         """Import doesn't create wrappers for profile dirs without config."""
@@ -1693,7 +1693,7 @@ class TestQuickSnapshot:
         assert snap_id is not None
 
 # ---------------------------------------------------------------------------
-# Pre-update backup (hermes update safety net)
+# Pre-update backup (opencodon update safety net)
 # ---------------------------------------------------------------------------
 
     # -- security: path traversal regression coverage -----------------------
@@ -1966,7 +1966,7 @@ class TestQuickSnapshotProjectsKanban:
 
 
 class TestPreUpdateBackup:
-    """Tests for create_pre_update_backup — the auto-backup ``hermes update``
+    """Tests for create_pre_update_backup — the auto-backup ``opencodon update``
     runs before touching anything."""
 
     def test_failed_sqlite_snapshot_removes_incomplete_archive(self, tmp_path, monkeypatch):
@@ -2020,7 +2020,7 @@ class TestPreUpdateBackup:
     def opencodon_home(self, tmp_path):
         root = tmp_path / ".opencodon"
         root.mkdir()
-        _make_hermes_tree(root)
+        _make_opencodon_tree(root)
         return root
 
     def test_creates_backup_under_backups_dir(self, opencodon_home):
@@ -2034,7 +2034,7 @@ class TestPreUpdateBackup:
 
     def test_backup_contents_match_full_backup(self, opencodon_home):
         """Pre-update backup should include the same user data that
-        ``hermes backup`` would, and should exclude the same directories."""
+        ``opencodon backup`` would, and should exclude the same directories."""
         from opencodon_cli.backup import create_pre_update_backup
         out = create_pre_update_backup(opencodon_home=opencodon_home)
         assert out is not None
@@ -2046,8 +2046,8 @@ class TestPreUpdateBackup:
         assert "sessions/abc123.json" in names
         assert "skills/my-skill/SKILL.md" in names
         assert "profiles/coder/config.yaml" in names
-        # hermes-agent repo excluded
-        assert not any(n.startswith("hermes-agent/") for n in names)
+        # opencodon repo excluded
+        assert not any(n.startswith("opencodon/") for n in names)
         # __pycache__ excluded
         assert not any("__pycache__" in n for n in names)
         # pid files excluded
@@ -2185,7 +2185,7 @@ class TestRunPreUpdateBackup:
     def opencodon_home(self, tmp_path, monkeypatch):
         root = tmp_path / ".opencodon"
         root.mkdir()
-        _make_hermes_tree(root)
+        _make_opencodon_tree(root)
         # Point OPENCODON_HOME at the temp dir so config + backup paths resolve here
         monkeypatch.setenv("OPENCODON_HOME", str(root))
         # Make Path.home() point at tmp_path for anything that uses it
@@ -2239,7 +2239,7 @@ class TestRunPreUpdateBackup:
         assert "Pre-update snapshot" in out
         assert "Creating pre-update backup" in out
         assert "Saved:" in out
-        assert "hermes import" in out
+        assert "opencodon import" in out
         assert len(self._zips(opencodon_home)) == 1
 
     def test_no_backup_flag_skips_everything(self, opencodon_home, capsys):
@@ -2338,111 +2338,11 @@ class TestRunPreUpdateBackup:
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration backup (hermes claw migrate safety net)
-# ---------------------------------------------------------------------------
-
-class TestPreMigrationBackup:
-    """Tests for create_pre_migration_backup — the auto-backup
-    ``hermes claw migrate`` runs before mutating ~/.opencodon/."""
-
-    @pytest.fixture
-    def opencodon_home(self, tmp_path):
-        root = tmp_path / ".opencodon"
-        root.mkdir()
-        _make_hermes_tree(root)
-        return root
-
-    def test_creates_backup_under_backups_dir(self, opencodon_home):
-        from opencodon_cli.backup import create_pre_migration_backup
-        out = create_pre_migration_backup(opencodon_home=opencodon_home)
-        assert out is not None
-        assert out.exists()
-        # Shares the backups/ directory with pre-update backups so `hermes
-        # import` and the update-backup listing both pick them up.
-        assert out.parent == opencodon_home / "backups"
-        assert out.name.startswith("pre-migration-")
-        assert out.suffix == ".zip"
-
-    def test_backup_uses_shared_exclusion_rules(self, opencodon_home):
-        """Pre-migration backup reuses the same exclusion rules as
-        ``hermes backup`` / ``create_pre_update_backup`` — no drift."""
-        from opencodon_cli.backup import create_pre_migration_backup
-        out = create_pre_migration_backup(opencodon_home=opencodon_home)
-        assert out is not None
-        with zipfile.ZipFile(out) as zf:
-            names = set(zf.namelist())
-        # User data present
-        assert "config.yaml" in names
-        assert ".env" in names
-        assert "skills/my-skill/SKILL.md" in names
-        # Same exclusions as the shared helper
-        assert not any(n.startswith("hermes-agent/") for n in names)
-        assert not any("__pycache__" in n for n in names)
-        assert "gateway.pid" not in names
-
-    def test_restorable_with_hermes_import(self, opencodon_home, tmp_path):
-        """The zip produced by pre-migration backup must be a valid Hermes
-        backup — `hermes import` should accept it."""
-        from opencodon_cli.backup import create_pre_migration_backup, _validate_backup_zip
-        out = create_pre_migration_backup(opencodon_home=opencodon_home)
-        assert out is not None
-        with zipfile.ZipFile(out) as zf:
-            valid, _reason = _validate_backup_zip(zf)
-        assert valid, "pre-migration zip failed _validate_backup_zip"
-
-    def test_does_not_recurse_into_prior_backups(self, opencodon_home):
-        from opencodon_cli.backup import create_pre_migration_backup
-        out1 = create_pre_migration_backup(opencodon_home=opencodon_home)
-        assert out1 is not None
-        out2 = create_pre_migration_backup(opencodon_home=opencodon_home)
-        assert out2 is not None
-        with zipfile.ZipFile(out2) as zf:
-            names = zf.namelist()
-        assert not any(n.startswith("backups/") for n in names)
-
-    def test_rotation_keeps_only_n(self, opencodon_home):
-        import time as _t
-        from opencodon_cli.backup import create_pre_migration_backup
-
-        created = []
-        for _ in range(7):
-            out = create_pre_migration_backup(opencodon_home=opencodon_home, keep=3)
-            if out is not None:
-                created.append(out)
-            _t.sleep(1.05)  # timestamp resolution
-
-        remaining = sorted((opencodon_home / "backups").glob("pre-migration-*.zip"))
-        assert len(remaining) <= 3, f"expected <=3 backups retained, got {len(remaining)}"
-
-    def test_missing_opencodon_home_returns_none(self, tmp_path):
-        """Fresh install with no ~/.opencodon yet — nothing to back up."""
-        from opencodon_cli.backup import create_pre_migration_backup
-        missing = tmp_path / "does-not-exist"
-        out = create_pre_migration_backup(opencodon_home=missing)
-        assert out is None
-
-    def test_does_not_touch_pre_update_backups(self, opencodon_home):
-        """Pre-migration rotation must only prune pre-migration-*.zip files,
-        leaving pre-update-*.zip backups untouched."""
-        from opencodon_cli.backup import create_pre_update_backup, create_pre_migration_backup
-        update_backup = create_pre_update_backup(opencodon_home=opencodon_home, keep=5)
-        assert update_backup is not None and update_backup.exists()
-        # Spin up a lot of migration backups with keep=1
-        import time as _t
-        for _ in range(3):
-            out = create_pre_migration_backup(opencodon_home=opencodon_home, keep=1)
-            assert out is not None
-            _t.sleep(1.05)
-        # Update backup must still be there
-        assert update_backup.exists(), "pre-migration rotation wrongly pruned the pre-update backup"
-
-
-# ---------------------------------------------------------------------------
 # Cron jobs auto-restore after silent migration loss (issue #34600)
 # ---------------------------------------------------------------------------
 
 class TestRestoreCronJobsIfEmptied:
-    """`hermes update` config migration can leave cron/jobs.json valid-but-empty,
+    """`opencodon update` config migration can leave cron/jobs.json valid-but-empty,
     silently dropping every scheduled job. `restore_cron_jobs_if_emptied` is the
     post-migration safety net that restores from the pre-update snapshot."""
 
@@ -2586,7 +2486,7 @@ class TestRestoreCronJobsIfEmptied:
 
 
 # ---------------------------------------------------------------------------
-# Memory-provider external paths (~/.honcho, ...) — captured via
+# Memory-provider external paths — captured via
 # MemoryProvider.backup_paths() and restored to their original home-relative
 # location, NOT under OPENCODON_HOME. (backup/import cycle data-loss fix)
 # ---------------------------------------------------------------------------
@@ -2599,23 +2499,23 @@ class TestMemoryProviderExternalPaths:
         (opencodon_home / "state.db").write_bytes(b"x")
 
     def test_backup_captures_external_paths_under_external_prefix(self, tmp_path, monkeypatch):
-        """Provider state under ~/.honcho is archived beneath _external/,
+        """Provider state under an external dir is archived beneath _external/,
         encoded relative to the home directory."""
         opencodon_home = tmp_path / ".opencodon"
         self._make_min_tree(opencodon_home)
         # External provider state living OUTSIDE OPENCODON_HOME.
-        honcho = tmp_path / ".honcho"
-        honcho.mkdir()
-        (honcho / "config.json").write_text('{"peer":"alice"}')
-        (honcho / "sub").mkdir()
-        (honcho / "sub" / "x.json").write_text('{"a":1}')
+        extmem = tmp_path / ".extmem"
+        extmem.mkdir()
+        (extmem / "config.json").write_text('{"peer":"alice"}')
+        (extmem / "sub").mkdir()
+        (extmem / "sub" / "x.json").write_text('{"a":1}')
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         import opencodon_cli.backup as backup_mod
         monkeypatch.setattr(
-            backup_mod, "_collect_memory_provider_external_paths", lambda: [honcho]
+            backup_mod, "_collect_memory_provider_external_paths", lambda: [extmem]
         )
 
         out_zip = tmp_path / "backup.zip"
@@ -2623,8 +2523,8 @@ class TestMemoryProviderExternalPaths:
 
         with zipfile.ZipFile(out_zip) as zf:
             names = set(zf.namelist())
-        assert "_external/.honcho/config.json" in names
-        assert "_external/.honcho/sub/x.json" in names
+        assert "_external/.extmem/config.json" in names
+        assert "_external/.extmem/sub/x.json" in names
         # In-home files still present.
         assert "config.yaml" in names
 
@@ -2668,7 +2568,7 @@ class TestMemoryProviderExternalPaths:
             zf.writestr("config.yaml", "model: {}\n")
             zf.writestr(".env", "X=1\n")
             zf.writestr("state.db", "")
-            zf.writestr("_external/.honcho/config.json", '{"peer":"bob"}')
+            zf.writestr("_external/.extmem/config.json", '{"peer":"bob"}')
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
@@ -2676,7 +2576,7 @@ class TestMemoryProviderExternalPaths:
         from opencodon_cli.backup import run_import
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
-        restored = dst_home / ".honcho" / "config.json"
+        restored = dst_home / ".extmem" / "config.json"
         assert restored.exists()
         assert restored.read_text() == '{"peer":"bob"}'
         # Credential-shaped file tightened.
@@ -2726,12 +2626,3 @@ class TestMemoryProviderExternalPaths:
                 return []
 
         assert _Dummy().backup_paths() == []
-
-    def test_honcho_provider_declares_global_config_dir(self, tmp_path, monkeypatch):
-        """The honcho provider's backup_paths() resolves to ~/.honcho."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        from plugins.memory.honcho import HonchoMemoryProvider
-
-        paths = HonchoMemoryProvider().backup_paths()
-        assert str(tmp_path / ".honcho") in paths
-

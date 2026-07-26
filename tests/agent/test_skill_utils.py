@@ -18,11 +18,11 @@ from agent.skill_utils import (
 )
 
 
-def test_metadata_as_dict_with_hermes():
-    """Normal case: metadata is a dict containing hermes keys."""
+def test_metadata_as_dict_with_opencodon():
+    """Normal case: metadata is a dict containing opencodon keys."""
     frontmatter = {
         "metadata": {
-            "hermes": {
+            "opencodon": {
                 "fallback_for_toolsets": ["toolset_a"],
                 "requires_toolsets": ["toolset_b"],
                 "fallback_for_tools": ["tool_x"],
@@ -411,7 +411,7 @@ class TestParseFrontmatterBOM:
         "description: Does a thing.\n"
         "platforms: [macos]\n"
         "metadata:\n"
-        "  hermes:\n"
+        "  opencodon:\n"
         "    config:\n"
         "      - key: my.key\n"
         "        description: A configured value\n"

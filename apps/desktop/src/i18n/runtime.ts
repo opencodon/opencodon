@@ -29,8 +29,8 @@ function render(value: unknown, args: unknown[]): null | string {
 /** The active → DEFAULT → key resolution every translator shares. `source`
  *  yields a message tree per locale — the app catalog, or a plugin's bundles. */
 export function translateFrom(
-  source: (locale: Locale) => unknown,
-  locale: Locale,
+  source: (locale: string) => unknown,
+  locale: string,
   key: string,
   args: unknown[]
 ): string {
@@ -62,5 +62,5 @@ export function getRuntimeI18nLocale(): Locale {
 }
 
 export function translateNow(key: string, ...args: unknown[]): string {
-  return translateFrom(locale => TRANSLATIONS[locale], runtimeLocale, key, args)
+  return translateFrom(locale => TRANSLATIONS[locale as Locale], runtimeLocale, key, args)
 }

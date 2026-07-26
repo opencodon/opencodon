@@ -1,4 +1,4 @@
-"""Contract for the headless ``hermes serve`` backend command.
+"""Contract for the headless ``opencodon serve`` backend command.
 
 ``serve`` is what the desktop app and remote backends launch — the same gateway
 as ``dashboard`` (shared handler) but always headless, and decoupled in name so
@@ -20,16 +20,11 @@ def _dash(args):  # sentinel handler — identity-compared, never invoked
     return args
 
 
-def _register(args):
-    return args
-
-
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     build_dashboard_parser(
         parser.add_subparsers(dest="command"),
         cmd_dashboard=_dash,
-        cmd_dashboard_register=_register,
     )
     return parser
 

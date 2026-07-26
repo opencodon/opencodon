@@ -36,8 +36,8 @@ class TestCliTurnRoutePool:
             service_tier=None,
         )
 
-        from cli import HermesCLI
-        bound = HermesCLI._resolve_turn_agent_config.__get__(shell)
+        from cli import OpencodonCLI
+        bound = OpencodonCLI._resolve_turn_agent_config.__get__(shell)
         route = bound("test message")
 
         assert route["runtime"]["credential_pool"] is fake_pool
@@ -293,7 +293,7 @@ class TestApiKeyHintRealPool:
     def _seed_pool(self, tmp_path, monkeypatch):
         import json
 
-        opencodon_home = tmp_path / "hermes"
+        opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
         (opencodon_home / "auth.json").write_text(
             json.dumps(
@@ -374,10 +374,10 @@ class TestFailureAttribution:
     """
 
     def _make_pool(self, tmp_path, monkeypatch, entries):
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "hermes"))
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(
+        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
+        opencodon_home = tmp_path / "opencodon"
+        opencodon_home.mkdir(parents=True, exist_ok=True)
+        (opencodon_home / "auth.json").write_text(
             json.dumps({"version": 1, "credential_pool": {"anthropic": entries}})
         )
         from agent.credential_pool import load_pool

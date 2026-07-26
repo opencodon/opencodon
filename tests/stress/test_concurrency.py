@@ -117,7 +117,7 @@ def worker_loop(worker_id: int, opencodon_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="hermes_concurrency_")
+    home = tempfile.mkdtemp(prefix="opencodon_concurrency_")
     print(f"OPENCODON_HOME = {home}")
 
     # Seed.

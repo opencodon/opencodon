@@ -41,7 +41,7 @@ import pytest
 @pytest.fixture
 def isolated_home(monkeypatch):
     """Temp OPENCODON_HOME with config + clean credential env vars."""
-    test_home = tempfile.mkdtemp(prefix="hermes_test_31179_")
+    test_home = tempfile.mkdtemp(prefix="opencodon_test_31179_")
     opencodon_home = os.path.join(test_home, ".opencodon")
     os.makedirs(opencodon_home)
     monkeypatch.setenv("OPENCODON_HOME", opencodon_home)
@@ -61,7 +61,7 @@ def _write_config(home: str, text: str) -> None:
 
 
 def _fresh_modules():
-    """Drop cached hermes modules so each test reloads against current env."""
+    """Drop cached opencodon modules so each test reloads against current env."""
     for mod in list(sys.modules.keys()):
         if mod.startswith(("agent.auxiliary_client", "agent.image_routing",
                            "tools.vision_tools", "tools.browser_tool",

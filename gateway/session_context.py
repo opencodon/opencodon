@@ -1,5 +1,5 @@
 """
-Session-scoped context variables for the Hermes gateway.
+Session-scoped context variables for the opencodon gateway.
 
 Replaces the previous ``os.environ``-based session state
 (``OPENCODON_SESSION_PLATFORM``, ``OPENCODON_SESSION_CHAT_ID``, etc.) with
@@ -347,7 +347,7 @@ def declare_stateless_channel() -> None:
     returned within the turn instead of being dispatched to a channel that will
     never deliver them.
 
-    See NousResearch/hermes-agent#53027 and #63142.
+    See upstream#53027 and #63142.
     """
     _SESSION_ASYNC_DELIVERY.set(False)
 
@@ -358,7 +358,7 @@ def async_delivery_supported() -> bool:
     Returns ``False`` when the active session was bound by a stateless channel:
     an adapter that cannot route a notification back after the turn ends (the
     API server), or a one-shot runner that exits after its final response
-    (``hermes -z``, cron — see :func:`declare_stateless_channel`). The real
+    (``opencodon -z``, cron — see :func:`declare_stateless_channel`). The real
     gateway platforms, the interactive CLI, and any path that never bound the
     contextvar return ``True``.
 

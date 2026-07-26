@@ -11,61 +11,7 @@ from utils import is_truthy_value
 
 _DEFAULT_BROWSER_PROVIDER = "local"
 _DEFAULT_MODAL_MODE = "auto"
-_VALID_MODAL_MODES = {"auto", "direct", "managed"}
-
-
-def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
-    """Return True when the user is entitled to the Nous Tool Gateway.
-
-    Entitlement is paid Nous Portal service access OR a live free tool pool
-    (``tool_gateway_entitled``). Per-category coverage (the pool funds image but
-    not video, etc.) is narrowed by callers via ``tool_gateway_entitled_for``;
-    this coarse gate only answers "is any managed tool usable at all".
-
-    Tool Gateway availability fails closed on unknown/error entitlement.  We
-    intentionally catch all exceptions and return False — never block startup.
-    ``force_fresh=True`` is for interactive configuration flows that should
-    reflect a just-purchased subscription, credits, or pool grant immediately.
-    """
-    try:
-        from opencodon_cli.nous_account import get_nous_portal_account_info
-
-        if force_fresh:
-            account_info = get_nous_portal_account_info(force_fresh=True)
-        else:
-            account_info = get_nous_portal_account_info()
-        if not account_info.logged_in:
-            return False
-        return account_info.tool_gateway_entitled
-    except Exception:
-        return False
-
-
-def nous_tool_gateway_unavailable_message(
-    capability: str = "the Nous Tool Gateway",
-    *,
-    force_fresh: bool = False,
-) -> str:
-    """Return account-aware guidance for an unavailable Nous Tool Gateway path."""
-    try:
-        from opencodon_cli.nous_account import (
-            format_nous_portal_entitlement_message,
-            get_nous_portal_account_info,
-        )
-
-        account_info = get_nous_portal_account_info(force_fresh=force_fresh)
-        message = format_nous_portal_entitlement_message(
-            account_info,
-            capability=capability,
-        )
-        if message:
-            return message
-    except Exception:
-        pass
-    return (
-        f"{capability} is unavailable. Run `hermes model` to refresh your "
-        "Nous Portal login and billing status."
-    )
+_VALID_MODAL_MODES = {"auto", "direct"}
 
 
 def normalize_browser_cloud_provider(value: object | None) -> str:
@@ -103,38 +49,20 @@ def resolve_modal_backend_state(
     modal_mode: object | None,
     *,
     has_direct: bool,
-    managed_ready: bool,
-    managed_enabled: bool | None = None,
 ) -> Dict[str, Any]:
-    """Resolve direct vs managed Modal backend selection.
+    """Resolve Modal backend selection.
 
-    Semantics:
-    - ``direct`` means direct-only
-    - ``managed`` means managed-only
-    - ``auto`` prefers managed when available, then falls back to direct
+    Only direct credentials remain (``auto`` and ``direct`` both resolve to
+    the direct backend when credentials are present, else no backend).
     """
     requested_mode = coerce_modal_mode(modal_mode)
     normalized_mode = normalize_modal_mode(modal_mode)
-    if managed_enabled is None:
-        managed_enabled = managed_nous_tools_enabled()
-    managed_mode_blocked = (
-        requested_mode == "managed" and not managed_enabled
-    )
-
-    if normalized_mode == "managed":
-        selected_backend = "managed" if managed_enabled and managed_ready else None
-    elif normalized_mode == "direct":
-        selected_backend = "direct" if has_direct else None
-    else:
-        selected_backend = "managed" if managed_enabled and managed_ready else "direct" if has_direct else None
 
     return {
         "requested_mode": requested_mode,
         "mode": normalized_mode,
         "has_direct": has_direct,
-        "managed_ready": managed_ready,
-        "managed_mode_blocked": managed_mode_blocked,
-        "selected_backend": selected_backend,
+        "selected_backend": "direct" if has_direct else None,
     }
 
 
@@ -144,21 +72,6 @@ def resolve_openai_audio_api_key() -> str:
         os.getenv("VOICE_TOOLS_OPENAI_KEY", "")
         or os.getenv("OPENAI_API_KEY", "")
     ).strip()
-
-
-def prefers_gateway(config_section: str) -> bool:
-    """Return True when the user opted into the Tool Gateway for this tool.
-
-    Reads ``<section>.use_gateway`` from config.yaml.  Never raises.
-    """
-    try:
-        from opencodon_cli.config import load_config
-        section = (load_config() or {}).get(config_section)
-        if isinstance(section, dict):
-            return is_truthy_value(section.get("use_gateway"), default=False)
-    except Exception:
-        pass
-    return False
 
 
 def fal_key_is_configured() -> bool:

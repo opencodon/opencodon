@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 BUSY_INPUT_FLAG = "busy_input_prompt"
 TOOL_PROGRESS_FLAG = "tool_progress_prompt"
-OPENCLAW_RESIDUE_FLAG = "openclaw_residue_cleanup"
 PROFILE_BUILD_FLAG = "profile_build_offered"
 
 
@@ -107,37 +106,6 @@ def tool_progress_hint_cli() -> str:
         "(tip) That tool ran for a while. Use /verbose to cycle tool-progress "
         "display modes (all -> new -> off -> verbose). This tip only shows once."
     )
-
-
-def openclaw_residue_hint_cli() -> str:
-    """Banner shown the first time Hermes starts and finds ``~/.openclaw/``.
-
-    Points users at ``hermes claw migrate`` (non-destructive port of config,
-    memory, and skills) first. ``hermes claw cleanup`` is mentioned as the
-    follow-up step for users who have already migrated and want to archive
-    the old directory — with a warning that archiving breaks OpenClaw.
-    """
-    return (
-        "A legacy OpenClaw directory was detected at ~/.openclaw/.\n"
-        "To port your config, memory, and skills over to Hermes, run "
-        "`hermes claw migrate`.\n"
-        "If you've already migrated and want to archive the old directory, "
-        "run `hermes claw cleanup` (renames it to ~/.openclaw.pre-migration — "
-        "OpenClaw will stop working after this).\n"
-        "This tip only shows once."
-    )
-
-
-def detect_openclaw_residue(home: Optional[Path] = None) -> bool:
-    """Return True if an OpenClaw workspace directory is present in ``$HOME``.
-
-    Pure filesystem check — no side effects. ``home`` override exists for tests.
-    """
-    base = home or Path.home()
-    try:
-        return (base / ".openclaw").is_dir()
-    except OSError:
-        return False
 
 
 # -------------------------------------------------------------------------
@@ -251,14 +219,11 @@ def mark_seen(config_path: Path, flag: str) -> bool:
 __all__ = [
     "BUSY_INPUT_FLAG",
     "TOOL_PROGRESS_FLAG",
-    "OPENCLAW_RESIDUE_FLAG",
     "PROFILE_BUILD_FLAG",
     "busy_input_hint_gateway",
     "busy_input_hint_cli",
     "tool_progress_hint_gateway",
     "tool_progress_hint_cli",
-    "openclaw_residue_hint_cli",
-    "detect_openclaw_residue",
     "profile_build_mode",
     "profile_build_directive",
     "is_seen",

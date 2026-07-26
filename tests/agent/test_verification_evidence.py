@@ -173,7 +173,7 @@ def test_uv_run_pytest_matches_detected_pytest(tmp_path, monkeypatch):
 def test_temp_script_records_ad_hoc_evidence_without_canonical_suite(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-    script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"opencodon-ad-hoc-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         evidence = classify_verification_command(
@@ -215,7 +215,7 @@ def test_unprefixed_temp_script_is_not_ad_hoc_evidence(tmp_path, monkeypatch):
 def test_temp_script_does_not_replace_detected_suite(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     _node_project(tmp_path)
-    script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"opencodon-ad-hoc-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         evidence = classify_verification_command(
@@ -412,14 +412,14 @@ def test_windows_backslash_ad_hoc_script_path_is_matched(tmp_path, monkeypatch):
     # posix=False preserves them. Mock _is_temp_script_path so the test
     # focuses on the splitting fallback without needing a real Windows FS.
     def mock_is_temp_script(token, root):
-        return "hermes-ad-hoc" in token and ".py" in token
+        return "opencodon-ad-hoc" in token and ".py" in token
 
     monkeypatch.setattr(
         "agent.verification_evidence._is_temp_script_path",
         mock_is_temp_script,
     )
 
-    win_script = r"C:\Users\test\AppData\Local\Temp\hermes-ad-hoc-check.py"
+    win_script = r"C:\Users\test\AppData\Local\Temp\opencodon-ad-hoc-check.py"
     result = _find_ad_hoc_match(f"python {win_script}", tmp_path)
     assert result is not None, (
         "Windows backslash path should be matched via posix=False fallback"

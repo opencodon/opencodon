@@ -50,7 +50,7 @@ def test_non_anthropic_provider_unchanged():
 
 
 def test_add_entry_normalizes_before_persisting(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
@@ -71,7 +71,7 @@ def test_add_entry_normalizes_before_persisting(tmp_path, monkeypatch):
 
 
 def test_load_heals_legacy_row_and_exposes_it_to_resolver(tmp_path, monkeypatch):
-    opencodon_home = tmp_path / "hermes"
+    opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"):

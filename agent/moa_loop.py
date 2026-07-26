@@ -1,7 +1,7 @@
 """Mixture-of-Agents runtime helpers for /moa turns.
 
 The slash command is deliberately not a model tool. It marks one user turn as
-MoA-enabled; the normal Hermes agent loop still owns tool calling and turn
+MoA-enabled; the normal opencodon agent loop still owns tool calling and turn
 termination, while this module gathers reference-model context before each model
 iteration.
 """
@@ -200,7 +200,7 @@ def _slot_runtime(slot: dict[str, Any]) -> dict[str, Any]:
         # so provider branches that add auth refresh / request metadata /
         # request-shape adapters — anthropic OAuth (Bearer + anthropic-beta),
         # openai-codex Responses wrapping + Cloudflare headers, xai-oauth,
-        # bedrock SigV4 signing, nous Portal tags — still fire. Those branches
+        # bedrock SigV4 signing — still fire. Those branches
         # re-resolve their own credentials by name and ignore a forwarded
         # base_url/api_key, so forwarding is safe even for a placeholder key
         # (bedrock's "aws-sdk"). We used to maintain a name-preservation set here
@@ -406,7 +406,7 @@ def _run_references_parallel(
     workers = min(_MAX_REFERENCE_WORKERS, len(reference_models))
     # Reference slots run on bare executor threads, which start with an empty
     # contextvars.Context — propagate the parent turn's context (approval
-    # callbacks + the Nous Portal conversation tag) into each worker so
+    # callbacks + the provider conversation tag) into each worker so
     # advisor calls attribute to the same conversation as the acting turn.
     from tools.thread_context import propagate_context_to_thread
 
@@ -493,7 +493,7 @@ def _reference_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     came back — not just the agent's narration. We therefore preserve the whole
     conversation flow, but flatten it into clean user/assistant *text* turns:
 
-      - system prompt: dropped (8K of Hermes boilerplate, not advisory signal).
+      - system prompt: dropped (8K of opencodon boilerplate, not advisory signal).
       - assistant turns: kept; any ``tool_calls`` are rendered inline as
         ``[called tool: name(args)]`` text lines appended to the turn's text.
       - ``tool``-role results: NOT dropped. Each is folded (head+tail preview,
@@ -644,7 +644,7 @@ def _preset_temperature(preset: dict[str, Any], key: str) -> float | None:
 
     Returns None when the key is absent, empty, or explicitly null — meaning
     "don't send temperature; let the provider default apply", exactly like a
-    single-model Hermes agent (which never sends temperature unless
+    single-model opencodon agent (which never sends temperature unless
     configured). The old coercion ``float(preset.get(key, 0.6) or 0.6)``
     made unset impossible: absent, null, and even 0 all collapsed to the
     hardcoded default, so MoA advisors/aggregator always ran at 0.6/0.4
@@ -702,7 +702,7 @@ def aggregate_moa_context(
     synth_prompt = (
         "You are the aggregator in a Mixture of Agents process. Synthesize the "
         "reference responses into concise, actionable guidance for the main "
-        "Hermes agent. Focus on next steps, tool-use strategy, risks, and any "
+        "opencodon agent. Focus on next steps, tool-use strategy, risks, and any "
         "disagreements. Do not answer the user directly unless that is all that "
         "is needed; produce context the main agent should use in its normal loop.\n\n"
         f"Original user prompt:\n{user_prompt}\n\n"
@@ -743,7 +743,7 @@ def aggregate_moa_context(
 
     return (
         "[Mixture of Agents context — use this as private guidance for the "
-        "normal Hermes agent loop. You may call tools, continue reasoning, or "
+        "normal opencodon agent loop. You may call tools, continue reasoning, or "
         "finish normally.]\n"
         f"Aggregator: {agg_label}\n"
         f"References: {', '.join(_slot_label(slot) for slot in reference_models)}\n\n"

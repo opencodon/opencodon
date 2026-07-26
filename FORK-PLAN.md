@@ -127,7 +127,7 @@ release. Full suite = documented pre-existing baseline exactly.
 
 Live at github.com/opencodon/opencodon (private until v0.1.0):
 `origin` = git@github.com:opencodon/opencodon.git, `upstream` =
-NousResearch/hermes-agent with push URL DISABLED. CI pruned to the
+opencodon/opencodon with push URL DISABLED. CI pruned to the
 ci.yml orchestrator calling tests / lint / js-tests / uv-lockfile-check
 / osv-scanner, plus Dependabot (github-actions only). Cut: docker
 build+lint, desktop E2E + evidence publishing, supply-chain diff

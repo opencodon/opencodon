@@ -141,7 +141,7 @@ def test_log_startup_security_warnings_emits_and_is_idempotent(monkeypatch, tmp_
     monkeypatch.setattr(audit, "_iter_sshd_config_lines", lambda: [])
     monkeypatch.setattr(audit, "_in_container", lambda: False)
 
-    with caplog.at_level(logging.WARNING, logger="hermes.security_audit"):
+    with caplog.at_level(logging.WARNING, logger="opencodon.security_audit"):
         first = audit.log_startup_security_warnings(opencodon_home=tmp_path, config={})
     assert len(first) == 1
     assert any("ROOT" in r.message for r in caplog.records)

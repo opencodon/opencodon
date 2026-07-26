@@ -1,5 +1,5 @@
 """
-Shared platform registry for Hermes Agent.
+Shared platform registry for opencodon.
 
 Single source of truth for platform metadata consumed by both
 skills_config (label display) and tools_config (default toolset
@@ -64,7 +64,7 @@ def get_all_platforms() -> "OrderedDict[str, PlatformInfo]":
             if entry.name not in merged:
                 merged[entry.name] = PlatformInfo(
                     label=f"{entry.emoji}  {entry.label}" if entry.emoji else entry.label,
-                    default_toolset=f"hermes-{entry.name}",
+                    default_toolset=f"opencodon-{entry.name}",
                 )
     except Exception:
         pass
