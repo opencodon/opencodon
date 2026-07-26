@@ -9,7 +9,6 @@ import {
   Cpu,
   Database,
   Download,
-  Globe,
   HardDrive,
   KeyRound,
   Link2,
