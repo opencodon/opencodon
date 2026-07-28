@@ -257,6 +257,13 @@ TOOLSETS = {
         "includes": []
     },
 
+    "environments": {
+        "description": "Durable micromamba environments with lockfile identity (science layer)",
+        "tools": ["env_list", "env_create", "env_install", "env_describe",
+                  "env_remove"],
+        "includes": []
+    },
+
     "project": {
         "description": "Desktop Projects — create/switch named workspaces (GUI sessions only)",
         "tools": ["project_list", "project_create", "project_switch"],

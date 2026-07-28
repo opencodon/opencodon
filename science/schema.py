@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS execution_log (
     language TEXT NOT NULL,
     env_name TEXT,
     env_snapshot TEXT,
+    env_lock_hash TEXT,
     kernel_location TEXT,
     source TEXT NOT NULL,
     stdout TEXT,

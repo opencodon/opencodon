@@ -253,6 +253,42 @@ phases:
         statement: Clinical trials and drug regulatory records are available.
         acceptance: ClinicalTrials.gov search and openFDA Drugs@FDA / SPL labels.
 
+  P6:
+    title: Durable environments
+    status: complete
+    requirements:
+      - id: SCI-P6-01
+        statement: A named environment survives the session that made it.
+        acceptance: >
+          micromamba environments live outside any session workspace and are
+          listable and reusable after the creating session ends.
+      - id: SCI-P6-02
+        statement: An environment has a recreatable identity, not just a description.
+        acceptance: >
+          `micromamba env export --explicit` yields a lock of exact package
+          URLs, hashed into a stable id that is order- and comment-independent.
+      - id: SCI-P6-03
+        statement: An observation is never mistaken for a recipe.
+        acceptance: >
+          snapshots that merely list installed packages return no lock identity,
+          so pre-micromamba cells cannot claim reproducibility they lack.
+      - id: SCI-P6-04
+        statement: A kernel can run inside a named environment.
+        acceptance: >
+          run_code with `env` executes in that environment's interpreter and
+          sees its packages; each environment gets its own kernel.
+      - id: SCI-P6-05
+        statement: Every cell records the environment identity it ran under.
+        acceptance: >
+          execution_log.env_lock_hash is populated on every row, not only the
+          first cell of a kernel — the producing cell is rarely the first.
+      - id: SCI-P6-06
+        statement: A byte match under a matching lock is graded verified.
+        acceptance: >
+          reproduce() returns claim 'verified' when bytes match and the
+          environment identity still matches, and 'reproduced' with a caveat
+          when the environment cannot be vouched for.
+
   P2:
     title: Literature and evidence layer
     status: complete

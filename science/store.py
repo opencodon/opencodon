@@ -84,6 +84,7 @@ class ScienceStore:
         kernel_kind: str = None,
         env_name: str = None,
         env_snapshot: str = None,
+        env_lock_hash: str = None,
         kernel_location: str = None,
         error_lineno: int = None,
         traceback: str = None,
@@ -114,12 +115,12 @@ class ScienceStore:
             conn.execute(
                 """INSERT INTO execution_log (
                        id, session_id, cell_index, kernel_id, kernel_kind,
-                       language, env_name, env_snapshot, kernel_location,
-                       source, stdout, stderr,
+                       language, env_name, env_snapshot, env_lock_hash,
+                       kernel_location, source, stdout, stderr,
                        exit_status, error_lineno, traceback, display_count,
                        has_magics, origin, user_intervention,
                        files_written, files_read, created_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     cell_id,
                     session_id,
@@ -129,6 +130,7 @@ class ScienceStore:
                     language,
                     env_name,
                     env_snapshot,
+                    env_lock_hash,
                     kernel_location,
                     source,
                     stdout,

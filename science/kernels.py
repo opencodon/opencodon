@@ -182,6 +182,48 @@ class PythonEnvResolver:
         return python_env_snapshot()
 
 
+class MicromambaEnvResolver:
+    """Bind a durable micromamba environment as the kernel for a session.
+
+    Unlike :class:`PythonEnvResolver`, whose snapshot is an *observation* of
+    whatever happened to be installed, this one's snapshot carries a lockfile
+    identity — which is what lets reproduce() grade a replay as verified
+    rather than merely byte-identical.
+    """
+
+    def __init__(self, env_name: str):
+        self.env_name = env_name
+
+    def available(self) -> bool:
+        try:
+            from science import envmanager
+
+            return kernels_installed() and envmanager.exists(self.env_name)
+        except Exception:
+            return False
+
+    def resolve(self) -> EnvironmentSpec:
+        from science import envmanager
+
+        if not envmanager.exists(self.env_name):
+            raise RuntimeError(
+                f"environment {self.env_name!r} does not exist; create it first"
+            )
+        interpreter = envmanager.env_prefix(self.env_name) / "bin" / "python"
+        return EnvironmentSpec(
+            language="python",
+            interpreter_path=str(interpreter),
+            argv=(str(interpreter), "-m", "ipykernel_launcher", "-f", "{connection_file}"),
+            runtime_identity=f"micromamba:{self.env_name}",
+            env_name=self.env_name,
+        )
+
+    def snapshot(self) -> str:
+        from science import envmanager
+
+        return envmanager.env_snapshot(self.env_name)
+
+
 class RKernelResolver:
     """Bind a system R + IRkernel as the R kernel (cross-language via files).
 
@@ -694,14 +736,27 @@ class SessionKernelManager:
         # bootstrap_fn(session, workspace, language) runs right after a kernel
         # starts — the artifact/host SDK injection hook (science/bridge.py).
         self._bootstrap_fn = bootstrap_fn
-        self._live: Dict[Tuple[str, str], KernelSession] = {}
+        self._env_resolvers: Dict[str, Any] = {}
+        self._live: Dict[Tuple[str, str, Optional[str]], KernelSession] = {}
         self._locks: Dict[Tuple[str, str], threading.Lock] = {}
         self._locks_guard = threading.Lock()
 
     def workspace_for(self, session_id: str) -> Path:
         return self._root / _safe_dirname(session_id)
 
-    def resolver_for(self, language: str):
+    def resolver_for(self, language: str, env: Optional[str] = None):
+        """The resolver for a language, or for a named durable environment.
+
+        Environment resolvers are built on demand rather than registered: an
+        env is created at runtime and there is no point requiring a manager
+        rebuild to use one.
+        """
+        if env:
+            cached = self._env_resolvers.get(env)
+            if cached is None:
+                cached = MicromambaEnvResolver(env)
+                self._env_resolvers[env] = cached
+            return cached
         resolver = self._resolvers.get(language)
         if resolver is None:
             raise ValueError(
@@ -721,16 +776,20 @@ class SessionKernelManager:
             return self._locks.setdefault(key, threading.Lock())
 
     def ensure_kernel(
-        self, session_id: str, language: str = "python"
+        self, session_id: str, language: str = "python", env: Optional[str] = None
     ) -> Tuple[KernelSession, bool]:
         """Start (or reuse) the kernel for a key; returns (session, fresh).
 
         Lets callers learn the kernel identity *before* submitting a cell,
         so the execution_log row can be inserted ahead of execution.
+
+        A named *env* gets its own kernel: two environments are two different
+        interpreters with different packages, and sharing state between them
+        would be neither possible nor meaningful.
         """
-        key = (session_id, language)
+        key = (session_id, language, env)
         with self._lock(key):
-            return self._ensure_kernel(session_id, language)
+            return self._ensure_kernel(session_id, language, env)
 
     def run_cell(
         self,
@@ -739,10 +798,11 @@ class SessionKernelManager:
         *,
         language: str = "python",
         timeout: float = DEFAULT_CELL_TIMEOUT_S,
+        env: Optional[str] = None,
     ) -> CellRun:
-        key = (session_id, language)
+        key = (session_id, language, env)
         with self._lock(key):
-            session, fresh = self._ensure_kernel(session_id, language)
+            session, fresh = self._ensure_kernel(session_id, language, env)
             outputs = session.execute(source, timeout=timeout)
 
             tainted = False
@@ -768,15 +828,15 @@ class SessionKernelManager:
                 taint_reasons=reasons,
             )
 
-    def _ensure_kernel(self, session_id, language) -> Tuple[KernelSession, bool]:
-        key = (session_id, language)
+    def _ensure_kernel(self, session_id, language, env=None) -> Tuple[KernelSession, bool]:
+        key = (session_id, language, env)
         live = self._live.get(key)
         if live is not None and live.is_alive():
             return live, False
         if live is not None:
             live.shutdown()
             self._live.pop(key, None)
-        spec = self.resolver_for(language).resolve()
+        spec = self.resolver_for(language, env).resolve()
         workspace = self.workspace_for(session_id)
         session = self._session_factory(
             spec, workdir=workspace, provisioner=self._provisioner
@@ -791,8 +851,10 @@ class SessionKernelManager:
         self._live[key] = session
         return session, True
 
-    def interrupt(self, session_id: str, *, language: str = "python") -> bool:
-        key = (session_id, language)
+    def interrupt(
+        self, session_id: str, *, language: str = "python", env: Optional[str] = None
+    ) -> bool:
+        key = (session_id, language, env)
         live = self._live.get(key)
         if live is None:
             return False
@@ -801,8 +863,10 @@ class SessionKernelManager:
         self._live.pop(key, None)
         return True
 
-    def kernel_for(self, session_id, *, language="python") -> Optional[KernelSession]:
-        return self._live.get((session_id, language))
+    def kernel_for(
+        self, session_id, *, language="python", env: Optional[str] = None
+    ) -> Optional[KernelSession]:
+        return self._live.get((session_id, language, env))
 
     def close_session(self, session_id: str) -> None:
         for key in [k for k in list(self._live) if k[0] == session_id]:

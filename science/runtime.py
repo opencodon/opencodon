@@ -66,6 +66,21 @@ def contains_magics(source: str) -> bool:
     return bool(_MAGIC_LINE_RE.search(source or ""))
 
 
+def _lock_hash_of(snapshot: Optional[str]) -> Optional[str]:
+    """Recreatable-environment identity from a snapshot, if it carries one.
+
+    Observational snapshots (a pip-freeze of whatever was installed) have no
+    identity and must not be given one — they record what was there, not how
+    to get it back.
+    """
+    try:
+        from science.envmanager import snapshot_lock_hash
+
+        return snapshot_lock_hash(snapshot)
+    except Exception:
+        return None
+
+
 def _clip(text: Optional[str]) -> Optional[str]:
     if text and len(text) > RESULT_STREAM_CHARS:
         return text[:RESULT_STREAM_CHARS] + f"\n…[{len(text) - RESULT_STREAM_CHARS} chars truncated; full output in execution_log]"
@@ -126,14 +141,15 @@ class ScienceRuntime:
         timeout: float = DEFAULT_CELL_TIMEOUT_S,
         inputs: Optional[List[Union[str, dict]]] = None,
         origin: str = "agent",
+        env: Optional[str] = None,
     ) -> Dict[str, Any]:
         root_session_id = self.root_for(session_id)
         execution_id = f"cell-{uuid.uuid4().hex}"
         declared_inputs = _normalize_inputs(inputs)
 
-        kernel, fresh = self._manager.ensure_kernel(session_id, language)
-        resolver = self._manager.resolver_for(language)
-        env_key = (session_id, language)
+        kernel, fresh = self._manager.ensure_kernel(session_id, language, env)
+        resolver = self._manager.resolver_for(language, env)
+        env_key = (session_id, language, env)
         with self._lock:
             if fresh or env_key not in self._env_cache:
                 try:
@@ -141,6 +157,10 @@ class ScienceRuntime:
                 except Exception:
                     self._env_cache[env_key] = ""
             env_snapshot = self._env_cache[env_key]
+        # The bulky snapshot is written once per kernel, but its identity goes
+        # on every row: reproduce() compares the *producing* cell's
+        # environment, which is rarely the first cell of its kernel.
+        env_lock_hash = _lock_hash_of(env_snapshot)
 
         self._store.record_cell(
             session_id,
@@ -152,6 +172,7 @@ class ScienceRuntime:
             origin=origin,
             env_name=kernel.spec.runtime_identity,
             env_snapshot=env_snapshot if fresh else None,
+            env_lock_hash=env_lock_hash,
             kernel_location=getattr(kernel, "location", "local"),
             has_magics=1 if contains_magics(source) else 0,
         )
@@ -169,7 +190,7 @@ class ScienceRuntime:
 
         with host.current_cell(execution_id):
             run = self._manager.run_cell(
-                session_id, source, language=language, timeout=timeout
+                session_id, source, language=language, timeout=timeout, env=env
             )
 
         collected = _bridge.collect_cell(workspace, execution_id)
