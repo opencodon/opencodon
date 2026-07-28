@@ -1,0 +1,135 @@
+# Phase requirements registry — the spec each science-integration phase is
+# graded against.
+#
+# Every requirement here must be claimed by at least one test via
+# `@pytest.mark.requirement("<id>")`, and every claiming test must pass, before
+# a phase can be called complete. `scripts/phase_eval.py` enforces both halves:
+# an unclaimed requirement fails the phase just as loudly as a failing test, so
+# "we shipped it but never tested it" cannot pass as done.
+#
+# Writing style: `statement` is what a user gets; `acceptance` is the
+# observable condition a test can assert. If you cannot phrase the acceptance
+# without hedging, the requirement is not yet specified well enough to build.
+
+phases:
+  P0:
+    title: Failure-location and replayability provenance
+    status: complete
+    requirements:
+      - id: SCI-P0-01
+        statement: A failing cell records where in the cell it broke.
+        acceptance: >
+          execution_log.error_lineno is populated from the kernel traceback and
+          names the innermost frame belonging to the cell. Library frames never
+          supply the number.
+      - id: SCI-P0-02
+        statement: The full traceback survives in the record without costing model context.
+        acceptance: >
+          execution_log.traceback holds the ANSI-stripped, length-bounded frames;
+          the run_code result forwards only {name, value}.
+      - id: SCI-P0-03
+        statement: A cell that succeeds carries no failure evidence.
+        acceptance: error_lineno and traceback are both NULL when exit_status is 'ok'.
+      - id: SCI-P0-04
+        statement: Rich display output that was never saved is visible as a gap.
+        acceptance: >
+          execution_log.display_count counts the rendered display messages, the
+          result reports unsaved_displays, and the payload bytes never reach the
+          model.
+      - id: SCI-P0-05
+        statement: A cell told to save is not also nagged about saving.
+        acceptance: >
+          the advisory note appears only when the cell ingested no artifacts;
+          the count is reported either way.
+      - id: SCI-P0-06
+        statement: Source that needs an IPython kernel to replay is marked as such.
+        acceptance: >
+          execution_log.has_magics is 1 for magics/shell-escape cells and 0 for
+          plain source, including the `!=` and modulo-continuation near-misses.
+      - id: SCI-P0-07
+        statement: An RO-Crate consumer is warned before running non-portable source.
+        acceptance: >
+          CreateAction entities for magic-flagged cells carry a
+          disambiguatingDescription naming the limitation; unflagged cells do not.
+      - id: SCI-P0-08
+        statement: Existing databases gain the new columns without losing rows.
+        acceptance: >
+          the declarative reconciler ADDs traceback/display_count/has_magics on
+          reopen, and rows predating a NOT NULL column read back as the default
+          rather than NULL.
+
+  P2:
+    title: Literature and evidence layer
+    status: in-progress
+    requirements:
+      # — shared transport —
+      - id: SCI-P2-01
+        statement: Every scholarly API call identifies this client politely.
+        acceptance: >
+          outbound requests carry a User-Agent naming opencodon and a contact
+          mailto, which is what OpenAlex and Crossref ask for in exchange for
+          the faster rate-limit pool.
+      - id: SCI-P2-02
+        statement: A transient upstream failure does not surface as a tool error.
+        acceptance: >
+          429 and 5xx responses are retried with backoff up to a bounded number
+          of attempts; a Retry-After header is honoured when present.
+      - id: SCI-P2-03
+        statement: A dead or slow upstream fails fast and legibly.
+        acceptance: >
+          non-retryable statuses (400/404) and exhausted retries return a
+          structured error naming the source, never a raw traceback or a hang.
+      - id: SCI-P2-04
+        statement: Literature results cannot flood the model's context.
+        acceptance: >
+          result payloads are bounded — abstracts truncated, result counts
+          capped — so a broad query costs predictable tokens.
+
+      # — sources —
+      - id: SCI-P2-10
+        statement: Works can be searched and retrieved from OpenAlex.
+        acceptance: >
+          a keyword search returns id/title/year/authors/venue/citation count,
+          and a single work is retrievable by DOI or OpenAlex id.
+      - id: SCI-P2-11
+        statement: The citation graph is navigable.
+        acceptance: works cited by, and works citing, a given work are both retrievable.
+      - id: SCI-P2-12
+        statement: A DOI resolves to authoritative bibliographic metadata.
+        acceptance: >
+          Crossref lookup by DOI returns title, container, issued date, authors
+          and type; a malformed DOI is rejected before the request is made.
+      - id: SCI-P2-13
+        statement: PubMed can be searched and records fetched.
+        acceptance: >
+          an ESearch query returns PMIDs with a total count, and EFetch returns
+          title/abstract/journal/authors/date for those PMIDs.
+      - id: SCI-P2-14
+        statement: Identifiers convert between the schemes a reader actually holds.
+        acceptance: DOI ↔ PMID ↔ PMCID conversion resolves in both directions where a mapping exists.
+
+      # — sources not yet built —
+      # Listed so the gate reports P2 as incomplete. The phase was scoped in
+      # the plan as six source families; three are done. Shrinking the spec to
+      # match what shipped would make the gate agree with the code instead of
+      # with the plan, which is the one thing it exists to prevent.
+      - id: SCI-P2-15
+        statement: Preprints are searchable on bioRxiv and medRxiv.
+        acceptance: >
+          search by date range and category returns DOI/title/authors, and a
+          preprint's published journal version is resolvable when one exists.
+      - id: SCI-P2-16
+        statement: Open-access full text is retrievable, not just abstracts.
+        acceptance: >
+          Europe PMC full text is fetched by DOI or PMCID and returned in
+          bounded sections rather than as one unbounded blob.
+      - id: SCI-P2-17
+        statement: arXiv preprints are searchable by topic and author.
+        acceptance: the Atom feed is parsed to id/title/authors/summary/category/updated.
+
+      # — agent surface —
+      - id: SCI-P2-20
+        statement: The literature tools are reachable from a session.
+        acceptance: >
+          the tools register in a `literature` toolset, appear in the schema when
+          enabled, and are absent when it is not.
