@@ -227,6 +227,18 @@ TOOLSETS = {
         "includes": []
     },
 
+    # Opt-in, unlike the science layer above: every call here reaches the
+    # public internet, so a session asks for it rather than getting it by
+    # default. Set OPENCODON_SCHOLARLY_MAILTO to enter the polite rate-limit
+    # pools that OpenAlex, Crossref and NCBI operate.
+    "literature": {
+        "description": "Scholarly search, DOI resolution and citation graph (OpenAlex, Crossref, PubMed)",
+        "tools": ["literature_search", "literature_work", "literature_citations",
+                  "literature_doi", "pubmed_search", "pubmed_fetch",
+                  "literature_convert_ids"],
+        "includes": []
+    },
+
     "project": {
         "description": "Desktop Projects — create/switch named workspaces (GUI sessions only)",
         "tools": ["project_list", "project_create", "project_switch"],
