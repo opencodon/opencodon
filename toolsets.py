@@ -235,7 +235,9 @@ TOOLSETS = {
         "description": "Scholarly search, DOI resolution and citation graph (OpenAlex, Crossref, PubMed)",
         "tools": ["literature_search", "literature_work", "literature_citations",
                   "literature_doi", "pubmed_search", "pubmed_fetch",
-                  "literature_convert_ids"],
+                  "literature_convert_ids", "preprint_search", "preprint_get",
+                  "preprint_published_versions", "arxiv_search",
+                  "fulltext_search", "fulltext_get"],
         "includes": []
     },
 

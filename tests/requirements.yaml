@@ -60,7 +60,7 @@ phases:
 
   P2:
     title: Literature and evidence layer
-    status: in-progress
+    status: complete
     requirements:
       # — shared transport —
       - id: SCI-P2-01

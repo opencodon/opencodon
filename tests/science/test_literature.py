@@ -15,7 +15,7 @@ import json
 import httpx
 import pytest
 
-from science.literature import crossref, openalex, pubmed
+from science.literature import arxiv, biorxiv, crossref, europepmc, openalex, pubmed
 from science.literature.client import (
     MAX_RESULTS,
     ScholarlyClient,
@@ -545,3 +545,347 @@ def test_live_pubmed_round_trip():
     assert found["total"] > 0
     fetched = pubmed.fetch(found["pmids"])
     assert fetched["returned"] == len(found["pmids"])
+
+
+# ── SCI-P2-15 bioRxiv / medRxiv ─────────────────────────────────────
+
+
+PREPRINT = {
+    "title": "KCNQ2/3 regulates vestibular afferents",
+    "authors": "Sinha, A. K.; Lee, C.; Holt, J. C.",
+    "doi": "10.1101/2023.12.30.573731",
+    "date": "2024-01-01",
+    "version": "1",
+    "type": "new results",
+    "license": "cc_no",
+    "category": "neuroscience",
+    "abstract": "Efferent modulation of vestibular afferents.",
+    "published": "NA",
+    "server": "biorxiv",
+}
+
+
+@pytest.mark.requirement("SCI-P2-15")
+def test_preprint_window_shapes_records():
+    transport = RecordingTransport(
+        json_response({
+            "messages": [{"status": "ok", "total": "220", "count": 30}],
+            "collection": [PREPRINT],
+        })
+    )
+    result = biorxiv.search_preprints("2024-01-01", "2024-01-02", transport=transport)
+
+    assert result["window_total"] == 220
+    [item] = result["results"]
+    assert item["doi"] == "10.1101/2023.12.30.573731"
+    assert item["category"] == "neuroscience"
+    # Semicolon-delimited upstream; a list is what a caller can use.
+    assert item["authors"] == ["Sinha, A. K.", "Lee, C.", "Holt, J. C."]
+    # "NA" means not yet published — normalised away rather than passed on.
+    assert item["published_doi"] is None
+
+
+@pytest.mark.requirement("SCI-P2-15")
+def test_category_filter_reports_that_it_narrowed():
+    transport = RecordingTransport(
+        json_response({
+            "messages": [{"status": "ok", "total": "220"}],
+            "collection": [PREPRINT, {**PREPRINT, "category": "genomics"}],
+        })
+    )
+    result = biorxiv.search_preprints(
+        "2024-01-01", "2024-01-02", category="neuroscience", transport=transport
+    )
+
+    assert result["returned"] == 1
+    # window_total describes the window, filtered_from what we actually saw —
+    # conflating them would make the filter look lossless when it is not.
+    assert result["window_total"] == 220
+    assert result["filtered_from"] == 2
+
+
+@pytest.mark.requirement("SCI-P2-15")
+def test_preprint_lookup_returns_the_latest_revision():
+    transport = RecordingTransport(
+        json_response({"collection": [
+            {**PREPRINT, "version": "1"},
+            {**PREPRINT, "version": "2", "published": "10.1038/s41586-024-00001"},
+        ]})
+    )
+    result = biorxiv.get_preprint("10.1101/2023.12.30.573731", transport=transport)
+
+    assert result["version"] == "2"
+    assert result["published_doi"] == "10.1038/s41586-024-00001"
+
+
+@pytest.mark.requirement("SCI-P2-15")
+def test_missing_preprint_and_bad_server_are_errors():
+    transport = RecordingTransport(json_response({"collection": []}))
+    with pytest.raises(ScholarlyError) as caught:
+        biorxiv.get_preprint("10.1101/nope", transport=transport)
+    assert caught.value.status == 404
+
+    with pytest.raises(ScholarlyError):
+        biorxiv.search_preprints("2024-01-01", "2024-01-02", server="arxiv")
+    with pytest.raises(ScholarlyError):
+        biorxiv.search_preprints("", "2024-01-02")
+
+
+@pytest.mark.requirement("SCI-P2-15")
+def test_published_versions_link_preprint_to_journal():
+    transport = RecordingTransport(
+        json_response({
+            "messages": [{"status": "ok", "total": "276"}],
+            "collection": [{
+                "preprint_doi": "10.1101/2022.09.11.507474",
+                "published_doi": "10.1038/s41564-023-01548-y",
+                "published_journal": "Nature Microbiology",
+                "preprint_title": "Integron cassette dissemination",
+                "preprint_authors": "Loot, C.; Millot, G.",
+                "preprint_date": "2022-09-12",
+                "published_date": "2023-12-01",
+            }],
+        })
+    )
+    result = biorxiv.published_versions("2024-01-01", "2024-01-05", transport=transport)
+
+    [item] = result["results"]
+    assert item["published_journal"] == "Nature Microbiology"
+    assert item["published_doi"] == "10.1038/s41564-023-01548-y"
+
+
+# ── SCI-P2-17 arXiv ─────────────────────────────────────────────────
+
+
+ARXIV_ATOM = """<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom"
+      xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <opensearch:totalResults>109</opensearch:totalResults>
+  <entry>
+    <id>http://arxiv.org/abs/2202.07171v1</id>
+    <updated>2022-02-15T03:47:26Z</updated>
+    <published>2022-02-14T01:00:00Z</published>
+    <title>Genomic background of CRISPR-Cas genomes</title>
+    <summary>CRISPR-Cas systems are an adaptive immunity.</summary>
+    <author><name>Ada Lovelace</name></author>
+    <author><name>Alan Turing</name></author>
+    <arxiv:primary_category term="q-bio.GN"/>
+    <category term="q-bio.GN"/>
+    <category term="cs.LG"/>
+    <arxiv:comment>12 pages, 3 figures</arxiv:comment>
+    <link href="https://arxiv.org/abs/2202.07171v1" rel="alternate"/>
+    <link href="https://arxiv.org/pdf/2202.07171v1" rel="related" title="pdf"/>
+  </entry>
+</feed>
+"""
+
+
+@pytest.mark.requirement("SCI-P2-17")
+def test_arxiv_atom_is_parsed_to_fields():
+    transport = RecordingTransport((200, ARXIV_ATOM, {}))
+    result = arxiv.search("crispr", transport=transport)
+
+    assert result["total"] == 109
+    [paper] = result["results"]
+    assert paper["arxiv_id"] == "2202.07171v1"
+    assert paper["title"] == "Genomic background of CRISPR-Cas genomes"
+    assert paper["authors"] == ["Ada Lovelace", "Alan Turing"]
+    assert paper["primary_category"] == "q-bio.GN"
+    assert paper["categories"] == ["q-bio.GN", "cs.LG"]
+    assert paper["updated"] == "2022-02-15T03:47:26Z"
+    assert paper["pdf_url"].endswith("/pdf/2202.07171v1")
+    assert "adaptive immunity" in paper["summary"]
+
+
+@pytest.mark.requirement("SCI-P2-17")
+def test_bare_phrase_is_qualified_but_field_syntax_is_not():
+    transport = RecordingTransport((200, ARXIV_ATOM, {}))
+
+    arxiv.search("crispr", transport=transport)
+    assert transport.requests[0].url.params["search_query"] == "all:crispr"
+
+    arxiv.search("au:hinton AND cat:cs.LG", transport=transport)
+    assert transport.requests[1].url.params["search_query"] == "au:hinton AND cat:cs.LG"
+
+
+@pytest.mark.requirement("SCI-P2-17")
+def test_arxiv_rejects_bad_input():
+    with pytest.raises(ScholarlyError):
+        arxiv.search("")
+    with pytest.raises(ScholarlyError):
+        arxiv.search("crispr", sort_by="citations")
+    with pytest.raises(ScholarlyError):
+        arxiv.get_papers([])
+
+    transport = RecordingTransport((200, "<not-atom", {}))
+    with pytest.raises(ScholarlyError) as caught:
+        arxiv.search("crispr", transport=transport)
+    assert "unparseable" in str(caught.value)
+
+
+# ── SCI-P2-16 Europe PMC full text ──────────────────────────────────
+
+
+PMC_SEARCH = {
+    "hitCount": 1,
+    "resultList": {"result": [{
+        "id": "23903748", "source": "MED", "pmid": "23903748",
+        "pmcid": "PMC4221854", "doi": "10.1038/nature12373",
+        "title": "Nanometre-scale thermometry in a living cell.",
+        "journalInfo": {"journal": {"title": "Nature"}},
+        "pubYear": "2013", "citedByCount": 500, "isOpenAccess": "Y",
+        "fullTextIdList": {"fullTextId": ["PMC4221854"]},
+        "authorList": {"author": [{"fullName": "Kucsko G"}]},
+        "abstractText": "We demonstrate thermometry.",
+    }]},
+}
+
+JATS = """<article>
+  <front><article-meta>
+    <title-group><article-title>Nanometre-scale thermometry</article-title></title-group>
+    <abstract><p>We demonstrate thermometry.</p></abstract>
+  </article-meta></front>
+  <body>
+    <sec><title>Introduction</title><p>Temperature matters.</p></sec>
+    <sec><title>Methods</title><p>We used nanodiamonds.</p><p>And lasers.</p></sec>
+    <sec><title>Results</title><p>It worked well.</p></sec>
+  </body>
+</article>
+"""
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_fulltext_is_returned_as_sections():
+    transport = RecordingTransport((200, JATS, {}))
+    result = europepmc.full_text("PMC4221854", transport=transport)
+
+    assert result["pmcid"] == "PMC4221854"
+    assert result["title"] == "Nanometre-scale thermometry"
+    titles = [section["title"] for section in result["sections"]]
+    assert titles == ["Introduction", "Methods", "Results"]
+    # Paragraphs within a section are joined, not flattened into one line.
+    methods = result["sections"][1]
+    assert "nanodiamonds" in methods["text"] and "lasers" in methods["text"]
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_a_single_section_can_be_requested():
+    transport = RecordingTransport((200, JATS, {}))
+    result = europepmc.full_text("PMC4221854", section="methods", transport=transport)
+
+    assert result["returned_sections"] == 1
+    assert result["sections"][0]["title"] == "Methods"
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_unknown_section_lists_what_is_available():
+    transport = RecordingTransport((200, JATS, {}))
+    with pytest.raises(ScholarlyError) as caught:
+        europepmc.full_text("PMC4221854", section="discussion", transport=transport)
+
+    message = str(caught.value)
+    assert "Introduction" in message and "Methods" in message
+
+
+@pytest.mark.requirement("SCI-P2-16", "SCI-P2-04")
+def test_sections_beyond_the_cap_are_named_not_dropped():
+    many = "<article><body>" + "".join(
+        f"<sec><title>S{i}</title><p>body {i}</p></sec>" for i in range(20)
+    ) + "</body></article>"
+    transport = RecordingTransport((200, many, {}))
+    result = europepmc.full_text("PMC1", max_sections=3, transport=transport)
+
+    assert result["returned_sections"] == 3
+    # The rest are still discoverable — that is what makes the cap safe.
+    assert result["omitted_sections"][:2] == ["S3", "S4"]
+    assert len(result["omitted_sections"]) == 17
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_long_sections_are_clipped():
+    long_body = "<article><body><sec><title>S</title><p>" + ("word " * 5000) + "</p></sec></body></article>"
+    transport = RecordingTransport((200, long_body, {}))
+    result = europepmc.full_text("PMC1", transport=transport)
+
+    section = result["sections"][0]
+    assert "more chars" in section["text"]
+    # The true length is reported even though the text is cut.
+    assert section["chars"] > len(section["text"])
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_doi_is_resolved_to_a_pmcid_before_fetching():
+    transport = RecordingTransport(json_response(PMC_SEARCH), (200, JATS, {}))
+    result = europepmc.full_text("10.1038/nature12373", transport=transport)
+
+    assert result["pmcid"] == "PMC4221854"
+    assert transport.requests[0].url.params["query"] == "DOI:10.1038/nature12373"
+    assert "PMC4221854/fullTextXML" in str(transport.requests[1].url)
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_record_without_open_access_fulltext_says_so():
+    transport = RecordingTransport(
+        json_response({"hitCount": 1, "resultList": {"result": [
+            {"id": "1", "doi": "10.1000/paywalled", "title": "Behind a wall"}
+        ]}})
+    )
+    with pytest.raises(ScholarlyError) as caught:
+        europepmc.full_text("10.1000/paywalled", transport=transport)
+
+    assert "no open-access full text" in str(caught.value)
+    assert caught.value.status == 404
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_pmcid_without_deposited_fulltext_is_explained():
+    """Indexed in PMC is not the same as full text being open access."""
+    transport = RecordingTransport((404, "Not Found", {}))
+    with pytest.raises(ScholarlyError) as caught:
+        europepmc.full_text("PMC4221854", transport=transport)
+
+    message = str(caught.value)
+    assert "not open access" in message
+    assert "only the abstract" in message
+    assert caught.value.status == 404
+
+
+@pytest.mark.requirement("SCI-P2-16")
+def test_fulltext_search_flags_retrievability():
+    transport = RecordingTransport(json_response(PMC_SEARCH))
+    result = europepmc.search("thermometry", transport=transport)
+
+    [item] = result["results"]
+    assert item["has_full_text"] is True
+    assert item["is_open_access"] is True
+    assert item["journal"] == "Nature"
+
+
+# ── live services (second wave) ─────────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P2-15")
+def test_live_biorxiv_window():
+    result = biorxiv.search_preprints("2024-01-01", "2024-01-02", limit=3)
+    assert result["returned"] >= 1
+    assert all(item["doi"].startswith("10.1101/") for item in result["results"])
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P2-17")
+def test_live_arxiv_search():
+    result = arxiv.search("cat:q-bio.GN", limit=3)
+    assert result["returned"] >= 1
+    assert all(paper["arxiv_id"] for paper in result["results"])
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P2-16")
+def test_live_europepmc_fulltext():
+    # PMC3703847 has full text deposited; PMC4221854 is indexed but abstract
+    # only, which is the case test_pmcid_without_deposited_fulltext covers.
+    result = europepmc.full_text("PMC3703847", max_sections=2)
+    assert result["returned_sections"] >= 1
+    assert result["sections"][0]["text"]

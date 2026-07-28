@@ -37,6 +37,24 @@ def _pubmed():
     return pubmed
 
 
+def _biorxiv():
+    from science.literature import biorxiv
+
+    return biorxiv
+
+
+def _arxiv():
+    from science.literature import arxiv
+
+    return arxiv
+
+
+def _europepmc():
+    from science.literature import europepmc
+
+    return europepmc
+
+
 def _call(fn, **kwargs) -> str:
     """Run a literature call, rendering both outcomes as JSON for the model."""
     from science.literature.client import ScholarlyError
@@ -259,5 +277,209 @@ registry.register(
     handler=lambda args, **kw: _call(
         _pubmed().convert_ids,
         ids=args.get("ids") or [],
+    ),
+)
+
+
+# ── preprints ───────────────────────────────────────────────────────
+
+
+registry.register(
+    name="preprint_search",
+    toolset="literature",
+    schema={
+        "name": "preprint_search",
+        "description": (
+            "List bioRxiv or medRxiv preprints posted in a date window. NOTE: "
+            "this API has no keyword search — it filters by date and category "
+            "only, so use literature_search or pubmed_search to find a topic "
+            "and this to survey what is new in a field."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_from": {"type": "string", "description": "Window start, YYYY-MM-DD."},
+                "date_to": {"type": "string", "description": "Window end, YYYY-MM-DD."},
+                "server": {
+                    "type": "string",
+                    "enum": ["biorxiv", "medrxiv"],
+                    "description": "Preprint server (default biorxiv).",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Subject category, e.g. 'neuroscience' (applied client-side).",
+                },
+                "limit": _LIMIT_SCHEMA,
+            },
+            "required": ["date_from", "date_to"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _biorxiv().search_preprints,
+        date_from=args.get("date_from", ""),
+        date_to=args.get("date_to", ""),
+        server=args.get("server", "biorxiv"),
+        category=args.get("category"),
+        limit=args.get("limit"),
+    ),
+)
+
+
+registry.register(
+    name="preprint_get",
+    toolset="literature",
+    schema={
+        "name": "preprint_get",
+        "description": (
+            "Fetch one bioRxiv/medRxiv preprint by DOI, including whether it "
+            "was later published in a peer-reviewed journal."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "doi": {"type": "string", "description": "Preprint DOI (10.1101/...)."},
+                "server": {
+                    "type": "string",
+                    "enum": ["biorxiv", "medrxiv"],
+                    "description": "Preprint server (default biorxiv).",
+                },
+            },
+            "required": ["doi"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _biorxiv().get_preprint,
+        doi=args.get("doi", ""),
+        server=args.get("server", "biorxiv"),
+    ),
+)
+
+
+registry.register(
+    name="preprint_published_versions",
+    toolset="literature",
+    schema={
+        "name": "preprint_published_versions",
+        "description": (
+            "Preprints from a date window that subsequently appeared in a "
+            "journal, with the published DOI and journal name. Use to gauge "
+            "how much of a field's preprint output has cleared peer review."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_from": {"type": "string", "description": "Window start, YYYY-MM-DD."},
+                "date_to": {"type": "string", "description": "Window end, YYYY-MM-DD."},
+                "server": {
+                    "type": "string",
+                    "enum": ["biorxiv", "medrxiv"],
+                    "description": "Preprint server (default biorxiv).",
+                },
+                "limit": _LIMIT_SCHEMA,
+            },
+            "required": ["date_from", "date_to"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _biorxiv().published_versions,
+        date_from=args.get("date_from", ""),
+        date_to=args.get("date_to", ""),
+        server=args.get("server", "biorxiv"),
+        limit=args.get("limit"),
+    ),
+)
+
+
+registry.register(
+    name="arxiv_search",
+    toolset="literature",
+    schema={
+        "name": "arxiv_search",
+        "description": (
+            "Search arXiv — physics, maths, CS, quantitative biology, stats. "
+            "Supports arXiv field syntax: 'au:hinton', 'cat:q-bio.GN', "
+            "'ti:transformer AND cat:cs.LG'. A bare phrase searches all fields."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "arXiv query."},
+                "limit": _LIMIT_SCHEMA,
+                "sort_by": {
+                    "type": "string",
+                    "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
+                    "description": "Sort order (default relevance).",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _arxiv().search,
+        query=args.get("query", ""),
+        limit=args.get("limit"),
+        sort_by=args.get("sort_by", "relevance"),
+    ),
+)
+
+
+# ── open-access full text ───────────────────────────────────────────
+
+
+registry.register(
+    name="fulltext_search",
+    toolset="literature",
+    schema={
+        "name": "fulltext_search",
+        "description": (
+            "Search Europe PMC, which indexes full text rather than just "
+            "abstracts. Supports its syntax: 'DOI:10.1038/...', "
+            "'AUTH:\"Doudna J\"', 'OPEN_ACCESS:Y'. Results flag which records "
+            "have retrievable full text."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Europe PMC query."},
+                "limit": _LIMIT_SCHEMA,
+            },
+            "required": ["query"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _europepmc().search,
+        query=args.get("query", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+
+registry.register(
+    name="fulltext_get",
+    toolset="literature",
+    schema={
+        "name": "fulltext_get",
+        "description": (
+            "Retrieve open-access full text by DOI, PMID or PMCID, returned as "
+            "sections rather than one blob. Pass `section` to read just one "
+            "(e.g. 'methods') — sections not returned are named so you can ask "
+            "for them without fetching the whole paper."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "identifier": {"type": "string", "description": "DOI, PMID or PMCID."},
+                "section": {
+                    "type": "string",
+                    "description": "Optional section title to return alone, e.g. 'methods'.",
+                },
+            },
+            "required": ["identifier"],
+        },
+    },
+    handler=lambda args, **kw: _call(
+        _europepmc().full_text,
+        identifier=args.get("identifier", ""),
+        section=args.get("section"),
     ),
 )
