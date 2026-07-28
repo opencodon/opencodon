@@ -173,6 +173,89 @@ phases:
       # work would be asserting something nobody checked, which is the failure
       # this registry exists to prevent.
 
+  P5:
+    title: Bio-data services
+    status: in-progress
+    requirements:
+      # — genes and proteins —
+      - id: SCI-P5-01
+        statement: A gene symbol resolves to coordinates and a biotype.
+        acceptance: Ensembl lookup returns gene id, assembly, chromosome, start/end and strand.
+      - id: SCI-P5-02
+        statement: An identifier resolves across naming schemes.
+        acceptance: >
+          a symbol or alias returns Entrez, Ensembl and UniProt ids together —
+          the step most bio questions start with, since symbols are ambiguous
+          across species and get renamed.
+      - id: SCI-P5-03
+        statement: Sequence is retrievable without flooding the caller.
+        acceptance: >
+          a bounded preview is returned with the true length and a truncation
+          flag, so a short sequence is distinguishable from a clipped one.
+      - id: SCI-P5-04
+        statement: A protein record is retrievable from UniProt.
+        acceptance: accession lookup returns name, organism, length and function text.
+
+      # — variants —
+      - id: SCI-P5-10
+        statement: A variant's population frequency is retrievable.
+        acceptance: >
+          gnomAD returns overall and per-ancestry allele frequencies, since a
+          variant rare overall can be common in one population.
+      - id: SCI-P5-11
+        statement: A gene's variants can be listed and filtered by consequence.
+        acceptance: >
+          the pre-filter total is reported alongside the returned page, so
+          truncation is visible rather than implied.
+      - id: SCI-P5-12
+        statement: Clinical assertions never arrive without their review status.
+        acceptance: >
+          every ClinVar record carries review_status beside the classification —
+          "pathogenic, one submitter, no criteria" and "pathogenic, expert
+          panel" are different claims and must not read alike.
+      - id: SCI-P5-13
+        statement: A GraphQL-level failure is reported, not swallowed.
+        acceptance: >
+          gnomAD returns errors in the body with HTTP 200; those surface as a
+          named ApiError rather than an empty result.
+
+      # — chemistry —
+      - id: SCI-P5-20
+        statement: A compound resolves to structure and properties.
+        acceptance: >
+          PubChem lookup returns formula, SMILES, InChIKey and physicochemical
+          properties, tolerating the CanonicalSMILES/ConnectivitySMILES rename.
+      - id: SCI-P5-21
+        statement: Chemical similarity search works from a SMILES query.
+        acceptance: a Tanimoto-threshold search returns ranked compounds with properties.
+      - id: SCI-P5-22
+        statement: Drugs and their measured activities are retrievable.
+        acceptance: >
+          ChEMBL search returns clinical phase and safety flags, and activities
+          carry target, value, units and the source document id.
+
+      # — surface —
+      - id: SCI-P5-30
+        statement: The bio-data tools are reachable from a session.
+        acceptance: they register in a `biodata` toolset matching the declared tool list.
+      - id: SCI-P5-31
+        statement: A failed lookup is an answer, not a crash.
+        acceptance: ApiError becomes a structured {error, source} payload at the tool boundary.
+
+      # — sources not yet built —
+      # The plan scoped P5 as the full donor set. This tranche covers genes,
+      # variants and chemistry; the rest are listed so the gate keeps P5 open
+      # rather than agreeing with the code.
+      - id: SCI-P5-40
+        statement: Expression and regulation data are available.
+        acceptance: GTEx tissue expression and eQTLs; ENCODE experiments; JASPAR motifs.
+      - id: SCI-P5-41
+        statement: Structures and interactions are available.
+        acceptance: PDB entries, AlphaFold DB models, InterPro domains, STRING networks.
+      - id: SCI-P5-42
+        statement: Clinical trials and drug regulatory records are available.
+        acceptance: ClinicalTrials.gov search and openFDA Drugs@FDA / SPL labels.
+
   P2:
     title: Literature and evidence layer
     status: complete

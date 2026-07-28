@@ -241,6 +241,18 @@ TOOLSETS = {
         "includes": []
     },
 
+    # Opt-in for the same reason as `literature`: every call reaches the
+    # public internet. Set OPENCODON_SCHOLARLY_MAILTO (and optionally
+    # NCBI_API_KEY) to enter the polite rate-limit pools.
+    "biodata": {
+        "description": "Genes, variants and chemistry from the public biology databases (Ensembl, gnomAD, ClinVar, PubChem, ChEMBL)",
+        "tools": ["gene_lookup", "gene_resolve", "gene_sequence", "gene_homologs",
+                  "protein_lookup", "variant_frequency", "gene_variants",
+                  "clinvar_search", "clinvar_records", "compound_lookup",
+                  "compound_similarity", "drug_search", "drug_bioactivities"],
+        "includes": []
+    },
+
     "project": {
         "description": "Desktop Projects — create/switch named workspaces (GUI sessions only)",
         "tools": ["project_list", "project_create", "project_switch"],
