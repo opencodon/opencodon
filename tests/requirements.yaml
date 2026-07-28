@@ -134,6 +134,45 @@ phases:
         statement: A skill that ships no helpers fails clearly rather than silently.
         acceptance: load_skill_helpers on an unknown or helper-less skill raises a named error.
 
+  P4:
+    title: Biomodel skills
+    status: complete
+    requirements:
+      - id: SCI-P4-01
+        statement: Every biomodel skill attributes the weights it depends on.
+        acceptance: >
+          each skill tagged `biomodels` carries metadata.third_party naming the
+          weights, their licence and a terms URL — these are other people's
+          models and the licence is the whole basis for using them.
+      - id: SCI-P4-02
+        statement: A skill states whether it needs a GPU.
+        acceptance: >
+          skills that require an accelerator declare `requirements: [gpu]`; the
+          MPNN family, which the upstream documents as CPU-capable, does not.
+      - id: SCI-P4-03
+        statement: Models with unresolved licensing are not shipped.
+        acceptance: >
+          borzoi (no terms URL) and scgpt (no declared licence) are absent from
+          skills/science until their upstream terms are established.
+      - id: SCI-P4-04
+        statement: A GPU-only skill can reach a GPU.
+        acceptance: >
+          the provisioner registry can produce a GPU-backed target, so a skill
+          declaring `requirements: [gpu]` has somewhere to run.
+      - id: SCI-P4-10
+        statement: A CPU-runnable model actually runs and produces real output.
+        acceptance: >
+          ProteinMPNN executes through run_code on this machine, emits designed
+          sequences with scores, and the result is captured as a lineage-tracked
+          artifact.
+
+      # NOT claimed: the GPU models (alphafold2, boltz, chai1, openfold3,
+      # esmfold2, evo2, diffdock, fair-esm2, scvi-tools) are imported and
+      # attributed but have NOT been run against their real weights. Each pulls
+      # a multi-GB image and needs a GPU sandbox per validation. Asserting they
+      # work would be asserting something nobody checked, which is the failure
+      # this registry exists to prevent.
+
   P2:
     title: Literature and evidence layer
     status: complete
