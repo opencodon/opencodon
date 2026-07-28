@@ -28,6 +28,7 @@ import json
 import logging
 import platform
 import queue
+import re
 import shutil
 import sys
 import threading
@@ -36,6 +37,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+from tools.ansi_strip import strip_ansi
 
 logger = logging.getLogger(__name__)
 
@@ -465,6 +468,56 @@ def _bounded(text: str) -> str:
     if len(text) <= MAX_STREAM_CHARS:
         return text
     return text[:MAX_STREAM_CHARS] + "\n…[stream truncated]"
+
+
+# Frames that belong to the *submitted cell* rather than to library code.
+# IPython has named cells three ways across versions, so all three are
+# matched; anything else in the traceback is a library frame and ignored.
+_CELL_FRAME_RE = re.compile(
+    r"Cell In\[\d+\],\s*line\s+(\d+)"                                  # IPython 8+
+    r"|File\s+\"?<ipython-input-[^>\"]*>\"?,\s*line\s+(\d+)"           # legacy
+    r"|File\s+\"?[^\"\n]*ipykernel_\d+[/\\][^\"\n]*\.py\"?,\s*line\s+(\d+)"  # temp-file cells
+)
+
+
+def error_lineno_from_traceback(traceback) -> Optional[int]:
+    """1-based line number *within the submitted cell* of a failure.
+
+    The Jupyter ``error`` message carries the traceback as pre-rendered,
+    usually ANSI-coloured frames rather than structured data, so the line
+    number has to be read back out of the text. Only cell frames are
+    considered — a ``ValueError`` raised three frames deep inside pandas
+    should report where *the cell* entered pandas, not a line in pandas.
+
+    Returns the last cell frame's line (the innermost point still inside the
+    cell), or ``None`` when the traceback names no cell frame — which is the
+    honest answer for a kernel death or an abort, where no cell line failed.
+    """
+    if not traceback:
+        return None
+    lineno = None
+    for frame in traceback:
+        for match in _CELL_FRAME_RE.finditer(strip_ansi(str(frame))):
+            captured = next((g for g in match.groups() if g), None)
+            if captured is not None:
+                try:
+                    lineno = int(captured)
+                except ValueError:
+                    continue
+    return lineno
+
+
+def traceback_text(traceback) -> Optional[str]:
+    """The traceback as stripped, bounded plain text for ``execution_log``.
+
+    ANSI is removed because these frames are persisted and may later be
+    replayed into a terminal UI; the same cap as stdout/stderr applies so a
+    pathological recursion traceback cannot bloat the row.
+    """
+    if not traceback:
+        return None
+    joined = "\n".join(strip_ansi(str(frame)) for frame in traceback)
+    return _bounded(joined) or None
 
 
 # ── Session kernel manager ──────────────────────────────────────────

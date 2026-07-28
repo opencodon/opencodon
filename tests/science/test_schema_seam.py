@@ -185,13 +185,21 @@ class TestScienceSchema:
         for table in SCIENCE_TABLES:
             assert table in names
 
+    @pytest.mark.requirement("SCI-P0-08")
     def test_science_columns_are_reconciled(self, tmp_path):
         # A database created before a science column existed gets it ADDed
         # on next open — same declarative contract as the core schema.
         path = tmp_path / "state.db"
         db = SessionDB(path)
+        db.create_session("s1", source="cli")
+        store = ScienceStore(db)
+        cell_id = store.record_cell("s1", "print(1)", "python", "k1")
         with db._lock:
             db._conn.execute("ALTER TABLE execution_log DROP COLUMN env_snapshot")
+            # has_magics is NOT NULL DEFAULT 0 — the riskier reconciler case,
+            # since the ADD has to carry the default forward onto rows that
+            # predate the column rather than leaving them NULL.
+            db._conn.execute("ALTER TABLE execution_log DROP COLUMN has_magics")
             db._conn.commit()
         db.close()
         db = SessionDB(path)
@@ -204,6 +212,9 @@ class TestScienceSchema:
                     ).fetchall()
                 }
             assert "env_snapshot" in cols
+            assert "has_magics" in cols
+            # The pre-existing row is readable and defaulted, not NULL.
+            assert ScienceStore(db).get_cell(cell_id)["has_magics"] == 0
         finally:
             db.close()
 

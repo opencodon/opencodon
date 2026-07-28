@@ -55,6 +55,36 @@ class TestRealPythonKernel:
         report = reproduce(artifact["version_id"], runtime=real_runtime)
         assert report["claim"] == "reproduced"
 
+    @pytest.mark.requirement("SCI-P0-01", "SCI-P0-02")
+    def test_failure_location_from_a_real_traceback(self, real_runtime, db):
+        """The line number is read back out of IPython's own rendering.
+
+        The doubles in conftest emit a traceback in the kernel's *shape*; only
+        this test proves the parser survives what ipykernel actually sends —
+        current frame format, ANSI colouring and all.
+        """
+        db.create_session("s-tb", source="cli")
+        result = real_runtime.run_cell(
+            "s-tb",
+            "import json\n"
+            "def parse(blob):\n"
+            "    return json.loads(blob)\n"
+            "\n"
+            "parse('{not json')\n",
+        )
+
+        assert result["status"] == "error"
+        row = real_runtime.store.get_cell(result["cell_id"])
+        # Three frames are in play: the call at line 5, the cell-defined
+        # helper at line 3, and the raise itself deep inside json/decoder.py.
+        # The innermost *cell* line wins — line 3 names the statement that
+        # actually broke, which is what a reader needs, while the library
+        # frame is correctly ignored as not being the cell's code.
+        assert row["error_lineno"] == 3
+        assert "JSONDecodeError" in row["traceback"]
+        assert "decoder.py" in row["traceback"], "library frames still recorded"
+        assert "\x1b" not in row["traceback"]
+
     def test_timeout_taints_and_restarts_kernel(self, real_runtime, db):
         db.create_session("s2", source="cli")
         real_runtime.run_cell("s2", "x = 'survives?'")

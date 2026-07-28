@@ -87,23 +87,30 @@ def export_rocrate(root_session_id: str, out_dir: Path, *, runtime=None) -> Path
             for vid, rel in version_entity.items()
             if (store.get_version(vid) or {}).get("producing_cell_id") == cell_id
         ]
-        graph.append(
-            {
-                "@id": f"#cell-{cell_id}",
-                "@type": "CreateAction",
-                "name": f"cell {cell['cell_index']} ({cell['language']})",
-                "instrument": {"@id": "#opencodon-science"},
-                "description": cell["source"],
-                "actionStatus": (
-                    "CompletedActionStatus"
-                    if cell["exit_status"] == "ok"
-                    else "FailedActionStatus"
-                ),
-                "startTime": _iso(cell["created_at"]),
-                "object": _dedupe(inputs),
-                "result": outputs,
-            }
-        )
+        action = {
+            "@id": f"#cell-{cell_id}",
+            "@type": "CreateAction",
+            "name": f"cell {cell['cell_index']} ({cell['language']})",
+            "instrument": {"@id": "#opencodon-science"},
+            "description": cell["source"],
+            "actionStatus": (
+                "CompletedActionStatus"
+                if cell["exit_status"] == "ok"
+                else "FailedActionStatus"
+            ),
+            "startTime": _iso(cell["created_at"]),
+            "object": _dedupe(inputs),
+            "result": outputs,
+        }
+        # The crate is meant to be read by other tools, and a consumer's
+        # natural move is to run `description` as a script. Say so when that
+        # will not work, rather than shipping source that fails on them.
+        if cell.get("has_magics"):
+            action["disambiguatingDescription"] = (
+                f"Source uses IPython magics or shell escapes; it is not plain "
+                f"{cell['language']} and requires an IPython kernel to replay."
+            )
+        graph.append(action)
 
     metadata = {
         "@context": ROCRATE_CONTEXT,

@@ -85,6 +85,9 @@ class ScienceStore:
         env_name: str = None,
         env_snapshot: str = None,
         error_lineno: int = None,
+        traceback: str = None,
+        display_count: int = 0,
+        has_magics: int = 0,
         origin: str = "agent",
         user_intervention: str = None,
         files_written: list = None,
@@ -111,9 +114,10 @@ class ScienceStore:
                 """INSERT INTO execution_log (
                        id, session_id, cell_index, kernel_id, kernel_kind,
                        language, env_name, env_snapshot, source, stdout, stderr,
-                       exit_status, error_lineno, origin, user_intervention,
+                       exit_status, error_lineno, traceback, display_count,
+                       has_magics, origin, user_intervention,
                        files_written, files_read, created_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     cell_id,
                     session_id,
@@ -128,6 +132,9 @@ class ScienceStore:
                     stderr,
                     exit_status,
                     error_lineno,
+                    traceback,
+                    display_count,
+                    has_magics,
                     origin,
                     user_intervention,
                     json.dumps(files_written) if files_written else None,
