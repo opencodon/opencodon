@@ -6,7 +6,7 @@
  * click away, never hidden behind a menu.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
@@ -50,12 +50,24 @@ function Section({
   );
 }
 
+/**
+ * How often the trace polls for cells recorded since the last one we hold.
+ *
+ * Polling, not push: the agent writes cells from its own process (CLI, TUI,
+ * cron) while the dashboard is a separate FastAPI process with no channel
+ * back to it. A cursor poll is honest about that and works no matter which
+ * process ran the code. It stops as soon as the frame's session ends.
+ */
+const POLL_INTERVAL_MS = 4000;
+
 export default function FrameDetailPage() {
   const { frameId = "" } = useParams();
   const [frame, setFrame] = useState<FrameDetail | null>(null);
   const [cells, setCells] = useState<CellSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [liveCount, setLiveCount] = useState(0);
+  const cursorRef = useRef<number | null>(null);
   const { setTitle, setEnd } = usePageHeader();
 
   const load = useCallback(() => {
@@ -65,12 +77,45 @@ export default function FrameDetailPage() {
       .then(([detail, trace]) => {
         setFrame(detail);
         setCells(trace.cells);
+        cursorRef.current = trace.cursor;
+        setLiveCount(0);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [frameId]);
 
   useEffect(load, [load]);
+
+  // A frame whose session has ended can never gain cells, so don't poll it.
+  const isLive = frame !== null && !frame.ended_at && !frame.session_missing;
+
+  useEffect(() => {
+    if (!isLive) return;
+    let cancelled = false;
+    const tick = () => {
+      api
+        .getFrameCells(frameId, cursorRef.current)
+        .then((trace) => {
+          if (cancelled || trace.cells.length === 0) return;
+          cursorRef.current = trace.cursor ?? cursorRef.current;
+          setCells((prev) => {
+            const known = new Set(prev.map((c) => c.cell_id));
+            const fresh = trace.cells.filter((c) => !known.has(c.cell_id));
+            if (fresh.length === 0) return prev;
+            setLiveCount((n) => n + fresh.length);
+            return [...prev, ...fresh];
+          });
+        })
+        .catch(() => {
+          /* a dropped poll is not worth surfacing; the next one retries */
+        });
+    };
+    const handle = setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, [frameId, isLive]);
 
   useEffect(() => {
     setTitle(frame?.title || "Frame");
@@ -175,6 +220,21 @@ export default function FrameDetailPage() {
       </Section>
 
       <Section title="Trace" count={cells.length}>
+        {isLive ? (
+          <p className="flex items-center gap-2 text-xs text-text-secondary">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full bg-success motion-safe:animate-pulse"
+              aria-hidden
+            />
+            This frame is still running — new cells appear as they are
+            recorded.
+            {liveCount > 0 ? (
+              <span className="tabular-nums text-text-tertiary">
+                +{liveCount} since you opened it
+              </span>
+            ) : null}
+          </p>
+        ) : null}
         <CellTimeline cells={cells} />
       </Section>
 

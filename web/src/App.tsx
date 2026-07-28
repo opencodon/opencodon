@@ -21,7 +21,6 @@ import {
 import {
   Activity,
   BarChart3,
-  BookOpen,
   Clock,
   Code,
   Cpu,
@@ -39,18 +38,14 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
-  Plug,
   Puzzle,
-  Radio,
   RotateCw,
   Settings,
   Shield,
-  ShieldCheck,
   Sparkles,
   Star,
   Terminal,
   Users,
-  Webhook,
   Wrench,
   X,
   Zap,
@@ -75,6 +70,7 @@ import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
 import ArtifactDetailPage from "@/pages/ArtifactDetailPage";
 import ArtifactsPage from "@/pages/ArtifactsPage";
+import CellDetailPage from "@/pages/CellDetailPage";
 import ConfigPage from "@/pages/ConfigPage";
 import DocsPage from "@/pages/DocsPage";
 import FrameDetailPage from "@/pages/FrameDetailPage";
@@ -94,6 +90,7 @@ import McpPage from "@/pages/McpPage";
 import PairingPage from "@/pages/PairingPage";
 import ChannelsPage from "@/pages/ChannelsPage";
 import WebhooksPage from "@/pages/WebhooksPage";
+import SettingsPage, { SETTINGS_PATHS } from "@/pages/SettingsPage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -142,7 +139,9 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/frames/:frameId": FrameDetailPage,
   "/artifacts": ArtifactsPage,
   "/artifacts/:artifactId": ArtifactDetailPage,
+  "/cells/:cellId": CellDetailPage,
   "/sessions": SessionsPage,
+  "/settings": SettingsPage,
   "/files": FilesPage,
   "/analytics": AnalyticsPage,
   "/models": ModelsPage,
@@ -170,45 +169,40 @@ function ChatRouteSink() {
   return null;
 }
 
+/**
+ * The sidebar: work surfaces only.
+ *
+ * The twelve configuration pages moved behind /settings — they keep their own
+ * routes (deep links, bookmarks, and plugin `override` targets all still
+ * resolve), they just no longer compete with the work for sidebar attention.
+ * `ownedPaths` is how the Settings entry stays lit while you are on one of
+ * them.
+ *
+ * Sessions stays top-level rather than folding into Frames: a frame requires
+ * a science record, so conversations that never ran code would otherwise
+ * disappear from the dashboard entirely.
+ */
 const BUILTIN_NAV_REST: NavItem[] = [
-  { path: "/frames", label: "Frames", icon: FlaskConical },
-  { path: "/artifacts", label: "Artifacts", icon: Package },
+  { path: "/frames", labelKey: "frames", label: "Frames", icon: FlaskConical },
+  {
+    path: "/artifacts",
+    labelKey: "artifacts",
+    label: "Artifacts",
+    icon: Package,
+  },
   {
     path: "/sessions",
     labelKey: "sessions",
     label: "Sessions",
     icon: MessageSquare,
   },
-  { path: "/files", label: "Files", icon: FolderOpen },
-  {
-    path: "/analytics",
-    labelKey: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-  },
-  {
-    path: "/models",
-    labelKey: "models",
-    label: "Models",
-    icon: Cpu,
-  },
-  { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText },
   { path: "/cron", labelKey: "cron", label: "Cron", icon: Clock },
-  { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
-  { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
-  { path: "/mcp", label: "MCP", icon: Plug },
-  { path: "/channels", label: "Channels", icon: Radio },
-  { path: "/webhooks", label: "Webhooks", icon: Webhook },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck },
-  { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
-  { path: "/config", labelKey: "config", label: "Config", icon: Settings },
-  { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
-  { path: "/system", label: "System", icon: Wrench },
   {
-    path: "/docs",
-    labelKey: "documentation",
-    label: "Documentation",
-    icon: BookOpen,
+    path: "/settings",
+    labelKey: "settings",
+    label: "Settings",
+    icon: Settings,
+    ownedPaths: SETTINGS_PATHS,
   },
 ];
 
@@ -817,9 +811,15 @@ function SidebarNavLink({
   tooltipWarmRef,
   t,
 }: SidebarNavLinkProps) {
-  const { path, label, labelKey, icon: Icon } = item;
+  const { path, label, labelKey, icon: Icon, ownedPaths } = item;
   const [hovered, setHovered] = useState(false);
   const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+  const { pathname } = useLocation();
+  // NavLink only knows about its own `to`; an entry that stands in for other
+  // routes (Settings) has to match them itself.
+  const ownsRoute = (ownedPaths ?? []).some(
+    (owned) => pathname === owned || pathname.startsWith(`${owned}/`),
+  );
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
@@ -852,7 +852,7 @@ function SidebarNavLink({
             "font-sans text-display uppercase text-sm tracking-[0.12em]",
             "whitespace-nowrap transition-colors cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
-            isActive
+            isActive || ownsRoute
               ? "text-midground"
               : "text-text-secondary hover:text-midground",
           )
@@ -1312,6 +1312,12 @@ interface NavItem {
   label: string;
   labelKey?: string;
   path: string;
+  /**
+   * Extra routes this entry represents. The Settings hub links to pages that
+   * keep their own top-level paths, so without this the sidebar would go dark
+   * whenever you followed one of those links.
+   */
+  ownedPaths?: string[];
 }
 
 interface SidebarIconWithTooltipProps {

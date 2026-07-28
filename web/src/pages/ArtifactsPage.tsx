@@ -13,24 +13,28 @@ import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Pager } from "@/components/science/Pager";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { api } from "@/lib/api";
 import type { ArtifactSummary } from "@/lib/api";
 import { formatAge, formatBytes } from "@/lib/science-format";
 
+const PAGE_SIZE = 60;
+
 export default function ArtifactsPage() {
   const [artifacts, setArtifacts] = useState<ArtifactSummary[]>([]);
   const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { setEnd } = usePageHeader();
 
-  const load = useCallback((term: string) => {
+  const load = useCallback((term: string, from: number) => {
     setLoading(true);
     setError(null);
     api
-      .getArtifacts({ search: term || undefined })
+      .getArtifacts({ search: term || undefined, limit: PAGE_SIZE, offset: from })
       .then((resp) => {
         setArtifacts(resp.artifacts);
         setTotal(resp.total);
@@ -41,23 +45,23 @@ export default function ArtifactsPage() {
 
   // Debounced so typing doesn't fire a request per keystroke.
   useEffect(() => {
-    const handle = setTimeout(() => load(search), 200);
+    const handle = setTimeout(() => load(search, offset), 200);
     return () => clearTimeout(handle);
-  }, [load, search]);
+  }, [load, offset, search]);
 
   useEffect(() => {
     setEnd(
       <Button
         ghost
         size="sm"
-        onClick={() => load(search)}
+        onClick={() => load(search, offset)}
         aria-label="Refresh artifacts"
       >
         <RefreshCw className="h-4 w-4" aria-hidden />
       </Button>,
     );
     return () => setEnd(null);
-  }, [load, search, setEnd]);
+  }, [load, offset, search, setEnd]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -71,7 +75,10 @@ export default function ArtifactsPage() {
             className="pl-7"
             placeholder="Search artifacts…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setOffset(0);
+            }}
             aria-label="Search artifacts"
           />
         </div>
@@ -134,6 +141,14 @@ export default function ArtifactsPage() {
           ))}
         </ul>
       )}
+
+      <Pager
+        total={total}
+        limit={PAGE_SIZE}
+        offset={offset}
+        onOffsetChange={setOffset}
+        noun="artifacts"
+      />
     </div>
   );
 }

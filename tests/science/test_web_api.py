@@ -98,6 +98,39 @@ class TestFrames:
     def test_detail_404_for_unknown_frame(self, client):
         assert client.get("/api/science/frames/nope").status_code == 404
 
+    def test_pagination_windows_the_index(self, client, science_runtime, db):
+        for i in range(3):
+            db.create_session(f"s{i}", source="cli")
+            science_runtime.run_cell(f"s{i}", "pass")
+        page = client.get(
+            "/api/science/frames", params={"limit": 2, "offset": 0}
+        ).json()
+        assert page["total"] == 3
+        assert len(page["frames"]) == 2
+        rest = client.get(
+            "/api/science/frames", params={"limit": 2, "offset": 2}
+        ).json()
+        assert len(rest["frames"]) == 1
+        seen = {f["frame_id"] for f in page["frames"] + rest["frames"]}
+        assert seen == {"s0", "s1", "s2"}
+
+    def test_frame_survives_session_deletion(self, client, science_runtime, db):
+        db.create_session("gone", source="cli")
+        science_runtime.run_cell("gone", "save_artifact('x', 'kept.txt')")
+        with db._lock:
+            db._conn.execute("DELETE FROM sessions WHERE id = 'gone'")
+            db._conn.commit()
+
+        [row] = client.get("/api/science/frames").json()["frames"]
+        assert row["frame_id"] == "gone"
+        assert row["session_missing"] is True
+        assert row["cell_count"] == 1
+        assert row["artifact_count"] == 1
+        # And the detail view still resolves.
+        detail = client.get("/api/science/frames/gone").json()
+        assert detail["session_missing"] is True
+        assert [a["filename"] for a in detail["artifacts"]] == ["kept.txt"]
+
     def test_cells_carry_host_call_and_version_counts(self, client, frame):
         cells = client.get("/api/science/frames/s1/cells").json()["cells"]
         assert [c["cell_index"] for c in cells] == [0, 1, 2]
@@ -108,6 +141,28 @@ class TestFrames:
         assert derived["origin"] == "agent"
         failed = next(c for c in cells if c["cell_id"] == frame["failed_cell"])
         assert failed["exit_status"] == "error"
+
+    def test_since_cursor_returns_only_newer_cells(
+        self, client, science_runtime, db, frame
+    ):
+        first = client.get("/api/science/frames/s1/cells").json()
+        cursor = first["cursor"]
+        assert cursor is not None
+
+        # Nothing new yet.
+        idle = client.get(
+            "/api/science/frames/s1/cells", params={"since": cursor}
+        ).json()
+        assert idle["cells"] == []
+        assert idle["cursor"] == cursor
+
+        science_runtime.run_cell("s1", "print('later')")
+        fresh = client.get(
+            "/api/science/frames/s1/cells", params={"since": cursor}
+        ).json()
+        assert len(fresh["cells"]) == 1
+        assert "later" in fresh["cells"][0]["source"]
+        assert fresh["cursor"] > cursor
 
 
 class TestCells:

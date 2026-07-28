@@ -1247,9 +1247,11 @@ export const api = {
     ),
   getFrame: (frameId: string) =>
     fetchJSON<FrameDetail>(`/api/science/frames/${encodeURIComponent(frameId)}`),
-  getFrameCells: (frameId: string) =>
-    fetchJSON<{ frame_id: string; cells: CellSummary[] }>(
-      `/api/science/frames/${encodeURIComponent(frameId)}/cells`,
+  /** `since` is the cursor from a previous call — returns only newer cells. */
+  getFrameCells: (frameId: string, since?: number | null) =>
+    fetchJSON<FrameCellsResponse>(
+      `/api/science/frames/${encodeURIComponent(frameId)}/cells` +
+        (since === null || since === undefined ? "" : `?since=${since}`),
     ),
   getCell: (cellId: string) =>
     fetchJSON<CellDetail>(`/api/science/cells/${encodeURIComponent(cellId)}`),
@@ -1258,7 +1260,7 @@ export const api = {
     search?: string;
     limit?: number;
     offset?: number;
-  }) => {
+  }): Promise<ArtifactsResponse> => {
     const q = new URLSearchParams();
     if (params?.frameId) q.set("frame_id", params.frameId);
     if (params?.search) q.set("search", params.search);
@@ -1354,6 +1356,13 @@ export interface CellSummary {
   created_at: number | null;
   host_call_count?: number;
   version_count?: number;
+}
+
+export interface FrameCellsResponse {
+  frame_id: string;
+  cells: CellSummary[];
+  /** Newest `created_at` seen; pass back as `since` to poll for new cells. */
+  cursor: number | null;
 }
 
 export interface HostCall {

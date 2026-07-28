@@ -13,6 +13,7 @@ import { FlaskConical, Package, RefreshCw } from "lucide-react";
 import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Pager } from "@/components/science/Pager";
 import { api } from "@/lib/api";
 import type { FrameSummary } from "@/lib/api";
 import { usePageHeader } from "@/contexts/usePageHeader";
@@ -75,8 +76,12 @@ function FrameRow({ frame }: { frame: FrameSummary }) {
   );
 }
 
+const PAGE_SIZE = 50;
+
 export default function FramesPage() {
   const [frames, setFrames] = useState<FrameSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { setEnd } = usePageHeader();
@@ -85,11 +90,14 @@ export default function FramesPage() {
     setLoading(true);
     setError(null);
     api
-      .getFrames()
-      .then((resp) => setFrames(resp.frames))
+      .getFrames({ limit: PAGE_SIZE, offset })
+      .then((resp) => {
+        setFrames(resp.frames);
+        setTotal(resp.total);
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [offset]);
 
   useEffect(load, [load]);
 
@@ -139,6 +147,13 @@ export default function FramesPage() {
           <FrameRow key={frame.frame_id} frame={frame} />
         ))}
       </ul>
+      <Pager
+        total={total}
+        limit={PAGE_SIZE}
+        offset={offset}
+        onOffsetChange={setOffset}
+        noun="frames"
+      />
     </div>
   );
 }

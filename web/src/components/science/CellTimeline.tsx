@@ -140,9 +140,30 @@ function CellBody({ cell }: { cell: CellDetail }) {
   );
 }
 
-export function CellTimeline({ cells }: { cells: CellSummary[] }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [details, setDetails] = useState<Record<string, CellDetail>>({});
+/** True when a summary is already a full detail payload (no fetch needed). */
+function isDetail(cell: CellSummary | CellDetail): cell is CellDetail {
+  return Array.isArray((cell as CellDetail).host_calls);
+}
+
+export function CellTimeline({
+  cells,
+  defaultOpenId = null,
+  showPermalink = true,
+}: {
+  cells: Array<CellSummary | CellDetail>;
+  /** Expand this cell on mount — used by the single-cell permalink page. */
+  defaultOpenId?: string | null;
+  /** Off on the cell page itself, where the permalink is the current URL. */
+  showPermalink?: boolean;
+}) {
+  const [openId, setOpenId] = useState<string | null>(defaultOpenId);
+  // Callers that already hold a detail payload (the artifact's producing
+  // cell, the cell permalink page) seed the cache so expanding costs nothing.
+  const [details, setDetails] = useState<Record<string, CellDetail>>(() =>
+    Object.fromEntries(
+      cells.filter(isDetail).map((cell) => [cell.cell_id, cell]),
+    ),
+  );
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
 
@@ -230,7 +251,19 @@ export function CellTimeline({ cells }: { cells: CellSummary[] }) {
                   Could not load this cell. Refresh to try again.
                 </p>
               ) : details[cell.cell_id] ? (
-                <CellBody cell={details[cell.cell_id]} />
+                <>
+                  <CellBody cell={details[cell.cell_id]} />
+                  {showPermalink ? (
+                    <div className="border-t border-border px-3 py-2">
+                      <Link
+                        className="text-xs text-text-secondary underline hover:text-text-primary"
+                        to={`/cells/${encodeURIComponent(cell.cell_id)}`}
+                      >
+                        Link to this cell
+                      </Link>
+                    </div>
+                  ) : null}
+                </>
               ) : null
             ) : null}
           </li>

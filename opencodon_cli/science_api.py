@@ -221,6 +221,68 @@ _ARTIFACT_WITH_LATEST_SQL = """
 # ── routes: frames ──────────────────────────────────────────────────
 
 
+# Rollup for the frames index, aggregated in SQLite rather than in Python.
+#
+# ``frame_of`` maps every execution row onto its root session in one pass; the
+# LEFT JOIN to sessions keeps frames whose session row was pruned (their
+# execution record survives, so they must stay listed). Sorting and the
+# LIMIT/OFFSET window both happen in SQL so the page never materialises the
+# whole execution log.
+_FRAME_ROLLUP_SQL = """
+    WITH frame_of AS (
+        SELECT e.id            AS cell_id,
+               e.exit_status   AS exit_status,
+               e.language      AS language,
+               e.created_at    AS created_at,
+               COALESCE(s.root_session_id, e.session_id) AS frame_id
+          FROM execution_log e
+          LEFT JOIN sessions s ON s.id = e.session_id
+    ),
+    cell_agg AS (
+        SELECT frame_id,
+               COUNT(*)                                          AS cell_count,
+               SUM(CASE WHEN exit_status <> 'ok' THEN 1 ELSE 0 END) AS failed_cell_count,
+               MAX(created_at)                                   AS last_cell_at
+          FROM frame_of
+         GROUP BY frame_id
+    ),
+    artifact_agg AS (
+        SELECT root_session_id AS frame_id, COUNT(*) AS artifact_count
+          FROM artifacts
+         GROUP BY root_session_id
+    ),
+    frames AS (
+        SELECT frame_id FROM cell_agg
+        UNION
+        SELECT frame_id FROM artifact_agg
+    )
+    SELECT f.frame_id                              AS frame_id,
+           COALESCE(c.cell_count, 0)               AS cell_count,
+           COALESCE(c.failed_cell_count, 0)        AS failed_cell_count,
+           COALESCE(a.artifact_count, 0)           AS artifact_count,
+           c.last_cell_at                          AS last_cell_at,
+           s.id                                    AS session_id,
+           s.title, s.model, s.cwd, s.source, s.started_at, s.ended_at,
+           s.profile_name
+      FROM frames f
+      LEFT JOIN cell_agg     c ON c.frame_id = f.frame_id
+      LEFT JOIN artifact_agg a ON a.frame_id = f.frame_id
+      LEFT JOIN sessions     s ON s.id       = f.frame_id
+     ORDER BY COALESCE(c.last_cell_at, s.started_at, 0) DESC
+     LIMIT ? OFFSET ?
+"""
+
+_FRAME_COUNT_SQL = """
+    SELECT COUNT(*) AS n FROM (
+        SELECT COALESCE(s.root_session_id, e.session_id) AS frame_id
+          FROM execution_log e
+          LEFT JOIN sessions s ON s.id = e.session_id
+        UNION
+        SELECT root_session_id FROM artifacts
+    )
+"""
+
+
 @router.get("/frames")
 def list_frames(
     limit: int = Query(50, ge=1, le=500),
@@ -230,89 +292,49 @@ def list_frames(
     """Frames that carry a science record — cells, artifacts, or both."""
     db = _open_db(profile)
     try:
-        # session id → frame (root) id, for folding cell rows onto their root.
-        root_of = {
-            r["id"]: (r["root_session_id"] or r["id"])
-            for r in _rows(db, "SELECT id, root_session_id FROM sessions")
-        }
+        total = (_row(db, _FRAME_COUNT_SQL) or {"n": 0})["n"]
+        rows = _rows(db, _FRAME_ROLLUP_SQL, (limit, offset))
+        if not rows:
+            return {"frames": [], "total": total, "limit": limit, "offset": offset}
 
-        counts: Dict[str, Dict[str, Any]] = {}
-
-        def _bucket(frame_id: str) -> Dict[str, Any]:
-            return counts.setdefault(
-                frame_id,
-                {
-                    "cell_count": 0,
-                    "failed_cell_count": 0,
-                    "artifact_count": 0,
-                    "last_cell_at": None,
-                    "languages": set(),
-                },
-            )
-
+        # Languages are a small per-frame set; fetch them only for the page.
+        ids = [r["frame_id"] for r in rows]
+        languages: Dict[str, List[str]] = {}
         for row in _rows(
             db,
-            "SELECT session_id, exit_status, language, created_at FROM execution_log",
+            "SELECT DISTINCT COALESCE(s.root_session_id, e.session_id) AS frame_id, "
+            "       e.language AS language "
+            "  FROM execution_log e "
+            "  LEFT JOIN sessions s ON s.id = e.session_id "
+            f" WHERE COALESCE(s.root_session_id, e.session_id) IN ({_placeholders(ids)}) "
+            "   AND e.language IS NOT NULL",
+            tuple(ids),
         ):
-            sid = row["session_id"]
-            bucket = _bucket(root_of.get(sid, sid))
-            bucket["cell_count"] += 1
-            if row["exit_status"] != "ok":
-                bucket["failed_cell_count"] += 1
-            if row["language"]:
-                bucket["languages"].add(row["language"])
-            created = row["created_at"] or 0
-            if bucket["last_cell_at"] is None or created > bucket["last_cell_at"]:
-                bucket["last_cell_at"] = created
+            languages.setdefault(row["frame_id"], []).append(row["language"])
 
-        for row in _rows(db, "SELECT root_session_id FROM artifacts"):
-            _bucket(row["root_session_id"])["artifact_count"] += 1
-
-        if not counts:
-            return {"frames": [], "total": 0, "limit": limit, "offset": offset}
-
-        ids = list(counts)
-        sessions = {
-            r["id"]: r
-            for r in _rows(
-                db,
-                "SELECT id, title, model, cwd, source, started_at, ended_at, "
-                "profile_name FROM sessions "
-                f"WHERE id IN ({_placeholders(ids)})",
-                tuple(ids),
-            )
-        }
-
-        frames = []
-        for frame_id, agg in counts.items():
-            meta = sessions.get(frame_id, {})
-            frames.append(
-                {
-                    "frame_id": frame_id,
-                    "title": meta.get("title"),
-                    "model": meta.get("model"),
-                    "cwd": meta.get("cwd"),
-                    "source": meta.get("source"),
-                    "profile": meta.get("profile_name"),
-                    "started_at": meta.get("started_at"),
-                    "ended_at": meta.get("ended_at"),
-                    # True when the session row is gone but its execution
-                    # record survives — provenance outlives retention.
-                    "session_missing": frame_id not in sessions,
-                    "cell_count": agg["cell_count"],
-                    "failed_cell_count": agg["failed_cell_count"],
-                    "artifact_count": agg["artifact_count"],
-                    "last_cell_at": agg["last_cell_at"],
-                    "languages": sorted(agg["languages"]),
-                }
-            )
-
-        frames.sort(
-            key=lambda f: (f["last_cell_at"] or f["started_at"] or 0), reverse=True
-        )
-        total = len(frames)
+        frames = [
+            {
+                "frame_id": row["frame_id"],
+                "title": row["title"],
+                "model": row["model"],
+                "cwd": row["cwd"],
+                "source": row["source"],
+                "profile": row["profile_name"],
+                "started_at": row["started_at"],
+                "ended_at": row["ended_at"],
+                # True when the session row is gone but its execution record
+                # survives — provenance outlives retention.
+                "session_missing": row["session_id"] is None,
+                "cell_count": row["cell_count"],
+                "failed_cell_count": row["failed_cell_count"],
+                "artifact_count": row["artifact_count"],
+                "last_cell_at": row["last_cell_at"],
+                "languages": sorted(languages.get(row["frame_id"], [])),
+            }
+            for row in rows
+        ]
         return {
-            "frames": frames[offset : offset + limit],
+            "frames": frames,
             "total": total,
             "limit": limit,
             "offset": offset,
@@ -380,13 +402,32 @@ def get_frame(frame_id: str, profile: Optional[str] = None):
 
 
 @router.get("/frames/{frame_id}/cells")
-def get_frame_cells(frame_id: str, profile: Optional[str] = None):
-    """The frame's execution trace, with per-cell host-call counts."""
+def get_frame_cells(
+    frame_id: str,
+    since: Optional[float] = Query(
+        None,
+        description=(
+            "Return only cells recorded after this epoch-second cursor. The "
+            "frame page polls with the newest cursor it holds to pick up cells "
+            "as they are recorded."
+        ),
+    ),
+    profile: Optional[str] = None,
+):
+    """The frame's execution trace, with per-cell host-call counts.
+
+    ``cursor`` in the response is the newest ``created_at`` the caller has now
+    seen — pass it back as ``since`` on the next poll. It is null when the
+    frame has no cells, in which case the caller keeps its previous cursor.
+    """
     db = _open_db(profile)
     try:
         cells = _cells_for_sessions(db, _frame_session_ids(db, frame_id))
+        cursor = max((c["created_at"] or 0) for c in cells) if cells else None
+        if since is not None:
+            cells = [c for c in cells if (c["created_at"] or 0) > since]
         if not cells:
-            return {"frame_id": frame_id, "cells": []}
+            return {"frame_id": frame_id, "cells": [], "cursor": cursor}
 
         ids = [c["id"] for c in cells]
         host_counts: Dict[str, int] = {}
@@ -415,7 +456,7 @@ def get_frame_cells(frame_id: str, profile: Optional[str] = None):
             summary["host_call_count"] = host_counts.get(cell["id"], 0)
             summary["version_count"] = produced.get(cell["id"], 0)
             out.append(summary)
-        return {"frame_id": frame_id, "cells": out}
+        return {"frame_id": frame_id, "cells": out, "cursor": cursor}
     finally:
         db.close()
 
