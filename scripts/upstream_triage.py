@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weekly upstream triage for the hard fork (see FORK-PLAN.md).
+"""Weekly upstream triage for the hard fork.
 
 Fetches the upstream remote, walks every upstream commit since the recorded
 baseline, and buckets each one:
@@ -39,7 +39,7 @@ _SECURITY_SUBJECT = re.compile(
     re.IGNORECASE,
 )
 # Pin/lockfile changes count as security-relevant: we inherit the pinning
-# policy and own CVE response now (FORK-PLAN "CI" step).
+# policy and own CVE response now.
 _PIN_PATHS = ("uv.lock", "pyproject.toml")
 
 _PROVIDER_PATHS = (
@@ -163,7 +163,7 @@ def main() -> int:
         "",
         f"Range: `{baseline[:12]}..{tip[:12]}` on `{args.remote}/{args.branch}` — {total} commits.",
         "",
-        "Rules (FORK-PLAN): SECURITY cherry-picked same week, always. PROVIDER",
+        "Rules: SECURITY cherry-picked same week, always. PROVIDER",
         "reviewed and usually adopted. BUGFIX adopted only if reproduced here.",
         "FEATURE never auto-adopted. N/A touches only cut subsystems.",
         "",

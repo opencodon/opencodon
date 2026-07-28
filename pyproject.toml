@@ -257,6 +257,13 @@ all = [
   #   modal, daytona, messaging (telegram/discord/slack),
   #   slack, voice (faster-whisper),
   #   bedrock, tts-premium (elevenlabs)
+  #
+  # Science kernels are the product, not an opt-in backend: `run_code` and
+  # `reproduce_artifact` are check_fn-gated on this stack, so leaving it out
+  # of [all] makes the headline tools invisible on a stock install. Also
+  # lazy-installable (LAZY_DEPS["tool.science"]) so lean/partial/broken-extra
+  # installs recover on first use instead of silently missing the tools.
+  "opencodon[science]",
   "opencodon[cron]",
   "opencodon[cli]",
   "opencodon[pty]",

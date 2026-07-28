@@ -5821,9 +5821,8 @@ def decompose_triage_task(
     # atomic: either every child is created AND the root flips to
     # ``todo``, or nothing changes. We deliberately do NOT call any
     # kb helper that opens its own write_txn (create_task, link_tasks,
-    # add_comment) from inside this block — see architecture.md
-    # write_txn pitfalls. Instead we inline the INSERTs and
-    # _append_event calls.
+    # add_comment) from inside this block — nesting write_txn deadlocks.
+    # Instead we inline the INSERTs and _append_event calls.
     now = int(time.time())
     child_ids: list[str] = []
     with write_txn(conn):

@@ -8,11 +8,14 @@ import pytest
 
 from science.blobstore import BlobStore
 from science.bridge import bootstrap_kernel
-from science.kernels import RKernelResolver, SessionKernelManager, kernels_available
+from science.kernels import RKernelResolver, SessionKernelManager, kernels_installed
 from science.runtime import ScienceRuntime
 
+# kernels_installed, not kernels_available: the latter is the schema gate and
+# reads True whenever the stack could be lazy-installed, which would run these
+# against an environment that doesn't actually have a kernel.
 pytestmark = pytest.mark.skipif(
-    not kernels_available(), reason="jupyter kernel stack not installed"
+    not kernels_installed(), reason="jupyter kernel stack not installed"
 )
 
 

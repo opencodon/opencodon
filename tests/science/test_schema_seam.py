@@ -1,4 +1,4 @@
-"""Schema-seam tests for the science layer (PR 1 of implementation-design.md).
+"""Schema-seam tests for the science layer.
 
 Covers the behavior contracts, not snapshots:
 - sessions.root_session_id is maintained at creation time and agrees with

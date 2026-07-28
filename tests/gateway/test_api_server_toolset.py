@@ -170,4 +170,9 @@ class TestApiServerAdapterToolset:
             mock_agent_cls.assert_called_once()
             call_kwargs = mock_agent_cls.call_args
             toolsets = call_kwargs.kwargs.get("enabled_toolsets")
-            assert sorted(toolsets) == ["terminal", "web"]
+            # `science` rides along on top of the user's picks: it is not in
+            # CONFIGURABLE_TOOLSETS, so _get_platform_tools recovers it the way
+            # it recovers any non-configurable toolset in the platform's
+            # universe. An explicit override narrows the configurable set, not
+            # the science layer.
+            assert sorted(toolsets) == ["science", "terminal", "web"]

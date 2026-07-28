@@ -1,18 +1,39 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **The science layer is on by default.** `run_code`, `load_artifact`,
+  `list_artifacts`, `artifact_lineage`, and `reproduce_artifact` moved into
+  `_OPENCODON_CORE_TOOLS`, so every platform bundle (CLI, TUI, cron, ACP,
+  api-server, and the messaging platforms) ships them without
+  `--toolsets science`. They are also in the `coding` posture, which is
+  auto-selected in code workspaces and would otherwise switch the science
+  layer off inside a repo. The `opencodon-webhook` bundle still excludes
+  them — webhook payloads are untrusted input and that bundle stays free of
+  execution surface.
+- `opencodon[science]` (`jupyter_client`, `ipykernel`) is now part of the
+  `[all]` extra the installer uses, so a standard install carries real
+  kernels. `run_code` / `reproduce_artifact` keep their `check_fn` gate, but
+  it now reads "installed **or** installable": the tools stay in the schema
+  on installs that lack the stack and the deps are fetched at kernel-start
+  time via `LAZY_DEPS["tool.science"]`, instead of the tools silently
+  vanishing.
+
 ## 0.1.0 — 2026-07-24
 
 Initial release. **opencodon** is a hard fork of
 [opencodon/opencodon](https://github.com/opencodon/opencodon)
 (forked at upstream commit `8fc278207b0f`, 2026-07-23) refocused on
 scientific computing workflows. Full git history is retained; upstream
-security fixes are triaged weekly and cherry-picked (see `FORK-PLAN.md`).
+security fixes are triaged weekly and cherry-picked.
 
 ### Added
 
 - **Science layer** (`science/`, `tools/science_tools.py`): frame
   architecture for structured scientific workflows — the reason this fork
-  exists. See `implementation-design.md` and `architecture.md`.
+  exists.
 - Weekly upstream-triage automation (`scripts/upstream_triage.py`):
   security fixes and dependency pins adopted same week, bug fixes when
   reproduced, features never auto-adopted.

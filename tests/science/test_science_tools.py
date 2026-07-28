@@ -36,12 +36,46 @@ class TestRegistration:
         for name in ("run_code", "list_artifacts", "artifact_lineage"):
             assert registry.get_entry(name) is not None
 
-    def test_science_not_in_core_tools(self):
-        # The footprint rule: science is opt-in, never part of the default
-        # bundle shipped on every API call.
+    SCIENCE_TOOLS = (
+        "run_code",
+        "load_artifact",
+        "list_artifacts",
+        "artifact_lineage",
+        "reproduce_artifact",
+    )
+
+    def test_science_in_core_tools(self):
+        # opencodon is an open-science agent: the science layer is part of the
+        # default bundle every platform ships, not an opt-in toolset. This
+        # inverts the donor's footprint rule deliberately.
         from toolsets import _OPENCODON_CORE_TOOLS
 
-        assert "run_code" not in _OPENCODON_CORE_TOOLS
+        for name in self.SCIENCE_TOOLS:
+            assert name in _OPENCODON_CORE_TOOLS
+
+    def test_science_in_default_cli_toolset(self):
+        # The bundle the default config actually enables (agent.toolsets).
+        from toolsets import resolve_toolset
+
+        resolved = resolve_toolset("opencodon-cli")
+        for name in self.SCIENCE_TOOLS:
+            assert name in resolved
+
+    def test_science_survives_coding_posture(self):
+        # The coding posture is auto-selected in any code workspace; if it
+        # dropped these, science would silently switch off inside a repo.
+        from toolsets import resolve_toolset
+
+        resolved = resolve_toolset("coding")
+        for name in self.SCIENCE_TOOLS:
+            assert name in resolved
+
+    def test_science_excluded_from_webhook_toolset(self):
+        # Webhook payloads are untrusted third-party content; that bundle
+        # stays narrow on purpose (no execution surface).
+        from toolsets import resolve_toolset
+
+        assert "run_code" not in resolve_toolset("opencodon-webhook")
 
 
 class TestHandlers:

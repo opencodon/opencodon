@@ -14,9 +14,9 @@ Most AI agents optimize for chat. Science needs provenance:
 - **Real kernels** — Python and R execute in Jupyter kernels with a filesystem contract and a token-authenticated host bridge, not string-eval sandboxes.
 - **RO-Crate export** — hand a collaborator a standards-compliant research object, not a chat log.
 
-## Inherited strengths
+## Everything else an agent should do
 
-opencodon is a hard fork of [opencodon](https://github.com/opencodon/opencodon) by Nous Research, and keeps its best machinery:
+Provenance is the point, but the rest of the platform is there too:
 
 - **Any model** — 33 providers (OpenRouter, OpenAI, Anthropic, local endpoints, …); switch with `opencodon model`, no lock-in.
 - **Three UI surfaces** — terminal TUI, web dashboard, and desktop app (being redesigned result-first for science work).
@@ -81,21 +81,21 @@ uv run opencodon
 
 `opencodon` stores its state in `~/.opencodon` (`OPENCODON_HOME` to override; `%LOCALAPPDATA%\opencodon` on native Windows). Upgrading from a opencodon install? Your `OPENCODON_*` environment variables are honored for one release, the `opencodon` command remains as an alias, and pointing `OPENCODON_HOME` at your old `~/.opencodon` adopts it in place.
 
-## Science quickstart
+## How a session works
 
-Enable the science toolset and ask for an analysis — the agent runs code in a real kernel, saves artifacts with lineage, and the session is replayable:
+Ask for an analysis. The agent runs the code in a real Jupyter kernel (Python or R), records every cell and every host call the code makes back into the agent, and versions the artifacts it produces.
 
-```bash
-opencodon --toolsets science
-```
+From there: `artifact_lineage` traces how any result was produced, `reproduce_artifact` replays a version's producing cells and checksum-verifies the output, and the whole session exports as an RO-Crate.
 
-Inside a session the agent can `run_code` (Python/R), `save_artifact` / `load_artifact` with automatic versioning, trace lineage, and export the whole session as an RO-Crate.
+## License
 
-## License and attribution
+MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-MIT. Inherited code is Copyright (c) 2025 Nous Research; fork changes are Copyright (c) 2026 opencodon contributors. See [LICENSE](LICENSE) and [NOTICE](NOTICE). The `opencodon-*` model names in provider catalogs refer to Nous Research's LLMs, not this project.
+## Acknowledgements
 
-Weekly upstream triage: security and dependency-pin fixes from opencodon are reviewed and cherry-picked every week (`scripts/upstream_triage.py`); features are never auto-adopted.
+opencodon is a hard fork of [hermes-agent](https://github.com/NousResearch/hermes-agent) by Nous Research, used under the MIT License. Inherited code remains Copyright (c) 2025 Nous Research; fork changes are Copyright (c) 2026 opencodon contributors. The `hermes-*` model names in provider catalogs refer to Nous Research's LLMs, not this project.
+
+Weekly upstream triage: security and dependency-pin fixes from upstream are reviewed and cherry-picked every week (`scripts/upstream_triage.py`); features are never auto-adopted.
 
 ## Contributing
 
