@@ -51,8 +51,11 @@ def _cell_traceback(exc: BaseException) -> tuple:
 class FakeKernelSession:
     _counter = 0
 
-    def __init__(self, spec, *, workdir):
+    def __init__(self, spec, *, workdir, provisioner=None):
         self._spec = spec
+        # Mirrors KernelSession: the double reports where it 'ran' so the
+        # kernel_location column is exercised without a real remote.
+        self.location = provisioner.describe_target() if provisioner else "local"
         self._workdir = Path(workdir)
         FakeKernelSession._counter += 1
         self.kernel_id = f"fake-{FakeKernelSession._counter}"

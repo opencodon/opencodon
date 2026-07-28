@@ -152,6 +152,7 @@ class ScienceRuntime:
             origin=origin,
             env_name=kernel.spec.runtime_identity,
             env_snapshot=env_snapshot if fresh else None,
+            kernel_location=getattr(kernel, "location", "local"),
             has_magics=1 if contains_magics(source) else 0,
         )
 

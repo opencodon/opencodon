@@ -58,6 +58,49 @@ phases:
           reopen, and rows predating a NOT NULL column read back as the default
           rather than NULL.
 
+  P1:
+    title: Remote kernels
+    status: in-progress
+    requirements:
+      # — the seam (no remote target needed) —
+      - id: SCI-P1-01
+        statement: Where a kernel runs is a pluggable decision, not hard-wired to this machine.
+        acceptance: >
+          KernelSession obtains its kernel through a provisioner; the local
+          path is one implementation of that interface and remains the default.
+      - id: SCI-P1-02
+        statement: A cell records where it ran.
+        acceptance: >
+          execution_log.kernel_location names the provisioner and target
+          ('local', 'ssh:<host>', 'modal:<app>'), so a result computed on a GPU
+          host is distinguishable from one computed here.
+      - id: SCI-P1-03
+        statement: Remote execution records provenance identically to local.
+        acceptance: >
+          the convergence invariant holds — a remote cell writes the same
+          execution_log/host_call_log/artifact rows as a local one, with no
+          field populated only on the local path.
+      - id: SCI-P1-04
+        statement: A provisioner that cannot start a kernel fails legibly.
+        acceptance: >
+          a start failure names the provisioner and target and taints the
+          kernel, rather than surfacing a bare transport exception.
+
+      # — targets (need a configured remote) —
+      - id: SCI-P1-10
+        statement: A kernel can run on a Modal sandbox.
+        acceptance: >
+          run_code executes against a Modal-provisioned kernel, state persists
+          across cells, and artifacts round-trip back to the local store.
+      - id: SCI-P1-11
+        statement: A kernel can run on an SSH host.
+        acceptance: as SCI-P1-10, over an SSH-provisioned kernel.
+      - id: SCI-P1-12
+        statement: A GPU is usable from a provisioned kernel.
+        acceptance: >
+          a cell on a GPU-backed target reports an available accelerator,
+          which is the precondition every Phase 4 model skill depends on.
+
   P2:
     title: Literature and evidence layer
     status: complete

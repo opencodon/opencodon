@@ -11,8 +11,10 @@ Ported from the opencodon donor (``execution/kernel_client.py`` +
   ``(session_id, language)``. Cells serialize on a per-key lock. A timeout or
   kernel death *taints* the kernel: it is shut down and the next run_code
   lazily starts a fresh one (interruption is not a rollback).
-- Kernels are local-only for now: remote kernel backends wait for a
-  deliberate extension of tools/environments/.
+- **Where** a kernel runs is a KernelProvisioner decision. Everything above
+  that seam is transport-agnostic — msg_id correlation, taint/restart, the
+  execution_log and lineage writes — so a remote backend supplies a
+  provisioner and nothing else. LocalProvisioner is the default.
 
 The donor's epoch/policy record machinery is deliberately dropped: opencodon
 records each cell in ``execution_log`` (science/store.py) and a restart shows
@@ -260,14 +262,108 @@ class KernelStartError(RuntimeError):
     """The kernel process failed to start or become ready."""
 
 
-class KernelSession:
-    """One live kernel process bound to a workspace directory."""
+@dataclass
+class ProvisionedKernel:
+    """A started kernel and the client already connected to it.
 
-    def __init__(self, spec: EnvironmentSpec, *, workdir: Path):
+    ``location`` names where it runs — ``local``, ``ssh:<host>``,
+    ``modal:<app>`` — and is recorded per cell. It is the difference between
+    "this number was computed" and "this number was computed on a GPU", which
+    a reader of the provenance record cannot otherwise recover.
+    """
+
+    manager: Any
+    client: Any
+    location: str
+
+
+class KernelProvisioner:
+    """Starts a kernel somewhere and hands back a connected client.
+
+    The seam that lets a kernel live off this machine. Everything above it —
+    msg_id correlation, taint-and-restart, the execution_log and lineage
+    writes — is transport-agnostic already, so a provisioner is the whole of
+    what a remote backend has to supply.
+
+    Implementations must either return a live :class:`ProvisionedKernel` or
+    raise :class:`KernelStartError`; a half-started kernel must be cleaned up
+    before raising, since the manager will treat the failure as a taint and
+    immediately try again.
+    """
+
+    name = "abstract"
+
+    def provision(self, spec: EnvironmentSpec, workdir: Path) -> ProvisionedKernel:
+        raise NotImplementedError
+
+    def describe_target(self) -> str:
+        """Human-readable target, used in errors and in kernel_location."""
+        return self.name
+
+
+class LocalProvisioner(KernelProvisioner):
+    """Start the kernel as a child process on this machine.
+
+    The default, and the only one that needs no configuration.
+    """
+
+    name = "local"
+
+    def provision(self, spec: EnvironmentSpec, workdir: Path) -> ProvisionedKernel:
+        import os
+
+        # First actual use — fetch the kernel stack if this install doesn't
+        # carry it (lean install, broken [all] resolve). Raises
+        # FeatureUnavailable with a remediation hint if that's not possible.
+        ensure_kernels()
+
+        from jupyter_client.kernelspec import KernelSpec
+        from jupyter_client.manager import KernelManager
+
+        workdir.mkdir(parents=True, exist_ok=True)
+        km = KernelManager(kernel_name="python3")
+        km._kernel_spec = KernelSpec(
+            argv=list(spec.argv),
+            display_name="opencodon-science-kernel",
+            language=spec.language,
+        )
+        try:
+            if spec.env_overrides:
+                km.start_kernel(
+                    cwd=str(workdir), env={**os.environ, **spec.env_overrides}
+                )
+            else:
+                km.start_kernel(cwd=str(workdir))
+            kc = km.client()
+            kc.start_channels()
+            kc.wait_for_ready(timeout=READY_TIMEOUT_S)
+        except Exception as exc:
+            try:
+                km.shutdown_kernel(now=True)
+            except Exception:
+                pass
+            raise KernelStartError(
+                f"kernel failed to start on {self.describe_target()}: {exc}"
+            ) from exc
+        return ProvisionedKernel(manager=km, client=kc, location=self.name)
+
+
+class KernelSession:
+    """One live kernel bound to a workspace directory."""
+
+    def __init__(
+        self,
+        spec: EnvironmentSpec,
+        *,
+        workdir: Path,
+        provisioner: Optional[KernelProvisioner] = None,
+    ):
         self._spec = spec
         self._workdir = Path(workdir)
+        self._provisioner = provisioner or LocalProvisioner()
         self._km: Any = None
         self._kc: Any = None
+        self.location = self._provisioner.describe_target()
         self.kernel_id = f"krn-{uuid.uuid4().hex[:16]}"
 
     @property
@@ -279,42 +375,10 @@ class KernelSession:
         return self._spec
 
     def start(self) -> None:
-        import os
-
-        # First actual use — fetch the kernel stack if this install doesn't
-        # carry it (lean install, broken [all] resolve). Raises
-        # FeatureUnavailable with a remediation hint if that's not possible.
-        ensure_kernels()
-
-        from jupyter_client.kernelspec import KernelSpec
-        from jupyter_client.manager import KernelManager
-
-        self._workdir.mkdir(parents=True, exist_ok=True)
-        km = KernelManager(kernel_name="python3")
-        km._kernel_spec = KernelSpec(
-            argv=list(self._spec.argv),
-            display_name="opencodon-science-kernel",
-            language=self._spec.language,
-        )
-        try:
-            if self._spec.env_overrides:
-                km.start_kernel(
-                    cwd=str(self._workdir),
-                    env={**os.environ, **self._spec.env_overrides},
-                )
-            else:
-                km.start_kernel(cwd=str(self._workdir))
-            kc = km.client()
-            kc.start_channels()
-            kc.wait_for_ready(timeout=READY_TIMEOUT_S)
-        except Exception as exc:
-            try:
-                km.shutdown_kernel(now=True)
-            except Exception:
-                pass
-            raise KernelStartError(f"kernel failed to start: {exc}") from exc
-        self._km = km
-        self._kc = kc
+        provisioned = self._provisioner.provision(self._spec, self._workdir)
+        self._km = provisioned.manager
+        self._kc = provisioned.client
+        self.location = provisioned.location
 
     def is_alive(self) -> bool:
         return self._km is not None and self._km.is_alive()
@@ -532,6 +596,7 @@ class CellRun:
     language: str
     workspace: Path
     fresh_kernel: bool
+    location: str = "local"
     tainted: bool = False
     taint_reasons: Tuple[str, ...] = ()
 
@@ -546,11 +611,16 @@ class SessionKernelManager:
         resolvers: Dict[str, Any] = None,
         bootstrap_fn=None,
         session_factory=None,
+        provisioner: Optional[KernelProvisioner] = None,
     ):
         self._root = Path(workspaces_root)
         # Seam for tests/embedders: anything with the KernelSession protocol
         # (start/execute/is_alive/interrupt/shutdown, .kernel_id, .spec).
         self._session_factory = session_factory or KernelSession
+        # Where kernels run. Local unless an embedder supplies otherwise; the
+        # choice is per-manager rather than per-cell, since a session's kernel
+        # holds state that cannot migrate mid-conversation.
+        self._provisioner = provisioner or LocalProvisioner()
         self._resolvers: Dict[str, Any] = {
             "python": PythonEnvResolver(),
             "r": RKernelResolver(),
@@ -629,6 +699,7 @@ class SessionKernelManager:
                 language=language,
                 workspace=session.workdir,
                 fresh_kernel=fresh,
+                location=getattr(session, "location", "local"),
                 tainted=tainted,
                 taint_reasons=reasons,
             )
@@ -643,7 +714,9 @@ class SessionKernelManager:
             self._live.pop(key, None)
         spec = self.resolver_for(language).resolve()
         workspace = self.workspace_for(session_id)
-        session = self._session_factory(spec, workdir=workspace)
+        session = self._session_factory(
+            spec, workdir=workspace, provisioner=self._provisioner
+        )
         session.start()
         if self._bootstrap_fn is not None:
             try:
