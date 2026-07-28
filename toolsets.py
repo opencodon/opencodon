@@ -249,7 +249,11 @@ TOOLSETS = {
         "tools": ["gene_lookup", "gene_resolve", "gene_sequence", "gene_homologs",
                   "protein_lookup", "variant_frequency", "gene_variants",
                   "clinvar_search", "clinvar_records", "compound_lookup",
-                  "compound_similarity", "drug_search", "drug_bioactivities"],
+                  "compound_similarity", "drug_search", "drug_bioactivities",
+                  "tissue_expression", "eqtl_genes", "encode_experiments",
+                  "tf_motifs", "pdb_entry", "pdb_search", "alphafold_model",
+                  "protein_domains", "interaction_network", "trial_search",
+                  "trial_record", "drug_label", "drug_approvals"],
         "includes": []
     },
 

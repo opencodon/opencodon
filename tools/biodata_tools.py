@@ -31,6 +31,24 @@ def _chemistry():
     return chemistry
 
 
+def _expression():
+    from science.biodata import expression
+
+    return expression
+
+
+def _structures():
+    from science.biodata import structures
+
+    return structures
+
+
+def _clinical():
+    from science.biodata import clinical
+
+    return clinical
+
+
 def _call(fn, **kwargs) -> str:
     from science.apiclient import ApiError
 
@@ -290,6 +308,228 @@ _register(
     lambda args, **kw: _call(
         _chemistry().bioactivities,
         chembl_id=args.get("chembl_id", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+
+# ── expression and regulation ───────────────────────────────────────
+
+
+_register(
+    "tissue_expression",
+    "Median expression of a gene across GTEx tissues, highest first. Answers "
+    "'where is this gene actually expressed' before any hypothesis about what "
+    "it does there.",
+    {
+        "symbol": {"type": "string", "description": "Gene symbol."},
+        "limit": _LIMIT,
+    },
+    ["symbol"],
+    lambda args, **kw: _call(
+        _expression().tissue_expression,
+        symbol=args.get("symbol", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "eqtl_genes",
+    "Genes with a significant eQTL in a GTEx tissue (e.g. Liver, "
+    "Brain_Cortex) — genes whose expression is under detectable genetic control.",
+    {
+        "tissue": {"type": "string", "description": "GTEx tissue id, e.g. Liver."},
+        "limit": _LIMIT,
+    },
+    ["tissue"],
+    lambda args, **kw: _call(
+        _expression().eqtl_genes,
+        tissue=args.get("tissue", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "encode_experiments",
+    "Search ENCODE for functional-genomics experiments — ChIP-seq, ATAC-seq, "
+    "RNA-seq and the rest — by target, assay or biosample.",
+    {
+        "query": {"type": "string", "description": "Search term, e.g. CTCF."},
+        "assay": {"type": "string", "description": "Assay title filter, e.g. 'TF ChIP-seq'."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _expression().encode_experiments,
+        query=args.get("query", ""),
+        assay=args.get("assay"),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "tf_motifs",
+    "Transcription-factor binding matrices from JASPAR. Matrix versions are "
+    "distinct models of the same factor and scan differently, so the version "
+    "is returned with the id.",
+    {
+        "query": {"type": "string", "description": "Transcription factor name, e.g. CTCF."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _expression().tf_motifs,
+        query=args.get("query", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+
+# ── structures and interactions ─────────────────────────────────────
+
+
+_register(
+    "pdb_entry",
+    "Experimental structure metadata from the PDB, including resolution — a "
+    "3.5 A structure does not support the same claims as a 1.2 A one.",
+    {"pdb_id": {"type": "string", "description": "PDB id, e.g. 1TUP."}},
+    ["pdb_id"],
+    lambda args, **kw: _call(_structures().pdb_entry, pdb_id=args.get("pdb_id", "")),
+)
+
+_register(
+    "pdb_search",
+    "Full-text search over the PDB for experimental structures.",
+    {
+        "query": {"type": "string", "description": "Search query."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _structures().pdb_search,
+        query=args.get("query", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "alphafold_model",
+    "Predicted structure for a UniProt accession, with mean pLDDT and a named "
+    "confidence band. A prediction, not a measurement — and low confidence "
+    "often means genuine disorder rather than a bad model.",
+    {"accession": {"type": "string", "description": "UniProt accession, e.g. P38398."}},
+    ["accession"],
+    lambda args, **kw: _call(
+        _structures().alphafold_model, accession=args.get("accession", "")
+    ),
+)
+
+_register(
+    "protein_domains",
+    "Domain architecture for a protein from InterPro.",
+    {
+        "accession": {"type": "string", "description": "UniProt accession."},
+        "limit": _LIMIT,
+    },
+    ["accession"],
+    lambda args, **kw: _call(
+        _structures().protein_domains,
+        accession=args.get("accession", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "interaction_network",
+    "Protein-protein interaction partners from STRING, with per-channel "
+    "evidence scores. A link supported only by text-mining is weaker than one "
+    "from experiments, and a combined score alone hides which it is.",
+    {
+        "identifiers": {
+            "type": "array", "items": {"type": "string"},
+            "description": "Protein symbols, e.g. ['TP53'].",
+        },
+        "species": {"type": "integer", "description": "NCBI taxon id (default 9606, human)."},
+        "min_score": {"type": "number", "description": "Minimum combined score 0-1 (default 0.4)."},
+        "limit": _LIMIT,
+    },
+    ["identifiers"],
+    lambda args, **kw: _call(
+        _structures().interaction_network,
+        identifiers=args.get("identifiers") or [],
+        species=args.get("species", 9606),
+        min_score=args.get("min_score", 0.4),
+        limit=args.get("limit"),
+    ),
+)
+
+
+# ── clinical and regulatory ─────────────────────────────────────────
+
+
+_register(
+    "trial_search",
+    "Search ClinicalTrials.gov — phase, status, sponsor, enrolment and primary "
+    "endpoints. A registration is not a result: registered, ongoing and "
+    "terminated trials all appear and only `status` separates them.",
+    {
+        "query": {"type": "string", "description": "Condition, intervention or term."},
+        "status": {
+            "type": "string",
+            "enum": ["RECRUITING", "ACTIVE_NOT_RECRUITING", "COMPLETED",
+                     "TERMINATED", "WITHDRAWN", "SUSPENDED",
+                     "NOT_YET_RECRUITING", "UNKNOWN"],
+            "description": "Filter by overall status.",
+        },
+        "phase": {"type": "string", "description": "Phase filter, e.g. PHASE3."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _clinical().trial_search,
+        query=args.get("query", ""),
+        status=args.get("status"),
+        phase=args.get("phase"),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "trial_record",
+    "One clinical trial by NCT identifier.",
+    {"nct_id": {"type": "string", "description": "NCT id, e.g. NCT01234567."}},
+    ["nct_id"],
+    lambda args, **kw: _call(_clinical().trial_record, nct_id=args.get("nct_id", "")),
+)
+
+_register(
+    "drug_label",
+    "FDA structured product label — indications, warnings, boxed warning and "
+    "contraindications. Research use only, not medical advice.",
+    {
+        "query": {"type": "string", "description": "Brand or generic drug name."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _clinical().drug_label,
+        query=args.get("query", ""),
+        limit=args.get("limit"),
+    ),
+)
+
+_register(
+    "drug_approvals",
+    "Drugs@FDA application records — sponsor, products, first approval date "
+    "and marketing status.",
+    {
+        "query": {"type": "string", "description": "Brand or generic drug name."},
+        "limit": _LIMIT,
+    },
+    ["query"],
+    lambda args, **kw: _call(
+        _clinical().drug_approvals,
+        query=args.get("query", ""),
         limit=args.get("limit"),
     ),
 )

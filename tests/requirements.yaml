@@ -175,7 +175,7 @@ phases:
 
   P5:
     title: Bio-data services
-    status: in-progress
+    status: complete
     requirements:
       # — genes and proteins —
       - id: SCI-P5-01
@@ -242,10 +242,7 @@ phases:
         statement: A failed lookup is an answer, not a crash.
         acceptance: ApiError becomes a structured {error, source} payload at the tool boundary.
 
-      # — sources not yet built —
-      # The plan scoped P5 as the full donor set. This tranche covers genes,
-      # variants and chemistry; the rest are listed so the gate keeps P5 open
-      # rather than agreeing with the code.
+      # — expression, structures, clinical —
       - id: SCI-P5-40
         statement: Expression and regulation data are available.
         acceptance: GTEx tissue expression and eQTLs; ENCODE experiments; JASPAR motifs.

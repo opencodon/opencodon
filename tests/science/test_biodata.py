@@ -15,7 +15,7 @@ import httpx
 import pytest
 
 from science.apiclient import MAX_RESULTS, ApiError
-from science.biodata import chemistry, genes, variants
+from science.biodata import chemistry, clinical, expression, genes, structures, variants
 
 
 class StubTransport(httpx.BaseTransport):
@@ -413,3 +413,274 @@ def test_live_pubchem_and_chembl():
 
     [drug] = chemistry.drug_search("aspirin", limit=1)["results"]
     assert drug["chembl_id"] == "CHEMBL25"
+
+
+# ── SCI-P5-40 expression and regulation ─────────────────────────────
+
+
+@pytest.mark.requirement("SCI-P5-40")
+def test_gtex_resolves_its_own_versioned_gencode_id():
+    """GTEx keys on a versioned GENCODE id from *its* release, not Ensembl's.
+
+    A plausible-looking id from elsewhere returns an empty list rather than an
+    error, which is the worst kind of failure to debug — so the symbol is
+    always resolved through GTEx's own reference endpoint first.
+    """
+    transport = StubTransport(
+        ok({"data": [{"geneSymbol": "BRCA1", "gencodeId": "ENSG00000012048.20",
+                      "gencodeVersion": "v26", "chromosome": "chr17"}]}),
+        ok({"data": [
+            {"tissueSiteDetailId": "Testis", "median": 10.9, "unit": "TPM"},
+            {"tissueSiteDetailId": "Liver", "median": 1.1, "unit": "TPM"},
+            {"tissueSiteDetailId": "Lymphocytes", "median": 19.7, "unit": "TPM"},
+        ]}),
+    )
+    result = expression.tissue_expression("BRCA1", limit=2, transport=transport)
+
+    assert transport.requests[1].url.params["gencodeId"] == "ENSG00000012048.20"
+    # Sorted highest-first, so the interesting tissues survive the cap.
+    assert [r["tissue"] for r in result["results"]] == ["Lymphocytes", "Testis"]
+    assert result["tissues_measured"] == 3 and result["returned"] == 2
+
+
+@pytest.mark.requirement("SCI-P5-40")
+def test_unknown_gtex_gene_is_a_named_error():
+    with pytest.raises(ApiError) as caught:
+        expression.resolve_gencode_id("NOPE", transport=StubTransport(ok({"data": []})))
+    assert caught.value.status == 404
+
+
+@pytest.mark.requirement("SCI-P5-40")
+def test_encode_and_jaspar_are_shaped():
+    encode = expression.encode_experiments("CTCF", transport=StubTransport(ok({
+        "total": 609,
+        "@graph": [{"accession": "ENCSR1", "assay_title": "TF ChIP-seq",
+                    "target": {"label": "CTCF"}, "biosample_summary": "K562",
+                    "status": "released"}],
+    })))
+    assert encode["total"] == 609
+    assert encode["results"][0]["target"] == "CTCF"
+
+    jaspar = expression.tf_motifs("CTCF", transport=StubTransport(ok({
+        "count": 11,
+        "results": [{"matrix_id": "MA0139.1", "name": "CTCF",
+                     "base_id": "MA0139", "version": "1", "collection": "CORE"}],
+    })))
+    # Versions are distinct models that scan differently — the id alone is
+    # not enough to reproduce a motif scan.
+    assert jaspar["results"][0]["version"] == "1"
+    assert jaspar["results"][0]["matrix_id"] == "MA0139.1"
+
+
+# ── SCI-P5-41 structures and interactions ───────────────────────────
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_pdb_entry_carries_its_resolution():
+    transport = StubTransport(ok({
+        "rcsb_id": "1TUP", "struct": {"title": "P53 CORE DOMAIN"},
+        "exptl": [{"method": "X-RAY DIFFRACTION"}],
+        "rcsb_entry_info": {"resolution_combined": [2.2], "polymer_entity_count": 2},
+        "rcsb_accession_info": {"deposit_date": "1995-07-11"},
+        "audit_author": [{"name": "Cho, Y."}],
+        "citation": [{"pdbx_database_id_doi": "10.1126/science.8023157"}],
+    }))
+    entry = structures.pdb_entry("1tup", transport=transport)
+
+    assert entry["pdb_id"] == "1TUP"
+    # A 3.5 A structure does not support the claims a 1.2 A one does.
+    assert entry["resolution"] == 2.2
+    assert entry["method"] == "X-RAY DIFFRACTION"
+
+
+@pytest.mark.requirement("SCI-P5-41")
+@pytest.mark.parametrize(
+    "score,band",
+    [(95.0, "very high"), (75.0, "confident"), (60.0, "low"), (41.59, "very low"),
+     (None, None)],
+)
+def test_plddt_is_banded_not_left_as_a_bare_number(score, band):
+    """A pLDDT of 41 is not 'a structure that is 41% right' — it is a region
+    that should not be trusted, and very often genuinely disordered."""
+    assert structures.plddt_band(score) == band
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_alphafold_model_reports_confidence():
+    transport = StubTransport(ok([{
+        "modelEntityId": "AF-P38398-F1", "uniprotId": "P38398",
+        "globalMetricValue": 41.59, "fractionPlddtVeryLow": 0.804,
+        "toolUsed": "AlphaFold Monomer v2.0 pipeline",
+    }]))
+    model = structures.alphafold_model("P38398", transport=transport)
+    assert model["mean_plddt"] == 41.59
+    assert model["confidence"] == "very low"
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_missing_alphafold_model_is_a_named_error():
+    with pytest.raises(ApiError) as caught:
+        structures.alphafold_model("XXXXX", transport=StubTransport(ok([])))
+    assert caught.value.status == 404
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_interpro_domains_are_shaped():
+    transport = StubTransport(ok({
+        "count": 9,
+        "results": [{"metadata": {"accession": "IPR001357", "name": "BRCT domain",
+                                  "type": "domain", "source_database": "interpro"}}],
+    }))
+    result = structures.protein_domains("P38398", transport=transport)
+    assert result["total"] == 9
+    assert result["results"][0]["name"] == "BRCT domain"
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_string_edges_expose_evidence_channels():
+    transport = StubTransport(ok([
+        {"preferredName_A": "TP53", "preferredName_B": "MDM2", "score": 0.99,
+         "escore": 0.9, "dscore": 0.9, "tscore": 0.8, "ascore": 0.1},
+        {"preferredName_A": "TP53", "preferredName_B": "WEAK", "score": 0.2,
+         "escore": 0.0, "dscore": 0.0, "tscore": 0.2, "ascore": 0.0},
+    ]))
+    result = structures.interaction_network(["TP53"], min_score=0.4, transport=transport)
+
+    # The weak text-mining-only edge is filtered out, and the surviving edge
+    # shows *why* it is strong rather than only how strong.
+    assert result["edges_returned"] == 1
+    edge = result["results"][0]
+    assert edge["protein_b"] == "MDM2"
+    assert edge["experimental"] == 0.9 and edge["textmining"] == 0.8
+
+
+@pytest.mark.requirement("SCI-P5-41")
+def test_string_validates_its_inputs():
+    with pytest.raises(ApiError):
+        structures.interaction_network([])
+    with pytest.raises(ApiError):
+        structures.interaction_network(["TP53"], min_score=5)
+
+
+# ── SCI-P5-42 clinical and regulatory ───────────────────────────────
+
+
+TRIAL = {"protocolSection": {
+    "identificationModule": {"nctId": "NCT01234567", "briefTitle": "A study"},
+    "statusModule": {"overallStatus": "TERMINATED",
+                     "startDateStruct": {"date": "2020-01-01"}},
+    "designModule": {"phases": ["PHASE3"], "studyType": "INTERVENTIONAL",
+                     "enrollmentInfo": {"count": 400}},
+    "sponsorCollaboratorsModule": {"leadSponsor": {"name": "Someone"}},
+    "conditionsModule": {"conditions": ["Breast Cancer"]},
+    "armsInterventionsModule": {"interventions": [{"type": "DRUG", "name": "X"}]},
+    "outcomesModule": {"primaryOutcomes": [{"measure": "Overall survival"}]},
+    "eligibilityModule": {"sex": "ALL", "minimumAge": "18 Years"},
+}}
+
+
+@pytest.mark.requirement("SCI-P5-42")
+def test_trial_search_surfaces_status_and_endpoints():
+    transport = StubTransport(ok({"totalCount": 662, "studies": [TRIAL]}))
+    result = clinical.trial_search("BRCA1", transport=transport)
+
+    [study] = result["results"]
+    assert study["nct_id"] == "NCT01234567"
+    # A registration is not a result: this one was terminated, and only the
+    # status says so.
+    assert study["status"] == "TERMINATED"
+    assert study["phase"] == "PHASE3"
+    # The endpoint is what the trial actually tested; the title rarely says.
+    assert study["primary_outcomes"] == ["Overall survival"]
+    assert result["disclaimer"]
+
+
+@pytest.mark.requirement("SCI-P5-42")
+def test_trial_status_filter_is_validated_locally():
+    with pytest.raises(ApiError) as caught:
+        clinical.trial_search("BRCA1", status="FINISHED")
+    assert "COMPLETED" in str(caught.value)
+
+
+@pytest.mark.requirement("SCI-P5-42")
+def test_drug_label_carries_the_regulator_disclaimer():
+    transport = StubTransport(ok({
+        "meta": {"disclaimer": "Do not rely on openFDA to make decisions...",
+                 "results": {"total": 12}},
+        "results": [{
+            "openfda": {"brand_name": ["Bayer Aspirin"], "generic_name": ["ASPIRIN"],
+                        "manufacturer_name": ["Bayer"], "route": ["ORAL"]},
+            "indications_and_usage": ["For the temporary relief of..."],
+            "boxed_warning": ["Reye's syndrome"],
+        }],
+    }))
+    result = clinical.drug_label("aspirin", transport=transport)
+
+    assert result["results"][0]["brand_names"] == ["Bayer Aspirin"]
+    assert "Reye" in result["results"][0]["boxed_warning"]
+    # openFDA's own position travels with the payload rather than staying in
+    # its documentation.
+    assert "Do not rely on openFDA" in result["disclaimer"]
+
+
+@pytest.mark.requirement("SCI-P5-42")
+def test_drug_approvals_pick_the_earliest_approval():
+    transport = StubTransport(ok({
+        "meta": {"results": {"total": 3}},
+        "results": [{
+            "application_number": "NDA012345", "sponsor_name": "ACME",
+            "products": [{"brand_name": "X", "dosage_form": "TABLET",
+                          "marketing_status": "Prescription",
+                          "active_ingredients": [{"strength": "81MG"}]}],
+            "submissions": [
+                {"submission_status": "AP", "submission_status_date": "20100101"},
+                {"submission_status": "AP", "submission_status_date": "19980101"},
+                {"submission_status": "TA", "submission_status_date": "19900101"},
+            ],
+        }],
+    }))
+    [record] = clinical.drug_approvals("aspirin", transport=transport)["results"]
+
+    # Earliest *approval*, ignoring tentative-approval rows.
+    assert record["first_approval"] == "19980101"
+    assert record["submission_count"] == 3
+
+
+# ── live services (tranche 2) ───────────────────────────────────────
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P5-40")
+def test_live_gtex_encode_jaspar():
+    tissues = expression.tissue_expression("BRCA1", limit=3)
+    assert tissues["tissues_measured"] > 40
+    assert tissues["results"][0]["median"] >= tissues["results"][-1]["median"]
+
+    assert expression.encode_experiments("CTCF", limit=2)["total"] > 0
+    assert expression.tf_motifs("CTCF", limit=2)["total"] > 0
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P5-41")
+def test_live_structures():
+    entry = structures.pdb_entry("1TUP")
+    assert entry["method"] == "X-RAY DIFFRACTION"
+    assert entry["resolution"] and entry["resolution"] < 5
+
+    model = structures.alphafold_model("P38398")
+    assert model["confidence"] in {"very high", "confident", "low", "very low"}
+
+    assert structures.protein_domains("P38398", limit=3)["total"] > 0
+    assert structures.interaction_network(["TP53"], limit=3)["edges_returned"] >= 1
+
+
+@pytest.mark.integration
+@pytest.mark.requirement("SCI-P5-42")
+def test_live_trials_and_openfda():
+    trials = clinical.trial_search("BRCA1", limit=2)
+    assert trials["total"] > 0
+    assert trials["results"][0]["nct_id"].startswith("NCT")
+
+    label = clinical.drug_label("aspirin", limit=1)
+    assert label["returned"] == 1
+    assert label["disclaimer"]
