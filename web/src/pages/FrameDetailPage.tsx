@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 
 import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Button } from "@nous-research/ui/ui/components/button";
@@ -156,13 +156,25 @@ export default function FrameDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <Link
-        to="/frames"
-        className="flex w-fit items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        All frames
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/frames"
+          className="flex w-fit items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          All frames
+        </Link>
+        {frame.artifacts.length > 0 ? (
+          <a
+            href={api.frameExportUrl(frame.frame_id)}
+            className="flex items-center gap-1.5 rounded border border-border px-2.5 py-1.5 text-xs text-text-primary hover:bg-card focus-visible:outline-2 focus-visible:outline-ring"
+            title="Artifact bytes plus an RO-Crate manifest of the provenance DAG"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden />
+            Export RO-Crate
+          </a>
+        ) : null}
+      </div>
 
       {/* Context strip — the facts a reader needs to judge the result. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">

@@ -1287,7 +1287,33 @@ export const api = {
   /** Absolute URL for a version's raw bytes — used as an <a href>. */
   versionDownloadUrl: (versionId: string) =>
     `${OPENCODON_BASE_PATH}/api/science/versions/${encodeURIComponent(versionId)}/download`,
+  /** Absolute URL for a frame's RO-Crate zip — used as an <a href>. */
+  frameExportUrl: (frameId: string) =>
+    `${OPENCODON_BASE_PATH}/api/science/frames/${encodeURIComponent(frameId)}/export`,
+  startReproduction: (versionId: string) =>
+    fetchJSON<ReproductionJob>(
+      `/api/science/versions/${encodeURIComponent(versionId)}/reproduce`,
+      { method: "POST" },
+    ),
+  getReproduction: (jobId: string) =>
+    fetchJSON<ReproductionJob>(
+      `/api/science/reproductions/${encodeURIComponent(jobId)}`,
+    ),
 };
+
+export interface ReproductionReport {
+  claim: string;
+  reason?: string;
+  caveats?: string[];
+  [key: string]: unknown;
+}
+
+export interface ReproductionJob {
+  job_id: string;
+  version_id: string;
+  state: "running" | "done" | "error";
+  report: ReproductionReport | null;
+}
 
 // ── Science types ─────────────────────────────────────────────────────
 

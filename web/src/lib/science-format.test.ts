@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CLAIM_LABEL,
+  CLAIM_MEANING,
+  CLAIM_TONE,
   formatBytes,
   formatAge,
+  isReproduceClaim,
   runHealth,
   shortHash,
   languageLabel,
@@ -57,5 +61,35 @@ describe("languageLabel", () => {
     expect(languageLabel("r")).toBe("R");
     expect(languageLabel("python")).toBe("python");
     expect(languageLabel(null)).toBe("unknown");
+  });
+});
+
+describe("reproduce claims", () => {
+  it("labels every claim the backend can return", () => {
+    for (const claim of [
+      "reproduced",
+      "diverged",
+      "failed",
+      "indeterminate",
+      "ineligible",
+    ] as const) {
+      expect(CLAIM_LABEL[claim]).toBeTruthy();
+      expect(CLAIM_MEANING[claim]).toBeTruthy();
+      expect(CLAIM_TONE[claim]).toBeTruthy();
+    }
+  });
+
+  it("never claims more than a byte match", () => {
+    // The UI must not upgrade "reproduced" into "verified" or "correct".
+    const wording = Object.values(CLAIM_MEANING).join(" ").toLowerCase();
+    expect(wording).not.toContain("verified");
+    expect(wording).not.toContain("correct");
+    expect(CLAIM_MEANING.reproduced).toContain("identical bytes");
+  });
+
+  it("recognises only the five known claims", () => {
+    expect(isReproduceClaim("reproduced")).toBe(true);
+    expect(isReproduceClaim("verified")).toBe(false);
+    expect(isReproduceClaim(null)).toBe(false);
   });
 });

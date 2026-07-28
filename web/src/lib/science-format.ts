@@ -70,3 +70,47 @@ export function languageLabel(language: string | null | undefined): string {
   if (!language) return "unknown";
   return language === "r" ? "R" : language;
 }
+
+/**
+ * The five claims `reproduce()` can return.
+ *
+ * Capped deliberately: "reproduced" means the bytes matched, never that the
+ * result is correct or verified. The UI must not inflate it.
+ */
+export type ReproduceClaim =
+  | "reproduced"
+  | "diverged"
+  | "failed"
+  | "indeterminate"
+  | "ineligible";
+
+export const CLAIM_LABEL: Record<ReproduceClaim, string> = {
+  reproduced: "Reproduced",
+  diverged: "Diverged",
+  failed: "Replay failed",
+  indeterminate: "Indeterminate",
+  ineligible: "Not reproducible",
+};
+
+/** What each claim actually asserts, in the reader's terms. */
+export const CLAIM_MEANING: Record<ReproduceClaim, string> = {
+  reproduced: "Re-running the recorded cells produced identical bytes.",
+  diverged: "The replay succeeded but produced different bytes.",
+  failed: "The replay could not be completed.",
+  indeterminate: "The replay ran but the result could not be compared.",
+  ineligible: "This version has no producing cell to replay.",
+};
+
+export const CLAIM_TONE: Record<ReproduceClaim, string> = {
+  reproduced: "text-success",
+  diverged: "text-warning",
+  failed: "text-destructive",
+  indeterminate: "text-text-secondary",
+  ineligible: "text-text-tertiary",
+};
+
+export function isReproduceClaim(value: unknown): value is ReproduceClaim {
+  return (
+    typeof value === "string" && value in CLAIM_LABEL
+  );
+}

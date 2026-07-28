@@ -1,10 +1,17 @@
 """Read-only HTTP surface over the science layer.
 
 The dashboard's science pages (frames, artifacts, lineage, provenance) read
-through this router. Every route is a ``GET``: the web UI observes the
-execution record, it never writes to it and never submits code. Running
-analysis stays in the CLI/TUI, so there is no browser-originated execution
-path to secure — see ``docs/design/web-ui-redesign.md``.
+through this router. The web UI observes the execution record and never
+submits code: authoring stays in the CLI/TUI — see
+``docs/design/web-ui-redesign.md``.
+
+One route is not a ``GET``. ``POST /versions/{id}/reproduce`` replays the
+cells that *already* produced a version and checksum-compares the result. It
+runs no user-supplied code, but it is still execution, so it is gated: the
+default gate denies, and the server opens it only on a loopback bind
+(:func:`set_reproduce_gate`). Under the OAuth gate it stays closed, because
+an authenticated reader is not the same as someone entitled to spend CPU on
+this machine.
 
 Two seams keep this module independent of ``web_server``'s 18k-line module:
 
@@ -49,6 +56,13 @@ LIST_TEXT_CLIP = 2000
 
 _db_opener: Optional[Callable[[Optional[str]], Any]] = None
 _blob_opener: Optional[Callable[[], Any]] = None
+def _deny_reproduction() -> bool:
+    """The default gate. A router mounted without an explicit decision must
+    not execute anything, so reproduction is off until a caller opens it."""
+    return False
+
+
+_reproduce_gate: Callable[[], bool] = _deny_reproduction
 
 
 def set_db_opener(opener: Callable[[Optional[str]], Any]) -> None:
@@ -61,6 +75,16 @@ def set_blob_store_opener(opener: Callable[[], Any]) -> None:
     """Install the blob-store accessor used by content/download routes."""
     global _blob_opener
     _blob_opener = opener
+
+
+def set_reproduce_gate(gate: Callable[[], bool]) -> None:
+    """Install the predicate that decides whether reproduction may run.
+
+    Evaluated per request rather than at import, so it can read live server
+    state (the auth mode is settled after this module is mounted).
+    """
+    global _reproduce_gate
+    _reproduce_gate = gate
 
 
 def _open_db(profile: Optional[str]):
@@ -754,3 +778,155 @@ def get_snapshot(digest: str, profile: Optional[str] = None):
         }
     finally:
         db.close()
+
+
+# ── routes: export ──────────────────────────────────────────────────
+
+
+@router.get("/frames/{frame_id}/export")
+def export_frame(frame_id: str, profile: Optional[str] = None):
+    """The frame as an RO-Crate, zipped.
+
+    A research object rather than a chat log: artifact bytes under ``data/``
+    plus ``ro-crate-metadata.json`` describing each version as a File and each
+    producing cell as a CreateAction over its inputs and outputs.
+    """
+    import io
+    import tempfile
+    import zipfile
+    from pathlib import Path
+
+    from science.rocrate import export_rocrate
+    from science.runtime import ScienceRuntime
+
+    db = _open_db(profile)
+    try:
+        exists = _row(
+            db,
+            "SELECT 1 AS ok FROM artifacts WHERE root_session_id = ? LIMIT 1",
+            (frame_id,),
+        )
+        if exists is None:
+            raise HTTPException(
+                status_code=404,
+                detail="frame has no artifacts to export",
+            )
+
+        # A runtime bound to *this* request's database and blob store, so an
+        # export of another profile reads that profile's rows rather than the
+        # dashboard process's own singleton.
+        runtime = ScienceRuntime(db, blobs=_blobs())
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp) / "crate"
+            export_rocrate(frame_id, out_dir, runtime=runtime)
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+                for path in sorted(out_dir.rglob("*")):
+                    if path.is_file():
+                        archive.write(path, path.relative_to(out_dir))
+            data = buffer.getvalue()
+    finally:
+        db.close()
+
+    safe = frame_id.replace('"', "")
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe}-ro-crate.zip"',
+        },
+    )
+
+
+# ── routes: reproduction ────────────────────────────────────────────
+#
+# Reproduction starts a kernel and replays recorded cells, so it is far too
+# slow for a request cycle. Jobs run on a single worker (kernels are heavy and
+# concurrent replays would contend) and are polled.
+#
+# Results live in memory: a restart loses them. That is deliberate for now —
+# a persisted verdict would need a table and a staleness story (does last
+# week's "reproduced" still apply after the environment changed?), and
+# claiming more than we can defend is exactly what this UI must not do.
+
+_repro_jobs: Dict[str, Dict[str, Any]] = {}
+_repro_lock = __import__("threading").Lock()
+_repro_pool = None
+
+
+def _reproduce_executor():
+    global _repro_pool
+    if _repro_pool is None:
+        from concurrent.futures import ThreadPoolExecutor
+
+        _repro_pool = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="science-reproduce"
+        )
+    return _repro_pool
+
+
+def _run_reproduction(job_id: str, version_id: str, profile: Optional[str]) -> None:
+    from science.reproduce import reproduce
+    from science.runtime import ScienceRuntime
+
+    db = _open_db(profile)
+    try:
+        runtime = ScienceRuntime(db, blobs=_blobs())
+        report = reproduce(version_id, runtime=runtime)
+        state, payload = "done", report
+    except Exception as exc:  # a crashed replay is a result, not a 500
+        _log.exception("reproduction %s failed", job_id)
+        state, payload = "error", {
+            "claim": "failed",
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
+    finally:
+        db.close()
+
+    with _repro_lock:
+        job = _repro_jobs.get(job_id)
+        if job is not None:
+            job.update(state=state, report=payload)
+
+
+@router.post("/versions/{version_id}/reproduce")
+def start_reproduction(version_id: str, profile: Optional[str] = None):
+    """Replay the cells that produced a version; returns a job to poll."""
+    if not _reproduce_gate():
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Reproduction is disabled on this bind. It re-runs recorded "
+                "code, so it is available only on a local dashboard; use "
+                "`reproduce_artifact` from the CLI instead."
+            ),
+        )
+
+    db = _open_db(profile)
+    try:
+        _require_version(db, version_id)
+    finally:
+        db.close()
+
+    import uuid
+
+    job_id = uuid.uuid4().hex
+    with _repro_lock:
+        _repro_jobs[job_id] = {
+            "job_id": job_id,
+            "version_id": version_id,
+            "state": "running",
+            "report": None,
+        }
+    _reproduce_executor().submit(_run_reproduction, job_id, version_id, profile)
+    return {"job_id": job_id, "version_id": version_id, "state": "running"}
+
+
+@router.get("/reproductions/{job_id}")
+def get_reproduction(job_id: str):
+    """Poll a reproduction. ``state`` is running | done | error."""
+    with _repro_lock:
+        job = _repro_jobs.get(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="no such reproduction")
+        return dict(job)

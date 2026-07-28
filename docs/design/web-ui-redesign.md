@@ -1,6 +1,6 @@
 # Web UI redesign — result-first dashboard
 
-Status: **plan agreed, Phase 1 in progress**
+Status: **all four phases shipped**
 Date: 2026-07-28
 
 ## 1. Why
@@ -44,14 +44,22 @@ Seventeen nav items become five.
 
 | New | Contains | Absorbs |
 |---|---|---|
-| **Frames** | index + detail (results, trace, context) | Sessions, Logs |
+| **Frames** | index + detail (results, trace, context) | Logs |
 | **Artifacts** | durable plane, cross-frame, searchable, lineage | *(new)* |
+| **Sessions** | conversation-level browsing | — |
 | **Console** | the embedded TUI terminal | Chat |
 | **Automations** | scheduled runs and watchers | Cron |
 | **Settings** | Capabilities (Models, Compute & Environments, Skills, MCP, Channels) and Workspace (Keys, Permissions, Storage, Profiles, System) | the remaining twelve |
 
 The Settings split follows the reference platform's Capabilities / Workspace
 grouping, which reads better than a flat list of twelve.
+
+**Shipped with one departure from this plan:** Sessions stayed top-level
+rather than folding into Frames. A frame requires a science record, so
+conversations that never ran code would otherwise have disappeared from the
+dashboard entirely — a functional regression the collapse did not justify.
+The config pages keep their own routes behind the hub, so deep links,
+bookmarks, and plugin `override` targets all still resolve.
 
 ### Screens
 
@@ -82,6 +90,13 @@ and real tracebacks.
 **Decision: the web UI does not execute code.** No user-submitted cells, no
 kernel controls, no submit path from the browser. Running analysis stays in the
 CLI/TUI.
+
+One route qualifies that: `POST /versions/{id}/reproduce` replays cells that
+were *already recorded* and checksum-compares the result. It accepts no code,
+but it is still execution, so it is gated — the default denies, and the server
+opens it only on a loopback bind. Under the OAuth gate it stays closed: an
+authenticated reader is not the same as someone entitled to spend CPU on this
+machine.
 
 Consequences:
 
@@ -115,6 +130,9 @@ GET /api/science/versions/{id}/lineage      ?direction=upstream|downstream
 GET /api/science/versions/{id}/content      bounded inline preview
 GET /api/science/versions/{id}/download     raw bytes from the CAS
 GET /api/science/snapshots/{hash}           a content_snapshots payload
+GET /api/science/frames/{id}/export         the frame as a zipped RO-Crate
+POST /api/science/versions/{id}/reproduce   start a replay (gated; see §4)
+GET /api/science/reproductions/{job_id}     poll a replay
 ```
 
 Notes:
@@ -130,8 +148,11 @@ Notes:
 
 - **Phase 1 — Provenance, read-only.** The API above, plus Frames, Artifacts,
   Artifact detail with lineage, and Cell detail. Nav collapse.
-- **Phase 2 — Trace streaming.** Cells appear as they run, over the existing
-  `/api/events` channel. Still no submission.
+- **Phase 2 — Trace streaming.** Cells appear as they run. **Shipped as cursor
+  polling, not push:** the agent writes cells from its own process (CLI, TUI,
+  cron) and the dashboard is a separate FastAPI process with no channel back to
+  it, so `/api/events` — which is fed by the PTY sidecar — cannot see them. A
+  `since` cursor works regardless of which process ran the code.
 - **Phase 3 — Viewers and addressing.** Viewer registry on `content_type`,
   `{{artifact:VERSION_ID}}` references, `human_description` action labels so the
   trace reads as a lab log.
@@ -146,3 +167,24 @@ Notes:
   to the trace. Accepted.
 - Built assets ship from `opencodon_cli/web_dist/`; `opencodon dashboard` serves
   the built bundle, so UI changes need `npm run build` to appear there.
+
+## 8. Shipped
+
+| Phase | Commit |
+|---|---|
+| 1 — provenance surfaces | `7a8a71e06` |
+| 1 leftovers + 2 — nav, permalinks, paging, live trace | `dee034374` |
+| 3 — viewers, refs, action labels | `767df2760` |
+| 4 — reproduce and export | this commit |
+
+Known limits carried forward:
+
+- Reproduction results live in memory and are lost on restart. Persisting a
+  verdict needs a table *and* a staleness story (does last week's
+  "reproduced" still hold after the environment moved?), and claiming more
+  than we can defend is the one thing this UI must not do.
+- Lineage renders as a depth-indented list, not a graph. Fine for a chain,
+  thin for a wide DAG.
+- Artifact search is `filename LIKE`; there is no content search.
+- The new pages were built against the default teal theme and have not been
+  reviewed in the others, where density and radius shift.

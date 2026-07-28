@@ -26,12 +26,18 @@ def client(tmp_path, db, science_runtime):
     # production opener at module scope, and clearing it here would leave a
     # later test in the same process reading the real state.db.
     prev_db, prev_blobs = science_api._db_opener, science_api._blob_opener
+    prev_gate = science_api._reproduce_gate
     science_api.set_db_opener(lambda profile: SessionDB(db_path))
     science_api.set_blob_store_opener(lambda: science_runtime.blobs)
+    # Importing web_server installs a gate that opens on a loopback bind, and
+    # that import may have happened in an earlier test in this process. Pin
+    # the closed gate so tests do not inherit whatever ran before them.
+    science_api.set_reproduce_gate(science_api._deny_reproduction)
     app = FastAPI()
     app.include_router(science_api.router)
     yield TestClient(app)
     science_api._db_opener, science_api._blob_opener = prev_db, prev_blobs
+    science_api._reproduce_gate = prev_gate
 
 
 @pytest.fixture
@@ -315,3 +321,72 @@ class TestActionLabels:
         science_runtime.run_cell("s1", "x = 1")
         [cell] = client.get("/api/science/frames/s1/cells").json()["cells"]
         assert cell["description"] is None
+
+
+class TestExport:
+    def test_frame_exports_as_a_zipped_ro_crate(self, client, frame):
+        resp = client.get("/api/science/frames/s1/export")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/zip"
+        assert 's1-ro-crate.zip' in resp.headers["content-disposition"]
+
+        import io
+        import zipfile
+
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as archive:
+            names = archive.namelist()
+            assert "ro-crate-metadata.json" in names
+            # Artifact bytes travel with the metadata, not just references.
+            assert any(name.startswith("data/") for name in names)
+
+    def test_404_for_a_frame_with_nothing_to_export(self, client, science_runtime, db):
+        db.create_session("bare", source="cli")
+        science_runtime.run_cell("bare", "x = 1")
+        assert client.get("/api/science/frames/bare/export").status_code == 404
+
+
+class TestReproduce:
+    def test_default_gate_denies(self):
+        # The shipped default, independent of whatever a server installed.
+        assert science_api._deny_reproduction() is False
+
+    def test_403_when_the_gate_is_closed(self, client, frame):
+        resp = client.post(
+            f"/api/science/versions/{frame['derived_version']}/reproduce"
+        )
+        assert resp.status_code == 403
+        assert "local dashboard" in resp.json()["detail"]
+
+    def test_runs_to_a_claim_when_allowed(self, client, frame, monkeypatch):
+        monkeypatch.setattr(science_api, "_reproduce_gate", lambda: True)
+        started = client.post(
+            f"/api/science/versions/{frame['derived_version']}/reproduce"
+        ).json()
+        assert started["state"] == "running"
+
+        # The pool has one worker; shutting it down waits for the job.
+        science_api._reproduce_executor().shutdown(wait=True)
+        science_api._repro_pool = None
+
+        report = client.get(
+            f"/api/science/reproductions/{started['job_id']}"
+        ).json()
+        assert report["state"] in ("done", "error")
+        assert report["report"]["claim"] in (
+            "reproduced",
+            "diverged",
+            "failed",
+            "indeterminate",
+            "ineligible",
+        )
+
+    def test_unknown_version_is_rejected_before_scheduling(
+        self, client, monkeypatch
+    ):
+        monkeypatch.setattr(science_api, "_reproduce_gate", lambda: True)
+        assert (
+            client.post("/api/science/versions/nope/reproduce").status_code == 404
+        )
+
+    def test_404_for_unknown_job(self, client):
+        assert client.get("/api/science/reproductions/nope").status_code == 404

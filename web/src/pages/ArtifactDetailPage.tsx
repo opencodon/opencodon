@@ -16,6 +16,7 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@nous-research/ui/ui/components/tabs";
 import { ArtifactViewer } from "@/components/science/ArtifactViewer";
 import { CellTimeline } from "@/components/science/CellTimeline";
+import { ReproducePanel } from "@/components/science/ReproducePanel";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { api } from "@/lib/api";
 import type {
@@ -33,7 +34,13 @@ import {
   shortHash,
 } from "@/lib/science-format";
 
-const TABS = ["preview", "provenance", "lineage", "versions"] as const;
+const TABS = [
+  "preview",
+  "provenance",
+  "lineage",
+  "versions",
+  "reproduce",
+] as const;
 type TabKey = (typeof TABS)[number];
 
 const TAB_LABEL: Record<TabKey, string> = {
@@ -41,6 +48,7 @@ const TAB_LABEL: Record<TabKey, string> = {
   provenance: "Provenance",
   lineage: "Lineage",
   versions: "Versions",
+  reproduce: "Reproduce",
 };
 
 function PreviewPane({
@@ -371,6 +379,10 @@ export default function ArtifactDetailPage() {
 
             {active === "lineage" ? (
               <LineagePane versionId={activeVersionId} />
+            ) : null}
+
+            {active === "reproduce" ? (
+              <ReproducePanel versionId={activeVersionId} />
             ) : null}
 
             {active === "versions" ? (
