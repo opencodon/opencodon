@@ -28,6 +28,7 @@ import {
   Database,
   Download,
   Eye,
+  FlaskConical,
   FolderOpen,
   FileText,
   Globe,
@@ -72,8 +73,12 @@ import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 import { ProfileScopeBanner } from "@/components/ProfileScopeBanner";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
+import ArtifactDetailPage from "@/pages/ArtifactDetailPage";
+import ArtifactsPage from "@/pages/ArtifactsPage";
 import ConfigPage from "@/pages/ConfigPage";
 import DocsPage from "@/pages/DocsPage";
+import FrameDetailPage from "@/pages/FrameDetailPage";
+import FramesPage from "@/pages/FramesPage";
 import EnvPage from "@/pages/EnvPage";
 import FilesPage from "@/pages/FilesPage";
 import SessionsPage from "@/pages/SessionsPage";
@@ -102,7 +107,7 @@ import { api } from "@/lib/api";
 import type { StatusResponse, UpdateCheckResponse } from "@/lib/api";
 
 function RootRedirect() {
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/frames" replace />;
 }
 
 function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
@@ -110,7 +115,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/frames" replace />;
 }
 
 const CHAT_NAV_ITEM: NavItem = {
@@ -131,6 +136,12 @@ const CHAT_NAV_ITEM: NavItem = {
  */
 const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/": RootRedirect,
+  // Science surfaces — the frames/artifacts planes are the product's
+  // landing experience; /sessions remains for conversation-level browsing.
+  "/frames": FramesPage,
+  "/frames/:frameId": FrameDetailPage,
+  "/artifacts": ArtifactsPage,
+  "/artifacts/:artifactId": ArtifactDetailPage,
   "/sessions": SessionsPage,
   "/files": FilesPage,
   "/analytics": AnalyticsPage,
@@ -160,6 +171,8 @@ function ChatRouteSink() {
 }
 
 const BUILTIN_NAV_REST: NavItem[] = [
+  { path: "/frames", label: "Frames", icon: FlaskConical },
+  { path: "/artifacts", label: "Artifacts", icon: Package },
   {
     path: "/sessions",
     labelKey: "sessions",
