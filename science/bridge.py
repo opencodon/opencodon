@@ -203,10 +203,14 @@ def r_bootstrap_source(workspace: str) -> str:
 
 def bootstrap_kernel(session, workspace, language) -> None:
     """Inject the SDK into a freshly started kernel (kernel-manager hook)."""
+    # The workspace path is baked into the injected SDK, so it has to be the
+    # path *the kernel* will resolve — which is not the host path when the
+    # kernel runs elsewhere.
+    ws = getattr(session, "kernel_workspace", None) or str(workspace)
     if language == "python":
-        src = bootstrap_source(str(workspace))
+        src = bootstrap_source(ws)
     elif language == "r":
-        src = r_bootstrap_source(str(workspace))
+        src = r_bootstrap_source(ws)
     else:
         return
     result = session.execute(src, timeout=30.0)

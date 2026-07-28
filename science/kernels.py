@@ -275,6 +275,14 @@ class ProvisionedKernel:
     manager: Any
     client: Any
     location: str
+    # Where the workspace lives *from the kernel's point of view*. Local
+    # kernels share the host path; a remote one has its own copy that the
+    # provisioner syncs, and the injected SDK must be told about it or every
+    # save_artifact() writes into a directory nobody reads.
+    remote_workspace: Optional[str] = None
+    # Backend-owned state (sandbox handle, forwarders) — opaque here, handed
+    # back to the provisioner for liveness, sync and teardown.
+    handle: Any = None
 
 
 class KernelProvisioner:
@@ -299,6 +307,33 @@ class KernelProvisioner:
     def describe_target(self) -> str:
         """Human-readable target, used in errors and in kernel_location."""
         return self.name
+
+    def is_alive(self, provisioned: ProvisionedKernel) -> bool:
+        """Whether the kernel is still usable.
+
+        Not delegated to jupyter_client, because its liveness check reads the
+        heartbeat channel — and a heartbeat does not survive every transport.
+        A remote kernel that answers ``kernel_info`` perfectly can report
+        ``hb_channel.is_beating() == False``, which would make the manager tear
+        down and restart a healthy kernel on every cell, destroying exactly the
+        session state persistent kernels exist to keep.
+        """
+        return bool(provisioned.manager and provisioned.manager.is_alive())
+
+    def shutdown(self, provisioned: ProvisionedKernel) -> None:
+        try:
+            provisioned.manager.shutdown_kernel(now=True)
+        except Exception:
+            pass
+
+    def sync_in(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
+        """Push host workspace state to the kernel before a cell runs.
+
+        A no-op when the kernel shares the host filesystem.
+        """
+
+    def sync_out(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
+        """Pull kernel-side workspace changes back after a cell runs."""
 
 
 class LocalProvisioner(KernelProvisioner):
@@ -347,6 +382,9 @@ class LocalProvisioner(KernelProvisioner):
             ) from exc
         return ProvisionedKernel(manager=km, client=kc, location=self.name)
 
+    # sync_in/sync_out stay no-ops: the kernel *is* on this filesystem, so
+    # there is nothing to copy — the workspace it writes is the one we read.
+
 
 class KernelSession:
     """One live kernel bound to a workspace directory."""
@@ -361,6 +399,7 @@ class KernelSession:
         self._spec = spec
         self._workdir = Path(workdir)
         self._provisioner = provisioner or LocalProvisioner()
+        self._provisioned: Optional[ProvisionedKernel] = None
         self._km: Any = None
         self._kc: Any = None
         self.location = self._provisioner.describe_target()
@@ -376,16 +415,43 @@ class KernelSession:
 
     def start(self) -> None:
         provisioned = self._provisioner.provision(self._spec, self._workdir)
+        self._provisioned = provisioned
         self._km = provisioned.manager
         self._kc = provisioned.client
         self.location = provisioned.location
 
+    @property
+    def kernel_workspace(self) -> str:
+        """Workspace path as the *kernel* sees it — remote copy or host path."""
+        if self._provisioned and self._provisioned.remote_workspace:
+            return self._provisioned.remote_workspace
+        return str(self._workdir)
+
     def is_alive(self) -> bool:
-        return self._km is not None and self._km.is_alive()
+        if self._provisioned is None:
+            return False
+        return self._provisioner.is_alive(self._provisioned)
 
     def execute(self, source: str, *, timeout: float) -> ExecutionOutputs:
+        """Run one cell, syncing the workspace around it.
+
+        The sync is bracketed in ``finally`` so a cell that times out or dies
+        still has its partial writes pulled back — a failed cell's artifacts
+        are evidence too, and a timeout is where you most want to see what the
+        kernel had managed to produce.
+        """
         if self._kc is None:
             raise RuntimeError("kernel session is not started")
+        # Push host-side cell setup (cell.json, materialized inputs) to the
+        # kernel before it looks for them; pull its writes back afterwards.
+        # Both are no-ops when the kernel shares this filesystem.
+        self._provisioner.sync_in(self._provisioned, self._workdir)
+        try:
+            return self._execute(source, timeout=timeout)
+        finally:
+            self._provisioner.sync_out(self._provisioned, self._workdir)
+
+    def _execute(self, source: str, *, timeout: float) -> ExecutionOutputs:
         kc = self._kc
         # Drain any stale iopub so a prior cell's late traffic is not
         # attributed to this request (msg_id filtering below is the real
@@ -510,12 +576,10 @@ class KernelSession:
             except Exception:
                 pass
             self._kc = None
-        if self._km is not None:
-            try:
-                self._km.shutdown_kernel(now=True)
-            except Exception:
-                pass
-            self._km = None
+        if self._provisioned is not None:
+            self._provisioner.shutdown(self._provisioned)
+            self._provisioned = None
+        self._km = None
 
 
 def _drain(kc) -> None:
