@@ -101,6 +101,39 @@ phases:
           a cell on a GPU-backed target reports an available accelerator,
           which is the precondition every Phase 4 model skill depends on.
 
+  P3:
+    title: Publication and workflow skills
+    status: complete
+    requirements:
+      - id: SCI-P3-01
+        statement: Imported skills carry the attribution their licence requires.
+        acceptance: >
+          every skill under skills/science declares license Apache-2.0 and a
+          metadata.provenance block naming upstream, upstream_version,
+          upstream_license, retrieved date and a non-empty modifications
+          statement — the Apache-2.0 §4(b) obligation.
+      - id: SCI-P3-02
+        statement: Third-party attribution is carried forward, not paraphrased.
+        acceptance: >
+          where the donor skill declared metadata.third_party, the imported
+          skill carries the same entries with their names and terms URLs intact.
+      - id: SCI-P3-03
+        statement: The distribution states what it derived and from where.
+        acceptance: NOTICE names Claude Science, the Apache-2.0 grant, and that weights are not redistributed.
+      - id: SCI-P3-04
+        statement: Imported skills load in opencodon like any other skill.
+        acceptance: >
+          each parses as valid frontmatter with name/description/version and is
+          discovered by the skills loader.
+      - id: SCI-P3-05
+        statement: Skills that ship kernel helpers can load them into a running kernel.
+        acceptance: >
+          load_skill_helpers(name) defines the skill's helper functions in the
+          cell namespace, and works on a remote kernel as well as a local one.
+      - id: SCI-P3-06
+        statement: A skill that ships no helpers fails clearly rather than silently.
+        acceptance: load_skill_helpers on an unknown or helper-less skill raises a named error.
+
   P2:
     title: Literature and evidence layer
     status: complete

@@ -25,12 +25,19 @@ The CAS path is never exposed to the kernel — inputs are verified copies.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+logger = logging.getLogger(__name__)
+
 SCIENCE_DIR = ".opencodon-science"
+# Skill-shipped kernel helpers are staged here, inside the workspace, so a
+# remote kernel gets them through the ordinary workspace sync rather than
+# needing a second channel back to the host.
+SKILL_HELPERS_DIR = "skill-helpers"
 INPUTS_DIR = "inputs"
 CELL_CONFIG_NAME = "cell.json"
 _SCAN_FILE_LIMIT = 256
@@ -62,6 +69,24 @@ def _hs_append(entry):
     path = _hs_os.path.join(_hs_dir(), cfg["journal"])
     with open(path, "a") as _f:
         _f.write(_hs_json.dumps(entry) + "\n")
+
+def load_skill_helpers(name, namespace=None):
+    """Define a skill's kernel helpers in this namespace; returns their names.
+
+    Some skills ship a kernel.py of plotting or analysis helpers their
+    instructions then refer to. The host stages those into the workspace, so
+    this works identically on a local and a remote kernel.
+    """
+    path = _hs_os.path.join(_hs_dir(), "skill-helpers", str(name) + ".py")
+    if not _hs_os.path.exists(path):
+        raise LookupError(
+            "skill %r ships no kernel helpers (looked for %s)" % (name, path))
+    with open(path, "r") as _f:
+        _source = _f.read()
+    _ns = namespace if namespace is not None else globals()
+    _before = set(_ns)
+    exec(compile(_source, path, "exec"), _ns)
+    return sorted(n for n in set(_ns) - _before if not n.startswith("_"))
 
 def load_artifact(version_id, reference_name=None):
     """Return the read-only path of a host-materialized input version."""
@@ -270,6 +295,40 @@ def _safe_reference(name: str, used: set) -> str:
     return candidate
 
 
+def stage_skill_helpers(workspace: Path) -> int:
+    """Copy installed skills' ``kernel.py`` into the workspace.
+
+    Staging inside the workspace is what makes the helpers reach a remote
+    kernel: the provisioners already mirror the workspace, so nothing extra
+    has to cross the boundary. Best-effort by design — a missing or
+    unreadable skills tree must never stop a cell from running.
+    """
+    try:
+        from tools.skills_hub import _skills_dir
+
+        root = Path(_skills_dir())
+    except Exception:
+        return 0
+    if not root.is_dir():
+        return 0
+
+    dest = science_dir(workspace) / SKILL_HELPERS_DIR
+    staged = 0
+    for helper in root.glob("*/*/kernel.py"):
+        try:
+            target = dest / f"{helper.parent.name}.py"
+            payload = helper.read_bytes()
+            if target.exists() and target.read_bytes() == payload:
+                staged += 1
+                continue
+            dest.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(payload)
+            staged += 1
+        except OSError as exc:
+            logger.warning("could not stage helpers for %s: %s", helper.parent.name, exc)
+    return staged
+
+
 def prepare_cell(
     workspace: Path,
     *,
@@ -292,6 +351,7 @@ def prepare_cell(
     inputs_dir.mkdir(parents=True, exist_ok=True)
     staging_dir = sci / f"staging-{execution_id}"
     staging_dir.mkdir(parents=True, exist_ok=True)
+    stage_skill_helpers(workspace)
 
     input_paths: Dict[str, str] = {}
     cell_inputs: Dict[str, dict] = {}

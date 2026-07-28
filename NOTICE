@@ -17,3 +17,14 @@ project's issue tracker.
 The web dashboard depends on the third-party npm package
 "@nous-research/ui", published by Nous Research. It is an ordinary
 dependency; the package name is theirs, not a claim of affiliation.
+
+The science skills in skills/science/ are derived from Claude Science
+(Anthropic), used under the Apache License 2.0. They have been modified
+for opencodon; each skill's metadata.provenance block records the
+upstream version and what was changed.
+
+Those skills reference third-party models, datasets and services that
+opencodon does not redistribute. Model weights are fetched by the user's
+own environment from their original sources and remain subject to their
+own licenses; each skill's metadata.third_party block names them and
+links their terms.
