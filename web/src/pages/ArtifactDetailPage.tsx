@@ -14,6 +14,7 @@ import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@nous-research/ui/ui/components/tabs";
+import { ArtifactViewer } from "@/components/science/ArtifactViewer";
 import { CellTimeline } from "@/components/science/CellTimeline";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { api } from "@/lib/api";
@@ -42,7 +43,13 @@ const TAB_LABEL: Record<TabKey, string> = {
   versions: "Versions",
 };
 
-function PreviewPane({ versionId }: { versionId: string }) {
+function PreviewPane({
+  versionId,
+  filename,
+}: {
+  versionId: string;
+  filename: string | null;
+}) {
   const [content, setContent] = useState<VersionContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,34 +78,12 @@ function PreviewPane({ versionId }: { versionId: string }) {
       </p>
     );
   }
-  if (content.binary) {
-    return (
-      <div className="flex flex-col items-start gap-2">
-        <p className="text-xs text-text-secondary">
-          {content.content_type ?? "Binary"} · {formatBytes(content.size_bytes)}{" "}
-          — not previewable as text.
-        </p>
-        <a
-          className="text-xs text-text-primary underline"
-          href={api.versionDownloadUrl(versionId)}
-        >
-          Download the file
-        </a>
-      </div>
-    );
-  }
   return (
-    <div className="flex flex-col gap-2">
-      {content.truncated ? (
-        <p className="text-xs text-warning">
-          Showing the first part of this file. Download it for the whole
-          content.
-        </p>
-      ) : null}
-      <pre className="overflow-x-auto rounded border border-border bg-card p-3 font-mono text-xs text-text-primary">
-        {content.text}
-      </pre>
-    </div>
+    <ArtifactViewer
+      versionId={versionId}
+      filename={filename}
+      content={content}
+    />
   );
 }
 
@@ -361,7 +346,10 @@ export default function ArtifactDetailPage() {
             </TabsList>
 
             {active === "preview" ? (
-              <PreviewPane versionId={activeVersionId} />
+              <PreviewPane
+                versionId={activeVersionId}
+                filename={version?.filename ?? artifact.filename}
+              />
             ) : null}
 
             {active === "provenance" ? (

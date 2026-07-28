@@ -102,7 +102,15 @@ class ScienceRuntime:
         timeout: float = DEFAULT_CELL_TIMEOUT_S,
         inputs: Optional[List[Union[str, dict]]] = None,
         origin: str = "agent",
+        description: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Run one cell and record it.
+
+        *description* is a short present-participle label for what the cell is
+        doing ("Fitting the calibration curve"). It is recorded alongside the
+        source so a reader can scan the trace as a lab log instead of reading
+        code; nothing downstream depends on it being present.
+        """
         root_session_id = self.root_for(session_id)
         execution_id = f"cell-{uuid.uuid4().hex}"
         declared_inputs = _normalize_inputs(inputs)
@@ -126,6 +134,7 @@ class ScienceRuntime:
             cell_id=execution_id,
             exit_status="running",
             origin=origin,
+            description=description,
             env_name=kernel.spec.runtime_identity,
             env_snapshot=env_snapshot if fresh else None,
         )

@@ -166,6 +166,9 @@ def _cell_summary(cell: Dict[str, Any], *, clip: bool = True) -> Dict[str, Any]:
         # feature lands without changing this contract.
         "origin": cell.get("origin") or "agent",
         "user_intervention": cell.get("user_intervention"),
+        # Present-participle action label the agent supplies with the cell;
+        # null on cells recorded before the field existed.
+        "description": cell.get("description"),
         "files_written": _json_or_none(cell.get("files_written")),
         "files_read": _json_or_none(cell.get("files_read")),
         "created_at": cell.get("created_at"),

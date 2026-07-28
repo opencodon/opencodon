@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS execution_log (
     error_lineno INTEGER,
     origin TEXT NOT NULL DEFAULT 'agent',
     user_intervention TEXT,
+    description TEXT,
     files_written TEXT,
     files_read TEXT,
     created_at REAL NOT NULL,

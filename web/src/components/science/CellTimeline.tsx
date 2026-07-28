@@ -233,9 +233,15 @@ export function CellTimeline({
                   {cell.origin}
                 </Badge>
               ) : null}
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-text-primary">
-                {(cell.source ?? "").split("\n")[0]}
-              </span>
+              {cell.description ? (
+                <span className="min-w-0 flex-1 truncate text-xs text-text-primary">
+                  {cell.description}
+                </span>
+              ) : (
+                <span className="min-w-0 flex-1 truncate font-mono text-xs text-text-primary">
+                  {(cell.source ?? "").split("\n")[0]}
+                </span>
+              )}
               <span className="shrink-0 text-xs text-text-tertiary">
                 {outcome || formatAge(cell.created_at)}
               </span>

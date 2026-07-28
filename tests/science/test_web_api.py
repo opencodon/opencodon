@@ -299,3 +299,19 @@ class TestSnapshots:
         assert body["content"] == "recorded payload"
         assert body["size_bytes"] == len("recorded payload")
         assert client.get("/api/science/snapshots/deadbeef").status_code == 404
+
+
+class TestActionLabels:
+    def test_description_round_trips_to_the_trace(self, client, science_runtime, db):
+        db.create_session("s1", source="cli")
+        science_runtime.run_cell(
+            "s1", "x = 1", description="Setting up the fit"
+        )
+        [cell] = client.get("/api/science/frames/s1/cells").json()["cells"]
+        assert cell["description"] == "Setting up the fit"
+
+    def test_description_is_optional(self, client, science_runtime, db):
+        db.create_session("s1", source="cli")
+        science_runtime.run_cell("s1", "x = 1")
+        [cell] = client.get("/api/science/frames/s1/cells").json()["cells"]
+        assert cell["description"] is None

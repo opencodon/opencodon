@@ -91,6 +91,7 @@ import PairingPage from "@/pages/PairingPage";
 import ChannelsPage from "@/pages/ChannelsPage";
 import WebhooksPage from "@/pages/WebhooksPage";
 import SettingsPage, { SETTINGS_PATHS } from "@/pages/SettingsPage";
+import VersionResolvePage from "@/pages/VersionResolvePage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -138,6 +139,8 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/frames": FramesPage,
   "/frames/:frameId": FrameDetailPage,
   "/artifacts": ArtifactsPage,
+  // Registered before the :artifactId route so "resolve" is not read as an id.
+  "/artifacts/resolve/:versionId": VersionResolvePage,
   "/artifacts/:artifactId": ArtifactDetailPage,
   "/cells/:cellId": CellDetailPage,
   "/sessions": SessionsPage,

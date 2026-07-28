@@ -1351,6 +1351,8 @@ export interface CellSummary {
   /** "agent" today; the field exists so human-run cells need no migration. */
   origin: string;
   user_intervention: string | null;
+  /** Action label ("Fitting the calibration curve"); null on older cells. */
+  description: string | null;
   files_written: string[] | null;
   files_read: string[] | null;
   created_at: number | null;
