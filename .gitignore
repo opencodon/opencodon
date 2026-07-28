@@ -170,3 +170,7 @@ RELEASE_v*.md
 infographic/
 
 native/fts5_cjk/*.so
+
+# Local-only working docs kept out of the published repo (design drafts,
+# planning notes). Retained on disk for reference; never committed.
+/.archive/

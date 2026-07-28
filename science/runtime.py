@@ -12,7 +12,7 @@ The orchestration glue the ``run_code`` tool (and ``reproduce``) drive:
    the cell row
 
 Everything lands in the same execution/lineage tables no matter how the cell
-came to run — the convergence invariant (implementation-design.md §2.5).
+came to run — the convergence invariant.
 """
 
 from __future__ import annotations

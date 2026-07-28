@@ -1,7 +1,7 @@
 """DDL for the science-layer tables in state.db.
 
 These tables implement the two-granularity execution trace and the
-artifact/lineage store from ``architecture.md`` (frame_id → session_id):
+artifact/lineage store (frame_id → session_id):
 
 - ``execution_log``          one row per code cell (kernel, env, io, status)
 - ``host_call_log``          one row per host.* call inside a cell

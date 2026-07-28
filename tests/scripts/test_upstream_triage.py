@@ -1,4 +1,4 @@
-"""Behavior contract for the weekly upstream-triage classifier (FORK-PLAN)."""
+"""Behavior contract for the weekly upstream-triage classifier."""
 
 import importlib.util
 from pathlib import Path
