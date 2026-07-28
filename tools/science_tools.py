@@ -6,9 +6,18 @@ full execution/provenance trace; the artifact tools navigate the lineage
 store; ``reproduce_artifact`` replays a version's producing cells and
 checksum-verifies the result.
 
-The toolset ships disabled by default (enable the ``science`` toolset per
-platform) and ``run_code`` is additionally service-gated on the jupyter
-kernel stack being installed (``pip install 'opencodon[science]'``).
+These ship **on by default** on every platform bundle — they're in
+``_OPENCODON_CORE_TOOLS`` (toolsets.py), not behind an opt-in ``science``
+toolset. opencodon is an open-science agent; a session that can't run code in
+a real kernel and record provenance isn't one. The standalone ``science``
+toolset still exists for narrowing (``--toolsets science``).
+
+``run_code`` and ``reproduce_artifact`` stay service-gated on the jupyter
+kernel stack via ``check_fn``, but that gate is now "installed **or**
+installable" — on an install that lacks the stack the tools remain in the
+schema and the deps are fetched at kernel-start time
+(``science.kernels.ensure_kernels``). They drop out of the schema entirely
+only when lazy installs are disabled and the stack is absent.
 """
 
 import json

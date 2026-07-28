@@ -52,6 +52,15 @@ _OPENCODON_CORE_TOOLS = [
     "text_to_speech",
     # Planning & memory
     "todo", "memory",
+    # Science layer — persistent kernels, artifact lineage, reproduction.
+    # On by default: opencodon is an open-science agent, so a session must be
+    # able to run code in a real kernel and record provenance without the user
+    # first opting into a toolset. `run_code` and `reproduce_artifact` remain
+    # check_fn-gated on the jupyter stack (tools/science_tools.py) — they drop
+    # out of the schema on installs that lack it rather than erroring at call
+    # time, and the kernel deps lazy-install on first use (science.kernels).
+    "run_code", "load_artifact", "list_artifacts",
+    "artifact_lineage", "reproduce_artifact",
     # NOTE: the desktop Project tools (project_list/create/switch) are
     # deliberately NOT here. They only make sense where a GUI can follow the
     # move, so they live in the `project` toolset and are enabled solely by the
@@ -294,9 +303,11 @@ TOOLSETS = {
     # Coding posture (base opencodon — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,
-    # home-assistant, cron, computer-use).
+    # home-assistant, cron, computer-use). The science layer stays — analysis
+    # code in a repo is still analysis, and dropping it here would silently
+    # undo the default-on science surface for anyone working inside a project.
     "coding": {
-        "description": "Coding-focused toolset: files, terminal, search, web docs, skills, todo, delegate, vision, browser",
+        "description": "Coding-focused toolset: files, terminal, search, web docs, skills, todo, delegate, vision, browser, science",
         "tools": [
             "web_search", "web_extract",
             "terminal", "process", "read_terminal", "close_terminal",
@@ -310,6 +321,9 @@ TOOLSETS = {
             "todo", "memory",
             "session_search", "clarify",
             "execute_code", "delegate_task",
+            # Science layer (see _OPENCODON_CORE_TOOLS)
+            "run_code", "load_artifact", "list_artifacts",
+            "artifact_lineage", "reproduce_artifact",
         ],
         "includes": [],
         # Posture toolset: selected per-session by agent/coding_context.py,
@@ -342,6 +356,9 @@ TOOLSETS = {
             "todo", "memory",
             "session_search",
             "execute_code", "delegate_task",
+            # Science layer (see _OPENCODON_CORE_TOOLS)
+            "run_code", "load_artifact", "list_artifacts",
+            "artifact_lineage", "reproduce_artifact",
         ],
         "includes": []
     },
@@ -372,10 +389,13 @@ TOOLSETS = {
             "execute_code", "delegate_task",
             # Cronjob management
             "cronjob",
+            # Science layer (see _OPENCODON_CORE_TOOLS)
+            "run_code", "load_artifact", "list_artifacts",
+            "artifact_lineage", "reproduce_artifact",
         ],
         "includes": []
     },
-    
+
     "opencodon-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
         "tools": _OPENCODON_CORE_TOOLS,

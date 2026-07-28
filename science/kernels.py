@@ -11,8 +11,8 @@ Ported from the opencodon donor (``execution/kernel_client.py`` +
   ``(session_id, language)``. Cells serialize on a per-key lock. A timeout or
   kernel death *taints* the kernel: it is shut down and the next run_code
   lazily starts a fresh one (interruption is not a rollback).
-- Kernels are local-only for now (see implementation-design.md §5 — remote
-  kernel backends wait for a deliberate extension of tools/environments/).
+- Kernels are local-only for now: remote kernel backends wait for a
+  deliberate extension of tools/environments/.
 
 The donor's epoch/policy record machinery is deliberately dropped: opencodon
 records each cell in ``execution_log`` (science/store.py) and a restart shows
@@ -44,14 +44,52 @@ DEFAULT_CELL_TIMEOUT_S = 60.0
 MAX_STREAM_CHARS = 200_000
 
 
-def kernels_available() -> bool:
-    """True when the jupyter kernel stack is importable (the check_fn gate)."""
+def kernels_installed() -> bool:
+    """True when the jupyter kernel stack is importable right now."""
     try:
         import ipykernel  # noqa: F401
         import jupyter_client  # noqa: F401
         return True
     except Exception:
         return False
+
+
+def kernels_available() -> bool:
+    """The ``run_code`` / ``reproduce_artifact`` check_fn gate.
+
+    Deliberately broader than :func:`kernels_installed`. The science surface
+    is on by default (see ``_OPENCODON_CORE_TOOLS``), so an install that
+    merely *lacks* the kernel stack must not permanently hide the agent's
+    headline tools — it just needs to fetch them on first use. When the deps
+    are missing but lazy installs are permitted, the tools stay in the schema
+    and :func:`ensure_kernels` does the install at kernel-start time.
+
+    Never installs anything itself: this runs during schema assembly, on
+    every tool-definition build, in non-interactive contexts (gateway, cron).
+    A pip invocation there would be a latency and correctness hazard.
+    """
+    if kernels_installed():
+        return True
+    try:
+        from tools.lazy_deps import _allow_lazy_installs
+
+        return _allow_lazy_installs()
+    except Exception:
+        return False
+
+
+def ensure_kernels() -> None:
+    """Install the jupyter kernel stack if missing. Raises on failure.
+
+    Called from the kernel-start path — i.e. only when a cell is actually
+    being run, never during schema assembly. ``prompt=False`` because this
+    can be reached from the gateway/cron with no TTY to answer.
+    """
+    if kernels_installed():
+        return
+    from tools.lazy_deps import ensure
+
+    ensure("tool.science", prompt=False)
 
 
 # ── Environment resolution ──────────────────────────────────────────
@@ -113,7 +151,10 @@ class PythonEnvResolver:
         self._interpreter = interpreter_path or sys.executable
 
     def available(self) -> bool:
-        return kernels_available()
+        # Resolver availability means "usable now", so it tracks
+        # kernels_installed, not the schema-gate variant that also returns
+        # True when the stack is merely installable.
+        return kernels_installed()
 
     def resolve(self) -> EnvironmentSpec:
         return EnvironmentSpec(
@@ -236,6 +277,11 @@ class KernelSession:
 
     def start(self) -> None:
         import os
+
+        # First actual use — fetch the kernel stack if this install doesn't
+        # carry it (lean install, broken [all] resolve). Raises
+        # FeatureUnavailable with a remediation hint if that's not possible.
+        ensure_kernels()
 
         from jupyter_client.kernelspec import KernelSpec
         from jupyter_client.manager import KernelManager

@@ -200,6 +200,18 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     ),
     # HF Agent Trace Viewer upload (opencodon trace upload / /upload-trace).
     "tool.trace_upload": ("huggingface-hub==1.2.3",),
+    # Science layer persistent kernels (`run_code`, `reproduce_artifact`).
+    # Matches the `science` extra in pyproject.toml, which IS in [all] — this
+    # entry covers lean / partial / broken-extra installs so the science
+    # surface recovers on first use instead of staying permanently hidden by
+    # its check_fn (science/kernels.py::kernels_available).
+    # Ranges (not exact pins) deliberately mirror the `science` extra: an
+    # install that already has a newer 8.x/6.x from [all] must read as
+    # satisfied, not get downgraded on first run_code.
+    "tool.science": (
+        "jupyter_client>=8.6.3,<9",
+        "ipykernel>=6.30.1,<7",
+    ),
 }
 
 
