@@ -21,10 +21,9 @@ from science.provisioners.modal_backend import (
     CHANNEL_PORTS,
     REMOTE_WORKSPACE,
     ModalProvisioner,
-    _localise,
     _remote_walk,
-    _walk_dirs,
 )
+from science.provisioners.remote import localise, walk_dirs
 
 
 class StubSandbox:
@@ -131,7 +130,7 @@ def test_cell_json_paths_are_rewritten_for_the_container(tmp_path):
         "inputs": {"v1": {"path": f"{workdir}/inputs/data.csv"}},
     }))
 
-    rewritten = json.loads(_localise(cell, workdir).decode())
+    rewritten = json.loads(localise(cell, workdir, REMOTE_WORKSPACE).decode())
     assert rewritten["staging_dir"].startswith(REMOTE_WORKSPACE)
     assert rewritten["inputs"]["v1"]["path"].startswith(REMOTE_WORKSPACE)
     assert str(workdir) not in json.dumps(rewritten)
@@ -146,7 +145,7 @@ def test_user_data_is_copied_byte_for_byte(tmp_path):
     data = workdir / "data.csv"
     data.write_bytes(payload)
 
-    assert _localise(data, workdir) == payload
+    assert localise(data, workdir, REMOTE_WORKSPACE) == payload
 
 
 @pytest.mark.requirement("SCI-P1-03")
@@ -155,7 +154,7 @@ def test_binary_files_survive_localisation(tmp_path):
     workdir.mkdir()
     blob = workdir / "model.bin"
     blob.write_bytes(b"\x00\x01\x02\xff\xfe")
-    assert _localise(blob, workdir) == b"\x00\x01\x02\xff\xfe"
+    assert localise(blob, workdir, REMOTE_WORKSPACE) == b"\x00\x01\x02\xff\xfe"
 
 
 @pytest.mark.requirement("SCI-P1-03")
@@ -167,7 +166,7 @@ def test_empty_directories_are_mirrored(tmp_path):
     (workdir / "inputs").mkdir()
     (workdir / "__pycache__").mkdir()
 
-    dirs = _walk_dirs(workdir)
+    dirs = walk_dirs(workdir)
     assert ".opencodon-science/staging-cell-1" in dirs
     assert "inputs" in dirs
     assert "__pycache__" not in dirs

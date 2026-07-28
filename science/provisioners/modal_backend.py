@@ -35,8 +35,14 @@ from science.kernels import (
     ProvisionedKernel,
     READY_TIMEOUT_S,
 )
-from science.bridge import CELL_CONFIG_NAME
 from science.provisioners.forwarding import ForwarderSet
+from science.provisioners.remote import (
+    SKIP_DIRS as _SKIP_DIRS,
+    await_answering,
+    localise,
+    walk_dirs as _walk_dirs,
+    walk_files as _walk,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +62,6 @@ CONNECTION_FILE = "/tmp/opencodon-kernel.json"
 DEFAULT_IMAGE_PACKAGES = ("ipykernel==6.30.1",)
 DEFAULT_SANDBOX_TIMEOUT_S = 3600
 KERNEL_LISTEN_TIMEOUT_S = 60.0
-
-# Files never worth shipping into the container.
-_SKIP_DIRS = {"__pycache__", ".git"}
 
 
 @dataclass
@@ -226,43 +229,15 @@ class ModalProvisioner(KernelProvisioner):
         })
         client.start_channels()
         try:
-            self._await_answering(client)
+            await_answering(
+                client, timeout=READY_TIMEOUT_S, target=self.describe_target()
+            )
         except Exception as exc:
             client.stop_channels()
             raise KernelStartError(
                 f"kernel on {self.describe_target()} did not become ready: {exc}"
             ) from exc
         return client
-
-    @staticmethod
-    def _await_answering(client) -> None:
-        """Confirm both the shell *and* iopub channels are actually carrying.
-
-        Waiting only for the ``kernel_info`` shell reply is not enough. iopub
-        is a ZMQ PUB/SUB socket, and a subscriber that has connected but not
-        finished subscribing silently drops what is published in the gap — the
-        classic slow-joiner problem, widened here by a tunnel. The kernel then
-        looks perfectly healthy on shell while the first cell's ``idle`` status
-        is published into the void, and the cell waits out its whole timeout
-        for a message that was never delivered.
-
-        So: ping until an iopub message for our own request comes back. The
-        ping is idempotent, which is what makes retrying it safe.
-        """
-        deadline = time.monotonic() + READY_TIMEOUT_S
-        while time.monotonic() < deadline:
-            msg_id = client.kernel_info()
-            client.get_shell_msg(timeout=max(1.0, deadline - time.monotonic()))
-            while time.monotonic() < deadline:
-                try:
-                    msg = client.get_iopub_msg(timeout=2.0)
-                except Exception:
-                    break  # nothing yet — ping again
-                if msg.get("parent_header", {}).get("msg_id") == msg_id:
-                    return
-        raise TimeoutError(
-            f"iopub delivered no message within {READY_TIMEOUT_S:.0f}s"
-        )
 
     # ── lifecycle ───────────────────────────────────────────────────
 
@@ -330,7 +305,7 @@ class ModalProvisioner(KernelProvisioner):
             except Exception:
                 pass
             try:
-                payload = _localise(path, Path(workdir))
+                payload = localise(path, Path(workdir), REMOTE_WORKSPACE)
                 with handle.sandbox.open(remote, "wb") as fh:
                     fh.write(payload)
                 handle.synced_out[relative] = stamp
@@ -364,48 +339,6 @@ class ModalProvisioner(KernelProvisioner):
                 handle.synced_out[relative] = destination.stat().st_mtime
             except OSError:
                 pass
-
-
-def _localise(path: Path, workdir: Path) -> bytes:
-    """Rewrite host workspace paths inside ``cell.json`` to container paths.
-
-    ``prepare_cell`` records absolute paths — ``staging_dir`` and each declared
-    input's ``path`` — because for a local kernel the host path *is* the
-    kernel's path. A remote kernel resolving them would write staged artifacts
-    into a directory that does not exist in its container, and the failure
-    surfaces as a bewildering "no such file" from inside save_artifact rather
-    than as anything about remoteness.
-
-    Only cell.json is rewritten. User data is copied byte-for-byte: guessing at
-    path-like strings inside a CSV or a pickle would corrupt it.
-    """
-    raw = path.read_bytes()
-    if path.name != CELL_CONFIG_NAME:
-        return raw
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError:
-        return raw
-    return text.replace(str(workdir), REMOTE_WORKSPACE).encode("utf-8")
-
-
-def _walk_dirs(root: Path) -> List[str]:
-    """Workspace-relative directories, parents before children."""
-    directories = [
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if path.is_dir() and not any(part in _SKIP_DIRS for part in path.parts)
-    ]
-    return sorted(directories, key=lambda p: p.count("/"))
-
-
-def _walk(root: Path) -> List[Path]:
-    files: List[Path] = []
-    for path in root.rglob("*"):
-        if path.is_dir() or any(part in _SKIP_DIRS for part in path.parts):
-            continue
-        files.append(path)
-    return files
 
 
 def _remote_walk(sandbox, root: str, depth: int = 0) -> List[str]:

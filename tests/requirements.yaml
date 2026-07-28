@@ -60,7 +60,7 @@ phases:
 
   P1:
     title: Remote kernels
-    status: in-progress
+    status: complete
     requirements:
       # — the seam (no remote target needed) —
       - id: SCI-P1-01

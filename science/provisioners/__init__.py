@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from science.provisioners.modal_backend import ModalProvisioner
+    from science.provisioners.ssh_backend import SSHProvisioner
 
-__all__ = ["ModalProvisioner", "get_provisioner"]
+__all__ = ["ModalProvisioner", "SSHProvisioner", "get_provisioner"]
 
 
 def __getattr__(name):
@@ -18,14 +19,19 @@ def __getattr__(name):
         from science.provisioners.modal_backend import ModalProvisioner
 
         return ModalProvisioner
+    if name == "SSHProvisioner":
+        from science.provisioners.ssh_backend import SSHProvisioner
+
+        return SSHProvisioner
     raise AttributeError(name)
 
 
 def get_provisioner(target: str = "local", **kwargs):
     """Resolve a provisioner by name.
 
-    ``local`` (default), or ``modal`` — optionally with a GPU, e.g.
-    ``get_provisioner("modal", gpu="A100")``.
+    ``local`` (default), ``modal`` — optionally with a GPU, e.g.
+    ``get_provisioner("modal", gpu="A100")`` — or ``ssh``, e.g.
+    ``get_provisioner("ssh", host="gpu-01", user="ada")``.
     """
     target = (target or "local").strip().lower()
     if target == "local":
@@ -36,4 +42,10 @@ def get_provisioner(target: str = "local", **kwargs):
         from science.provisioners.modal_backend import ModalProvisioner
 
         return ModalProvisioner(**kwargs)
-    raise ValueError(f"unknown kernel target {target!r}; expected 'local' or 'modal'")
+    if target == "ssh":
+        from science.provisioners.ssh_backend import SSHProvisioner
+
+        return SSHProvisioner(**kwargs)
+    raise ValueError(
+        f"unknown kernel target {target!r}; expected 'local', 'modal' or 'ssh'"
+    )
