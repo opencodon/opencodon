@@ -21,23 +21,88 @@ from science.provisioners.modal_backend import (
     CHANNEL_PORTS,
     REMOTE_WORKSPACE,
     ModalProvisioner,
-    _remote_walk,
+    _remote_listing,
 )
-from science.provisioners.remote import localise, walk_dirs
+from science.provisioners.remote import (
+    localise,
+    parse_stat_listing,
+    stat_probe_argv,
+    walk_dirs,
+)
+
+
+class StubStream:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def read(self):
+        return self._payload
+
+
+class StubExec:
+    def __init__(self, payload, returncode=0):
+        self.stdout = StubStream(payload)
+        self._returncode = returncode
+
+    def wait(self):
+        return self._returncode
+
+    def poll(self):
+        return None
+
+
+class StubFile:
+    def __init__(self, payload, sink=None):
+        self._payload = payload
+        self._sink = sink
+
+    def read(self):
+        return self._payload
+
+    def write(self, data):
+        if self._sink is not None:
+            self._sink.append(data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
 
 
 class StubSandbox:
-    """Enough of modal.Sandbox to exercise the translation layer."""
+    """Enough of modal.Sandbox to exercise the translation layer.
 
-    def __init__(self, tree=None, alive=True):
-        # tree maps path -> list of children (dir) or None (file)
-        self.tree = tree or {}
+    ``listing`` is what the in-container stat probe would print: one
+    ``(size, mtime, relative_path)`` per file.
+    """
+
+    def __init__(self, listing=(), contents=None, alive=True, exec_fails=False):
+        self.listing = list(listing)
+        self.contents = dict(contents or {})
         self.alive = alive
+        self.exec_fails = exec_fails
+        self.execs = 0
+        self.opened = []
+        self.written = {}
 
-    def ls(self, path):
-        if path not in self.tree or self.tree[path] is None:
-            raise FileNotFoundError(f"not a directory: {path}")
-        return self.tree[path]
+    def exec(self, *argv):
+        self.execs += 1
+        if self.exec_fails:
+            return StubExec("", returncode=1)
+        rows = "".join(f"{size}\t{mtime}\t{rel}\n" for size, mtime, rel in self.listing)
+        return StubExec(rows)
+
+    def open(self, path, mode="r"):
+        relative = path[len(REMOTE_WORKSPACE) + 1:]
+        if "w" in mode:
+            sink = self.written.setdefault(relative, [])
+            return StubFile(None, sink=sink)
+        self.opened.append(relative)
+        return StubFile(self.contents[relative])
+
+    def mkdir(self, path, parents=False):
+        return None
 
     def poll(self):
         return None if self.alive else 1
@@ -211,31 +276,92 @@ def test_empty_directories_are_mirrored(tmp_path):
 
 
 @pytest.mark.requirement("SCI-P1-03")
-def test_remote_walk_tells_an_empty_directory_from_a_file():
-    """ls() succeeding means directory — even when it returns nothing.
+def test_remote_listing_reports_files_with_their_stats():
+    """The listing is one exec, and only files appear in it.
 
-    Reading the empty staging dir as a file logged a failure on every cell.
+    The `ls`-per-directory walk this replaced had to infer "directory" from
+    whether ls() raised, and read the empty staging dir as a file — logging a
+    spurious failure on every cell. os.walk cannot make that mistake.
     """
-    sandbox = StubSandbox(tree={
-        REMOTE_WORKSPACE: ["out.txt", "empty_dir", "sub"],
-        f"{REMOTE_WORKSPACE}/out.txt": None,
-        f"{REMOTE_WORKSPACE}/empty_dir": [],
-        f"{REMOTE_WORKSPACE}/sub": ["nested.bin"],
-        f"{REMOTE_WORKSPACE}/sub/nested.bin": None,
-    })
-    found = _remote_walk(sandbox, REMOTE_WORKSPACE)
+    sandbox = StubSandbox(listing=[
+        ("12", "1000.000000", "out.txt"),
+        ("34", "1001.000000", "sub/nested.bin"),
+    ])
+    found = _remote_listing(sandbox)
 
-    assert f"{REMOTE_WORKSPACE}/out.txt" in found
-    assert f"{REMOTE_WORKSPACE}/sub/nested.bin" in found
-    assert f"{REMOTE_WORKSPACE}/empty_dir" not in found
+    assert found == {
+        "out.txt": ("12", "1000.000000"),
+        "sub/nested.bin": ("34", "1001.000000"),
+    }
+    assert sandbox.execs == 1
 
 
 @pytest.mark.requirement("SCI-P1-03")
-def test_remote_walk_is_depth_bounded():
-    deep = {f"{REMOTE_WORKSPACE}{'/d' * i}": [f"d"] for i in range(30)}
-    sandbox = StubSandbox(tree=deep)
-    # Terminates rather than recursing forever on a cyclic or pathological tree.
-    assert _remote_walk(sandbox, REMOTE_WORKSPACE) == []
+def test_remote_listing_skips_the_directories_never_worth_shipping():
+    """__pycache__ is generated remotely and must not ride back to the host."""
+    argv = stat_probe_argv("python3", REMOTE_WORKSPACE)
+    assert "__pycache__" in argv[-1]
+    assert ".git" in argv[-1]
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_a_malformed_listing_row_costs_a_fetch_not_the_sync():
+    assert parse_stat_listing("garbage\n12\t1000.0\tkept.txt\n") == {
+        "kept.txt": ("12", "1000.0")
+    }
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_only_files_the_cell_touched_are_pulled_back(tmp_path):
+    """The cost of a cell is what it wrote, not what the workspace holds.
+
+    Re-reading every file each cell made cell N pay for the artifacts of cells
+    1..N-1, and pulled back the inputs sync_in had just pushed up.
+    """
+    workdir = tmp_path / "ws"
+    workdir.mkdir()
+    before = [
+        ("9", "1000.000000", "big_input.csv"),
+        ("4", "1000.000000", "notes.txt"),
+    ]
+    after = before[:1] + [
+        ("7", "2000.000000", "notes.txt"),        # rewritten by the cell
+        ("5", "2000.000000", "figure.png"),       # created by the cell
+    ]
+
+    sandbox = StubSandbox(listing=before, contents={
+        "notes.txt": b"after!!", "figure.png": b"png..",
+    })
+    provisioned = _provisioned(sandbox=sandbox)
+    provisioner = ModalProvisioner()
+
+    provisioner.sync_in(provisioned, workdir)   # establishes the baseline
+    sandbox.listing = after
+    provisioner.sync_out(provisioned, workdir)
+
+    assert sandbox.opened == ["notes.txt", "figure.png"]
+    assert "big_input.csv" not in sandbox.opened
+    assert (workdir / "notes.txt").read_bytes() == b"after!!"
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_an_unreadable_baseline_pulls_everything_rather_than_nothing(tmp_path):
+    """A stale baseline would silently drop an artifact; a redundant fetch
+    only costs bandwidth, so failure resolves that way."""
+    workdir = tmp_path / "ws"
+    workdir.mkdir()
+    sandbox = StubSandbox(
+        listing=[("4", "1000.000000", "out.txt")],
+        contents={"out.txt": b"data"},
+        exec_fails=True,
+    )
+    provisioned = _provisioned(sandbox=sandbox)
+    ModalProvisioner().sync_in(provisioned, workdir)
+
+    assert provisioned.handle.remote_seen == {}
+    sandbox.exec_fails = False
+    ModalProvisioner().sync_out(provisioned, workdir)
+    assert (workdir / "out.txt").read_bytes() == b"data"
 
 
 # ── forwarding ──────────────────────────────────────────────────────

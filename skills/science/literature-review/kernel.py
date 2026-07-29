@@ -387,7 +387,6 @@ def expand_citations(doi: str, n_backward: int = 50, n_forward: int = 15) -> dic
         if j is None:
 
 
-
             j = litrev_openalex_get(base + "&select=doi,title,publication_year,cited_by_count")
         return _rows((j or {}).get("results", []))
 

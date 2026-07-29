@@ -27,7 +27,7 @@ import secrets
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from science.kernels import (
     KernelProvisioner,
@@ -37,9 +37,11 @@ from science.kernels import (
 )
 from science.provisioners.forwarding import ForwarderSet
 from science.provisioners.remote import (
-    SKIP_DIRS as _SKIP_DIRS,
+    RemoteStat,
     await_answering,
     localise,
+    parse_stat_listing,
+    stat_probe_argv,
     walk_dirs as _walk_dirs,
     walk_files as _walk,
 )
@@ -74,6 +76,9 @@ class _ModalHandle:
     key: str
     app_name: str
     synced_out: Dict[str, float] = field(default_factory=dict)
+    # Container-side (size, mtime) as of the last sync_in — the state the cell
+    # started from, so what differs afterwards is what the cell wrote.
+    remote_seen: Dict[str, RemoteStat] = field(default_factory=dict)
 
 
 class ModalProvisioner(KernelProvisioner):
@@ -150,16 +155,20 @@ class ModalProvisioner(KernelProvisioner):
             )
             sandbox.mkdir(REMOTE_WORKSPACE, parents=True)
 
-            # Written via python rather than `echo`: shell quoting mangles the
-            # JSON, and a malformed connection file fails later and opaquely,
-            # as a kernel that starts but never answers.
-            writer = sandbox.exec(
-                "python3", "-c",
-                "import sys; open(sys.argv[1],'w').write(sys.argv[2])",
-                CONNECTION_FILE, json.dumps(connection),
-            )
-            if writer.wait() != 0:
-                raise KernelStartError("could not write the kernel connection file")
+            # Written through the filesystem API rather than passed to a
+            # process: the connection JSON carries the HMAC key that
+            # authenticates every message to this kernel, and anything handed
+            # to exec() becomes argv, readable from /proc by any other process
+            # in the container. Writing it directly also sidesteps the shell
+            # quoting that would mangle the JSON into a kernel that starts but
+            # never answers.
+            try:
+                with sandbox.open(CONNECTION_FILE, "w") as handle_file:
+                    handle_file.write(json.dumps(connection))
+            except Exception as exc:
+                raise KernelStartError(
+                    f"could not write the kernel connection file: {exc}"
+                ) from exc
 
             process = sandbox.exec(
                 "python3", "-m", "ipykernel_launcher", "-f", CONNECTION_FILE
@@ -315,21 +324,39 @@ class ModalProvisioner(KernelProvisioner):
             except Exception as exc:
                 logger.warning("modal sync_in failed for %s: %s", relative, exc)
 
+        # Baseline for sync_out, taken after the push and before the cell runs.
+        # Without it every file we just uploaded reads as new on the way back,
+        # so a large declared input makes the round trip twice per cell.
+        try:
+            handle.remote_seen = _remote_listing(handle.sandbox)
+        except Exception as exc:
+            # Empty is the safe direction: it costs a redundant fetch, where a
+            # stale baseline would silently drop a written artifact.
+            logger.warning("modal sync_in baseline failed: %s", exc)
+            handle.remote_seen = {}
+
     def sync_out(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
         """Copy container-side workspace writes back to the host."""
         handle: _ModalHandle = provisioned.handle
         if handle is None:
             return
         try:
-            remote_files = _remote_walk(handle.sandbox, REMOTE_WORKSPACE)
+            listing = _remote_listing(handle.sandbox)
         except Exception as exc:
             logger.warning("modal sync_out listing failed: %s", exc)
             return
-        for remote in remote_files:
-            relative = remote[len(REMOTE_WORKSPACE) + 1:]
+        baseline = handle.remote_seen
+        for relative, stat in listing.items():
+            # An untouched file is not read, not transferred and not compared,
+            # so a cell costs what it wrote rather than what the workspace
+            # happens to hold by then.
+            if baseline.get(relative) == stat:
+                continue
             destination = Path(workdir) / relative
             try:
-                with handle.sandbox.open(remote, "rb") as fh:
+                with handle.sandbox.open(
+                    f"{REMOTE_WORKSPACE}/{relative}", "rb"
+                ) as fh:
                     payload = fh.read()
             except Exception as exc:
                 logger.warning("modal sync_out failed for %s: %s", relative, exc)
@@ -342,26 +369,23 @@ class ModalProvisioner(KernelProvisioner):
                 handle.synced_out[relative] = destination.stat().st_mtime
             except OSError:
                 pass
+        handle.remote_seen = listing
 
 
-def _remote_walk(sandbox, root: str, depth: int = 0) -> List[str]:
-    """List files under *root* in the container, recursively."""
-    if depth > 8:
-        return []
-    found: List[str] = []
-    for entry in sandbox.ls(root):
-        path = f"{root}/{entry}"
-        if entry in _SKIP_DIRS:
-            continue
-        try:
-            children = sandbox.ls(path)
-        except Exception:
-            # ls() only fails on a non-directory, so this is a file.
-            found.append(path)
-            continue
-        # ls() succeeded: a directory, even when it came back empty. Recursing
-        # on it yields nothing, which is right — an empty staging dir has no
-        # artifacts to pull back. Treating "empty" as "file" instead would try
-        # to read a directory and log a spurious failure for every cell.
-        found.extend(_remote_walk(sandbox, path, depth + 1))
-    return found
+def _remote_listing(sandbox, root: str = REMOTE_WORKSPACE) -> Dict[str, RemoteStat]:
+    """``{relative: (size, mtime)}`` for every file in the container workspace.
+
+    One ``exec`` walking the tree in-container, rather than an ``ls`` per
+    directory across the RPC boundary. Beyond being a single round trip, it
+    removes the guesswork the ``ls`` walk depended on — a directory that came
+    back empty had to be told from a file by whether ``ls`` raised, and getting
+    that wrong logged a spurious failure for the empty staging dir on every
+    cell. ``os.walk`` simply knows.
+    """
+    process = sandbox.exec(*stat_probe_argv("python3", root))
+    output = process.stdout.read()
+    if process.wait() != 0:
+        raise RuntimeError(f"remote listing of {root} failed")
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", "replace")
+    return parse_stat_listing(output)

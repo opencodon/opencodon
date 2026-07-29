@@ -242,7 +242,3 @@ def derive_outline(figure_png_path, claim=None, data_hints=None, model=None):
     for p in out.get("panels") or []:
         p["data_vid"] = None
     return out
-
-
-
-

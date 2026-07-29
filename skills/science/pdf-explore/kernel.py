@@ -119,7 +119,6 @@ def pdf_prompt_blocks(instructions):
     """
 
 
-
     if instructions and not isinstance(instructions, str):
         raise TypeError(
             f"pdf-explore: system/instructions must be a str, got "
@@ -205,13 +204,9 @@ def pdf_pages(path, mode="auto", pages=None, dpi=100, cache=True):
         )
 
 
-
     if pages is not None and not hasattr(pages, "__len__"):
         pages = list(pages)
     if mode == "auto":
-
-
-
 
 
         txt = pdf_pages(path, mode="text", pages=pages, dpi=dpi, cache=cache)
@@ -243,11 +238,6 @@ def pdf_pages(path, mode="auto", pages=None, dpi=100, cache=True):
         sha8 = hashlib.sha1(abspath.encode()).hexdigest()[:8]
 
 
-
-
-
-
-
         img_dir = os.path.join(
             os.getcwd(), ".cache", "pdf-explore",
             f"{sha8}-{mtime}", f"dpi{int(dpi)}",
@@ -258,10 +248,6 @@ def pdf_pages(path, mode="auto", pages=None, dpi=100, cache=True):
         import pypdfium2 as pdfium
     except ImportError:
         pdfium = None
-
-
-
-
 
 
     if pdfium is not None and render:
@@ -490,11 +476,6 @@ def pdf_map(path, prompt="Summarize this page in 2 sentences.",
     want_image = any(p.get("image_path") for p in parsed)
 
 
-
-
-
-
-
     if system and not isinstance(system, str):
         raise TypeError(
             f"pdf-explore: system/instructions must be a str, got "
@@ -580,7 +561,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
                     idx = dest.get_index() if dest else None
 
 
-
                     toc.append([bm.level + 1, bm.get_title(),
                                 (idx + 1) if idx is not None else 0])
             finally:
@@ -597,10 +577,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
                 fast = [{"page": int(p), "heading": str(t), "level": int(lv)}
                         for lv, t, p in toc if p > 0]
                 if fast:
-
-
-
-
 
 
                     try:
@@ -620,9 +596,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
                             t = _norm(by_pg.get(e["page"], "")[:1200])
                             if h and h in t:
                                 hits += 1
-
-
-
 
 
                         has_text_layer = any(
@@ -657,12 +630,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
     )
 
 
-
-
-
-
-
-
     parsed = pdf_pages(abspath, mode="auto")
     if not parsed:
         return []
@@ -686,7 +653,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
         r = pdf_sdk().llm([{
             "prompt": hdr + body,
             "model": model or PDF_DEFAULT_MODEL,
-
 
 
             "max_tokens": 8192,
@@ -723,10 +689,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
             if out and r.get("stop_reason") != "max_tokens":
                 out.sort(key=lambda e: e["page"])
                 return out
-
-
-
-
 
 
     if pages is None and len(parsed) > PDF_MAX_FANOUT_PAGES:
@@ -766,7 +728,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
     )
 
 
-
     per_page = {}
     for r in rows:
         hs = (r.get("data") or {}).get("section_headings") or []
@@ -781,10 +742,6 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
             m = level_re.match(h)
             level = 1 + (m.group(1).count(".") if m else 0)
             out.append({"page": pg, "heading": h, "level": level})
-
-
-
-
 
 
     last_page = {}
@@ -856,11 +813,6 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
     want_image = any(p.get("image_path") for p in parsed)
 
 
-
-
-
-
-
     if strategy not in ("auto", "single_call", "fanout"):
         raise ValueError(
             f"pdf_scan: strategy must be 'auto'|'single_call'|'fanout', "
@@ -880,9 +832,6 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
     if strategy == "single_call" and want_image:
 
 
-
-
-
         raise ValueError(
             "pdf_scan: strategy='single_call' is text-only; this document "
             "parsed in image mode. Pass mode='text' to rank from the text "
@@ -891,18 +840,11 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
         )
 
 
-
     if strategy == "fanout":
         pdf_check_fanout(parsed, "pdf_scan")
 
 
-
-
-
-
     if strategy == "single_call" and not want_image:
-
-
 
 
         hdr, p_open, p_close, q_open, q_close = pdf_prompt_blocks(
@@ -946,8 +888,6 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
                   .get("top_pages") or [])
 
 
-
-
         if not ranked and r.get("stop_reason") == "max_tokens":
             return {"hits": [], "n_scanned": len(parsed),
                     "usage": {**usage, "n_errors": 1},
@@ -957,7 +897,6 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
         hits = []
         seen = set()
         for pg in ranked:
-
 
 
             try:
@@ -982,15 +921,12 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
         return {"hits": hits, "n_scanned": len(parsed), "usage": usage}
 
 
-
-
     hdr, p_open, p_close, q_open, q_close = pdf_prompt_blocks(
         system or PDF_CLASSIFY_SYSTEM)
 
     reqs = []
     for p in parsed:
         txt = pdf_guard_text(p["text"])
-
 
 
         if len(txt) > 6000:
@@ -1028,9 +964,6 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
             })
             continue
         tu = (r.get("tool_use") or {}).get("input") or {}
-
-
-
 
 
         if not tu and r.get("stop_reason") == "max_tokens":
@@ -1145,7 +1078,6 @@ def pdf_extract(path, schema, pages=None, mode="auto", model=None,
                         "usage": None})
             continue
         tu = (r.get("tool_use") or {}).get("input")
-
 
 
         out.append({"page": p["page"], "data": tu,

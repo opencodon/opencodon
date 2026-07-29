@@ -33,8 +33,11 @@ from science.kernels import (
     READY_TIMEOUT_S,
 )
 from science.provisioners.remote import (
+    RemoteStat,
     await_answering,
     localise,
+    parse_stat_listing,
+    stat_probe_argv,
     walk_dirs,
     walk_files,
 )
@@ -42,6 +45,9 @@ from science.provisioners.remote import (
 logger = logging.getLogger(__name__)
 
 CHANNELS = ("shell_port", "iopub_port", "stdin_port", "control_port", "hb_port")
+# Written into the remote workspace by this backend, so never pulled back as
+# though the cell had produced them.
+_BOOKKEEPING = frozenset({"kernel.log", "kernel-connection.json"})
 SSH_CONNECT_TIMEOUT_S = 20
 KERNEL_LISTEN_TIMEOUT_S = 60.0
 COMMAND_TIMEOUT_S = 120
@@ -64,6 +70,10 @@ class _SSHHandle:
     local_ports: List[int] = field(default_factory=list)
     ssh_opts: tuple = ()
     synced: Dict[str, float] = field(default_factory=dict)
+    # Remote (size, mtime) as of the last sync_in, i.e. immediately before the
+    # cell ran. Anything differing afterwards is what the cell wrote, which is
+    # the only thing worth pulling back.
+    remote_seen: Dict[str, RemoteStat] = field(default_factory=dict)
 
 
 def _port_open(port: int) -> bool:
@@ -171,14 +181,20 @@ class SSHProvisioner(KernelProvisioner):
             return shlex.quote(self.remote_workspace)
         return '"$HOME"/' + shlex.quote(self.remote_workspace)
 
-    def _run(self, command: str, *, timeout: int = COMMAND_TIMEOUT_S):
+    def _run(
+        self,
+        command: str,
+        *,
+        timeout: int = COMMAND_TIMEOUT_S,
+        input: Optional[str] = None,
+    ):
         return subprocess.run(
             ["ssh", *self._opts, self.destination, command],
-            capture_output=True, text=True, timeout=timeout,
+            input=input, capture_output=True, text=True, timeout=timeout,
         )
 
-    def _check(self, command: str, what: str) -> str:
-        result = self._run(command)
+    def _check(self, command: str, what: str, *, input: Optional[str] = None) -> str:
+        result = self._run(command, input=input)
         if result.returncode != 0:
             raise KernelStartError(
                 f"{what} failed on {self.describe_target()}: "
@@ -204,8 +220,11 @@ class SSHProvisioner(KernelProvisioner):
             # Resolve ~ remotely: every later path is absolute, because
             # cell.json is read by a process whose cwd we do not control.
             target = self._remote_root_expr()
+            # 0700: the workspace holds the session's data and, until the
+            # kernel exits, its connection file. On a shared login node the
+            # default umask would leave both world-readable.
             root = self._check(
-                f"mkdir -p {target} && cd {target} && pwd",
+                f"mkdir -p {target} && chmod 700 {target} && cd {target} && pwd",
                 "creating the remote workspace",
             )
             handle.remote_workspace = root
@@ -221,10 +240,17 @@ class SSHProvisioner(KernelProvisioner):
             # Bound to 127.0.0.1, not 0.0.0.0: the channels are reachable only
             # through the SSH tunnel, so a shared login node does not expose
             # someone else's kernel to the network.
+            #
+            # Piped over stdin, never interpolated into the command. The
+            # connection JSON carries the HMAC key that authenticates every
+            # message to this kernel, and a command string is argv — readable
+            # from /proc by any other user on the host, which on a shared login
+            # node is precisely the threat. `umask 077` covers the window
+            # between create and chmod.
             self._check(
-                f"cat > {shlex.quote(conn_path)} <<'OPENCODON_EOF'\n"
-                f"{json.dumps(connection)}\nOPENCODON_EOF",
+                f"umask 077 && cat > {shlex.quote(conn_path)}",
                 "writing the kernel connection file",
+                input=json.dumps(connection),
             )
 
             # Launched by a remote Python daemonizer rather than `nohup ... &`.
@@ -450,6 +476,19 @@ class SSHProvisioner(KernelProvisioner):
 
     # ── workspace mirroring ─────────────────────────────────────────
 
+    def _remote_listing(self, root: str) -> Dict[str, RemoteStat]:
+        """``{relative: (size, mtime)}`` for every file in the remote workspace."""
+        argv = stat_probe_argv(self.python, root)
+        result = self._run(" ".join(shlex.quote(part) for part in argv))
+        if result.returncode != 0:
+            # Not a KernelStartError: the kernel is running fine, the mirror
+            # is what failed, and both callers treat that as recoverable.
+            raise RuntimeError(
+                f"listing the remote workspace on {self.describe_target()} "
+                f"failed: {(result.stderr or result.stdout).strip()[:200]}"
+            )
+        return parse_stat_listing(result.stdout)
+
     def sync_in(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
         handle: _SSHHandle = provisioned.handle
         if handle is None or not handle.remote_workspace:
@@ -477,25 +516,42 @@ class SSHProvisioner(KernelProvisioner):
             except Exception as exc:
                 logger.warning("ssh sync_in failed for %s: %s", relative, exc)
 
+        # Baseline for sync_out, taken *after* the push and before the cell:
+        # whatever differs from this is the cell's own work. Without it every
+        # file we just uploaded reads as new on the way back, so a large
+        # declared input would make the round trip twice per cell.
+        try:
+            handle.remote_seen = self._remote_listing(root)
+        except Exception as exc:
+            # An empty baseline is the safe direction — it costs a redundant
+            # fetch, where a stale one would silently drop a written artifact.
+            logger.warning("ssh sync_in baseline failed: %s", exc)
+            handle.remote_seen = {}
+
     def sync_out(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
         handle: _SSHHandle = provisioned.handle
         if handle is None or not handle.remote_workspace:
             return
         root = handle.remote_workspace
-        listing = self._run(f"find {shlex.quote(root)} -type f")
-        if listing.returncode != 0:
+        try:
+            listing = self._remote_listing(root)
+        except Exception as exc:
+            logger.warning("ssh sync_out listing failed: %s", exc)
             return
-        for remote in listing.stdout.split("\n"):
-            remote = remote.strip()
-            if not remote or not remote.startswith(root + "/"):
+
+        baseline = handle.remote_seen
+        for relative, stat in listing.items():
+            if relative in _BOOKKEEPING:
+                continue  # backend plumbing, not the session's workspace
+            # The whole point of the baseline: an untouched file is not read,
+            # not transferred and not compared, so a cell costs what it wrote
+            # rather than what the workspace happens to hold.
+            if baseline.get(relative) == stat:
                 continue
-            relative = remote[len(root) + 1:]
-            if relative in ("kernel.log", "kernel-connection.json"):
-                continue  # backend bookkeeping, not the session's workspace
             try:
                 fetched = subprocess.run(
                     ["ssh", *self._opts, self.destination,
-                     f"cat {shlex.quote(remote)}"],
+                     f"cat {shlex.quote(f'{root}/{relative}')}"],
                     capture_output=True, timeout=COMMAND_TIMEOUT_S, check=True,
                 )
             except Exception as exc:
@@ -507,9 +563,9 @@ class SSHProvisioner(KernelProvisioner):
                 continue
             destination.write_bytes(fetched.stdout)
             try:
+                # Host-side mtime, so the file we just pulled down is not
+                # pushed straight back up on the next cell.
                 handle.synced[relative] = destination.stat().st_mtime
             except OSError:
                 pass
-
-
-
+        handle.remote_seen = listing

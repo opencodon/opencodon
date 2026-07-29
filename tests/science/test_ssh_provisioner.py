@@ -9,6 +9,7 @@ Modal backend uses. That makes it genuine key auth and genuine `ssh -L`
 tunnels rather than a mock of them.
 """
 
+import json
 import subprocess
 import tempfile
 import time
@@ -202,6 +203,143 @@ def test_non_python_language_is_refused_before_connecting():
 def test_a_host_is_required():
     with pytest.raises(ValueError):
         SSHProvisioner("")
+
+
+# ── SCI-P1-03 workspace mirroring ───────────────────────────────────
+
+
+def _listing(rows):
+    return "".join(f"{size}\t{mtime}\t{rel}\n" for size, mtime, rel in rows)
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_only_files_the_cell_touched_are_pulled_back(tmp_path, monkeypatch):
+    """A cell costs what it wrote, not what the workspace holds.
+
+    Re-reading every file each cell made cell N pay for the artifacts of cells
+    1..N-1, and pulled back the inputs sync_in had just pushed up.
+    """
+    provisioner = SSHProvisioner("gpu-01")
+    root = "/home/ada/ws"
+    before = [("9", "1000.000000", "big_input.csv"), ("4", "1000.000000", "notes.txt")]
+    after = [
+        ("9", "1000.000000", "big_input.csv"),
+        ("7", "2000.000000", "notes.txt"),
+        ("5", "2000.000000", "figure.png"),
+    ]
+    state = {"rows": before}
+
+    monkeypatch.setattr(
+        provisioner, "_run",
+        lambda command, **kw: subprocess.CompletedProcess(
+            [], 0, _listing(state["rows"]) if "os.walk" in command else "", ""
+        ),
+    )
+    fetched = []
+
+    def fake_fetch(argv, **kwargs):
+        fetched.append(argv[-1].rsplit("/", 1)[-1])
+        return subprocess.CompletedProcess(argv, 0, b"pulled", b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_fetch)
+
+    workdir = tmp_path / "ws"
+    workdir.mkdir()
+    provisioned = _provisioned(remote_workspace=root)
+    provisioner.sync_in(provisioned, workdir)   # establishes the baseline
+    state["rows"] = after
+    provisioner.sync_out(provisioned, workdir)
+
+    assert fetched == ["notes.txt", "figure.png"]
+    assert "big_input.csv" not in fetched
+    assert (workdir / "notes.txt").read_bytes() == b"pulled"
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_backend_bookkeeping_is_never_pulled_back(tmp_path, monkeypatch):
+    """kernel.log and the connection file are this backend's, not the cell's."""
+    provisioner = SSHProvisioner("gpu-01")
+    rows = [
+        ("1", "2000.000000", "kernel.log"),
+        ("2", "2000.000000", "kernel-connection.json"),
+        ("3", "2000.000000", "real.txt"),
+    ]
+    monkeypatch.setattr(
+        provisioner, "_run",
+        lambda command, **kw: subprocess.CompletedProcess([], 0, _listing(rows), ""),
+    )
+    fetched = []
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda argv, **kw: (
+            fetched.append(argv[-1].rsplit("/", 1)[-1]),
+            subprocess.CompletedProcess(argv, 0, b"x", b""),
+        )[1],
+    )
+
+    workdir = tmp_path / "ws"
+    workdir.mkdir()
+    provisioner.sync_out(_provisioned(remote_workspace="/home/ada/ws"), workdir)
+    assert fetched == ["real.txt"]
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_the_connection_key_never_reaches_a_command_line(monkeypatch):
+    """The HMAC key authenticates every message to the kernel, and argv is
+    world-readable via /proc — which on a shared login node is the threat."""
+    provisioner = SSHProvisioner("gpu-01")
+    seen = []
+
+    def record(command, *, timeout=120, input=None):
+        seen.append((command, input))
+        if "pwd" in command:
+            return subprocess.CompletedProcess([], 0, "/home/ada/ws", "")
+        if "socket" in command:
+            return subprocess.CompletedProcess([], 0, "1 2 3 4 5", "")
+        if "subprocess" in command:
+            return subprocess.CompletedProcess([], 0, "9999", "")
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(provisioner, "_run", record)
+    monkeypatch.setattr(provisioner, "_await_listening", lambda *a, **k: None)
+    monkeypatch.setattr(provisioner, "_open_tunnel", lambda *a: None)
+    monkeypatch.setattr(provisioner, "_await_tunnels", lambda *a: None)
+    monkeypatch.setattr(provisioner, "_connect", lambda key, ports: object())
+
+    spec = PythonEnvResolver().resolve()
+    provisioner.provision(spec, Path("/tmp"))
+
+    written = [payload for command, payload in seen if payload and "key" in payload]
+    assert len(written) == 1, "the connection file is written exactly once"
+    key = json.loads(written[0])["key"]
+    assert key and all(key not in command for command, _ in seen)
+
+
+@pytest.mark.requirement("SCI-P1-03")
+def test_the_remote_workspace_is_not_world_readable(monkeypatch):
+    """It holds the session's data and, until the kernel exits, its key."""
+    provisioner = SSHProvisioner("gpu-01")
+    seen = []
+
+    def record(command, *, timeout=120, input=None):
+        seen.append(command)
+        if "socket" in command:
+            return subprocess.CompletedProcess([], 0, "1 2 3 4 5", "")
+        if "subprocess" in command:
+            return subprocess.CompletedProcess([], 0, "9999", "")
+        return subprocess.CompletedProcess([], 0, "/home/ada/ws", "")
+
+    monkeypatch.setattr(provisioner, "_run", record)
+    monkeypatch.setattr(provisioner, "_await_listening", lambda *a, **k: None)
+    monkeypatch.setattr(provisioner, "_open_tunnel", lambda *a: None)
+    monkeypatch.setattr(provisioner, "_await_tunnels", lambda *a: None)
+    monkeypatch.setattr(provisioner, "_connect", lambda key, ports: object())
+
+    provisioner.provision(PythonEnvResolver().resolve(), Path("/tmp"))
+
+    assert any("chmod 700" in command for command in seen)
+    # Covers the window between create and chmod on the connection file.
+    assert any("umask 077" in command for command in seen)
 
 
 # ── live SSH ────────────────────────────────────────────────────────

@@ -8,6 +8,8 @@ learned the hard way against a live backend:
 - ``cell.json`` carries absolute host paths that mean nothing remotely
 - empty directories matter, because the staging dir is created empty
 - user data must be copied byte-for-byte, never path-rewritten
+- pulling the workspace back has to cost what the cell *wrote*, not what the
+  workspace holds
 
 Keeping these here means a second backend inherits the fixes rather than
 rediscovering them.
@@ -18,7 +20,7 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 
 from science.bridge import CELL_CONFIG_NAME
 
@@ -26,6 +28,57 @@ logger = logging.getLogger(__name__)
 
 # Directories never worth shipping to the far end.
 SKIP_DIRS = {"__pycache__", ".git"}
+
+# A file's identity for change detection: size and mtime, kept as the strings
+# the remote printed. Comparing the raw text sidesteps float round-tripping —
+# the only question being asked is "is this the same as last time".
+RemoteStat = Tuple[str, str]
+
+# Listed remotely rather than by walking directories over the RPC boundary.
+# One round trip returns the whole tree with the stats needed to tell what the
+# cell touched, and os.walk cannot mistake an empty directory for a file — the
+# failure the per-directory `ls` walk used to hit on every cell.
+STAT_PROBE_SRC = """
+import os, sys
+root = sys.argv[1]
+skip = set(sys.argv[2].split(",")) if len(sys.argv) > 2 else set()
+for dirpath, dirnames, filenames in os.walk(root):
+    dirnames[:] = [d for d in dirnames if d not in skip]
+    for name in filenames:
+        path = os.path.join(dirpath, name)
+        try:
+            st = os.stat(path)
+        except OSError:
+            continue
+        sys.stdout.write(
+            "%d\\t%.6f\\t%s\\n" % (st.st_size, st.st_mtime,
+                                   os.path.relpath(path, root))
+        )
+"""
+
+
+def stat_probe_argv(python: str, root: str) -> List[str]:
+    """Argv running :data:`STAT_PROBE_SRC` against *root*."""
+    return [python, "-c", STAT_PROBE_SRC, root, ",".join(sorted(SKIP_DIRS))]
+
+
+def parse_stat_listing(text: str) -> Dict[str, RemoteStat]:
+    """``{relative_path: (size, mtime)}`` from the probe's output.
+
+    Unparseable lines are dropped rather than raising: a listing is a cache
+    key, and one malformed row should cost a redundant fetch, not the sync.
+    """
+    listing: Dict[str, RemoteStat] = {}
+    for line in (text or "").splitlines():
+        # Split from the left exactly twice, so a path containing a tab
+        # survives intact in the remainder.
+        parts = line.rstrip("\n").split("\t", 2)
+        if len(parts) != 3:
+            continue
+        size, mtime, relative = parts
+        if relative:
+            listing[relative] = (size, mtime)
+    return listing
 
 
 def await_answering(client, *, timeout: float, target: str) -> None:
