@@ -17,6 +17,12 @@ metadata:
 
 ---
 
+> **Limitation on opencodon.** `derive_paper_brief()` raises
+> `NotImplementedError`: it needs `host.llm()` with tool-calling, which
+> opencodon's science host bridge does not implement. Write the brief
+> dict by hand (see `paper_brief_schema()`) and the review flow works.
+> See `docs/science-skill-gaps.md`.
+
 
 # paper-narrative
 

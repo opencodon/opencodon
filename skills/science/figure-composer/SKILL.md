@@ -17,6 +17,12 @@ metadata:
 
 ---
 
+> **Limitation on opencodon.** `derive_outline()` raises
+> `NotImplementedError`: it needs `host.llm()` with tool-calling and
+> vision, which opencodon's science host bridge does not implement.
+> Author the outline dict by hand and the rest of the skill works.
+> See `docs/science-skill-gaps.md`.
+
 
 # Figure Composer — narrative → panels → compose → adversarial loop
 

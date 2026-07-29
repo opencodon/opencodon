@@ -17,6 +17,13 @@ metadata:
 
 ---
 
+> **Limitation on opencodon.** `pdf_map`, `pdf_outline`, `pdf_scan` and
+> `pdf_extract` raise `NotImplementedError`: they need a batched
+> `host.llm()` call per page, which opencodon's science host bridge does
+> not implement. The parsing layer (`pdf_pages`, `pdf_resolve`) works, so
+> a cell can still read a PDF's text and page images directly.
+> See `docs/science-skill-gaps.md`.
+
 # PDF Explore — navigate a PDF too big to embed
 
 A 50-page PDF via `read_file` is ~200K tokens in context, and pages

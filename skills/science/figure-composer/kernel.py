@@ -221,6 +221,7 @@ def derive_outline(figure_png_path, claim=None, data_hints=None, model=None):
     untrusted input and every string field is vision-model-derived. `data_vid`
     is forced to None on every panel (pixels cannot encode a workspace artifact
     id); fill those in yourself from the session's data refs."""
+    fc_unsupported("derive_outline", "host.llm() with tool-calling and vision")
     sch = figure_outline_schema()
     prompt = ("Reverse-engineer this multi-panel figure into a figure_outline. "
               "For each panel: letter, role (hero/primary/supporting/schematic), "
@@ -241,3 +242,20 @@ def derive_outline(figure_png_path, claim=None, data_hints=None, model=None):
     for p in out.get("panels") or []:
         p["data_vid"] = None
     return out
+
+
+def fc_unsupported(fn, needs):
+    """Refuse an entry point that depends on a host capability we lack.
+
+    Written against Claude Science's host SDK, whose ``llm()`` takes ``tools``/
+    ``tool_choice`` (and images) and returns ``tool_use`` blocks. opencodon's
+    ``host.llm()`` takes one prompt string and returns text, so the call fails
+    with a ``TypeError`` several frames in — which reads as a bug in the skill
+    rather than a capability that was never ported. Raise the real reason at
+    the boundary instead. See docs/science-skill-gaps.md.
+    """
+    raise NotImplementedError(
+        f"figure-composer: {fn}() needs {needs}, which opencodon's science host "
+        f"bridge does not implement (host.llm takes one prompt string and "
+        f"returns text). See docs/science-skill-gaps.md."
+    )

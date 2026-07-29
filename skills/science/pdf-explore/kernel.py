@@ -68,6 +68,25 @@ PDF_MAX_FANOUT_PAGES = 512
 fails with a chunking hint before building 600 requests, not after."""
 
 
+def pdf_unsupported(fn, needs):
+    """Refuse an entry point that depends on a host capability we lack.
+
+    These functions were written against Claude Science's host SDK, whose
+    ``llm()`` takes a list of per-item request dicts (each with its own model,
+    token budget and images) and returns ``tool_use`` blocks. opencodon's
+    ``host.llm()`` takes one prompt string and returns text, so the call fails
+    with a ``TypeError`` several frames in — which reads as a bug in the skill
+    rather than a capability that was never ported. Raise the real reason at
+    the boundary instead. See docs/science-skill-gaps.md.
+    """
+    raise NotImplementedError(
+        f"pdf-explore: {fn}() needs {needs}, which opencodon's science host "
+        f"bridge does not implement (host.llm takes one prompt string and "
+        f"returns text). The parsing layer — pdf_pages, pdf_resolve — works. "
+        f"See docs/science-skill-gaps.md."
+    )
+
+
 def pdf_check_fanout(parsed, fn):
     if len(parsed) > PDF_MAX_FANOUT_PAGES:
         raise ValueError(
@@ -475,6 +494,7 @@ def pdf_map(path, prompt="Summarize this page in 2 sentences.",
     ``prompt`` is applied per-page with the page text/image prepended;
     defaults to a 2-sentence summary.
     """
+    pdf_unsupported("pdf_map", "a batched host.llm() call per page")
     model = model or pdf_default_model()
     parsed = pdf_pages(path, mode=mode, pages=pages, dpi=dpi)
     if not parsed:
@@ -557,6 +577,7 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
             print(f"p{e['page']:>3} {'  ' * (e['level'] - 1)}{e['heading']}")
         # → then read_file(pages=[the section you want])
     """
+    pdf_unsupported("pdf_outline", "a batched host.llm() call per page")
     abspath = os.path.abspath(pdf_resolve(path))
     if not force_llm:
         toc = None
@@ -800,6 +821,7 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
     returns every page's summary so nothing is filtered out. Use
     ``pdf_scan`` when you have a specific query and want only the top-K.
     """
+    pdf_unsupported("pdf_scan", "a batched host.llm() call per page")
     if not isinstance(query, str) or not query.strip():
         raise ValueError("pdf_scan: query must be a non-empty str")
     model = model or pdf_default_model()
@@ -1012,6 +1034,7 @@ def pdf_extract(path, schema, pages=None, mode="auto", model=None,
         rows = pdf_extract("paper.pdf", schema)
         all_cites = [c for r in rows for c in (r["data"] or {}).get("citations", [])]
     """
+    pdf_unsupported("pdf_extract", "batched host.llm() calls with tool-calling")
     if not isinstance(schema, dict) or schema.get("type") != "object":
         raise TypeError(
             "pdf_extract: schema must be a JSON-Schema object dict "

@@ -133,6 +133,15 @@ phases:
       - id: SCI-P3-06
         statement: A skill that ships no helpers fails clearly rather than silently.
         acceptance: load_skill_helpers on an unknown or helper-less skill raises a named error.
+      - id: SCI-P3-08
+        statement: A skill that needs a host capability we lack says so at the boundary.
+        acceptance: >
+          every imported entry point whose donor SDK surface opencodon does not
+          implement raises NotImplementedError naming the gap and pointing at
+          docs/science-skill-gaps.md, rather than dying on a TypeError inside
+          the SDK; the register lists each one; and the mismatch set is
+          re-derived from science/bridge.py rather than hand-maintained, so an
+          unguarded one fails the suite.
       - id: SCI-P3-07
         statement: A skill never names a model its provider would reject.
         acceptance: >
