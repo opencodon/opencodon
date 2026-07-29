@@ -11,8 +11,10 @@ Ported from the opencodon donor (``execution/kernel_client.py`` +
   ``(session_id, language)``. Cells serialize on a per-key lock. A timeout or
   kernel death *taints* the kernel: it is shut down and the next run_code
   lazily starts a fresh one (interruption is not a rollback).
-- Kernels are local-only for now: remote kernel backends wait for a
-  deliberate extension of tools/environments/.
+- **Where** a kernel runs is a KernelProvisioner decision. Everything above
+  that seam is transport-agnostic — msg_id correlation, taint/restart, the
+  execution_log and lineage writes — so a remote backend supplies a
+  provisioner and nothing else. LocalProvisioner is the default.
 
 The donor's epoch/policy record machinery is deliberately dropped: opencodon
 records each cell in ``execution_log`` (science/store.py) and a restart shows
@@ -28,6 +30,7 @@ import json
 import logging
 import platform
 import queue
+import re
 import shutil
 import sys
 import threading
@@ -36,6 +39,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+from tools.ansi_strip import strip_ansi
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +182,48 @@ class PythonEnvResolver:
         return python_env_snapshot()
 
 
+class MicromambaEnvResolver:
+    """Bind a durable micromamba environment as the kernel for a session.
+
+    Unlike :class:`PythonEnvResolver`, whose snapshot is an *observation* of
+    whatever happened to be installed, this one's snapshot carries a lockfile
+    identity — which is what lets reproduce() grade a replay as verified
+    rather than merely byte-identical.
+    """
+
+    def __init__(self, env_name: str):
+        self.env_name = env_name
+
+    def available(self) -> bool:
+        try:
+            from science import envmanager
+
+            return kernels_installed() and envmanager.exists(self.env_name)
+        except Exception:
+            return False
+
+    def resolve(self) -> EnvironmentSpec:
+        from science import envmanager
+
+        if not envmanager.exists(self.env_name):
+            raise RuntimeError(
+                f"environment {self.env_name!r} does not exist; create it first"
+            )
+        interpreter = envmanager.env_prefix(self.env_name) / "bin" / "python"
+        return EnvironmentSpec(
+            language="python",
+            interpreter_path=str(interpreter),
+            argv=(str(interpreter), "-m", "ipykernel_launcher", "-f", "{connection_file}"),
+            runtime_identity=f"micromamba:{self.env_name}",
+            env_name=self.env_name,
+        )
+
+    def snapshot(self) -> str:
+        from science import envmanager
+
+        return envmanager.env_snapshot(self.env_name)
+
+
 class RKernelResolver:
     """Bind a system R + IRkernel as the R kernel (cross-language via files).
 
@@ -257,14 +304,147 @@ class KernelStartError(RuntimeError):
     """The kernel process failed to start or become ready."""
 
 
-class KernelSession:
-    """One live kernel process bound to a workspace directory."""
+@dataclass
+class ProvisionedKernel:
+    """A started kernel and the client already connected to it.
 
-    def __init__(self, spec: EnvironmentSpec, *, workdir: Path):
+    ``location`` names where it runs — ``local``, ``ssh:<host>``,
+    ``modal:<app>`` — and is recorded per cell. It is the difference between
+    "this number was computed" and "this number was computed on a GPU", which
+    a reader of the provenance record cannot otherwise recover.
+    """
+
+    manager: Any
+    client: Any
+    location: str
+    # Where the workspace lives *from the kernel's point of view*. Local
+    # kernels share the host path; a remote one has its own copy that the
+    # provisioner syncs, and the injected SDK must be told about it or every
+    # save_artifact() writes into a directory nobody reads.
+    remote_workspace: Optional[str] = None
+    # Backend-owned state (sandbox handle, forwarders) — opaque here, handed
+    # back to the provisioner for liveness, sync and teardown.
+    handle: Any = None
+
+
+class KernelProvisioner:
+    """Starts a kernel somewhere and hands back a connected client.
+
+    The seam that lets a kernel live off this machine. Everything above it —
+    msg_id correlation, taint-and-restart, the execution_log and lineage
+    writes — is transport-agnostic already, so a provisioner is the whole of
+    what a remote backend has to supply.
+
+    Implementations must either return a live :class:`ProvisionedKernel` or
+    raise :class:`KernelStartError`; a half-started kernel must be cleaned up
+    before raising, since the manager will treat the failure as a taint and
+    immediately try again.
+    """
+
+    name = "abstract"
+
+    def provision(self, spec: EnvironmentSpec, workdir: Path) -> ProvisionedKernel:
+        raise NotImplementedError
+
+    def describe_target(self) -> str:
+        """Human-readable target, used in errors and in kernel_location."""
+        return self.name
+
+    def is_alive(self, provisioned: ProvisionedKernel) -> bool:
+        """Whether the kernel is still usable.
+
+        Not delegated to jupyter_client, because its liveness check reads the
+        heartbeat channel — and a heartbeat does not survive every transport.
+        A remote kernel that answers ``kernel_info`` perfectly can report
+        ``hb_channel.is_beating() == False``, which would make the manager tear
+        down and restart a healthy kernel on every cell, destroying exactly the
+        session state persistent kernels exist to keep.
+        """
+        return bool(provisioned.manager and provisioned.manager.is_alive())
+
+    def shutdown(self, provisioned: ProvisionedKernel) -> None:
+        try:
+            provisioned.manager.shutdown_kernel(now=True)
+        except Exception:
+            pass
+
+    def sync_in(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
+        """Push host workspace state to the kernel before a cell runs.
+
+        A no-op when the kernel shares the host filesystem.
+        """
+
+    def sync_out(self, provisioned: ProvisionedKernel, workdir: Path) -> None:
+        """Pull kernel-side workspace changes back after a cell runs."""
+
+
+class LocalProvisioner(KernelProvisioner):
+    """Start the kernel as a child process on this machine.
+
+    The default, and the only one that needs no configuration.
+    """
+
+    name = "local"
+
+    def provision(self, spec: EnvironmentSpec, workdir: Path) -> ProvisionedKernel:
+        import os
+
+        # First actual use — fetch the kernel stack if this install doesn't
+        # carry it (lean install, broken [all] resolve). Raises
+        # FeatureUnavailable with a remediation hint if that's not possible.
+        ensure_kernels()
+
+        from jupyter_client.kernelspec import KernelSpec
+        from jupyter_client.manager import KernelManager
+
+        workdir.mkdir(parents=True, exist_ok=True)
+        km = KernelManager(kernel_name="python3")
+        km._kernel_spec = KernelSpec(
+            argv=list(spec.argv),
+            display_name="opencodon-science-kernel",
+            language=spec.language,
+        )
+        try:
+            if spec.env_overrides:
+                km.start_kernel(
+                    cwd=str(workdir), env={**os.environ, **spec.env_overrides}
+                )
+            else:
+                km.start_kernel(cwd=str(workdir))
+            kc = km.client()
+            kc.start_channels()
+            kc.wait_for_ready(timeout=READY_TIMEOUT_S)
+        except Exception as exc:
+            try:
+                km.shutdown_kernel(now=True)
+            except Exception:
+                pass
+            raise KernelStartError(
+                f"kernel failed to start on {self.describe_target()}: {exc}"
+            ) from exc
+        return ProvisionedKernel(manager=km, client=kc, location=self.name)
+
+    # sync_in/sync_out stay no-ops: the kernel *is* on this filesystem, so
+    # there is nothing to copy — the workspace it writes is the one we read.
+
+
+class KernelSession:
+    """One live kernel bound to a workspace directory."""
+
+    def __init__(
+        self,
+        spec: EnvironmentSpec,
+        *,
+        workdir: Path,
+        provisioner: Optional[KernelProvisioner] = None,
+    ):
         self._spec = spec
         self._workdir = Path(workdir)
+        self._provisioner = provisioner or LocalProvisioner()
+        self._provisioned: Optional[ProvisionedKernel] = None
         self._km: Any = None
         self._kc: Any = None
+        self.location = self._provisioner.describe_target()
         self.kernel_id = f"krn-{uuid.uuid4().hex[:16]}"
 
     @property
@@ -276,49 +456,44 @@ class KernelSession:
         return self._spec
 
     def start(self) -> None:
-        import os
+        provisioned = self._provisioner.provision(self._spec, self._workdir)
+        self._provisioned = provisioned
+        self._km = provisioned.manager
+        self._kc = provisioned.client
+        self.location = provisioned.location
 
-        # First actual use — fetch the kernel stack if this install doesn't
-        # carry it (lean install, broken [all] resolve). Raises
-        # FeatureUnavailable with a remediation hint if that's not possible.
-        ensure_kernels()
-
-        from jupyter_client.kernelspec import KernelSpec
-        from jupyter_client.manager import KernelManager
-
-        self._workdir.mkdir(parents=True, exist_ok=True)
-        km = KernelManager(kernel_name="python3")
-        km._kernel_spec = KernelSpec(
-            argv=list(self._spec.argv),
-            display_name="opencodon-science-kernel",
-            language=self._spec.language,
-        )
-        try:
-            if self._spec.env_overrides:
-                km.start_kernel(
-                    cwd=str(self._workdir),
-                    env={**os.environ, **self._spec.env_overrides},
-                )
-            else:
-                km.start_kernel(cwd=str(self._workdir))
-            kc = km.client()
-            kc.start_channels()
-            kc.wait_for_ready(timeout=READY_TIMEOUT_S)
-        except Exception as exc:
-            try:
-                km.shutdown_kernel(now=True)
-            except Exception:
-                pass
-            raise KernelStartError(f"kernel failed to start: {exc}") from exc
-        self._km = km
-        self._kc = kc
+    @property
+    def kernel_workspace(self) -> str:
+        """Workspace path as the *kernel* sees it — remote copy or host path."""
+        if self._provisioned and self._provisioned.remote_workspace:
+            return self._provisioned.remote_workspace
+        return str(self._workdir)
 
     def is_alive(self) -> bool:
-        return self._km is not None and self._km.is_alive()
+        if self._provisioned is None:
+            return False
+        return self._provisioner.is_alive(self._provisioned)
 
     def execute(self, source: str, *, timeout: float) -> ExecutionOutputs:
+        """Run one cell, syncing the workspace around it.
+
+        The sync is bracketed in ``finally`` so a cell that times out or dies
+        still has its partial writes pulled back — a failed cell's artifacts
+        are evidence too, and a timeout is where you most want to see what the
+        kernel had managed to produce.
+        """
         if self._kc is None:
             raise RuntimeError("kernel session is not started")
+        # Push host-side cell setup (cell.json, materialized inputs) to the
+        # kernel before it looks for them; pull its writes back afterwards.
+        # Both are no-ops when the kernel shares this filesystem.
+        self._provisioner.sync_in(self._provisioned, self._workdir)
+        try:
+            return self._execute(source, timeout=timeout)
+        finally:
+            self._provisioner.sync_out(self._provisioned, self._workdir)
+
+    def _execute(self, source: str, *, timeout: float) -> ExecutionOutputs:
         kc = self._kc
         # Drain any stale iopub so a prior cell's late traffic is not
         # attributed to this request (msg_id filtering below is the real
@@ -443,12 +618,10 @@ class KernelSession:
             except Exception:
                 pass
             self._kc = None
-        if self._km is not None:
-            try:
-                self._km.shutdown_kernel(now=True)
-            except Exception:
-                pass
-            self._km = None
+        if self._provisioned is not None:
+            self._provisioner.shutdown(self._provisioned)
+            self._provisioned = None
+        self._km = None
 
 
 def _drain(kc) -> None:
@@ -467,6 +640,56 @@ def _bounded(text: str) -> str:
     return text[:MAX_STREAM_CHARS] + "\n…[stream truncated]"
 
 
+# Frames that belong to the *submitted cell* rather than to library code.
+# IPython has named cells three ways across versions, so all three are
+# matched; anything else in the traceback is a library frame and ignored.
+_CELL_FRAME_RE = re.compile(
+    r"Cell In\[\d+\],\s*line\s+(\d+)"                                  # IPython 8+
+    r"|File\s+\"?<ipython-input-[^>\"]*>\"?,\s*line\s+(\d+)"           # legacy
+    r"|File\s+\"?[^\"\n]*ipykernel_\d+[/\\][^\"\n]*\.py\"?,\s*line\s+(\d+)"  # temp-file cells
+)
+
+
+def error_lineno_from_traceback(traceback) -> Optional[int]:
+    """1-based line number *within the submitted cell* of a failure.
+
+    The Jupyter ``error`` message carries the traceback as pre-rendered,
+    usually ANSI-coloured frames rather than structured data, so the line
+    number has to be read back out of the text. Only cell frames are
+    considered — a ``ValueError`` raised three frames deep inside pandas
+    should report where *the cell* entered pandas, not a line in pandas.
+
+    Returns the last cell frame's line (the innermost point still inside the
+    cell), or ``None`` when the traceback names no cell frame — which is the
+    honest answer for a kernel death or an abort, where no cell line failed.
+    """
+    if not traceback:
+        return None
+    lineno = None
+    for frame in traceback:
+        for match in _CELL_FRAME_RE.finditer(strip_ansi(str(frame))):
+            captured = next((g for g in match.groups() if g), None)
+            if captured is not None:
+                try:
+                    lineno = int(captured)
+                except ValueError:
+                    continue
+    return lineno
+
+
+def traceback_text(traceback) -> Optional[str]:
+    """The traceback as stripped, bounded plain text for ``execution_log``.
+
+    ANSI is removed because these frames are persisted and may later be
+    replayed into a terminal UI; the same cap as stdout/stderr applies so a
+    pathological recursion traceback cannot bloat the row.
+    """
+    if not traceback:
+        return None
+    joined = "\n".join(strip_ansi(str(frame)) for frame in traceback)
+    return _bounded(joined) or None
+
+
 # ── Session kernel manager ──────────────────────────────────────────
 
 
@@ -479,6 +702,7 @@ class CellRun:
     language: str
     workspace: Path
     fresh_kernel: bool
+    location: str = "local"
     tainted: bool = False
     taint_reasons: Tuple[str, ...] = ()
 
@@ -493,11 +717,16 @@ class SessionKernelManager:
         resolvers: Dict[str, Any] = None,
         bootstrap_fn=None,
         session_factory=None,
+        provisioner: Optional[KernelProvisioner] = None,
     ):
         self._root = Path(workspaces_root)
         # Seam for tests/embedders: anything with the KernelSession protocol
         # (start/execute/is_alive/interrupt/shutdown, .kernel_id, .spec).
         self._session_factory = session_factory or KernelSession
+        # Where kernels run. Local unless an embedder supplies otherwise; the
+        # choice is per-manager rather than per-cell, since a session's kernel
+        # holds state that cannot migrate mid-conversation.
+        self._provisioner = provisioner or LocalProvisioner()
         self._resolvers: Dict[str, Any] = {
             "python": PythonEnvResolver(),
             "r": RKernelResolver(),
@@ -507,14 +736,27 @@ class SessionKernelManager:
         # bootstrap_fn(session, workspace, language) runs right after a kernel
         # starts — the artifact/host SDK injection hook (science/bridge.py).
         self._bootstrap_fn = bootstrap_fn
-        self._live: Dict[Tuple[str, str], KernelSession] = {}
+        self._env_resolvers: Dict[str, Any] = {}
+        self._live: Dict[Tuple[str, str, Optional[str]], KernelSession] = {}
         self._locks: Dict[Tuple[str, str], threading.Lock] = {}
         self._locks_guard = threading.Lock()
 
     def workspace_for(self, session_id: str) -> Path:
         return self._root / _safe_dirname(session_id)
 
-    def resolver_for(self, language: str):
+    def resolver_for(self, language: str, env: Optional[str] = None):
+        """The resolver for a language, or for a named durable environment.
+
+        Environment resolvers are built on demand rather than registered: an
+        env is created at runtime and there is no point requiring a manager
+        rebuild to use one.
+        """
+        if env:
+            cached = self._env_resolvers.get(env)
+            if cached is None:
+                cached = MicromambaEnvResolver(env)
+                self._env_resolvers[env] = cached
+            return cached
         resolver = self._resolvers.get(language)
         if resolver is None:
             raise ValueError(
@@ -534,16 +776,20 @@ class SessionKernelManager:
             return self._locks.setdefault(key, threading.Lock())
 
     def ensure_kernel(
-        self, session_id: str, language: str = "python"
+        self, session_id: str, language: str = "python", env: Optional[str] = None
     ) -> Tuple[KernelSession, bool]:
         """Start (or reuse) the kernel for a key; returns (session, fresh).
 
         Lets callers learn the kernel identity *before* submitting a cell,
         so the execution_log row can be inserted ahead of execution.
+
+        A named *env* gets its own kernel: two environments are two different
+        interpreters with different packages, and sharing state between them
+        would be neither possible nor meaningful.
         """
-        key = (session_id, language)
+        key = (session_id, language, env)
         with self._lock(key):
-            return self._ensure_kernel(session_id, language)
+            return self._ensure_kernel(session_id, language, env)
 
     def run_cell(
         self,
@@ -552,10 +798,11 @@ class SessionKernelManager:
         *,
         language: str = "python",
         timeout: float = DEFAULT_CELL_TIMEOUT_S,
+        env: Optional[str] = None,
     ) -> CellRun:
-        key = (session_id, language)
+        key = (session_id, language, env)
         with self._lock(key):
-            session, fresh = self._ensure_kernel(session_id, language)
+            session, fresh = self._ensure_kernel(session_id, language, env)
             outputs = session.execute(source, timeout=timeout)
 
             tainted = False
@@ -576,21 +823,24 @@ class SessionKernelManager:
                 language=language,
                 workspace=session.workdir,
                 fresh_kernel=fresh,
+                location=getattr(session, "location", "local"),
                 tainted=tainted,
                 taint_reasons=reasons,
             )
 
-    def _ensure_kernel(self, session_id, language) -> Tuple[KernelSession, bool]:
-        key = (session_id, language)
+    def _ensure_kernel(self, session_id, language, env=None) -> Tuple[KernelSession, bool]:
+        key = (session_id, language, env)
         live = self._live.get(key)
         if live is not None and live.is_alive():
             return live, False
         if live is not None:
             live.shutdown()
             self._live.pop(key, None)
-        spec = self.resolver_for(language).resolve()
+        spec = self.resolver_for(language, env).resolve()
         workspace = self.workspace_for(session_id)
-        session = self._session_factory(spec, workdir=workspace)
+        session = self._session_factory(
+            spec, workdir=workspace, provisioner=self._provisioner
+        )
         session.start()
         if self._bootstrap_fn is not None:
             try:
@@ -601,8 +851,10 @@ class SessionKernelManager:
         self._live[key] = session
         return session, True
 
-    def interrupt(self, session_id: str, *, language: str = "python") -> bool:
-        key = (session_id, language)
+    def interrupt(
+        self, session_id: str, *, language: str = "python", env: Optional[str] = None
+    ) -> bool:
+        key = (session_id, language, env)
         live = self._live.get(key)
         if live is None:
             return False
@@ -611,8 +863,10 @@ class SessionKernelManager:
         self._live.pop(key, None)
         return True
 
-    def kernel_for(self, session_id, *, language="python") -> Optional[KernelSession]:
-        return self._live.get((session_id, language))
+    def kernel_for(
+        self, session_id, *, language="python", env: Optional[str] = None
+    ) -> Optional[KernelSession]:
+        return self._live.get((session_id, language, env))
 
     def close_session(self, session_id: str) -> None:
         for key in [k for k in list(self._live) if k[0] == session_id]:
