@@ -72,12 +72,18 @@ export function languageLabel(language: string | null | undefined): string {
 }
 
 /**
- * The five claims `reproduce()` can return.
+ * The six claims `reproduce()` can return, strongest first.
  *
- * Capped deliberately: "reproduced" means the bytes matched, never that the
- * result is correct or verified. The UI must not inflate it.
+ * The ladder is the point, and `science/reproduce.py` earns each rung rather
+ * than asserting it. `verified` requires the bytes to match *and* the
+ * producing cell's environment lock to still match, so someone else could
+ * recreate the result. A byte match without that lock is only `reproduced`:
+ * the replay agreed here, but nobody can promise the same environment
+ * elsewhere. The UI must preserve that distinction and never round one up
+ * into the other.
  */
 export type ReproduceClaim =
+  | "verified"
   | "reproduced"
   | "diverged"
   | "failed"
@@ -85,6 +91,7 @@ export type ReproduceClaim =
   | "ineligible";
 
 export const CLAIM_LABEL: Record<ReproduceClaim, string> = {
+  verified: "Verified",
   reproduced: "Reproduced",
   diverged: "Diverged",
   failed: "Replay failed",
@@ -94,7 +101,12 @@ export const CLAIM_LABEL: Record<ReproduceClaim, string> = {
 
 /** What each claim actually asserts, in the reader's terms. */
 export const CLAIM_MEANING: Record<ReproduceClaim, string> = {
-  reproduced: "Re-running the recorded cells produced identical bytes.",
+  verified:
+    "Identical bytes, and the recorded environment lock still matches — " +
+    "this result can be recreated elsewhere.",
+  reproduced:
+    "Identical bytes, but the environment was an observation rather than a " +
+    "recreatable lock, so the match holds here and not necessarily elsewhere.",
   diverged: "The replay succeeded but produced different bytes.",
   failed: "The replay could not be completed.",
   indeterminate: "The replay ran but the result could not be compared.",
@@ -102,6 +114,7 @@ export const CLAIM_MEANING: Record<ReproduceClaim, string> = {
 };
 
 export const CLAIM_TONE: Record<ReproduceClaim, string> = {
+  verified: "text-success",
   reproduced: "text-success",
   diverged: "text-warning",
   failed: "text-destructive",

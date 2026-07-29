@@ -18,7 +18,10 @@ Methods:
 - ``tool(name, args)`` — invoke a opencodon tool, gated by the
   ``science.host_tools`` allowlist in config.yaml (empty by default: no
   tool is reachable from the kernel unless the user opts in).
-- ``models()`` — the resolved default model, so kernel code can route.
+- ``models()`` — the resolved models, so kernel code can route: ``default``
+  for ordinary calls and ``cheap`` for the high-volume per-page kind. Both
+  are resolved here rather than in the kernel because only the host knows
+  which provider is configured, and a model slug is only valid against one.
 
 Calls are only served while a cell is executing (``current_cell`` context);
 out-of-cell connections are refused so nothing escapes the execution trace.
@@ -291,13 +294,106 @@ class HostBridge:
 
     def _do_models(self, params: dict):
         _client, model = self._llm_client(None)
-        return {"default": model}, {}, True
+        return (
+            {
+                "default": model,
+                "cheap": cheap_model(model),
+                "reasoning": reasoning_model(model),
+            },
+            {},
+            True,
+        )
 
 
 def _elide(text: str, limit: int = 2000) -> str:
     if len(text) <= limit:
         return text
     return text[:limit] + f"…[{len(text) - limit} chars elided]"
+
+
+# ── Model-role resolution ───────────────────────────────────────────
+
+# Skills route by *role* rather than by slug: a page-classification loop wants
+# the smallest capable model, a figure-layout call wants the strongest one.
+# Which slug that is depends entirely on the configured provider, so the roles
+# are resolved here — the kernel cannot see which provider it is talking to.
+CHEAP_MODEL_KEY = "cheap_model"
+REASONING_MODEL_KEY = "reasoning_model"
+
+# Used only when the configured provider is Anthropic's own API, where this
+# alias is valid. Everywhere else an unconfigured caller gets the provider's
+# own default, which is always a slug that provider accepts.
+_ANTHROPIC_CHEAP_MODEL = "claude-haiku-4-5"
+_ANTHROPIC_HOSTS = ("api.anthropic.com",)
+
+
+def _configured_model(key: str) -> Optional[str]:
+    """``auxiliary.science_llm.<key>`` from config.yaml, if set."""
+    try:
+        from agent.auxiliary_client import _get_auxiliary_task_config
+
+        value = _get_auxiliary_task_config("science_llm").get(key)
+    except Exception:
+        return None
+    value = str(value or "").strip()
+    return value or None
+
+
+def _configured_cheap_model() -> Optional[str]:
+    """``auxiliary.science_llm.cheap_model`` from config.yaml, if set."""
+    return _configured_model(CHEAP_MODEL_KEY)
+
+
+def _provider_is_anthropic() -> bool:
+    """Whether science_llm resolves to Anthropic's own API."""
+    try:
+        from agent.auxiliary_client import _resolve_task_provider_model
+
+        provider, _model, base_url, _key, _mode = _resolve_task_provider_model(
+            "science_llm"
+        )
+    except Exception:
+        return False
+    if str(provider or "").strip().lower() == "anthropic":
+        return True
+    host = str(base_url or "").lower()
+    return any(known in host for known in _ANTHROPIC_HOSTS)
+
+
+def cheap_model(default_model: Optional[str]) -> Optional[str]:
+    """The model high-volume per-item work should use.
+
+    Resolution order, most explicit first:
+
+    1. ``auxiliary.science_llm.cheap_model`` — the user named one, so it is
+       theirs to get right; it is passed through untouched.
+    2. The Anthropic pin, but only when the configured provider is Anthropic's
+       own API. A bare ``claude-haiku-4-5`` is not a valid slug on OpenRouter
+       (which wants ``anthropic/claude-haiku-4-5``) and does not exist at all
+       on OpenAI or a local endpoint.
+    3. The provider's own default — never cheaper, but always a slug the
+       configured provider will accept.
+    """
+    configured = _configured_cheap_model()
+    if configured:
+        return configured
+    if _provider_is_anthropic():
+        return _ANTHROPIC_CHEAP_MODEL
+    return default_model
+
+
+def reasoning_model(default_model: Optional[str]) -> Optional[str]:
+    """The model work that needs the strongest reasoning should use.
+
+    ``auxiliary.science_llm.reasoning_model`` when set, otherwise the
+    provider's own default. There is no built-in pin here, unlike
+    :func:`cheap_model`: the cheap role has a defensible default because
+    "smallest capable model" is a claim benchmarks can support, while
+    "strongest model" is a per-provider, per-budget judgement nobody can make
+    on the user's behalf. The provider default is already the model every
+    other ``host.llm`` call uses, so an unconfigured caller is no worse off.
+    """
+    return _configured_model(REASONING_MODEL_KEY) or default_model
 
 
 # ── Per-workspace bridge registry ───────────────────────────────────

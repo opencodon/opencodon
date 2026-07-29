@@ -178,3 +178,109 @@ class TestToolAllowlist:
         [call] = store.host_calls_for_cell(cell)
         assert call["method"] == "tool"
         assert json.loads(call["args_json"])["name"] == "echo_tool"
+
+
+class TestCheapModel:
+    """A model slug is only valid against the provider it belongs to.
+
+    ``claude-haiku-4-5`` is a real Anthropic alias, and nothing else: on
+    OpenRouter the slug is ``anthropic/claude-haiku-4-5`` and on OpenAI or a
+    local endpoint it does not exist at all. Resolving it in the kernel — which
+    cannot see which provider is configured — sends a broken slug to whichever
+    one the user actually has.
+    """
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_configured_pin_wins(self, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(
+            host_bridge, "_configured_cheap_model", lambda: "anthropic/claude-haiku-4-5"
+        )
+        # Provider identity is irrelevant once the user has named a model.
+        monkeypatch.setattr(host_bridge, "_provider_is_anthropic", lambda: True)
+        assert host_bridge.cheap_model("gpt-5") == "anthropic/claude-haiku-4-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_anthropic_provider_gets_the_haiku_pin(self, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_cheap_model", lambda: None)
+        monkeypatch.setattr(host_bridge, "_provider_is_anthropic", lambda: True)
+        assert host_bridge.cheap_model("claude-opus-5") == "claude-haiku-4-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_other_providers_fall_back_to_their_own_default(self, monkeypatch):
+        """Not cheaper, but a slug the configured provider will accept."""
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_cheap_model", lambda: None)
+        monkeypatch.setattr(host_bridge, "_provider_is_anthropic", lambda: False)
+        assert host_bridge.cheap_model("google/gemini-3-flash") == "google/gemini-3-flash"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_a_broken_config_read_does_not_break_the_call(self, monkeypatch):
+        from science import host_bridge
+
+        def boom(task):
+            raise RuntimeError("config unreadable")
+
+        monkeypatch.setattr(
+            "agent.auxiliary_client._get_auxiliary_task_config", boom
+        )
+        assert host_bridge._configured_cheap_model() is None
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_models_reports_both_default_and_cheap(self, bridge, cell, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_cheap_model", lambda: "cheap-1")
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "models", {})
+        assert reply["data"]["cheap"] == "cheap-1"
+        assert reply["data"]["default"]
+
+
+class TestReasoningModel:
+    """The counterpart role to `cheap`: work that needs the strongest model.
+
+    Both skills that use it called `host.reasoning_model()`, a donor-SDK name
+    opencodon never implemented — an AttributeError on first use.
+    """
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_configured_pin_wins(self, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(
+            host_bridge, "_configured_model",
+            lambda key: "anthropic/claude-opus-5" if key == "reasoning_model" else None,
+        )
+        assert host_bridge.reasoning_model("gpt-5") == "anthropic/claude-opus-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_unset_falls_back_to_the_provider_default(self, monkeypatch):
+        """No built-in pin: "strongest model" is not a claim we can make for
+        someone else's provider and budget."""
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        assert host_bridge.reasoning_model("google/gemini-3-pro") == "google/gemini-3-pro"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_the_anthropic_pin_is_cheap_only(self, monkeypatch):
+        """A provider check must not leak the haiku pin into the reasoning role."""
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        monkeypatch.setattr(host_bridge, "_provider_is_anthropic", lambda: True)
+        assert host_bridge.reasoning_model("claude-opus-5") == "claude-opus-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_models_reports_every_role(self, bridge, cell, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "models", {})
+        assert set(reply["data"]) == {"default", "cheap", "reasoning"}

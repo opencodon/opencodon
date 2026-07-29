@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+import re
 import threading
 import uuid
 from pathlib import Path
@@ -31,7 +32,9 @@ from science.kernels import (
     DEFAULT_CELL_TIMEOUT_S,
     SessionKernelManager,
     env_snapshot_hash,
+    error_lineno_from_traceback,
     get_kernel_manager,
+    traceback_text,
 )
 from science.store import ScienceStore
 
@@ -40,6 +43,42 @@ logger = logging.getLogger(__name__)
 # Stream text returned to the model is capped; the full text lives in
 # execution_log (itself bounded by the kernel client's stream cap).
 RESULT_STREAM_CHARS = 12_000
+
+
+# A ``%magic``/``%%magic``/``!shell`` line makes a cell valid input to *this*
+# kernel but not valid Python, so anything that replays the recorded source as
+# a standalone script — notably an external reader of an RO-Crate export —
+# breaks on it. Matched at column 0 only: magics sit at statement position,
+# while an indented ``%`` is far more likely a modulo continuation line.
+# ``!=`` is excluded so a comparison never reads as a shell escape.
+_MAGIC_LINE_RE = re.compile(r"^(?:%{1,2}[A-Za-z_]|![^=])", re.MULTILINE)
+
+
+def contains_magics(source: str) -> bool:
+    """True when *source* uses IPython magics or a ``!`` shell escape.
+
+    A deliberately shallow lexical check — it does not parse, so a magic-like
+    line inside a triple-quoted string reads as a false positive. That
+    direction is the safe one: the flag only ever adds a caveat to an export,
+    and over-warning costs a sentence while under-warning ships source that
+    silently will not run.
+    """
+    return bool(_MAGIC_LINE_RE.search(source or ""))
+
+
+def _lock_hash_of(snapshot: Optional[str]) -> Optional[str]:
+    """Recreatable-environment identity from a snapshot, if it carries one.
+
+    Observational snapshots (a pip-freeze of whatever was installed) have no
+    identity and must not be given one — they record what was there, not how
+    to get it back.
+    """
+    try:
+        from science.envmanager import snapshot_lock_hash
+
+        return snapshot_lock_hash(snapshot)
+    except Exception:
+        return None
 
 
 def _clip(text: Optional[str]) -> Optional[str]:
@@ -102,6 +141,7 @@ class ScienceRuntime:
         timeout: float = DEFAULT_CELL_TIMEOUT_S,
         inputs: Optional[List[Union[str, dict]]] = None,
         origin: str = "agent",
+        env: Optional[str] = None,
         description: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run one cell and record it.
@@ -115,9 +155,9 @@ class ScienceRuntime:
         execution_id = f"cell-{uuid.uuid4().hex}"
         declared_inputs = _normalize_inputs(inputs)
 
-        kernel, fresh = self._manager.ensure_kernel(session_id, language)
-        resolver = self._manager.resolver_for(language)
-        env_key = (session_id, language)
+        kernel, fresh = self._manager.ensure_kernel(session_id, language, env)
+        resolver = self._manager.resolver_for(language, env)
+        env_key = (session_id, language, env)
         with self._lock:
             if fresh or env_key not in self._env_cache:
                 try:
@@ -125,6 +165,10 @@ class ScienceRuntime:
                 except Exception:
                     self._env_cache[env_key] = ""
             env_snapshot = self._env_cache[env_key]
+        # The bulky snapshot is written once per kernel, but its identity goes
+        # on every row: reproduce() compares the *producing* cell's
+        # environment, which is rarely the first cell of its kernel.
+        env_lock_hash = _lock_hash_of(env_snapshot)
 
         self._store.record_cell(
             session_id,
@@ -137,6 +181,9 @@ class ScienceRuntime:
             description=description,
             env_name=kernel.spec.runtime_identity,
             env_snapshot=env_snapshot if fresh else None,
+            env_lock_hash=env_lock_hash,
+            kernel_location=getattr(kernel, "location", "local"),
+            has_magics=1 if contains_magics(source) else 0,
         )
 
         workspace = self._manager.workspace_for(session_id)
@@ -152,7 +199,7 @@ class ScienceRuntime:
 
         with host.current_cell(execution_id):
             run = self._manager.run_cell(
-                session_id, source, language=language, timeout=timeout
+                session_id, source, language=language, timeout=timeout, env=env
             )
 
         collected = _bridge.collect_cell(workspace, execution_id)
@@ -181,6 +228,12 @@ class ScienceRuntime:
             kernel_id=run.kernel_id,
             files_written=files_written or None,
             files_read=files_read or None,
+            # Failure evidence: the frames say *where* the cell broke, which
+            # "ValueError: shapes not aligned" alone does not. DB-only — the
+            # model still sees just name/value, so this costs no context.
+            traceback=traceback_text(run.outputs.traceback),
+            error_lineno=error_lineno_from_traceback(run.outputs.traceback),
+            display_count=len(run.outputs.display),
         )
 
         cell_row = self._store.get_cell(execution_id) or {}
@@ -204,6 +257,18 @@ class ScienceRuntime:
         if run.tainted:
             result["kernel_restarted"] = True
             result["kernel_restart_reasons"] = list(run.taint_reasons)
+        if run.outputs.display:
+            # Rich display output is deliberately not forwarded (a base64 PNG
+            # would cost the model thousands of tokens to no purpose), but a
+            # figure that was rendered and never saved would otherwise vanish
+            # from the record with nothing to show it ever existed. Report the
+            # count so the gap is visible.
+            result["unsaved_displays"] = len(run.outputs.display)
+            if not ingested:
+                result["note"] = (
+                    f"{len(run.outputs.display)} display output(s) rendered but "
+                    "not recorded — call save_artifact(path, filename) to keep them."
+                )
         text_results = [
             r["data"].get("text/plain")
             for r in run.outputs.results

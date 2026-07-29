@@ -126,6 +126,21 @@ function CellBody({ cell }: { cell: CellDetail }) {
         </div>
       ) : null}
 
+      {cell.env_lock_hash || cell.kernel_location ? (
+        <div className="flex flex-wrap gap-4 text-xs text-text-tertiary">
+          {cell.kernel_location ? <span>ran on {cell.kernel_location}</span> : null}
+          {cell.env_lock_hash ? (
+            <span className="font-mono" title="Environment lock identity">
+              lock {cell.env_lock_hash.slice(0, 12)}
+            </span>
+          ) : (
+            <span title="Without a lock, a byte match can only be graded 'reproduced'">
+              no environment lock recorded
+            </span>
+          )}
+        </div>
+      ) : null}
+
       {cell.files_read?.length || cell.files_written?.length ? (
         <div className="flex flex-wrap gap-4 text-xs text-text-tertiary">
           {cell.files_read?.length ? (

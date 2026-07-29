@@ -3,7 +3,9 @@
 These tables implement the two-granularity execution trace and the
 artifact/lineage store (frame_id → session_id):
 
-- ``execution_log``          one row per code cell (kernel, env, io, status)
+- ``execution_log``          one row per code cell (kernel, env, io, status,
+                             failure location, and whether the source is
+                             replayable as a plain script)
 - ``host_call_log``          one row per host.* call inside a cell
 - ``content_snapshots``      large payloads stored once, content-addressed
 - ``artifacts``              artifact identity, stable across versions
@@ -44,11 +46,16 @@ CREATE TABLE IF NOT EXISTS execution_log (
     language TEXT NOT NULL,
     env_name TEXT,
     env_snapshot TEXT,
+    env_lock_hash TEXT,
+    kernel_location TEXT,
     source TEXT NOT NULL,
     stdout TEXT,
     stderr TEXT,
     exit_status TEXT NOT NULL,
     error_lineno INTEGER,
+    traceback TEXT,
+    display_count INTEGER NOT NULL DEFAULT 0,
+    has_magics INTEGER NOT NULL DEFAULT 0,
     origin TEXT NOT NULL DEFAULT 'agent',
     user_intervention TEXT,
     description TEXT,

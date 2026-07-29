@@ -12,9 +12,12 @@ Simplified port of the donor's ReproductionRunner, graded honestly:
 - Replays run in a scratch session (``<session>~repro~<n>``) with a fresh
   kernel; candidate outputs become artifacts under the scratch root, never
   touching the original artifact's version chain or latest pointer.
-- The claim is capped at ``reproduced`` (bytes matched) — never "verified" —
-  because the local environment is an observation, not a recreatable recipe
-  (no lockfile identity yet).
+- The claim reaches ``verified`` only when the bytes match *and* the producing
+  cell recorded a recreatable environment identity (a micromamba lock hash,
+  see science/envmanager.py) that still matches today. Without that identity
+  the environment is an observation rather than a recipe, and a byte match is
+  graded ``reproduced`` — the replay agreed, but nobody can promise the same
+  environment elsewhere.
 """
 
 from __future__ import annotations
@@ -70,10 +73,13 @@ def reproduce(
         and cell["cell_index"] <= producing["cell_index"]
     ]
 
-    caveats: List[str] = [
-        "environment is observation-only (no lockfile identity); a byte match "
-        "is graded 'reproduced', not 'verified'",
-    ]
+    recorded_lock = _lock_identity(producing)
+    caveats: List[str] = []
+    if not recorded_lock:
+        caveats.append(
+            "environment is observation-only (no lockfile identity); a byte "
+            "match is graded 'reproduced', not 'verified'"
+        )
     if any(c["exit_status"] not in ("ok", "running") for c in prefix[:-1]):
         caveats.append(
             "a prior cell in the replay prefix had a non-ok status; kernel "
@@ -123,10 +129,27 @@ def reproduce(
             repro_session=repro_session,
         )
 
-    if candidate["sha256"] == version["checksum"]:
-        claim, reason = "reproduced", "candidate bytes are identical to the recorded version"
-    else:
+    if candidate["sha256"] != version["checksum"]:
         claim, reason = "diverged", "candidate bytes differ from the recorded version"
+    else:
+        replay_lock = _lock_identity(store.get_cell(replayed[-1]["replay_cell_id"]))
+        if recorded_lock and replay_lock == recorded_lock:
+            # Bytes agree *and* the environment is a recipe that still holds,
+            # so the result is reproducible by someone else, not just by us.
+            claim = "verified"
+            reason = (
+                "candidate bytes are identical and the environment lock "
+                f"({recorded_lock[:12]}…) matches the recorded one"
+            )
+        else:
+            claim = "reproduced"
+            reason = "candidate bytes are identical to the recorded version"
+            if recorded_lock and replay_lock and replay_lock != recorded_lock:
+                caveats.append(
+                    "the replay environment lock differs from the recorded "
+                    "one; bytes matched anyway, but the environment is not "
+                    "the one that produced them"
+                )
     report = _report(
         claim, version, replayed, caveats, reason=reason,
         repro_session=repro_session,
@@ -155,6 +178,18 @@ def _historical_inputs(store, cell_id: str) -> List[dict]:
                 {"version_id": vid, "reference_name": args.get("reference_name")}
             )
     return inputs
+
+
+def _lock_identity(cell) -> Optional[str]:
+    """The recreatable environment identity a cell recorded, if it has one.
+
+    Cells predating micromamba environments carry an observational snapshot —
+    a list of what was installed, which cannot rebuild anything. Those return
+    None so they are never mistaken for an identity.
+    """
+    if not cell:
+        return None
+    return cell.get("env_lock_hash")
 
 
 def _report(

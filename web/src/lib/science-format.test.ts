@@ -66,7 +66,10 @@ describe("languageLabel", () => {
 
 describe("reproduce claims", () => {
   it("labels every claim the backend can return", () => {
+    // Mirrors the vocabulary in science/reproduce.py. A claim the backend
+    // emits but the UI cannot label would render as a bare enum string.
     for (const claim of [
+      "verified",
       "reproduced",
       "diverged",
       "failed",
@@ -79,17 +82,27 @@ describe("reproduce claims", () => {
     }
   });
 
-  it("never claims more than a byte match", () => {
-    // The UI must not upgrade "reproduced" into "verified" or "correct".
-    const wording = Object.values(CLAIM_MEANING).join(" ").toLowerCase();
-    expect(wording).not.toContain("verified");
-    expect(wording).not.toContain("correct");
-    expect(CLAIM_MEANING.reproduced).toContain("identical bytes");
+  it("keeps verified strictly stronger than reproduced", () => {
+    // The backend grades a byte match as `reproduced` and reserves
+    // `verified` for a match whose environment lock still holds. Collapsing
+    // the two in the copy would hand the reader a promise nobody made.
+    expect(CLAIM_MEANING.verified).not.toBe(CLAIM_MEANING.reproduced);
+    expect(CLAIM_MEANING.verified.toLowerCase()).toContain("lock");
+    expect(CLAIM_MEANING.reproduced.toLowerCase()).toContain("not necessarily");
   });
 
-  it("recognises only the five known claims", () => {
+  it("never promises correctness", () => {
+    // Both rungs are claims about bytes and environments, never about the
+    // science being right.
+    const wording = Object.values(CLAIM_MEANING).join(" ").toLowerCase();
+    expect(wording).not.toContain("correct");
+    expect(wording).not.toContain("valid");
+  });
+
+  it("recognises only the known claims", () => {
     expect(isReproduceClaim("reproduced")).toBe(true);
-    expect(isReproduceClaim("verified")).toBe(false);
+    expect(isReproduceClaim("verified")).toBe(true);
+    expect(isReproduceClaim("proven")).toBe(false);
     expect(isReproduceClaim(null)).toBe(false);
   });
 });

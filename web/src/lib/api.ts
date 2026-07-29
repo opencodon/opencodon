@@ -1369,6 +1369,10 @@ export interface CellSummary {
   kernel_kind: string | null;
   language: string | null;
   env_name: string | null;
+  /** Micromamba lock identity; `verified` requires this to still match. */
+  env_lock_hash: string | null;
+  /** Where the kernel ran — local, ssh:…, modal:… */
+  kernel_location: string | null;
   source: string | null;
   stdout: string | null;
   stderr: string | null;

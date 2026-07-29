@@ -10,6 +10,7 @@ coverage lives in test_kernel_integration.py.
 import contextlib
 import io
 import os
+import traceback as _traceback
 from pathlib import Path
 
 import pytest
@@ -25,11 +26,36 @@ from science.kernels import (
 from science.runtime import ScienceRuntime
 
 
+def _cell_traceback(exc: BaseException) -> tuple:
+    """A Jupyter-shaped traceback for an exception raised by ``exec``.
+
+    Real kernels return pre-rendered frames naming the cell as
+    ``Cell In[n], line L``; ``exec`` frames carry the filename ``<string>``.
+    Rendering them in the kernel's shape keeps the double honest for anything
+    that reads line numbers back out of a traceback.
+    """
+    if isinstance(exc, SyntaxError) and exc.lineno:
+        linenos = [exc.lineno]
+    else:
+        linenos = [
+            frame.lineno
+            for frame in _traceback.extract_tb(exc.__traceback__)
+            if frame.filename == "<string>"
+        ]
+    frames = ["Traceback (most recent call last)"]
+    frames += [f"Cell In[1], line {lineno}" for lineno in linenos]
+    frames.append(f"{type(exc).__name__}: {exc}")
+    return tuple(frames)
+
+
 class FakeKernelSession:
     _counter = 0
 
-    def __init__(self, spec, *, workdir):
+    def __init__(self, spec, *, workdir, provisioner=None):
         self._spec = spec
+        # Mirrors KernelSession: the double reports where it 'ran' so the
+        # kernel_location column is exercised without a real remote.
+        self.location = provisioner.describe_target() if provisioner else "local"
         self._workdir = Path(workdir)
         FakeKernelSession._counter += 1
         self.kernel_id = f"fake-{FakeKernelSession._counter}"
@@ -63,6 +89,7 @@ class FakeKernelSession:
             out.status = "error"
             out.error_name = type(exc).__name__
             out.error_value = str(exc)
+            out.traceback = _cell_traceback(exc)
         finally:
             os.chdir(cwd)
         out.stdout = stdout.getvalue()
@@ -92,6 +119,20 @@ class FakeResolver:
         return '{"language": "python", "runtime": "fake"}'
 
 
+class DisplayingKernelSession(FakeKernelSession):
+    """A kernel that renders one inline figure per cell and saves nothing.
+
+    Models the case the plain double cannot: rich display output exists in the
+    protocol, is never forwarded to the model, and vanishes unless the cell
+    explicitly saved an artifact.
+    """
+
+    def execute(self, source, *, timeout):
+        out = super().execute(source, timeout=timeout)
+        out.display.append({"data": {"image/png": "b64…"}, "metadata": {}})
+        return out
+
+
 @pytest.fixture
 def db(tmp_path):
     db = SessionDB(tmp_path / "state.db")
@@ -99,13 +140,12 @@ def db(tmp_path):
     db.close()
 
 
-@pytest.fixture
-def science_runtime(tmp_path, db):
+def _runtime_with(tmp_path, db, session_factory):
     manager = SessionKernelManager(
         workspaces_root=tmp_path / "workspaces",
         resolvers={"python": FakeResolver()},
         bootstrap_fn=bootstrap_kernel,
-        session_factory=FakeKernelSession,
+        session_factory=session_factory,
     )
     blobs = BlobStore(tmp_path / "blobs")
     runtime = ScienceRuntime(db, blobs=blobs, manager=manager)
@@ -114,3 +154,14 @@ def science_runtime(tmp_path, db):
 
     shutdown_bridges()
     manager.shutdown()
+
+
+@pytest.fixture
+def science_runtime(tmp_path, db):
+    yield from _runtime_with(tmp_path, db, FakeKernelSession)
+
+
+@pytest.fixture
+def displaying_runtime(tmp_path, db):
+    """``science_runtime``, but every cell also renders an unsaved figure."""
+    yield from _runtime_with(tmp_path, db, DisplayingKernelSession)

@@ -26,8 +26,11 @@ that gap is the redesign.
    environment. Addressable means citable and shareable.
 3. **Provenance is a view, not a feature.** No artifact is shown without a path
    back to the cell, the inputs, and the environment that made it.
-4. **Claims stay capped.** `reproduced` is the strongest word the UI uses, never
-   "verified" — matching `science/reproduce.py`.
+4. **Claims say exactly what was earned.** `science/reproduce.py` grades a
+   byte match as `reproduced` and reserves `verified` for a match whose
+   environment lock still holds, so the result can be recreated elsewhere.
+   The UI carries both rungs with their distinct meanings and never rounds one
+   up into the other, nor either into a claim about correctness.
 5. **Two planes, honestly drawn.** Workspace files are ephemeral and should look
    it; staged artifacts are durable and carry the weight.
 6. **Config recedes.** Seventeen top-level ops pages collapse into one Settings

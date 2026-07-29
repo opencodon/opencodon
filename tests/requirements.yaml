@@ -1,0 +1,383 @@
+# Phase requirements registry — the spec each science-integration phase is
+# graded against.
+#
+# Every requirement here must be claimed by at least one test via
+# `@pytest.mark.requirement("<id>")`, and every claiming test must pass, before
+# a phase can be called complete. `scripts/phase_eval.py` enforces both halves:
+# an unclaimed requirement fails the phase just as loudly as a failing test, so
+# "we shipped it but never tested it" cannot pass as done.
+#
+# Writing style: `statement` is what a user gets; `acceptance` is the
+# observable condition a test can assert. If you cannot phrase the acceptance
+# without hedging, the requirement is not yet specified well enough to build.
+
+phases:
+  P0:
+    title: Failure-location and replayability provenance
+    status: complete
+    requirements:
+      - id: SCI-P0-01
+        statement: A failing cell records where in the cell it broke.
+        acceptance: >
+          execution_log.error_lineno is populated from the kernel traceback and
+          names the innermost frame belonging to the cell. Library frames never
+          supply the number.
+      - id: SCI-P0-02
+        statement: The full traceback survives in the record without costing model context.
+        acceptance: >
+          execution_log.traceback holds the ANSI-stripped, length-bounded frames;
+          the run_code result forwards only {name, value}.
+      - id: SCI-P0-03
+        statement: A cell that succeeds carries no failure evidence.
+        acceptance: error_lineno and traceback are both NULL when exit_status is 'ok'.
+      - id: SCI-P0-04
+        statement: Rich display output that was never saved is visible as a gap.
+        acceptance: >
+          execution_log.display_count counts the rendered display messages, the
+          result reports unsaved_displays, and the payload bytes never reach the
+          model.
+      - id: SCI-P0-05
+        statement: A cell told to save is not also nagged about saving.
+        acceptance: >
+          the advisory note appears only when the cell ingested no artifacts;
+          the count is reported either way.
+      - id: SCI-P0-06
+        statement: Source that needs an IPython kernel to replay is marked as such.
+        acceptance: >
+          execution_log.has_magics is 1 for magics/shell-escape cells and 0 for
+          plain source, including the `!=` and modulo-continuation near-misses.
+      - id: SCI-P0-07
+        statement: An RO-Crate consumer is warned before running non-portable source.
+        acceptance: >
+          CreateAction entities for magic-flagged cells carry a
+          disambiguatingDescription naming the limitation; unflagged cells do not.
+      - id: SCI-P0-08
+        statement: Existing databases gain the new columns without losing rows.
+        acceptance: >
+          the declarative reconciler ADDs traceback/display_count/has_magics on
+          reopen, and rows predating a NOT NULL column read back as the default
+          rather than NULL.
+
+  P1:
+    title: Remote kernels
+    status: complete
+    requirements:
+      # — the seam (no remote target needed) —
+      - id: SCI-P1-01
+        statement: Where a kernel runs is a pluggable decision, not hard-wired to this machine.
+        acceptance: >
+          KernelSession obtains its kernel through a provisioner; the local
+          path is one implementation of that interface and remains the default.
+      - id: SCI-P1-02
+        statement: A cell records where it ran.
+        acceptance: >
+          execution_log.kernel_location names the provisioner and target
+          ('local', 'ssh:<host>', 'modal:<app>'), so a result computed on a GPU
+          host is distinguishable from one computed here.
+      - id: SCI-P1-03
+        statement: Remote execution records provenance identically to local.
+        acceptance: >
+          the convergence invariant holds — a remote cell writes the same
+          execution_log/host_call_log/artifact rows as a local one, with no
+          field populated only on the local path.
+      - id: SCI-P1-04
+        statement: A provisioner that cannot start a kernel fails legibly.
+        acceptance: >
+          a start failure names the provisioner and target and taints the
+          kernel, rather than surfacing a bare transport exception.
+
+      # — targets (need a configured remote) —
+      - id: SCI-P1-10
+        statement: A kernel can run on a Modal sandbox.
+        acceptance: >
+          run_code executes against a Modal-provisioned kernel, state persists
+          across cells, and artifacts round-trip back to the local store.
+      - id: SCI-P1-11
+        statement: A kernel can run on an SSH host.
+        acceptance: as SCI-P1-10, over an SSH-provisioned kernel.
+      - id: SCI-P1-12
+        statement: A GPU is usable from a provisioned kernel.
+        acceptance: >
+          a cell on a GPU-backed target reports an available accelerator,
+          which is the precondition every Phase 4 model skill depends on.
+
+  P3:
+    title: Publication and workflow skills
+    status: complete
+    requirements:
+      - id: SCI-P3-01
+        statement: Imported skills carry the attribution their licence requires.
+        acceptance: >
+          every skill under skills/science declares license Apache-2.0 and a
+          metadata.provenance block naming upstream, upstream_version,
+          upstream_license, retrieved date and a non-empty modifications
+          statement — the Apache-2.0 §4(b) obligation.
+      - id: SCI-P3-02
+        statement: Third-party attribution is carried forward, not paraphrased.
+        acceptance: >
+          where the donor skill declared metadata.third_party, the imported
+          skill carries the same entries with their names and terms URLs intact.
+      - id: SCI-P3-03
+        statement: The distribution states what it derived and from where.
+        acceptance: NOTICE names Claude Science, the Apache-2.0 grant, and that weights are not redistributed.
+      - id: SCI-P3-04
+        statement: Imported skills load in opencodon like any other skill.
+        acceptance: >
+          each parses as valid frontmatter with name/description/version and is
+          discovered by the skills loader.
+      - id: SCI-P3-05
+        statement: Skills that ship kernel helpers can load them into a running kernel.
+        acceptance: >
+          load_skill_helpers(name) defines the skill's helper functions in the
+          cell namespace, and works on a remote kernel as well as a local one.
+      - id: SCI-P3-06
+        statement: A skill that ships no helpers fails clearly rather than silently.
+        acceptance: load_skill_helpers on an unknown or helper-less skill raises a named error.
+      - id: SCI-P3-08
+        statement: A skill that needs a host capability we lack says so at the boundary.
+        acceptance: >
+          every imported entry point whose donor SDK surface opencodon does not
+          implement raises NotImplementedError naming the gap and pointing at
+          docs/science-skill-gaps.md, rather than dying on a TypeError inside
+          the SDK; the register lists each one; and the mismatch set is
+          re-derived from science/bridge.py rather than hand-maintained, so an
+          unguarded one fails the suite.
+      - id: SCI-P3-07
+        statement: A skill never names a model its provider would reject.
+        acceptance: >
+          the cheap-model pin skills use for high-volume per-item work is
+          resolved host-side, where the provider is known: an explicit
+          auxiliary.science_llm.cheap_model wins, the Anthropic alias is used
+          only when the provider is Anthropic's own API, and every other
+          provider falls back to its own default model.
+
+  P4:
+    title: Biomodel skills
+    status: complete
+    requirements:
+      - id: SCI-P4-01
+        statement: Every biomodel skill attributes the weights it depends on.
+        acceptance: >
+          each skill tagged `biomodels` carries metadata.third_party naming the
+          weights, their licence and a terms URL — these are other people's
+          models and the licence is the whole basis for using them.
+      - id: SCI-P4-02
+        statement: A skill states whether it needs a GPU.
+        acceptance: >
+          skills that require an accelerator declare `requirements: [gpu]`; the
+          MPNN family, which the upstream documents as CPU-capable, does not.
+      - id: SCI-P4-03
+        statement: Models with unresolved licensing are not shipped.
+        acceptance: >
+          borzoi (no terms URL) and scgpt (no declared licence) are absent from
+          skills/science until their upstream terms are established.
+      - id: SCI-P4-04
+        statement: A GPU-only skill can reach a GPU.
+        acceptance: >
+          the provisioner registry can produce a GPU-backed target, so a skill
+          declaring `requirements: [gpu]` has somewhere to run.
+      - id: SCI-P4-10
+        statement: A CPU-runnable model actually runs and produces real output.
+        acceptance: >
+          ProteinMPNN executes through run_code on this machine, emits designed
+          sequences with scores, and the result is captured as a lineage-tracked
+          artifact.
+
+      # NOT claimed: the GPU models (alphafold2, boltz, chai1, openfold3,
+      # esmfold2, evo2, diffdock, fair-esm2, scvi-tools) are imported and
+      # attributed but have NOT been run against their real weights. Each pulls
+      # a multi-GB image and needs a GPU sandbox per validation. Asserting they
+      # work would be asserting something nobody checked, which is the failure
+      # this registry exists to prevent.
+
+  P5:
+    title: Bio-data services
+    status: complete
+    requirements:
+      # — genes and proteins —
+      - id: SCI-P5-01
+        statement: A gene symbol resolves to coordinates and a biotype.
+        acceptance: Ensembl lookup returns gene id, assembly, chromosome, start/end and strand.
+      - id: SCI-P5-02
+        statement: An identifier resolves across naming schemes.
+        acceptance: >
+          a symbol or alias returns Entrez, Ensembl and UniProt ids together —
+          the step most bio questions start with, since symbols are ambiguous
+          across species and get renamed.
+      - id: SCI-P5-03
+        statement: Sequence is retrievable without flooding the caller.
+        acceptance: >
+          a bounded preview is returned with the true length and a truncation
+          flag, so a short sequence is distinguishable from a clipped one.
+      - id: SCI-P5-04
+        statement: A protein record is retrievable from UniProt.
+        acceptance: accession lookup returns name, organism, length and function text.
+
+      # — variants —
+      - id: SCI-P5-10
+        statement: A variant's population frequency is retrievable.
+        acceptance: >
+          gnomAD returns overall and per-ancestry allele frequencies, since a
+          variant rare overall can be common in one population.
+      - id: SCI-P5-11
+        statement: A gene's variants can be listed and filtered by consequence.
+        acceptance: >
+          the pre-filter total is reported alongside the returned page, so
+          truncation is visible rather than implied.
+      - id: SCI-P5-12
+        statement: Clinical assertions never arrive without their review status.
+        acceptance: >
+          every ClinVar record carries review_status beside the classification —
+          "pathogenic, one submitter, no criteria" and "pathogenic, expert
+          panel" are different claims and must not read alike.
+      - id: SCI-P5-13
+        statement: A GraphQL-level failure is reported, not swallowed.
+        acceptance: >
+          gnomAD returns errors in the body with HTTP 200; those surface as a
+          named ApiError rather than an empty result.
+
+      # — chemistry —
+      - id: SCI-P5-20
+        statement: A compound resolves to structure and properties.
+        acceptance: >
+          PubChem lookup returns formula, SMILES, InChIKey and physicochemical
+          properties, tolerating the CanonicalSMILES/ConnectivitySMILES rename.
+      - id: SCI-P5-21
+        statement: Chemical similarity search works from a SMILES query.
+        acceptance: a Tanimoto-threshold search returns ranked compounds with properties.
+      - id: SCI-P5-22
+        statement: Drugs and their measured activities are retrievable.
+        acceptance: >
+          ChEMBL search returns clinical phase and safety flags, and activities
+          carry target, value, units and the source document id.
+
+      # — surface —
+      - id: SCI-P5-30
+        statement: The bio-data tools are reachable from a session.
+        acceptance: they register in a `biodata` toolset matching the declared tool list.
+      - id: SCI-P5-31
+        statement: A failed lookup is an answer, not a crash.
+        acceptance: ApiError becomes a structured {error, source} payload at the tool boundary.
+
+      # — expression, structures, clinical —
+      - id: SCI-P5-40
+        statement: Expression and regulation data are available.
+        acceptance: GTEx tissue expression and eQTLs; ENCODE experiments; JASPAR motifs.
+      - id: SCI-P5-41
+        statement: Structures and interactions are available.
+        acceptance: PDB entries, AlphaFold DB models, InterPro domains, STRING networks.
+      - id: SCI-P5-42
+        statement: Clinical trials and drug regulatory records are available.
+        acceptance: ClinicalTrials.gov search and openFDA Drugs@FDA / SPL labels.
+
+  P6:
+    title: Durable environments
+    status: complete
+    requirements:
+      - id: SCI-P6-01
+        statement: A named environment survives the session that made it.
+        acceptance: >
+          micromamba environments live outside any session workspace and are
+          listable and reusable after the creating session ends.
+      - id: SCI-P6-02
+        statement: An environment has a recreatable identity, not just a description.
+        acceptance: >
+          `micromamba env export --explicit` yields a lock of exact package
+          URLs, hashed into a stable id that is order- and comment-independent.
+      - id: SCI-P6-03
+        statement: An observation is never mistaken for a recipe.
+        acceptance: >
+          snapshots that merely list installed packages return no lock identity,
+          so pre-micromamba cells cannot claim reproducibility they lack.
+      - id: SCI-P6-04
+        statement: A kernel can run inside a named environment.
+        acceptance: >
+          run_code with `env` executes in that environment's interpreter and
+          sees its packages; each environment gets its own kernel.
+      - id: SCI-P6-05
+        statement: Every cell records the environment identity it ran under.
+        acceptance: >
+          execution_log.env_lock_hash is populated on every row, not only the
+          first cell of a kernel — the producing cell is rarely the first.
+      - id: SCI-P6-06
+        statement: A byte match under a matching lock is graded verified.
+        acceptance: >
+          reproduce() returns claim 'verified' when bytes match and the
+          environment identity still matches, and 'reproduced' with a caveat
+          when the environment cannot be vouched for.
+
+  P2:
+    title: Literature and evidence layer
+    status: complete
+    requirements:
+      # — shared transport —
+      - id: SCI-P2-01
+        statement: Every scholarly API call identifies this client politely.
+        acceptance: >
+          outbound requests carry a User-Agent naming opencodon and a contact
+          mailto, which is what OpenAlex and Crossref ask for in exchange for
+          the faster rate-limit pool.
+      - id: SCI-P2-02
+        statement: A transient upstream failure does not surface as a tool error.
+        acceptance: >
+          429 and 5xx responses are retried with backoff up to a bounded number
+          of attempts; a Retry-After header is honoured when present.
+      - id: SCI-P2-03
+        statement: A dead or slow upstream fails fast and legibly.
+        acceptance: >
+          non-retryable statuses (400/404) and exhausted retries return a
+          structured error naming the source, never a raw traceback or a hang.
+      - id: SCI-P2-04
+        statement: Literature results cannot flood the model's context.
+        acceptance: >
+          result payloads are bounded — abstracts truncated, result counts
+          capped — so a broad query costs predictable tokens.
+
+      # — sources —
+      - id: SCI-P2-10
+        statement: Works can be searched and retrieved from OpenAlex.
+        acceptance: >
+          a keyword search returns id/title/year/authors/venue/citation count,
+          and a single work is retrievable by DOI or OpenAlex id.
+      - id: SCI-P2-11
+        statement: The citation graph is navigable.
+        acceptance: works cited by, and works citing, a given work are both retrievable.
+      - id: SCI-P2-12
+        statement: A DOI resolves to authoritative bibliographic metadata.
+        acceptance: >
+          Crossref lookup by DOI returns title, container, issued date, authors
+          and type; a malformed DOI is rejected before the request is made.
+      - id: SCI-P2-13
+        statement: PubMed can be searched and records fetched.
+        acceptance: >
+          an ESearch query returns PMIDs with a total count, and EFetch returns
+          title/abstract/journal/authors/date for those PMIDs.
+      - id: SCI-P2-14
+        statement: Identifiers convert between the schemes a reader actually holds.
+        acceptance: DOI ↔ PMID ↔ PMCID conversion resolves in both directions where a mapping exists.
+
+      # — sources not yet built —
+      # Listed so the gate reports P2 as incomplete. The phase was scoped in
+      # the plan as six source families; three are done. Shrinking the spec to
+      # match what shipped would make the gate agree with the code instead of
+      # with the plan, which is the one thing it exists to prevent.
+      - id: SCI-P2-15
+        statement: Preprints are searchable on bioRxiv and medRxiv.
+        acceptance: >
+          search by date range and category returns DOI/title/authors, and a
+          preprint's published journal version is resolvable when one exists.
+      - id: SCI-P2-16
+        statement: Open-access full text is retrievable, not just abstracts.
+        acceptance: >
+          Europe PMC full text is fetched by DOI or PMCID and returned in
+          bounded sections rather than as one unbounded blob.
+      - id: SCI-P2-17
+        statement: arXiv preprints are searchable by topic and author.
+        acceptance: the Atom feed is parsed to id/title/authors/summary/category/updated.
+
+      # — agent surface —
+      - id: SCI-P2-20
+        statement: The literature tools are reachable from a session.
+        acceptance: >
+          the tools register in a `literature` toolset, appear in the schema when
+          enabled, and are absent when it is not.

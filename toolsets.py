@@ -227,6 +227,43 @@ TOOLSETS = {
         "includes": []
     },
 
+    # Opt-in, unlike the science layer above: every call here reaches the
+    # public internet, so a session asks for it rather than getting it by
+    # default. Set OPENCODON_SCHOLARLY_MAILTO to enter the polite rate-limit
+    # pools that OpenAlex, Crossref and NCBI operate.
+    "literature": {
+        "description": "Scholarly search, DOI resolution and citation graph (OpenAlex, Crossref, PubMed)",
+        "tools": ["literature_search", "literature_work", "literature_citations",
+                  "literature_doi", "pubmed_search", "pubmed_fetch",
+                  "literature_convert_ids", "preprint_search", "preprint_get",
+                  "preprint_published_versions", "arxiv_search",
+                  "fulltext_search", "fulltext_get"],
+        "includes": []
+    },
+
+    # Opt-in for the same reason as `literature`: every call reaches the
+    # public internet. Set OPENCODON_SCHOLARLY_MAILTO (and optionally
+    # NCBI_API_KEY) to enter the polite rate-limit pools.
+    "biodata": {
+        "description": "Genes, variants and chemistry from the public biology databases (Ensembl, gnomAD, ClinVar, PubChem, ChEMBL)",
+        "tools": ["gene_lookup", "gene_resolve", "gene_sequence", "gene_homologs",
+                  "protein_lookup", "variant_frequency", "gene_variants",
+                  "clinvar_search", "clinvar_records", "compound_lookup",
+                  "compound_similarity", "drug_search", "drug_bioactivities",
+                  "tissue_expression", "eqtl_genes", "encode_experiments",
+                  "tf_motifs", "pdb_entry", "pdb_search", "alphafold_model",
+                  "protein_domains", "interaction_network", "trial_search",
+                  "trial_record", "drug_label", "drug_approvals"],
+        "includes": []
+    },
+
+    "environments": {
+        "description": "Durable micromamba environments with lockfile identity (science layer)",
+        "tools": ["env_list", "env_create", "env_install", "env_describe",
+                  "env_remove"],
+        "includes": []
+    },
+
     "project": {
         "description": "Desktop Projects — create/switch named workspaces (GUI sessions only)",
         "tools": ["project_list", "project_create", "project_switch"],

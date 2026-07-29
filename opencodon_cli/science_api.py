@@ -180,6 +180,11 @@ def _cell_summary(cell: Dict[str, Any], *, clip: bool = True) -> Dict[str, Any]:
         "kernel_kind": cell.get("kernel_kind"),
         "language": cell.get("language"),
         "env_name": cell.get("env_name"),
+        # The reproduce ladder turns on these two: a byte match only reaches
+        # "verified" when the recorded lock still matches, and where a cell
+        # ran explains an environment that cannot be recreated.
+        "env_lock_hash": cell.get("env_lock_hash"),
+        "kernel_location": cell.get("kernel_location"),
         "source": text(cell.get("source")),
         "stdout": text(cell.get("stdout")),
         "stderr": text(cell.get("stderr")),
