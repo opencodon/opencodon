@@ -25,6 +25,8 @@
     "start": "npm run build && electron .",
     "prebuild": "npm run clean",
     "build": "node scripts/assert-root-install.mjs && node scripts/write-build-stamp.mjs && vite build && node scripts/bundle-electron-main.mjs && node scripts/stage-native-deps.mjs",
+    "build:web": "node scripts/write-build-stamp.mjs && vite build --config vite.config.web.ts",
+    "dev:web": "vite --config vite.config.web.ts --host 127.0.0.1 --port 5175",
     "postbuild": "node scripts/assert-dist-built.mjs",
     "prebuilder": "node scripts/patch-electron-builder-mac-binary.mjs",
     "builder": "cross-env NODE_OPTIONS=--max-old-space-size=16384 node scripts/run-electron-builder.mjs",

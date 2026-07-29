@@ -13,7 +13,13 @@ import { HapticsProvider } from './components/haptics-provider'
 import { I18nProvider } from './i18n'
 import { installClipboardShim } from './lib/clipboard'
 import { queryClient } from './lib/query-client'
+import { installWebBridge } from './lib/web-bridge'
 import { ThemeProvider } from './themes/context'
+
+// Must run before any module reads `window.opencodonDesktop`. Under Electron
+// the preload has already installed the real bridge and this is a no-op; in a
+// browser it installs the HTTP/WS-backed one.
+installWebBridge()
 
 installClipboardShim()
 

@@ -75,6 +75,8 @@ environments/benchmarks/evals/
 
 # Web UI build output
 opencodon_cli/web_dist/
+# Browser session UI build output (apps/desktop → npm run build:web)
+opencodon_cli/web_app_dist/
 # Cross-process web UI build lock (flock target, always empty)
 .web_ui_build.lock
 apps/desktop/build/
