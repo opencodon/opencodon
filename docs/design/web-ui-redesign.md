@@ -165,9 +165,11 @@ Notes:
 ## 7. Risks
 
 - `web_server.py` is a monolith. Every new route goes in its own module.
-- The Console tab is a PTY in xterm.js; it has no addressable spans, so
+- ~~The Console tab is a PTY in xterm.js; it has no addressable spans, so
   annotations and inline artifact embeds can never live there. Structure belongs
-  to the trace. Accepted.
+  to the trace. Accepted.~~ **Superseded (2026-07-29).** The browser now renders
+  sessions natively over the JSON-RPC gateway, with no PTY in the path — see
+  [`browser-session-ui.md`](./browser-session-ui.md).
 - Built assets ship from `opencodon_cli/web_dist/`; `opencodon dashboard` serves
   the built bundle, so UI changes need `npm run build` to appear there.
 
