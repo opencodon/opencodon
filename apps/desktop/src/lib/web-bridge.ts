@@ -297,9 +297,21 @@ const terminal = {
 
     terminals.set(id, handle)
 
+    // The PTY sends raw bytes, which a WebSocket surfaces as Blob by default —
+    // and `String(blob)` is the literal "[object Blob]", not the terminal
+    // output. Take ArrayBuffers and decode them. UTF-8 is stateful across
+    // frames (a multi-byte character can straddle a chunk boundary), so one
+    // decoder with `stream: true` is reused for the terminal's lifetime.
+    socket.binaryType = 'arraybuffer'
+
+    const decoder = new TextDecoder()
+
     socket.onmessage = event => {
+      const text =
+        typeof event.data === 'string' ? event.data : decoder.decode(event.data as ArrayBuffer, { stream: true })
+
       for (const listener of handle.onData) {
-        listener(String(event.data))
+        listener(text)
       }
     }
 
