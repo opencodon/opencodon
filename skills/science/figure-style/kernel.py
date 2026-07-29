@@ -254,13 +254,11 @@ def panel_crops(fig, dpi=None, pad_px=6, bbox_inches=None, pad_inches=None):
                 lettered[ax] = s
                 break
 
-
     if not lettered:
         lettered = {ax: str(i) for i, ax in enumerate(fig.axes)}
     out = {}
     for ax, letter in lettered.items():
         bbs = [ax.get_tightbbox(r)]
-
 
         ss = ax.get_subplotspec()
         for sib in fig.axes:

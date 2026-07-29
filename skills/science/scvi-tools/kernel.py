@@ -45,7 +45,6 @@ def h5ad_safe_obs(df):
     for c in out.columns:
         dt = str(out[c].dtype)
 
-
         if dt == "object" or "string" in dt:
             mask = out[c].notna()
             vals = np.asarray(out[c].astype(object).where(mask, None), dtype=object)

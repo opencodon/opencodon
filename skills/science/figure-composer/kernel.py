@@ -236,7 +236,6 @@ def derive_outline(figure_png_path, claim=None, data_hints=None, model=None):
                    tools=[{"name":"outline","input_schema":sch}],
                    tool_choice={"type":"tool","name":"outline"},
 
-
                    model=model or fc_sdk().reasoning_model(), max_tokens=4000)
     out = (r.get("tool_use") or [{}])[0].get("input") or {}
     for p in out.get("panels") or []:
