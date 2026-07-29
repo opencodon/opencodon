@@ -107,18 +107,21 @@ class ModalProvisioner(KernelProvisioner):
     # ── provisioning ────────────────────────────────────────────────
 
     def provision(self, spec, workdir: Path) -> ProvisionedKernel:
+        # Arguments before dependencies: an R spec is a malformed call whether
+        # or not the SDK happens to be installed, and reporting the missing
+        # SDK first would send the caller to fix the wrong thing.
+        if spec.language != "python":
+            raise KernelStartError(
+                f"{self.describe_target()} provisions python kernels only, "
+                f"got {spec.language!r}"
+            )
+
         try:
             import modal
         except ImportError as exc:
             raise KernelStartError(
                 "the modal SDK is not installed — `uv sync --extra modal`"
             ) from exc
-
-        if spec.language != "python":
-            raise KernelStartError(
-                f"{self.describe_target()} provisions python kernels only, "
-                f"got {spec.language!r}"
-            )
 
         key = secrets.token_hex(16)
         connection = {

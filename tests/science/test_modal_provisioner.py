@@ -92,6 +92,40 @@ def test_non_python_language_is_refused_before_a_sandbox_is_made():
 
 
 @pytest.mark.requirement("SCI-P1-04")
+def test_language_is_checked_before_the_sdk_import(monkeypatch):
+    """Argument validation must not depend on an optional dependency.
+
+    CI runs without the modal extra, so an SDK-first check reported "modal is
+    not installed" for a call that was malformed regardless — sending the
+    caller to fix the wrong thing, and making the test above pass or fail
+    depending on which extras happened to be present.
+    """
+    import builtins
+
+    real_import = builtins.__import__
+
+    def no_modal(name, *args, **kwargs):
+        if name == "modal":
+            raise ImportError("No module named 'modal'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_modal)
+
+    spec = PythonEnvResolver().resolve()
+    r_spec = type(spec)(
+        language="r", interpreter_path="R", argv=("R",), runtime_identity="R",
+    )
+    with pytest.raises(KernelStartError) as caught:
+        ModalProvisioner().provision(r_spec, "/tmp")
+    assert "python kernels only" in str(caught.value)
+
+    # And a well-formed call with no SDK still says what is actually missing.
+    with pytest.raises(KernelStartError) as caught:
+        ModalProvisioner().provision(spec, "/tmp")
+    assert "modal SDK is not installed" in str(caught.value)
+
+
+@pytest.mark.requirement("SCI-P1-04")
 def test_liveness_does_not_trust_the_heartbeat():
     """The bug this guards: hb does not survive the tunnel.
 
