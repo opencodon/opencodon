@@ -569,6 +569,19 @@ prompt_caching:
 #     timeout: 30
 #     language: ""           # empty = match the user's language; or e.g. "English"
 #
+#   # In-kernel host.llm() calls from the science layer and its skills
+#   science_llm:
+#     provider: "auto"
+#     model: ""
+#     cheap_model: ""        # Model for high-volume per-item work — skills that
+#                            # classify a document page by page make one call per
+#                            # page, so the choice is about cost, not quality.
+#                            # A slug is only valid on its own provider:
+#                            # "anthropic/claude-haiku-4-5" on OpenRouter,
+#                            # "claude-haiku-4-5" on Anthropic direct.
+#                            # Empty = haiku when the provider IS Anthropic,
+#                            # otherwise the provider's own default model.
+#
 #   # Session search — summarizes matching past sessions
 #   session_search:
 #     provider: "auto"

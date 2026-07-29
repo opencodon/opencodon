@@ -18,7 +18,10 @@ Methods:
 - ``tool(name, args)`` — invoke a opencodon tool, gated by the
   ``science.host_tools`` allowlist in config.yaml (empty by default: no
   tool is reachable from the kernel unless the user opts in).
-- ``models()`` — the resolved default model, so kernel code can route.
+- ``models()`` — the resolved models, so kernel code can route: ``default``
+  for ordinary calls and ``cheap`` for the high-volume per-page kind. Both
+  are resolved here rather than in the kernel because only the host knows
+  which provider is configured, and a model slug is only valid against one.
 
 Calls are only served while a cell is executing (``current_cell`` context);
 out-of-cell connections are refused so nothing escapes the execution trace.
@@ -291,13 +294,78 @@ class HostBridge:
 
     def _do_models(self, params: dict):
         _client, model = self._llm_client(None)
-        return {"default": model}, {}, True
+        return {"default": model, "cheap": cheap_model(model)}, {}, True
 
 
 def _elide(text: str, limit: int = 2000) -> str:
     if len(text) <= limit:
         return text
     return text[:limit] + f"…[{len(text) - limit} chars elided]"
+
+
+# ── Cheap-model resolution ──────────────────────────────────────────
+
+# Skills that classify page-by-page make one call per page, so the model
+# choice is a cost decision rather than a quality one. This names a smaller
+# model for that work — but a slug is only meaningful against the provider
+# it belongs to, so the pin has to be resolved where the provider is known.
+CHEAP_MODEL_KEY = "cheap_model"
+
+# Used only when the configured provider is Anthropic's own API, where this
+# alias is valid. Everywhere else an unconfigured caller gets the provider's
+# own default, which is always a slug that provider accepts.
+_ANTHROPIC_CHEAP_MODEL = "claude-haiku-4-5"
+_ANTHROPIC_HOSTS = ("api.anthropic.com",)
+
+
+def _configured_cheap_model() -> Optional[str]:
+    """``auxiliary.science_llm.cheap_model`` from config.yaml, if set."""
+    try:
+        from agent.auxiliary_client import _get_auxiliary_task_config
+
+        value = _get_auxiliary_task_config("science_llm").get(CHEAP_MODEL_KEY)
+    except Exception:
+        return None
+    value = str(value or "").strip()
+    return value or None
+
+
+def _provider_is_anthropic() -> bool:
+    """Whether science_llm resolves to Anthropic's own API."""
+    try:
+        from agent.auxiliary_client import _resolve_task_provider_model
+
+        provider, _model, base_url, _key, _mode = _resolve_task_provider_model(
+            "science_llm"
+        )
+    except Exception:
+        return False
+    if str(provider or "").strip().lower() == "anthropic":
+        return True
+    host = str(base_url or "").lower()
+    return any(known in host for known in _ANTHROPIC_HOSTS)
+
+
+def cheap_model(default_model: Optional[str]) -> Optional[str]:
+    """The model high-volume per-item work should use.
+
+    Resolution order, most explicit first:
+
+    1. ``auxiliary.science_llm.cheap_model`` — the user named one, so it is
+       theirs to get right; it is passed through untouched.
+    2. The Anthropic pin, but only when the configured provider is Anthropic's
+       own API. A bare ``claude-haiku-4-5`` is not a valid slug on OpenRouter
+       (which wants ``anthropic/claude-haiku-4-5``) and does not exist at all
+       on OpenAI or a local endpoint.
+    3. The provider's own default — never cheaper, but always a slug the
+       configured provider will accept.
+    """
+    configured = _configured_cheap_model()
+    if configured:
+        return configured
+    if _provider_is_anthropic():
+        return _ANTHROPIC_CHEAP_MODEL
+    return default_model
 
 
 # ── Per-workspace bridge registry ───────────────────────────────────

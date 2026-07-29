@@ -133,6 +133,14 @@ phases:
       - id: SCI-P3-06
         statement: A skill that ships no helpers fails clearly rather than silently.
         acceptance: load_skill_helpers on an unknown or helper-less skill raises a named error.
+      - id: SCI-P3-07
+        statement: A skill never names a model its provider would reject.
+        acceptance: >
+          the cheap-model pin skills use for high-volume per-item work is
+          resolved host-side, where the provider is known: an explicit
+          auxiliary.science_llm.cheap_model wins, the Anthropic alias is used
+          only when the provider is Anthropic's own API, and every other
+          provider falls back to its own default model.
 
   P4:
     title: Biomodel skills

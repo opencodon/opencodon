@@ -175,6 +175,14 @@ class _OpencodonHost(object):
     def models(self):
         return self._call("models", {})
 
+    def cheap_model(self):
+        """Model to use for high-volume per-item work (one call per page).
+
+        Resolved by the host, which is the only side that knows which
+        provider is configured — a model slug is only valid against one.
+        """
+        return (self.models() or {}).get("cheap")
+
 host = _OpencodonHost()
 '''
 

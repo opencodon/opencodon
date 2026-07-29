@@ -38,11 +38,24 @@ Module-level so repeat ``pdf_scan`` calls on the same file with a different
 query skip re-parsing/re-rendering. Cleared only on kernel restart."""
 
 
-PDF_DEFAULT_MODEL = "claude-haiku-4-5"
-"""Cheap model for per-page classification. Bench (n=10 arXiv) shows sonnet
-at 3× cost for zero recall gain; haiku is the right default. Deliberate
-cost pin — for the platform's reasoning default see
-``[llm] kernel_reasoning_model`` / ``host.reasoning_model()``."""
+def pdf_default_model():
+    """Cheap model for per-page classification, resolved per provider.
+
+    Bench (n=10 arXiv) shows sonnet at 3x cost for zero recall gain, so this
+    work wants the smallest capable model. Which slug that *is* depends on
+    the configured provider, so the host resolves it: set
+    ``auxiliary.science_llm.cheap_model`` in config.yaml to pin one
+    (``anthropic/claude-haiku-4-5`` on OpenRouter, ``claude-haiku-4-5`` on
+    Anthropic direct). Unset, it falls back to the provider's own default —
+    not cheaper, but always a slug that provider accepts.
+    """
+    try:
+        return pdf_sdk().cheap_model()
+    except Exception:
+        # An older host without the `cheap` key: the provider default is what
+        # every other host.llm call already uses, so it is the safe answer.
+        return None
+
 
 PDF_AUTO_IMAGE_CHARS_THRESHOLD = 80
 """Mean chars/page below which ``mode='auto'`` switches text→image.
@@ -459,7 +472,7 @@ def pdf_map(path, prompt="Summarize this page in 2 sentences.",
     ``prompt`` is applied per-page with the page text/image prepended;
     defaults to a 2-sentence summary.
     """
-    model = model or PDF_DEFAULT_MODEL
+    model = model or pdf_default_model()
     parsed = pdf_pages(path, mode=mode, pages=pages, dpi=dpi)
     if not parsed:
         return {"pages": [], "n_pages": 0,
@@ -640,7 +653,7 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
         )
         r = pdf_sdk().llm([{
             "prompt": hdr + body,
-            "model": model or PDF_DEFAULT_MODEL,
+            "model": model or pdf_default_model(),
 
             "max_tokens": 8192,
             "tools": [{
@@ -702,7 +715,7 @@ def pdf_outline(path, model=None, max_concurrency=8, force_llm=False,
          "required": ["section_headings"]},
         pages=pages,
         mode="auto",
-        model=model or PDF_DEFAULT_MODEL,
+        model=model or pdf_default_model(),
         max_concurrency=max_concurrency,
         system=(
             "You extract section headings from a single PDF page. Return "
@@ -776,7 +789,8 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
     ~$0.001/page, ~1-3s wall. ``strategy="fanout"`` (scanned, >150pp, or
     ``threshold=`` set) → ~$0.0026/page; 100pp ≈ $0.26 and ~15s at
     ``max_concurrency=16``. ``model`` defaults to
-    :data:`PDF_DEFAULT_MODEL` (haiku); sonnet at 3× cost shows no recall
+    :func:`pdf_default_model` (haiku on Anthropic, otherwise the provider's
+    own default); sonnet at 3× cost shows no recall
     gain on the bench.
 
     Prefer :func:`pdf_map` for "what's in this document" navigation — it
@@ -785,7 +799,7 @@ def pdf_scan(path, query, top_k=5, mode="auto", model=None,
     """
     if not isinstance(query, str) or not query.strip():
         raise ValueError("pdf_scan: query must be a non-empty str")
-    model = model or PDF_DEFAULT_MODEL
+    model = model or pdf_default_model()
 
     parsed = pdf_pages(path, mode=mode, pages=pages, dpi=dpi)
     if not parsed:
@@ -1000,7 +1014,7 @@ def pdf_extract(path, schema, pages=None, mode="auto", model=None,
             "pdf_extract: schema must be a JSON-Schema object dict "
             '({"type":"object","properties":{...}})'
         )
-    model = model or PDF_DEFAULT_MODEL
+    model = model or pdf_default_model()
 
     parsed = pdf_pages(path, mode=mode, pages=pages, dpi=dpi)
     if not parsed:
