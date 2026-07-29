@@ -52,6 +52,7 @@ def run_code(
     language: str = "python",
     timeout: float = 60.0,
     inputs=None,
+    description: str = None,
     session_id: str = "adhoc",
 ) -> str:
     try:
@@ -61,6 +62,7 @@ def run_code(
             language=language,
             timeout=float(timeout),
             inputs=inputs,
+            description=description,
         )
         return json.dumps(result, ensure_ascii=False, default=str)
     except LookupError as exc:
@@ -107,8 +109,17 @@ registry.register(
                         "load_artifact()."
                     ),
                 },
+                "description": {
+                    "type": "string",
+                    "description": (
+                        "Short present-participle label for what this cell "
+                        "does, e.g. 'Fitting the calibration curve'. Shown "
+                        "in the session trace so a reader can follow the "
+                        "work as a lab log rather than reading code."
+                    ),
+                },
             },
-            "required": ["code"],
+            "required": ["code", "description"],
         },
     },
     handler=lambda args, **kw: run_code(
@@ -116,6 +127,7 @@ registry.register(
         language=args.get("language", "python"),
         timeout=args.get("timeout", 60.0),
         inputs=args.get("inputs"),
+        description=args.get("description"),
         session_id=_session(kw),
     ),
     check_fn=_kernels_ready,

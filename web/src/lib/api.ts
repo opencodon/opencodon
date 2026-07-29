@@ -79,6 +79,7 @@ const PROFILE_SCOPED_PREFIXES = [
   "/api/model/auxiliary",
   "/api/model/moa",
   "/api/model/options",
+  "/api/science",
 ];
 
 function withManagementProfile(url: string): string {
@@ -1236,7 +1237,253 @@ export const api = {
     fetchJSON<SkillHubScan>(
       `/api/skills/hub/scan?identifier=${encodeURIComponent(identifier)}`,
     ),
+
+  // ── Science: frames, cells, artifacts, lineage ──────────────────────
+  // Read-only by design — the dashboard observes the execution record and
+  // never submits code. See docs/design/web-ui-redesign.md §4.
+  getFrames: (params?: { limit?: number; offset?: number }) =>
+    fetchJSON<FramesResponse>(
+      `/api/science/frames?limit=${params?.limit ?? 50}&offset=${params?.offset ?? 0}`,
+    ),
+  getFrame: (frameId: string) =>
+    fetchJSON<FrameDetail>(`/api/science/frames/${encodeURIComponent(frameId)}`),
+  /** `since` is the cursor from a previous call — returns only newer cells. */
+  getFrameCells: (frameId: string, since?: number | null) =>
+    fetchJSON<FrameCellsResponse>(
+      `/api/science/frames/${encodeURIComponent(frameId)}/cells` +
+        (since === null || since === undefined ? "" : `?since=${since}`),
+    ),
+  getCell: (cellId: string) =>
+    fetchJSON<CellDetail>(`/api/science/cells/${encodeURIComponent(cellId)}`),
+  getArtifacts: (params?: {
+    frameId?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ArtifactsResponse> => {
+    const q = new URLSearchParams();
+    if (params?.frameId) q.set("frame_id", params.frameId);
+    if (params?.search) q.set("search", params.search);
+    q.set("limit", String(params?.limit ?? 200));
+    q.set("offset", String(params?.offset ?? 0));
+    return fetchJSON<ArtifactsResponse>(`/api/science/artifacts?${q}`);
+  },
+  getArtifact: (artifactId: string) =>
+    fetchJSON<ArtifactDetail>(
+      `/api/science/artifacts/${encodeURIComponent(artifactId)}`,
+    ),
+  getVersion: (versionId: string) =>
+    fetchJSON<VersionDetail>(
+      `/api/science/versions/${encodeURIComponent(versionId)}`,
+    ),
+  getVersionLineage: (versionId: string, direction: LineageDirection) =>
+    fetchJSON<LineageResponse>(
+      `/api/science/versions/${encodeURIComponent(versionId)}/lineage?direction=${direction}`,
+    ),
+  getVersionContent: (versionId: string) =>
+    fetchJSON<VersionContent>(
+      `/api/science/versions/${encodeURIComponent(versionId)}/content`,
+    ),
+  /** Absolute URL for a version's raw bytes — used as an <a href>. */
+  versionDownloadUrl: (versionId: string) =>
+    `${OPENCODON_BASE_PATH}/api/science/versions/${encodeURIComponent(versionId)}/download`,
+  /** Absolute URL for a frame's RO-Crate zip — used as an <a href>. */
+  frameExportUrl: (frameId: string) =>
+    `${OPENCODON_BASE_PATH}/api/science/frames/${encodeURIComponent(frameId)}/export`,
+  startReproduction: (versionId: string) =>
+    fetchJSON<ReproductionJob>(
+      `/api/science/versions/${encodeURIComponent(versionId)}/reproduce`,
+      { method: "POST" },
+    ),
+  getReproduction: (jobId: string) =>
+    fetchJSON<ReproductionJob>(
+      `/api/science/reproductions/${encodeURIComponent(jobId)}`,
+    ),
 };
+
+export interface ReproductionReport {
+  claim: string;
+  reason?: string;
+  caveats?: string[];
+  [key: string]: unknown;
+}
+
+export interface ReproductionJob {
+  job_id: string;
+  version_id: string;
+  state: "running" | "done" | "error";
+  report: ReproductionReport | null;
+}
+
+// ── Science types ─────────────────────────────────────────────────────
+
+export type LineageDirection = "upstream" | "downstream";
+
+export interface FrameSummary {
+  frame_id: string;
+  title: string | null;
+  model: string | null;
+  cwd: string | null;
+  source: string | null;
+  profile: string | null;
+  started_at: number | null;
+  ended_at: number | null;
+  /** The session row is gone but its execution record survived retention. */
+  session_missing: boolean;
+  cell_count: number;
+  failed_cell_count: number;
+  artifact_count: number;
+  last_cell_at: number | null;
+  languages: string[];
+}
+
+export interface FramesResponse {
+  frames: FrameSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface FrameEnvironment {
+  language: string | null;
+  env_name: string | null;
+  kernel_kind: string | null;
+  cell_count: number;
+  snapshot: unknown;
+}
+
+export interface FrameDetail
+  extends Omit<FrameSummary, "cell_count" | "artifact_count" | "last_cell_at" | "languages"> {
+  session_ids: string[];
+  cell_count: number;
+  failed_cell_count: number;
+  artifacts: ArtifactSummary[];
+  environments: FrameEnvironment[];
+}
+
+export interface CellSummary {
+  cell_id: string;
+  session_id: string;
+  cell_index: number;
+  kernel_id: string | null;
+  kernel_kind: string | null;
+  language: string | null;
+  env_name: string | null;
+  /** Micromamba lock identity; `verified` requires this to still match. */
+  env_lock_hash: string | null;
+  /** Where the kernel ran — local, ssh:…, modal:… */
+  kernel_location: string | null;
+  source: string | null;
+  stdout: string | null;
+  stderr: string | null;
+  exit_status: string;
+  error_lineno: number | null;
+  /** "agent" today; the field exists so human-run cells need no migration. */
+  origin: string;
+  user_intervention: string | null;
+  /** Action label ("Fitting the calibration curve"); null on older cells. */
+  description: string | null;
+  files_written: string[] | null;
+  files_read: string[] | null;
+  created_at: number | null;
+  host_call_count?: number;
+  version_count?: number;
+}
+
+export interface FrameCellsResponse {
+  frame_id: string;
+  cells: CellSummary[];
+  /** Newest `created_at` seen; pass back as `since` to poll for new cells. */
+  cursor: number | null;
+}
+
+export interface HostCall {
+  seq: number;
+  method: string;
+  args: unknown;
+  derivable: boolean;
+  data_inline: string | null;
+  data_ref: string | null;
+  error: string | null;
+  bytes: number;
+  created_at: number | null;
+}
+
+export interface CellDetail extends CellSummary {
+  env_snapshot: unknown;
+  host_calls: HostCall[];
+  versions: VersionSummary[];
+}
+
+export interface ArtifactSummary {
+  artifact_id: string;
+  frame_id: string;
+  session_id: string | null;
+  filename: string;
+  is_user_upload: boolean;
+  is_ephemeral: boolean;
+  latest_version_id: string | null;
+  latest_version_number: number | null;
+  latest_content_type: string | null;
+  latest_size_bytes: number | null;
+  latest_sha256: string | null;
+  superseded_by_artifact_id: string | null;
+  created_at: number | null;
+}
+
+export interface ArtifactsResponse {
+  artifacts: ArtifactSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface VersionSummary {
+  version_id: string;
+  artifact_id: string;
+  version_number: number;
+  session_id: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  sha256: string | null;
+  language: string | null;
+  is_intermediate: boolean;
+  producing_cell_id: string | null;
+  parent_version_id: string | null;
+  env_snapshot_hash: string | null;
+  created_at: number | null;
+}
+
+export interface ArtifactDetail extends ArtifactSummary {
+  versions: VersionSummary[];
+}
+
+export interface VersionDetail extends VersionSummary {
+  filename: string | null;
+  frame_id: string | null;
+  producing_cell: CellDetail | null;
+  depends_on: Array<{ version_id: string; reference_name: string }>;
+}
+
+export interface LineageEntry extends VersionSummary {
+  depth: number;
+  filename: string | null;
+}
+
+export interface LineageResponse {
+  version_id: string;
+  direction: LineageDirection;
+  lineage: LineageEntry[];
+}
+
+export interface VersionContent {
+  version_id: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  binary: boolean;
+  truncated: boolean;
+  text: string | null;
+}
 
 /** Identity payload returned by ``GET /api/auth/me`` (Phase 7).
  *

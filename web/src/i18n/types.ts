@@ -72,16 +72,20 @@ export interface Translations {
     };
     nav: {
       analytics: string;
+      artifacts: string;
+      cells: string;
       chat: string;
       config: string;
       cron: string;
       documentation: string;
+      frames: string;
       keys: string;
       logs: string;
       models: string;
       profiles: string;
       plugins: string;
       sessions: string;
+      settings: string;
       skills: string;
     };
     modelToolsSheetSubtitle: string;

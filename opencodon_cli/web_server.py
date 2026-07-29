@@ -18392,6 +18392,19 @@ _mount_plugin_api_routes()
 from opencodon_cli.dashboard_auth.routes import router as _dashboard_auth_router  # noqa: E402
 app.include_router(_dashboard_auth_router)
 
+# Read-only science surface (/api/science/*) — frames, cells, artifacts,
+# lineage.  Lives in its own module; it only needs this module's
+# profile-aware SessionDB opener, injected here.  Mounted before the SPA
+# catch-all for the same reason as the auth routes.
+from opencodon_cli import science_api as _science_api  # noqa: E402
+_science_api.set_db_opener(_open_session_db_for_profile)
+# Reproduction re-runs recorded cells, so it is allowed only on a loopback
+# bind. Evaluated per request because the auth mode is settled after import.
+_science_api.set_reproduce_gate(
+    lambda: not getattr(app.state, "auth_required", False)
+)
+app.include_router(_science_api.router)
+
 mount_spa(app)
 
 

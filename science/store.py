@@ -92,6 +92,7 @@ class ScienceStore:
         has_magics: int = 0,
         origin: str = "agent",
         user_intervention: str = None,
+        description: str = None,
         files_written: list = None,
         files_read: list = None,
         cell_id: str = None,
@@ -118,9 +119,9 @@ class ScienceStore:
                        language, env_name, env_snapshot, env_lock_hash,
                        kernel_location, source, stdout, stderr,
                        exit_status, error_lineno, traceback, display_count,
-                       has_magics, origin, user_intervention,
+                       has_magics, origin, user_intervention, description,
                        files_written, files_read, created_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     cell_id,
                     session_id,
@@ -142,6 +143,7 @@ class ScienceStore:
                     has_magics,
                     origin,
                     user_intervention,
+                    description,
                     json.dumps(files_written) if files_written else None,
                     json.dumps(files_read) if files_read else None,
                     time.time(),

@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS execution_log (
     has_magics INTEGER NOT NULL DEFAULT 0,
     origin TEXT NOT NULL DEFAULT 'agent',
     user_intervention TEXT,
+    description TEXT,
     files_written TEXT,
     files_read TEXT,
     created_at REAL NOT NULL,
