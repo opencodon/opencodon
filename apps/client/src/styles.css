@@ -1,4 +1,10 @@
 @import 'tailwindcss';
+/* Tailwind v4 auto-detects content from the *build root*, which is the host
+   package (apps/desktop or apps/web) — not this one. Without an explicit
+   source the scan misses every component here and emits a stylesheet with
+   none of the utility classes the UI uses, which renders as a fully unstyled
+   page. Point it at this package's sources so both hosts get the same CSS. */
+@source './';
 @plugin '@tailwindcss/typography';
 @import 'tw-shimmer';
 @import 'katex/dist/katex.min.css';

@@ -1,0 +1,24 @@
+{
+  "name": "@opencodon/web",
+  "version": "0.17.0",
+  "private": true,
+  "description": "Browser host for the Opencodon session UI. Serves the client bundle from the dashboard at /app.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@opencodon/client": "file:../client",
+    "@opencodon/shared": "file:../shared"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}
