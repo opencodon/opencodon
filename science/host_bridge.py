@@ -294,7 +294,15 @@ class HostBridge:
 
     def _do_models(self, params: dict):
         _client, model = self._llm_client(None)
-        return {"default": model, "cheap": cheap_model(model)}, {}, True
+        return (
+            {
+                "default": model,
+                "cheap": cheap_model(model),
+                "reasoning": reasoning_model(model),
+            },
+            {},
+            True,
+        )
 
 
 def _elide(text: str, limit: int = 2000) -> str:
@@ -303,13 +311,14 @@ def _elide(text: str, limit: int = 2000) -> str:
     return text[:limit] + f"…[{len(text) - limit} chars elided]"
 
 
-# ── Cheap-model resolution ──────────────────────────────────────────
+# ── Model-role resolution ───────────────────────────────────────────
 
-# Skills that classify page-by-page make one call per page, so the model
-# choice is a cost decision rather than a quality one. This names a smaller
-# model for that work — but a slug is only meaningful against the provider
-# it belongs to, so the pin has to be resolved where the provider is known.
+# Skills route by *role* rather than by slug: a page-classification loop wants
+# the smallest capable model, a figure-layout call wants the strongest one.
+# Which slug that is depends entirely on the configured provider, so the roles
+# are resolved here — the kernel cannot see which provider it is talking to.
 CHEAP_MODEL_KEY = "cheap_model"
+REASONING_MODEL_KEY = "reasoning_model"
 
 # Used only when the configured provider is Anthropic's own API, where this
 # alias is valid. Everywhere else an unconfigured caller gets the provider's
@@ -318,16 +327,21 @@ _ANTHROPIC_CHEAP_MODEL = "claude-haiku-4-5"
 _ANTHROPIC_HOSTS = ("api.anthropic.com",)
 
 
-def _configured_cheap_model() -> Optional[str]:
-    """``auxiliary.science_llm.cheap_model`` from config.yaml, if set."""
+def _configured_model(key: str) -> Optional[str]:
+    """``auxiliary.science_llm.<key>`` from config.yaml, if set."""
     try:
         from agent.auxiliary_client import _get_auxiliary_task_config
 
-        value = _get_auxiliary_task_config("science_llm").get(CHEAP_MODEL_KEY)
+        value = _get_auxiliary_task_config("science_llm").get(key)
     except Exception:
         return None
     value = str(value or "").strip()
     return value or None
+
+
+def _configured_cheap_model() -> Optional[str]:
+    """``auxiliary.science_llm.cheap_model`` from config.yaml, if set."""
+    return _configured_model(CHEAP_MODEL_KEY)
 
 
 def _provider_is_anthropic() -> bool:
@@ -366,6 +380,20 @@ def cheap_model(default_model: Optional[str]) -> Optional[str]:
     if _provider_is_anthropic():
         return _ANTHROPIC_CHEAP_MODEL
     return default_model
+
+
+def reasoning_model(default_model: Optional[str]) -> Optional[str]:
+    """The model work that needs the strongest reasoning should use.
+
+    ``auxiliary.science_llm.reasoning_model`` when set, otherwise the
+    provider's own default. There is no built-in pin here, unlike
+    :func:`cheap_model`: the cheap role has a defensible default because
+    "smallest capable model" is a claim benchmarks can support, while
+    "strongest model" is a per-provider, per-budget judgement nobody can make
+    on the user's behalf. The provider default is already the model every
+    other ``host.llm`` call uses, so an unconfigured caller is no worse off.
+    """
+    return _configured_model(REASONING_MODEL_KEY) or default_model
 
 
 # ── Per-workspace bridge registry ───────────────────────────────────

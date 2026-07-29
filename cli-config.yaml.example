@@ -581,6 +581,11 @@ prompt_caching:
 #                            # "claude-haiku-4-5" on Anthropic direct.
 #                            # Empty = haiku when the provider IS Anthropic,
 #                            # otherwise the provider's own default model.
+#     reasoning_model: ""    # Model for work that needs the strongest reasoning
+#                            # (figure layout, paper framing). Empty = the
+#                            # provider's own default; there is no built-in pin,
+#                            # since "strongest" depends on your provider and
+#                            # budget in a way we can't guess.
 #
 #   # Session search — summarizes matching past sessions
 #   session_search:

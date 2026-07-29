@@ -239,3 +239,48 @@ class TestCheapModel:
             reply = call_bridge(bridge, "models", {})
         assert reply["data"]["cheap"] == "cheap-1"
         assert reply["data"]["default"]
+
+
+class TestReasoningModel:
+    """The counterpart role to `cheap`: work that needs the strongest model.
+
+    Both skills that use it called `host.reasoning_model()`, a donor-SDK name
+    opencodon never implemented — an AttributeError on first use.
+    """
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_configured_pin_wins(self, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(
+            host_bridge, "_configured_model",
+            lambda key: "anthropic/claude-opus-5" if key == "reasoning_model" else None,
+        )
+        assert host_bridge.reasoning_model("gpt-5") == "anthropic/claude-opus-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_unset_falls_back_to_the_provider_default(self, monkeypatch):
+        """No built-in pin: "strongest model" is not a claim we can make for
+        someone else's provider and budget."""
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        assert host_bridge.reasoning_model("google/gemini-3-pro") == "google/gemini-3-pro"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_the_anthropic_pin_is_cheap_only(self, monkeypatch):
+        """A provider check must not leak the haiku pin into the reasoning role."""
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        monkeypatch.setattr(host_bridge, "_provider_is_anthropic", lambda: True)
+        assert host_bridge.reasoning_model("claude-opus-5") == "claude-opus-5"
+
+    @pytest.mark.requirement("SCI-P3-07")
+    def test_models_reports_every_role(self, bridge, cell, monkeypatch):
+        from science import host_bridge
+
+        monkeypatch.setattr(host_bridge, "_configured_model", lambda key: None)
+        with bridge.current_cell(cell):
+            reply = call_bridge(bridge, "models", {})
+        assert set(reply["data"]) == {"default", "cheap", "reasoning"}

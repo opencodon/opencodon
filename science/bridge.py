@@ -183,6 +183,10 @@ class _OpencodonHost(object):
         """
         return (self.models() or {}).get("cheap")
 
+    def reasoning_model(self):
+        """Model to use for work that needs the strongest reasoning."""
+        return (self.models() or {}).get("reasoning")
+
 host = _OpencodonHost()
 '''
 

@@ -174,7 +174,10 @@ def pdf_resolve(path_or_vid):
         return p
 
     if re.fullmatch(r"[0-9a-fA-F-]{32,36}", path_or_vid.strip()):
-        return pdf_sdk().artifact_path(path_or_vid)
+        # The donor SDK spelled this `host.artifact_path`; opencodon injects it
+        # as a module-level `load_artifact`, which returns the same read-only
+        # materialized path.
+        return load_artifact(path_or_vid.strip())
     return p
 
 
