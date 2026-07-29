@@ -31,12 +31,6 @@ def litrev_contact() -> str | None:
     """User contact email for polite-pool API headers (CrossRef/doi.org
     ONLY — never sent to OpenAlex, which does not take a contact
     email); None if unavailable/declined."""
-
-
-
-
-
-
     try:
         r = lr_sdk().get_user_email()
     except Exception:
@@ -59,12 +53,6 @@ def litrev_openalex_key() -> str:
     try:
         k = lr_sdk().credentials.request("openalex")
     except Exception as e:
-
-
-
-
-
-
         if type(e).__name__ in ("CredentialUnavailable", "CredentialDeclined"):
             raise
         raise RuntimeError(
@@ -74,8 +62,6 @@ def litrev_openalex_key() -> str:
             "can add a key under Customize → Credentials → OpenAlex "
             "(free at https://openalex.org/settings/api)." % e
         ) from None
-
-
 
     if isinstance(k, str) and k:
         os.environ["OPENALEX_API_KEY"] = k
@@ -138,9 +124,6 @@ def litrev_openalex_get(url: str, timeout: float = 15) -> dict | None:
                     "anonymously." % e.code
                 ) from None
             if e.code == 403:
-
-
-
                 if litrev_openalex_key_ok(key, timeout) is False:
                     raise RuntimeError(
                         "OpenAlex rejected the API key (HTTP 403, and the "
@@ -152,9 +135,6 @@ def litrev_openalex_get(url: str, timeout: float = 15) -> dict | None:
                     ) from None
                 return None
             if e.code == 429:
-
-
-
                 if attempt == 0:
                     time.sleep(2)
                     continue
@@ -278,11 +258,6 @@ def verify_dois(dois: list[str]) -> dict[str, dict]:
     out: dict[str, dict] = {}
     for d in dois:
         d = d.strip()
-
-
-
-
-
         segs = urllib.parse.unquote(d).split("/")
         if any(seg in ("", ".", "..") for seg in segs[1:]):
             out[d] = {"ok": False, "error": "dot-segment in DOI"}
@@ -309,8 +284,6 @@ def verify_dois(dois: list[str]) -> dict[str, dict]:
                 "registry": "crossref",
             }
             continue
-
-
         code = litrev_head(f"https://doi.org/{enc}")
         if code is not None and 200 <= code < 400:
             out[d] = {"ok": True, "registry": "non-crossref", "retracted": None}
