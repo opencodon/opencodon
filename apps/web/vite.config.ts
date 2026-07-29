@@ -49,7 +49,19 @@ export default defineConfig({
   build: {
     ...clientBase.build,
     outDir: path.resolve(__dirname, '../../opencodon_cli/web_app_dist'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    // The shared base disables code splitting because electron-builder can OOM
+    // scanning thousands of files when packaging the desktop app. Nothing
+    // packages the web build, and the single-chunk mode is actively harmful
+    // here: it ships ~28 MB on first paint, and collapsing shiki's re-exports
+    // into one scope trips a rolldown helper-naming bug that leaves
+    // `__reExport$1` undefined — a blank page with no React error, because the
+    // module graph dies before the app mounts. Split instead.
+    rolldownOptions: {
+      output: {
+        codeSplitting: true
+      }
+    }
   },
   server: {
     host: '127.0.0.1',

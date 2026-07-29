@@ -959,7 +959,7 @@ export interface Translations {
     archivedChats: string
     sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
     sectionDescriptions: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
-    nav: Record<'newChat' | 'settings' | 'skills' | 'messaging' | 'artifacts', { title: string; detail: string }>
+    nav: Record<'newChat' | 'settings' | 'skills' | 'messaging' | 'artifacts' | 'science', { title: string; detail: string }>
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
     providerSessions: string
@@ -1248,6 +1248,46 @@ export interface Translations {
     createAction: string
   }
 
+  science: {
+    search: string
+    refresh: string
+    loading: string
+    tabFrames: string
+    tabArtifacts: string
+    trace: string
+    failedLoad: string
+    noFramesTitle: string
+    noFramesDesc: string
+    noArtifactsTitle: string
+    noArtifactsDesc: string
+    cells: string
+    artifacts: string
+    failed: string
+    clean: string
+    partial: string
+    unknown: string
+    versions: string
+    version: string
+    lineage: string
+    upstream: string
+    downstream: string
+    producedBy: string
+    environment: string
+    download: string
+    export: string
+    reproduce: string
+    reproducing: string
+    reproduceGated: string
+    noLineage: string
+    binaryContent: string
+    truncated: string
+    sessionMissing: string
+    selectPrompt: string
+    checksum: string
+    size: string
+    created: string
+    ranIn: string
+  }
   artifacts: {
     search: string
     refresh: string
