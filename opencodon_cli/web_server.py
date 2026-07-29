@@ -287,7 +287,12 @@ app.include_router(_memory_oauth_router)
 # injected into the SPA HTML so only the legitimate web UI can use it.
 # ---------------------------------------------------------------------------
 _SESSION_TOKEN = os.environ.get("OPENCODON_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-Opencodon-Session-Token"
+# The rebrand renamed the SPA's header (web/src/lib/api.ts) but not this
+# constant, so every non-public /api route 401'd for any bundle built after
+# it. Both names are accepted: current bundles send the opencodon header,
+# older ones (and the desktop app until it updates) still send the hermes one.
+_LEGACY_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
 _SSH_OWNER_NONCE: Optional[str] = None
 
 
@@ -351,12 +356,13 @@ def _has_valid_session_token(request: Request) -> bool:
     accept the legacy Bearer path for backward compatibility with older
     dashboard bundles.
     """
-    session_header = request.headers.get(_SESSION_HEADER_NAME, "")
-    if session_header and hmac.compare_digest(
-        session_header.encode(),
-        _SESSION_TOKEN.encode(),
-    ):
-        return True
+    for header_name in (_SESSION_HEADER_NAME, _LEGACY_SESSION_HEADER_NAME):
+        session_header = request.headers.get(header_name, "")
+        if session_header and hmac.compare_digest(
+            session_header.encode(),
+            _SESSION_TOKEN.encode(),
+        ):
+            return True
 
     auth = request.headers.get("authorization", "")
     expected = f"Bearer {_SESSION_TOKEN}"
