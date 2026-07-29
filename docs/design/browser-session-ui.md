@@ -1,6 +1,6 @@
 # Browser session UI — the web server as a first-class session host
 
-Status: **working end to end**; parity gaps listed in §6
+Status: **working end to end**; parity gaps listed in §7
 Date: 2026-07-29
 
 ## 1. The problem
@@ -26,14 +26,15 @@ dispatcher is **already mounted in this process** at `/api/ws`
 
 So the server could always host sessions directly. What was missing was a
 browser client for that protocol — and one already existed too:
-`apps/desktop`, a 133k-line React renderer that drives exactly these RPCs and
-events, and whose only host coupling is the `window.opencodonDesktop` bridge.
+the renderer now in `apps/client` — a 134k-line React app that drives exactly
+these RPCs and events, and whose only host coupling is the
+`window.opencodonDesktop` bridge.
 
 The change is therefore not a new UI. It is a transport swap.
 
 ```
-browser (apps/desktop renderer, built for the web)
-  └─ window.opencodonDesktop  ← src/lib/web-bridge.ts (HTTP/WS, not IPC)
+browser (apps/client, built for the web by apps/web)
+  └─ window.opencodonDesktop  ← apps/web/src/web-bridge.ts (HTTP/WS, not IPC)
        └─ WS /api/ws
             └─ tui_gateway.ws.handle_ws → WSTransport
                  └─ tui_gateway.server.dispatch          ← the seam
@@ -44,7 +45,7 @@ No PTY, no Node, no TUI anywhere in that path.
 
 ## 3. The bridge
 
-`apps/desktop/src/lib/web-bridge.ts` installs `window.opencodonDesktop` when
+`apps/web/src/web-bridge.ts` installs `window.opencodonDesktop` when
 one isn't already present, so the real Electron preload always wins. Members
 fall into three kinds, and new ones must pick deliberately:
 
@@ -80,7 +81,33 @@ the browser authenticates by cookie, with the gateway socket using single-use
 tickets from `/api/auth/ws-ticket` — minted immediately before each dial, since
 a ticket held across a reconnect is spent.
 
-## 4. Serving
+## 4. Packages
+
+The UI is its own package, shared by two hosts:
+
+```
+apps/client   the UI. Host-agnostic: renders against whatever bridge is
+              already installed, and never installs one itself.
+apps/desktop  the Electron shell — main process, preload (bridge over IPC),
+              packaging.
+apps/web      the browser host — bridge over HTTP/WS, plus the build the
+              dashboard serves.
+```
+
+Each host owns only its entry point and the config that genuinely differs
+(base path, output dir, dev server); the rest comes from
+`apps/client/vite.base.ts` so the two cannot drift into building the same
+source differently. Two traps this arrangement sets:
+
+- Tailwind v4 detects content from the *build root*, which is now the host
+  package. `apps/client/src/styles.css` carries an explicit `@source` — without
+  it the scan finds no components and emits a stylesheet with no utility
+  classes, which typechecks, builds, passes tests, and renders an unstyled
+  page.
+- The desktop build sets `codeSplitting: false` so electron-builder doesn't OOM
+  scanning thousands of files. The web build must *not* inherit that; see §7.
+
+## 5. Serving
 
 `opencodon_cli/web_app.py` mounts the bundle at `/app`, before the config SPA's
 catch-all. It injects the same bootstrap globals `mount_spa` does, and honours
@@ -89,16 +116,16 @@ catch-all. It injects the same bootstrap globals `mount_spa` does, and honours
 The two UIs coexist: `/` is the config dashboard, `/app` is the session UI.
 
 ```bash
-cd apps/desktop && npm run build:web   # → opencodon_cli/web_app_dist/
-opencodon dashboard --no-open          # → http://127.0.0.1:9119/app
+npm run build --workspace @opencodon/web   # → opencodon_cli/web_app_dist/
+opencodon dashboard --no-open              # → http://127.0.0.1:9119/app
 ```
 
-For development, `npm run dev:web` serves the renderer with HMR and proxies
+For development, `npm run dev --workspace @opencodon/web` serves it with HMR and proxies
 `/api` (WebSockets included) at a running dashboard. Export
 `OPENCODON_DASHBOARD_SESSION_TOKEN` before starting both so they agree on a
 credential — the dev server injects it the way the FastAPI mount would.
 
-## 5. `/api/shell`
+## 6. `/api/shell`
 
 `/api/pty` only ever spawns the TUI. The renderer's terminal pane wants a
 login shell, so `/api/shell` provides one. It lives beside `pty_ws` rather than
@@ -107,29 +134,44 @@ splitting it out would mean exporting six private gates and letting the two
 drift. It is 1:1 with the socket — reattach semantics belong to agent sessions,
 not scratch terminals.
 
-## 6. What works, and what doesn't yet
+## 7. What works, and what doesn't yet
 
 Verified in a browser against `opencodon dashboard`: gateway connects, a new
 session is created and streams a reply, sessions group by project, session
 tabs open side by side, the file tree browses the real workspace, the artifact
 index lists and filters, and the terminal spawns a shell and echoes writes.
 
+Since resolved:
+
+- **Two artifact surfaces** — the session UI now carries a Provenance surface
+  (`apps/client/src/app/science/`) over the same `/api/science` endpoints:
+  runs, cell traces, artifact version timelines, typed previews, lineage, and
+  RO-Crate export. The config SPA's copies are now the redundant ones.
+- **Bundle size** — the web build splits (§4), so first paint is a 3.9 MB entry
+  chunk rather than 27.8 MB. The desktop build keeps its single chunk, which is
+  a packaging constraint, not a preference.
+
 Known gaps:
 
-- **Two artifact surfaces.** The science provenance pages (frames, lineage,
-  reproduce, RO-Crate export) live in the config SPA at `/`; the session UI has
-  the desktop's own artifact index. These should converge on the science layer.
 - **Landing surface.** The reference platform opens on a projects-and-recent-
   sessions dashboard; this UI opens on chat, per `apps/desktop/DESIGN.md`
-  ("chat is the home surface").
-- **Bundle size.** 27.8 MB (5.9 MB gzipped) in a single chunk, inherited from
-  the Electron build's deliberate `codeSplitting: false`. Fine over loopback,
-  too slow over a tunnel; the web build should split.
+  ("chat is the home surface"). Worth deciding deliberately rather than by
+  inheritance.
+- **Compute pane.** The reference shows live kernels and host CPU/RAM beside
+  the transcript. We have the data (`science/kernels.py`, `/api/system/stats`)
+  and no surface for it in the session UI.
+- **Files pane scoping.** The right rail browses the workspace tree; it cannot
+  yet scope to "artifacts of this session" the way the reference's file pane
+  does. The data now exists behind Provenance — this is a pane, not a backend,
+  gap.
+- **The config SPA still owns settings.** Two frontends remain: `/` for
+  configuration, `/app` for work. Defensible as a transition, not as an end
+  state.
 - **Absent bridge members** (§3.3) are stubs. Anything routing a user through
   "reveal in Finder" needs a browser-appropriate alternative, not a silent
   no-op.
 
-## 7. Consequence for the old plan
+## 8. Consequence for the old plan
 
 [`web-ui-redesign.md`](./web-ui-redesign.md) §7 accepted that the Console tab
 could never carry structure because it was a PTY. That constraint is gone —
