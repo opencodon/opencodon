@@ -1,6 +1,6 @@
 # Browser session UI — the web server as a first-class session host
 
-Status: **working end to end**; parity gaps listed in §7
+Status: **working end to end**; remaining gaps in §7
 Date: 2026-07-29
 
 ## 1. The problem
@@ -146,27 +146,35 @@ Since resolved:
 - **Two artifact surfaces** — the session UI now carries a Provenance surface
   (`apps/client/src/app/science/`) over the same `/api/science` endpoints:
   runs, cell traces, artifact version timelines, typed previews, lineage, and
-  RO-Crate export. The config SPA's copies are now the redundant ones.
+  RO-Crate export.
 - **Bundle size** — the web build splits (§4), so first paint is a 3.9 MB entry
   chunk rather than 27.8 MB. The desktop build keeps its single chunk, which is
   a packaging constraint, not a preference.
+- **Compute pane** — live kernels with host CPU/memory, behind a new
+  `GET /api/science/kernels`. Reports, never controls. Scoped to this process's
+  kernels and says so, because a CLI or cron run holds its own in another
+  process and an authoritative-looking pane that omits them is worse than none.
+- **Files pane scoping** — the pane header switches between the workspace tree
+  and the session's staged artifacts. The two planes stay distinct rather than
+  merged: "this file exists" and "this file is a result" are different claims.
+- **Projects overview** — `/projects` lists every project with its session
+  count and last activity beside the recent sessions across all of them.
 
 Known gaps:
 
-- **Landing surface.** The reference platform opens on a projects-and-recent-
-  sessions dashboard; this UI opens on chat, per `apps/desktop/DESIGN.md`
-  ("chat is the home surface"). Worth deciding deliberately rather than by
-  inheritance.
-- **Compute pane.** The reference shows live kernels and host CPU/RAM beside
-  the transcript. We have the data (`science/kernels.py`, `/api/system/stats`)
-  and no surface for it in the session UI.
-- **Files pane scoping.** The right rail browses the workspace tree; it cannot
-  yet scope to "artifacts of this session" the way the reference's file pane
-  does. The data now exists behind Provenance — this is a pane, not a backend,
-  gap.
-- **The config SPA still owns settings.** Two frontends remain: `/` for
-  configuration, `/app` for work. Defensible as a transition, not as an end
-  state.
+- **Landing surface.** The overview exists but the app still opens on chat, per
+  `apps/desktop/DESIGN.md` ("chat is the home surface"). This client is shared
+  with the Electron shell, so where the app opens is a product decision rather
+  than a UI detail; flipping it is a one-line default once someone decides.
+- **The config SPA at `/`.** Smaller than it first looked: `/app` already
+  carries Settings (config, keys, providers, models, env, gateway, keybinds,
+  appearance, notifications, plugins, toolsets, memory, terminal backends),
+  plus Capabilities, Messaging, Cron, Agents, and Profiles. What remains only
+  at `/` is a handful of ops pages — analytics, webhooks, pairing, docs,
+  version-resolve, system stats — none of which the reference platform has
+  either. So retiring `/` is a scoping decision, not a porting backlog.
+- **Notebook.** The reference streams live kernel cells. We show kernel state
+  but never submit code, per `web-ui-redesign.md` §4; that decision stands.
 - **Absent bridge members** (§3.3) are stubs. Anything routing a user through
   "reveal in Finder" needs a browser-appropriate alternative, not a silent
   no-op.
