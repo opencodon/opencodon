@@ -15,6 +15,11 @@ import { notifyError } from '@/store/notifications'
 import { setCurrentSessionPreviewTarget } from '@/store/preview'
 import { $currentCwd } from '@/store/session'
 
+import { TabDropdown } from '@/components/ui/tab-dropdown'
+import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
+
+import { ArtifactsBody } from './files/artifacts-body'
+import { $filesScope } from './files/scope'
 import { SidebarPanelLabel } from '../shell/sidebar-label'
 
 import { ProjectTree } from './files/tree'
@@ -139,8 +144,21 @@ function FilesystemTab({
 }: FilesystemTabProps) {
   const { t } = useI18n()
   const r = t.rightSidebar
+  const scope = useStore($filesScope)
+  const activeSessionId = useStore($activeSessionId)
+  const selectedStoredSessionId = useStore($selectedStoredSessionId)
 
   // No working directory (a bare/detached chat) → no tree, just a terse hint.
+  // The artifacts plane doesn't need one: it is keyed on the session, not the
+  // filesystem, so it stays available in a cwd-less chat.
+  if (!hasWorkspace && scope === 'artifacts') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ArtifactsBody sessionId={selectedStoredSessionId || activeSessionId} />
+      </div>
+    )
+  }
+
   // Switching workspace is a project/worktree action, never a raw folder picker.
   if (!hasWorkspace) {
     return <PaneEmptyState label={r.noProjectOpen} />
@@ -150,7 +168,23 @@ function FilesystemTab({
     <div className="flex min-h-0 flex-1 flex-col">
       <RightSidebarSectionHeader>
         <div className="flex min-w-0 flex-1">
-          <SidebarPanelLabel>{cwdName}</SidebarPanelLabel>
+          <TabDropdown
+            align="start"
+            items={[
+              {
+                active: scope === 'workspace',
+                id: 'workspace',
+                label: cwdName,
+                onSelect: () => $filesScope.set('workspace')
+              },
+              {
+                active: scope === 'artifacts',
+                id: 'artifacts',
+                label: r.scopeArtifacts,
+                onSelect: () => $filesScope.set('artifacts')
+              }
+            ]}
+          />
         </div>
         <Tip label={r.refreshTree}>
           <Button
@@ -177,6 +211,9 @@ function FilesystemTab({
           </Button>
         </Tip>
       </RightSidebarSectionHeader>
+      {scope === 'artifacts' ? (
+        <ArtifactsBody sessionId={selectedStoredSessionId || activeSessionId} />
+      ) : (
       <FileTreeBody
         collapseNonce={collapseNonce}
         cwd={cwd}
@@ -191,6 +228,7 @@ function FilesystemTab({
         onRetry={onRefresh}
         openState={openState}
       />
+      )}
     </div>
   )
 }

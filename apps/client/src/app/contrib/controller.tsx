@@ -67,7 +67,7 @@ import {
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { $workspaceIsPage } from '../routes'
 
-import { FilesPane, LogsPane, PreviewRailPane, ReviewPaneContent } from './panes'
+import { ComputePane, FilesPane, LogsPane, PreviewRailPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
 
 /**
@@ -223,6 +223,23 @@ registry.registerMany([
       maxWidth: FILE_BROWSER_MAX_WIDTH
     },
     render: () => idle(<ReviewPaneContent />)
+  },
+  {
+    // Optional chrome, off by default. Docks with `files` so Compute reads as a
+    // peer of the file tree — the two answer "what is on this machine" from
+    // opposite ends (bytes at rest, processes running).
+    id: 'compute',
+    area: 'panes',
+    title: 'compute',
+    data: {
+      placement: 'right',
+      collapsible: true,
+      dock: { pane: 'files', pos: 'right' },
+      width: FILE_BROWSER_DEFAULT_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: FILE_BROWSER_MAX_WIDTH
+    },
+    render: () => idle(<ComputePane />)
   },
   {
     // Optional chrome — in NO default layout. Adoption stacks it with the
@@ -553,6 +570,26 @@ const $previewVisible = computed([$previewTarget, $filePreviewTarget], (target, 
 )
 
 bindPaneVisibility('preview', $previewVisible, closeRightRail)
+
+// Compute is optional chrome: off by default, toggled from ⌘K, persisted.
+const $computeOpen = persistentAtom('opencodon.desktop.computeOpen', false, Codecs.bool)
+
+bindPaneCollapse(
+  'compute',
+  $computeOpen,
+  () => $computeOpen.set(false),
+  () => $computeOpen.set(true)
+)
+registry.register({
+  id: 'compute.toggle',
+  area: PALETTE_AREA,
+  data: {
+    id: 'compute.toggle',
+    label: 'Toggle compute',
+    keywords: ['compute', 'kernel', 'kernels', 'host', 'cpu', 'memory', 'gpu'],
+    run: () => $computeOpen.set(!$computeOpen.get())
+  } satisfies PaletteContribution
+})
 
 // Logs are optional chrome: off by default, toggled from ⌘K, persisted.
 const $logsOpen = persistentAtom('opencodon.desktop.logsOpen', false, Codecs.bool)

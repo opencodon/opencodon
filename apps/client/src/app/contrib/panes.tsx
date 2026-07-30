@@ -212,3 +212,8 @@ export function registryGroupSetter<T>(prefix: string): GroupSetter<T> {
  *  take as props, backed by the registry instead of component state. */
 export const setStatusbarItemGroup = registryGroupSetter<StatusbarItem>('statusBar')
 export const setTitlebarToolGroup = registryGroupSetter<TitlebarTool>('titleBar.tools')
+
+
+/** Compute lives in `right-sidebar/compute`; re-exported here so the contrib
+ *  controller keeps a single import site for pane components. */
+export { ComputePane } from '../right-sidebar/compute'

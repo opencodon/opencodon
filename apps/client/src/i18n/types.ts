@@ -1869,6 +1869,24 @@ export interface Translations {
   }
 
   rightSidebar: {
+    scopeArtifacts: string
+    artifactsNoSessionTitle: string
+    artifactsNoSessionDesc: string
+    artifactsEmptyTitle: string
+    artifactsEmptyDesc: string
+    artifactsFailedTitle: string
+    artifactsFailedDesc: string
+    computeTitle: string
+    computeCpu: string
+    computeMemory: string
+    computeCores: (n: number) => string
+    computeRunning: (n: number) => string
+    computeNoneRunning: string
+    computeAlive: string
+    computeDead: string
+    computeEmptyTitle: string
+    computeEmptyDesc: string
+    computeUnavailable: string
     aria: string
     panelsAria: string
     files: string

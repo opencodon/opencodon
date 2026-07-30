@@ -190,6 +190,30 @@ export interface ReproductionReport {
   [key: string]: unknown
 }
 
+export interface LiveKernel {
+  kernel_id: null | string
+  session_id: string
+  language: string
+  env_name: null | string
+  runtime_identity: null | string
+  location: string
+  workspace: string
+  alive: boolean
+}
+
+export interface KernelsResponse {
+  kernels: LiveKernel[]
+  host: {
+    cpu_percent?: number
+    cpu_count?: number
+    memory_percent?: number
+    memory_used_bytes?: number
+    memory_total_bytes?: number
+  }
+  /** Set when kernels can't be reported at all (e.g. jupyter not installed). */
+  unavailable_reason: null | string
+}
+
 export interface ReproductionJob {
   job_id: string
   version_id: string
@@ -263,7 +287,10 @@ export const scienceApi = {
   startReproduction: (versionId: string) =>
     science<ReproductionJob>(`/versions/${encodeURIComponent(versionId)}/reproduce`, { method: 'POST' }),
 
-  reproduction: (jobId: string) => science<ReproductionJob>(`/reproductions/${encodeURIComponent(jobId)}`)
+  reproduction: (jobId: string) => science<ReproductionJob>(`/reproductions/${encodeURIComponent(jobId)}`),
+
+  /** Live kernels in the backend process, plus host CPU/memory. */
+  kernels: () => science<KernelsResponse>('/kernels')
 }
 
 /**

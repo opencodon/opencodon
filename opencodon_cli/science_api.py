@@ -935,3 +935,47 @@ def get_reproduction(job_id: str):
         if job is None:
             raise HTTPException(status_code=404, detail="no such reproduction")
         return dict(job)
+
+
+@router.get("/kernels")
+def list_kernels():
+    """Live kernels in *this* process, with host CPU / memory alongside.
+
+    Scoped to this process on purpose. Kernels are held by a module-level
+    singleton (``science.kernels.get_kernel_manager``), so this sees the ones
+    belonging to sessions the dashboard is hosting itself — which, now that the
+    browser drives sessions over this server's own gateway, is the set the user
+    is actually looking at. A CLI or cron run in another process keeps its own
+    kernels and they are deliberately not reported here; claiming otherwise
+    would make the pane look authoritative when it is not.
+
+    Degrades rather than fails: kernels without jupyter installed report an
+    empty list, and host stats are omitted when psutil is absent.
+    """
+    kernels: list = []
+    reason = None
+    try:
+        from science.kernels import get_kernel_manager, kernels_available
+
+        if kernels_available():
+            kernels = get_kernel_manager().list_live()
+        else:
+            reason = "jupyter kernels are not installed"
+    except Exception as exc:  # pragma: no cover - defensive
+        reason = str(exc) or "kernel manager unavailable"
+
+    host: dict = {}
+    try:
+        import psutil
+
+        host = {
+            "cpu_percent": psutil.cpu_percent(interval=None),
+            "cpu_count": psutil.cpu_count(logical=True),
+            "memory_percent": psutil.virtual_memory().percent,
+            "memory_used_bytes": psutil.virtual_memory().used,
+            "memory_total_bytes": psutil.virtual_memory().total,
+        }
+    except Exception:
+        host = {}
+
+    return {"kernels": kernels, "host": host, "unavailable_reason": reason}
