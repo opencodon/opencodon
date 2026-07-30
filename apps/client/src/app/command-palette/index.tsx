@@ -65,6 +65,7 @@ import { isUserTheme, resolveTheme } from '@/themes/user-themes'
 import {
   AGENTS_ROUTE,
   ARTIFACTS_ROUTE,
+  PROJECTS_ROUTE,
   SCIENCE_ROUTE,
   COMMAND_CENTER_ROUTE,
   CRON_ROUTE,
@@ -467,6 +468,13 @@ export function CommandPalette() {
             id: 'nav-science',
             label: cc.nav.science.title,
             run: go(SCIENCE_ROUTE)
+          },
+          {
+            action: 'nav.projects',
+            icon: Package,
+            id: 'nav-projects',
+            label: cc.nav.projects.title,
+            run: go(PROJECTS_ROUTE)
           },
           {
             action: 'nav.cron',

@@ -232,6 +232,7 @@ export const en: Translations = {
       'nav.messaging': 'Open messaging',
       'nav.artifacts': 'Open artifacts',
     'nav.science': 'Open provenance',
+    'nav.projects': 'Open projects',
       'nav.cron': 'Open scheduled jobs',
       'nav.agents': 'Open agents',
       'session.new': 'New session',
@@ -1102,7 +1103,8 @@ export const en: Translations = {
       skills: { title: 'Capabilities', detail: 'Skills, tools, and MCP servers' },
       messaging: { title: 'Messaging', detail: 'Set up Telegram, Slack, Discord, and more' },
       artifacts: { title: 'Artifacts', detail: 'Browse generated outputs' },
-      science: { title: 'Provenance', detail: 'Runs, artifacts, and how they were produced' }
+      science: { title: 'Provenance', detail: 'Runs, artifacts, and how they were produced' },
+      projects: { title: 'Projects', detail: 'Every project and its recent sessions' }
     },
     sectionEntries: {
       sessions: { title: 'Sessions panel', detail: 'Search, pin, and manage sessions' },
@@ -1527,6 +1529,18 @@ export const en: Translations = {
     createAction: 'Create cron'
   },
 
+  projectsOverview: {
+    title: 'Projects',
+    recent: 'Recent sessions',
+    search: 'Search projects and sessions...',
+    refresh: 'Refresh projects',
+    loading: 'Reading your projects',
+    emptyTitle: 'No projects yet',
+    emptyDesc: 'Add a folder or a git repo from the sidebar and its sessions gather here.',
+    noRecentTitle: 'No sessions yet',
+    noRecentDesc: 'Start a session and it shows up here with the project it belongs to.',
+    sessions: (n: number) => `${n} ${n === 1 ? 'session' : 'sessions'}`
+  },
   science: {
     search: 'Search runs and artifacts...',
     refresh: 'Refresh',

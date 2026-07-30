@@ -101,6 +101,7 @@ import { $focusedStoredSessionId, $workingSessionIds, type SplitDir } from '@/st
 import {
   type AppView,
   ARTIFACTS_ROUTE,
+  PROJECTS_ROUTE,
   SCIENCE_ROUTE,
   MESSAGING_ROUTE,
   SIDEBAR_NAV_AREA,
@@ -168,6 +169,13 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
     keybindActionId: 'nav.artifacts'
+  },
+  {
+    id: 'projects',
+    label: '',
+    icon: props => <Codicon name="folder-library" {...props} />,
+    route: PROJECTS_ROUTE,
+    keybindActionId: 'nav.projects'
   },
   {
     id: 'science',
@@ -1114,6 +1122,7 @@ export function ChatSidebar({
                   (item.id === 'messaging' && currentView === 'messaging') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
               (item.id === 'science' && currentView === 'science') ||
+              (item.id === 'projects' && currentView === 'projects') ||
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)
 

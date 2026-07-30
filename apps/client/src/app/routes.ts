@@ -11,6 +11,7 @@ export const SKILLS_ROUTE = '/skills'
 export const MESSAGING_ROUTE = '/messaging'
 export const ARTIFACTS_ROUTE = '/artifacts'
 export const SCIENCE_ROUTE = '/science'
+export const PROJECTS_ROUTE = '/projects'
 export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
@@ -29,6 +30,7 @@ export type AppView =
   | 'extension'
   | 'messaging'
   | 'profiles'
+  | 'projects'
   | 'science'
   | 'settings'
   | 'skills'
@@ -42,6 +44,7 @@ export type AppRouteId =
   | 'messaging'
   | 'new'
   | 'profiles'
+  | 'projects'
   | 'science'
   | 'settings'
   | 'skills'
@@ -61,6 +64,7 @@ export const APP_ROUTES = [
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
   { id: 'science', path: SCIENCE_ROUTE, view: 'science' },
+  { id: 'projects', path: PROJECTS_ROUTE, view: 'projects' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },

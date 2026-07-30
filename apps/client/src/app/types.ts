@@ -158,6 +158,7 @@ export type SidebarNavId =
   | 'command-center'
   | 'messaging'
   | 'new-session'
+  | 'projects'
   | 'science'
   | 'settings'
   | 'skills'

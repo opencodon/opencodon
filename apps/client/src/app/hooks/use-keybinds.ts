@@ -48,6 +48,7 @@ import { requestComposerFocus, requestVoiceToggle } from '../chat/composer/focus
 import {
   AGENTS_ROUTE,
   ARTIFACTS_ROUTE,
+  PROJECTS_ROUTE,
   SCIENCE_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
@@ -136,6 +137,7 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.messaging': () => navigate(MESSAGING_ROUTE),
     'nav.artifacts': () => navigate(ARTIFACTS_ROUTE),
     'nav.science': () => navigate(SCIENCE_ROUTE),
+    'nav.projects': () => navigate(PROJECTS_ROUTE),
     'nav.cron': () => navigate(CRON_ROUTE),
     'nav.agents': () => navigate(AGENTS_ROUTE),
 

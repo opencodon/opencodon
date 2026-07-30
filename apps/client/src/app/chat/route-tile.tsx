@@ -13,7 +13,15 @@ import { ContribBoundary } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { $routeTiles, closeRouteTile, type RouteTile } from '@/store/route-tiles'
 
-import { ARTIFACTS_ROUTE, contributedRoutes, MESSAGING_ROUTE, ROUTES_AREA, SCIENCE_ROUTE, SKILLS_ROUTE } from '../routes'
+import {
+  ARTIFACTS_ROUTE,
+  contributedRoutes,
+  MESSAGING_ROUTE,
+  PROJECTS_ROUTE,
+  ROUTES_AREA,
+  SCIENCE_ROUTE,
+  SKILLS_ROUTE
+} from '../routes'
 
 import { paneMirror } from './pane-mirror'
 
@@ -21,11 +29,13 @@ const SkillsView = lazy(async () => ({ default: (await import('../skills')).Skil
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
 const ScienceView = lazy(async () => ({ default: (await import('../science')).ScienceView }))
+const ProjectsView = lazy(async () => ({ default: (await import('../projects')).ProjectsView }))
 
 // Built-in page views + their pane titles, keyed by route.
 const BUILTIN_PAGES: Record<string, { render: () => ReactNode; title: string }> = {
   [ARTIFACTS_ROUTE]: { render: () => <ArtifactsView />, title: 'Artifacts' },
   [SCIENCE_ROUTE]: { render: () => <ScienceView />, title: 'Provenance' },
+  [PROJECTS_ROUTE]: { render: () => <ProjectsView />, title: 'Projects' },
   [MESSAGING_ROUTE]: { render: () => <MessagingView />, title: 'Messaging' },
   [SKILLS_ROUTE]: { render: () => <SkillsView />, title: 'Capabilities' }
 }

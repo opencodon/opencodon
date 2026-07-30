@@ -33,6 +33,7 @@ import type { SidebarActions, WiringActions } from './types'
 // (agents/settings/…) are the controller's and stay in wiring.tsx.
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
 const ScienceView = lazy(async () => ({ default: (await import('../science')).ScienceView }))
+const ProjectsView = lazy(async () => ({ default: (await import('../projects')).ProjectsView }))
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
 
@@ -185,6 +186,7 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
         <Route element={page(<ScienceView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="science" />
+        <Route element={page(<ProjectsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="projects" />
       <Route element={null} path="agents" />
       <Route element={null} path="command-center" />
       <Route element={null} path="cron" />
