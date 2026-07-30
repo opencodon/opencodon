@@ -1121,8 +1121,8 @@ export function ChatSidebar({
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'messaging' && currentView === 'messaging') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
-              (item.id === 'science' && currentView === 'science') ||
-              (item.id === 'projects' && currentView === 'projects') ||
+                  (item.id === 'projects' && currentView === 'projects') ||
+                  (item.id === 'science' && currentView === 'science') ||
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)
 
