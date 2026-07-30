@@ -868,6 +868,38 @@ class SessionKernelManager:
     ) -> Optional[KernelSession]:
         return self._live.get((session_id, language, env))
 
+    def list_live(self) -> List[Dict[str, Any]]:
+        """Describe the live kernels, for the UI's compute pane.
+
+        Liveness is probed per kernel rather than trusted from the map: a
+        kernel process can die without anything having called back in, and
+        reporting a dead namespace as live is worse than reporting nothing —
+        the whole point of showing kernel state is telling the reader whether
+        the namespace that produced their artifacts still exists.
+
+        Read-only: dead entries are reported as such, not reaped. Eviction
+        belongs to the execute path, which holds the per-key lock.
+        """
+        described: List[Dict[str, Any]] = []
+        for (session_id, language, env), session in list(self._live.items()):
+            try:
+                alive = session.is_alive()
+            except Exception:
+                alive = False
+            described.append(
+                {
+                    "kernel_id": getattr(session, "kernel_id", None),
+                    "session_id": session_id,
+                    "language": language,
+                    "env_name": env or getattr(session.spec, "env_name", None),
+                    "runtime_identity": getattr(session.spec, "runtime_identity", None),
+                    "location": getattr(session, "location", "local"),
+                    "workspace": str(getattr(session, "workdir", "")),
+                    "alive": alive,
+                }
+            )
+        return described
+
     def close_session(self, session_id: str) -> None:
         for key in [k for k in list(self._live) if k[0] == session_id]:
             self._live.pop(key).shutdown()

@@ -1,0 +1,30 @@
+{
+  "name": "@opencodon/web",
+  "version": "0.17.0",
+  "private": true,
+  "description": "Browser host for the Opencodon session UI. Serves the client bundle from the dashboard at /app.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "fix": "npm run lint:fix",
+    "typecheck": "tsc -p . --noEmit",
+    "check": "npm run typecheck"
+  },
+  "dependencies": {
+    "@opencodon/client": "file:../client",
+    "@opencodon/shared": "file:../shared"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}

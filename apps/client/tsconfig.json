@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
+    "useDefineForClassFields": true,
     "lib": [
       "DOM",
       "DOM.Iterable",
@@ -10,10 +11,12 @@
       "node",
       "vite/client"
     ],
+    "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
@@ -21,11 +24,14 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "paths": {
-      "@opencodon/client": [
-        "../client/src/root.tsx"
-      ],
       "@/*": [
-        "../client/src/*"
+        "./src/*"
+      ],
+      "@opencodon/plugin-sdk": [
+        "./src/sdk/index.ts"
+      ],
+      "@opencodon/shared/billing": [
+        "../shared/src/billing-types.ts"
       ],
       "@opencodon/shared": [
         "../shared/src/index.ts"
@@ -34,6 +40,7 @@
   },
   "include": [
     "src",
-    "vite.config.ts"
+    "vite.base.ts",
+    "../shared/src"
   ]
 }

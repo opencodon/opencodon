@@ -17013,6 +17013,78 @@ async def pty_ws(ws: WebSocket) -> None:
         PTY_REGISTRY.detach(attach_token, ws)
 
 
+@app.websocket("/api/shell")
+async def shell_ws(ws: WebSocket) -> None:
+    """A plain login shell in a PTY, for the session UI's terminal pane.
+
+    ``/api/pty`` above spawns the Ink TUI specifically; this spawns the user's
+    own shell, which is what the desktop renderer's ``terminal.*`` bridge
+    expects.  It lives beside ``pty_ws`` rather than in its own module because
+    it shares the entire auth/host/peer preamble — splitting it out would mean
+    exporting six private gates and letting the two drift.
+
+    1:1 with the socket, like the legacy PTY path: a browser terminal tab that
+    goes away should take its shell with it.  Reattach semantics belong to
+    agent sessions, not to scratch terminals.
+    """
+    peer = ws.client.host if ws.client else "?"
+
+    auth_reason, cred = _ws_auth_reason(ws)
+    if auth_reason is not None:
+        _log.warning("shell auth rejected reason=%s cred=%s peer=%s", auth_reason, cred, peer)
+        await ws.close(code=4401, reason=_ws_close_reason(f"auth: {auth_reason}"))
+        return
+
+    host_origin_reason = _ws_host_origin_reason(ws)
+    if host_origin_reason is not None:
+        await ws.close(code=4403, reason=_ws_close_reason(host_origin_reason))
+        return
+
+    client_reason = _ws_client_reason(ws)
+    if client_reason is not None:
+        await ws.close(code=4408, reason=_ws_close_reason(client_reason))
+        return
+
+    await ws.accept()
+
+    if not _PTY_BRIDGE_AVAILABLE:
+        await ws.send_text(
+            "\r\n\x1b[31mThe terminal requires a POSIX PTY, which native "
+            "Windows Python doesn't provide. Install opencodon inside WSL2 to "
+            "use it.\x1b[0m\r\n"
+        )
+        await ws.close(code=1011)
+        return
+
+    shell = os.environ.get("SHELL") or "/bin/bash"
+    cwd = ws.query_params.get("cwd") or None
+    if cwd and not Path(cwd).is_dir():
+        # A stale cwd from a closed project shouldn't fail the spawn; fall
+        # back to the same default the file pickers use.
+        cwd = None
+
+    try:
+        bridge = PtyBridge.spawn([shell, "-l"], cwd=cwd or _fs_default_cwd(), env=dict(os.environ))
+    except PtyUnavailableError as exc:
+        await ws.send_text(f"\r\n\x1b[31mTerminal unavailable: {exc}\x1b[0m\r\n")
+        await ws.close(code=1011)
+        return
+    except (FileNotFoundError, OSError) as exc:
+        await ws.send_text(f"\r\n\x1b[31mTerminal failed to start: {exc}\x1b[0m\r\n")
+        await ws.close(code=1011)
+        return
+
+    try:
+        cols = int(ws.query_params.get("cols") or 0)
+        rows = int(ws.query_params.get("rows") or 0)
+        if cols > 0 and rows > 0:
+            bridge.resize(cols=cols, rows=rows)
+    except (TypeError, ValueError):
+        pass
+
+    await _legacy_pump(ws, bridge)
+
+
 # ---------------------------------------------------------------------------
 # /api/ws — JSON-RPC WebSocket sidecar for the dashboard "Chat" tab.
 #
@@ -18410,6 +18482,18 @@ _science_api.set_reproduce_gate(
     lambda: not getattr(app.state, "auth_required", False)
 )
 app.include_router(_science_api.router)
+
+# The browser session UI (/app) — the renderer from apps/desktop, built for the
+# browser and driving sessions over this process's own /api/ws gateway. Mounted
+# before the SPA catch-all, which would otherwise swallow /app as a client-side
+# route of the config dashboard.
+from opencodon_cli.web_app import mount_web_app as _mount_web_app  # noqa: E402
+_WEB_APP_MOUNTED = _mount_web_app(
+    app,
+    session_token=lambda: _SESSION_TOKEN,
+    auth_required=lambda: bool(getattr(app.state, "auth_required", False)),
+    normalise_prefix=_normalise_prefix,
+)
 
 mount_spa(app)
 
