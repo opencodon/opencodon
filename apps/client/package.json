@@ -11,8 +11,12 @@
     "./src/*": "./src/*"
   },
   "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "fix": "npm run lint:fix",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test"
   },
   "dependencies": {
     "@assistant-ui/react": "^0.14.23",

@@ -5,9 +5,9 @@ import shared from '../../eslint.config.shared.mjs'
 export default [
   ...shared,
   {
-    // The Electron shell: a main process (node) plus a thin renderer entry
-    // that mounts @opencodon/client. The renderer's own rules — including the
-    // plugin fence — live with the UI, in apps/client.
+    // The browser host: its bridge is written against DOM APIs (fetch,
+    // WebSocket, localStorage), so it needs the browser globals the shared
+    // config withholds from terminal-only workspaces.
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
