@@ -10,15 +10,19 @@ import {
   isNewChatRoute,
   isProjectFirstHost,
   NEW_CHAT_ROUTE,
+  newChatRoute,
   parseProjectRoute,
   projectRoute,
   PROJECTS_ROUTE,
   routeProjectId,
+  routeProjectScope,
   routeSessionId,
+  SCIENCE_ROUTE,
   sessionRoute,
   setHomeSurface,
   setRouteProjectId,
   SETTINGS_ROUTE,
+  SKILLS_ROUTE,
   syncLandingOpen
 } from './routes'
 
@@ -204,5 +208,58 @@ describe('landing surface', () => {
     // shell, so reaching it leaves the landing.
     syncLandingOpen(ARTIFACTS_ROUTE)
     expect($landingOpen.get()).toBe(false)
+  })
+})
+
+// The distinction this encodes is the one that broke: a route that says
+// NOTHING about projects is not the same as one that says "no project".
+// Collapsing the two ejected the user from their project — losing the scoped
+// session list, file tree and new-session cwd — every time they opened
+// Capabilities, Artifacts or Settings.
+describe('routeProjectScope', () => {
+  it('names the project on a project route', () => {
+    expect(routeProjectScope('/projects/p_123')).toBe('p_123')
+    expect(routeProjectScope('/projects/p_123/sessions/sess_1')).toBe('p_123')
+  })
+
+  it('says "no project" only where that is actually true', () => {
+    // The landing is the surface for choosing one, so nothing is chosen.
+    expect(routeProjectScope(PROJECTS_ROUTE)).toBeNull()
+    // A detached draft, and a bare session route (re-homed by adoption).
+    expect(routeProjectScope(NEW_CHAT_ROUTE)).toBeNull()
+    expect(routeProjectScope('/sess_1')).toBeNull()
+  })
+
+  it('stays silent on pages and overlays — a surface change, not a project change', () => {
+    expect(routeProjectScope(SKILLS_ROUTE)).toBeUndefined()
+    expect(routeProjectScope(ARTIFACTS_ROUTE)).toBeUndefined()
+    expect(routeProjectScope(SCIENCE_ROUTE)).toBeUndefined()
+    expect(routeProjectScope(SETTINGS_ROUTE)).toBeUndefined()
+    expect(routeProjectScope(COMMAND_CENTER_ROUTE)).toBeUndefined()
+  })
+
+  it('distinguishes silence from null, which is the whole point', () => {
+    // A caller that coerces undefined to null reintroduces the bug, so assert
+    // the two are not interchangeable rather than just checking falsiness.
+    expect(routeProjectScope(SKILLS_ROUTE)).not.toBeNull()
+    expect(routeProjectScope(PROJECTS_ROUTE)).not.toBeUndefined()
+  })
+})
+
+describe('newChatRoute', () => {
+  it('starts a draft inside the current project', () => {
+    setRouteProjectId('p_123')
+    expect(newChatRoute()).toBe('/projects/p_123')
+    // And that route IS a new chat, so the chat view renders a draft there.
+    expect(isNewChatRoute(newChatRoute())).toBe(true)
+  })
+
+  it('falls back to the detached root with no project in scope', () => {
+    expect(newChatRoute()).toBe(NEW_CHAT_ROUTE)
+  })
+
+  it('takes an explicit null to force the detached form', () => {
+    setRouteProjectId('p_123')
+    expect(newChatRoute(null)).toBe(NEW_CHAT_ROUTE)
   })
 })

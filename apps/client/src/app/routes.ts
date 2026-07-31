@@ -219,6 +219,44 @@ export function routeProjectId(pathname: string): null | string {
   return parseProjectRoute(pathname)?.projectId ?? null
 }
 
+/**
+ * What a path SAYS about project scope — which is not the same question as
+ * `routeProjectId`, and the difference is the whole point:
+ *
+ *   a project id  the route names that project
+ *   null          the route means "no project" (the landing, a detached draft)
+ *   undefined     the route says NOTHING about projects
+ *
+ * Capabilities, Artifacts, Provenance, Settings and every plugin page are the
+ * third case. They are a change of SURFACE, not a change of project — you are
+ * still working in the project you were working in, you are just looking at
+ * something else for a moment. Collapsing them into `null` is what silently
+ * dropped the user out of their project whenever they opened one, taking the
+ * scoped session list and file tree with it.
+ *
+ * Callers must no-op on `undefined` rather than coercing it.
+ */
+export function routeProjectScope(pathname: string): null | string | undefined {
+  const parts = parseProjectRoute(pathname)
+
+  if (parts) {
+    return parts.projectId
+  }
+
+  // The landing is the one surface that positively means "no project chosen".
+  if (pathname === PROJECTS_ROUTE) {
+    return null
+  }
+
+  // A detached draft, and a bare `/:sessionId` — the latter gets re-homed into
+  // its owning project by adoptBareSessionRoute once the tree can say which.
+  if (pathname === NEW_CHAT_ROUTE || routeSessionId(pathname)) {
+    return null
+  }
+
+  return undefined
+}
+
 export function projectRoute(projectId: string, sessionId?: null | string): string {
   const base = `${PROJECT_ROUTE_PREFIX}${encodeURIComponent(projectId)}`
 
@@ -273,6 +311,17 @@ export function sessionRoute(sessionId: string, projectId: null | string | undef
   }
 
   return `${SESSION_ROUTE_PREFIX}${encodeURIComponent(sessionId)}`
+}
+
+/**
+ * Where a NEW chat starts — the current project's home route, which is that
+ * project's draft (see isNewChatRoute), or the detached `/` when no project is
+ * in scope. The sibling of `sessionRoute` for the not-yet-a-session case:
+ * without it, "New session" hard-navigated to `/` and dropped the user out of
+ * the project they were working in.
+ */
+export function newChatRoute(projectId: null | string | undefined = currentProjectId): string {
+  return projectId ? projectRoute(projectId) : NEW_CHAT_ROUTE
 }
 
 export function appViewForPath(pathname: string): AppView {

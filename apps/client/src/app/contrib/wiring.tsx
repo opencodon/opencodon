@@ -83,6 +83,7 @@ import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
 import {
   CRON_ROUTE,
   routeProjectId,
+  routeProjectScope,
   routeSessionId,
   sessionRoute,
   setRouteProjectId,
@@ -189,13 +190,23 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // sidebar's session list, the files pane, terminals, artifacts) reads
   // `$projectScope`, so this single mirror is what makes back/forward and a
   // reload land in the same project the URL names.
+  //
+  // `undefined` means the route says nothing about projects — a page or an
+  // overlay, which is a change of surface, not of project. Hold scope where it
+  // is. Writing `null` there is what used to eject the user from their project
+  // the moment they opened Capabilities or Settings.
   const routedProjectId = routeProjectId(location.pathname)
+  const routedProjectScope = routeProjectScope(location.pathname)
   const projectTree = useStore($projectTree)
 
   useEffect(() => {
-    setRouteProjectId(routedProjectId)
-    syncProjectScopeFromRoute(routedProjectId)
-  }, [routedProjectId])
+    if (routedProjectScope === undefined) {
+      return
+    }
+
+    setRouteProjectId(routedProjectScope)
+    syncProjectScopeFromRoute(routedProjectScope)
+  }, [routedProjectScope])
 
   // A session reached by its bare `/:sessionId` route (notification, deep link,
   // a recents row on the landing) still belongs to a project. Re-home the URL

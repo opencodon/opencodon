@@ -70,7 +70,7 @@ import { broadcastSessionsChanged } from '@/store/session-sync'
 import { isWatchWindow } from '@/store/windows'
 import type { SessionCreateResponse, SessionMessage, SessionResumeResponse, UsageStats } from '@/types/opencodon'
 
-import { NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
+import { newChatRoute, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
 import type { ClientSessionState, SidebarNavItem } from '../../../types'
 import { sessionContextDrift } from '../session-context-drift'
 
@@ -311,7 +311,11 @@ export function useSessionActions({
       onFreshDraftRouteIntent?.()
 
       if (!preserveRoute) {
-        navigate(NEW_CHAT_ROUTE, { replace: replaceRoute })
+        // The project's home route IS its new-chat draft, so a fresh draft
+        // stays inside the project the user is working in. Hard-navigating to
+        // `/` here dropped them out of it — the sidebar, file tree and the new
+        // session's own cwd all fell back to unscoped.
+        navigate(newChatRoute(), { replace: replaceRoute })
       }
 
       setActiveSessionId(null)
@@ -538,7 +542,9 @@ export function useSessionActions({
       return
     }
 
-    navigate(NEW_CHAT_ROUTE)
+    // Same reason as the fresh draft above: closing settings with no session
+    // selected must land back in the project, not at the detached root.
+    navigate(newChatRoute())
   }, [navigate, selectedStoredSessionId])
 
   const resumeSession = useCallback(
