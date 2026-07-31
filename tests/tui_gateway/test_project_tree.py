@@ -479,3 +479,69 @@ def test_colliding_repo_basenames_disambiguate_labels():
     labels = sorted(p["label"] for p in tree["projects"])
 
     assert labels == ["x/proj", "y/proj"]
+
+
+# ---------------------------------------------------------------------------
+# Recorded membership (sessions.project_id) beats the cwd derivation
+# ---------------------------------------------------------------------------
+
+
+def test_recorded_project_id_wins_over_path_derivation():
+    """The cwd sits in project B's folder, but the row says it belongs to A.
+
+    This is the case a rename or a deliberate move produces, and the whole
+    reason the column exists: the derivation would silently re-home the session.
+    """
+    a = _project("p_a", "A", ["/repos/a"])
+    b = _project("p_b", "B", ["/repos/b"])
+    session = _session("/repos/b", repo_root="/repos/b", project_id="p_a")
+
+    tree = pt.build_tree([a, b], [session], [], resolve=lambda _cwd: None, hydrate=True)
+    by_id = {p["id"]: p for p in tree["projects"]}
+
+    assert by_id["p_a"]["sessionCount"] == 1
+    assert by_id["p_b"]["sessionCount"] == 0
+
+
+def test_recorded_project_id_keeps_a_cwdless_session():
+    """No cwd means no derivation is even possible — previously unowned."""
+    project = _project("p_a", "A", ["/repos/a"])
+    session = _session("", project_id="p_a")
+
+    tree = pt.build_tree([project], [session], [], resolve=lambda _cwd: None, hydrate=True)
+
+    assert tree["projects"][0]["sessionCount"] == 1
+    assert session["id"] in tree["scoped_session_ids"]
+
+
+def test_stale_project_id_falls_back_to_the_derivation():
+    """A deleted project must not strand its sessions in a phantom row."""
+    project = _project("p_b", "B", ["/repos/b"])
+    session = _session("/repos/b", repo_root="/repos/b", project_id="p_gone")
+
+    tree = pt.build_tree([project], [session], [], resolve=lambda _cwd: None, hydrate=True)
+    by_id = {p["id"]: p for p in tree["projects"]}
+
+    assert by_id["p_b"]["sessionCount"] == 1
+
+
+def test_archived_project_id_does_not_claim_the_session():
+    """Archived projects are filtered before membership, so the row is unowned
+    rather than attached to something the user has put away."""
+    archived = _project("p_a", "A", ["/repos/a"], archived=True)
+    session = _session("", project_id="p_a")
+
+    tree = pt.build_tree([archived], [session], [], resolve=lambda _cwd: None, hydrate=True)
+
+    assert tree["projects"] == []
+    assert session["id"] not in tree["scoped_session_ids"]
+
+
+def test_no_project_id_still_groups_by_cwd():
+    """Legacy rows keep working until the backfill adopts them."""
+    project = _project("p_a", "A", ["/repos/a"])
+    session = _session("/repos/a", repo_root="/repos/a")
+
+    tree = pt.build_tree([project], [session], [], resolve=lambda _cwd: None, hydrate=True)
+
+    assert tree["projects"][0]["sessionCount"] == 1

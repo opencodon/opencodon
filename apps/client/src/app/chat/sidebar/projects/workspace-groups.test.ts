@@ -446,6 +446,7 @@ const makeProject = (id: string, folders: string[]): ProjectInfo => ({
   icon: null,
   id,
   name: id,
+  context: null,
   primary_path: folders[0] ?? null,
   slug: id
 })

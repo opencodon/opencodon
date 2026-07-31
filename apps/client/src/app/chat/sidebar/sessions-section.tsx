@@ -263,7 +263,16 @@ export function SidebarSessionsSection({
       </>
     )
   } else if (showEmptyState) {
-    inner = emptyState
+    // A brand-new project has no sessions yet, and that is the state where
+    // being able to leave matters most — keep the back row above the hint.
+    inner = projectBackRow ? (
+      <>
+        {projectBackRow}
+        {emptyState}
+      </>
+    ) : (
+      emptyState
+    )
   } else if (projectOverview?.length) {
     // The model is already ordered (default sort groups explicit-before-auto;
     // a manual drag-order, when present, wins). Render in that order and make
@@ -296,15 +305,22 @@ export function SidebarSessionsSection({
         rows
       )
   } else if (groups?.length) {
-    // Profile/source groups never reorder; render them flat with static rows.
-    inner = groups.map(group => (
-      <SidebarWorkspaceGroup
-        group={group}
-        key={group.id}
-        onNewSession={onNewSessionInWorkspace}
-        renderRows={renderRows}
-      />
-    ))
+    // Profile / recency groups never reorder; render them flat with static rows.
+    // `projectBackRow` is only set inside a project, where these groups are the
+    // recency buckets — without it, entering a project would be a one-way door.
+    inner = (
+      <>
+        {projectBackRow}
+        {groups.map(group => (
+          <SidebarWorkspaceGroup
+            group={group}
+            key={group.id}
+            onNewSession={onNewSessionInWorkspace}
+            renderRows={renderRows}
+          />
+        ))}
+      </>
+    )
   } else if (flatVirtualized) {
     const virtual = (
       <VirtualSessionList

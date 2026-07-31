@@ -5,6 +5,17 @@ import { registry } from '@/contrib/registry'
 
 export const SESSION_ROUTE_PREFIX = '/'
 export const NEW_CHAT_ROUTE = '/'
+// Project-scoped routes nest under the projects dashboard, so the root
+// namespace stays the session namespace (see routeSessionId):
+//
+//   /projects                              the dashboard (PROJECTS_ROUTE)
+//   /projects/:projectId                   a project's new-chat draft
+//   /projects/:projectId/sessions/:id      a session inside it
+//
+// `:projectId` is the projects.db row id — every project is user-created, so
+// there is no path-shaped or otherwise unstable id to encode around.
+export const PROJECT_ROUTE_PREFIX = '/projects/'
+export const PROJECT_SESSION_SEGMENT = 'sessions'
 export const SETTINGS_ROUTE = '/settings'
 export const COMMAND_CENTER_ROUTE = '/command-center'
 export const SKILLS_ROUTE = '/skills'
@@ -16,6 +27,27 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+
+// ── Home surface — where a cold start lands with nothing to restore ─────────
+// Set once by the host at mount (see `mount()` in root.tsx). `chat` is the
+// historical desktop home; `projects` opens on the project picker, which is
+// where both hosts are headed.
+export type HomeSurface = 'chat' | 'projects'
+
+let homeSurface: HomeSurface = 'chat'
+
+export function setHomeSurface(surface: HomeSurface): void {
+  homeSurface = surface
+}
+
+export function homeRoute(): string {
+  return homeSurface === 'projects' ? PROJECTS_ROUTE : NEW_CHAT_ROUTE
+}
+
+/** True when the host opens on the project picker rather than a chat draft. */
+export function isProjectFirstHost(): boolean {
+  return homeSurface === 'projects'
+}
 
 export type AppView =
   | 'agents'
@@ -97,7 +129,14 @@ export function contributedRoutes(): Array<{ key: string; path: string; title?: 
       title: c.title,
       render: c.render!
     }))
-    .filter(route => Boolean(route.path.startsWith('/') && route.render) && !RESERVED_PATHS.has(route.path))
+    .filter(
+      route =>
+        Boolean(route.path.startsWith('/') && route.render) &&
+        !RESERVED_PATHS.has(route.path) &&
+        // The project namespace is the app's, not a contribution's — a plugin
+        // page at `/p/x` would shadow a project route.
+        !route.path.startsWith(PROJECT_ROUTE_PREFIX)
+    )
 }
 
 function isContributedPath(pathname: string): boolean {
@@ -136,11 +175,75 @@ export function isOverlayView(view: AppView): boolean {
   return OVERLAY_VIEWS.has(view)
 }
 
+// ── Project routes ──────────────────────────────────────────────────────────
+// See PROJECT_ROUTE_PREFIX above for the shape. The literal `sessions` segment
+// is what keeps the two levels unambiguous: without it, `/projects/:a/:b` can't
+// say whether `:b` is a session or a mis-typed sub-resource, and a project id
+// that happened to contain a slash would silently parse as a session route.
+
+export interface ProjectRouteParts {
+  projectId: string
+  /** Null on a project's home route (its new-chat draft). */
+  sessionId: null | string
+}
+
+export function parseProjectRoute(pathname: string): null | ProjectRouteParts {
+  if (!pathname.startsWith(PROJECT_ROUTE_PREFIX)) {
+    return null
+  }
+
+  const [rawProjectId, segment, rawSessionId, ...extra] = pathname.slice(PROJECT_ROUTE_PREFIX.length).split('/')
+
+  if (!rawProjectId) {
+    return null
+  }
+
+  const projectId = decodeURIComponent(rawProjectId)
+
+  if (segment === undefined) {
+    return { projectId, sessionId: null }
+  }
+
+  // Anything past the project id must be exactly `sessions/:id`. A partial or
+  // unknown tail is a bad URL, not a project home — say so rather than quietly
+  // dropping the tail and landing the user somewhere they didn't ask for.
+  if (segment !== PROJECT_SESSION_SEGMENT || !rawSessionId || extra.length > 0) {
+    return null
+  }
+
+  return { projectId, sessionId: decodeURIComponent(rawSessionId) }
+}
+
+/** The project this path is scoped to, or null outside a project route. */
+export function routeProjectId(pathname: string): null | string {
+  return parseProjectRoute(pathname)?.projectId ?? null
+}
+
+export function projectRoute(projectId: string, sessionId?: null | string): string {
+  const base = `${PROJECT_ROUTE_PREFIX}${encodeURIComponent(projectId)}`
+
+  return sessionId ? `${base}/${PROJECT_SESSION_SEGMENT}/${encodeURIComponent(sessionId)}` : base
+}
+
 export function isNewChatRoute(pathname: string): boolean {
-  return pathname === NEW_CHAT_ROUTE
+  if (pathname === NEW_CHAT_ROUTE) {
+    return true
+  }
+
+  const parts = parseProjectRoute(pathname)
+
+  // A project's home route IS its new chat — the draft just starts in the
+  // project's root instead of detached.
+  return parts !== null && parts.sessionId === null
 }
 
 export function routeSessionId(pathname: string): string | null {
+  const scoped = parseProjectRoute(pathname)
+
+  if (scoped) {
+    return scoped.sessionId
+  }
+
   if (!pathname.startsWith(SESSION_ROUTE_PREFIX) || RESERVED_PATHS.has(pathname) || isContributedPath(pathname)) {
     return null
   }
@@ -150,7 +253,25 @@ export function routeSessionId(pathname: string): string | null {
   return id && !id.includes('/') ? decodeURIComponent(id) : null
 }
 
-export function sessionRoute(sessionId: string): string {
+// The project the app is currently inside, mirrored here by the wiring
+// controller. `sessionRoute` defaults to it so that every existing call site —
+// the command palette, keybinds, notification clicks, tab close — keeps the
+// user inside the project they are working in, without each one having to know
+// about project scope. Module-level rather than an atom because route BUILDING
+// is a pure string operation on the side of a navigation that already happened.
+let currentProjectId: null | string = null
+
+export function setRouteProjectId(projectId: null | string): void {
+  currentProjectId = projectId
+}
+
+/** Route to a session — inside `projectId`'s namespace, defaulting to the
+ *  project the app is currently in. Pass `null` for the bare, unscoped form. */
+export function sessionRoute(sessionId: string, projectId: null | string | undefined = currentProjectId): string {
+  if (projectId) {
+    return projectRoute(projectId, sessionId)
+  }
+
   return `${SESSION_ROUTE_PREFIX}${encodeURIComponent(sessionId)}`
 }
 

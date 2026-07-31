@@ -9,7 +9,6 @@ import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
 import { SearchField } from '@/components/ui/search-field'
 import {
@@ -23,17 +22,16 @@ import {
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
-import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { profileColor } from '@/lib/profile-color'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/opencodon'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
 import {
-  $dismissedAutoProjectIds,
   $panesFlipped,
   $pinnedSessionIds,
   $sidebarAgentsGrouped,
@@ -70,7 +68,6 @@ import {
   $projectTree,
   $projectTreeLoading,
   $removedSessionIds,
-  $reposScanning,
   ALL_PROJECTS,
   enterProject,
   exitProjectScope,
@@ -78,8 +75,7 @@ import {
   openProjectCreate,
   refreshProjects,
   refreshProjectTree,
-  refreshWorktrees,
-  scanAndRecordRepos
+  refreshWorktrees
 } from '@/store/projects'
 import { openRouteTile } from '@/store/route-tiles'
 import {
@@ -101,9 +97,9 @@ import { $focusedStoredSessionId, $workingSessionIds, type SplitDir } from '@/st
 import {
   type AppView,
   ARTIFACTS_ROUTE,
+  MESSAGING_ROUTE,
   PROJECTS_ROUTE,
   SCIENCE_ROUTE,
-  MESSAGING_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   SKILLS_ROUTE
@@ -122,7 +118,9 @@ import {
   PROJECT_PREVIEW_COUNT,
   ProjectBackRow,
   ProjectMenu,
+  projectSessions,
   projectTreeCwd,
+  recencySessionGroups,
   sessionRecency as sessionTime,
   type SidebarProjectTree,
   type SidebarSessionGroup,
@@ -336,12 +334,10 @@ export function ChatSidebar({
   const projectTree = useStore($projectTree)
   const projectTreeLoading = useStore($projectTreeLoading)
   const removedSessionIds = useStore($removedSessionIds)
-  const reposScanning = useStore($reposScanning)
   const activeProjectId = useStore($activeProjectId)
   const projectScope = useStore($projectScope)
   const currentCwd = useStore($currentCwd)
   const gatewayState = useStore($gatewayState)
-  const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
   const [searchQuery, setSearchQuery] = useState('')
@@ -561,27 +557,23 @@ export function ChatSidebar({
   useEffect(() => {
     if (worktreeGroupingActive && gatewayReady) {
       void refreshProjects()
-      // Paint the list from the fast tree fetch (explicit projects + repos from
-      // existing sessions / the backend cache) FIRST, then kick off the heavy
-      // home-dir git crawl so newly-discovered repos fold in afterward — instead
-      // of the crawl blocking the first render.
-      void refreshProjectTree().finally(() => void scanAndRecordRepos())
+      // No home-dir git crawl: projects are created by the user, never
+      // discovered, so a scan could only produce rows the app now drops at
+      // ingestion (see userCreatedOnly). Deleting the call rather than the
+      // machinery — `scanAndRecordRepos` is still reachable from the Workspace
+      // settings pane, which is where a repo-scan belongs if it comes back.
+      void refreshProjectTree()
     }
   }, [worktreeGroupingActive, profileScope, gatewayReady])
 
-  // Out-of-band repo changes (a `git init` / `rm -rf` in another terminal) emit
-  // no git events, so — like every git GUI — re-pull on window focus / tab
-  // visibility instead of stranding the tree until a hard reload. The tree
-  // fetch is cheap and runs every focus (picks up explicit create/delete +
-  // session regrouping); the heavy disk crawl that surfaces brand-new repos is
-  // throttled. Agent-driven changes already refresh via $workspaceChangeTick.
+  // Out-of-band changes (a project created in the TUI, a worktree removed in
+  // another terminal) emit no events, so — like every git GUI — re-pull on
+  // window focus / tab visibility instead of stranding the tree until a hard
+  // reload. Agent-driven changes already refresh via $workspaceChangeTick.
   useEffect(() => {
     if (!worktreeGroupingActive || !gatewayReady) {
       return
     }
-
-    let lastScanAt = 0
-    const SCAN_THROTTLE_MS = 30_000
 
     const onActive = () => {
       if (document.visibilityState === 'hidden') {
@@ -590,13 +582,6 @@ export function ChatSidebar({
 
       void refreshProjects()
       void refreshProjectTree()
-
-      const now = Date.now()
-
-      if (now - lastScanAt >= SCAN_THROTTLE_MS) {
-        lastScanAt = now
-        void scanAndRecordRepos(true)
-      }
     }
 
     window.addEventListener('focus', onActive)
@@ -619,28 +604,24 @@ export function ChatSidebar({
   )
 
   // ── Projects: the single top-level model (authoritative, from the backend) ──
-  // `projects.tree` already unifies explicit projects + auto repos and folds
-  // linked worktrees under their main repo. The desktop only layers local view
-  // state on top: dismissed auto-projects, persisted repo/lane order, and the
-  // overview sort. Membership is the backend tree's — never re-derived here.
+  // `projects.tree` is the membership authority and folds linked worktrees under
+  // their main repo; `$projectTree` has already dropped everything the user
+  // didn't create. The sidebar only layers local view state on top: persisted
+  // repo/lane order and the overview sort. Never re-derived here.
   const projectModel = useMemo<SidebarProjectTree[]>(() => {
     if (showAllProfiles) {
       return []
     }
 
-    const dismissed = new Set(dismissedAutoProjects)
-
     const sorted = sortProjectsForOverview(
-      projectTree
-        .filter(node => !(node.isAuto && dismissed.has(node.id)))
-        .map(project => ({ ...project, repos: orderRepos(project.repos) })),
+      projectTree.map(project => ({ ...project, repos: orderRepos(project.repos) })),
       activeProjectId
     )
 
     // Layer the user's manual drag-order on top of the deterministic sort. Empty
     // (default) returns `sorted` untouched; new projects surface on top.
     return orderByIds(sorted, project => project.id, projectOrderIds)
-  }, [showAllProfiles, projectTree, dismissedAutoProjects, orderRepos, activeProjectId, projectOrderIds])
+  }, [showAllProfiles, projectTree, orderRepos, activeProjectId, projectOrderIds])
 
   // The overview only renders in grouped mode; the model stays live regardless
   // so scoping is consistent across views.
@@ -715,6 +696,25 @@ export function ChatSidebar({
     [enteredProject, agentSessions, removedSessionIds]
   )
 
+  // Inside a project the session list is bucketed by TIME, not by repo/branch/
+  // worktree. "Which checkout is this in" is already answered by being in the
+  // project; "what was I just doing" is the question a session list is for. The
+  // lane tree above still feeds the worktree actions and the files pane — it is
+  // the row grouping that changes, not the model.
+  //
+  // Reuses the same overlay as the lane view so a just-created session appears
+  // immediately, then dedupes: `overlayLiveLanes` may already carry it.
+  const enteredProjectGroups = useMemo(() => {
+    if (!enteredProjectContent) {
+      return undefined
+    }
+
+    const removed = removedSessionIds
+    const snapshot = projectSessions(enteredProjectContent).filter(session => !removed.has(session.id))
+
+    return recencySessionGroups(snapshot, s.projects.recency, Date.now())
+  }, [enteredProjectContent, removedSessionIds, s.projects.recency])
+
   const scopedRepoPaths = useMemo(
     () =>
       enteredProject ? enteredProject.repos.map(repo => repo.path).filter((path): path is string => Boolean(path)) : [],
@@ -785,9 +785,10 @@ export function ChatSidebar({
     lastProjectCwdSyncRef.current = enteredProject.id
   }, [inProject, enteredProject, syncProjectCwd])
 
-  // A persisted scope can go stale (project archived/removed, or a profile
-  // switch swapped the whole catalog). Once projects have loaded, drop back to
-  // the overview if the scoped id is gone.
+  // A routed scope can go stale — the project was archived or removed, or a
+  // profile switch swapped the whole catalog out from under the URL. Once
+  // projects have loaded, fall back to the overview rather than leaving the
+  // user inside a project that no longer exists.
   useEffect(() => {
     if (projectScope !== ALL_PROJECTS && projectsActive && !enteredProject) {
       exitProjectScope()
@@ -1027,7 +1028,9 @@ export function ChatSidebar({
     }
   }, [onLoadMoreSessions, recentsLoadMorePending])
 
-  const displayAgentGroups = showAllProfiles ? profileGroups : undefined
+  // Three grouping modes share one `groups` prop: profiles (all-profiles view),
+  // recency (inside a project), or none (the flat recents list).
+  const displayAgentGroups = showAllProfiles ? profileGroups : inProject ? enteredProjectGroups : undefined
 
   // The recents list owns its own (virtualized) scroll container only when it's a
   // long flat list. In that case it must keep its scroller even in short mode, so
@@ -1398,15 +1401,10 @@ export function ChatSidebar({
                   )
                 }
                 label={sessionsLabel}
-                labelMeta={
-                  worktreeGroupingActive ? (
-                    reposScanning && !projectsSkeletonVisible ? (
-                      <GlyphSpinner ariaLabel={s.loading} className="text-[0.6875rem] text-(--ui-text-quaternary)" />
-                    ) : undefined
-                  ) : (
-                    recentsMeta
-                  )
-                }
+                // No "finding repos" spinner in grouped mode any more: nothing
+                // is being discovered in the background, so there is no
+                // in-flight state for the header to report.
+                labelMeta={worktreeGroupingActive ? undefined : recentsMeta}
                 liveSessions={inProject ? agentSessions : undefined}
                 onArchiveSession={onArchiveSession}
                 onBranchSession={onBranchSession}
@@ -1423,7 +1421,10 @@ export function ChatSidebar({
                 projectBackRow={
                   inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
                 }
-                projectContent={inProject ? enteredProjectContent : undefined}
+                // `projectContent` (the lane tree) stands down inside a project
+                // — `groups` carries the recency buckets instead. It stays wired
+                // for the empty/hydrating states the section still keys off.
+                projectContent={undefined}
                 projectOverview={projectOverview}
                 projectOverviewPreviews={overviewPreviews}
                 projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}

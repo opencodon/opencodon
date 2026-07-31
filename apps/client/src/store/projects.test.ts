@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SidebarProjectTree } from '@/app/chat/sidebar/projects/workspace-groups'
 import { $sidebarAgentsGrouped } from '@/store/layout'
 import { $activeGatewayProfile } from '@/store/profile'
+import type { ProjectInfo } from '@/types/opencodon'
 
 import {
   $activeProjectId,
+  $projects,
   $projectScope,
   $projectsRpcAvailable,
   $projectTree,
@@ -26,8 +28,32 @@ import {
   refreshProjectTree,
   refreshWorktrees,
   scanAndRecordRepos,
+  syncProjectScopeFromRoute,
   tombstoneSessions
 } from './projects'
+
+const treeNode = (
+  over: Partial<SidebarProjectTree> & Pick<SidebarProjectTree, 'id' | 'label'>
+): SidebarProjectTree => ({
+  path: null,
+  repos: [],
+  sessionCount: 0,
+  ...over
+})
+
+const projectInfo = (overrides: Partial<ProjectInfo> & Pick<ProjectInfo, 'id' | 'slug'>): ProjectInfo => ({
+  archived: false,
+  board_slug: null,
+  color: null,
+  created_at: 0,
+  description: null,
+  folders: [],
+  icon: null,
+  name: overrides.slug,
+  context: null,
+  primary_path: null,
+  ...overrides
+})
 
 vi.mock('@/i18n', () => ({
   translateNow: (key: string) => key
@@ -79,6 +105,9 @@ const notify = vi.mocked(notifications.notify)
 describe('project scope', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    window.location.hash = '#/'
+    $projects.set([])
+    $projectTree.set([])
     $projectScope.set(ALL_PROJECTS)
   })
 
@@ -86,40 +115,66 @@ describe('project scope', () => {
     expect($projectScope.get()).toBe(ALL_PROJECTS)
   })
 
-  it('enterProject scopes the sidebar to the project id', () => {
-    // setActiveProject fires best-effort (no gateway in test → it rejects and is
-    // swallowed); the synchronous scope change is what matters here.
+  it('enterProject navigates into the project route', () => {
     enterProject('p_123')
-    expect($projectScope.get()).toBe('p_123')
+    expect(window.location.hash).toBe('#/projects/p_123')
   })
 
-  it('exitProjectScope returns to the overview', () => {
-    enterProject('p_123')
+  it('exitProjectScope returns to the dashboard', () => {
     exitProjectScope()
+    expect(window.location.hash).toBe('#/projects')
+  })
+
+  it('the route is what sets the scope', () => {
+    // setActiveProject fires best-effort (no gateway in test → it rejects and is
+    // swallowed); the synchronous scope change is what matters here.
+    syncProjectScopeFromRoute('p_123')
+    expect($projectScope.get()).toBe('p_123')
+
+    syncProjectScopeFromRoute(null)
     expect($projectScope.get()).toBe(ALL_PROJECTS)
   })
 
-  it('entering the synthetic No-project bucket still scopes (no active pin)', () => {
-    enterProject('__no_project__')
-    expect($projectScope.get()).toBe('__no_project__')
+  it('scopes to a project the list has not loaded yet', () => {
+    // The route can name a project before projects.list lands (a cold load on a
+    // deep link). Trusting the id keeps that from flashing back to the
+    // dashboard; a genuinely missing project is recovered from by the sidebar.
+    syncProjectScopeFromRoute('p_unlisted')
+    expect($projectScope.get()).toBe('p_unlisted')
+  })
+})
+
+describe('project tree ingestion', () => {
+  beforeEach(() => {
+    $projectTree.set([])
   })
 
-  it('persists the scope to localStorage', () => {
-    enterProject('p_abc')
-    expect(window.localStorage.getItem('opencodon.desktop.projectScope')).toBe('p_abc')
+  it('drops everything the user did not create', async () => {
+    const gateway = {
+      connectionState: 'open',
+      request: vi.fn().mockResolvedValue({
+        active_id: null,
+        projects: [
+          treeNode({ id: 'p_mine', label: 'Mine', path: '/repos/mine' }),
+          treeNode({ id: '/repos/discovered', isAuto: true, label: 'discovered', path: '/repos/discovered' }),
+          treeNode({ id: '__no_project__', isNoProject: true, label: 'No project', path: null })
+        ],
+        scoped_session_ids: []
+      }),
+      requestGeneration: 0
+    }
+
+    activeGateway.mockReturnValue(gateway as never)
+    gatewayAtom.set(gateway as never)
+    $activeGatewayProfile.set('default')
+
+    await refreshProjectTree()
+
+    expect($projectTree.get().map(node => node.id)).toEqual(['p_mine'])
   })
 })
 
 describe('projectNameForCwd', () => {
-  const treeNode = (
-    over: Partial<SidebarProjectTree> & Pick<SidebarProjectTree, 'id' | 'label'>
-  ): SidebarProjectTree => ({
-    path: null,
-    repos: [],
-    sessionCount: 0,
-    ...over
-  })
-
   beforeEach(() => {
     $projectTree.set([])
   })

@@ -182,11 +182,18 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
     <Routes>
       <Route element={chatView} index />
       <Route element={chatView} path=":sessionId" />
+      {/* The project namespace, nested under the dashboard. Both project routes
+          render the chat — a project is carried by the URL and consumed as
+          SCOPE (see syncProjectScopeFromRoute), not as a different view. These
+          must be declared alongside `projects` itself, or `/projects/:id` falls
+          through to the catch-all and bounces the user to the new-chat route. */}
+      <Route element={page(<ProjectsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="projects" />
+      <Route element={chatView} path="projects/:projectId" />
+      <Route element={chatView} path="projects/:projectId/sessions/:sessionId" />
       <Route element={page(<SkillsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="skills" />
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
-        <Route element={page(<ScienceView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="science" />
-        <Route element={page(<ProjectsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="projects" />
+      <Route element={page(<ScienceView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="science" />
       <Route element={null} path="agents" />
       <Route element={null} path="command-center" />
       <Route element={null} path="cron" />

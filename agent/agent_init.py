@@ -560,6 +560,12 @@ def init_agent(
     agent.background_review_callback = None  # Optional sync callback for gateway delivery
     agent.memory_notifications = "on"  # Memory update notifications: "off", "on", "verbose"
     agent.skip_context_files = skip_context_files
+    # The project this agent is working in, when the caller knows it (the
+    # gateway sets it from the session row). Lets the system prompt load the
+    # project's Agent Context without re-deriving membership from the cwd —
+    # which is wrong for a worktree outside the repo root, or a session with no
+    # cwd at all. None falls back to that derivation.
+    agent.project_id = None
     agent.load_soul_identity = load_soul_identity
     agent.pass_session_id = pass_session_id
     agent.log_prefix_chars = log_prefix_chars

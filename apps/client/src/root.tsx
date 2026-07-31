@@ -8,12 +8,18 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import App from './app'
+import { type HomeSurface, setHomeSurface } from './app/routes'
 import { ErrorBoundary } from './components/error-boundary'
 import { HapticsProvider } from './components/haptics-provider'
 import { I18nProvider } from './i18n'
 import { installClipboardShim } from './lib/clipboard'
 import { queryClient } from './lib/query-client'
 import { ThemeProvider } from './themes/context'
+
+export interface MountOptions {
+  /** Cold-start landing surface. Defaults to `'chat'`. */
+  home?: HomeSurface
+}
 
 /**
  * Mount the app into `#root`.
@@ -23,8 +29,14 @@ import { ThemeProvider } from './themes/context'
  * one itself. Each host supplies its own before calling this — Electron
  * through its preload script, the browser through `apps/web`'s bridge — which
  * is what keeps a host's transport out of the UI's dependency graph.
+ *
+ * `home` is the surface a cold start lands on when there is nothing remembered
+ * to restore. Project-first is the destination for both hosts; the browser is
+ * there now and Electron follows, which is why this is a host DEFAULT and not a
+ * second code path — the scoping itself is identical either way.
  */
-export function mount(): void {
+export function mount(options: MountOptions = {}): void {
+  setHomeSurface(options.home ?? 'chat')
   installClipboardShim()
 
   // The perf probe ships in dev, and in a production build ONLY when

@@ -3,6 +3,7 @@ export { EnteredProjectContent } from './entered-content'
 export { PROJECT_PREVIEW_COUNT, projectTreeCwd, sortProjectsForOverview, useRepoWorktreeMap } from './model'
 export { ProjectBackRow, ProjectOverviewRow } from './overview-row'
 export { ProjectMenu } from './project-menu'
+export { projectSessions, recencySessionGroups } from './recency'
 export { SidebarWorkspaceGroup } from './workspace-group'
 export {
   overlayLiveLanes,

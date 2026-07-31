@@ -22,16 +22,24 @@ import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { $newSessionTabAction } from '@/components/pane-shell/tree/store'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
-import { getSessionMessages, triggerCronJob } from '@/opencodon'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
+import { currentRoutePath } from '@/lib/navigate'
 import { sessionMessagesSignature } from '@/lib/session-signatures'
 import { isMessagingSource } from '@/lib/session-source'
 import { latestSessionTodos } from '@/lib/todos'
+import { getSessionMessages, triggerCronJob } from '@/opencodon'
 import { setCronFocusJobId } from '@/store/cron'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { $filePreviewTarget, $previewTarget } from '@/store/preview'
 import { $activeGatewayProfile, $freshSessionRequest, $profileScope, refreshActiveProfile } from '@/store/profile'
-import { $startWorkSessionRequest, followActiveSessionCwd } from '@/store/projects'
+import {
+  $projectTree,
+  $startWorkSessionRequest,
+  adoptBareSessionRoute,
+  exitProjectScope,
+  followActiveSessionCwd,
+  syncProjectScopeFromRoute
+} from '@/store/projects'
 import {
   $activeSessionId,
   $connection,
@@ -64,6 +72,7 @@ import { CommandPalette } from '../command-palette'
 import { useGatewayBoot } from '../gateway/hooks/use-gateway-boot'
 import { useGatewayRequest } from '../gateway/hooks/use-gateway-request'
 import { useKeybinds } from '../hooks/use-keybinds'
+import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { ModelPickerOverlay } from '../model-picker-overlay'
 import { ModelVisibilityOverlay } from '../model-visibility-overlay'
 import { FileActionDialogs } from '../right-sidebar/file-actions'
@@ -71,15 +80,23 @@ import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
 import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
-import { CRON_ROUTE, routeSessionId, sessionRoute, SETTINGS_ROUTE, syncWorkspaceIsPage } from '../routes'
+import {
+  CRON_ROUTE,
+  routeProjectId,
+  routeSessionId,
+  sessionRoute,
+  setRouteProjectId,
+  SETTINGS_ROUTE,
+  syncWorkspaceIsPage
+} from '../routes'
 import { SessionPickerOverlay } from '../session-picker-overlay'
 import { SessionSwitcher } from '../session-switcher'
 import { useBackgroundQueueDrain } from '../session/hooks/use-background-queue-drain'
 import { useContextSuggestions } from '../session/hooks/use-context-suggestions'
 import { useCwdActions } from '../session/hooks/use-cwd-actions'
-import { useOpencodonConfig } from '../session/hooks/use-opencodon-config'
 import { useMessageStream } from '../session/hooks/use-message-stream'
 import { useModelControls } from '../session/hooks/use-model-controls'
+import { useOpencodonConfig } from '../session/hooks/use-opencodon-config'
 import { usePreviewRouting } from '../session/hooks/use-preview-routing'
 import { usePromptActions } from '../session/hooks/use-prompt-actions'
 import { useRouteResume } from '../session/hooks/use-route-resume'
@@ -161,6 +178,37 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncWorkspaceIsPage(location.pathname)
   }, [location.pathname])
+
+  // The route owns project scope. Every surface that scopes to a project (the
+  // sidebar's session list, the files pane, terminals, artifacts) reads
+  // `$projectScope`, so this single mirror is what makes back/forward and a
+  // reload land in the same project the URL names.
+  const routedProjectId = routeProjectId(location.pathname)
+  const projectTree = useStore($projectTree)
+
+  useEffect(() => {
+    setRouteProjectId(routedProjectId)
+    syncProjectScopeFromRoute(routedProjectId)
+  }, [routedProjectId])
+
+  // A session reached by its bare `/:sessionId` route (notification, deep link,
+  // a recents row on the landing) still belongs to a project. Re-home the URL
+  // once the tree can answer which one, so scope-reading surfaces agree.
+  useEffect(() => {
+    if (!routedProjectId) {
+      adoptBareSessionRoute(routedSessionId)
+    }
+  }, [projectTree, routedProjectId, routedSessionId])
+
+  // Projects live in a per-profile projects.db, so a project ref means nothing
+  // once the profile swaps — it would resolve against the new profile's catalog
+  // or, worse, collide with an unrelated slug. Leaving the project is the honest
+  // re-home; the picker is the new profile's own catalog.
+  useOnProfileSwitch(() => {
+    if (routeProjectId(currentRoutePath())) {
+      exitProjectScope()
+    }
+  })
 
   const {
     agentsOpen,

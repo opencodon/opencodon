@@ -416,7 +416,30 @@ def _project_for_path(index: _FolderIndex, target: str) -> Optional[dict]:
     return index.match(target)[0]
 
 
-def _project_for_session(session: dict, index: _FolderIndex, resolve: Optional[Resolve]) -> Optional[dict]:
+def _project_for_session(
+    session: dict,
+    index: _FolderIndex,
+    resolve: Optional[Resolve],
+    by_id: Optional[dict[str, dict]] = None,
+) -> Optional[dict]:
+    """The project a session belongs to.
+
+    RECORDED membership wins. ``sessions.project_id`` is written at creation,
+    so it survives a folder rename or move, an ambiguous nesting of two
+    projects, a linked worktree living outside the repo root, and a session
+    with no cwd at all — every case the path derivation below gets wrong.
+
+    The derivation stays as the fallback for rows that predate the column and
+    for sessions genuinely started outside any project. A recorded id pointing
+    at a project that no longer exists falls through to it too, rather than
+    stranding the session in a project that isn't there.
+    """
+    recorded = (session.get("project_id") or "").strip()
+    if recorded and by_id is not None:
+        owner = by_id.get(recorded)
+        if owner is not None:
+            return owner
+
     cwd = (session.get("cwd") or "").strip()
     if not cwd:
         return None
@@ -498,10 +521,12 @@ def build_tree(
     _junk_cwd = is_junk_cwd or (lambda _cwd: False)
     folder_index = _FolderIndex(active_projects)
 
+    by_id = {p["id"]: p for p in active_projects if p.get("id")}
+
     by_project: dict[str, list[dict]] = {}
     unowned: list[dict] = []
     for session in sessions:
-        owner = _project_for_session(session, folder_index, resolve)
+        owner = _project_for_session(session, folder_index, resolve, by_id)
         if owner:
             by_project.setdefault(owner["id"], []).append(session)
         else:

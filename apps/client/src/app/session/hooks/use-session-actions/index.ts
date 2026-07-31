@@ -3,17 +3,19 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 
 import { revealTreePane } from '@/components/pane-shell/tree/store'
-import { deleteSession, getSessionMessages, setSessionArchived } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { setSessionYolo } from '@/lib/yolo-session'
+import { deleteSession, getSessionMessages, setSessionArchived } from '@/opencodon'
 import { migrateSessionDraft } from '@/store/composer'
 import { clearQueuedPrompts, migrateQueuedPrompts } from '@/store/composer-queue'
 import { $pinnedSessionIds } from '@/store/layout'
 import { clearNotifications, notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $newChatProfile, ensureGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import {
+  $projectScope,
+  ALL_PROJECTS,
   beginSessionMutation,
   endSessionMutation,
   resolveNewSessionCwd,
@@ -170,10 +172,18 @@ async function desktopSessionCreateParams(cwd: string): Promise<Record<string, u
   const profile = $newChatProfile.get() ?? normalizeProfileKey($activeGatewayProfile.get())
   await ensureGatewayProfile(profile)
 
+  // The project the user is inside, recorded on the row rather than left to be
+  // re-derived from the cwd. Sent even when there is no cwd — a draft started
+  // in a project belongs to it whether or not a folder was picked, and that is
+  // exactly the case the cwd derivation cannot represent.
+  const projectScope = $projectScope.get()
+  const projectId = projectScope === ALL_PROJECTS ? '' : projectScope
+
   return {
     cols: 96,
     source: 'desktop',
     ...(cwd && { cwd }),
+    ...(projectId ? { project_id: projectId } : {}),
     ...(profile ? { profile } : {}),
     ...(selection.model
       ? { model: selection.model, ...(selection.provider ? { provider: selection.provider } : {}) }

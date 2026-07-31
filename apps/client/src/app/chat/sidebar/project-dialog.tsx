@@ -41,6 +41,8 @@ export function ProjectDialog() {
 
   const [name, setName] = useState('')
   const [folders, setFolders] = useState<string[]>([])
+  const [description, setDescription] = useState('')
+  const [context, setContext] = useState('')
   const [idea, setIdea] = useState('')
   const [templates, setTemplates] = useState<ProjectIdeaTemplate[]>([])
   const [generatingIdea, setGeneratingIdea] = useState(false)
@@ -51,6 +53,8 @@ export function ProjectDialog() {
     if (open) {
       setName(state?.name ?? '')
       setFolders([])
+      setDescription('')
+      setContext('')
       setIdea('')
       setTemplates(randomIdeaTemplates())
       setGeneratingIdea(false)
@@ -121,10 +125,20 @@ export function ProjectDialog() {
       return
     }
 
-    // A project owns sessions by folder (cwd-prefix), so creation requires at
-    // least one — a folder-less project couldn't hold a session anyway.
+    // Every session runs in a directory, so creation requires at least one
+    // folder — the first is the project's primary path and the default cwd for
+    // new sessions in it.
     if (mode === 'create' && trimmed && folders.length) {
-      await runSubmit(() => createProject({ folders, idea: idea.trim() || undefined, name: trimmed, use: true }))
+      await runSubmit(() =>
+        createProject({
+          context: context.trim() || undefined,
+          description: description.trim() || undefined,
+          folders,
+          idea: idea.trim() || undefined,
+          name: trimmed,
+          use: true
+        })
+      )
     }
   }
 
@@ -225,6 +239,37 @@ export function ProjectDialog() {
               <Codicon name="add" size="0.75rem" />
               {p.addFolder}
             </Button>
+          </div>
+        )}
+
+        {/* Description and Agent Context look alike and are not: one is for the
+            person scanning the project list, the other lands in every system
+            prompt. The hints under each label are the only thing stopping a
+            user from typing house rules into the wrong box. */}
+        {mode === 'create' && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{p.descriptionLabel}</span>
+            <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{p.descriptionHint}</span>
+            <Input
+              disabled={submitting}
+              onChange={event => setDescription(event.target.value)}
+              placeholder={p.descriptionPlaceholder}
+              value={description}
+            />
+          </div>
+        )}
+
+        {mode === 'create' && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{p.contextLabel}</span>
+            <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{p.contextHint}</span>
+            <Textarea
+              className="min-h-20 text-[0.8125rem]"
+              disabled={submitting}
+              onChange={event => setContext(event.target.value)}
+              placeholder={p.contextPlaceholder}
+              value={context}
+            />
           </div>
         )}
 

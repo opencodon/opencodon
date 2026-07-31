@@ -33,9 +33,10 @@ def _captured_context_cwd(agent):
 
     def fake_context_files(
         cwd=None, skip_soul=False, context_length=None,
-        allow_install_tree_fallback=False,
+        allow_install_tree_fallback=False, project_id=None,
     ):
         captured["cwd"] = cwd
+        captured["project_id"] = project_id
         return ""
 
     with (

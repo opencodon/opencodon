@@ -388,6 +388,12 @@ export interface SessionInfo {
    *  groups by this instead of probing git in the GUI. Null for non-git
    *  workspaces and not-yet-backfilled rows. */
   git_repo_root?: null | string
+  /** The project this session BELONGS to, recorded at creation — as opposed to
+   *  `cwd`, which is only where it RUNS. Prefer this over deriving membership
+   *  from the cwd: it survives a folder rename, a worktree outside the repo
+   *  root, and a session with no cwd at all. Null for sessions started outside
+   *  any project, and for rows the backfill hasn't adopted yet. */
+  project_id?: null | string
   ended_at: null | number
   id: string
   /** Original root id of a compression chain, when this entry is a projected
@@ -705,6 +711,9 @@ export interface ProjectInfo {
   color: null | string
   board_slug: null | string
   primary_path: null | string
+  /** Free text injected into every agent's system prompt for this project.
+   *  `description` is the human-facing blurb and never reaches a prompt. */
+  context: null | string
   archived: boolean
   created_at: number
   folders: ProjectFolder[]
