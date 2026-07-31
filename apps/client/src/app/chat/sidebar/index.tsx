@@ -1499,9 +1499,16 @@ export function ChatSidebar({
 
         {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
 
-        <div className="shrink-0 px-0.5 pb-1 pt-0.5">
-          <ProfileRail />
-        </div>
+        {/* The rail is the one profile surface that renders even for a
+            single-profile install (it carries the create affordance), so it
+            needs its own gate — `multiProfile` above only covers grouping and
+            per-row tags. Gated here rather than inside ProfileRail so the
+            footer padding goes with it. */}
+        {PROFILES_UI_ENABLED && (
+          <div className="shrink-0 px-0.5 pb-1 pt-0.5">
+            <ProfileRail />
+          </div>
+        )}
       </SidebarContent>
       <ProjectDialog />
     </Sidebar>
