@@ -318,6 +318,15 @@ export function useSessionActions({
         navigate(newChatRoute(), { replace: replaceRoute })
       }
 
+      // Show the draft. The workspace tab hides itself while it holds an
+      // untouched draft and real session tabs are open (see
+      // syncWorkspaceTabVisibility), so "New session" has to ASK for it back.
+      // It cannot ride on the selection-homing listener in session-states:
+      // that fires on a CHANGE to $selectedStoredSessionId, and starting a
+      // draft while the workspace already holds one sets null over null —
+      // no change, no notification, no reveal.
+      revealTreePane('workspace')
+
       setActiveSessionId(null)
       activeSessionIdRef.current = null
       setSelectedStoredSessionId(null)
@@ -461,21 +470,6 @@ export function useSessionActions({
     ]
   )
 
-  const selectSidebarItem = useCallback(
-    (item: SidebarNavItem) => {
-      if (item.action === 'new-session') {
-        startFreshSessionDraft()
-
-        return
-      }
-
-      if (item.route) {
-        navigate(item.route)
-      }
-    },
-    [navigate, startFreshSessionDraft]
-  )
-
   /** Create a fresh session and open it as a tile — leaves the primary chat alone.
    *  Used by the New session row's "Open in split" menu and the tab-strip "+".
    *
@@ -529,6 +523,27 @@ export function useSessionActions({
       }
     },
     [copy, requestGateway, updateSessionState]
+  )
+
+  const selectSidebarItem = useCallback(
+    (item: SidebarNavItem) => {
+      // "New session" opens a REAL session as its own tab, listed in the
+      // sidebar — not a workspace draft. Two reasons: the workspace draft was
+      // also titled "New session", so the two were indistinguishable and
+      // traded places as tabs opened and closed; and a draft that exists only
+      // in the workspace can't be opened twice, which made "new session" feel
+      // like it refused to do anything the second time.
+      if (item.action === 'new-session') {
+        void openNewSessionTile('center')
+
+        return
+      }
+
+      if (item.route) {
+        navigate(item.route)
+      }
+    },
+    [navigate, openNewSessionTile]
   )
 
   const openSettings = useCallback(() => {

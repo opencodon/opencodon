@@ -61,7 +61,7 @@ import {
   setCurrentProvider,
   setMessages
 } from '@/store/session'
-import { focusOpenSession } from '@/store/session-states'
+import { focusOpenSession, openSessionTabFocused } from '@/store/session-states'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
 import { isSecondaryWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
@@ -770,21 +770,28 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // The tab-strip "+" and ⌘T share one action: open a new session as its own
-  // tab (stacked into the workspace zone) WITHOUT polluting the session list.
-  // Created `listed: false`, so each new tab's in-memory session stays out of
-  // the sidebar until its first message persists a turn and a refresh surfaces
-  // it — Cursor-style. Every click opens a fresh "New session" tab (multiple
-  // empty tabs are fine since none touch the session list).
+  // The tab-strip "+" and ⌘T share one action with the sidebar's New session
+  // row: open a new session as its own tab, stacked into the workspace zone,
+  // and LIST it in the sidebar. Unbounded on purpose — opening another session
+  // is the app's most common action and nothing here should ration it.
+  //
+  // `listed` (the default) is what makes the new session appear in the left
+  // panel immediately. It used to be `listed: false` (Cursor-style draft tab),
+  // which left a tab whose session existed nowhere the user could see.
+  //
   const openNewSessionTab = useCallback(() => {
-    void openNewSessionTile('center', { listed: false })
+    void openNewSessionTile('center')
   }, [openNewSessionTile])
 
   // Single global listener for every rebindable hotkey plus the on-screen
   // keybind editor's capture mode (same as DesktopController).
   useKeybinds({
     openNewSessionTab,
-    startFreshSession: startFreshSessionDraft,
+    // ⌘N is the shortcut printed on the sidebar's New session row, so it has
+    // to do what that row does — open a listed session in a new tab, not reset
+    // the workspace to a draft. `startFreshSessionDraft` stays the internal
+    // reset (profile switch, deleted session) and keeps its own callers.
+    startFreshSession: openNewSessionTab,
     toggleCommandCenter,
     toggleSelectedPin
   })
@@ -838,11 +845,17 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onReload: reloadFromMessage,
     onRemoveAttachment: id => void composer.removeAttachment(id),
     onRestoreToMessage: restoreToMessage,
-    // Already on screen (open tile, or the main session)? Jump to its tab;
-    // otherwise load it into main.
+    // Every session opens as its own TAB. Already on screen (an open tile, or
+    // the main session)? Front it rather than opening a second copy of the
+    // same conversation — that check is what keeps "open a tab per click"
+    // from meaning "a duplicate per click".
+    //
+    // Opening a tab is cheap on purpose: the gateway defers the AIAgent build
+    // (and the slash-worker subprocess with it) until a session is actually
+    // prompted, so a tab you only read costs a transcript, not a process.
     onResumeSession: sessionId => {
       if (!focusOpenSession(sessionId)) {
-        navigate(sessionRoute(sessionId))
+        openSessionTabFocused(sessionId)
       }
     },
     onRetryResume: sessionId => void resumeSession(sessionId, true),

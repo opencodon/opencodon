@@ -8,7 +8,7 @@ import { PALETTE_AREA, type PaletteContribution } from '@/app/command-palette/co
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { IdleMount } from '@/components/idle-mount'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
-import { allPaneIds, group, split } from '@/components/pane-shell/tree/model'
+import { allPaneIds, findGroupOfPane, group, split } from '@/components/pane-shell/tree/model'
 import { LayoutTreeRoot } from '@/components/pane-shell/tree/renderer'
 import type { DoubleTapContext } from '@/components/pane-shell/tree/renderer/drag-session'
 import {
@@ -54,6 +54,7 @@ import {
 import { $filePreviewTarget, $previewTarget, closeRightRail } from '@/store/preview'
 import { $reviewOpen, closeReview, REVIEW_PANE_ID } from '@/store/review'
 import { $currentCwd, $selectedStoredSessionId, $sessions, sessionMatchesStoredId } from '@/store/session'
+import { $sessionTiles, workspaceTabHides } from '@/store/session-states'
 
 import type { SessionDragPayload } from '../chat/composer/inline-refs'
 import { watchRouteTiles } from '../chat/route-tile'
@@ -639,6 +640,40 @@ const revealPreview = () => {
 
 $previewTarget.listen(target => target && revealPreview())
 $filePreviewTarget.listen(target => target && revealPreview())
+
+// ---------------------------------------------------------------------------
+// The workspace tab holds the new-chat draft. Now that every session opens as
+// its OWN tab, an untouched draft parked at the head of the strip is just a tab
+// the user can't close — permanent, empty, and named "New session" while the
+// real work sits beside it. So hide its tab while all three hold:
+//
+//   1. the workspace holds a DRAFT, not a session (nothing selected),
+//   2. there is at least one real session tab to show instead, and
+//   3. the workspace is not the tab currently being looked at.
+//
+// (3) is what keeps this from fighting the user: clicking "New session" homes
+// selection to the workspace and fronts it (see the $selectedStoredSessionId
+// listener in session-states), which makes it active — so it is never hidden
+// out from under someone who just asked for it. The draft itself lives in the
+// composer stores, so hiding the tab never discards typed text.
+function syncWorkspaceTabVisibility(): void {
+  const tree = $layoutTree.get()
+  const group = tree ? findGroupOfPane(tree, 'workspace') : null
+
+  setTreePaneHidden(
+    'workspace',
+    workspaceTabHides({
+      hasSessionTabs: $sessionTiles.get().length > 0,
+      holdsDraft: $selectedStoredSessionId.get() === null,
+      isActive: group?.active === 'workspace'
+    })
+  )
+}
+
+$selectedStoredSessionId.listen(syncWorkspaceTabVisibility)
+$sessionTiles.listen(syncWorkspaceTabVisibility)
+$layoutTree.listen(syncWorkspaceTabVisibility)
+syncWorkspaceTabVisibility()
 
 // ---------------------------------------------------------------------------
 

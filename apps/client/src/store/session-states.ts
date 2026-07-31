@@ -298,6 +298,11 @@ const TILES_KEY = 'opencodon.desktop.sessionTiles.v2'
 const LEGACY_TILES_KEY = 'opencodon.desktop.sessionTiles.v1'
 const TILE_PANE_PREFIX = 'session-tile:'
 
+/** How long `openSessionTabFocused` waits for a new tile's pane to be adopted
+ *  into the layout tree before giving up on fronting it. Generous — adoption is
+ *  a registry round-trip, not a network call — and only a leak guard. */
+const TAB_ADOPT_TIMEOUT_MS = 5_000
+
 /** Persisted placement — `dir` + strip slot (`before`) + dock `anchor` so a
  *  restart / profile swap re-adopts tiles in the same order, not all stacked
  *  right of workspace. */
@@ -602,6 +607,59 @@ export function focusOpenSession(storedSessionId: string): boolean {
   return false
 }
 
+/**
+ * Open a session as a tab AND bring it to the front — the plain-click path.
+ *
+ * `openSessionTile` alone opens in the BACKGROUND, which is what ⌘-click and
+ * middle-click want (browser semantics: queue it up, keep reading). A plain
+ * click means "show me this session", so it has to front the tab as well or
+ * the click looks dead — a tab appears at the far end of the strip while the
+ * pane keeps showing whatever was there before.
+ *
+ * Adoption into the tree is async (the pane registers via the contribution
+ * registry), so `revealTreePane` is issued for a pane that may not exist yet;
+ * it un-dismisses and fronts once adoption lands. Same ordering the branch flow
+ * uses.
+ */
+export function openSessionTabFocused(storedSessionId: string): void {
+  openSessionTile(storedSessionId, 'center')
+
+  const paneId = `${TILE_PANE_PREFIX}${storedSessionId}`
+
+  // Front only once the pane is really in the tree. `revealTreePane` resolves
+  // the pane's group through `findGroupOfPane`, so calling it before adoption
+  // is a silent no-op — which is exactly how this first shipped broken: the
+  // tab appeared at the end of the strip while the pane kept showing whatever
+  // was there before, and the click read as dead.
+  const front = (): boolean => {
+    const tree = $layoutTree.get()
+
+    if (!tree || !findGroupOfPane(tree, paneId)) {
+      return false
+    }
+
+    focusOpenSession(storedSessionId)
+
+    return true
+  }
+
+  if (front()) {
+    return
+  }
+
+  let unsubscribe: (() => void) | undefined
+  // Bounded so a pane that never adopts (a tile discarded mid-flight) can't
+  // leave a listener attached to the layout tree for the life of the session.
+  const timer = setTimeout(() => unsubscribe?.(), TAB_ADOPT_TIMEOUT_MS)
+
+  unsubscribe = $layoutTree.listen(() => {
+    if (front()) {
+      clearTimeout(timer)
+      unsubscribe?.()
+    }
+  })
+}
+
 // Closed-tab stack for ⌘⇧T reopen (in-memory) — keyed PER PROFILE like the
 // tiles themselves, so ⌘⇧T after a profile switch never resurrects the other
 // profile's session. The tile's placement is remembered so it returns in place.
@@ -697,6 +755,34 @@ export const $focusedSessionState = computed([$focusedRuntimeId, $sessionStates]
  *  behind the workspace (A+B "disappear" when switching to C). */
 export const selectionHomesToWorkspace = (selected: null | string, tiles: readonly SessionTile[]): boolean =>
   !(selected && tiles.some(t => t.storedSessionId === selected))
+
+/**
+ * Whether the workspace tab should drop out of the tab strip.
+ *
+ * The workspace holds the new-chat draft. Once every session opens as its own
+ * tab, an untouched draft parked at the head of the strip is a tab the user
+ * can't close — permanently there, empty, and named "New session" while the
+ * real work sits beside it. Hide it while all three hold.
+ *
+ * `isActive` is load-bearing and easy to get wrong: without it the rule hides
+ * the tab the user is looking at. With it, the rule LATCHES — a hidden tab can
+ * never become active on its own — so whatever wants the draft back must
+ * `revealTreePane('workspace')` explicitly. Notably `startFreshSessionDraft`
+ * cannot lean on the selection-homing listener, because starting a draft while
+ * one is already open sets null over null and nanostores notifies nothing.
+ */
+export const workspaceTabHides = ({
+  hasSessionTabs,
+  holdsDraft,
+  isActive
+}: {
+  /** At least one real session tab exists to show instead. */
+  hasSessionTabs: boolean
+  /** The workspace holds a draft, not a loaded session. */
+  holdsDraft: boolean
+  /** The workspace is the tab currently being viewed. */
+  isActive: boolean
+}): boolean => holdsDraft && hasSessionTabs && !isActive
 
 // Homing also FRONTS the workspace tab: the resumed chat loads in the workspace
 // pane, so a zone parked on a tile tab must switch back or the click looks dead.
