@@ -1976,7 +1976,18 @@ def _is_verification_artifact_cleanup(command: str) -> bool:
     operand = argv[2]
     temp_dir = os.path.realpath(tempfile.gettempdir())
     basename = os.path.basename(operand)
-    if operand != os.path.join(temp_dir, basename):
+    # macOS mirrors /tmp and /var under /private, so the canonical temp dir
+    # never matches the spelling tempfile.gettempdir() hands out — which means
+    # the ad-hoc scripts opencodon itself writes could never qualify for this
+    # exemption on a Mac, and every cleanup prompted as "delete in root path".
+    # That mirror is a fixed OS mapping (see _MACOS_PRIVATE_SYSTEM_PATH above),
+    # not a symlink anyone can repoint, so both spellings are accepted. Any
+    # *other* symlinked route to the temp dir stays non-exempt on purpose — the
+    # realpath check below is what enforces that.
+    accepted = {os.path.join(temp_dir, basename)}
+    if temp_dir.startswith("/private/"):
+        accepted.add(os.path.join(temp_dir[len("/private"):], basename))
+    if operand not in accepted:
         return False
 
     target = os.path.realpath(operand)
