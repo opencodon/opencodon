@@ -1772,6 +1772,8 @@ export interface Translations {
     windowControls: string
     paneControls: string
     appControls: string
+    /** Accessible label for a tab's × — `Close <tab title>`. */
+    closeTab: (title: string) => string
     modelMenu: {
       search: string
       noModels: string

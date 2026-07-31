@@ -2159,6 +2159,7 @@ export const en: Translations = {
     windowControls: 'Window controls',
     paneControls: 'Pane controls',
     appControls: 'App controls',
+    closeTab: (title: string) => `Close ${title}`,
     modelMenu: {
       search: 'Search models',
       noModels: 'No models found',
