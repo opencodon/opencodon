@@ -5,7 +5,7 @@ import { closeActiveTab } from '@/app/chat/close-tab'
 import { $terminalTakeover, setTerminalTakeover } from '@/app/right-sidebar/store'
 import { closeActiveTerminal, createTerminal, cycleTerminal } from '@/app/right-sidebar/terminal/terminals'
 import { activateTreeTabSlot, cycleTreeTabInFocusedZone, layoutHasRootSide } from '@/components/pane-shell/tree/store'
-import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { contributedKeybindHandler, PROFILE_SLOT_COUNT, SESSION_SLOT_COUNT } from '@/lib/keybinds/actions'
 import { comboAllowedInInput, comboFromEvent, isEditableTarget } from '@/lib/keybinds/combo'
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
@@ -135,7 +135,10 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.settings': () => navigate(SETTINGS_ROUTE),
     'nav.profiles': () => navigate(PROFILES_ROUTE),
     'nav.skills': () => navigate(SKILLS_ROUTE),
-    'nav.messaging': () => navigate(MESSAGING_ROUTE),
+    // Messaging is hidden while MESSAGING_UI_ENABLED is off. Dropped rather
+    // than left bound to a route that renders nothing — a shortcut that
+    // navigates to a blank surface is worse than one that does nothing.
+    ...(MESSAGING_UI_ENABLED ? { 'nav.messaging': () => navigate(MESSAGING_ROUTE) } : {}),
     'nav.artifacts': () => navigate(ARTIFACTS_ROUTE),
     'nav.science': () => navigate(SCIENCE_ROUTE),
     'nav.projects': () => navigate(PROJECTS_ROUTE),

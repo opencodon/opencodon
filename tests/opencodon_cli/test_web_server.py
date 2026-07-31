@@ -2663,17 +2663,35 @@ class TestWebServerEndpoints:
         assert "App-Level Tokens" in fields["SLACK_APP_TOKEN"]["help"]
         assert "Copy member ID" in fields["SLACK_ALLOWED_USERS"]["help"]
 
-    def test_messaging_catalog_covers_gateway_platforms(self):
-        """Catalog is derived from the Platform enum, so every built-in shows up."""
-        from gateway.config import Platform
+    def test_messaging_catalog_covers_wired_gateway_platforms(self):
+        """Catalog is derived from the Platform enum, so every WIRED built-in shows up."""
+        from gateway.config import RETIRED_PLATFORM_VALUES, Platform
 
         resp = self.client.get("/api/messaging/platforms")
         platforms = {entry["id"] for entry in resp.json()["platforms"]}
 
         for member in Platform.__members__.values():
-            if member.value == "local":
+            if member.value == "local" or member.value in RETIRED_PLATFORM_VALUES:
                 continue
             assert member.value in platforms, f"Missing gateway platform {member.value} from /api/messaging/platforms"
+
+    def test_messaging_catalog_omits_retired_platforms(self):
+        """A fork-cut platform must never be offered.
+
+        Its enum member survives so stale configs and session stores still
+        parse, but no adapter exists — listing it hands the user a card, a
+        credential form and an enable toggle for a connection the gateway will
+        refuse to make. This is the half of the invariant that has teeth: the
+        coverage test above passes just as well if the filter drops everything.
+        """
+        from gateway.config import RETIRED_PLATFORM_VALUES
+
+        resp = self.client.get("/api/messaging/platforms")
+        platforms = {entry["id"] for entry in resp.json()["platforms"]}
+
+        assert platforms, "catalog is empty — the filter is dropping wired platforms too"
+        offered_but_dead = platforms & RETIRED_PLATFORM_VALUES
+        assert not offered_but_dead, f"retired platforms offered by the dashboard: {sorted(offered_but_dead)}"
 
     def test_messaging_catalog_includes_plugin_platforms(self, monkeypatch):
         """Plugin-registered adapters appear in the catalog without per-platform code."""

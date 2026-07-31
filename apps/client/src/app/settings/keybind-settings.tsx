@@ -8,7 +8,7 @@ import { SearchField } from '@/components/ui/search-field'
 import { Tip } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
-import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import {
   allKeybindActions,
   KEYBIND_CATEGORIES,
@@ -47,9 +47,12 @@ export function KeybindSettings() {
   // when plugins add/remove actions, and memoizing would freeze that list.
   const allActions = allKeybindActions()
 
-  const actionList = PROFILES_UI_ENABLED
-    ? allActions
-    : allActions.filter(action => action.category !== 'profiles')
+  // Hidden surfaces must not be rebindable: a shortcut row for a page the user
+  // can't reach is an offer the app won't honour. Profiles drops a whole
+  // category; messaging is one row inside `navigation`, so it goes by id.
+  const actionList = allActions
+    .filter(action => PROFILES_UI_ENABLED || action.category !== 'profiles')
+    .filter(action => MESSAGING_UI_ENABLED || action.id !== 'nav.messaging')
 
   const [query, setQuery] = useState('')
 

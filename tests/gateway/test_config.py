@@ -1885,3 +1885,33 @@ class TestMultiplexProfilesConfig:
             "Explicit top-level false was overridden by nested true — "
             "loader must respect top-level precedence when key is present"
         )
+
+
+class TestRetiredPlatforms:
+    """``RETIRED_PLATFORM_VALUES`` is the machine-readable form of the
+    "retired platform (fork cut)" comments on the Platform enum. Surfaces that
+    ENUMERATE platforms read it to avoid advertising a connection no adapter
+    can make, so drift between the set and the enum is a real bug: a typo here
+    silently re-lists a dead platform in the dashboard."""
+
+    def test_every_retired_value_is_a_real_enum_member(self):
+        from gateway.config import RETIRED_PLATFORM_VALUES, Platform
+
+        values = {m.value for m in Platform.__members__.values()}
+        unknown = RETIRED_PLATFORM_VALUES - values
+
+        assert not unknown, f"retired values with no matching Platform member (typo?): {sorted(unknown)}"
+
+    def test_wired_platforms_are_not_marked_retired(self):
+        """The platforms with adapters must never be in the retired set —
+        listing one there would hide a working integration from the UI."""
+        from gateway.config import RETIRED_PLATFORM_VALUES
+
+        wired = {"telegram", "discord", "slack", "whatsapp", "whatsapp_cloud", "api_server", "webhook", "relay"}
+        assert not (wired & RETIRED_PLATFORM_VALUES)
+
+    def test_local_is_not_retired(self):
+        """LOCAL is excluded from catalogs by its own rule, not this one."""
+        from gateway.config import RETIRED_PLATFORM_VALUES
+
+        assert "local" not in RETIRED_PLATFORM_VALUES

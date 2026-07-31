@@ -377,6 +377,35 @@ class Platform(Enum):
 _BUILTIN_PLATFORM_VALUES = frozenset(m.value for m in Platform.__members__.values())
 
 
+# Platforms whose adapters were removed in the fork cut. The enum members above
+# stay so stale configs and session stores still parse — a retired platform is
+# readable history, not a config error — but nothing can dial them: no branch in
+# ``_make_adapter`` builds one and no module under ``gateway/platforms/`` or
+# ``plugins/platforms/`` implements one.
+#
+# This is the machine-readable form of the "retired platform (fork cut)"
+# comments, and exists so surfaces that ENUMERATE platforms (the dashboard's
+# channel catalog) can't advertise a connection the gateway would refuse to
+# make. Keep it in step with the enum: a member is either wired or listed here.
+RETIRED_PLATFORM_VALUES = frozenset({
+    "signal",
+    "mattermost",
+    "matrix",
+    "homeassistant",
+    "email",
+    "sms",
+    "dingtalk",
+    "msgraph_webhook",
+    "feishu",
+    "wecom",
+    "wecom_callback",
+    "weixin",
+    "bluebubbles",
+    "qqbot",
+    "yuanbao",
+})
+
+
 # Platforms that bind a host TCP port (HTTP/webhook listeners). In a profile
 # multiplexer the default profile owns the single shared listener and serves
 # every profile through the /p/<profile>/ URL prefix, so a SECONDARY profile

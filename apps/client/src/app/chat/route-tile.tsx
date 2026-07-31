@@ -11,6 +11,7 @@ import { lazy, type ReactNode, Suspense } from 'react'
 
 import { ContribBoundary } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
+import { MESSAGING_UI_ENABLED } from '@/lib/feature-flags'
 import { $routeTiles, closeRouteTile, type RouteTile } from '@/store/route-tiles'
 
 import {
@@ -38,7 +39,9 @@ const ScienceView = lazy(async () => ({ default: (await import('../science')).Sc
 const BUILTIN_PAGES: Record<string, { render: () => ReactNode; title: string }> = {
   [ARTIFACTS_ROUTE]: { render: () => <ArtifactsView />, title: 'Artifacts' },
   [SCIENCE_ROUTE]: { render: () => <ScienceView />, title: 'Provenance' },
-  [MESSAGING_ROUTE]: { render: () => <MessagingView />, title: 'Messaging' },
+  // Messaging only while MESSAGING_UI_ENABLED is on. A route tile is a second
+  // door to a page, so gating the route alone would leave this one open.
+  ...(MESSAGING_UI_ENABLED ? { [MESSAGING_ROUTE]: { render: () => <MessagingView />, title: 'Messaging' } } : {}),
   [SKILLS_ROUTE]: { render: () => <SkillsView />, title: 'Capabilities' }
 }
 

@@ -11,7 +11,7 @@ import { KbdCombo } from '@/components/ui/kbd'
 import { getOpencodonConfigRecord, listAllProfileSessions } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
-import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import {
   Activity,
   AppWindow,
@@ -449,13 +449,19 @@ export function CommandPalette() {
             label: cc.nav.skills.title,
             run: go(SKILLS_ROUTE)
           },
-          {
-            action: 'nav.messaging',
-            icon: MessageCircle,
-            id: 'nav-messaging',
-            label: cc.nav.messaging.title,
-            run: go(MESSAGING_ROUTE)
-          },
+          // Messaging is hidden while MESSAGING_UI_ENABLED is off — the page it
+          // would open renders nothing.
+          ...(MESSAGING_UI_ENABLED
+            ? [
+                {
+                  action: 'nav.messaging',
+                  icon: MessageCircle,
+                  id: 'nav-messaging',
+                  label: cc.nav.messaging.title,
+                  run: go(MESSAGING_ROUTE)
+                }
+              ]
+            : []),
           {
             action: 'nav.artifacts',
             icon: Package,

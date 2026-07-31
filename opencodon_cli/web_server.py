@@ -7704,20 +7704,25 @@ _MESSAGING_ENV_FALLBACKS: dict[str, dict[str, Any]] = {
 def _messaging_platform_catalog() -> tuple[dict[str, Any], ...]:
     """Build the messaging catalog from the gateway's Platform enum + plugin registry.
 
-    Built-in platforms come from ``gateway.config.Platform`` (LOCAL is excluded).
-    Plugin platforms come from ``gateway.platform_registry.plugin_entries()``,
+    Built-in platforms come from ``gateway.config.Platform`` (LOCAL is excluded,
+    and so are the fork-cut platforms in ``RETIRED_PLATFORM_VALUES`` — their enum
+    members survive only so stale configs parse, and listing a platform the
+    gateway has no adapter for offers the user a connection that can never be
+    made). Plugin platforms come from ``gateway.platform_registry.plugin_entries()``,
     which lets newly installed adapters (e.g. IRC) appear without a code change
     here. Per-platform UI metadata (description, docs URL, env-var picks) lives
     in :data:`_PLATFORM_OVERRIDES`; anything not overridden gets reasonable
     defaults derived from the platform id and required_env.
     """
-    from gateway.config import Platform
+    from gateway.config import RETIRED_PLATFORM_VALUES, Platform
 
     seen: set[str] = set()
     entries: list[dict[str, Any]] = []
 
     for member in Platform.__members__.values():
         if member.value == "local":
+            continue
+        if member.value in RETIRED_PLATFORM_VALUES:
             continue
         if member.value in seen:
             continue
