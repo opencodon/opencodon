@@ -1134,6 +1134,26 @@ export function ChatSidebar({
 
                 const isNewSession = item.id === 'new-session'
 
+                // The project row is the one place in the sidebar that names
+                // the current project, so it is where the project's own
+                // actions belong. Rendered as a sibling of the row button
+                // (absolutely positioned) rather than inside it: both are
+                // real <button>s and nesting them is invalid HTML.
+                const projectActions =
+                  item.id === 'projects' && inProject && enteredProject ? (
+                    <div className="absolute inset-y-0 right-1.5 flex items-center gap-1">
+                      {enteredProject.path && (
+                        <StartWorkButton onStarted={onNewSessionInWorkspace} repoPath={enteredProject.path} />
+                      )}
+                      <ProjectMenu
+                        isActive={enteredProject.id === activeProjectId}
+                        onExitScope={exitProjectScope}
+                        project={enteredProject}
+                        scoped
+                      />
+                    </div>
+                  ) : null
+
                 const button = (
                   <SidebarMenuButton
                     aria-disabled={!isInteractive}
@@ -1149,7 +1169,10 @@ export function ChatSidebar({
                       active &&
                         'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
                       !isInteractive &&
-                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
+                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit',
+                      // Clear the trailing action cluster so a long project
+                      // name truncates before it instead of sliding under it.
+                      projectActions && 'pr-12'
                     )}
                     onClick={() => {
                       // A plain new session lands in whatever profile the live
@@ -1188,7 +1211,11 @@ export function ChatSidebar({
                 // New session + route-backed pages can open in a split —
                 // right-click for the directional "Open in split" submenu.
                 return (
-                  <SidebarMenuItem key={item.id}>
+                  // `group/section` is what reveals the actions on hover —
+                  // StartWorkButton and the scoped ProjectMenu both key their
+                  // opacity off that group name (they were written for the
+                  // section header they used to live in).
+                  <SidebarMenuItem className={cn(projectActions && 'group/section')} key={item.id}>
                     {isNewSession || item.route ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
@@ -1209,6 +1236,7 @@ export function ChatSidebar({
                     ) : (
                       button
                     )}
+                    {projectActions}
                   </SidebarMenuItem>
                 )
               })}
@@ -1327,35 +1355,12 @@ export function ChatSidebar({
                 forceEmptyState={showSessionSkeletons}
                 groups={displayAgentGroups}
                 headerAction={
-                  inProject && enteredProject ? (
-                    <div className="group/workspace flex shrink-0 items-center gap-0.5">
-                      {enteredProject.path && (
-                        <StartWorkButton onStarted={onNewSessionInWorkspace} repoPath={enteredProject.path} />
-                      )}
-                      <ProjectMenu
-                        isActive={enteredProject.id === activeProjectId}
-                        onExitScope={exitProjectScope}
-                        project={enteredProject}
-                        scoped
-                      />
-                      <div className="grid size-6 place-items-center">
-                        <Tip label={s.showProjects}>
-                          <Button
-                            aria-label={s.showProjects}
-                            className={HEADER_NAV_BTN}
-                            onClick={event => {
-                              event.stopPropagation()
-                              exitProjectScope()
-                            }}
-                            size="icon-xs"
-                            variant="ghost"
-                          >
-                            <Codicon name="list-unordered" size="0.75rem" />
-                          </Button>
-                        </Tip>
-                      </div>
-                    </div>
-                  ) : (
+                  // Inside a project this header carries NOTHING. It labels a
+                  // list of sessions; the project's own actions (start work,
+                  // the project menu) belong to the project row at the top,
+                  // next to the name they act on. A third exit button lived
+                  // here too, duplicating that row's back arrow.
+                  inProject ? null : (
                     <div className="flex shrink-0 items-center gap-0.5">
                       {!showAllProfiles ? (
                         <Tip label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}>
