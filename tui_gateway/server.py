@@ -2059,14 +2059,30 @@ def _ensure_session_db_row(session: dict) -> None:
             # what left project-scoped drafts homeless.
             project_id=session.get("project_id") or None,
         )
+    except (TypeError, AttributeError):
+        # A signature or attribute mismatch is a programming error, not a
+        # runtime DB fault: the row silently never lands and the session loses
+        # its model, workspace and project membership all at once. Stay
+        # non-fatal — the agent's own lazy create still backstops the row, and
+        # a failed persist must never break the user's submit — but log it as
+        # the bug it is instead of burying it at debug, where a stale call
+        # signature can sit undetected behind passing tests.
+        logger.error(
+            "failed to persist desktop session row (bad create_session call)",
+            exc_info=True,
+        )
     except Exception:
-        logger.debug("failed to persist desktop session row", exc_info=True)
+        # Operational faults (locked, corrupt, or read-only state.db) are
+        # expected in the field and recoverable on the next write, so they stay
+        # swallowed — but above debug, so a persistently unwritable db is
+        # diagnosable from a normal log.
+        logger.warning("failed to persist desktop session row", exc_info=True)
     finally:
         if close_db:
             try:
                 db.close()
             except Exception:
-                pass
+                logger.debug("failed to close profile db", exc_info=True)
 
 
 def _persist_branch_seed(session: dict) -> None:

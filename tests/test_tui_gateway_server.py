@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -3877,9 +3878,16 @@ def test_ensure_session_db_row_persists_explicit_cwd(monkeypatch, tmp_path):
     created = []
 
     class _FakeDB:
-        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None):
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
             created.append(
-                {"key": key, "source": source, "model": model, "model_config": model_config, "cwd": cwd}
+                {
+                    "key": key,
+                    "source": source,
+                    "model": model,
+                    "model_config": model_config,
+                    "cwd": cwd,
+                    "project_id": project_id,
+                }
             )
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
@@ -3890,7 +3898,14 @@ def test_ensure_session_db_row_persists_explicit_cwd(monkeypatch, tmp_path):
     server._ensure_session_db_row({"session_key": "k1", "cwd": str(tmp_path), "explicit_cwd": True})
 
     assert created == [
-        {"key": "k1", "source": "tui", "model": "test-model", "model_config": None, "cwd": str(tmp_path)}
+        {
+            "key": "k1",
+            "source": "tui",
+            "model": "test-model",
+            "model_config": None,
+            "cwd": str(tmp_path),
+            "project_id": None,
+        }
     ]
 
 
@@ -3898,9 +3913,16 @@ def test_ensure_session_db_row_persists_session_source(monkeypatch):
     created = []
 
     class _FakeDB:
-        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None):
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
             created.append(
-                {"key": key, "source": source, "model": model, "model_config": model_config, "cwd": cwd}
+                {
+                    "key": key,
+                    "source": source,
+                    "model": model,
+                    "model_config": model_config,
+                    "cwd": cwd,
+                    "project_id": project_id,
+                }
             )
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
@@ -3909,7 +3931,14 @@ def test_ensure_session_db_row_persists_session_source(monkeypatch):
     server._ensure_session_db_row({"session_key": "k1", "source": "tool"})
 
     assert created == [
-        {"key": "k1", "source": "tool", "model": "test-model", "model_config": None, "cwd": None}
+        {
+            "key": "k1",
+            "source": "tool",
+            "model": "test-model",
+            "model_config": None,
+            "cwd": None,
+            "project_id": None,
+        }
     ]
 
 
@@ -3919,9 +3948,16 @@ def test_ensure_session_db_row_defaults_to_no_workspace(monkeypatch, tmp_path):
     created = []
 
     class _FakeDB:
-        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None):
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
             created.append(
-                {"key": key, "source": source, "model": model, "model_config": model_config, "cwd": cwd}
+                {
+                    "key": key,
+                    "source": source,
+                    "model": model,
+                    "model_config": model_config,
+                    "cwd": cwd,
+                    "project_id": project_id,
+                }
             )
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
@@ -3932,8 +3968,66 @@ def test_ensure_session_db_row_defaults_to_no_workspace(monkeypatch, tmp_path):
     server._ensure_session_db_row({"session_key": "k1", "cwd": str(tmp_path)})
 
     assert created == [
-        {"key": "k1", "source": "tui", "model": "test-model", "model_config": None, "cwd": None}
+        {
+            "key": "k1",
+            "source": "tui",
+            "model": "test-model",
+            "model_config": None,
+            "cwd": None,
+            "project_id": None,
+        }
     ]
+
+
+def test_ensure_session_db_row_persists_project_without_explicit_cwd(monkeypatch, tmp_path):
+    """Project membership is recorded even when no workspace was picked.
+
+    Unlike cwd — deliberately withheld unless the user chose a folder — the
+    project is written whenever it is known. "Which project is this" and "which
+    folder did you choose" are different questions, and conflating them is what
+    left project-scoped sessions homeless.
+    """
+    created = []
+
+    class _FakeDB:
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
+            created.append({"cwd": cwd, "project_id": project_id})
+
+    monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
+    monkeypatch.setattr(server, "_resolve_model", lambda: "test-model")
+
+    server._ensure_session_db_row(
+        {"session_key": "k1", "cwd": str(tmp_path), "project_id": "proj_abc"}
+    )
+
+    assert created == [{"cwd": None, "project_id": "proj_abc"}]
+
+
+def test_ensure_session_db_row_logs_bad_create_session_call(monkeypatch, caplog):
+    """A stale create_session signature is logged as an error, not swallowed.
+
+    Persisting the row is best-effort by design — the agent's lazy create
+    backstops it and a failed write must never break the user's submit. But a
+    TypeError from a call-site/signature drift is a bug, not a runtime DB
+    fault, and burying it at debug is how a whole class of "the session lost
+    its model/workspace/project" reports stayed invisible.
+    """
+
+    class _StaleDB:
+        def create_session(self, key, source=None, model=None):  # missing newer kwargs
+            raise AssertionError("unreachable — the call above raises TypeError first")
+
+    monkeypatch.setattr(server, "_get_db", lambda: _StaleDB())
+    monkeypatch.setattr(server, "_resolve_model", lambda: "test-model")
+
+    with caplog.at_level(logging.ERROR, logger=server.logger.name):
+        # Must not propagate: submit keeps working even when the row is lost.
+        server._ensure_session_db_row({"session_key": "k1"})
+
+    assert any(
+        record.levelno >= logging.ERROR and "bad create_session call" in record.message
+        for record in caplog.records
+    ), "a stale create_session signature must surface as an error log"
 
 
 def test_ensure_session_db_row_persists_session_model_override(monkeypatch):
@@ -3948,7 +4042,7 @@ def test_ensure_session_db_row_persists_session_model_override(monkeypatch):
     created = []
 
     class _FakeDB:
-        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None):
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
             created.append(
                 {"key": key, "model": model, "model_config": model_config, "cwd": cwd}
             )
@@ -3980,7 +4074,7 @@ def test_ensure_session_db_row_no_override_uses_global(monkeypatch):
     created = []
 
     class _FakeDB:
-        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None):
+        def create_session(self, key, source=None, model=None, model_config=None, parent_session_id=None, cwd=None, project_id=None):
             created.append({"model": model, "model_config": model_config})
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
