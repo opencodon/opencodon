@@ -1,8 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  $landingOpen,
   appViewForPath,
+  ARTIFACTS_ROUTE,
+  COMMAND_CENTER_ROUTE,
   homeRoute,
+  isLandingRoute,
   isNewChatRoute,
   isProjectFirstHost,
   NEW_CHAT_ROUTE,
@@ -13,7 +17,9 @@ import {
   routeSessionId,
   sessionRoute,
   setHomeSurface,
-  setRouteProjectId
+  setRouteProjectId,
+  SETTINGS_ROUTE,
+  syncLandingOpen
 } from './routes'
 
 // Sessions live at the ROOT of the route namespace, so every reserved prefix is
@@ -139,5 +145,64 @@ describe('home surface', () => {
     setHomeSurface('projects')
     expect(homeRoute()).toBe(PROJECTS_ROUTE)
     expect(isProjectFirstHost()).toBe(true)
+  })
+})
+
+// The landing REPLACES the shell rather than rendering inside it, so this flag
+// decides which of the app's two halves is mounted. Getting it wrong is not a
+// styling bug: a false negative wraps the project picker in a sidebar listing
+// every session in the profile, and a false positive unmounts the user's chat.
+describe('landing surface', () => {
+  beforeEach(() => {
+    // Re-establish a known base route — the module remembers the last
+    // non-overlay path across calls, which is the whole point of it.
+    syncLandingOpen(NEW_CHAT_ROUTE)
+  })
+
+  it('owns exactly one route', () => {
+    expect(isLandingRoute(PROJECTS_ROUTE)).toBe(true)
+    // A project is inside the shell, not the landing — including its home.
+    expect(isLandingRoute('/projects/p_123')).toBe(false)
+    expect(isLandingRoute('/projects/p_123/sessions/sess_1')).toBe(false)
+    expect(isLandingRoute(NEW_CHAT_ROUTE)).toBe(false)
+  })
+
+  it('opens on the landing route and closes on entering a project', () => {
+    syncLandingOpen(PROJECTS_ROUTE)
+    expect($landingOpen.get()).toBe(true)
+
+    syncLandingOpen('/projects/p_123')
+    expect($landingOpen.get()).toBe(false)
+  })
+
+  it('stays open under an overlay opened FROM the landing', () => {
+    syncLandingOpen(PROJECTS_ROUTE)
+    // Settings renders over whatever surface is beneath. If the overlay
+    // reset the base surface, the entire chat shell would paint behind the
+    // settings card — and closing it would land the user in a project they
+    // never picked.
+    syncLandingOpen(SETTINGS_ROUTE)
+    expect($landingOpen.get()).toBe(true)
+
+    syncLandingOpen(COMMAND_CENTER_ROUTE)
+    expect($landingOpen.get()).toBe(true)
+
+    // Closing the overlay returns to the landing, still open.
+    syncLandingOpen(PROJECTS_ROUTE)
+    expect($landingOpen.get()).toBe(true)
+  })
+
+  it('stays closed under an overlay opened from inside a project', () => {
+    syncLandingOpen('/projects/p_123/sessions/sess_1')
+    syncLandingOpen(SETTINGS_ROUTE)
+    expect($landingOpen.get()).toBe(false)
+  })
+
+  it('closes on a full page, which renders in the shell', () => {
+    syncLandingOpen(PROJECTS_ROUTE)
+    // Artifacts is a workspace-pane page, not an overlay: it belongs to the
+    // shell, so reaching it leaves the landing.
+    syncLandingOpen(ARTIFACTS_ROUTE)
+    expect($landingOpen.get()).toBe(false)
   })
 })

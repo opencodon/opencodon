@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { computed } from 'nanostores'
-import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
+import { type CSSProperties, lazy, type ReactElement, type PointerEvent as ReactPointerEvent, Suspense } from 'react'
 
 import { PREVIEW_RAIL_MAX_WIDTH, PREVIEW_RAIL_MIN_WIDTH } from '@/app/chat/right-rail'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
@@ -65,7 +65,11 @@ import {
   WorkspaceTabMenu
 } from '../chat/session-tile'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
-import { $workspaceIsPage } from '../routes'
+import { $landingOpen, $workspaceIsPage } from '../routes'
+
+// The landing is the app's other half, not a page inside it — lazy so the
+// shell's cost stays off the landing's first paint and vice versa.
+const ProjectsLanding = lazy(async () => ({ default: (await import('../projects')).ProjectsLanding }))
 
 import { ComputePane, FilesPane, LogsPane, PreviewRailPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
@@ -658,18 +662,15 @@ function TitlebarSlot({ area, className, style }: TitlebarSlotProps) {
   )
 }
 
-export function ContribController() {
-  const sidebarOpen = useStore($sidebarOpen)
-
+/**
+ * The working shell: titlebar band, pane tree, statusbar. Everything here
+ * assumes a project is selected — the sessions sidebar, the file tree and the
+ * terminal all read project scope. The landing renders INSTEAD of this, not
+ * inside it.
+ */
+function ShellFrame() {
   return (
-    <SidebarProvider
-      className="h-screen min-h-0 flex-col bg-background"
-      onOpenChange={setSidebarOpen}
-      open={sidebarOpen}
-      style={{ '--sidebar-width': '100%' } as CSSProperties}
-    >
-      <ContribWiring>
-        <div
+    <div
           className="flex h-screen min-h-0 w-screen flex-col bg-(--ui-bg-chrome) text-(--ui-text-primary)"
           style={{ '--titlebar-height': '0px' } as CSSProperties}
         >
@@ -728,7 +729,37 @@ export function ContribController() {
           {/* The REAL statusbar (model pill, command center, agents, …) with
               statusBar.left/right contributions merged in. */}
           <WiredPane part="statusbar" />
-        </div>
+    </div>
+  )
+}
+
+export function ContribController() {
+  const sidebarOpen = useStore($sidebarOpen)
+  const landingOpen = useStore($landingOpen)
+
+  return (
+    <SidebarProvider
+      className="h-screen min-h-0 flex-col bg-background"
+      onOpenChange={setSidebarOpen}
+      open={sidebarOpen}
+      style={{ '--sidebar-width': '100%' } as CSSProperties}
+    >
+      {/* The swap sits INSIDE ContribWiring on purpose. Everything
+          gateway-bound — the socket, the session stores, streaming, the
+          overlay set, and TitlebarControls (whose traffic lights may never
+          unmount) — lives in the wiring and stays mounted across it. Leaving a
+          project is a re-home, not a reboot (apps/desktop/AGENTS.md). What the
+          landing does drop is the pane furniture, and that is cheap: the
+          layout tree is a module atom hydrated from localStorage, so zone
+          arrangement and widths restore intact on the way back in. */}
+      <ContribWiring>
+        {landingOpen ? (
+          <Suspense fallback={null}>
+            <ProjectsLanding />
+          </Suspense>
+        ) : (
+          <ShellFrame />
+        )}
       </ContribWiring>
     </SidebarProvider>
   )

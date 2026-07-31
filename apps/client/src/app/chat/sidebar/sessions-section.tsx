@@ -132,8 +132,6 @@ interface SidebarSessionsSectionProps {
   onReorderSessions?: (ids: string[]) => void
   // Drag-to-reorder for the project overview list (top-level projects).
   onReorderProjects?: (ids: string[]) => void
-  // Rendered atop the entered-project body (a "back to overview" row).
-  projectBackRow?: React.ReactNode
   dndSensors?: ReturnType<typeof useSensors>
   // Tag every row with its owning profile. Set on the flat cross-profile
   // lists (Pinned / search results) in the All-profiles view, where no group
@@ -177,7 +175,6 @@ export function SidebarSessionsSection({
   sortable = false,
   onReorderSessions,
   onReorderProjects,
-  projectBackRow,
   dndSensors,
   showProfileTags = false
 }: SidebarSessionsSectionProps) {
@@ -242,12 +239,10 @@ export function SidebarSessionsSection({
   if (showProjectsSkeleton) {
     inner = <SidebarSessionSkeletons />
   } else if (projectContent) {
-    // Entered a project: the back row is always present, then either the
-    // (overlay-aware) content or a clean empty state — never a bare spinner or a
-    // blank pane while lanes hydrate.
+    // Entered a project: either the (overlay-aware) content or a clean empty
+    // state — never a bare spinner or a blank pane while lanes hydrate.
     inner = (
       <>
-        {projectBackRow}
         {hasProjectContent ? (
           <EnteredProjectContent
             liveSessions={liveSessions}
@@ -263,16 +258,7 @@ export function SidebarSessionsSection({
       </>
     )
   } else if (showEmptyState) {
-    // A brand-new project has no sessions yet, and that is the state where
-    // being able to leave matters most — keep the back row above the hint.
-    inner = projectBackRow ? (
-      <>
-        {projectBackRow}
-        {emptyState}
-      </>
-    ) : (
-      emptyState
-    )
+    inner = emptyState
   } else if (projectOverview?.length) {
     // The model is already ordered (default sort groups explicit-before-auto;
     // a manual drag-order, when present, wins). Render in that order and make
@@ -306,11 +292,8 @@ export function SidebarSessionsSection({
       )
   } else if (groups?.length) {
     // Profile / recency groups never reorder; render them flat with static rows.
-    // `projectBackRow` is only set inside a project, where these groups are the
-    // recency buckets — without it, entering a project would be a one-way door.
     inner = (
       <>
-        {projectBackRow}
         {groups.map(group => (
           <SidebarWorkspaceGroup
             group={group}

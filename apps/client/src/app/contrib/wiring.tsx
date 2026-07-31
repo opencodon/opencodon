@@ -87,6 +87,7 @@ import {
   sessionRoute,
   setRouteProjectId,
   SETTINGS_ROUTE,
+  syncLandingOpen,
   syncWorkspaceIsPage
 } from '../routes'
 import { SessionPickerOverlay } from '../session-picker-overlay'
@@ -175,8 +176,13 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // Mirror "the workspace is showing a full page" into its atom — the
   // workspace pane contribution re-registers headerVeto from it, so the main
   // zone's tab bar stands down on pages (and returns with the chat).
+  //
+  // `syncLandingOpen` is the coarser twin: not which page the workspace shows,
+  // but whether there is a workspace at all. It must see EVERY path (overlays
+  // included) to keep its base-route memory honest — see routes.ts.
   useEffect(() => {
     syncWorkspaceIsPage(location.pathname)
+    syncLandingOpen(location.pathname)
   }, [location.pathname])
 
   // The route owns project scope. Every surface that scopes to a project (the

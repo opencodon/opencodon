@@ -1625,7 +1625,9 @@ export const en: Translations = {
       skills: 'Capabilities',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
-      projects: 'Projects',
+      // Leaving the project, not a tab beside the others — the landing
+      // replaces this whole shell.
+      projects: 'All projects',
       science: 'Provenance'
     },
     searchAria: 'Search sessions',

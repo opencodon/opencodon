@@ -302,3 +302,37 @@ export function syncWorkspaceIsPage(pathname: string): void {
     $workspaceIsPage.set(isPage)
   }
 }
+
+// ── Landing vs shell ────────────────────────────────────────────────────────
+// The projects landing is not a page inside the workspace pane — it stands in
+// FOR the whole shell. "No project is selected" is an app state, not a route
+// within a project-scoped frame: rendering it in the workspace pane wrapped it
+// in a sidebar listing every session in the profile, which is exactly the
+// scoping the landing exists to establish.
+
+/** True on the one route the landing owns. */
+export function isLandingRoute(pathname: string): boolean {
+  return pathname === PROJECTS_ROUTE
+}
+
+// The last non-overlay path. Overlays (settings/command-center/…) render OVER
+// whatever surface is beneath, so they must not change which surface that is —
+// without this, opening Settings from the landing paints the entire chat shell
+// behind the overlay card, and closing it lands the user in a project they
+// never picked.
+let baseRoutePath: string = NEW_CHAT_ROUTE
+
+/** True while the landing replaces the shell. Read by the app root. */
+export const $landingOpen = atom(false)
+
+export function syncLandingOpen(pathname: string): void {
+  if (!isOverlayView(appViewForPath(pathname))) {
+    baseRoutePath = pathname
+  }
+
+  const open = isLandingRoute(baseRoutePath)
+
+  if (open !== $landingOpen.get()) {
+    $landingOpen.set(open)
+  }
+}

@@ -247,6 +247,38 @@ one Settings entry. Its job is *choosing*; the per-project surfaces belong insid
 a project and the profile-wide ones behind Settings. Resist growing a row of
 buttons back onto it.
 
+### The landing replaces the shell
+
+The picker is **not a page inside the app** — while it is showing, it *is* the
+app. It was first built as a route in the workspace pane's table, which wrapped
+it in the project-scoped shell: a sessions sidebar listing every session in the
+profile, sitting next to a project card claiming six. Both numbers were correct,
+which is the tell. A surface whose job is to establish scope cannot render inside
+a frame that already assumes it.
+
+So `ContribController` branches on `$landingOpen`: either the landing, or the
+titlebar band + `LayoutTreeRoot` + statusbar. Three things make that safe:
+
+- **The branch sits inside `ContribWiring`.** The socket, session stores,
+  streaming, the overlay set, and `TitlebarControls` (whose traffic lights may
+  never unmount) all live in the wiring and stay mounted across it. Leaving a
+  project is a re-home, not a reboot — see `apps/desktop/AGENTS.md`.
+- **The pane furniture is cheap to drop.** `$layoutTree` is a module atom
+  hydrated from localStorage, so zone arrangement, presets and widths restore
+  intact on the way back in. What genuinely dies is per-tile React state; if
+  unsent composer text ever needs to survive, lift it into a store rather than
+  keeping the shell mounted.
+- **`syncLandingOpen` tracks the last *non-overlay* path.** Overlays render over
+  whatever is beneath and must not change what that is. Without this, opening
+  Settings from the landing paints the whole chat shell behind the settings card
+  and closing it strands the user in a project they never picked.
+
+Two corollaries: `/projects` is absent from the workspace route table and from
+`BUILTIN_PAGES` in `route-tile.tsx` (a project picker docked beside the project
+it was meant to pick is nonsense), and the sidebar's Projects row is an
+**exit** — first in the list, arrow icon, and the one row that can never show an
+active state, because firing it unmounts the sidebar.
+
 Not done here: per-project settings, skills, or model defaults. Config is
 strictly per-profile (`$OPENCODON_HOME/config.yaml`) and the only per-scope
 mechanism that exists is the per-session model override on `session.create`, so

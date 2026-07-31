@@ -10,10 +10,8 @@ import { cn } from '@/lib/utils'
 
 import {
   SIDEBAR_LEAD_ICON_SIZE,
-  SidebarRowBody,
   SidebarRowCluster,
   SidebarRowGrab,
-  SidebarRowLabel,
   SidebarRowLead,
   SidebarRowLeadGlyph,
   SidebarRowLink,
@@ -41,24 +39,6 @@ export function projectIcon({ color, icon }: SidebarProjectTree) {
     <SidebarRowLeadGlyph style={color ? { color } : undefined}>
       <Codicon name={icon || 'folder-library'} size={SIDEBAR_LEAD_ICON_SIZE} />
     </SidebarRowLeadGlyph>
-  )
-}
-
-export function ProjectBackRow({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <SidebarRowShell>
-      <SidebarRowBody
-        className="group/back w-full text-(--ui-text-tertiary) opacity-40 hover:text-foreground"
-        onClick={onClick}
-      >
-        <SidebarRowLead>
-          <SidebarRowLeadGlyph>
-            <Codicon name="arrow-left" size={SIDEBAR_LEAD_ICON_SIZE} />
-          </SidebarRowLeadGlyph>
-        </SidebarRowLead>
-        <SidebarRowLabel className="text-xs underline-offset-4 group-hover/back:underline">{label}</SidebarRowLabel>
-      </SidebarRowBody>
-    </SidebarRowShell>
   )
 }
 

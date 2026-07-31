@@ -116,7 +116,6 @@ import {
   overlayLiveLanes,
   overlayLivePreviews,
   PROJECT_PREVIEW_COUNT,
-  ProjectBackRow,
   ProjectMenu,
   projectSessions,
   projectTreeCwd,
@@ -140,6 +139,16 @@ const NON_SESSION_INITIAL_ROWS = 3
 const NON_SESSION_LOAD_STEP = 10
 
 const SIDEBAR_NAV: SidebarNavItem[] = [
+  // First, and an arrow rather than a folder: this row LEAVES the project for
+  // the landing, which replaces the shell entirely. It is the only row here
+  // that can never be "active" — once it fires, none of this is on screen.
+  {
+    id: 'projects',
+    label: '',
+    icon: props => <Codicon name="arrow-left" {...props} />,
+    route: PROJECTS_ROUTE,
+    keybindActionId: 'nav.projects'
+  },
   {
     id: 'new-session',
     label: '',
@@ -167,13 +176,6 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
     keybindActionId: 'nav.artifacts'
-  },
-  {
-    id: 'projects',
-    label: '',
-    icon: props => <Codicon name="folder-library" {...props} />,
-    route: PROJECTS_ROUTE,
-    keybindActionId: 'nav.projects'
   },
   {
     id: 'science',
@@ -1124,8 +1126,10 @@ export function ChatSidebar({
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'messaging' && currentView === 'messaging') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
-                  (item.id === 'projects' && currentView === 'projects') ||
                   (item.id === 'science' && currentView === 'science') ||
+                  // No `projects` clause: that row navigates out of the shell,
+                  // so this sidebar is unmounted by the time its route is
+                  // current. An active state for it would be unreachable.
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)
 
@@ -1418,9 +1422,6 @@ export function ChatSidebar({
                 onTogglePin={pinSession}
                 open={agentsOpen}
                 pinned={false}
-                projectBackRow={
-                  inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
-                }
                 // `projectContent` (the lane tree) stands down inside a project
                 // — `groups` carries the recency buckets instead. It stays wired
                 // for the empty/hydrating states the section still keys off.
