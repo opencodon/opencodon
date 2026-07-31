@@ -23,7 +23,7 @@ import {
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
-import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { profileColor } from '@/lib/profile-color'
 import { sessionMatchesSearch } from '@/lib/session-search'
@@ -51,7 +51,6 @@ import {
   setSidebarAgentsGrouped,
   setSidebarCronOpen,
   setSidebarPinsOpen,
-  setSidebarProjectOrderIds,
   setSidebarRecentsOpen,
   setSidebarSessionOrderIds,
   setSidebarSessionOrderManual,
@@ -70,7 +69,6 @@ import {
   $projectTreeLoading,
   $removedSessionIds,
   ALL_PROJECTS,
-  enterProject,
   exitProjectScope,
   fetchProjectSessions,
   openProjectCreate,
@@ -115,8 +113,6 @@ import { ProfileRail } from './profile-switcher'
 import { ProjectDialog } from './project-dialog'
 import {
   overlayLiveLanes,
-  overlayLivePreviews,
-  PROJECT_PREVIEW_COUNT,
   ProjectMenu,
   projectSessions,
   projectTreeCwd,
@@ -164,13 +160,20 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     route: SKILLS_ROUTE,
     keybindActionId: 'nav.skills'
   },
-  {
-    id: 'messaging',
-    label: '',
-    icon: props => <Codicon name="comment" {...props} />,
-    route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
-  },
+  // Messaging is hidden while MESSAGING_UI_ENABLED is off. Spread rather than
+  // filtered after the fact so the row simply isn't in the array — nothing
+  // downstream has to know it could have been there.
+  ...(MESSAGING_UI_ENABLED
+    ? [
+        {
+          id: 'messaging',
+          label: '',
+          icon: (props: { className?: string }) => <Codicon name="comment" {...props} />,
+          route: MESSAGING_ROUTE,
+          keybindActionId: 'nav.messaging'
+        }
+      ]
+    : []),
   {
     id: 'artifacts',
     label: '',
@@ -628,14 +631,15 @@ export function ChatSidebar({
     return orderByIds(sorted, project => project.id, projectOrderIds)
   }, [showAllProfiles, projectTree, orderRepos, activeProjectId, projectOrderIds])
 
-  // The overview only renders in grouped mode; the model stays live regardless
-  // so scoping is consistent across views.
+  // Grouped mode only; the model stays live regardless so scoping is
+  // consistent across views.
   const agentProjectTree = worktreeGroupingActive ? projectModel : undefined
 
-  // ── Project switcher (drill-in) ────────────────────────────────────────────
-  // Grouped, single-profile view is a project switcher: ALL_PROJECTS shows the
-  // overview (a list you click into); a concrete scope means you've "entered" a
-  // project, so the Sessions list shows ONLY that project's worktrees/sessions.
+  // ── The project in scope ───────────────────────────────────────────────────
+  // The route sets `$projectScope`; the model is consulted only to resolve that
+  // id to its lanes. There is no drill-in here any more — the sidebar never
+  // lists projects, so a scope is either resolved or the user is on the bare
+  // chat route with a flat session list.
   const projectsActive = Boolean(agentProjectTree?.length)
 
   // The overview node for the entered project (structure + counts, empty lanes).
@@ -800,44 +804,35 @@ export function ChatSidebar({
     }
   }, [projectScope, projectsActive, enteredProject])
 
-  // The project overview (drill-in list) vs. the entered project's content.
-  const projectOverview = projectsActive && !inProject ? agentProjectTree : undefined
+  // No project OVERVIEW here. The sidebar lists sessions — only ever the
+  // sessions of the project you are in. Listing projects and sessions in the
+  // same column made a click ambiguous: two row kinds, two destinations, one
+  // list. Choosing a project is the landing's job, and the landing replaces
+  // this whole shell, so the two can never be on screen at once to compete.
+  // Always "Sessions". It used to read "Projects" at the overview and the
+  // project's name inside one — both are wrong now: there is no overview, and
+  // the exit row above already carries the project's name, so repeating it as
+  // the section header said the same thing twice while naming neither list.
+  const sessionsLabel = s.sessions
 
-  // Preview rows come from the backend tree (each project carries its
-  // most-recent sessions), overlaid with live $sessions so a just-created
-  // session shows under its project instantly (and with its working arc),
-  // matching the flat Recents list. Keyed by project path for the rows.
-  const overviewPreviews = useMemo<Record<string, SessionInfo[]>>(
-    () => overlayLivePreviews(projectOverview ?? [], agentSessions, projects, PROJECT_PREVIEW_COUNT, removedSessionIds),
-    [projectOverview, agentSessions, projects, removedSessionIds]
-  )
+  // The exit row is titled by the project you are in: a back arrow plus the
+  // project's own name reads as "leave this project", where a generic label
+  // read as one more destination in the list. Sourced from the project ROWS
+  // rather than the lane tree — the tree only exists in grouped mode, and the
+  // row must be titled either way. Falls back to the static label on the bare
+  // chat route, where no project is in scope.
+  const scopedProjectName =
+    projectScope === ALL_PROJECTS
+      ? null
+      : (projects.find(project => project.id === projectScope)?.name ?? enteredProject?.label ?? null)
 
-  const onEnterProject = useCallback(
-    (id: string) => {
-      const project = projectModel.find(node => node.id === id)
-
-      if (project) {
-        syncProjectCwd(project)
-      }
-
-      enterProject(id)
-    },
-    [projectModel, syncProjectCwd]
-  )
-
-  // The Sessions section is a project switcher in grouped mode: its label reads
-  // "Sessions" when flat, "Projects" at the overview, and the project's name
-  // once you've entered one.
-  const sessionsLabel =
-    inProject && enteredProject ? enteredProject.label : worktreeGroupingActive ? s.projects.sectionLabel : s.sessions
+  const navLabel = (item: SidebarNavItem) =>
+    (item.id === 'projects' ? scopedProjectName : null) ?? s.nav[item.id] ?? item.label
 
   // Mirror the section's skeleton gate (projectsLoading + nothing to show yet):
   // while the skeleton is up there's no point also spinning the header count.
   const projectsSkeletonVisible =
-    worktreeGroupingActive &&
-    projectTreeLoading &&
-    !projectOverview?.length &&
-    !(inProject && (enteredProject?.sessionCount ?? 0) > 0)
+    worktreeGroupingActive && projectTreeLoading && !(inProject && (enteredProject?.sessionCount ?? 0) > 0)
 
   const runKeyedLoad = useCallback(
     (
@@ -885,7 +880,9 @@ export function ChatSidebar({
   // within a platform by recency. Per-platform totals (when a "load more" has
   // resolved them) drive the count + whether more remain on disk.
   const messagingGroups = useMemo<MessagingSection[]>(() => {
-    if (!messagingSessions.length) {
+    // Gated off — see MESSAGING_UI_ENABLED. The per-platform presentation is a
+    // messaging surface; the sessions themselves stay in the normal list.
+    if (!MESSAGING_UI_ENABLED || !messagingSessions.length) {
       return []
     }
 
@@ -1093,7 +1090,6 @@ export function ChatSidebar({
 
   // Persist the new project overview order (drag-to-reorder); orderByIds applies
   // it over the default sort, so stale/new ids reconcile on the next render.
-  const reorderProjects = (ids: string[]) => setSidebarProjectOrderIds(ids)
 
   // Sortable rows carry live session ids; the pinned store is keyed by durable
   // (lineage-root) ids, so translate before persisting the new order.
@@ -1170,15 +1166,15 @@ export function ChatSidebar({
                       item.keybindActionId
                         ? {
                             children: (
-                              <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
+                              <TipKeybindLabel actionId={item.keybindActionId} text={navLabel(item)} />
                             )
                           }
-                        : (s.nav[item.id] ?? item.label)
+                        : (navLabel(item))
                     }
                     type="button"
                   >
                     <item.icon className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]" />
-                    <span className="min-w-0 flex-1 truncate">{s.nav[item.id] ?? item.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{navLabel(item)}</span>
                     {isNewSession && (
                       <KbdGroup
                         className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
@@ -1196,7 +1192,7 @@ export function ChatSidebar({
                     {isNewSession || item.route ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
-                        <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
+                        <ContextMenuContent aria-label={navLabel(item)}>
                           <SplitSubmenu
                             kit={CONTEXT_SPLIT_KIT}
                             label={s.row.openInSplit}
@@ -1416,9 +1412,7 @@ export function ChatSidebar({
                 onArchiveSession={onArchiveSession}
                 onBranchSession={onBranchSession}
                 onDeleteSession={onDeleteSession}
-                onEnterProject={onEnterProject}
                 onNewSessionInWorkspace={showAllProfiles ? undefined : onNewSessionInWorkspace}
-                onReorderProjects={showAllProfiles ? undefined : reorderProjects}
                 onReorderSessions={showAllProfiles ? undefined : reorderSessions}
                 onResumeSession={onResumeSession}
                 onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
@@ -1429,8 +1423,6 @@ export function ChatSidebar({
                 // — `groups` carries the recency buckets instead. It stays wired
                 // for the empty/hydrating states the section still keys off.
                 projectContent={undefined}
-                projectOverview={projectOverview}
-                projectOverviewPreviews={overviewPreviews}
                 projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}
                 projectsLoading={worktreeGroupingActive ? projectTreeLoading : false}
                 removedSessionIds={inProject ? removedSessionIds : undefined}

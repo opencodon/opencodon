@@ -27,3 +27,27 @@
  * profile exists, so they need no explicit gate.
  */
 export const PROFILES_UI_ENABLED = false
+
+/**
+ * Messaging — running the agent over chat platforms (Telegram, Discord, Slack,
+ * WhatsApp, and the webhook / API-server / relay adapters).
+ *
+ * Turned OFF: the dashboard does not present messaging as a surface. The
+ * backend is untouched — the gateway still runs every wired adapter, and
+ * `opencodon gateway` / the Channels page of the config dashboard at `/` are
+ * unaffected. This flag hides only the *session UI* surfaces:
+ *
+ *   - the `/messaging` page (the route stays reserved so the path is never
+ *     mistaken for a session id; it just renders nothing)
+ *   - the sidebar's Messaging nav row and its per-platform session groups
+ *   - the command palette's "Messaging" navigation entry
+ *   - the `nav.messaging` keybind and its row in keybind settings
+ *
+ * Sessions that ARRIVED over a platform are not hidden from the session list
+ * itself — they are real work, and dropping them would look like data loss.
+ * What goes is the platform-grouped presentation and every affordance for
+ * configuring a channel.
+ *
+ * Set to `true` to bring all of it back — no other change should be needed.
+ */
+export const MESSAGING_UI_ENABLED = false

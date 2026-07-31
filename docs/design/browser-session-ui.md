@@ -276,8 +276,36 @@ titlebar band + `LayoutTreeRoot` + statusbar. Three things make that safe:
 Two corollaries: `/projects` is absent from the workspace route table and from
 `BUILTIN_PAGES` in `route-tile.tsx` (a project picker docked beside the project
 it was meant to pick is nonsense), and the sidebar's Projects row is an
-**exit** — first in the list, arrow icon, and the one row that can never show an
-active state, because firing it unmounts the sidebar.
+**exit** — first in the list, arrow icon, titled with the project's own name,
+and the one row that can never show an active state, because firing it unmounts
+the sidebar.
+
+### The sidebar lists sessions, and only sessions
+
+The drill-in project overview is gone: no `projectOverview`, no
+`ProjectOverviewRow`, no `onEnterProject`. Projects and sessions were two row
+kinds with two destinations in one column, so a click there was ambiguous by
+construction. Choosing a project belongs to the landing, and the landing
+replaces this shell, so the two lists can never compete for the same click.
+
+What remains inside a project is one list — that project's sessions, bucketed by
+recency — and the section header just reads "Sessions"; the project's name lives
+in the exit row above it rather than being said twice. The lane model
+(`projectModel`) stays, because resolving `$projectScope` to its repos and
+worktrees still needs it; only the *listing* of projects went away. On the bare
+`/` chat route, where no project is in scope, the section falls back to the flat
+session list it always had.
+
+### Several sessions at once
+
+Multi-session tabs are not new work — `openSessionTile(storedId, 'center')`
+docks a session into the main zone's group, which renders it as a tab in that
+zone's strip. Three doors exist already: ⌘/⌃-click a sidebar row, middle-click
+one (browser muscle memory), or "Open in new tab" in the row's context menu.
+⇧⌘-click pops a session into its own window, and dragging a row into a zone
+splits instead of stacking. Tabs carry the full session verb set through
+`SessionTabMenu` (close others/right/all) and persist across restarts, re-resuming
+on boot.
 
 Not done here: per-project settings, skills, or model defaults. Config is
 strictly per-profile (`$OPENCODON_HOME/config.yaml`) and the only per-scope

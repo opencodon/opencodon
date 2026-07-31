@@ -14,7 +14,6 @@ import { sessionPinId } from '@/store/session'
 import { SidebarCount } from './chrome'
 import {
   EnteredProjectContent,
-  ProjectOverviewRow,
   type SidebarProjectTree,
   type SidebarSessionGroup,
   SidebarWorkspaceGroup,
@@ -101,16 +100,8 @@ interface SidebarSessionsSectionProps {
   footer?: React.ReactNode
   groups?: SidebarSessionGroup[]
   tree?: SidebarWorkspaceTree[]
-  // Project overview: when present, render a drill-in list of project rows
-  // instead of sessions. Clicking a row enters that project (onEnterProject),
-  // which then passes `projectContent` on the next render. Takes precedence
-  // over `tree` / `groups`.
-  projectOverview?: SidebarProjectTree[]
-  // Per-project preview rows (from the backend tree), keyed by project path.
-  projectOverviewPreviews?: Record<string, SessionInfo[]>
-  // True while the backend project tree is loading (overview skeleton).
+  // True while the backend project tree is loading (content skeleton).
   projectsLoading?: boolean
-  onEnterProject?: (id: string) => void
   // The entered project's flattened content: main-checkout sessions render
   // directly (no redundant repo/branch header); only linked worktrees nest.
   projectContent?: SidebarProjectTree
@@ -130,8 +121,6 @@ interface SidebarSessionsSectionProps {
   // The flat session list is the only hand-reorderable surface (grouped/project
   // views sort deterministically), so it owns the one ReorderableList.
   onReorderSessions?: (ids: string[]) => void
-  // Drag-to-reorder for the project overview list (top-level projects).
-  onReorderProjects?: (ids: string[]) => void
   dndSensors?: ReturnType<typeof useSensors>
   // Tag every row with its owning profile. Set on the flat cross-profile
   // lists (Pinned / search results) in the All-profiles view, where no group
@@ -160,10 +149,7 @@ export function SidebarSessionsSection({
   headerAction,
   footer,
   groups,
-  projectOverview,
-  projectOverviewPreviews,
   projectsLoading = false,
-  onEnterProject,
   projectContent,
   projectRepoWorktrees,
   liveSessions,
@@ -174,19 +160,15 @@ export function SidebarSessionsSection({
   collapsible = true,
   sortable = false,
   onReorderSessions,
-  onReorderProjects,
   dndSensors,
   showProfileTags = false
 }: SidebarSessionsSectionProps) {
   const sectionOpen = collapsible ? open : true
   const hasGroupedSessions = Boolean(groups?.some(group => group.sessions.length > 0))
-  // A defined project list is itself content (even an empty project should
-  // render as a drill-in row so the user can see it exists).
-  const hasProjectOverview = Boolean(projectOverview?.length)
   const hasProjectContent = Boolean(projectContent && projectContent.sessionCount > 0)
 
   const showEmptyState =
-    forceEmptyState || (!hasGroupedSessions && !hasProjectOverview && !hasProjectContent && sessions.length === 0)
+    forceEmptyState || (!hasGroupedSessions && !hasProjectContent && sessions.length === 0)
 
   // The flat recents/pinned list is the only place sessions reorder by hand;
   // grouped/tree views always sort by creation date and never drag.
@@ -223,16 +205,14 @@ export function SidebarSessionsSection({
   const flatVirtualized =
     !showEmptyState &&
     !groups?.length &&
-    !projectOverview?.length &&
     !projectContent &&
     sessions.length >= VIRTUALIZE_THRESHOLD
 
-  // First paint into the grouped view (e.g. the app restoring the Projects tab)
-  // has flat recents in `sessions` but no tree yet. Show skeletons rather than
-  // flashing the flat session list until the overview/content/groups resolve. A
-  // background refresh keeps the prior tree, so this only fires when empty.
-  const showProjectsSkeleton =
-    projectsLoading && !hasProjectOverview && !hasProjectContent && !projectContent && !groups?.length
+  // First paint into the grouped view has flat recents in `sessions` but no
+  // tree yet. Show skeletons rather than flashing the flat session list until
+  // the content/groups resolve. A background refresh keeps the prior tree, so
+  // this only fires when empty.
+  const showProjectsSkeleton = projectsLoading && !hasProjectContent && !projectContent && !groups?.length
 
   let inner: React.ReactNode
 
@@ -259,37 +239,6 @@ export function SidebarSessionsSection({
     )
   } else if (showEmptyState) {
     inner = emptyState
-  } else if (projectOverview?.length) {
-    // The model is already ordered (default sort groups explicit-before-auto;
-    // a manual drag-order, when present, wins). Render in that order and make
-    // rows drag-to-reorder when a handler is wired.
-    const projectsDraggable = projectOverview.length > 1 && !!onReorderProjects
-    const Row = projectsDraggable ? SortableProjectOverviewRow : ProjectOverviewRow
-
-    const rows = projectOverview.map(project => (
-      <Row
-        activeProjectId={activeProjectId}
-        key={project.id}
-        onEnter={onEnterProject}
-        onNewSession={onNewSessionInWorkspace}
-        previewSessions={project.path ? projectOverviewPreviews?.[project.path] : undefined}
-        project={project}
-        renderRows={renderRows}
-      />
-    ))
-
-    inner =
-      projectsDraggable && onReorderProjects ? (
-        <ReorderableList
-          ids={projectOverview.map(project => project.id)}
-          onReorder={onReorderProjects}
-          sensors={dndSensors}
-        >
-          {rows}
-        </ReorderableList>
-      ) : (
-        rows
-      )
   } else if (groups?.length) {
     // Profile / recency groups never reorder; render them flat with static rows.
     inner = (
@@ -380,6 +329,3 @@ function SortableSidebarSessionRow(props: SortableSessionRowProps) {
   return <SidebarSessionRow {...props} {...useSortableBindings(props.session.id)} />
 }
 
-function SortableProjectOverviewRow(props: React.ComponentProps<typeof ProjectOverviewRow>) {
-  return <ProjectOverviewRow {...props} {...useSortableBindings(props.project.id)} />
-}
