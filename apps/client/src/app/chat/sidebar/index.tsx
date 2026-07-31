@@ -23,6 +23,7 @@ import {
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
+import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { profileColor } from '@/lib/profile-color'
 import { sessionMatchesSearch } from '@/lib/session-search'
@@ -321,8 +322,10 @@ export function ChatSidebar({
   const profiles = useStore($profiles)
   const profileScope = useStore($profileScope)
   // Only surface the profile switcher when more than one profile exists, so
-  // single-profile users see the unchanged sidebar.
-  const multiProfile = profiles.length > 1
+  // single-profile users see the unchanged sidebar. PROFILES_UI_ENABLED pins
+  // this off entirely: the dashboard runs on the default profile, so the rail
+  // stays hidden even if named profiles exist on disk from CLI use.
+  const multiProfile = PROFILES_UI_ENABLED && profiles.length > 1
   // Gate ALL-profiles grouping on multiProfile too: if a user drops back to one
   // profile while scope is still ALL (persisted), the rail is hidden and they'd
   // otherwise be stuck in the grouped view with no way out.

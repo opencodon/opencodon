@@ -8,6 +8,7 @@ import { SearchField } from '@/components/ui/search-field'
 import { Tip } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
+import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import {
   allKeybindActions,
   KEYBIND_CATEGORIES,
@@ -39,7 +40,17 @@ export function KeybindSettings() {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   // Subscribe so contributed actions appear/disappear live in the map.
   useContributions(KEYBINDS_AREA)
-  const actionList = allKeybindActions()
+  // Display-only filter. The registry itself keeps the profile actions so
+  // their bindings still resolve — notably ⌘1…⌘9, whose handler activates the
+  // focused pane's tab slot first and only falls through to a profile switch.
+  // Recomputed every render on purpose: `useContributions` above re-renders
+  // when plugins add/remove actions, and memoizing would freeze that list.
+  const allActions = allKeybindActions()
+
+  const actionList = PROFILES_UI_ENABLED
+    ? allActions
+    : allActions.filter(action => action.category !== 'profiles')
+
   const [query, setQuery] = useState('')
 
   const openCombo = bindings[KEYBIND_PANEL_ACTION]?.[0]
