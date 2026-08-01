@@ -28,8 +28,7 @@ class MessageDeduplicator:
     """TTL-based message deduplication cache.
 
     Replaces the identical ``_seen_messages`` / ``_is_duplicate()`` pattern
-    previously duplicated in discord, slack, dingtalk, wecom, weixin,
-    mattermost, and feishu adapters.
+    previously duplicated across platform adapters.
 
     Usage::
 
@@ -98,7 +97,7 @@ class TextBatchAggregator:
     """Aggregates rapid-fire text events into single messages.
 
     Replaces the ``_enqueue_text_event`` / ``_flush_text_batch`` pattern
-    previously duplicated in telegram, discord, matrix, wecom, and feishu.
+    previously duplicated in telegram and discord.
 
     Usage::
 
@@ -194,10 +193,10 @@ _RE_MULTI_NEWLINE = re.compile(r"\n{3,}")
 
 
 def strip_markdown(text: str) -> str:
-    """Strip markdown formatting for plain-text platforms (SMS, iMessage, etc.).
+    """Strip markdown formatting for plain-text platforms.
 
     Replaces the identical ``_strip_markdown()`` functions previously
-    duplicated in sms.py, bluebubbles.py, and feishu.py.
+    duplicated across platform adapters.
     """
     text = _RE_BOLD.sub(r"\1", text)
     text = _RE_ITALIC_STAR.sub(r"\1", text)
@@ -219,7 +218,7 @@ class ThreadParticipationTracker:
 
     Replaces the identical ``_load/_save_participated_threads`` +
     ``_mark_thread_participated`` pattern previously duplicated in
-    discord.py and matrix.py.
+    discord.py.
 
     Usage::
 
@@ -285,7 +284,7 @@ def redact_phone(phone: str) -> str:
     """Redact a phone number for logging, preserving country code and last 4.
 
     Replaces the identical ``_redact_phone()`` functions in signal.py,
-    sms.py, and bluebubbles.py.
+    platform adapters.
     """
     if not phone:
         return "<none>"

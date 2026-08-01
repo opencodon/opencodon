@@ -17,6 +17,7 @@ import { type OpencodonGateway } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { quickModelOptions, sessionTitle } from '@/lib/chat-runtime'
+import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { useIncrementalExternalStoreRuntime } from '@/lib/incremental-external-store-runtime'
 import { modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
 import { cn } from '@/lib/utils'
@@ -113,7 +114,9 @@ function ChatHeader({
   // Which agent/persona owns this chat — glanceable in the header once a
   // second profile exists, so the open session's ownership is never ambiguous
   // (#66003). Single-profile users see the unchanged header.
-  const showProfileTag = profiles.length > 1 && Boolean(activeStoredSession)
+  // PROFILES_UI_ENABLED pins this off: named profiles can still exist on disk
+  // from CLI use, so the length check alone would keep the chip in the header.
+  const showProfileTag = PROFILES_UI_ENABLED && profiles.length > 1 && Boolean(activeStoredSession)
 
   // Pins live on the durable lineage-root id, but selectedSessionId is the live
   // (tip) id — resolve through the loaded row so the menu reflects the pin

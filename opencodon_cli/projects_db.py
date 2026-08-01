@@ -16,9 +16,6 @@ Scope: **per-profile**, stored at ``$OPENCODON_HOME/projects.db`` (resolved via
 differs from kanban, whose board DB is root-anchored and shared across
 profiles. A Project may *bind* a kanban board (``board_slug``) so the two
 systems agree on the repo + branch convention without merging their stores.
-
-The schema is intentionally small and additive: column additions go through
-:func:`_add_column_if_missing` so opening an old DB is always safe.
 """
 
 from __future__ import annotations
@@ -33,7 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from opencodon_cli.sqlite_util import add_column_if_missing as _add_column_if_missing, write_txn
+from opencodon_cli.sqlite_util import write_txn
 from opencodon_constants import get_opencodon_home
 
 # ---------------------------------------------------------------------------
@@ -64,6 +61,11 @@ CREATE TABLE IF NOT EXISTS projects (
     color         TEXT,
     board_slug    TEXT,
     primary_path  TEXT,
+    -- Free text the user writes once and every agent in this project reads:
+    -- conventions, domain background, house rules. Distinct from `description`,
+    -- which is for the human scanning the project list and never reaches a
+    -- prompt. Injected by agent/prompt_builder.py alongside AGENTS.md.
+    context       TEXT,
     created_at    INTEGER NOT NULL,
     archived      INTEGER NOT NULL DEFAULT 0
 );
@@ -171,7 +173,6 @@ def connect(db_path: Optional[Path] = None) -> sqlite3.Connection:
         conn.execute("PRAGMA foreign_keys=ON")
         if resolved not in _INITIALIZED_PATHS:
             conn.executescript(SCHEMA_SQL)
-            _migrate_add_optional_columns(conn)
             _INITIALIZED_PATHS.add(resolved)
     except Exception:
         conn.close()
@@ -196,19 +197,6 @@ def connect_closing(db_path: Optional[Path] = None):
             conn.close()
         except Exception:
             pass
-
-
-# TEXT columns added to `projects` after v1; re-applied idempotently on every
-# open so a legacy DB upgrades in place.
-_OPTIONAL_PROJECT_COLUMNS = ("board_slug", "primary_path", "icon", "color")
-
-
-def _migrate_add_optional_columns(conn: sqlite3.Connection) -> None:
-    """Add columns introduced after v1 to legacy DBs (safe on every open)."""
-    cols = {row["name"] for row in conn.execute("PRAGMA table_info(projects)")}
-    for col in _OPTIONAL_PROJECT_COLUMNS:
-        if col not in cols:
-            _add_column_if_missing(conn, "projects", col, f"{col} TEXT")
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +231,7 @@ class Project:
     color: Optional[str] = None
     board_slug: Optional[str] = None
     primary_path: Optional[str] = None
+    context: Optional[str] = None
     archived: bool = False
     folders: List[ProjectFolder] = field(default_factory=list)
 
@@ -256,6 +245,7 @@ class Project:
             "color": self.color,
             "board_slug": self.board_slug,
             "primary_path": self.primary_path,
+            "context": self.context,
             "archived": bool(self.archived),
             "created_at": self.created_at,
             "folders": [f.to_dict() for f in self.folders],
@@ -274,6 +264,7 @@ def _project_from_row(row: sqlite3.Row) -> Project:
         color=row["color"] if "color" in keys else None,
         board_slug=row["board_slug"] if "board_slug" in keys else None,
         primary_path=row["primary_path"] if "primary_path" in keys else None,
+        context=row["context"] if "context" in keys else None,
         archived=bool(row["archived"]) if "archived" in keys else False,
     )
 
@@ -330,6 +321,7 @@ def create_project(
     icon: Optional[str] = None,
     color: Optional[str] = None,
     board_slug: Optional[str] = None,
+    context: Optional[str] = None,
 ) -> str:
     """Create a project and return its id.
 
@@ -362,8 +354,8 @@ def create_project(
         conn.execute(
             "INSERT INTO projects "
             "(id, slug, name, description, icon, color, board_slug, "
-            " primary_path, created_at, archived) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+            " primary_path, context, created_at, archived) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
             (
                 pid,
                 unique,
@@ -373,6 +365,7 @@ def create_project(
                 color,
                 normalize_slug(board_slug) if board_slug else None,
                 primary,
+                (context or None),
                 now,
             ),
         )
@@ -422,6 +415,7 @@ def update_project(
     icon: Optional[str] = None,
     color: Optional[str] = None,
     board_slug: Optional[str] = None,
+    context: Optional[str] = None,
 ) -> bool:
     """Patch top-level project fields. Only provided fields change.
 
@@ -440,6 +434,11 @@ def update_project(
     if description is not None:
         sets.append("description = ?")
         params.append(description)
+    if context is not None:
+        # Empty string clears it, like icon/color below — a user removing their
+        # project context must be able to actually remove it.
+        sets.append("context = ?")
+        params.append(context or None)
     if icon is not None:
         sets.append("icon = ?")
         params.append(icon or None)

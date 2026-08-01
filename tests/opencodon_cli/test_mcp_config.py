@@ -62,7 +62,7 @@ def _seed_config(tmp_path: Path, mcp_servers: dict):
     """Write a config.yaml with the given mcp_servers."""
     import yaml
 
-    config = {"mcp_servers": mcp_servers, "_config_version": 9}
+    config = {"mcp_servers": mcp_servers}
     config_path = tmp_path / "config.yaml"
     with open(config_path, "w") as f:
         yaml.safe_dump(config, f)

@@ -5,6 +5,7 @@ import { closeActiveTab } from '@/app/chat/close-tab'
 import { $terminalTakeover, setTerminalTakeover } from '@/app/right-sidebar/store'
 import { closeActiveTerminal, createTerminal, cycleTerminal } from '@/app/right-sidebar/terminal/terminals'
 import { activateTreeTabSlot, cycleTreeTabInFocusedZone, layoutHasRootSide } from '@/components/pane-shell/tree/store'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { contributedKeybindHandler, PROFILE_SLOT_COUNT, SESSION_SLOT_COUNT } from '@/lib/keybinds/actions'
 import { comboAllowedInInput, comboFromEvent, isEditableTarget } from '@/lib/keybinds/combo'
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
@@ -88,7 +89,7 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     // ⌘1…⌘9 switch the FOCUSED zone's tab when it's a real tab strip; only a
     // single-pane (or unfocused) layout falls through to the profile switch.
     profileSwitchHandlers[`profile.switch.${slot}`] = () => {
-      if (!activateTreeTabSlot(slot)) {
+      if (!activateTreeTabSlot(slot) && PROFILES_UI_ENABLED) {
         switchProfileToSlot(slot)
       }
     }
@@ -134,7 +135,10 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.settings': () => navigate(SETTINGS_ROUTE),
     'nav.profiles': () => navigate(PROFILES_ROUTE),
     'nav.skills': () => navigate(SKILLS_ROUTE),
-    'nav.messaging': () => navigate(MESSAGING_ROUTE),
+    // Messaging is hidden while MESSAGING_UI_ENABLED is off. Dropped rather
+    // than left bound to a route that renders nothing — a shortcut that
+    // navigates to a blank surface is worse than one that does nothing.
+    ...(MESSAGING_UI_ENABLED ? { 'nav.messaging': () => navigate(MESSAGING_ROUTE) } : {}),
     'nav.artifacts': () => navigate(ARTIFACTS_ROUTE),
     'nav.science': () => navigate(SCIENCE_ROUTE),
     'nav.projects': () => navigate(PROJECTS_ROUTE),
@@ -195,12 +199,21 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
 
     'appearance.toggleMode': () => setMode(resolvedMode === 'dark' ? 'light' : 'dark'),
 
-    'profile.default': switchToDefaultProfile,
+    // `profileSwitchHandlers` stays wired unconditionally — ⌘1…⌘9 activate the
+    // focused pane's tab slot first and only fall through to a profile switch,
+    // which is itself a no-op while the profiles UI is off. The rest are
+    // profile-only, so they are dropped rather than left silently mutating
+    // persisted profile state behind a hidden UI.
     ...profileSwitchHandlers,
-    'profile.next': () => cycleProfile(1),
-    'profile.prev': () => cycleProfile(-1),
-    'profile.toggleAll': toggleShowAllProfiles,
-    'profile.create': requestProfileCreate
+    ...(PROFILES_UI_ENABLED
+      ? {
+          'profile.create': requestProfileCreate,
+          'profile.default': switchToDefaultProfile,
+          'profile.next': () => cycleProfile(1),
+          'profile.prev': () => cycleProfile(-1),
+          'profile.toggleAll': toggleShowAllProfiles
+        }
+      : {})
   }
 
   useEffect(() => {

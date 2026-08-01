@@ -2502,29 +2502,6 @@ def cmd_chat(args):
         except Exception:
             pass  # never let cwd-restore break a resume
 
-    # xAI retirement warning — one-shot, non-blocking, never fails startup
-    try:
-        from opencodon_cli.xai_retirement import (
-            MIGRATION_GUIDE_URL,
-            RETIREMENT_DATE,
-            find_retired_xai_refs,
-            format_issue,
-        )
-        from opencodon_cli.config import load_config as _load_config_for_xai_check
-
-        _retired_xai_refs = find_retired_xai_refs(_load_config_for_xai_check())
-        if _retired_xai_refs:
-            sys.stderr.write(
-                f"\033[33m⚠ xAI retires {len(_retired_xai_refs)} model(s) "
-                f"in your config on {RETIREMENT_DATE}:\033[0m\n"
-            )
-            for _ref in _retired_xai_refs:
-                sys.stderr.write(f"  \033[33m⚠\033[0m {format_issue(_ref)}\n")
-            sys.stderr.write(f"  \033[2mMigration guide: {MIGRATION_GUIDE_URL}\033[0m\n")
-            sys.stderr.write("  \033[2mRun 'opencodon doctor' for details.\033[0m\n\n")
-    except Exception:
-        pass
-
     # First-run guard: check if any provider is configured before launching
     if not _has_any_provider_configured():
         print()
@@ -10978,82 +10955,32 @@ def _cmd_update_impl(args, gateway_mode: bool):
         except Exception:
             pass  # profiles module not available or no profiles
 
-        # Check for config migrations
+        # Reconcile config/.env: repair, validate, and collect anything only
+        # the user can supply. There is no version-upgrade step — new defaults
+        # merge in transparently at read time.
         print()
-        print("→ Checking configuration for new options...")
+        print("→ Checking configuration...")
 
-        from opencodon_cli.config import (
-            get_missing_env_vars,
-            get_missing_config_fields,
-            check_config_version,
-            migrate_config,
-        )
+        from opencodon_cli.config import get_missing_env_vars, reconcile_config
 
         missing_env = get_missing_env_vars(required_only=True)
-        missing_config = get_missing_config_fields()
-        current_ver, latest_ver = check_config_version()
 
-        has_new_options = bool(missing_env or missing_config)
-        version_bump_only = (
-            not has_new_options and current_ver < latest_ver
-        )
-        needs_migration = has_new_options or current_ver < latest_ver
-
-        if version_bump_only:
-            # Nothing for the user to fill in — only the config format version
-            # changed (new defaults already merge in transparently). Asking
-            # "configure new options now?" here is misleading: saying yes just
-            # bumps the version and looks like a no-op (issue: ScottFive /
-            # Tt2021). Apply it silently and say what actually happened.
+        if missing_env:
             print()
             print(
-                f"  ℹ Updating config format (v{current_ver} → v{latest_ver})…"
+                f"  ⚠️  {len(missing_env)} new required setting(s) need configuration"
             )
-            try:
-                migrate_config(interactive=False, quiet=True)
-                print("  ✓ Config format updated (no new settings to configure)")
-            except Exception as _mig_err:
-                print(f"  ⚠️  Config format update failed: {_mig_err}")
-                print("     Run 'opencodon config migrate' to retry.")
-        elif needs_migration:
-            print()
-            # Show WHAT changed, not just a count, so the user can make an
-            # informed yes/no decision (previously the prompt named nothing).
-            def _print_items(items, label, key, fallback_key=None):
-                if not items:
-                    return
-                print(f"  {label}:")
-                shown = items[:8]
-                for it in shown:
-                    if isinstance(it, dict):
-                        name = it.get(key) or (fallback_key and it.get(fallback_key)) or "?"
-                        desc = (it.get("description") or "").strip()
-                    else:
-                        # Defensive: some callers/mocks pass bare name strings.
-                        name = str(it)
-                        desc = ""
-                    if desc:
-                        print(f"      • {name} — {desc}")
-                    else:
-                        print(f"      • {name}")
-                extra = len(items) - len(shown)
-                if extra > 0:
-                    print(f"      … and {extra} more")
-
-            if missing_env:
-                print(
-                    f"  ⚠️  {len(missing_env)} new required setting(s) need configuration"
-                )
-                _print_items(missing_env, "New settings", "name")
-            if missing_config:
-                print(f"  ℹ️  {len(missing_config)} new config option(s) available")
-                _print_items(missing_config, "New options", "key")
+            for var in missing_env[:8]:
+                name = var.get("name", "?") if isinstance(var, dict) else str(var)
+                desc = (var.get("description") or "").strip() if isinstance(var, dict) else ""
+                print(f"      • {name} — {desc}" if desc else f"      • {name}")
+            extra = len(missing_env) - len(missing_env[:8])
+            if extra > 0:
+                print(f"      … and {extra} more")
 
             print()
             if assume_yes:
-                print(
-                    "  ℹ --yes: auto-applying config migration (skipping API-key prompts)."
-                )
+                print("  ℹ --yes: skipping API-key prompts.")
                 response = "y"
             elif gateway_mode:
                 response = (
@@ -11064,7 +10991,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     .lower()
                 )
             elif not (sys.stdin.isatty() and sys.stdout.isatty()):
-                print("  ℹ Non-interactive session — applying safe config migrations.")
+                print("  ℹ Non-interactive session — running the non-prompting passes.")
                 response = "auto"
             else:
                 try:
@@ -11075,29 +11002,27 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     )
                 except EOFError:
                     response = "n"
-
-            if response in {"", "y", "yes", "auto"}:
-                print()
-                # Gateway mode, --yes, and non-interactive update contexts
-                # (dashboard / web server actions) cannot prompt for API keys.
-                # Still run the non-interactive migration pass before restarting
-                # so new default config fields and version bumps are written
-                # before the freshly updated gateway validates config at startup.
-                interactive_migration = not (
-                    gateway_mode or assume_yes or response == "auto"
-                )
-                results = migrate_config(interactive=interactive_migration, quiet=False)
-
-                if results["env_added"] or results["config_added"]:
-                    print()
-                    print("✓ Configuration updated!")
-                if (gateway_mode or assume_yes or response == "auto") and missing_env:
-                    print("  ℹ API keys require manual entry: opencodon config migrate")
-            else:
-                print()
-                print("Skipped. Run 'opencodon config migrate' later to configure.")
         else:
-            print("  ✓ Configuration is up to date")
+            response = "auto"
+
+        if response in {"", "y", "yes", "auto"}:
+            # Gateway mode, --yes, and non-interactive update contexts
+            # (dashboard / web server actions) cannot prompt for API keys.
+            interactive_reconcile = not (
+                gateway_mode or assume_yes or response == "auto"
+            )
+            results = reconcile_config(interactive=interactive_reconcile, quiet=False)
+
+            if results["env_added"] or results["config_added"]:
+                print()
+                print("✓ Configuration updated!")
+            elif not missing_env:
+                print("  ✓ Configuration is up to date")
+            if (gateway_mode or assume_yes or response == "auto") and missing_env:
+                print("  ℹ API keys require manual entry: opencodon config reconcile")
+        else:
+            print()
+            print("Skipped. Run 'opencodon config reconcile' later to configure.")
 
         # Safety net: config-version migrations have been observed to leave
         # cron/jobs.json valid-but-empty, silently dropping every scheduled
@@ -13339,7 +13264,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
-        "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
+        "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "moa",
         "model", "pairing", "plugins", "profile",
         "project", "proxy",
         "prompt-size",
@@ -13973,44 +13898,6 @@ def main():
         return 0
 
     secrets_parser.set_defaults(func=_dispatch_secrets)
-
-    # =========================================================================
-    # migrate command
-    # =========================================================================
-    from opencodon_cli.migrate import cmd_migrate, cmd_migrate_xai
-
-    migrate_parser = subparsers.add_parser(
-        "migrate",
-        help="Migrate configuration for retired models or deprecated settings",
-        description=(
-            "Diagnose and (optionally) rewrite the active config.yaml to "
-            "replace references to retired models or deprecated settings."
-        ),
-    )
-    migrate_subparsers = migrate_parser.add_subparsers(dest="migrate_type")
-
-    migrate_xai = migrate_subparsers.add_parser(
-        "xai",
-        help="Migrate xAI models scheduled for retirement on May 15, 2026",
-        description=(
-            "Scan config.yaml for references to xAI models retiring on "
-            "May 15, 2026 and, with --apply, rewrite them in-place to the "
-            "official replacements per the xAI migration guide. The original "
-            "config.yaml is backed up before any rewrite."
-        ),
-    )
-    migrate_xai.add_argument(
-        "--apply",
-        action="store_true",
-        help="Rewrite config.yaml in-place (default: dry-run, no writes)",
-    )
-    migrate_xai.add_argument(
-        "--no-backup",
-        action="store_true",
-        help="Skip the timestamped backup of config.yaml when applying",
-    )
-    migrate_xai.set_defaults(func=cmd_migrate_xai)
-    migrate_parser.set_defaults(func=cmd_migrate)
 
     # =========================================================================
     # gateway + proxy commands  (parsers built in opencodon_cli/subcommands/gateway.py)

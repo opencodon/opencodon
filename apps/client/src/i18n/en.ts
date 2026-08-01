@@ -1536,10 +1536,13 @@ export const en: Translations = {
     refresh: 'Refresh projects',
     loading: 'Reading your projects',
     emptyTitle: 'No projects yet',
-    emptyDesc: 'Add a folder or a git repo from the sidebar and its sessions gather here.',
+    emptyDesc: 'Create one to get started — every session belongs to a project.',
     noRecentTitle: 'No sessions yet',
     noRecentDesc: 'Start a session and it shows up here with the project it belongs to.',
-    sessions: (n: number) => `${n} ${n === 1 ? 'session' : 'sessions'}`
+    sessions: (n: number) => `${n} ${n === 1 ? 'session' : 'sessions'}`,
+    newProject: 'New project',
+    manageSettings: 'Settings',
+    archived: (n: number) => `Archived (${n})`
   },
   science: {
     search: 'Search runs and artifacts...',
@@ -1622,7 +1625,9 @@ export const en: Translations = {
       skills: 'Capabilities',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
-      projects: 'Projects',
+      // Leaving the project, not a tab beside the others — the landing
+      // replaces this whole shell.
+      projects: 'All projects',
       science: 'Provenance'
     },
     searchAria: 'Search sessions',
@@ -1654,6 +1659,12 @@ export const en: Translations = {
       addFolderTitle: 'Add folder',
       namePlaceholder: 'e.g. Skunkworks',
       foldersLabel: 'Folders',
+      descriptionLabel: 'Description',
+      descriptionHint: 'Shown in the project list. Never sent to the agent.',
+      descriptionPlaceholder: 'What this project is, for you',
+      contextLabel: 'Agent context',
+      contextHint: "Included in every agent's system prompt for this project.",
+      contextPlaceholder: 'Conventions, background, and rules every agent should follow',
       ideaLabel: 'Idea',
       ideaPlaceholder: "What's this project about? (saved to IDEA.md)",
       ideaGenerate: 'Generate idea',
@@ -1706,7 +1717,14 @@ export const en: Translations = {
       enter: label => `Open ${label}`,
       reorder: label => `Reorder ${label}`,
       toggle: label => `Toggle ${label} sessions`,
-      back: 'All projects'
+      back: 'All projects',
+      recency: {
+        today: 'Today',
+        yesterday: 'Yesterday',
+        week: 'This week',
+        month: 'This month',
+        earlier: 'Earlier'
+      }
     },
     newSessionIn: label => `New session in ${label}`,
     showMoreIn: (count, label) => `Show ${count} more in ${label}`,
@@ -2141,6 +2159,7 @@ export const en: Translations = {
     windowControls: 'Window controls',
     paneControls: 'Pane controls',
     appControls: 'App controls',
+    closeTab: (title: string) => `Close ${title}`,
     modelMenu: {
       search: 'Search models',
       noModels: 'No models found',

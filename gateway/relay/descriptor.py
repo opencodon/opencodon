@@ -5,7 +5,7 @@ at handshake time; it tells the adapter which platform it is fronting and which
 capabilities to advertise to the ``GatewayStreamConsumer`` (char limit,
 draft-streaming, edit/threading support, markdown dialect, length unit). It is
 the linchpin of the generalization: one gateway adapter serves Discord,
-Telegram, Matrix, Signal, ... without per-platform branching.
+Telegram, Discord, Slack, ... without per-platform branching.
 
 EXPERIMENTAL: this schema MAY CHANGE without a deprecation cycle until at least
 two real Class-1 platforms have validated it. Evolution during the experimental
@@ -21,7 +21,7 @@ the per-instance capability methods on ``BasePlatformAdapter``):
   ("chars" = builtin len; "utf16" = Telegram-style UTF-16 code-unit counting).
 - ``supports_draft_streaming`` -> adapter ``supports_draft_streaming()`` probe.
 - ``supports_edit``      -> whether edit-based streaming is possible (Discord/
-  Telegram yes; Signal/SMS no -> consumer degrades to one-message-per-segment).
+  Telegram yes; others no -> consumer degrades to one-message-per-segment).
 - ``supports_threads``   -> ``create_handoff_thread`` capability flag.
 - ``markdown_dialect``   -> presentation hint (e.g. "markdown_v2", "discord").
 - ``emoji`` / ``platform_hint`` / ``pii_safe`` -> ``PlatformEntry`` fields of the

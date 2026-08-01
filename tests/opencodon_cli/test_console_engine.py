@@ -27,7 +27,7 @@ EXPECTED_CONSOLE_COMMANDS = {
     ("config", "path"),
     ("config", "env-path"),
     ("config", "check"),
-    ("config", "migrate"),
+    ("config", "reconcile"),
     ("config", "set"),
     ("sessions", "list"),
     ("sessions", "stats"),
@@ -170,7 +170,6 @@ EXPECTED_CONSOLE_COMMANDS = {
     ("checkpoints", "list"),
     ("checkpoints", "prune"),
     ("checkpoints", "clear"),
-    ("checkpoints", "clear-legacy"),
     ("curator", "status"),
     ("curator", "run"),
     ("curator", "pause"),
@@ -188,7 +187,7 @@ EXPECTED_CONSOLE_COMMANDS = {
 
 MUTATING_CONFIRMATION_SMOKE_COMMANDS = [
     "config set console.test true",
-    "config migrate",
+    "config reconcile",
     "sessions rename abc123 new title",
     "sessions optimize",
     "cron create 'every 1h' 'say hello'",

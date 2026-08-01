@@ -1,3 +1,4 @@
+import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -17,7 +18,6 @@ import {
 } from '@/components/ui/pagination'
 import { RowButton } from '@/components/ui/row-button'
 import { Tip } from '@/components/ui/tooltip'
-import { getSessionMessages, listAllProfileSessions } from '@/opencodon'
 import { type Translations, useI18n } from '@/i18n'
 import { ExternalLink, ExternalLinkIcon, hostPathLabel, urlSlugTitleLabel, useLinkTitle } from '@/lib/external-link'
 import { FileImage, FileText, FolderOpen, Link2, Loader2, RefreshCw } from '@/lib/icons'
@@ -25,7 +25,9 @@ import { downloadGatewayMediaFile, isRemoteGateway } from '@/lib/media'
 import { normalize } from '@/lib/text'
 import { fmtDayTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import { getSessionMessages, listAllProfileSessions } from '@/opencodon'
 import { notifyError } from '@/store/notifications'
+import { $projectScope, cwdInProjectScope } from '@/store/projects'
 
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
@@ -116,12 +118,20 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   const [filePage, setFilePage] = useState(1)
 
   const [refreshing, setRefreshing] = useState(false)
+  const projectScope = useStore($projectScope)
 
   const refreshArtifacts = useCallback(async () => {
     setRefreshing(true)
 
     try {
-      const sessions = (await listAllProfileSessions(30, 1)).sessions
+      // Scoped to the project when the app is inside one. The science API has
+      // no project filter, but every session row carries the cwd that decides
+      // membership, so the filter happens here — and before the per-session
+      // message fetches, which is the expensive half.
+      const sessions = (await listAllProfileSessions(30, 1)).sessions.filter(session =>
+        cwdInProjectScope(session.cwd)
+      )
+
       const results = await Promise.allSettled(sessions.map(session => getSessionMessages(session.id, session.profile)))
       const nextArtifacts: ArtifactRecord[] = []
 
@@ -141,7 +151,11 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
     } finally {
       setRefreshing(false)
     }
-  }, [a])
+    // `projectScope` IS a real dependency — cwdInProjectScope reads it from the
+    // store rather than closing over it, which the linter can't see. Entering or
+    // leaving a project has to re-collect, so it stays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a, projectScope])
 
   useRefreshHotkey(refreshArtifacts)
 

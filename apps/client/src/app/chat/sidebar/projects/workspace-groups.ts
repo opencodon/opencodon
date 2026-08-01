@@ -1,6 +1,6 @@
 import type { OpencodonGitWorktree } from '@/global'
-import type { ProjectInfo, SessionInfo } from '@/opencodon'
 import { normalize } from '@/lib/text'
+import type { ProjectInfo, SessionInfo } from '@/opencodon'
 
 // Session grouping is now computed authoritatively on the backend
 // (`tui_gateway/project_tree.py`, exposed via `projects.tree` /
@@ -364,6 +364,16 @@ function isPathUnder(folder: string, target: string): boolean {
  * only the repo-root AUTO-project fallback needs cwd-under-root confidence.
  */
 export function liveSessionProjectId(session: SessionInfo, explicitProjects: ProjectInfo[]): null | string {
+  // Recorded membership wins, exactly as it does server-side in
+  // `_project_for_session`. Verified against the live list first so a stale id
+  // — a project deleted in another window — falls through to the derivation
+  // instead of colouring the row for a project that no longer exists.
+  const recorded = (session.project_id || '').trim()
+
+  if (recorded && explicitProjects.some(project => project.id === recorded && !project.archived)) {
+    return recorded
+  }
+
   const cwd = (session.cwd || '').trim()
   // A session may carry only a git_repo_root and no cwd — older/imported rows,
   // or ones captured before cwd tracking. The backend still groups those by repo

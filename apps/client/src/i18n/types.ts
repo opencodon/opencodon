@@ -1259,6 +1259,9 @@ export interface Translations {
     noRecentTitle: string
     noRecentDesc: string
     sessions: (n: number) => string
+    newProject: string
+    manageSettings: string
+    archived: (n: number) => string
   }
   science: {
     search: string
@@ -1366,6 +1369,12 @@ export interface Translations {
       addFolderTitle: string
       namePlaceholder: string
       foldersLabel: string
+      descriptionLabel: string
+      descriptionHint: string
+      descriptionPlaceholder: string
+      contextLabel: string
+      contextHint: string
+      contextPlaceholder: string
       ideaLabel: string
       ideaPlaceholder: string
       ideaGenerate: string
@@ -1416,6 +1425,13 @@ export interface Translations {
       reorder: (label: string) => string
       toggle: (label: string) => string
       back: string
+      recency: {
+        today: string
+        yesterday: string
+        week: string
+        month: string
+        earlier: string
+      }
     }
     newSessionIn: (label: string) => string
     showMoreIn: (count: number, label: string) => string
@@ -1756,6 +1772,8 @@ export interface Translations {
     windowControls: string
     paneControls: string
     appControls: string
+    /** Accessible label for a tab's × — `Close <tab title>`. */
+    closeTab: (title: string) => string
     modelMenu: {
       search: string
       noModels: string

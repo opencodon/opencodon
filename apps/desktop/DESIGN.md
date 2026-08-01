@@ -45,8 +45,16 @@ one-off at the call site.
 
 ## Information architecture
 
-- **Chat is the home surface.** The transcript and composer stay primary; tools,
-  previews, files, review, and terminal complement the conversation.
+- **Projects is the home surface; desktop still opens on chat.** Picking a
+  project is the first move — the session list, file tree, terminal, and
+  artifact index are all scoped to one, and the route carries it (`/p/:ref`, see
+  [`browser-session-ui.md`](../../docs/design/browser-session-ui.md) §9). The
+  browser host already lands there; Electron keeps `home: 'chat'` until that
+  surface has settled, and the flip is a one-line default, not a fork. Read this
+  as a scheduled change rather than a divergence.
+- **Within a project, chat is primary.** The transcript and composer stay the
+  working surface; tools, previews, files, review, and terminal complement the
+  conversation.
 - **Pages are durable destinations.** Chat, Skills, Messaging, and Artifacts
   remain in shell chrome. Do not hide a distinct product noun inside an
   unrelated page.

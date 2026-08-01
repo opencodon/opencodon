@@ -459,7 +459,7 @@ def _sanitize_gateway_final_response(platform: Any, text: str) -> str:
     """Sanitize final gateway replies before sending them to chat surfaces.
 
     Every human-facing chat surface (Telegram, WhatsApp, Discord, Slack,
-    Signal, Matrix, plugin platforms, etc.) should receive concise, safe
+    plugin platforms, etc.) should receive concise, safe
     provider failure categories with secrets redacted instead of raw HTTP
     bodies, request IDs, leaked credentials, or policy text. Only programmatic
     surfaces in ``_GATEWAY_RAW_TEXT_PLATFORMS`` (CLI/TUI ``local`` diagnostics,
@@ -510,7 +510,7 @@ def render_notice_line(notice) -> str:
     verbatim — so we emit it as-is here too. Prepending a per-level glyph would
     DOUBLE it ("⚠ ⚠ Credits 90% used", "⛔ ✕ Credit access paused"). Plaintext
     only — no markdown — so it renders uniformly across Telegram/Discord/Slack/
-    SMS without per-platform escaping. Fail-soft: a malformed/empty notice
+    plain-text surfaces without per-platform escaping. Fail-soft: a malformed/empty notice
     degrades to "" rather than raising on the agent's callback path.
     """
     return str(getattr(notice, "text", "") or "").strip()
@@ -535,21 +535,9 @@ def _resolve_progress_thread_id(platform: Any, source_thread_id: Any, event_mess
     platform_key = str(platform_value or "").lower()
     if source_thread_id:
         return str(source_thread_id)
-    if platform_key in {"slack", "mattermost"} and event_message_id:
+    if platform_key == "slack" and event_message_id:
         return str(event_message_id)
     return None
-
-
-def _has_platform_display_override(user_config: dict, platform_key: str, setting: str) -> bool:
-    """Return True when display.platforms.<platform> explicitly sets setting."""
-    display = user_config.get("display") if isinstance(user_config, dict) else None
-    if not isinstance(display, dict):
-        return False
-    platforms = display.get("platforms")
-    if not isinstance(platforms, dict):
-        return False
-    platform_cfg = platforms.get(platform_key)
-    return isinstance(platform_cfg, dict) and setting in platform_cfg
 
 
 def _resolve_gateway_display_bool(
@@ -558,27 +546,8 @@ def _resolve_gateway_display_bool(
     setting: str,
     *,
     default: bool = False,
-    platform: Any = None,
-    require_platform_override_for: set[Any] | None = None,
 ) -> bool:
-    """Resolve a boolean display setting with optional platform-only opt-in.
-
-    Some display features expose assistant scratch text rather than deliberate
-    user-facing output.  For high-noise threaded chat surfaces such as
-    Mattermost, a global opt-in is too broad: they must be enabled with an
-    explicit display.platforms.<platform>.<setting> override.
-    """
-    current_platform = _gateway_platform_value(platform or platform_key)
-    platform_only = {
-        _gateway_platform_value(candidate)
-        for candidate in (require_platform_override_for or set())
-    }
-    if (
-        current_platform in platform_only
-        and not _has_platform_display_override(user_config, platform_key, setting)
-    ):
-        return False
-
+    """Resolve a boolean display setting for a platform."""
     from gateway.display_config import resolve_display_setting
 
     value = resolve_display_setting(user_config, platform_key, setting, default)
@@ -3735,7 +3704,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         Both ``cancel_background_tasks()`` and ``disconnect()`` can block
         indefinitely when a platform's network state is half-dead (e.g. a
-        wedged Feishu/Lark WebSocket thread waiting on I/O). An unbounded
+        wedged WebSocket thread waiting on I/O). An unbounded
         await here stalls the entire shutdown sequence past systemd's
         ``TimeoutStopSec``; the resulting SIGKILL skips ``atexit`` PID-file
         cleanup, so the next start dies with "PID file race lost" (#14128).
@@ -5862,8 +5831,8 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # resolves, so the approval times out and auto-denies (a deadlock).
         #
         # Slash forms (/approve, /deny) already bypass to the runner at the
-        # base-adapter guard.  This handles the bare-word forms (Signal/SMS
-        # users naturally type "yes" rather than "/approve").  Gating on
+        # base-adapter guard.  This handles the bare-word forms (users
+        # naturally type "yes" rather than "/approve").  Gating on
         # has_blocking_approval(session_key) is the disambiguator that keeps
         # a conversational "yes" from triggering a dangerous command when no
         # approval is actually pending (design intent — see run.py "Pending
@@ -5898,7 +5867,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     # event.get_command_args().  Always use a literal "/" —
                     # MessageEvent.is_command()/get_command_args() only
                     # recognize the "/" prefix, not the per-platform display
-                    # prefix ("!" on Slack/Matrix).
+                    # prefix ("!" on Slack).
                     _verb = "approve" if _approval_handler is self._handle_approve_command else "deny"
                     _synth = f"/{_verb}"
                     if _normalized_args:
@@ -8333,7 +8302,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         # Try to create a fresh thread on the destination so the handoff
         # has its own scrollback. Adapter returns None if threading isn't
-        # supported (Matrix/WhatsApp/Signal/SMS) or if creation failed
+        # supported (WhatsApp) or if creation failed
         # (no permission, topics-mode off, parent is a DM, etc.). When
         # None we fall through to using the home channel directly — the
         # synthetic turn still lands; just without thread isolation.
@@ -9519,7 +9488,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             platform.value
             for platform, platform_config in profile_cfg.platforms.items()
             if platform_config.enabled
-            and _platform_binds_port(platform.value, platform_config.extra)
+            and _platform_binds_port(platform.value)
         )
         if port_binding_platforms:
             joined = ", ".join(port_binding_platforms)
@@ -10448,7 +10417,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if _pending_confirm and not _tool_approval_live:
             _raw_reply = (event.text or "").strip()
             # Accept bang-prefixed replies (`!always`, `!cancel`) verbatim.
-            # Slack/Matrix instruction text shows the `!` prefix (typed `/`
+            # Slack instruction text shows the `!` prefix (typed `/`
             # is blocked in Slack threads), but the adapters only rewrite
             # `!<known-command>` — `always`/`cancel` are confirm keywords,
             # not registered commands, so the `!` survives to here.
@@ -10695,12 +10664,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # /model must not be used while the agent is running.
             if _cmd_def_inner and _cmd_def_inner.name == "model":
                 return "Agent is running — wait or /stop first, then switch models."
-
-            # /codex-runtime must not be used while the agent is running.
-            # Switching mid-turn would split a turn across two transports.
-            if _cmd_def_inner and _cmd_def_inner.name == "codex-runtime":
-                return ("Agent is running — wait or /stop first, then "
-                        "change runtime.")
 
             # /approve and /deny must bypass the running-agent interrupt path.
             # The agent thread is blocked on a threading.Event inside
@@ -11169,9 +11132,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if canonical == "model":
             return await self._handle_model_command(event)
-
-        if canonical == "codex-runtime":
-            return await self._handle_codex_runtime_command(event)
 
         if canonical == "personality":
             return await self._handle_personality_command(event)
@@ -13324,23 +13284,15 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     )
 
             # Prepend reasoning/thinking if display is enabled (per-platform).
-            # Mattermost requires explicit per-platform opt-in because this is
-            # scratch text, not ordinary final-answer content.
             try:
                 _show_reasoning_effective = _resolve_gateway_display_bool(
                     _load_gateway_config(),
                     _platform_config_key(source.platform),
                     "show_reasoning",
                     default=bool(getattr(self, "_show_reasoning", False)),
-                    platform=source.platform,
-                    require_platform_override_for={Platform.MATTERMOST},
                 )
             except Exception:
-                _show_reasoning_effective = (
-                    False
-                    if source.platform == Platform.MATTERMOST
-                    else getattr(self, "_show_reasoning", False)
-                )
+                _show_reasoning_effective = getattr(self, "_show_reasoning", False)
             if _show_reasoning_effective and response and not _intentional_silence:
                 last_reasoning = agent_result.get("last_reasoning")
                 if last_reasoning:
@@ -13570,14 +13522,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             
             # The agent already persisted these messages to SQLite via
             # _flush_messages_to_session_db(), so skip the DB write here
-            # to prevent the duplicate-write bug (#860 / #42039). This holds
-            # for the codex app-server runtime too: although it early-returns
-            # and bypasses conversation_loop's per-step flushes, it flushes its
-            # own projected assistant/tool messages before returning and
-            # reports agent_persisted=True (see agent/codex_runtime.py). Reading
-            # the flag (default = self._session_db is not None) keeps the
-            # persistence contract explicit and lets any future non-persisting
-            # runtime opt into a gateway-side write by returning False.
+            # to prevent the duplicate-write bug (#860 / #42039). Reading the
+            # agent_persisted flag (default = self._session_db is not None)
+            # keeps the persistence contract explicit and lets any future
+            # non-persisting runtime opt into a gateway-side write by
+            # returning False.
             agent_persisted = agent_result.get("agent_persisted", self._session_db is not None)
 
             # Find only the NEW messages from this turn (skip history we loaded).
@@ -13665,7 +13614,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 else:
                     # Attach the inbound platform message_id to the first user
                     # entry written this turn so platform-level quote-resolution
-                    # (e.g. Yuanbao QuoteContextMiddleware's transcript fallback)
+                    # (e.g. a middleware's transcript fallback)
                     # can find earlier @bot messages by their original message_id.
                     _user_msg_id_attached = False
                     for msg in new_messages:
@@ -15787,7 +15736,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     # /reload-mcp, which invalidates the prompt cache).  Two delivery
     # paths:
     #   1. Button UI — adapters that override ``send_slash_confirm``
-    #      (Telegram, Discord, Slack, Matrix, Feishu) render three
+    #      (Telegram, Discord, Slack) render three
     #      inline buttons.  The adapter routes the button click back via
     #      ``tools.slash_confirm.resolve(session_key, confirm_id, choice)``.
     #   2. Text fallback — adapters that don't override the hook get a
@@ -16065,7 +16014,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     # Built-in messaging platforms where the ``/update`` command is allowed.
     # ACP, API server, and webhooks are programmatic interfaces that should
     # not trigger system updates.  Plugin-migrated platforms (discord,
-    # mattermost, teams, irc, line, …) are NOT listed here — they declare
+    # teams, irc, line, …) are NOT listed here — they declare
     # ``allow_update_command=True`` on their ``PlatformEntry`` and are
     # honored via the registry fallback at ``_handle_update_command`` below.
     _UPDATE_ALLOWED_PLATFORMS = frozenset({
@@ -17605,7 +17554,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         ("compression", "model_thresholds"),
         ("compression", "threshold_tokens"),
         ("compression", "codex_gpt55_autoraise"),
-        ("compression", "codex_app_server_auto"),
         ("compression", "target_ratio"),
         ("compression", "protect_last_n"),
         ("agent", "disabled_toolsets"),
@@ -18742,7 +18690,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         (encryption, threading, media) and delegates all agent work to the
         remote server via ``POST /v1/chat/completions`` with SSE streaming.
 
-        This lets a Docker container handle Matrix E2EE while the actual
+        This lets a Docker container handle platform I/O while the actual
         agent runs on the host with full access to local files, memory,
         skills, and a unified session store.
         """
@@ -18845,9 +18793,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     _adapter_supports_edit = getattr(_adapter, "SUPPORTS_MESSAGE_EDITING", True)
                     _effective_cursor = _scfg.cursor if _adapter_supports_edit else ""
                     _buffer_only = False
-                    if source.platform == Platform.MATRIX:
-                        _effective_cursor = ""
-                        _buffer_only = True
                     # Fresh-final applies to Telegram only — other
                     # platforms either edit in place cheaply (Discord,
                     # Slack) or don't have the timestamp-on-edit
@@ -19287,21 +19232,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             setting: str,
             *,
             default: bool = False,
-            require_platform_override_for: set[Any] | None = None,
             allow_generic: bool = False,
         ) -> str:
             """Return off|raw|generic for a gateway visibility surface."""
-            if require_platform_override_for:
-                current_platform = _gateway_platform_value(source.platform)
-                platform_only = {
-                    _gateway_platform_value(item)
-                    for item in require_platform_override_for
-                }
-                if (
-                    current_platform in platform_only
-                    and not _has_platform_display_override(user_config, platform_key, setting)
-                ):
-                    return "off"
             value = resolve_display_setting(user_config, platform_key, setting, default)
             if isinstance(value, str) and value.strip().lower() == "generic":
                 return "generic" if allow_generic else "off"
@@ -19349,7 +19282,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         interim_assistant_messages_mode = _display_surface_mode(
             "interim_assistant_messages",
             default=True,
-            require_platform_override_for={Platform.MATTERMOST},
         )
         interim_assistant_messages_enabled = (
             source.platform != Platform.WEBHOOK
@@ -19357,12 +19289,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         )
         # thinking_progress is independent — if enabled, we need the progress
         # queue even when tool_progress is off (thinking relay uses same infra).
-        # Mattermost requires a per-platform opt-in: global scratch-text display
-        # is too easy to leak into busy public threads.
         _thinking_mode = _display_surface_mode(
             "thinking_progress",
             default=False,
-            require_platform_override_for={Platform.MATTERMOST},
         )
         _thinking_enabled = _thinking_mode != "off"
         needs_progress_queue = tool_progress_enabled or _thinking_enabled
@@ -19699,7 +19628,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # - Slack DM threading needs event_message_id fallback (reply thread)
         # - Telegram forum topics use message_thread_id; opencodon-created private
         #   DM topic lanes require both thread metadata and a reply anchor
-        # - Feishu only honors reply_in_thread when sending a reply, so topic
+        # - some adapters only honor reply_in_thread when sending a reply, so topic
         #   progress uses the triggering event message as the reply target
         # - Other platforms should use explicit source.thread_id only
         _progress_thread_id = _resolve_progress_thread_id(
@@ -19711,11 +19640,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             else {"thread_id": _progress_thread_id}
         ) if _progress_thread_id else None
         _progress_metadata = _non_conversational_metadata(_progress_metadata, platform=source.platform)
-        _progress_reply_to = (
-            event_message_id
-            if source.platform in (Platform.FEISHU, Platform.MATTERMOST) and source.thread_id and event_message_id
-            else None
-        )
+        _progress_reply_to = None
 
         async def write_tool_log():
             """Drain log_queue and append tool-call lines to tool_calls.log.
@@ -19781,7 +19706,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return
 
             # Skip tool progress for platforms that don't support message
-            # editing (e.g. iMessage/BlueBubbles) — each progress update
+            # editing — each progress update
             # would become a separate message bubble, which is noisy.
             if type(adapter).edit_message is BasePlatformAdapter.edit_message:
                 while not progress_queue.empty():
@@ -20153,17 +20078,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Bridge sync status_callback → async adapter.send for context pressure
         _status_adapter = self._adapter_for_source(source)
         _status_chat_id = source.chat_id
-        if source.platform == Platform.FEISHU and source.thread_id and event_message_id:
-            # Feishu topics only keep messages inside the topic when they are
-            # sent via the reply API with reply_in_thread=true. Status/interim,
-            # approval, and stream-consumer paths usually only receive metadata,
-            # so carry the triggering message id as a Feishu-specific fallback.
-            _status_thread_metadata: Optional[Dict[str, Any]] = {
-                "thread_id": _progress_thread_id,
-                "reply_to_message_id": event_message_id,
-            }
-        else:
-            _status_thread_metadata = self._thread_metadata_for_source(source, event_message_id) if _progress_thread_id else None
+        _status_thread_metadata: Optional[Dict[str, Any]] = (
+            self._thread_metadata_for_source(source, event_message_id)
+            if _progress_thread_id
+            else None
+        )
 
         def _status_callback_sync(event_type: str, message: str) -> None:
             if not _status_adapter or not _run_still_current():
@@ -20318,13 +20237,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         if not _adapter_supports_edit:
                             raise RuntimeError("skip streaming for non-editable platform")
                         _effective_cursor = _scfg.cursor
-                        # Some Matrix clients render the streaming cursor
-                        # as a visible tofu/white-box artifact.  Keep
-                        # streaming text on Matrix, but suppress the cursor.
                         _buffer_only = False
-                        if source.platform == Platform.MATRIX:
-                            _effective_cursor = ""
-                            _buffer_only = True
                         # Fresh-final applies to Telegram only — other
                         # platforms either edit in place cheaply or don't
                         # have the edit-timestamp-stays-stale problem.
@@ -20877,7 +20790,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             agent.clarify_callback = _clarify_callback_sync
 
             # Show assistant thinking between tool calls — independent of
-            # tool_progress mode. Mattermost needs an explicit per-platform
+            # tool_progress mode. Some platforms need an explicit per-platform
             # opt-in so global scratch-text display does not leak into threads.
             agent.thinking_progress = _thinking_enabled
             # Store agent reference for interrupt support
@@ -21012,9 +20925,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         )
 
                 # Fallback: plain text approval prompt.  Use the adapter's
-                # typed prefix so Slack/Matrix users are told the form they
+                # typed prefix so Slack users are told the form they
                 # can actually type (`!approve`) — typed "/" is blocked in
-                # Slack threads and reserved by Matrix clients.
+                # Slack threads.
                 _p = getattr(_status_adapter, "typed_command_prefix", "/")
                 msg = _format_exec_approval_fallback(
                     cmd,
@@ -21514,10 +21427,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 "session_id": effective_session_id,
                 "response_previewed": result.get("response_previewed", False),
                 "response_transformed": result.get("response_transformed", False),
-                # Pass through the agent_persisted flag so the persistence block
-                # above can correctly determine whether the codex app-server path
-                # self-persisted (it didn't — see codex_runtime.py).  Default
-                # True preserves the skip-db behaviour for the standard runtime.
+                # Pass through the agent_persisted flag so the persistence
+                # block above can determine whether the runtime self-persisted.
+                # Default True preserves the skip-db behaviour.
                 "agent_persisted": (result_holder[0].get("agent_persisted", True) if result_holder[0] else True),
             }
         

@@ -762,7 +762,7 @@ class TestSessionStoreSwitchSession:
         store._loaded = True
 
         source = SessionSource(
-            platform=Platform.FEISHU,
+            platform=Platform.WEBHOOK,
             chat_id="chat-1",
             chat_type="dm",
             user_id="user-1",
@@ -799,7 +799,7 @@ class TestSessionStoreLookupBySessionId:
 
     def test_returns_active_entry_for_persisted_session_id(self, store):
         source = SessionSource(
-            platform=Platform.MATRIX,
+            platform=Platform.API_SERVER,
             chat_id="!room:example.org",
             chat_type="group",
             user_id="@alice:example.org",

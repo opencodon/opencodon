@@ -898,6 +898,15 @@ CREATE TABLE IF NOT EXISTS sessions (
     cwd TEXT,
     git_branch TEXT,
     git_repo_root TEXT,
+    -- The project this session BELONGS to (a projects.db row id), as opposed to
+    -- ``cwd``, which is where it RUNS. Membership used to be re-derived on every
+    -- read by longest-prefix matching cwd against project_folders, so renaming
+    -- or moving a folder silently emptied a project, nested projects were
+    -- ambiguous, and a linked worktree outside the repo root needed special
+    -- casing. Recording it at creation makes membership a fact instead of an
+    -- inference. NULL means "no project" — legacy rows and genuinely detached
+    -- sessions alike, both of which still fall back to the cwd derivation.
+    project_id TEXT,
     billing_provider TEXT,
     billing_base_url TEXT,
     billing_mode TEXT,
@@ -1036,6 +1045,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_handoff_state
     ON sessions(handoff_state, started_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_root
     ON sessions(root_session_id);
+-- "this project's sessions, newest first" is the sidebar's hot query.
+CREATE INDEX IF NOT EXISTS idx_sessions_project
+    ON sessions(project_id, started_at DESC);
 """
 
 # Backfill sessions.root_session_id from parent chains (run whenever NULL
@@ -3248,6 +3260,7 @@ class SessionDB:
         cwd: str = None,
         profile_name: str = None,
         git_repo_root: str = None,
+        project_id: str = None,
     ) -> None:
         """Insert a session row, enriching NULL metadata on conflict.
 
@@ -3299,9 +3312,10 @@ class SessionDB:
                 """INSERT INTO sessions (
                    id, source, user_id, session_key, chat_id, chat_type, thread_id,
                    model, model_config, system_prompt, parent_session_id,
-                   root_session_id, cwd, profile_name, git_repo_root, started_at
+                   root_session_id, cwd, profile_name, git_repo_root, project_id,
+                   started_at
                 )
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(id) DO UPDATE SET
                        model = COALESCE(sessions.model, excluded.model),
                        model_config = COALESCE(sessions.model_config, excluded.model_config),
@@ -3319,7 +3333,8 @@ class SessionDB:
                        END,
                        cwd = COALESCE(sessions.cwd, excluded.cwd),
                        profile_name = COALESCE(sessions.profile_name, excluded.profile_name),
-                       git_repo_root = COALESCE(sessions.git_repo_root, excluded.git_repo_root)""",
+                       git_repo_root = COALESCE(sessions.git_repo_root, excluded.git_repo_root),
+                       project_id = COALESCE(sessions.project_id, excluded.project_id)""",
                 (
                     session_id,
                     source,
@@ -3336,6 +3351,7 @@ class SessionDB:
                     cwd,
                     profile_name,
                     git_repo_root,
+                    project_id,
                     time.time(),
                 ),
             )
@@ -3350,6 +3366,15 @@ class SessionDB:
                                              WHERE p.id = sessions.parent_session_id)),
                            git_branch = COALESCE(sessions.git_branch,
                                         (SELECT p.git_branch FROM sessions p
+                                          WHERE p.id = sessions.parent_session_id)),
+                           -- A compression fork, delegate, or branch continuation
+                           -- is the same work as its parent, so it belongs to the
+                           -- same project. Inherited rather than re-derived: the
+                           -- child may not carry a cwd of its own yet, and
+                           -- deriving would drop the lineage out of the project
+                           -- on every fork.
+                           project_id = COALESCE(sessions.project_id,
+                                        (SELECT p.project_id FROM sessions p
                                           WHERE p.id = sessions.parent_session_id))
                      WHERE id = ? AND parent_session_id IS NOT NULL""",
                     (session_id,),
@@ -3859,6 +3884,66 @@ class SessionDB:
             conn.execute(f"UPDATE sessions SET {', '.join(sets)} WHERE id = ?", params)
 
         self._execute_write(_do)
+
+    def set_session_project(self, session_id: str, project_id: Optional[str]) -> None:
+        """Record (or clear) the project a session belongs to.
+
+        Deliberately unconditional, unlike the COALESCE-guarded columns around
+        it: this is the one field the user can reassign, and an explicit move
+        must be able to overwrite an earlier value — including back to NULL for
+        "no project". Membership is not something to infer twice.
+        """
+        if not session_id:
+            return
+
+        pid = (project_id or "").strip() or None
+
+        def _do(conn):
+            conn.execute(
+                "UPDATE sessions SET project_id = ? WHERE id = ?", (pid, session_id)
+            )
+
+        self._execute_write(_do)
+
+    def backfill_session_projects(self, session_to_project: Dict[str, str]) -> int:
+        """Fill in ``project_id`` for rows that don't have one yet.
+
+        Used once per database to adopt sessions that predate the column, from
+        the same cwd-prefix derivation that used to run on every read. Only
+        touches NULLs, so re-running is harmless and an explicit assignment is
+        never overwritten. Returns the number of rows adopted.
+        """
+        pairs = [
+            (pid, sid)
+            for sid, pid in (session_to_project or {}).items()
+            if sid and pid
+        ]
+        if not pairs:
+            return 0
+
+        def _do(conn):
+            total = 0
+            for pid, sid in pairs:
+                cursor = conn.execute(
+                    "UPDATE sessions SET project_id = ? "
+                    "WHERE id = ? AND project_id IS NULL",
+                    (pid, sid),
+                )
+                total += cursor.rowcount
+            return total
+
+        return int(self._execute_write(_do) or 0)
+
+    def sessions_without_project(self, limit: int = 5000) -> List[Dict[str, Any]]:
+        """Rows that have a cwd but no project yet — the backfill's input."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT id, cwd FROM sessions "
+                "WHERE project_id IS NULL AND cwd IS NOT NULL AND TRIM(cwd) != '' "
+                "ORDER BY started_at DESC LIMIT ?",
+                (int(limit),),
+            ).fetchall()
+        return [{"id": row[0], "cwd": row[1]} for row in rows]
 
     def backfill_repo_roots(self, cwd_to_root: Dict[str, str]) -> None:
         """Persist resolved git repo roots for cwds that don't have one yet.

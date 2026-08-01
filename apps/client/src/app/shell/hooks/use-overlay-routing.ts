@@ -6,10 +6,12 @@ import {
   AGENTS_ROUTE,
   appViewForPath,
   COMMAND_CENTER_ROUTE,
+  homeRoute,
   isOverlayView,
   NEW_CHAT_ROUTE,
   STARMAP_ROUTE
 } from '@/app/routes'
+import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 
 const SECTIONS = ['sessions', 'system', 'usage'] as const
 
@@ -23,9 +25,21 @@ export function useOverlayRouting() {
   const agentsOpen = currentView === 'agents'
   const starmapOpen = currentView === 'starmap'
   const cronOpen = currentView === 'cron'
-  const profilesOpen = currentView === 'profiles'
+  // Gated off by default — see PROFILES_UI_ENABLED. The route itself stays in
+  // APP_ROUTES so `/profiles` remains reserved (an unreserved path falls
+  // through to the session-id parser); it simply renders nothing.
+  const profilesOpen = PROFILES_UI_ENABLED && currentView === 'profiles'
   const chatOpen = currentView === 'chat'
   const overlayOpen = isOverlayView(currentView)
+
+  // With the profiles UI off, `/profiles` renders no overlay AND isn't the
+  // chat view, so the shell would sit empty. A persisted window position or a
+  // hand-typed URL can still land there — bounce it home instead.
+  useEffect(() => {
+    if (!PROFILES_UI_ENABLED && currentView === 'profiles') {
+      navigate(homeRoute(), { replace: true })
+    }
+  }, [currentView, navigate])
 
   // Overlay routes (settings/command-center/agents) stash the underlying path
   // so closing them returns there instead of bouncing to /.

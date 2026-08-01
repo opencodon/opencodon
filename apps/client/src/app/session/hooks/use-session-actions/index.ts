@@ -3,17 +3,19 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 
 import { revealTreePane } from '@/components/pane-shell/tree/store'
-import { deleteSession, getSessionMessages, setSessionArchived } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { setSessionYolo } from '@/lib/yolo-session'
+import { deleteSession, getSessionMessages, setSessionArchived } from '@/opencodon'
 import { migrateSessionDraft } from '@/store/composer'
 import { clearQueuedPrompts, migrateQueuedPrompts } from '@/store/composer-queue'
 import { $pinnedSessionIds } from '@/store/layout'
 import { clearNotifications, notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $newChatProfile, ensureGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import {
+  $projectScope,
+  ALL_PROJECTS,
   beginSessionMutation,
   endSessionMutation,
   resolveNewSessionCwd,
@@ -68,7 +70,7 @@ import { broadcastSessionsChanged } from '@/store/session-sync'
 import { isWatchWindow } from '@/store/windows'
 import type { SessionCreateResponse, SessionMessage, SessionResumeResponse, UsageStats } from '@/types/opencodon'
 
-import { NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
+import { newChatRoute, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
 import type { ClientSessionState, SidebarNavItem } from '../../../types'
 import { sessionContextDrift } from '../session-context-drift'
 
@@ -170,10 +172,18 @@ async function desktopSessionCreateParams(cwd: string): Promise<Record<string, u
   const profile = $newChatProfile.get() ?? normalizeProfileKey($activeGatewayProfile.get())
   await ensureGatewayProfile(profile)
 
+  // The project the user is inside, recorded on the row rather than left to be
+  // re-derived from the cwd. Sent even when there is no cwd — a draft started
+  // in a project belongs to it whether or not a folder was picked, and that is
+  // exactly the case the cwd derivation cannot represent.
+  const projectScope = $projectScope.get()
+  const projectId = projectScope === ALL_PROJECTS ? '' : projectScope
+
   return {
     cols: 96,
     source: 'desktop',
     ...(cwd && { cwd }),
+    ...(projectId ? { project_id: projectId } : {}),
     ...(profile ? { profile } : {}),
     ...(selection.model
       ? { model: selection.model, ...(selection.provider ? { provider: selection.provider } : {}) }
@@ -301,8 +311,21 @@ export function useSessionActions({
       onFreshDraftRouteIntent?.()
 
       if (!preserveRoute) {
-        navigate(NEW_CHAT_ROUTE, { replace: replaceRoute })
+        // The project's home route IS its new-chat draft, so a fresh draft
+        // stays inside the project the user is working in. Hard-navigating to
+        // `/` here dropped them out of it — the sidebar, file tree and the new
+        // session's own cwd all fell back to unscoped.
+        navigate(newChatRoute(), { replace: replaceRoute })
       }
+
+      // Show the draft. The workspace tab hides itself while it holds an
+      // untouched draft and real session tabs are open (see
+      // syncWorkspaceTabVisibility), so "New session" has to ASK for it back.
+      // It cannot ride on the selection-homing listener in session-states:
+      // that fires on a CHANGE to $selectedStoredSessionId, and starting a
+      // draft while the workspace already holds one sets null over null —
+      // no change, no notification, no reveal.
+      revealTreePane('workspace')
 
       setActiveSessionId(null)
       activeSessionIdRef.current = null
@@ -447,21 +470,6 @@ export function useSessionActions({
     ]
   )
 
-  const selectSidebarItem = useCallback(
-    (item: SidebarNavItem) => {
-      if (item.action === 'new-session') {
-        startFreshSessionDraft()
-
-        return
-      }
-
-      if (item.route) {
-        navigate(item.route)
-      }
-    },
-    [navigate, startFreshSessionDraft]
-  )
-
   /** Create a fresh session and open it as a tile — leaves the primary chat alone.
    *  Used by the New session row's "Open in split" menu and the tab-strip "+".
    *
@@ -517,6 +525,27 @@ export function useSessionActions({
     [copy, requestGateway, updateSessionState]
   )
 
+  const selectSidebarItem = useCallback(
+    (item: SidebarNavItem) => {
+      // "New session" opens a REAL session as its own tab, listed in the
+      // sidebar — not a workspace draft. Two reasons: the workspace draft was
+      // also titled "New session", so the two were indistinguishable and
+      // traded places as tabs opened and closed; and a draft that exists only
+      // in the workspace can't be opened twice, which made "new session" feel
+      // like it refused to do anything the second time.
+      if (item.action === 'new-session') {
+        void openNewSessionTile('center')
+
+        return
+      }
+
+      if (item.route) {
+        navigate(item.route)
+      }
+    },
+    [navigate, openNewSessionTile]
+  )
+
   const openSettings = useCallback(() => {
     navigate(SETTINGS_ROUTE)
   }, [navigate])
@@ -528,7 +557,9 @@ export function useSessionActions({
       return
     }
 
-    navigate(NEW_CHAT_ROUTE)
+    // Same reason as the fresh draft above: closing settings with no session
+    // selected must land back in the project, not at the detached root.
+    navigate(newChatRoute())
   }, [navigate, selectedStoredSessionId])
 
   const resumeSession = useCallback(

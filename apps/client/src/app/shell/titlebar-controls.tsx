@@ -19,7 +19,7 @@ import {
   toggleSidebarOpen
 } from '@/store/layout'
 
-import { appViewForPath, isOverlayView, SETTINGS_ROUTE } from '../routes'
+import { appViewForPath, isLandingRoute, isOverlayView, SETTINGS_ROUTE } from '../routes'
 
 import { titlebarButtonClass } from './titlebar'
 
@@ -214,7 +214,13 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   // visually own the window. These control clusters are `fixed` at a higher
   // z-index than the overlay card, so they'd otherwise bleed over it — hide them
   // and let the overlay's own chrome (close button, drag region) take over.
-  if (isOverlayView(appViewForPath(location.pathname))) {
+  //
+  // The landing is hidden for a different reason: these are SHELL controls
+  // (toggle the sessions sidebar, flip the panes, open the pane tools). On the
+  // landing there is no shell for them to act on, so they would be dead
+  // buttons. Electron's traffic lights are OS-drawn and unaffected — this
+  // cluster only ever sat beside them.
+  if (isOverlayView(appViewForPath(location.pathname)) || isLandingRoute(location.pathname)) {
     return null
   }
 

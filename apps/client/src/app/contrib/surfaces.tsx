@@ -13,13 +13,14 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
 import { ContribBoundary } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
+import { MESSAGING_UI_ENABLED } from '@/lib/feature-flags'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $freshDraftReady, $gatewayState } from '@/store/session'
 
 import { ChatView } from '../chat'
 import { ChatSidebar } from '../chat/sidebar'
 import { TerminalPaneChrome } from '../right-sidebar/terminal/chrome'
-import { contributedRoutes, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
+import { contributedRoutes, homeRoute, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
 import { useStatusSnapshot } from '../shell/hooks/use-status-snapshot'
 import { useStatusbarItems } from '../shell/hooks/use-statusbar-items'
 import { ModelMenuPanel } from '../shell/model-menu-panel'
@@ -33,7 +34,6 @@ import type { SidebarActions, WiringActions } from './types'
 // (agents/settings/…) are the controller's and stay in wiring.tsx.
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
 const ScienceView = lazy(async () => ({ default: (await import('../science')).ScienceView }))
-const ProjectsView = lazy(async () => ({ default: (await import('../projects')).ProjectsView }))
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
 
@@ -182,11 +182,33 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
     <Routes>
       <Route element={chatView} index />
       <Route element={chatView} path=":sessionId" />
+      {/* The project namespace. Both project routes render the chat — a project
+          is carried by the URL and consumed as SCOPE (see
+          syncProjectScopeFromRoute), not as a different view.
+
+          `/projects` itself is absent on purpose: the landing replaces the
+          shell rather than rendering in this pane, so it is branched on in
+          ContribController and never reaches this table. The element below
+          renders nothing in that state — the whole tree is unmounted. */}
+      <Route element={chatView} path="projects/:projectId" />
+      <Route element={chatView} path="projects/:projectId/sessions/:sessionId" />
       <Route element={page(<SkillsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="skills" />
-      <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
+      {/* Messaging is gated off — see MESSAGING_UI_ENABLED. The path stays
+          declared so it remains RESERVED (an unreserved path falls through to
+          the session-id parser and `/messaging` would be read as a session);
+          it just bounces home instead of rendering the page. */}
+      <Route
+        element={
+          MESSAGING_UI_ENABLED ? (
+            page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)
+          ) : (
+            <Navigate replace to={homeRoute()} />
+          )
+        }
+        path="messaging"
+      />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
-        <Route element={page(<ScienceView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="science" />
-        <Route element={page(<ProjectsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="projects" />
+      <Route element={page(<ScienceView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="science" />
       <Route element={null} path="agents" />
       <Route element={null} path="command-center" />
       <Route element={null} path="cron" />

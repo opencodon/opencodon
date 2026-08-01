@@ -5,6 +5,7 @@ import { TreeSkeleton } from '@/components/chat/skeletons'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { TabDropdown } from '@/components/ui/tab-dropdown'
 import { Tip } from '@/components/ui/tooltip'
 import { useDelayedTrue } from '@/hooks/use-delayed-true'
 import { useI18n } from '@/i18n'
@@ -13,15 +14,14 @@ import { cn } from '@/lib/utils'
 import { $panesFlipped } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
 import { setCurrentSessionPreviewTarget } from '@/store/preview'
+import { $projectRootCwd } from '@/store/projects'
 import { $currentCwd } from '@/store/session'
-
-import { TabDropdown } from '@/components/ui/tab-dropdown'
 import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
+
+import { SidebarPanelLabel } from '../shell/sidebar-label'
 
 import { ArtifactsBody } from './files/artifacts-body'
 import { $filesScope } from './files/scope'
-import { SidebarPanelLabel } from '../shell/sidebar-label'
-
 import { ProjectTree } from './files/tree'
 import { useProjectTree } from './files/use-project-tree'
 
@@ -35,12 +35,19 @@ export function RightSidebarPane({ onActivateFile, onActivateFolder }: RightSide
   const r = t.rightSidebar
   const panesFlipped = useStore($panesFlipped)
   const currentCwd = useStore($currentCwd).trim()
+  const projectRootCwd = useStore($projectRootCwd)
 
-  // The file tree is simply "browse the session's working directory". If the
-  // session has a cwd — a repo, a sibling worktree, or any folder — show it. A
-  // bare/detached chat (resolveNewSessionCwd → '') has none, so it shows the
-  // empty hint instead of whatever dir Opencodon happens to run from.
-  const hasWorkspace = Boolean(currentCwd)
+  // The file tree browses the session's working directory. If the session has a
+  // cwd — a repo, a sibling worktree, or any folder — show that: it is the more
+  // specific truth, and a linked worktree legitimately sits outside the project
+  // root, so preferring the project would hide the files being worked on.
+  //
+  // Inside a project, a session with no cwd of its own (a fresh draft) falls
+  // back to the project's root rather than the empty hint — "I picked a project"
+  // is already an answer to "which files". Outside one, a bare/detached chat
+  // still shows the hint instead of whatever dir Opencodon happens to run from.
+  const workspaceCwd = currentCwd || projectRootCwd
+  const hasWorkspace = Boolean(workspaceCwd)
 
   const {
     collapseAll,
@@ -53,7 +60,7 @@ export function RightSidebarPane({ onActivateFile, onActivateFolder }: RightSide
     rootError,
     rootLoading,
     setNodeOpen
-  } = useProjectTree(hasWorkspace ? currentCwd : '')
+  } = useProjectTree(workspaceCwd)
 
   const cwdName =
     effectiveCwd

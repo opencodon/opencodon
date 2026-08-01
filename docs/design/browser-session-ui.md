@@ -159,13 +159,10 @@ Since resolved:
   merged: "this file exists" and "this file is a result" are different claims.
 - **Projects overview** — `/projects` lists every project with its session
   count and last activity beside the recent sessions across all of them.
+- **Landing surface** — the browser now opens on that overview, and a project
+  is carried by the route rather than held as sidebar state. See §9.
 
 Known gaps:
-
-- **Landing surface.** The overview exists but the app still opens on chat, per
-  `apps/desktop/DESIGN.md` ("chat is the home surface"). This client is shared
-  with the Electron shell, so where the app opens is a product decision rather
-  than a UI detail; flipping it is a one-line default once someone decides.
 - **The config SPA at `/`.** Smaller than it first looked: `/app` already
   carries Settings (config, keys, providers, models, env, gateway, keybinds,
   appearance, notifications, plugins, toolsets, memory, terminal backends),
@@ -187,3 +184,215 @@ the browser now renders structured messages directly. Its §4 decision that
 *the web UI does not execute code* still stands and is unaffected: this change
 adds no browser-originated code execution beyond the shell pane, which is an
 authenticated terminal on the same host, not a kernel submit path.
+
+## 9. Project-first — the route carries the project
+
+Status: **web done**; the desktop flip is a deferred one-line default.
+
+The browser opens on `/projects`, and picking one enters `/projects/:projectId`.
+Everything downstream of that — the sidebar's session list, the file tree,
+terminals, the artifact index — reads one atom, `$projectScope`, and the **route
+is its only writer** (`syncProjectScopeFromRoute`, called from the wiring
+controller). That is what makes back/forward, a reload, and a pasted link all
+agree; the atom was previously persisted to localStorage under a single
+unnamespaced key, which was a second source of truth that outlived the profile
+switches it should not have.
+
+Routes:
+
+```
+/                                     new chat (the desktop home)
+/projects                             the picker
+/projects/:projectId                  a project's new-chat draft
+/projects/:projectId/sessions/:id     a session inside a project
+/:sessionId                           still valid; re-homed into the project
+                                      form once the tree can say which project
+                                      owns its cwd (adoptBareSessionRoute)
+```
+
+Four decisions worth keeping:
+
+- **Projects are created, never discovered.** `projects.tree` still returns three
+  tiers — explicit rows, git repos auto-promoted from session cwds, and a bucket
+  for cwd-less sessions — but the last two are dropped at ingestion
+  (`userCreatedOnly` in `store/projects.ts`). One gate, so the sidebar, the
+  picker, scope resolution and path matching cannot disagree about what exists.
+  The home-dir git crawl is no longer called from the sidebar for the same
+  reason: it could only produce rows the app now drops.
+- **Route ids are projects.db row ids.** With discovery gone every project has
+  one, so there is no path-shaped or otherwise unstable ref to encode around, and
+  no slug indirection. The literal `sessions` segment keeps the two levels
+  unambiguous — a partial or unknown tail parses as *nothing*, rather than
+  silently degrading to the project home.
+- **`sessionRoute()` defaults to the current project.** The command palette,
+  keybinds, notification clicks and tab-close all build session routes; rather
+  than teach eighteen call sites about scope, the wiring mirrors the routed id
+  into `routes.ts` and `sessionRoute` reads it. Pass an explicit `null` for the
+  bare form.
+- **A session's own cwd still wins for the file tree.** Rooting the tree at the
+  project would hide a linked worktree, which legitimately lives outside the
+  repo root. The project root is the *fallback*, which is exactly the case of a
+  fresh draft inside a project — previously an empty pane.
+
+Inside a project the session list is bucketed by **recency** (Today / Yesterday /
+This week / This month / Earlier), not by repo → branch → worktree. Being in the
+project already answers "which checkout"; "what was I just doing" is the question
+a session list is for. The lane tree still exists and still feeds the worktree
+actions and the files pane — only the row grouping changed. One trap worth
+naming: session rows carry epoch **seconds** while `Date.now()` is milliseconds,
+and comparing them directly silently files every session under "Earlier".
+
+The picker's chrome is deliberately sparse — projects, recents, New project, and
+one Settings entry. Its job is *choosing*; the per-project surfaces belong inside
+a project and the profile-wide ones behind Settings. Resist growing a row of
+buttons back onto it.
+
+### The landing replaces the shell
+
+The picker is **not a page inside the app** — while it is showing, it *is* the
+app. It was first built as a route in the workspace pane's table, which wrapped
+it in the project-scoped shell: a sessions sidebar listing every session in the
+profile, sitting next to a project card claiming six. Both numbers were correct,
+which is the tell. A surface whose job is to establish scope cannot render inside
+a frame that already assumes it.
+
+So `ContribController` branches on `$landingOpen`: either the landing, or the
+titlebar band + `LayoutTreeRoot` + statusbar. Three things make that safe:
+
+- **The branch sits inside `ContribWiring`.** The socket, session stores,
+  streaming, the overlay set, and `TitlebarControls` (whose traffic lights may
+  never unmount) all live in the wiring and stay mounted across it. Leaving a
+  project is a re-home, not a reboot — see `apps/desktop/AGENTS.md`.
+- **The pane furniture is cheap to drop.** `$layoutTree` is a module atom
+  hydrated from localStorage, so zone arrangement, presets and widths restore
+  intact on the way back in. What genuinely dies is per-tile React state; if
+  unsent composer text ever needs to survive, lift it into a store rather than
+  keeping the shell mounted.
+- **`syncLandingOpen` tracks the last *non-overlay* path.** Overlays render over
+  whatever is beneath and must not change what that is. Without this, opening
+  Settings from the landing paints the whole chat shell behind the settings card
+  and closing it strands the user in a project they never picked.
+
+Two corollaries: `/projects` is absent from the workspace route table and from
+`BUILTIN_PAGES` in `route-tile.tsx` (a project picker docked beside the project
+it was meant to pick is nonsense), and the sidebar's Projects row is an
+**exit** — first in the list, arrow icon, titled with the project's own name,
+and the one row that can never show an active state, because firing it unmounts
+the sidebar.
+
+### The sidebar lists sessions, and only sessions
+
+The drill-in project overview is gone: no `projectOverview`, no
+`ProjectOverviewRow`, no `onEnterProject`. Projects and sessions were two row
+kinds with two destinations in one column, so a click there was ambiguous by
+construction. Choosing a project belongs to the landing, and the landing
+replaces this shell, so the two lists can never compete for the same click.
+
+What remains inside a project is one list — that project's sessions, bucketed by
+recency — and the section header just reads "Sessions"; the project's name lives
+in the exit row above it rather than being said twice. The lane model
+(`projectModel`) stays, because resolving `$projectScope` to its repos and
+worktrees still needs it; only the *listing* of projects went away. On the bare
+`/` chat route, where no project is in scope, the section falls back to the flat
+session list it always had.
+
+### Several sessions at once
+
+Multi-session tabs are not new work — `openSessionTile(storedId, 'center')`
+docks a session into the main zone's group, which renders it as a tab in that
+zone's strip. Three doors exist already: ⌘/⌃-click a sidebar row, middle-click
+one (browser muscle memory), or "Open in new tab" in the row's context menu.
+⇧⌘-click pops a session into its own window, and dragging a row into a zone
+splits instead of stacking. Tabs carry the full session verb set through
+`SessionTabMenu` (close others/right/all) and persist across restarts, re-resuming
+on boot.
+
+Not done here: per-project settings, skills, or model defaults. Config is
+strictly per-profile (`$OPENCODON_HOME/config.yaml`) and the only per-scope
+mechanism that exists is the per-session model override on `session.create`, so
+the picker exposes the global surfaces rather than pretending to scope them.
+Project scoping is also presentation-only at the boundary: `/api/fs/*` and
+`/api/git/*` take any absolute host path with no root confinement (`_fs_path`,
+`web_server.py`), so nothing here is a security boundary.
+
+## 10. Identity is a row; execution is a directory
+
+The reference product models a project as a **container row, not a directory** —
+frames, artifacts and folders hang off it by foreign key with `ON DELETE
+cascade`, and each conversation gets an ephemeral workspace keyed by frame id.
+That fits an analysis tool, where the scratch dir is disposable and the durable
+output is an artifact. It does not fit a coding agent: worktrees *are*
+directories, the review pane needs a checkout to diff, and the agent reads
+`AGENTS.md` / `CLAUDE.md` from the working directory.
+
+So we take the container's *identity* and keep the directory's *execution*:
+
+- **`sessions.project_id`** records membership at creation
+  (`opencodon_state.py`; written from `_ensure_session_db_row` via
+  `session.create`'s `project_id` param). `cwd` stays, but it now means only
+  "where this session runs".
+- **`_project_for_session`** (`tui_gateway/project_tree.py`) prefers the recorded
+  id and falls back to the cwd-prefix derivation. The client mirrors this in
+  `liveSessionProjectId`.
+
+The derivation it replaces was wrong in five ways that the column fixes outright:
+a folder rename or move silently emptied a project; two nested projects were
+ambiguous; a linked worktree outside the repo root needed special casing; a
+session with no cwd belonged nowhere; and two projects could not share a folder.
+
+Three rules the implementation depends on:
+
+- **A fork inherits, it does not re-derive.** Compression forks, delegates and
+  branch continuations copy the parent's `project_id` in the same `ON CONFLICT`
+  block that copies its cwd — a child often has no cwd of its own yet, and
+  deriving would drop the lineage out of the project on every fork.
+- **Moving the cwd does not move the project.** `session.cwd.set` deliberately
+  leaves membership alone; an agent `cd`-ing into a sibling checkout must not
+  emigrate the conversation. The one exception is a session that never had a
+  project — adopting it is new information, not a reassignment.
+- **A stale id falls through.** A recorded id naming a project that no longer
+  exists (or is archived) is ignored in favour of the derivation, so deleting a
+  project can't strand its sessions in a phantom row.
+
+Legacy rows are adopted once per database by
+`_backfill_session_projects_once`, guarded by a `state_meta` flag rather than by
+"are there NULLs left" — a session legitimately outside every project is NULL
+forever, so a count-based guard would re-scan on every tree build.
+
+One migration trap, learned the hard way: an index over a reconciler-added
+column must go in `DEFERRED_INDEX_SQL`, not `SCHEMA_SQL`. `_init_schema` runs
+`executescript(SCHEMA_SQL)` *before* `_reconcile_columns`, so on an existing
+database the `CREATE INDEX` fires against a column that doesn't exist yet and
+the whole open fails.
+
+### Agent Context
+
+`projects.context` is free text the user writes once and every agent in that
+project reads — conventions, domain background, house rules. It is deliberately
+**not** the same field as `description`, which is the blurb in the project list
+and never reaches a prompt; the two look alike in the create dialog, so each
+carries a hint saying which is which.
+
+`_load_project_context` (`agent/prompt_builder.py`) resolves it by id from
+`agent.project_id`, which the gateway sets from the session row, and falls back
+to the cwd derivation for the CLI and TUI — surfaces that have a directory but
+no project scope. Two details that matter:
+
+- It is **additive**, not part of the first-match-wins chain that picks exactly
+  one of `.opencodon.md` / `AGENTS.md` / `CLAUDE.md` / `.cursorrules`. A repo's
+  AGENTS.md describes the code; the project context describes how the user wants
+  agents to work in it. Both belong, and the project's leads.
+- The cwd handed to the fallback is **unresolved**. `project_folders` stores
+  `os.path.abspath` values, so a `.resolve()`d path misses every project reached
+  through a symlink — on macOS, anything under `/tmp`.
+
+### Two things we are NOT taking from the reference
+
+- **Project-scoped artifact storage.** Artifacts stay in the user's own folder,
+  where the work is. A `proj_<id>/…` blob store with virtual folders is right
+  when a project has no directory; ours does, and putting outputs anywhere but
+  the checkout would hide them from git, the file tree, and every other tool the
+  user already has.
+- **The per-frame ephemeral workspace.** The piece most specific to disposable
+  analysis, and the one that would hurt most in a tool whose output is a branch
+  you intend to merge.

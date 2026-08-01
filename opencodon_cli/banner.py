@@ -543,7 +543,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     _, unavailable_toolsets = check_tool_availability(quiet=True)
     # The availability check walks the GLOBAL toolset registry, so it includes
     # toolsets that aren't part of this agent's platform set at all (e.g.
-    # `discord`, `feishu_doc` on a CLI session). Those must never surface in the
+    # `discord` on a CLI session). Those must never surface in the
     # banner's "Available Tools" — they aren't exposed to the agent. Restrict to
     # toolsets actually enabled for this agent; a toolset that's enabled but
     # currently has unmet deps legitimately shows as disabled/lazy below.
@@ -554,8 +554,8 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             if str(item.get("id", item.get("name", ""))) in _enabled_ts
         ]
     disabled_tools = set()
-    # Tools whose toolset has a check_fn are lazy-initialized (e.g.
-    # homeassistant) — they show as unavailable at banner time because the
+    # Tools whose toolset has a check_fn are lazy-initialized — they show
+    # as unavailable at banner time because the
     # check hasn't run yet, but they aren't misconfigured.
     lazy_tools = set()
     for item in unavailable_toolsets:
@@ -774,19 +774,6 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     if mcp_connected:
         summary_parts.append(f"{mcp_connected} MCP servers")
     summary_parts.append("/help for commands")
-    # Indicate when the codex_app_server runtime is active so users
-    # understand why tool counts may not match what's actually reachable
-    # (codex builds its own tool list inside the spawned subprocess).
-    try:
-        from opencodon_cli.codex_runtime_switch import get_current_runtime
-        from opencodon_cli.config import load_config as _load_cfg
-        if get_current_runtime(_load_cfg()) == "codex_app_server":
-            right_lines.append(
-                f"[bold {accent}]Runtime:[/] [{text}]codex app-server[/] "
-                f"[dim {dim}](terminal/file ops/MCP run inside codex)[/]"
-            )
-    except Exception:
-        pass
     # Show active profile name when not 'default'
     try:
         from opencodon_cli.profiles import get_active_profile_name

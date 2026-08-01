@@ -185,7 +185,7 @@ class GatewayAuthorizationMixin:
         """Whether the adapter for *platform* gates access at intake itself.
 
         Mirrors ``BasePlatformAdapter.enforces_own_access_policy``. Adapters
-        such as WeCom, Weixin, Yuanbao, QQBot, and WhatsApp evaluate their
+        such as WhatsApp evaluate their
         documented ``dm_policy`` / ``group_policy`` / ``allow_from`` config before a
         message is dispatched to the gateway. The flag alone is NOT "already
         authorized": these adapters default to ``open``, which forwards every
@@ -285,7 +285,7 @@ class GatewayAuthorizationMixin:
     ) -> bool:
         """Whether a per-group sender allowlist gated this group message.
 
-        WeCom supports ``groups.<group_id>.allow_from`` on top of the top-level
+        Adapters support ``groups.<group_id>.allow_from`` on top of the top-level
         ``group_policy``. A group may be open at the chat level while still
         restricting which senders inside that group can invoke opencodon. If such a
         message reached the gateway, the adapter already checked that sender
@@ -651,8 +651,7 @@ class GatewayAuthorizationMixin:
         if global_allowlist:
             allowed_ids.update(uid.strip() for uid in global_allowlist.split(",") if uid.strip())
 
-        # "*" in any allowlist means allow everyone (consistent with
-        # SIGNAL_GROUP_ALLOWED_USERS precedent)
+        # "*" in any allowlist means allow everyone
         if "*" in allowed_ids:
             return True
 
@@ -719,7 +718,7 @@ class GatewayAuthorizationMixin:
             if config.unauthorized_dm_behavior != "pair":  # non-default → explicit override
                 return config.unauthorized_dm_behavior
 
-        # Config-driven dm_policy (WeCom / Weixin / Yuanbao / QQBot). An
+        # Config-driven dm_policy. An
         # allowlist or disabled DM policy means the operator restricted access,
         # so unauthorized DMs should be dropped silently rather than answered
         # with a pairing code. An explicit pairing policy opts back into codes.

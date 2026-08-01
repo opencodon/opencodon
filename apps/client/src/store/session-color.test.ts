@@ -40,6 +40,7 @@ function makeProject(id: string, folders: string[], color: null | string): Proje
     icon: null,
     id,
     name: id,
+    context: null,
     primary_path: folders[0] ?? null,
     slug: id
   }

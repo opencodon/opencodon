@@ -48,7 +48,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         "-y",
         action="store_true",
         default=False,
-        help="Assume yes for interactive prompts (config migration, stash restore). API-key entry is skipped; run 'opencodon config migrate' separately for those.",
+        help="Assume yes for interactive prompts (config reconcile, stash restore). API-key entry is skipped; run 'opencodon config reconcile' separately for those.",
     )
     update_parser.add_argument(
         "--branch",

@@ -67,54 +67,6 @@ def test_goal_mode_without_max_turns(kanban_home):
     assert task.goal_max_turns is None
 
 
-def test_legacy_db_migrates_goal_columns(tmp_path, monkeypatch):
-    """A tasks table created without goal columns must gain them on init."""
-    home = tmp_path / ".opencodon"
-    home.mkdir()
-    monkeypatch.setenv("OPENCODON_HOME", str(home))
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-    db_path = kb.kanban_db_path()
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    # Minimal legacy schema: tasks table missing goal_mode / goal_max_turns.
-    legacy = sqlite3.connect(db_path)
-    legacy.execute(
-        """
-        CREATE TABLE tasks (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            body TEXT,
-            assignee TEXT,
-            status TEXT NOT NULL DEFAULT 'ready',
-            priority INTEGER NOT NULL DEFAULT 0,
-            created_by TEXT,
-            created_at INTEGER NOT NULL,
-            started_at INTEGER,
-            completed_at INTEGER,
-            workspace_kind TEXT NOT NULL DEFAULT 'scratch',
-            workspace_path TEXT,
-            claim_lock TEXT,
-            claim_expires INTEGER
-        )
-        """
-    )
-    legacy.execute(
-        "INSERT INTO tasks (id, title, status, priority, created_at, workspace_kind) "
-        "VALUES ('legacy1', 'old', 'ready', 0, 1, 'scratch')"
-    )
-    legacy.commit()
-    legacy.close()
-
-    # init_db runs the additive migration.
-    kb.init_db()
-    with kb.connect() as conn:
-        cols = {r["name"] for r in conn.execute("PRAGMA table_info(tasks)")}
-        assert "goal_mode" in cols
-        assert "goal_max_turns" in cols
-        task = kb.get_task(conn, "legacy1")
-    # Existing row keeps the safe default.
-    assert task.goal_mode is False
-    assert task.goal_max_turns is None
 
 
 # ---------------------------------------------------------------------------

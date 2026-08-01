@@ -11,6 +11,7 @@ import { KbdCombo } from '@/components/ui/kbd'
 import { getOpencodonConfigRecord, listAllProfileSessions } from '@/opencodon'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import {
   Activity,
   AppWindow,
@@ -448,13 +449,19 @@ export function CommandPalette() {
             label: cc.nav.skills.title,
             run: go(SKILLS_ROUTE)
           },
-          {
-            action: 'nav.messaging',
-            icon: MessageCircle,
-            id: 'nav-messaging',
-            label: cc.nav.messaging.title,
-            run: go(MESSAGING_ROUTE)
-          },
+          // Messaging is hidden while MESSAGING_UI_ENABLED is off — the page it
+          // would open renders nothing.
+          ...(MESSAGING_UI_ENABLED
+            ? [
+                {
+                  action: 'nav.messaging',
+                  icon: MessageCircle,
+                  id: 'nav-messaging',
+                  label: cc.nav.messaging.title,
+                  run: go(MESSAGING_ROUTE)
+                }
+              ]
+            : []),
           {
             action: 'nav.artifacts',
             icon: Package,
@@ -484,7 +491,19 @@ export function CommandPalette() {
             label: t.shell.statusbar.cron,
             run: go(CRON_ROUTE)
           },
-          { action: 'nav.profiles', icon: Users, id: 'nav-profiles', label: t.profiles.title, run: go(PROFILES_ROUTE) },
+          // Profiles is hidden while PROFILES_UI_ENABLED is off — the page it
+          // navigates to renders nothing, so the entry would be a dead end.
+          ...(PROFILES_UI_ENABLED
+            ? [
+                {
+                  action: 'nav.profiles',
+                  icon: Users,
+                  id: 'nav-profiles',
+                  label: t.profiles.title,
+                  run: go(PROFILES_ROUTE)
+                }
+              ]
+            : []),
           { action: 'nav.agents', icon: Cpu, id: 'nav-agents', label: t.agents.title, run: go(AGENTS_ROUTE) },
           {
             icon: Starmap,

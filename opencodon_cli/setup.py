@@ -1679,10 +1679,6 @@ def _setup_telegram():
 # via setup_fn and dispatched through the plugin path). #41112 / #3823.
 
 
-# _setup_matrix moved to plugins/platforms/matrix/adapter.py::interactive_setup
-# (registered via setup_fn, dispatched through the plugin path). #41112.
-
-
 def _setup_webhooks():
     """Configure webhook integration."""
     print_header("Webhooks")
@@ -1693,7 +1689,7 @@ def _setup_webhooks():
             return
 
     print()
-    print_warning("⚠  Webhook and SMS platforms require exposing gateway ports to the")
+    print_warning("⚠  Webhook platforms require exposing gateway ports to the")
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
@@ -2074,8 +2070,7 @@ def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]
     elif section_key == "gateway":
         from opencodon_cli.gateway import _all_platforms, _platform_status
         # Count any non-empty status other than the "not configured" sentinel —
-        # platforms like WhatsApp ("enabled, not paired"), Matrix ("configured
-        # + E2EE"), and Signal ("partially configured") all indicate the user
+        # a platform like WhatsApp ("enabled, not paired") indicates the user
         # has already started setup and we shouldn't force the section to rerun.
         configured = [
             _gateway_platform_short_label(plat["label"])
@@ -2641,11 +2636,7 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
 
 def _run_quick_setup(config: dict, opencodon_home):
     """Quick setup — only configure items that are missing."""
-    from opencodon_cli.config import (
-        get_missing_env_vars,
-        get_missing_config_fields,
-        check_config_version,
-    )
+    from opencodon_cli.config import get_missing_env_vars
 
     print()
     print_header("Quick Setup — Missing Items Only")
@@ -2657,15 +2648,7 @@ def _run_quick_setup(config: dict, opencodon_home):
     missing_optional = [
         v for v in get_missing_env_vars(required_only=False) if not v.get("is_required")
     ]
-    missing_config = get_missing_config_fields()
-    current_ver, latest_ver = check_config_version()
-
-    has_anything_missing = (
-        missing_required
-        or missing_optional
-        or missing_config
-        or current_ver < latest_ver
-    )
+    has_anything_missing = bool(missing_required or missing_optional)
 
     if not has_anything_missing:
         print_success("Everything is configured! Nothing to do.")
@@ -2787,19 +2770,6 @@ def _run_quick_setup(config: dict, opencodon_home):
                 else:
                     print_warning("  Skipped")
                 print()
-
-    # Handle missing config fields
-    if missing_config:
-        print()
-        print_info(
-            f"Adding {len(missing_config)} new config option(s) with defaults..."
-        )
-        for field in missing_config:
-            print_success(f"  Added {field['key']} = {field['default']}")
-
-        # Update config version
-        config["_config_version"] = latest_ver
-        save_config(config)
 
     # Jump to summary
     _print_setup_summary(config, opencodon_home)

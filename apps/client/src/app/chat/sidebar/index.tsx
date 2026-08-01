@@ -9,7 +9,6 @@ import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
 import { SearchField } from '@/components/ui/search-field'
 import {
@@ -23,17 +22,17 @@ import {
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
-import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/opencodon'
 import { useI18n } from '@/i18n'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { profileColor } from '@/lib/profile-color'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/opencodon'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
 import {
-  $dismissedAutoProjectIds,
   $panesFlipped,
   $pinnedSessionIds,
   $sidebarAgentsGrouped,
@@ -52,7 +51,6 @@ import {
   setSidebarAgentsGrouped,
   setSidebarCronOpen,
   setSidebarPinsOpen,
-  setSidebarProjectOrderIds,
   setSidebarRecentsOpen,
   setSidebarSessionOrderIds,
   setSidebarSessionOrderManual,
@@ -70,16 +68,13 @@ import {
   $projectTree,
   $projectTreeLoading,
   $removedSessionIds,
-  $reposScanning,
   ALL_PROJECTS,
-  enterProject,
   exitProjectScope,
   fetchProjectSessions,
   openProjectCreate,
   refreshProjects,
   refreshProjectTree,
-  refreshWorktrees,
-  scanAndRecordRepos
+  refreshWorktrees
 } from '@/store/projects'
 import { openRouteTile } from '@/store/route-tiles'
 import {
@@ -101,9 +96,9 @@ import { $focusedStoredSessionId, $workingSessionIds, type SplitDir } from '@/st
 import {
   type AppView,
   ARTIFACTS_ROUTE,
+  MESSAGING_ROUTE,
   PROJECTS_ROUTE,
   SCIENCE_ROUTE,
-  MESSAGING_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   SKILLS_ROUTE
@@ -118,11 +113,10 @@ import { ProfileRail } from './profile-switcher'
 import { ProjectDialog } from './project-dialog'
 import {
   overlayLiveLanes,
-  overlayLivePreviews,
-  PROJECT_PREVIEW_COUNT,
-  ProjectBackRow,
   ProjectMenu,
+  projectSessions,
   projectTreeCwd,
+  recencySessionGroups,
   sessionRecency as sessionTime,
   type SidebarProjectTree,
   type SidebarSessionGroup,
@@ -142,6 +136,16 @@ const NON_SESSION_INITIAL_ROWS = 3
 const NON_SESSION_LOAD_STEP = 10
 
 const SIDEBAR_NAV: SidebarNavItem[] = [
+  // First, and an arrow rather than a folder: this row LEAVES the project for
+  // the landing, which replaces the shell entirely. It is the only row here
+  // that can never be "active" — once it fires, none of this is on screen.
+  {
+    id: 'projects',
+    label: '',
+    icon: props => <Codicon name="arrow-left" {...props} />,
+    route: PROJECTS_ROUTE,
+    keybindActionId: 'nav.projects'
+  },
   {
     id: 'new-session',
     label: '',
@@ -156,26 +160,26 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     route: SKILLS_ROUTE,
     keybindActionId: 'nav.skills'
   },
-  {
-    id: 'messaging',
-    label: '',
-    icon: props => <Codicon name="comment" {...props} />,
-    route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
-  },
+  // Messaging is hidden while MESSAGING_UI_ENABLED is off. Spread rather than
+  // filtered after the fact so the row simply isn't in the array — nothing
+  // downstream has to know it could have been there.
+  ...(MESSAGING_UI_ENABLED
+    ? [
+        {
+          id: 'messaging',
+          label: '',
+          icon: (props: { className?: string }) => <Codicon name="comment" {...props} />,
+          route: MESSAGING_ROUTE,
+          keybindActionId: 'nav.messaging'
+        }
+      ]
+    : []),
   {
     id: 'artifacts',
     label: '',
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
     keybindActionId: 'nav.artifacts'
-  },
-  {
-    id: 'projects',
-    label: '',
-    icon: props => <Codicon name="folder-library" {...props} />,
-    route: PROJECTS_ROUTE,
-    keybindActionId: 'nav.projects'
   },
   {
     id: 'science',
@@ -321,8 +325,10 @@ export function ChatSidebar({
   const profiles = useStore($profiles)
   const profileScope = useStore($profileScope)
   // Only surface the profile switcher when more than one profile exists, so
-  // single-profile users see the unchanged sidebar.
-  const multiProfile = profiles.length > 1
+  // single-profile users see the unchanged sidebar. PROFILES_UI_ENABLED pins
+  // this off entirely: the dashboard runs on the default profile, so the rail
+  // stays hidden even if named profiles exist on disk from CLI use.
+  const multiProfile = PROFILES_UI_ENABLED && profiles.length > 1
   // Gate ALL-profiles grouping on multiProfile too: if a user drops back to one
   // profile while scope is still ALL (persisted), the rail is hidden and they'd
   // otherwise be stuck in the grouped view with no way out.
@@ -336,12 +342,10 @@ export function ChatSidebar({
   const projectTree = useStore($projectTree)
   const projectTreeLoading = useStore($projectTreeLoading)
   const removedSessionIds = useStore($removedSessionIds)
-  const reposScanning = useStore($reposScanning)
   const activeProjectId = useStore($activeProjectId)
   const projectScope = useStore($projectScope)
   const currentCwd = useStore($currentCwd)
   const gatewayState = useStore($gatewayState)
-  const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
   const [searchQuery, setSearchQuery] = useState('')
@@ -561,27 +565,23 @@ export function ChatSidebar({
   useEffect(() => {
     if (worktreeGroupingActive && gatewayReady) {
       void refreshProjects()
-      // Paint the list from the fast tree fetch (explicit projects + repos from
-      // existing sessions / the backend cache) FIRST, then kick off the heavy
-      // home-dir git crawl so newly-discovered repos fold in afterward — instead
-      // of the crawl blocking the first render.
-      void refreshProjectTree().finally(() => void scanAndRecordRepos())
+      // No home-dir git crawl: projects are created by the user, never
+      // discovered, so a scan could only produce rows the app now drops at
+      // ingestion (see userCreatedOnly). Deleting the call rather than the
+      // machinery — `scanAndRecordRepos` is still reachable from the Workspace
+      // settings pane, which is where a repo-scan belongs if it comes back.
+      void refreshProjectTree()
     }
   }, [worktreeGroupingActive, profileScope, gatewayReady])
 
-  // Out-of-band repo changes (a `git init` / `rm -rf` in another terminal) emit
-  // no git events, so — like every git GUI — re-pull on window focus / tab
-  // visibility instead of stranding the tree until a hard reload. The tree
-  // fetch is cheap and runs every focus (picks up explicit create/delete +
-  // session regrouping); the heavy disk crawl that surfaces brand-new repos is
-  // throttled. Agent-driven changes already refresh via $workspaceChangeTick.
+  // Out-of-band changes (a project created in the TUI, a worktree removed in
+  // another terminal) emit no events, so — like every git GUI — re-pull on
+  // window focus / tab visibility instead of stranding the tree until a hard
+  // reload. Agent-driven changes already refresh via $workspaceChangeTick.
   useEffect(() => {
     if (!worktreeGroupingActive || !gatewayReady) {
       return
     }
-
-    let lastScanAt = 0
-    const SCAN_THROTTLE_MS = 30_000
 
     const onActive = () => {
       if (document.visibilityState === 'hidden') {
@@ -590,13 +590,6 @@ export function ChatSidebar({
 
       void refreshProjects()
       void refreshProjectTree()
-
-      const now = Date.now()
-
-      if (now - lastScanAt >= SCAN_THROTTLE_MS) {
-        lastScanAt = now
-        void scanAndRecordRepos(true)
-      }
     }
 
     window.addEventListener('focus', onActive)
@@ -619,37 +612,34 @@ export function ChatSidebar({
   )
 
   // ── Projects: the single top-level model (authoritative, from the backend) ──
-  // `projects.tree` already unifies explicit projects + auto repos and folds
-  // linked worktrees under their main repo. The desktop only layers local view
-  // state on top: dismissed auto-projects, persisted repo/lane order, and the
-  // overview sort. Membership is the backend tree's — never re-derived here.
+  // `projects.tree` is the membership authority and folds linked worktrees under
+  // their main repo; `$projectTree` has already dropped everything the user
+  // didn't create. The sidebar only layers local view state on top: persisted
+  // repo/lane order and the overview sort. Never re-derived here.
   const projectModel = useMemo<SidebarProjectTree[]>(() => {
     if (showAllProfiles) {
       return []
     }
 
-    const dismissed = new Set(dismissedAutoProjects)
-
     const sorted = sortProjectsForOverview(
-      projectTree
-        .filter(node => !(node.isAuto && dismissed.has(node.id)))
-        .map(project => ({ ...project, repos: orderRepos(project.repos) })),
+      projectTree.map(project => ({ ...project, repos: orderRepos(project.repos) })),
       activeProjectId
     )
 
     // Layer the user's manual drag-order on top of the deterministic sort. Empty
     // (default) returns `sorted` untouched; new projects surface on top.
     return orderByIds(sorted, project => project.id, projectOrderIds)
-  }, [showAllProfiles, projectTree, dismissedAutoProjects, orderRepos, activeProjectId, projectOrderIds])
+  }, [showAllProfiles, projectTree, orderRepos, activeProjectId, projectOrderIds])
 
-  // The overview only renders in grouped mode; the model stays live regardless
-  // so scoping is consistent across views.
+  // Grouped mode only; the model stays live regardless so scoping is
+  // consistent across views.
   const agentProjectTree = worktreeGroupingActive ? projectModel : undefined
 
-  // ── Project switcher (drill-in) ────────────────────────────────────────────
-  // Grouped, single-profile view is a project switcher: ALL_PROJECTS shows the
-  // overview (a list you click into); a concrete scope means you've "entered" a
-  // project, so the Sessions list shows ONLY that project's worktrees/sessions.
+  // ── The project in scope ───────────────────────────────────────────────────
+  // The route sets `$projectScope`; the model is consulted only to resolve that
+  // id to its lanes. There is no drill-in here any more — the sidebar never
+  // lists projects, so a scope is either resolved or the user is on the bare
+  // chat route with a flat session list.
   const projectsActive = Boolean(agentProjectTree?.length)
 
   // The overview node for the entered project (structure + counts, empty lanes).
@@ -714,6 +704,25 @@ export function ChatSidebar({
     () => (enteredProject ? overlayLiveLanes(enteredProject, agentSessions, removedSessionIds) : undefined),
     [enteredProject, agentSessions, removedSessionIds]
   )
+
+  // Inside a project the session list is bucketed by TIME, not by repo/branch/
+  // worktree. "Which checkout is this in" is already answered by being in the
+  // project; "what was I just doing" is the question a session list is for. The
+  // lane tree above still feeds the worktree actions and the files pane — it is
+  // the row grouping that changes, not the model.
+  //
+  // Reuses the same overlay as the lane view so a just-created session appears
+  // immediately, then dedupes: `overlayLiveLanes` may already carry it.
+  const enteredProjectGroups = useMemo(() => {
+    if (!enteredProjectContent) {
+      return undefined
+    }
+
+    const removed = removedSessionIds
+    const snapshot = projectSessions(enteredProjectContent).filter(session => !removed.has(session.id))
+
+    return recencySessionGroups(snapshot, s.projects.recency, Date.now())
+  }, [enteredProjectContent, removedSessionIds, s.projects.recency])
 
   const scopedRepoPaths = useMemo(
     () =>
@@ -785,53 +794,45 @@ export function ChatSidebar({
     lastProjectCwdSyncRef.current = enteredProject.id
   }, [inProject, enteredProject, syncProjectCwd])
 
-  // A persisted scope can go stale (project archived/removed, or a profile
-  // switch swapped the whole catalog). Once projects have loaded, drop back to
-  // the overview if the scoped id is gone.
+  // A routed scope can go stale — the project was archived or removed, or a
+  // profile switch swapped the whole catalog out from under the URL. Once
+  // projects have loaded, fall back to the overview rather than leaving the
+  // user inside a project that no longer exists.
   useEffect(() => {
     if (projectScope !== ALL_PROJECTS && projectsActive && !enteredProject) {
       exitProjectScope()
     }
   }, [projectScope, projectsActive, enteredProject])
 
-  // The project overview (drill-in list) vs. the entered project's content.
-  const projectOverview = projectsActive && !inProject ? agentProjectTree : undefined
+  // No project OVERVIEW here. The sidebar lists sessions — only ever the
+  // sessions of the project you are in. Listing projects and sessions in the
+  // same column made a click ambiguous: two row kinds, two destinations, one
+  // list. Choosing a project is the landing's job, and the landing replaces
+  // this whole shell, so the two can never be on screen at once to compete.
+  // Always "Sessions". It used to read "Projects" at the overview and the
+  // project's name inside one — both are wrong now: there is no overview, and
+  // the exit row above already carries the project's name, so repeating it as
+  // the section header said the same thing twice while naming neither list.
+  const sessionsLabel = s.sessions
 
-  // Preview rows come from the backend tree (each project carries its
-  // most-recent sessions), overlaid with live $sessions so a just-created
-  // session shows under its project instantly (and with its working arc),
-  // matching the flat Recents list. Keyed by project path for the rows.
-  const overviewPreviews = useMemo<Record<string, SessionInfo[]>>(
-    () => overlayLivePreviews(projectOverview ?? [], agentSessions, projects, PROJECT_PREVIEW_COUNT, removedSessionIds),
-    [projectOverview, agentSessions, projects, removedSessionIds]
-  )
+  // The exit row is titled by the project you are in: a back arrow plus the
+  // project's own name reads as "leave this project", where a generic label
+  // read as one more destination in the list. Sourced from the project ROWS
+  // rather than the lane tree — the tree only exists in grouped mode, and the
+  // row must be titled either way. Falls back to the static label on the bare
+  // chat route, where no project is in scope.
+  const scopedProjectName =
+    projectScope === ALL_PROJECTS
+      ? null
+      : (projects.find(project => project.id === projectScope)?.name ?? enteredProject?.label ?? null)
 
-  const onEnterProject = useCallback(
-    (id: string) => {
-      const project = projectModel.find(node => node.id === id)
-
-      if (project) {
-        syncProjectCwd(project)
-      }
-
-      enterProject(id)
-    },
-    [projectModel, syncProjectCwd]
-  )
-
-  // The Sessions section is a project switcher in grouped mode: its label reads
-  // "Sessions" when flat, "Projects" at the overview, and the project's name
-  // once you've entered one.
-  const sessionsLabel =
-    inProject && enteredProject ? enteredProject.label : worktreeGroupingActive ? s.projects.sectionLabel : s.sessions
+  const navLabel = (item: SidebarNavItem) =>
+    (item.id === 'projects' ? scopedProjectName : null) ?? s.nav[item.id] ?? item.label
 
   // Mirror the section's skeleton gate (projectsLoading + nothing to show yet):
   // while the skeleton is up there's no point also spinning the header count.
   const projectsSkeletonVisible =
-    worktreeGroupingActive &&
-    projectTreeLoading &&
-    !projectOverview?.length &&
-    !(inProject && (enteredProject?.sessionCount ?? 0) > 0)
+    worktreeGroupingActive && projectTreeLoading && !(inProject && (enteredProject?.sessionCount ?? 0) > 0)
 
   const runKeyedLoad = useCallback(
     (
@@ -879,7 +880,9 @@ export function ChatSidebar({
   // within a platform by recency. Per-platform totals (when a "load more" has
   // resolved them) drive the count + whether more remain on disk.
   const messagingGroups = useMemo<MessagingSection[]>(() => {
-    if (!messagingSessions.length) {
+    // Gated off — see MESSAGING_UI_ENABLED. The per-platform presentation is a
+    // messaging surface; the sessions themselves stay in the normal list.
+    if (!MESSAGING_UI_ENABLED || !messagingSessions.length) {
       return []
     }
 
@@ -1027,7 +1030,9 @@ export function ChatSidebar({
     }
   }, [onLoadMoreSessions, recentsLoadMorePending])
 
-  const displayAgentGroups = showAllProfiles ? profileGroups : undefined
+  // Three grouping modes share one `groups` prop: profiles (all-profiles view),
+  // recency (inside a project), or none (the flat recents list).
+  const displayAgentGroups = showAllProfiles ? profileGroups : inProject ? enteredProjectGroups : undefined
 
   // The recents list owns its own (virtualized) scroll container only when it's a
   // long flat list. In that case it must keep its scroller even in short mode, so
@@ -1085,7 +1090,6 @@ export function ChatSidebar({
 
   // Persist the new project overview order (drag-to-reorder); orderByIds applies
   // it over the default sort, so stale/new ids reconcile on the next render.
-  const reorderProjects = (ids: string[]) => setSidebarProjectOrderIds(ids)
 
   // Sortable rows carry live session ids; the pinned store is keyed by durable
   // (lineage-root) ids, so translate before persisting the new order.
@@ -1121,12 +1125,34 @@ export function ChatSidebar({
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'messaging' && currentView === 'messaging') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
-                  (item.id === 'projects' && currentView === 'projects') ||
                   (item.id === 'science' && currentView === 'science') ||
+                  // No `projects` clause: that row navigates out of the shell,
+                  // so this sidebar is unmounted by the time its route is
+                  // current. An active state for it would be unreachable.
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)
 
                 const isNewSession = item.id === 'new-session'
+
+                // The project row is the one place in the sidebar that names
+                // the current project, so it is where the project's own
+                // actions belong. Rendered as a sibling of the row button
+                // (absolutely positioned) rather than inside it: both are
+                // real <button>s and nesting them is invalid HTML.
+                const projectActions =
+                  item.id === 'projects' && inProject && enteredProject ? (
+                    <div className="absolute inset-y-0 right-1.5 flex items-center gap-1">
+                      {enteredProject.path && (
+                        <StartWorkButton onStarted={onNewSessionInWorkspace} repoPath={enteredProject.path} />
+                      )}
+                      <ProjectMenu
+                        isActive={enteredProject.id === activeProjectId}
+                        onExitScope={exitProjectScope}
+                        project={enteredProject}
+                        scoped
+                      />
+                    </div>
+                  ) : null
 
                 const button = (
                   <SidebarMenuButton
@@ -1143,7 +1169,10 @@ export function ChatSidebar({
                       active &&
                         'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
                       !isInteractive &&
-                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
+                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit',
+                      // Clear the trailing action cluster so a long project
+                      // name truncates before it instead of sliding under it.
+                      projectActions && 'pr-12'
                     )}
                     onClick={() => {
                       // A plain new session lands in whatever profile the live
@@ -1160,15 +1189,15 @@ export function ChatSidebar({
                       item.keybindActionId
                         ? {
                             children: (
-                              <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
+                              <TipKeybindLabel actionId={item.keybindActionId} text={navLabel(item)} />
                             )
                           }
-                        : (s.nav[item.id] ?? item.label)
+                        : (navLabel(item))
                     }
                     type="button"
                   >
                     <item.icon className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]" />
-                    <span className="min-w-0 flex-1 truncate">{s.nav[item.id] ?? item.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{navLabel(item)}</span>
                     {isNewSession && (
                       <KbdGroup
                         className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
@@ -1182,11 +1211,15 @@ export function ChatSidebar({
                 // New session + route-backed pages can open in a split —
                 // right-click for the directional "Open in split" submenu.
                 return (
-                  <SidebarMenuItem key={item.id}>
+                  // `group/section` is what reveals the actions on hover —
+                  // StartWorkButton and the scoped ProjectMenu both key their
+                  // opacity off that group name (they were written for the
+                  // section header they used to live in).
+                  <SidebarMenuItem className={cn(projectActions && 'group/section')} key={item.id}>
                     {isNewSession || item.route ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
-                        <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
+                        <ContextMenuContent aria-label={navLabel(item)}>
                           <SplitSubmenu
                             kit={CONTEXT_SPLIT_KIT}
                             label={s.row.openInSplit}
@@ -1203,6 +1236,7 @@ export function ChatSidebar({
                     ) : (
                       button
                     )}
+                    {projectActions}
                   </SidebarMenuItem>
                 )
               })}
@@ -1321,35 +1355,12 @@ export function ChatSidebar({
                 forceEmptyState={showSessionSkeletons}
                 groups={displayAgentGroups}
                 headerAction={
-                  inProject && enteredProject ? (
-                    <div className="group/workspace flex shrink-0 items-center gap-0.5">
-                      {enteredProject.path && (
-                        <StartWorkButton onStarted={onNewSessionInWorkspace} repoPath={enteredProject.path} />
-                      )}
-                      <ProjectMenu
-                        isActive={enteredProject.id === activeProjectId}
-                        onExitScope={exitProjectScope}
-                        project={enteredProject}
-                        scoped
-                      />
-                      <div className="grid size-6 place-items-center">
-                        <Tip label={s.showProjects}>
-                          <Button
-                            aria-label={s.showProjects}
-                            className={HEADER_NAV_BTN}
-                            onClick={event => {
-                              event.stopPropagation()
-                              exitProjectScope()
-                            }}
-                            size="icon-xs"
-                            variant="ghost"
-                          >
-                            <Codicon name="list-unordered" size="0.75rem" />
-                          </Button>
-                        </Tip>
-                      </div>
-                    </div>
-                  ) : (
+                  // Inside a project this header carries NOTHING. It labels a
+                  // list of sessions; the project's own actions (start work,
+                  // the project menu) belong to the project row at the top,
+                  // next to the name they act on. A third exit button lived
+                  // here too, duplicating that row's back arrow.
+                  inProject ? null : (
                     <div className="flex shrink-0 items-center gap-0.5">
                       {!showAllProfiles ? (
                         <Tip label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}>
@@ -1398,34 +1409,25 @@ export function ChatSidebar({
                   )
                 }
                 label={sessionsLabel}
-                labelMeta={
-                  worktreeGroupingActive ? (
-                    reposScanning && !projectsSkeletonVisible ? (
-                      <GlyphSpinner ariaLabel={s.loading} className="text-[0.6875rem] text-(--ui-text-quaternary)" />
-                    ) : undefined
-                  ) : (
-                    recentsMeta
-                  )
-                }
+                // No "finding repos" spinner in grouped mode any more: nothing
+                // is being discovered in the background, so there is no
+                // in-flight state for the header to report.
+                labelMeta={worktreeGroupingActive ? undefined : recentsMeta}
                 liveSessions={inProject ? agentSessions : undefined}
                 onArchiveSession={onArchiveSession}
                 onBranchSession={onBranchSession}
                 onDeleteSession={onDeleteSession}
-                onEnterProject={onEnterProject}
                 onNewSessionInWorkspace={showAllProfiles ? undefined : onNewSessionInWorkspace}
-                onReorderProjects={showAllProfiles ? undefined : reorderProjects}
                 onReorderSessions={showAllProfiles ? undefined : reorderSessions}
                 onResumeSession={onResumeSession}
                 onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
                 onTogglePin={pinSession}
                 open={agentsOpen}
                 pinned={false}
-                projectBackRow={
-                  inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
-                }
-                projectContent={inProject ? enteredProjectContent : undefined}
-                projectOverview={projectOverview}
-                projectOverviewPreviews={overviewPreviews}
+                // `projectContent` (the lane tree) stands down inside a project
+                // — `groups` carries the recency buckets instead. It stays wired
+                // for the empty/hydrating states the section still keys off.
+                projectContent={undefined}
                 projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}
                 projectsLoading={worktreeGroupingActive ? projectTreeLoading : false}
                 removedSessionIds={inProject ? removedSessionIds : undefined}
@@ -1502,9 +1504,16 @@ export function ChatSidebar({
 
         {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
 
-        <div className="shrink-0 px-0.5 pb-1 pt-0.5">
-          <ProfileRail />
-        </div>
+        {/* The rail is the one profile surface that renders even for a
+            single-profile install (it carries the create affordance), so it
+            needs its own gate — `multiProfile` above only covers grouping and
+            per-row tags. Gated here rather than inside ProfileRail so the
+            footer padding goes with it. */}
+        {PROFILES_UI_ENABLED && (
+          <div className="shrink-0 px-0.5 pb-1 pt-0.5">
+            <ProfileRail />
+          </div>
+        )}
       </SidebarContent>
       <ProjectDialog />
     </Sidebar>

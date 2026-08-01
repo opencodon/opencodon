@@ -454,14 +454,6 @@ compression:
   # the request estimate under the threshold. Validated >= 1, hard cap 10.
   max_attempts: 3
 
-  # Codex app-server (codex CLI runtime) thread-compaction mode. The codex
-  # agent owns the real thread context on this runtime, so opencodon' summarizer
-  # cannot shrink it — compaction goes through the app server instead.
-  #   native = let Codex decide when to compact its own thread (default)
-  #   opencodon = let opencodon threshold trigger Codex thread/compact/start
-  #   off    = opencodon will not auto-trigger compaction; Codex may still compact natively
-  codex_app_server_auto: native
-
   # Number of non-system messages to protect at the head of the transcript, in
   # ADDITION to the system prompt (which is always implicitly protected).
   # Head messages are NEVER summarized — they survive every compression

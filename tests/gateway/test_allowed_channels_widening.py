@@ -172,7 +172,7 @@ def _make_dingtalk_adapter(*, allowed_chats=None, require_mention=None):
         extra["require_mention"] = require_mention
 
     adapter = object.__new__(DingTalkAdapter)
-    adapter.platform = Platform.DINGTALK
+    adapter.platform = Platform.DISCORD
     adapter.config = PlatformConfig(enabled=True, extra=extra)
     return adapter
 

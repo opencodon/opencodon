@@ -19,7 +19,7 @@ Events:
 Errors in hooks are caught and logged but never block the main pipeline.
 
 Context dict passed to ``agent:start`` / ``agent:end`` handlers:
-  platform     -- source platform name (e.g. "telegram", "matrix", "slack")
+  platform     -- source platform name (e.g. "telegram", "discord", "slack")
   user_id      -- platform user id of the sender
   chat_id      -- platform chat id (group/DM identifier)
   thread_id    -- Telegram forum-topic id / thread root id (string; empty

@@ -1,13 +1,14 @@
-import { atom } from 'nanostores'
+import { atom, computed } from 'nanostores'
 
 import { liveSessionProjectId, type SidebarProjectTree } from '@/app/chat/sidebar/projects/workspace-groups'
+import { projectRoute, PROJECTS_ROUTE, routeSessionId } from '@/app/routes'
 import type { OpencodonGitBaseBranch, OpencodonGitBranch } from '@/global'
-import { getOpencodonConfig, type OpencodonGateway } from '@/opencodon'
 import { translateNow } from '@/i18n'
 import { desktopDefaultCwd, isDesktopFsRemoteMode, selectDesktopPaths, writeDesktopFileText } from '@/lib/desktop-fs'
 import { desktopGit } from '@/lib/desktop-git'
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
-import { persistentAtom } from '@/lib/persisted'
+import { currentRoutePath, navigateTo } from '@/lib/navigate'
+import { getOpencodonConfig, type OpencodonGateway } from '@/opencodon'
 import { $gateway, activeGateway, ensureActiveGatewayOpen } from '@/store/gateway'
 import { setSidebarAgentsGrouped } from '@/store/layout'
 import { notify } from '@/store/notifications'
@@ -124,37 +125,72 @@ export const endSessionMutation = (ids: Array<null | string | undefined>): void 
 export const $reposScanning = atom(false)
 
 // ── Project scope (the "you're inside a project" view, mirroring profile scope)─
-// The sidebar's grouped view is a project switcher: ALL_PROJECTS shows the
-// project overview (a list you drill into), and a concrete id means you've
-// "entered" that project so only its worktrees/branches/sessions show. This is
-// pure view state (localStorage), distinct from the durable active-project
-// pointer in projects.db — though entering a project also makes it active so new
-// chats land there, exactly as selecting a profile does.
+// ALL_PROJECTS means the project overview (the landing, a list you drill into);
+// a concrete id means you've "entered" that project, so only its worktrees,
+// branches, sessions, files and terminals show.
+//
+// The ROUTE is the source of truth: `/projects/:projectId` writes this atom via
+// `syncProjectScopeFromRoute`, and nothing else may set it. That is what makes
+// back/forward, reload, and a shared link all agree, and it is why the atom is
+// no longer persisted — a localStorage copy was a second, unnamespaced source of
+// truth that survived profile switches even though projects.db is per-profile.
 export const ALL_PROJECTS = '__all_projects__'
 
-const PROJECT_SCOPE_KEY = 'opencodon.desktop.projectScope'
+export const $projectScope = atom<string>(ALL_PROJECTS)
 
-export const $projectScope = persistentAtom<string>(PROJECT_SCOPE_KEY, ALL_PROJECTS, {
-  decode: raw => raw || ALL_PROJECTS,
-  encode: value => value || ALL_PROJECTS
-})
+/** Apply the project carried by the route. The ONLY writer of `$projectScope`. */
+export function syncProjectScopeFromRoute(projectId: null | string): void {
+  const next = projectId?.trim() || ALL_PROJECTS
 
-// Enter a project: scope the sidebar to it and make it the active project
-// (best-effort — the durable pointer is nice-to-have, the view scope is the
-// point). Never opens a session.
-export function enterProject(id: string): void {
-  $projectScope.set(id)
+  if (next !== $projectScope.get()) {
+    $projectScope.set(next)
+  }
 
-  // Only explicit, persisted projects (ids are `p_<hex>`) become active. Auto
-  // projects (ids are filesystem paths) and the "No project" bucket have no
-  // durable row to pin, so they're view-scope only.
-  if (id.startsWith('p_')) {
-    void setActiveProject(id).catch(() => undefined)
+  // Entering a project also makes it the durable active project, so a new chat
+  // from any surface — TUI included — lands there. Best-effort: the view scope
+  // is the point, the pointer is a nicety.
+  if (next !== ALL_PROJECTS && next !== $activeProjectId.get()) {
+    void setActiveProject(next).catch(() => undefined)
   }
 }
 
+/**
+ * Adopt a session opened by its bare `/:sessionId` route — a notification
+ * click, a deep link, a recents row on the landing — into its project's
+ * namespace, so the sidebar, files pane and terminal scope to it like any
+ * session opened from inside the project. No-op when the session has no cwd
+ * (a detached chat genuinely belongs to no project) or no project covers it.
+ */
+export function adoptBareSessionRoute(sessionId: null | string): void {
+  if (!sessionId) {
+    return
+  }
+
+  const session = $sessions.get().find(candidate => sessionMatchesStoredId(candidate, sessionId))
+
+  if (!session) {
+    return
+  }
+
+  // Recorded membership first; the cwd derivation is the fallback for rows the
+  // backfill hasn't reached.
+  const recorded = (session.project_id || '').trim()
+
+  const projectId = (recorded && $projectTree.get().some(node => node.id === recorded) ? recorded : null)
+    ?? (session.cwd ? projectIdForCwd(session.cwd.trim()) : null)
+
+  if (projectId) {
+    navigateTo(projectRoute(projectId, sessionId), { replace: true })
+  }
+}
+
+/** Navigate into a project. Never opens a session — you land on its new-chat. */
+export function enterProject(id: string): void {
+  navigateTo(projectRoute(id))
+}
+
 export function exitProjectScope(): void {
-  $projectScope.set(ALL_PROJECTS)
+  navigateTo(PROJECTS_ROUTE)
 }
 
 // The cwd a NEW chat should start in. The "active project" is just an atom
@@ -164,18 +200,58 @@ export function exitProjectScope(): void {
 // drifted into. Outside a project it falls back to the plain default (detached),
 // so a bare new chat shows no branch.
 export function resolveNewSessionCwd(): string {
-  const scope = $projectScope.get()
+  return $projectRootCwd.get() || workspaceCwdForNewSession()
+}
 
-  if (scope !== ALL_PROJECTS) {
-    const project = $projectTree.get().find(node => node.id === scope)
-    const cwd = (project?.path || project?.repos.find(repo => repo.path)?.path || '').trim()
-
-    if (cwd) {
-      return cwd
-    }
+/**
+ * The scoped project's root, or '' outside a project.
+ *
+ * This is the project-level answer to "which folder am I working in", as
+ * opposed to `$currentCwd`, which is the *session*-level answer. Surfaces that
+ * need a folder prefer the session's — it is the more specific truth, and a
+ * session in a linked worktree genuinely lives outside the project root — and
+ * fall back to this when there is no session cwd yet, which is exactly the case
+ * of a fresh draft inside a project.
+ */
+export const $projectRootCwd = computed([$projectScope, $projectTree], (scope, tree) => {
+  if (scope === ALL_PROJECTS) {
+    return ''
   }
 
-  return workspaceCwdForNewSession()
+  const project = tree.find(node => node.id === scope)
+
+  return (project?.path || project?.repos.find(repo => repo.path)?.path || '').trim()
+})
+
+/** Every folder the scoped project covers — its root, repos, and worktree lanes.
+ *  Empty outside a project, which callers read as "don't filter". */
+export const $projectScopePaths = computed([$projectScope, $projectTree], (scope, tree) => {
+  if (scope === ALL_PROJECTS) {
+    return [] as string[]
+  }
+
+  const project = tree.find(node => node.id === scope)
+
+  if (!project) {
+    return [] as string[]
+  }
+
+  return [project.path, ...project.repos.flatMap(repo => [repo.path, ...repo.groups.map(group => group.path)])]
+    .map(path => (path || '').trim())
+    .filter(Boolean)
+})
+
+/** True when `cwd` sits inside the scoped project (or nothing is scoped). */
+export function cwdInProjectScope(cwd: null | string | undefined): boolean {
+  const paths = $projectScopePaths.get()
+
+  if (paths.length === 0) {
+    return true
+  }
+
+  const target = (cwd || '').trim()
+
+  return Boolean(target) && paths.some(path => underPath(path, target))
 }
 
 const underPath = (parent: string, child: string): boolean =>
@@ -260,7 +336,7 @@ export async function followActiveSessionCwd(cwd: string): Promise<void> {
 
   await Promise.all([refreshProjects(), refreshProjectTree()])
 
-  // Resolve only after the refresh, so a just-created/auto project is in the tree.
+  // Resolve only after the refresh, so a just-created project is in the tree.
   const projectId = projectIdForCwd(target)
 
   if (projectId) {
@@ -270,7 +346,12 @@ export async function followActiveSessionCwd(cwd: string): Promise<void> {
     setSidebarAgentsGrouped(true)
 
     if (projectId !== $projectScope.get()) {
-      enterProject(projectId)
+      // Re-home, don't reboot: the user is mid-conversation, so carry the open
+      // session across into its new project's namespace rather than landing on
+      // the project's empty draft.
+      const routedSessionId = routeSessionId(currentRoutePath())
+
+      navigateTo(projectRoute(projectId, routedSessionId), { replace: true })
     }
   }
 }
@@ -343,6 +424,22 @@ interface ProjectTreePayload {
   scoped_session_ids: string[]
 }
 
+/**
+ * The one gate that keeps discovery out of the app.
+ *
+ * `projects.tree` still returns three tiers — explicit projects.db rows, git
+ * repos auto-promoted from session cwds, and a bucket for cwd-less sessions.
+ * A project here is a thing the user deliberately created, so the other two are
+ * dropped at ingestion rather than filtered per surface: every consumer reads
+ * `$projectTree`, so one gate means the sidebar, the landing, scope resolution
+ * and path matching cannot disagree about what exists.
+ *
+ * The backend still computes them; nothing downstream ever sees them.
+ */
+function userCreatedOnly(projects: SidebarProjectTree[] | undefined): SidebarProjectTree[] {
+  return (projects ?? []).filter(project => !project.isAuto && !project.isNoProject)
+}
+
 let projectTreeRefreshGeneration = 0
 
 async function refreshProjectTreeOn(gateway: OpencodonGateway): Promise<void> {
@@ -362,7 +459,7 @@ async function refreshProjectTreeOn(gateway: OpencodonGateway): Promise<void> {
     }
 
     const scoped = new Set(res.scoped_session_ids ?? [])
-    $projectTree.set(res.projects ?? [])
+    $projectTree.set(userCreatedOnly(res.projects))
     $activeProjectId.set(res.active_id ?? null)
     const tombstones = $removedSessionIds.get()
 
@@ -549,6 +646,9 @@ export interface CreateProjectInput {
   primaryPath?: string
   slug?: string
   description?: string
+  /** Injected into every agent's system prompt for this project. Distinct from
+   *  `description`, which is for the project list and never reaches a prompt. */
+  context?: string
   icon?: string
   color?: string
   boardSlug?: string
@@ -663,6 +763,7 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectI
       primary_path: input.primaryPath,
       slug: input.slug,
       description: input.description,
+      context: input.context,
       icon: input.icon,
       color: input.color,
       board_slug: input.boardSlug,

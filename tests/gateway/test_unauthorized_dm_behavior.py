@@ -699,12 +699,12 @@ async def test_global_allowlist_ignores_unauthorized_dm(monkeypatch):
     monkeypatch.setenv("GATEWAY_ALLOWED_USERS", "111111111")
 
     config = GatewayConfig(
-        platforms={Platform.SIGNAL: PlatformConfig(enabled=True)},
+        platforms={Platform.DISCORD: PlatformConfig(enabled=True)},
     )
-    runner, adapter = _make_runner(Platform.SIGNAL, config)
+    runner, adapter = _make_runner(Platform.DISCORD, config)
 
     result = await runner._handle_message(
-        _make_event(Platform.SIGNAL, "+15559999999", "+15559999999")
+        _make_event(Platform.DISCORD, "+15559999999", "+15559999999")
     )
 
     assert result is None
@@ -719,13 +719,13 @@ async def test_no_allowlist_still_pairs_by_default(monkeypatch):
     # No SIGNAL_ALLOWED_USERS, no GATEWAY_ALLOWED_USERS
 
     config = GatewayConfig(
-        platforms={Platform.SIGNAL: PlatformConfig(enabled=True)},
+        platforms={Platform.DISCORD: PlatformConfig(enabled=True)},
     )
-    runner, adapter = _make_runner(Platform.SIGNAL, config)
+    runner, adapter = _make_runner(Platform.DISCORD, config)
     runner.pairing_store.generate_code.return_value = "PAIR1234"
 
     result = await runner._handle_message(
-        _make_event(Platform.SIGNAL, "+15559999999", "+15559999999")
+        _make_event(Platform.DISCORD, "+15559999999", "+15559999999")
     )
 
     assert result is None
@@ -734,33 +734,6 @@ async def test_no_allowlist_still_pairs_by_default(monkeypatch):
     assert "PAIR1234" in adapter.send.await_args.args[1]
 
 
-@pytest.mark.asyncio
-async def test_email_pairing_requires_explicit_platform_opt_in(monkeypatch):
-    _clear_auth_env(monkeypatch)
-
-    config = GatewayConfig(
-        platforms={
-            Platform.EMAIL: PlatformConfig(
-                enabled=True,
-                extra={"unauthorized_dm_behavior": "pair"},
-            ),
-        },
-    )
-    runner, adapter = _make_runner(Platform.EMAIL, config)
-    runner.pairing_store.generate_code.return_value = "EMAIL123"
-
-    result = await runner._handle_message(
-        _make_event(Platform.EMAIL, "stranger@example.com", "stranger@example.com")
-    )
-
-    assert result is None
-    runner.pairing_store.generate_code.assert_called_once_with(
-        "email",
-        "stranger@example.com",
-        "tester",
-    )
-    adapter.send.assert_awaited_once()
-    assert "EMAIL123" in adapter.send.await_args.args[1]
 
 
 def test_explicit_pair_config_overrides_allowlist_default(monkeypatch):
@@ -776,16 +749,16 @@ def test_explicit_pair_config_overrides_allowlist_default(monkeypatch):
 
     config = GatewayConfig(
         platforms={
-            Platform.SIGNAL: PlatformConfig(
+            Platform.DISCORD: PlatformConfig(
                 enabled=True,
                 extra={"unauthorized_dm_behavior": "pair"},  # explicit override
             ),
         },
     )
-    runner, _adapter = _make_runner(Platform.SIGNAL, config)
+    runner, _adapter = _make_runner(Platform.DISCORD, config)
 
     # The per-platform explicit config should beat the allowlist-derived default
-    behavior = runner._get_unauthorized_dm_behavior(Platform.SIGNAL)
+    behavior = runner._get_unauthorized_dm_behavior(Platform.DISCORD)
     assert behavior == "pair"
 
 
@@ -812,10 +785,10 @@ def test_get_unauthorized_dm_behavior_no_allowlist_returns_pair(monkeypatch):
     _clear_auth_env(monkeypatch)
 
     config = GatewayConfig(
-        platforms={Platform.SIGNAL: PlatformConfig(enabled=True)},
+        platforms={Platform.DISCORD: PlatformConfig(enabled=True)},
     )
-    runner, _adapter = _make_runner(Platform.SIGNAL, config)
+    runner, _adapter = _make_runner(Platform.DISCORD, config)
 
-    behavior = runner._get_unauthorized_dm_behavior(Platform.SIGNAL)
+    behavior = runner._get_unauthorized_dm_behavior(Platform.DISCORD)
     assert behavior == "pair"
 

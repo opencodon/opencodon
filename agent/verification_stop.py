@@ -77,7 +77,7 @@ def _filter_verifiable_paths(paths: Iterable[str]) -> list[str]:
 # local, gateway) and programmatic callers (API server, webhooks, tools).
 # Verify-on-stop stays ON by default for these. Any other resolved gateway
 # platform is a conversational messaging surface (Telegram, Discord, WhatsApp,
-# Signal, Slack, etc.) where the verification narrative would reach a human as
+# Slack, Discord, etc.) where the verification narrative would reach a human as
 # chat noise, so it defaults OFF. Mirrors LOCAL_SESSION_SOURCE_IDS in
 # apps/desktop/src/lib/session-source.ts; keep roughly in sync when adding a
 # local or programmatic surface. Default-deny by design: an unrecognized
@@ -95,7 +95,6 @@ _NON_MESSAGING_SESSION_SURFACES = frozenset(
         "tool",
         "api_server",
         "webhook",
-        "msgraph_webhook",
     }
 )
 

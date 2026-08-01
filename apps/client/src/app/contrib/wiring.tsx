@@ -22,16 +22,24 @@ import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { $newSessionTabAction } from '@/components/pane-shell/tree/store'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
-import { getSessionMessages, triggerCronJob } from '@/opencodon'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
+import { currentRoutePath } from '@/lib/navigate'
 import { sessionMessagesSignature } from '@/lib/session-signatures'
 import { isMessagingSource } from '@/lib/session-source'
 import { latestSessionTodos } from '@/lib/todos'
+import { getSessionMessages, triggerCronJob } from '@/opencodon'
 import { setCronFocusJobId } from '@/store/cron'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { $filePreviewTarget, $previewTarget } from '@/store/preview'
 import { $activeGatewayProfile, $freshSessionRequest, $profileScope, refreshActiveProfile } from '@/store/profile'
-import { $startWorkSessionRequest, followActiveSessionCwd } from '@/store/projects'
+import {
+  $projectTree,
+  $startWorkSessionRequest,
+  adoptBareSessionRoute,
+  exitProjectScope,
+  followActiveSessionCwd,
+  syncProjectScopeFromRoute
+} from '@/store/projects'
 import {
   $activeSessionId,
   $connection,
@@ -53,7 +61,7 @@ import {
   setCurrentProvider,
   setMessages
 } from '@/store/session'
-import { focusOpenSession } from '@/store/session-states'
+import { focusOpenSession, openSessionTabFocused } from '@/store/session-states'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
 import { isSecondaryWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
@@ -64,6 +72,7 @@ import { CommandPalette } from '../command-palette'
 import { useGatewayBoot } from '../gateway/hooks/use-gateway-boot'
 import { useGatewayRequest } from '../gateway/hooks/use-gateway-request'
 import { useKeybinds } from '../hooks/use-keybinds'
+import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { ModelPickerOverlay } from '../model-picker-overlay'
 import { ModelVisibilityOverlay } from '../model-visibility-overlay'
 import { FileActionDialogs } from '../right-sidebar/file-actions'
@@ -71,15 +80,25 @@ import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
 import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
-import { CRON_ROUTE, routeSessionId, sessionRoute, SETTINGS_ROUTE, syncWorkspaceIsPage } from '../routes'
+import {
+  CRON_ROUTE,
+  routeProjectId,
+  routeProjectScope,
+  routeSessionId,
+  sessionRoute,
+  setRouteProjectId,
+  SETTINGS_ROUTE,
+  syncLandingOpen,
+  syncWorkspaceIsPage
+} from '../routes'
 import { SessionPickerOverlay } from '../session-picker-overlay'
 import { SessionSwitcher } from '../session-switcher'
 import { useBackgroundQueueDrain } from '../session/hooks/use-background-queue-drain'
 import { useContextSuggestions } from '../session/hooks/use-context-suggestions'
 import { useCwdActions } from '../session/hooks/use-cwd-actions'
-import { useOpencodonConfig } from '../session/hooks/use-opencodon-config'
 import { useMessageStream } from '../session/hooks/use-message-stream'
 import { useModelControls } from '../session/hooks/use-model-controls'
+import { useOpencodonConfig } from '../session/hooks/use-opencodon-config'
 import { usePreviewRouting } from '../session/hooks/use-preview-routing'
 import { usePromptActions } from '../session/hooks/use-prompt-actions'
 import { useRouteResume } from '../session/hooks/use-route-resume'
@@ -158,9 +177,55 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // Mirror "the workspace is showing a full page" into its atom — the
   // workspace pane contribution re-registers headerVeto from it, so the main
   // zone's tab bar stands down on pages (and returns with the chat).
+  //
+  // `syncLandingOpen` is the coarser twin: not which page the workspace shows,
+  // but whether there is a workspace at all. It must see EVERY path (overlays
+  // included) to keep its base-route memory honest — see routes.ts.
   useEffect(() => {
     syncWorkspaceIsPage(location.pathname)
+    syncLandingOpen(location.pathname)
   }, [location.pathname])
+
+  // The route owns project scope. Every surface that scopes to a project (the
+  // sidebar's session list, the files pane, terminals, artifacts) reads
+  // `$projectScope`, so this single mirror is what makes back/forward and a
+  // reload land in the same project the URL names.
+  //
+  // `undefined` means the route says nothing about projects — a page or an
+  // overlay, which is a change of surface, not of project. Hold scope where it
+  // is. Writing `null` there is what used to eject the user from their project
+  // the moment they opened Capabilities or Settings.
+  const routedProjectId = routeProjectId(location.pathname)
+  const routedProjectScope = routeProjectScope(location.pathname)
+  const projectTree = useStore($projectTree)
+
+  useEffect(() => {
+    if (routedProjectScope === undefined) {
+      return
+    }
+
+    setRouteProjectId(routedProjectScope)
+    syncProjectScopeFromRoute(routedProjectScope)
+  }, [routedProjectScope])
+
+  // A session reached by its bare `/:sessionId` route (notification, deep link,
+  // a recents row on the landing) still belongs to a project. Re-home the URL
+  // once the tree can answer which one, so scope-reading surfaces agree.
+  useEffect(() => {
+    if (!routedProjectId) {
+      adoptBareSessionRoute(routedSessionId)
+    }
+  }, [projectTree, routedProjectId, routedSessionId])
+
+  // Projects live in a per-profile projects.db, so a project ref means nothing
+  // once the profile swaps — it would resolve against the new profile's catalog
+  // or, worse, collide with an unrelated slug. Leaving the project is the honest
+  // re-home; the picker is the new profile's own catalog.
+  useOnProfileSwitch(() => {
+    if (routeProjectId(currentRoutePath())) {
+      exitProjectScope()
+    }
+  })
 
   const {
     agentsOpen,
@@ -705,21 +770,28 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // The tab-strip "+" and ⌘T share one action: open a new session as its own
-  // tab (stacked into the workspace zone) WITHOUT polluting the session list.
-  // Created `listed: false`, so each new tab's in-memory session stays out of
-  // the sidebar until its first message persists a turn and a refresh surfaces
-  // it — Cursor-style. Every click opens a fresh "New session" tab (multiple
-  // empty tabs are fine since none touch the session list).
+  // The tab-strip "+" and ⌘T share one action with the sidebar's New session
+  // row: open a new session as its own tab, stacked into the workspace zone,
+  // and LIST it in the sidebar. Unbounded on purpose — opening another session
+  // is the app's most common action and nothing here should ration it.
+  //
+  // `listed` (the default) is what makes the new session appear in the left
+  // panel immediately. It used to be `listed: false` (Cursor-style draft tab),
+  // which left a tab whose session existed nowhere the user could see.
+  //
   const openNewSessionTab = useCallback(() => {
-    void openNewSessionTile('center', { listed: false })
+    void openNewSessionTile('center')
   }, [openNewSessionTile])
 
   // Single global listener for every rebindable hotkey plus the on-screen
   // keybind editor's capture mode (same as DesktopController).
   useKeybinds({
     openNewSessionTab,
-    startFreshSession: startFreshSessionDraft,
+    // ⌘N is the shortcut printed on the sidebar's New session row, so it has
+    // to do what that row does — open a listed session in a new tab, not reset
+    // the workspace to a draft. `startFreshSessionDraft` stays the internal
+    // reset (profile switch, deleted session) and keeps its own callers.
+    startFreshSession: openNewSessionTab,
     toggleCommandCenter,
     toggleSelectedPin
   })
@@ -773,11 +845,17 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onReload: reloadFromMessage,
     onRemoveAttachment: id => void composer.removeAttachment(id),
     onRestoreToMessage: restoreToMessage,
-    // Already on screen (open tile, or the main session)? Jump to its tab;
-    // otherwise load it into main.
+    // Every session opens as its own TAB. Already on screen (an open tile, or
+    // the main session)? Front it rather than opening a second copy of the
+    // same conversation — that check is what keeps "open a tab per click"
+    // from meaning "a duplicate per click".
+    //
+    // Opening a tab is cheap on purpose: the gateway defers the AIAgent build
+    // (and the slash-worker subprocess with it) until a session is actually
+    // prompted, so a tab you only read costs a transcript, not a process.
     onResumeSession: sessionId => {
       if (!focusOpenSession(sessionId)) {
-        navigate(sessionRoute(sessionId))
+        openSessionTabFocused(sessionId)
       }
     },
     onRetryResume: sessionId => void resumeSession(sessionId, true),

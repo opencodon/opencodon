@@ -1,6 +1,7 @@
 import { atom, computed } from 'nanostores'
 
 import { readKey, writeKey } from '@/lib/storage'
+import { $projectRootCwd } from '@/store/projects'
 import { $currentCwd } from '@/store/session'
 
 import { setTerminalTakeover } from '../store'
@@ -157,8 +158,9 @@ const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `term-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 
 /** Append a fresh terminal and focus it. Captures the current cwd once (its only
- *  tie to session/project state); pass an explicit cwd to override. Returns the id. */
-export function createTerminal(cwd: string = $currentCwd.get()): string {
+ *  tie to session/project state) — the session's, or the scoped project's root
+ *  when the session has none. Pass an explicit cwd to override. Returns the id. */
+export function createTerminal(cwd: string = $currentCwd.get() || $projectRootCwd.get()): string {
   const id = newId()
   $terminals.set([...$terminals.get(), { id, title: 'Terminal', auto: true, cwd, kind: 'user' }])
   $activeTerminalId.set(id)

@@ -1973,7 +1973,6 @@ class TestWebServerEndpoints:
                 },
             },
         )
-        monkeypatch.setattr(web_server, "check_config_version", lambda: (1, 1))
         monkeypatch.setattr(gateway_config, "load_gateway_config", lambda: _GatewayConfig())
 
         resp = self.client.get("/api/status")
@@ -2004,7 +2003,6 @@ class TestWebServerEndpoints:
                 },
             },
         )
-        monkeypatch.setattr(web_server, "check_config_version", lambda: (1, 1))
         monkeypatch.setattr(gateway_config, "load_gateway_config", lambda: _GatewayConfig())
 
         resp = self.client.get("/api/status")
@@ -2663,13 +2661,14 @@ class TestWebServerEndpoints:
         assert "App-Level Tokens" in fields["SLACK_APP_TOKEN"]["help"]
         assert "Copy member ID" in fields["SLACK_ALLOWED_USERS"]["help"]
 
-    def test_messaging_catalog_covers_gateway_platforms(self):
+    def test_messaging_catalog_covers_wired_gateway_platforms(self):
         """Catalog is derived from the Platform enum, so every built-in shows up."""
         from gateway.config import Platform
 
         resp = self.client.get("/api/messaging/platforms")
         platforms = {entry["id"] for entry in resp.json()["platforms"]}
 
+        assert platforms, "catalog is empty — the filter is dropping wired platforms too"
         for member in Platform.__members__.values():
             if member.value == "local":
                 continue
@@ -3708,7 +3707,7 @@ class TestConfigRoundTrip:
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def test_get_config_no_internal_keys(self):
-        """GET /api/config should not expose _config_version or _model_meta."""
+        """GET /api/config should not expose underscore-prefixed internal keys."""
         config = self.client.get("/api/config").json()
         internal = [k for k in config if k.startswith("_")]
         assert not internal, f"Internal keys leaked to frontend: {internal}"
@@ -4102,8 +4101,6 @@ class TestNewEndpoints:
         cloned_root = get_opencodon_home() / "profiles" / "cloned"
         cloned_skill = cloned_root / "skills" / "custom" / "new-skill" / "SKILL.md"
         assert cloned_skill.exists()
-        cloned_config = yaml.safe_load((cloned_root / "config.yaml").read_text(encoding="utf-8"))
-        assert cloned_config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         profiles = {p["name"]: p for p in self.client.get("/api/profiles").json()["profiles"]}
         assert profiles["cloned"]["skill_count"] == 1
 

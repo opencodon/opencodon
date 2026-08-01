@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-import hashlib
 import inspect
 import logging
 import os
@@ -94,8 +93,8 @@ class GatewaySlashCommandsMixin:
         """Return the prefix users can always type to reach opencodon commands.
 
         Reads the adapter's ``typed_command_prefix`` capability flag
-        (default "/"). Slack and Matrix return "!" because typed "/"
-        commands are blocked in Slack threads / reserved by Matrix clients;
+        (default "/"). Slack returns "!" because typed "/"
+        commands are blocked in Slack threads;
         their adapters rewrite "!command" to "/command" on receive.
         Instruction text built for those platforms must show the prefix
         that actually works when typed.
@@ -661,13 +660,6 @@ class GatewaySlashCommandsMixin:
 
         return "\n".join(lines)
 
-    @staticmethod
-    def _redact_matrix_session_key(session_key: str) -> str:
-        """Return a stable Matrix session-key fingerprint for shared room status."""
-        text = str(session_key or "")
-        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-        return f"sha256:{digest}"
-
     def _gateway_session_origin_for_id(self, session_id: str) -> Optional[SessionSource]:
         """Best-effort origin lookup for gateway session IDs."""
         lookup = getattr(type(self.session_store), "lookup_by_session_id", None)
@@ -676,33 +668,15 @@ class GatewaySlashCommandsMixin:
             return getattr(entry, "origin", None) if entry is not None else None
 
         # Test doubles and older stores may not expose the public lookup helper.
-        # Keep the Matrix resume guard fail-closed if no origin can be resolved.
+        # Keep the resume guard fail-closed if no origin can be resolved.
         entries = getattr(self.session_store, "_entries", {}) or {}
         for entry in entries.values():
             if getattr(entry, "session_id", None) == session_id:
                 return getattr(entry, "origin", None)
         return None
 
-    @staticmethod
-    def _same_matrix_room(current: SessionSource, origin: Optional[SessionSource]) -> bool:
-        return (
-            origin is not None
-            and origin.platform == Platform.MATRIX
-            and current.platform == Platform.MATRIX
-            and origin.chat_id == current.chat_id
-            # thread_id is part of the session key (build_session_key appends it
-            # for every chat type when present), and Matrix scopes the model's
-            # turn to the current room/thread. A live session in another thread
-            # of the SAME room is a DIFFERENT session, so a caller in thread A
-            # must not resume/enumerate a target whose origin is in thread B.
-            # Non-threaded rooms have empty thread_id on both sides ("" == ""),
-            # so room-level sharing is preserved unchanged.
-            and str(getattr(current, "thread_id", "") or "")
-            == str(getattr(origin, "thread_id", "") or "")
-        )
-
     def _same_origin_chat(self, current: SessionSource, origin: Optional[SessionSource]) -> bool:
-        """Platform-agnostic counterpart to ``_same_matrix_room``.
+        """Return whether *origin* is the same chat/participant as *current*.
 
         True when *origin* shares *current*'s platform and chat, and the same
         participant whenever the session key for this source is per-user. Group
@@ -737,7 +711,7 @@ class GatewaySlashCommandsMixin:
             # chat_id was already required equal above and, when present, IS the
             # DM session key — so an equal non-empty chat_id is sufficient.
             # build_session_key only falls back to the participant id
-            # (``user_id_alt or user_id`` — Signal/Feishu key on user_id_alt)
+            # (``user_id_alt or user_id``)
             # when there is NO chat_id; mirror that and fail closed on a
             # missing/different participant so two no-chat_id DM origins are
             # never conflated (was: compared user_id only and allowed when
@@ -758,7 +732,7 @@ class GatewaySlashCommandsMixin:
         if shared:
             return True
         # Per-user key: compare the participant id the key is actually built
-        # from (user_id_alt or user_id — Signal/Feishu key on user_id_alt).
+        # from (user_id_alt or user_id).
         cur_pid = current.user_id_alt or current.user_id
         org_pid = origin.user_id_alt or origin.user_id
         if cur_pid and org_pid:
@@ -791,7 +765,7 @@ class GatewaySlashCommandsMixin:
     ) -> bool:
         """Whether *source* may resume the persisted session *target_id*.
 
-        Generalizes the Matrix-only room guard to every adapter so a caller
+        Applies the origin-chat guard to every adapter so a caller
         cannot bind their gateway session to another user's/room's persisted
         session id (IDOR). Uses the live origin when the target is active;
         otherwise falls back to the DB row's source + user_id (the sessions
@@ -835,7 +809,7 @@ class GatewaySlashCommandsMixin:
         chat_type = (getattr(source, "chat_type", "") or "").lower()
         caller_is_dm = chat_type in {"dm", "direct", "private", ""}
         # build_session_key keys the participant on ``user_id_alt or user_id``
-        # (Signal/Feishu carry the canonical participant in user_id_alt), but the
+        # (some adapters carry the canonical participant in user_id_alt), but the
         # sessions table only ever stored user_id — it has no user_id_alt column.
         # So when the caller carries a user_id_alt, the row CANNOT prove the
         # canonical participant that the live session key is built from: two
@@ -935,20 +909,10 @@ class GatewaySlashCommandsMixin:
         """Whether a titled-session listing *row* belongs to the caller's origin.
 
         Prevents cross-origin enumeration of session ids/previews via the
-        numbered /resume list. Preserves the existing Matrix room-scoping
-        semantics; scopes every other platform to the caller's own sessions
-        unless an admin passes ``--all``.
+        numbered /resume list. Scopes every platform to the caller's own
+        sessions unless an admin passes ``--all``.
         """
         sid = str(row.get("id") or "")
-        if source.platform == Platform.MATRIX:
-            # Cross-room enumeration is cross-ORIGIN data access: gate the
-            # ``--all`` short-circuit behind a real configured admin, exactly
-            # like the non-Matrix branch below. A non-admin Matrix ``--all``
-            # falls back to same-room scoping rather than exposing every Matrix
-            # titled session.
-            if allow_all and self._resume_caller_is_admin(source):
-                return True
-            return self._same_matrix_room(source, self._gateway_session_origin_for_id(sid))
         if allow_all and self._resume_caller_is_admin(source):
             return True
         return await self._resume_target_allowed(source, sid, allow_override=False)
@@ -2179,51 +2143,6 @@ class GatewaySlashCommandsMixin:
             )
 
         return await _finish_switch()
-
-    async def _handle_codex_runtime_command(self, event: MessageEvent) -> str:
-        """Handle /codex-runtime command in the gateway.
-
-        Same surface as the CLI handler in cli.py:
-            /codex-runtime                  — show current state
-            /codex-runtime auto             — opencodon default runtime
-            /codex-runtime codex_app_server — codex subprocess runtime
-            /codex-runtime on / off         — synonyms
-
-        On change, the cached agent for this session is evicted so the next
-        message creates a fresh AIAgent with the new api_mode wired in
-        (avoids prompt-cache invalidation mid-session)."""
-        from opencodon_cli import codex_runtime_switch as crs
-
-        raw_args = event.get_command_args().strip() if event else ""
-        new_value, errors = crs.parse_args(raw_args)
-        if errors:
-            return "❌ " + "\n❌ ".join(errors)
-
-        # Load + persist via the same helpers used for /model and /yolo
-        try:
-            from opencodon_cli.config import load_config, save_config
-        except Exception as exc:
-            return f"❌ Could not load config: {exc}"
-        cfg = load_config()
-
-        result = crs.apply(
-            cfg,
-            new_value,
-            persist_callback=(save_config if new_value is not None else None),
-        )
-
-        # On a real change, evict the cached agent so the new runtime takes
-        # effect on the next message rather than waiting for cache TTL.
-        if result.success and new_value is not None and result.requires_new_session:
-            try:
-                session_key = self._session_key_for_source(event.source)
-                self._evict_cached_agent(session_key)
-            except Exception:
-                logger.debug("could not evict cached agent after codex-runtime change",
-                             exc_info=True)
-
-        prefix = "✓" if result.success else "✗"
-        return f"{prefix} {result.message}"
 
     async def _handle_personality_command(self, event: MessageEvent) -> str:
         """Handle /personality command - list or set a personality."""
@@ -3852,8 +3771,7 @@ class GatewaySlashCommandsMixin:
         except ValueError as exc:
             return t("gateway.resume.parse_error", error=exc)
         allow_all = "--all" in parts
-        allow_cross_room = "--cross-room" in parts
-        name = " ".join(p for p in parts if p not in {"--all", "--cross-room"}).strip()
+        name = " ".join(p for p in parts if p != "--all").strip()
 
         # Strip common outer brackets/quotes users may type literally from the
         # usage hint (e.g. ``/resume <abc123>``). Mirrors the CLI behavior.
@@ -3879,16 +3797,10 @@ class GatewaySlashCommandsMixin:
                     if await self._resume_row_visible(source, s, allow_all)
                 ]
                 if not titled:
-                    if source.platform == Platform.MATRIX and not allow_all:
-                        return t("gateway.resume.matrix_no_named_sessions")
                     return t("gateway.resume.no_named_sessions")
                 lines = [t("gateway.resume.list_header")]
                 for idx, s in enumerate(titled[:10], start=1):
                     title = s["title"]
-                    if source.platform == Platform.MATRIX and allow_all:
-                        origin = self._gateway_session_origin_for_id(str(s.get("id") or ""))
-                        if origin:
-                            title = f"{title} — {origin.chat_name or origin.chat_id}"
                     preview = s.get("preview", "")[:40]
                     preview_part = t("gateway.resume.list_preview_suffix", preview=preview) if preview else ""
                     lines.append(t("gateway.resume.list_item_numbered", index=idx, title=title, preview_part=preview_part))
@@ -3932,22 +3844,12 @@ class GatewaySlashCommandsMixin:
         except Exception as e:
             logger.debug("Failed to resolve resume continuation for %s: %s", target_id, e)
 
-        if source.platform == Platform.MATRIX:
-            target_origin = self._gateway_session_origin_for_id(target_id)
-            if not self._same_matrix_room(source, target_origin) and not allow_cross_room:
-                if target_origin is None:
-                    return t("gateway.resume.matrix_blocked_no_origin", name=name)
-                return t(
-                    "gateway.resume.matrix_blocked_other_room",
-                    room=target_origin.chat_name or target_origin.chat_id,
-                    name=name,
-                )
-        elif not await self._resume_target_allowed(
-            source, target_id, allow_override=(allow_all or allow_cross_room)
+        if not await self._resume_target_allowed(
+            source, target_id, allow_override=allow_all
         ):
             # IDOR guard: a session id/title is a routing handle, not authority.
             # Bind /resume to the caller's own platform/user/chat on every
-            # non-Matrix adapter so one user can't attach to another's
+            # adapter so one user can't attach to another's
             # persisted transcript.
             return t("gateway.resume.blocked_not_owner", name=name)
 
@@ -3986,13 +3888,6 @@ class GatewaySlashCommandsMixin:
         msg_count = len([m for m in history if m.get("role") == "user"]) if history else 0
         msg_part = f" ({msg_count} message{'s' if msg_count != 1 else ''})" if msg_count else ""
 
-        if source.platform == Platform.MATRIX and allow_cross_room:
-            return t(
-                "gateway.resume.matrix_cross_room_success",
-                title=title,
-                room=source.chat_name or source.chat_id,
-                msg_part=msg_part,
-            )
         if not msg_count:
             return t("gateway.resume.resumed_no_count", title=title)
         if msg_count == 1:

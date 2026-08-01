@@ -181,34 +181,23 @@ export function ProjectMenu({
           onCloseAutoFocus={event => event.preventDefault()}
           sideOffset={6}
         >
-          {project.isAuto ? (
-            // Inherited (auto) repos can still be themed — the change adopts the
-            // repo as a real project. Rename / add-folder / set-active stay out
-            // until then (they need the materialized record).
-            project.path && (
-              <>
-                {appearanceItem}
-                <DropdownMenuSeparator />
-              </>
-            )
-          ) : (
-            <>
-              <DropdownMenuItem onSelect={() => openProjectRename(target)}>
-                <Codicon name="edit" size="0.875rem" />
-                <span>{p.menuRename}</span>
-              </DropdownMenuItem>
-              {appearanceItem}
-              <DropdownMenuItem onSelect={() => openProjectAddFolder(target)}>
-                <Codicon name="new-folder" size="0.875rem" />
-                <span>{p.menuAddFolder}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isActive} onSelect={() => void setActiveProject(project.id)}>
-                <Codicon name="target" size="0.875rem" />
-                <span>{p.menuSetActive}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
+          {/* Every project is a materialized projects.db row now, so the full
+              set of actions always applies — there is no inherited-repo case
+              left to withhold rename / add-folder / set-active from. */}
+          <DropdownMenuItem onSelect={() => openProjectRename(target)}>
+            <Codicon name="edit" size="0.875rem" />
+            <span>{p.menuRename}</span>
+          </DropdownMenuItem>
+          {appearanceItem}
+          <DropdownMenuItem onSelect={() => openProjectAddFolder(target)}>
+            <Codicon name="new-folder" size="0.875rem" />
+            <span>{p.menuAddFolder}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={isActive} onSelect={() => void setActiveProject(project.id)}>
+            <Codicon name="target" size="0.875rem" />
+            <span>{p.menuSetActive}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem disabled={!project.path} onSelect={() => void revealPath(project.path)}>
             <Codicon name="folder-opened" size="0.875rem" />
             <span>{p.reveal}</span>
@@ -218,17 +207,10 @@ export function ProjectMenu({
             <span>{p.copyPath}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {project.isAuto ? (
-            <DropdownMenuItem onSelect={removeAuto} variant="destructive">
-              <Codicon name="trash" size="0.875rem" />
-              <span>{p.removeFromSidebar}</span>
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem onSelect={() => setConfirmDeleteOpen(true)} variant="destructive">
-              <Codicon name="trash" size="0.875rem" />
-              <span>{`${p.menuDelete}…`}</span>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onSelect={() => setConfirmDeleteOpen(true)} variant="destructive">
+            <Codicon name="trash" size="0.875rem" />
+            <span>{`${p.menuDelete}…`}</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <PopoverContent

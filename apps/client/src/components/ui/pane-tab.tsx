@@ -27,9 +27,20 @@ const TAB_IDLE =
 interface PaneTabProps extends React.ComponentProps<'div'> {
   active?: boolean
   dirty?: boolean
-  /** Close gesture, no hover X (too easy to hit on small tabs): middle-click,
-   *  or ⌘-click as the trackpad-friendly Mac equivalent. */
+  /**
+   * Close this tab. Reachable four ways: the × (hover, or always on the active
+   * tab), middle-click, and ⌘-click as the trackpad-friendly Mac equivalent.
+   *
+   * The × was deliberately absent while tabs were rare — "too easy to hit on
+   * small tabs", and the gestures were enough for a preview rail. That stopped
+   * being true once every session opens as its own tab: closing became routine
+   * and all three remaining gestures are invisible, so the strip filled up with
+   * no apparent way to empty it. It only renders on hover/active, so an idle
+   * strip stays as quiet as it was.
+   */
   onClose?: () => void
+  /** Label for the × (the tab title, so the control reads as "Close <tab>"). */
+  closeLabel?: string
   /** Vertical rail form (collapsed sidebar zones). */
   vertical?: boolean
   /** Content-facing edge of a vertical rail — the strip line the active tab cuts. */
@@ -52,6 +63,7 @@ const isMetaClose = (event: { button: number; metaKey: boolean }) => event.butto
 export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function PaneTab(
   {
     active = false,
+    closeLabel,
     dirty = false,
     onClose,
     onAuxClick,
@@ -77,6 +89,9 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
         vertical ? TAB_VERTICAL : TAB_HORIZONTAL,
         edge,
         active ? TAB_ACTIVE : cn(TAB_IDLE, `${edge}-(--ui-stroke-tertiary)`),
+        // Reserve the × slot unconditionally, not just while it shows —
+        // otherwise every hover reflows the label out from under the cursor.
+        onClose && !vertical && 'pr-4',
         className
       )}
       data-active={active}
@@ -127,16 +142,52 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
       {...props}
     >
       {children}
+      {/* The dot and the × share one slot: unsaved state is what matters at
+          rest, closing is what matters under the cursor. Showing both would
+          crowd a tab this narrow, which is what made an always-on × a bad
+          idea in the first place. */}
       {dirty && (
         <span
           aria-hidden
           className={cn(
             'pointer-events-none absolute grid size-4 place-items-center',
-            vertical ? 'bottom-1.5 left-1/2 -translate-x-1/2' : 'right-1.5 top-1/2 -translate-y-1/2'
+            vertical ? 'bottom-1.5 left-1/2 -translate-x-1/2' : 'right-1.5 top-1/2 -translate-y-1/2',
+            onClose && 'group-hover/tab:hidden'
           )}
         >
           <span className="size-2 rounded-full bg-amber-500 shadow-[0_0_0_2px_var(--tab-bg),0_1px_2px_rgba(0,0,0,0.45)] dark:bg-amber-400" />
         </span>
+      )}
+      {onClose && !vertical && (
+        <button
+          aria-label={closeLabel}
+          className={cn(
+            'absolute right-1 top-1/2 grid size-4 -translate-y-1/2 place-items-center rounded-[3px]',
+            'text-(--ui-text-tertiary) hover:bg-(--ui-control-hover-background) hover:text-foreground',
+            // Quiet at rest. The active tab keeps its × so the thing you are
+            // looking at is always closeable without hunting for a gesture;
+            // the rest reveal on hover. focus-visible keeps it keyboard-usable.
+            active ? 'opacity-100' : 'opacity-0 group-hover/tab:opacity-100',
+            'focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--ui-stroke-secondary)'
+          )}
+          onClick={event => {
+            // The strip activates and starts drags on pointerdown, so the ×
+            // must claim the press outright — otherwise closing also drags.
+            event.preventDefault()
+            event.stopPropagation()
+            onClose()
+          }}
+          onPointerDown={event => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          tabIndex={-1}
+          type="button"
+        >
+          <svg aria-hidden="true" fill="none" height="8" viewBox="0 0 8 8" width="8">
+            <path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.25" />
+          </svg>
+        </button>
       )}
     </div>
   )

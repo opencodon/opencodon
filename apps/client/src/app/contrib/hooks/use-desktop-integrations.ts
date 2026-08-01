@@ -17,7 +17,14 @@ import { openUpdatesWindow, startUpdatePoller, stopUpdatePoller } from '@/store/
 import { isSecondaryWindow } from '@/store/windows'
 
 import { requestComposerFocus, requestComposerInsert } from '../../chat/composer/focus'
-import { appViewForPath, isOverlayView, NEW_CHAT_ROUTE, sessionRoute } from '../../routes'
+import {
+  appViewForPath,
+  homeRoute,
+  isOverlayView,
+  isProjectFirstHost,
+  NEW_CHAT_ROUTE,
+  sessionRoute
+} from '../../routes'
 
 interface DesktopIntegrationsParams {
   chatOpen: boolean
@@ -86,7 +93,8 @@ export function useDesktopIntegrations({
 
   // Restore once on cold start — only when the renderer booted at the default
   // route (a hidden-then-shown window keeps its own route). Prefer the full
-  // remembered route (covers pages); fall back to the last session id.
+  // remembered route (covers pages and project routes); fall back to the last
+  // session id, and finally to the host's home surface.
   useEffect(() => {
     if (restoredRef.current || locationPathname !== NEW_CHAT_ROUTE) {
       restoredRef.current = true
@@ -103,10 +111,21 @@ export function useDesktopIntegrations({
       return
     }
 
-    const last = getRememberedSessionId($activeGatewayProfile.get())
+    // On a project-first host a bare remembered session is NOT a good landing:
+    // it drops the user into a conversation with no project chosen, which is
+    // the state the project-first shell exists to avoid. `adoptBareSessionRoute`
+    // would re-home it a moment later, so prefer the picker outright and let
+    // the user pick — the session is still one click away in its project.
+    const last = isProjectFirstHost() ? null : getRememberedSessionId($activeGatewayProfile.get())
 
     if (last) {
       navigate(sessionRoute(last), { replace: true })
+
+      return
+    }
+
+    if (homeRoute() !== NEW_CHAT_ROUTE) {
+      navigate(homeRoute(), { replace: true })
     }
   }, [locationPathname, navigate])
 

@@ -447,48 +447,6 @@ async def test_run_agent_progress_uses_event_message_id_for_slack_dm(monkeypatch
     assert all(call["metadata"] == {"thread_id": "1234567890.000001"} for call in adapter.typing)
 
 
-@pytest.mark.asyncio
-async def test_run_agent_feishu_progress_replies_inside_existing_thread(monkeypatch, tmp_path):
-    """Feishu needs reply_to plus reply_in_thread metadata for topic-scoped progress."""
-    monkeypatch.setenv("OPENCODON_TOOL_PROGRESS_MODE", "all")
-
-    fake_dotenv = types.ModuleType("dotenv")
-    fake_dotenv.load_dotenv = lambda *args, **kwargs: None
-    monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
-
-    fake_run_agent = types.ModuleType("run_agent")
-    fake_run_agent.AIAgent = FakeAgent
-    monkeypatch.setitem(sys.modules, "run_agent", fake_run_agent)
-
-    adapter = ProgressCaptureAdapter(platform=Platform.FEISHU)
-    runner = _make_runner(adapter)
-    gateway_run = importlib.import_module("gateway.run")
-    monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
-    monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})
-
-    source = SessionSource(
-        platform=Platform.FEISHU,
-        chat_id="oc_chat",
-        chat_type="group",
-        thread_id="topic_17585",
-    )
-
-    result = await runner._run_agent(
-        message="hello",
-        context_prompt="",
-        history=[],
-        source=source,
-        session_id="sess-feishu-progress",
-        session_key="agent:main:feishu:group:oc_chat:topic_17585",
-        event_message_id="om_triggering_user_message",
-    )
-
-    assert result["final_response"] == "done"
-    assert adapter.sent
-    assert adapter.sent[0]["reply_to"] == "om_triggering_user_message"
-    assert adapter.sent[0]["metadata"] == {"thread_id": "topic_17585"}
-    assert adapter.edits
-    assert adapter.edits[0]["message_id"] == "progress-1"
 
 
 # ---------------------------------------------------------------------------
@@ -986,14 +944,14 @@ async def test_run_agent_interim_commentary_works_with_tool_progress_off(monkeyp
 
 
 @pytest.mark.asyncio
-async def test_run_agent_bluebubbles_uses_commentary_send_path_for_quick_replies(monkeypatch, tmp_path):
+async def test_run_agent_non_editing_adapter_uses_commentary_send_path(monkeypatch, tmp_path):
     adapter, result = await _run_with_agent(
         monkeypatch,
         tmp_path,
         CommentaryAgent,
-        session_id="sess-bluebubbles-commentary",
+        session_id="sess-noedit-commentary",
         config_data={"display": {"interim_assistant_messages": True}},
-        platform=Platform.BLUEBUBBLES,
+        platform=Platform.WHATSAPP,
         chat_id="iMessage;-;user@example.com",
         chat_type="dm",
         thread_id=None,
@@ -1034,28 +992,6 @@ async def test_run_agent_previewed_split_keeps_final_delivery_pending(monkeypatc
     assert [call["content"] for call in adapter.sent] == ["I'll inspect the repo first."]
 
 
-@pytest.mark.asyncio
-async def test_run_agent_matrix_streaming_omits_cursor(monkeypatch, tmp_path):
-    adapter, result = await _run_with_agent(
-        monkeypatch,
-        tmp_path,
-        StreamingRefineAgent,
-        session_id="sess-matrix-streaming",
-        config_data={
-            "display": {"tool_progress": "off", "interim_assistant_messages": False},
-            "streaming": {"enabled": True, "edit_interval": 0.01, "buffer_threshold": 1},
-        },
-        platform=Platform.MATRIX,
-        chat_id="!room:matrix.example.org",
-        chat_type="group",
-        thread_id="$thread",
-    )
-
-    assert result.get("already_sent") is True
-    all_text = [call["content"] for call in adapter.sent] + [call["content"] for call in adapter.edits]
-    assert all_text, "expected streamed Matrix content to be sent or edited"
-    assert all("▉" not in text for text in all_text)
-    assert any("Continuing to refine:" in text for text in all_text)
 
 
 class TransformedStreamAgent:
@@ -1097,7 +1033,7 @@ async def test_transformed_response_edits_streamed_message_in_place(monkeypatch,
             "display": {"tool_progress": "off", "interim_assistant_messages": False},
             "streaming": {"enabled": True, "edit_interval": 0.01, "buffer_threshold": 1},
         },
-        platform=Platform.MATRIX,
+        platform=Platform.WHATSAPP,
         chat_id="!room:matrix.example.org",
         chat_type="group",
         thread_id="$thread",

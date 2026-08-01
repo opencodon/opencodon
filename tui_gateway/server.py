@@ -1657,6 +1657,17 @@ def _start_agent_build(sid: str, session: dict) -> None:
 
             # Session DB row deferred to first run_conversation() call.
             # pending_title applied post-first-message (see cli.exec handler).
+            #
+            # Hand the agent its project so the system prompt can load that
+            # project's Agent Context by id rather than re-deriving membership
+            # from the cwd (wrong for an out-of-root worktree, impossible with
+            # no cwd). Set before the first prompt build, which happens on the
+            # first turn, not here.
+            try:
+                agent.project_id = current.get("project_id") or None
+            except Exception:
+                logger.debug("could not set agent project_id", exc_info=True)
+
             current["agent"] = agent
             # Baseline for the per-turn config sync; the profile home
             # override is still active here.
@@ -2040,15 +2051,38 @@ def _ensure_session_db_row(session: dict) -> None:
             model_config=model_config or None,
             parent_session_id=parent_session_id,
             cwd=_session_cwd(session) if session.get("explicit_cwd") else None,
+            # Membership is recorded, not inferred. Unlike cwd above — which is
+            # deliberately withheld unless the user picked a workspace — the
+            # project is written whenever we know it, including for a session
+            # with no explicit cwd: "which project is this" and "which folder
+            # did you choose" are different questions, and conflating them is
+            # what left project-scoped drafts homeless.
+            project_id=session.get("project_id") or None,
+        )
+    except (TypeError, AttributeError):
+        # A signature or attribute mismatch is a programming error, not a
+        # runtime DB fault: the row silently never lands and the session loses
+        # its model, workspace and project membership all at once. Stay
+        # non-fatal — the agent's own lazy create still backstops the row, and
+        # a failed persist must never break the user's submit — but log it as
+        # the bug it is instead of burying it at debug, where a stale call
+        # signature can sit undetected behind passing tests.
+        logger.error(
+            "failed to persist desktop session row (bad create_session call)",
+            exc_info=True,
         )
     except Exception:
-        logger.debug("failed to persist desktop session row", exc_info=True)
+        # Operational faults (locked, corrupt, or read-only state.db) are
+        # expected in the field and recoverable on the next write, so they stay
+        # swallowed — but above debug, so a persistently unwritable db is
+        # diagnosable from a normal log.
+        logger.warning("failed to persist desktop session row", exc_info=True)
     finally:
         if close_db:
             try:
                 db.close()
             except Exception:
-                pass
+                logger.debug("failed to close profile db", exc_info=True)
 
 
 def _persist_branch_seed(session: dict) -> None:
@@ -2163,10 +2197,26 @@ def _set_session_cwd(session: dict, cwd: str) -> str:
     # lazy row creation persist it too, not the launch-dir fallback).
     session["explicit_cwd"] = True
     _register_session_cwd(session)
+
+    # Moving the working directory does NOT move the session between projects.
+    # Membership is recorded at creation and only the user changes it — that is
+    # the whole point of the column, and re-deriving here would resurrect the
+    # bug where an agent cd-ing into a sibling checkout silently emigrated the
+    # conversation. The one exception is a session that never had a project:
+    # adopting it is new information, not a reassignment.
+    adopted: str | None = None
+    if not session.get("project_id"):
+        info = _project_info_for_cwd(resolved)
+        if info:
+            adopted = info["id"]
+            session["project_id"] = adopted
+
     with _session_db(session) as db:
         if db is not None:
             try:
                 db.update_session_cwd(session.get("session_key", ""), resolved)
+                if adopted:
+                    db.set_session_project(session.get("session_key", ""), adopted)
             except Exception:
                 logger.debug("failed to persist session cwd", exc_info=True)
     # Branch/repo-root probes are git subprocesses — capture them off the hot path.
@@ -3916,6 +3966,37 @@ def _project_info_for_cwd(cwd: str) -> dict | None:
     except Exception:
         logger.debug("failed to resolve project for cwd", exc_info=True)
         return None
+
+
+def _resolve_session_project(params: dict, cwd: str) -> str | None:
+    """The project a new session belongs to.
+
+    An explicit ``project_id`` from the client wins: the user picked a project
+    before they picked (or didn't pick) a folder, and that choice is the whole
+    point of recording membership rather than deriving it. Anything else falls
+    back to the folder derivation, which is what a TUI or cron session — neither
+    of which knows about project scope — will hit.
+
+    A client-supplied id is verified against projects.db before it is trusted,
+    so a stale id from a UI that hasn't refreshed can't strand a session in a
+    project that no longer exists.
+    """
+    requested = str(params.get("project_id") or "").strip()
+
+    if requested:
+        try:
+            from opencodon_cli import projects_db as pdb
+
+            with pdb.connect_closing() as conn:
+                if pdb.get_project(conn, requested) is not None:
+                    return requested
+            logger.debug("session.create: unknown project_id %r, deriving", requested)
+        except Exception:
+            logger.debug("failed to verify project_id", exc_info=True)
+
+    info = _project_info_for_cwd(cwd)
+
+    return info["id"] if info else None
 
 
 def _session_info(agent, session: dict | None = None) -> dict:
@@ -6008,6 +6089,7 @@ def _(rid, params: dict) -> dict:
     except Exception:
         explicit_cwd = False
     resolved_cwd = _completion_cwd(params)
+    project_id = _resolve_session_project(params, raw_cwd or resolved_cwd)
     source = _resolve_session_source(str(params.get("source") or "").strip() or None)
     _enable_gateway_prompts()
 
@@ -6066,6 +6148,7 @@ def _(rid, params: dict) -> dict:
             "created_at": now,
             "edit_snapshots": {},
             "explicit_cwd": explicit_cwd,
+            "project_id": project_id,
             "history": history,
             "history_lock": threading.Lock(),
             "history_version": 0,
@@ -6176,6 +6259,12 @@ def _(rid, params: dict) -> dict:
                         "started_at": s.get("started_at") or 0,
                         "message_count": s.get("message_count") or 0,
                         "source": s.get("source") or "",
+                        # Enough for a client to filter this flat list by
+                        # project without a second round trip to
+                        # `projects.project_sessions`, which rebuilds the whole
+                        # tree to answer one project's worth of rows.
+                        "project_id": s.get("project_id"),
+                        "cwd": s.get("cwd"),
                     }
                     for s in rows
                 ]
@@ -8930,8 +9019,6 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                         _model,
                         _cfg,
                     )
-                    if getattr(agent, "api_mode", "") == "codex_app_server":
-                        _mode = "text"
                 except Exception as _img_exc:
                     print(
                         f"[tui_gateway] image_routing decision failed, defaulting to text: {_img_exc}",
@@ -10949,6 +11036,7 @@ def _(rid, params, pdb, conn) -> dict:
         icon=params.get("icon"),
         color=params.get("color"),
         board_slug=params.get("board_slug"),
+        context=params.get("context"),
     )
     if params.get("use"):
         pdb.set_active(conn, pid)
@@ -10967,6 +11055,7 @@ def _(rid, params, pdb, conn) -> dict:
         icon=params.get("icon"),
         color=params.get("color"),
         board_slug=params.get("board_slug"),
+        context=params.get("context"),
     )
     return _ok(rid, {"project": pdb.get_project(conn, proj.id).to_dict()})
 
@@ -11328,6 +11417,10 @@ def _project_tree_row(r: dict) -> dict:
         "cwd": r.get("cwd"),
         "git_branch": r.get("git_branch"),
         "git_repo_root": r.get("git_repo_root"),
+        # Recorded membership. `build_tree` prefers this over the cwd-prefix
+        # derivation, so a session stays in its project across a folder rename,
+        # a worktree that lives outside the repo root, or no cwd at all.
+        "project_id": r.get("project_id"),
     }
 
 
@@ -11390,6 +11483,7 @@ def _build_project_tree(
     """Gather inputs and run the one authoritative builder. Returns (tree, active_id)."""
     from tui_gateway import project_tree
 
+    _backfill_session_projects_once(db)
     sessions, projects, discovered, active_id = _project_tree_inputs(
         db, session_limit, include_discovered=include_discovered
     )
@@ -11404,6 +11498,47 @@ def _build_project_tree(
         is_junk_cwd=_is_session_cwd_junk,
     )
     return tree, active_id
+
+
+_SESSION_PROJECT_BACKFILL_META = "session_project_backfill_v1"
+
+
+def _backfill_session_projects_once(db) -> None:
+    """Adopt pre-column sessions into their projects, once per database.
+
+    Rows written before ``sessions.project_id`` existed have no membership, so
+    without this they'd all read as unowned the moment the tree starts trusting
+    the column. The adoption uses the same cwd-prefix derivation that used to
+    run on every read — this is that derivation's last run, persisted.
+
+    Guarded by a meta flag rather than by "are there NULLs left": a session
+    legitimately outside every project is NULL forever, so a count-based guard
+    would re-scan on every tree build. Failures are swallowed and leave the flag
+    unset, so the next call simply tries again.
+    """
+    try:
+        if db.get_meta(_SESSION_PROJECT_BACKFILL_META):
+            return
+
+        rows = db.sessions_without_project()
+        mapping: dict[str, str] = {}
+
+        if rows:
+            from opencodon_cli import projects_db as pdb
+
+            with pdb.connect_closing() as conn:
+                for row in rows:
+                    project = pdb.project_for_path(conn, row.get("cwd") or "")
+                    if project is not None:
+                        mapping[row["id"]] = project.id
+
+        adopted = db.backfill_session_projects(mapping) if mapping else 0
+        db.set_meta(_SESSION_PROJECT_BACKFILL_META, "1")
+
+        if adopted:
+            logger.info("Adopted %d pre-existing session(s) into their projects.", adopted)
+    except Exception:
+        logger.debug("session project backfill failed (will retry)", exc_info=True)
 
 
 @method("projects.tree")

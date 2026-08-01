@@ -89,7 +89,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-from opencodon_cli.sqlite_util import add_column_if_missing as _add_column_if_missing
 from toolsets import get_toolset_names
 
 _log = logging.getLogger(__name__)
@@ -925,10 +924,9 @@ class Task:
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "Task":
-        keys = set(row.keys())
         # Parse skills JSON blob if present
         skills_value: Optional[list] = None
-        if "skills" in keys and row["skills"]:
+        if row["skills"]:
             try:
                 parsed = json.loads(row["skills"])
                 if isinstance(parsed, list):
@@ -948,69 +946,30 @@ class Task:
             completed_at=row["completed_at"],
             workspace_kind=row["workspace_kind"],
             workspace_path=row["workspace_path"],
-            branch_name=row["branch_name"] if "branch_name" in keys else None,
-            project_id=row["project_id"] if "project_id" in keys else None,
+            branch_name=row["branch_name"],
+            project_id=row["project_id"],
             claim_lock=row["claim_lock"],
             claim_expires=row["claim_expires"],
-            tenant=row["tenant"] if "tenant" in keys else None,
-            result=row["result"] if "result" in keys else None,
-            idempotency_key=row["idempotency_key"] if "idempotency_key" in keys else None,
-            consecutive_failures=(
-                row["consecutive_failures"] if "consecutive_failures" in keys
-                # Pre-migration fallback: ``_migrate_add_optional_columns`` always
-                # adds ``consecutive_failures`` now, so this branch is only reachable
-                # on a DB that was never opened since pre-#20410 code ran. Keep for
-                # belt-and-suspenders safety; in practice it is dead code post-migration.
-                else (row["spawn_failures"] if "spawn_failures" in keys else 0)
-            ),
-            worker_pid=row["worker_pid"] if "worker_pid" in keys else None,
-            last_failure_error=(
-                row["last_failure_error"] if "last_failure_error" in keys
-                # Same belt-and-suspenders fallback as consecutive_failures above.
-                else (row["last_spawn_error"] if "last_spawn_error" in keys else None)
-            ),
-            max_runtime_seconds=(
-                row["max_runtime_seconds"] if "max_runtime_seconds" in keys else None
-            ),
-            last_heartbeat_at=(
-                row["last_heartbeat_at"] if "last_heartbeat_at" in keys else None
-            ),
-            current_run_id=(
-                row["current_run_id"] if "current_run_id" in keys else None
-            ),
-            workflow_template_id=(
-                row["workflow_template_id"] if "workflow_template_id" in keys else None
-            ),
-            current_step_key=(
-                row["current_step_key"] if "current_step_key" in keys else None
-            ),
+            tenant=row["tenant"],
+            result=row["result"],
+            idempotency_key=row["idempotency_key"],
+            consecutive_failures=row["consecutive_failures"],
+            worker_pid=row["worker_pid"],
+            last_failure_error=row["last_failure_error"],
+            max_runtime_seconds=row["max_runtime_seconds"],
+            last_heartbeat_at=row["last_heartbeat_at"],
+            current_run_id=row["current_run_id"],
+            workflow_template_id=row["workflow_template_id"],
+            current_step_key=row["current_step_key"],
             skills=skills_value,
-            model_override=row["model_override"] if "model_override" in keys and row["model_override"] else None,
-            provider_override=(
-                row["provider_override"]
-                if "provider_override" in keys and row["provider_override"]
-                else None
-            ),
-            max_retries=(
-                row["max_retries"] if "max_retries" in keys else None
-            ),
-            goal_mode=(
-                bool(row["goal_mode"]) if "goal_mode" in keys and row["goal_mode"] else False
-            ),
-            goal_max_turns=(
-                row["goal_max_turns"] if "goal_max_turns" in keys and row["goal_max_turns"] else None
-            ),
-            session_id=(
-                row["session_id"] if "session_id" in keys else None
-            ),
-            block_kind=(
-                row["block_kind"] if "block_kind" in keys and row["block_kind"] else None
-            ),
-            block_recurrences=(
-                int(row["block_recurrences"])
-                if "block_recurrences" in keys and row["block_recurrences"] is not None
-                else 0
-            ),
+            model_override=row["model_override"] or None,
+            provider_override=row["provider_override"] or None,
+            max_retries=row["max_retries"],
+            goal_mode=bool(row["goal_mode"]),
+            goal_max_turns=row["goal_max_turns"] or None,
+            session_id=row["session_id"],
+            block_kind=row["block_kind"] or None,
+            block_recurrences=int(row["block_recurrences"] or 0),
         )
 
 
@@ -1291,6 +1250,10 @@ CREATE INDEX IF NOT EXISTS idx_runs_task             ON task_runs(task_id, start
 CREATE INDEX IF NOT EXISTS idx_runs_status           ON task_runs(status);
 CREATE INDEX IF NOT EXISTS idx_attachments_task      ON task_attachments(task_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_notify_task           ON kanban_notify_subs(task_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_tenant          ON tasks(tenant);
+CREATE INDEX IF NOT EXISTS idx_tasks_idempotency     ON tasks(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_tasks_session_id      ON tasks(session_id);
+CREATE INDEX IF NOT EXISTS idx_events_run            ON task_events(run_id, id);
 """
 
 
@@ -2122,13 +2085,9 @@ def connect(
                 conn.execute("PRAGMA cell_size_check=ON")
                 needs_init = resolved not in _INITIALIZED_PATHS
                 if needs_init:
-                    # Idempotent: runs CREATE TABLE IF NOT EXISTS + the additive
-                    # migrations. Cached so subsequent connect() calls in the same
-                    # process are cheap. The lock prevents same-process dispatcher
-                    # threads from racing through the additive ALTER TABLE pass with
-                    # stale PRAGMA snapshots during gateway startup.
+                    # Idempotent: CREATE TABLE IF NOT EXISTS. Cached so
+                    # subsequent connect() calls in the same process are cheap.
                     conn.executescript(SCHEMA_SQL)
-                    _migrate_add_optional_columns(conn)
                     _INITIALIZED_PATHS.add(resolved)
         except Exception:
             conn.close()
@@ -2193,7 +2152,7 @@ def init_db(
     path.parent.mkdir(parents=True, exist_ok=True)
     resolved = str(path.resolve())
     # Clear the cache entry so the underlying connect() re-runs the
-    # schema + migration pass unconditionally.
+    # schema pass unconditionally.
     with _INIT_LOCK:
         _INITIALIZED_PATHS.discard(resolved)
     with contextlib.closing(connect(path)):
@@ -2201,394 +2160,6 @@ def init_db(
     return path
 
 
-def _migrate_add_optional_columns(conn: sqlite3.Connection) -> None:
-    """Add columns that were introduced after v1 release to legacy DBs.
-
-    Called by ``init_db`` so opening an old DB is always safe.
-    """
-    cols = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
-    if "tenant" not in cols:
-        _add_column_if_missing(conn, "tasks", "tenant", "tenant TEXT")
-    if "result" not in cols:
-        _add_column_if_missing(conn, "tasks", "result", "result TEXT")
-    if "branch_name" not in cols:
-        _add_column_if_missing(conn, "tasks", "branch_name", "branch_name TEXT")
-    if "project_id" not in cols:
-        _add_column_if_missing(conn, "tasks", "project_id", "project_id TEXT")
-    if "idempotency_key" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "idempotency_key", "idempotency_key TEXT"
-        )
-    # ``idx_tasks_idempotency`` is created unconditionally below alongside
-    # the other additive-column indexes — see the block after the
-    # legacy-column migration. Creating it here too would be redundant.
-
-    # Refresh after early additive migrations above. Some existing DBs were
-    # partially migrated in older releases and can already contain the later
-    # columns (for example ``consecutive_failures``) even when this function's
-    # initial snapshot did not. Re-snapshot here so the legacy-column migration
-    # below is truly idempotent and never re-adds columns that already exist.
-    cols = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
-
-    # Legacy column migration: ``spawn_failures`` → ``consecutive_failures``
-    # and ``last_spawn_error`` → ``last_failure_error``.
-    #
-    # Avoid ``ALTER TABLE ... RENAME COLUMN`` for two reasons:
-    #   1. Primary: very old DBs may never have had ``spawn_failures`` at
-    #      all, so RENAME raises OperationalError: no such column (the crash
-    #      reported in issue #20842 after the #20410 update).
-    #   2. Secondary: SQLite reparses the whole schema on any RENAME, which
-    #      fails if related objects (views, triggers) reference the old name.
-    #
-    # ADD-first-then-copy is tolerant of both shapes and preserves
-    # historical counter values when the legacy columns do exist.
-    if "consecutive_failures" not in cols:
-        added = _add_column_if_missing(
-            conn,
-            "tasks",
-            "consecutive_failures",
-            "consecutive_failures INTEGER NOT NULL DEFAULT 0",
-        )
-        if added and "spawn_failures" in cols:
-            conn.execute(
-                "UPDATE tasks SET consecutive_failures = COALESCE(spawn_failures, 0)"
-            )
-    if "worker_pid" not in cols:
-        _add_column_if_missing(conn, "tasks", "worker_pid", "worker_pid INTEGER")
-    if "last_failure_error" not in cols:
-        added = _add_column_if_missing(
-            conn, "tasks", "last_failure_error", "last_failure_error TEXT"
-        )
-        if added and "last_spawn_error" in cols:
-            conn.execute(
-                "UPDATE tasks SET last_failure_error = last_spawn_error"
-            )
-    if "max_runtime_seconds" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "max_runtime_seconds", "max_runtime_seconds INTEGER"
-        )
-    if "last_heartbeat_at" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "last_heartbeat_at", "last_heartbeat_at INTEGER"
-        )
-    if "current_run_id" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "current_run_id", "current_run_id INTEGER"
-        )
-    if "workflow_template_id" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "workflow_template_id", "workflow_template_id TEXT"
-        )
-    if "current_step_key" not in cols:
-        _add_column_if_missing(
-            conn, "tasks", "current_step_key", "current_step_key TEXT"
-        )
-    if "skills" not in cols:
-        # JSON array of skill names the dispatcher force-loads into the
-        # worker via --skills. NULL is fine for existing rows.
-        _add_column_if_missing(conn, "tasks", "skills", "skills TEXT")
-
-    if "max_retries" not in cols:
-        # Per-task override for the consecutive-failure circuit breaker.
-        # NULL = fall through to the dispatcher-level ``kanban.failure_limit``
-        # config, then ``DEFAULT_FAILURE_LIMIT``. Existing rows get NULL,
-        # which is the correct default (they keep the global behaviour
-        # they were getting before the column existed).
-        _add_column_if_missing(conn, "tasks", "max_retries", "max_retries INTEGER")
-
-    if "model_override" not in cols:
-        conn.execute("ALTER TABLE tasks ADD COLUMN model_override TEXT")
-
-    if "provider_override" not in cols:
-        # Provider the model_override belongs to. NULL = worker profile's
-        # provider resolves the model (the behaviour existing rows had).
-        _add_column_if_missing(
-            conn, "tasks", "provider_override", "provider_override TEXT"
-        )
-
-    if "goal_mode" not in cols:
-        # Ralph-style goal loop toggle for the dispatched worker. 0 (the
-        # default) = classic single-shot worker, preserving the behaviour
-        # existing rows had before the column existed.
-        _add_column_if_missing(
-            conn, "tasks", "goal_mode", "goal_mode INTEGER NOT NULL DEFAULT 0"
-        )
-
-    if "goal_max_turns" not in cols:
-        # Per-task goal-loop turn budget. NULL = goals-engine default.
-        _add_column_if_missing(
-            conn, "tasks", "goal_max_turns", "goal_max_turns INTEGER"
-        )
-
-    if "session_id" not in cols:
-        # Originating agent/chat session id, populated when the task is
-        # created from within an agent loop that propagated
-        # ``OPENCODON_SESSION_ID`` (e.g. ACP). NULL on legacy rows and on any
-        # creation path that doesn't set the env var (CLI, dashboard).
-        _add_column_if_missing(
-            conn, "tasks", "session_id", "session_id TEXT"
-        )
-
-    if "block_kind" not in cols:
-        # Typed block reason (VALID_BLOCK_KINDS) or NULL for legacy/un-typed
-        # blocks. Existing blocked rows get NULL, which is treated as a
-        # generic human blocker — same behaviour they had before the column.
-        _add_column_if_missing(conn, "tasks", "block_kind", "block_kind TEXT")
-
-    if "block_recurrences" not in cols:
-        # Unblock-loop counter. Existing rows start at 0, so the loop breaker
-        # only begins counting from the first re-block after this migration.
-        _add_column_if_missing(
-            conn,
-            "tasks",
-            "block_recurrences",
-            "block_recurrences INTEGER NOT NULL DEFAULT 0",
-        )
-
-    # Indexes over additive ``tasks`` columns must be created after the
-    # columns exist. Keeping them in SCHEMA_SQL breaks legacy boards: SQLite
-    # parses each statement in ``executescript`` against the live schema, so a
-    # ``CREATE INDEX`` over a missing column aborts initialization before the
-    # additive ``ALTER TABLE`` migrations below can run. Re-running them here
-    # is cheap thanks to ``IF NOT EXISTS`` and stays correct on fresh DBs
-    # (where the columns already exist from SCHEMA_SQL).
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_tenant ON tasks(tenant)")
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_tasks_idempotency ON tasks(idempotency_key)"
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id)"
-    )
-
-    # task_events gained a run_id column; back-fill it as NULL for
-    # historical events (they predate runs and can't be attributed).
-    ev_cols = {row["name"] for row in conn.execute("PRAGMA table_info(task_events)")}
-    if "run_id" not in ev_cols:
-        _add_column_if_missing(conn, "task_events", "run_id", "run_id INTEGER")
-
-    # Same ordering rule as the additive ``tasks`` indexes above: create the
-    # index after the additive column migration so legacy ``task_events``
-    # tables don't fail during SCHEMA_SQL execution before ``run_id`` exists.
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_events_run "
-        "ON task_events(run_id, id)"
-    )
-
-    notify_table_exists = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='kanban_notify_subs'"
-    ).fetchone() is not None
-    if notify_table_exists:
-        notify_cols = {
-            row["name"] for row in conn.execute("PRAGMA table_info(kanban_notify_subs)")
-        }
-        if "notifier_profile" not in notify_cols:
-            _add_column_if_missing(
-                conn, "kanban_notify_subs", "notifier_profile", "notifier_profile TEXT"
-            )
-
-    # One-shot backfill: any task that is 'running' before runs existed
-    # had its claim_lock / claim_expires / worker_pid on the task row.
-    # Synthesize a matching task_runs row so subsequent end-run / heartbeat
-    # calls have something to write to. Wrapped in write_txn to serialize
-    # against any concurrent dispatcher, and the per-row UPDATE uses
-    # ``current_run_id IS NULL`` as a CAS guard so a racing claim can't
-    # produce an orphaned row if it interleaves with the backfill pass.
-    runs_exist = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='task_runs'"
-    ).fetchone() is not None
-    if runs_exist:
-        with write_txn(conn):
-            inflight = conn.execute(
-                "SELECT id, assignee, claim_lock, claim_expires, worker_pid, "
-                "       max_runtime_seconds, last_heartbeat_at, started_at "
-                "FROM tasks "
-                "WHERE status = 'running' AND current_run_id IS NULL"
-            ).fetchall()
-            for row in inflight:
-                started = row["started_at"] or int(time.time())
-                cur = conn.execute(
-                    """
-                    INSERT INTO task_runs (
-                        task_id, profile, status,
-                        claim_lock, claim_expires, worker_pid,
-                        max_runtime_seconds, last_heartbeat_at,
-                        started_at
-                    ) VALUES (?, ?, 'running', ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        row["id"], row["assignee"], row["claim_lock"],
-                        row["claim_expires"], row["worker_pid"],
-                        row["max_runtime_seconds"], row["last_heartbeat_at"],
-                        started,
-                    ),
-                )
-                # CAS: only install the pointer if nothing else claimed
-                # the task between our SELECT and here (shouldn't happen
-                # under the write_txn, but belt-and-suspenders). If the
-                # CAS fails we've got an orphan run_row — mark it
-                # reclaimed so it doesn't look in-flight.
-                upd = conn.execute(
-                    "UPDATE tasks SET current_run_id = ? "
-                    "WHERE id = ? AND current_run_id IS NULL",
-                    (cur.lastrowid, row["id"]),
-                )
-                if upd.rowcount != 1:
-                    conn.execute(
-                        "UPDATE task_runs SET status = 'reclaimed', "
-                        "    outcome = 'reclaimed', ended_at = ? "
-                        "WHERE id = ?",
-                        (int(time.time()), cur.lastrowid),
-                    )
-
-    # One-shot event-kind rename pass. The old names ("ready", "priority",
-    # "spawn_auto_blocked") still worked but were awkward on the wire;
-    # rename them in-place so existing DBs migrate cleanly. Fires once
-    # per DB because after the UPDATE no rows match the old kinds.
-    _EVENT_RENAMES = (
-        # (old, new)
-        ("ready",              "promoted"),
-        ("priority",           "reprioritized"),
-        ("spawn_auto_blocked", "gave_up"),
-    )
-    for old, new in _EVENT_RENAMES:
-        conn.execute(
-            "UPDATE task_events SET kind = ? WHERE kind = ?",
-            (new, old),
-        )
-
-    _rebuild_drifted_tables(conn)
-
-
-# Legacy DBs defined these tables with a ``TEXT PRIMARY KEY`` id (or, for
-# ``kanban_notify_subs``, a nullable ``TEXT last_event_id``). The current
-# schema uses ``INTEGER PRIMARY KEY AUTOINCREMENT`` / ``INTEGER NOT NULL
-# DEFAULT 0``. ``CREATE TABLE IF NOT EXISTS`` skips existing tables
-# regardless of schema and ``_add_column_if_missing`` only adds columns, so
-# neither can fix a drifted column type — the table must be rebuilt. See
-# #35096.
-#
-# Each entry pairs the canonical CREATE TABLE with the CREATE INDEX
-# statements that DROP TABLE would otherwise take down with it (including
-# ``idx_events_run``, added by the additive pass above). To guard against
-# this list drifting from SCHEMA_SQL, ``test_rebuilt_schema_matches_fresh``
-# asserts a rebuilt legacy DB is byte-identical to a fresh one.
-_REBUILD_SPECS = {
-    "task_events": (
-        "CREATE TABLE task_events ("
-        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        " task_id TEXT NOT NULL, run_id INTEGER, kind TEXT NOT NULL,"
-        " payload TEXT, created_at INTEGER NOT NULL)",
-        (
-            "CREATE INDEX idx_events_task ON task_events(task_id, created_at)",
-            "CREATE INDEX idx_events_run ON task_events(run_id, id)",
-        ),
-    ),
-    "task_comments": (
-        "CREATE TABLE task_comments ("
-        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        " task_id TEXT NOT NULL, author TEXT NOT NULL, body TEXT NOT NULL,"
-        " created_at INTEGER NOT NULL)",
-        ("CREATE INDEX idx_comments_task ON task_comments(task_id, created_at)",),
-    ),
-    "task_runs": (
-        "CREATE TABLE task_runs ("
-        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        " task_id TEXT NOT NULL, profile TEXT, step_key TEXT,"
-        " status TEXT NOT NULL, claim_lock TEXT, claim_expires INTEGER,"
-        " worker_pid INTEGER, max_runtime_seconds INTEGER,"
-        " last_heartbeat_at INTEGER, started_at INTEGER NOT NULL,"
-        " ended_at INTEGER, outcome TEXT, summary TEXT, metadata TEXT,"
-        " error TEXT)",
-        (
-            "CREATE INDEX idx_runs_task ON task_runs(task_id, started_at)",
-            "CREATE INDEX idx_runs_status ON task_runs(status)",
-        ),
-    ),
-    "kanban_notify_subs": (
-        "CREATE TABLE kanban_notify_subs ("
-        " task_id TEXT NOT NULL, platform TEXT NOT NULL, chat_id TEXT NOT NULL,"
-        " thread_id TEXT NOT NULL DEFAULT '', user_id TEXT,"
-        " notifier_profile TEXT, created_at INTEGER NOT NULL,"
-        " last_event_id INTEGER NOT NULL DEFAULT 0,"
-        " PRIMARY KEY (task_id, platform, chat_id, thread_id))",
-        ("CREATE INDEX idx_notify_task ON kanban_notify_subs(task_id)",),
-    ),
-}
-
-
-def _table_has_drifted(conn: sqlite3.Connection, table: str) -> bool:
-    """True when ``table`` still carries the legacy (pre-AUTOINCREMENT) shape."""
-    info = conn.execute(f"PRAGMA table_info({table})").fetchall()
-    if not info:
-        return False  # table absent — nothing to rebuild
-    if table == "kanban_notify_subs":
-        lei = next((c for c in info if c["name"] == "last_event_id"), None)
-        return lei is not None and (lei["type"] or "").upper() != "INTEGER"
-    # task_events / task_comments / task_runs: id must be INTEGER and a PK.
-    id_col = next((c for c in info if c["name"] == "id"), None)
-    if id_col is None:
-        return False
-    return not ((id_col["type"] or "").upper() == "INTEGER" and id_col["pk"])
-
-
-def _rebuild_drifted_tables(conn: sqlite3.Connection) -> None:
-    """Rebuild any kanban table whose column types drifted from SCHEMA_SQL.
-
-    Old boards crash the gateway notifier (``int(None)`` on a NULL id in
-    ``unseen_events_for_sub``) and never match the ``id > cursor`` filter, so
-    every kanban notification is silently lost (#35096). Each affected table is
-    rebuilt with the standard SQLite pattern — CREATE new → INSERT shared
-    columns → DROP old → RENAME — recreating its indexes too (DROP TABLE takes
-    them down). The legacy TEXT ids are dropped (they aren't valid integers);
-    AUTOINCREMENT assigns fresh ones and ``last_event_id`` cursors reset to 0,
-    so the first post-migration tick replays a task's event history once —
-    the safe failure mode for a feature that was already fully broken.
-
-    The whole pass runs in one transaction so an interruption can't leave a
-    table half-renamed, and under ``connect()``'s init locks so nothing races
-    it. Idempotent: a correctly-typed DB skips every table and returns without
-    opening a transaction.
-    """
-    drifted = [t for t in _REBUILD_SPECS if _table_has_drifted(conn, t)]
-    if not drifted:
-        return
-
-    conn.execute("BEGIN IMMEDIATE")
-    try:
-        for table in drifted:
-            create_sql, index_sqls = _REBUILD_SPECS[table]
-            old_cols = [c["name"] for c in conn.execute(f"PRAGMA table_info({table})")]
-            _log.info("kanban migration: rebuilding %s to match current schema", table)
-            conn.execute(f"ALTER TABLE {table} RENAME TO {table}_legacy")
-            conn.execute(create_sql)
-            new_cols = {c["name"] for c in conn.execute(f"PRAGMA table_info({table})")}
-            if table == "kanban_notify_subs":
-                # Cast the legacy TEXT cursor to INTEGER; NULL / non-numeric → 0.
-                shared = [c for c in old_cols if c in new_cols and c != "last_event_id"]
-                cols_csv = ", ".join(shared)
-                conn.execute(
-                    f"INSERT INTO {table} ({cols_csv}, last_event_id) "
-                    f"SELECT {cols_csv}, COALESCE(CAST(last_event_id AS INTEGER), 0) "
-                    f"FROM {table}_legacy"
-                )
-            else:
-                # Drop the legacy TEXT id; AUTOINCREMENT reassigns it.
-                shared = [c for c in old_cols if c in new_cols and c != "id"]
-                cols_csv = ", ".join(shared)
-                conn.execute(
-                    f"INSERT INTO {table} ({cols_csv}) "
-                    f"SELECT {cols_csv} FROM {table}_legacy"
-                )
-            conn.execute(f"DROP TABLE {table}_legacy")
-            for index_sql in index_sqls:
-                conn.execute(index_sql)
-        conn.execute("COMMIT")
-    except Exception:
-        try:
-            conn.execute("ROLLBACK")
-        except sqlite3.OperationalError:
-            pass
-        raise
 
 
 def _check_file_length_invariant(conn: sqlite3.Connection) -> None:

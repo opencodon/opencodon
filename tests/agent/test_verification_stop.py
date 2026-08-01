@@ -96,7 +96,7 @@ def test_verify_on_stop_auto_off_on_gateway_messaging_platform(clear_verify_env)
 
 @pytest.mark.parametrize(
     "platform",
-    ["discord", "whatsapp_cloud", "signal", "slack", "matrix", "email", "sms"],
+    ["discord", "whatsapp_cloud", "slack", "telegram", "whatsapp"],
 )
 def test_verify_on_stop_auto_off_for_each_messaging_platform(clear_verify_env, platform):
     clear_verify_env.setenv("OPENCODON_SESSION_PLATFORM", platform)
@@ -122,7 +122,7 @@ def test_verify_on_stop_auto_on_for_interactive_surfaces(clear_verify_env, sourc
     assert verify_on_stop_enabled({"agent": {"verify_on_stop": "auto"}}) is True
 
 
-@pytest.mark.parametrize("platform", ["api_server", "webhook", "msgraph_webhook"])
+@pytest.mark.parametrize("platform", ["api_server", "webhook"])
 def test_verify_on_stop_auto_on_for_programmatic_surfaces(clear_verify_env, platform):
     clear_verify_env.setenv("OPENCODON_SESSION_PLATFORM", platform)
     assert verify_on_stop_enabled({"agent": {"verify_on_stop": "auto"}}) is True

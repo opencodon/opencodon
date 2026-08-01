@@ -1807,11 +1807,57 @@ def _load_cursorrules(cwd_path: Path, context_length: Optional[int] = None) -> s
     )
 
 
+def _load_project_context(
+    project_id: Optional[str], cwd: str, context_length: Optional[int] = None
+) -> str:
+    """The project's Agent Context block, or "".
+
+    This is text the user wrote against the PROJECT, so unlike the file-based
+    sources below it is not part of the first-match-wins chain — a repo's
+    AGENTS.md describes the code, the project context describes how the user
+    wants agents to work in it, and both belong in the prompt.
+
+    Resolved by id when the caller knows it (the gateway passes the session's
+    ``project_id``), falling back to the cwd derivation for surfaces that don't
+    — the CLI and TUI, which have a directory but no project scope.
+
+    ``cwd`` is deliberately the UNRESOLVED path: ``project_folders`` stores
+    ``os.path.abspath`` values, so passing a ``.resolve()``d path would miss
+    every project reached through a symlink (on macOS, anything under ``/tmp``).
+    """
+    try:
+        from opencodon_cli import projects_db as pdb
+
+        with pdb.connect_closing() as conn:
+            project = pdb.get_project(conn, project_id) if project_id else None
+            if project is None:
+                # No id, or an id naming a project that has since been deleted.
+                # Derive from the directory rather than silently dropping the
+                # context — same stale-id recovery as the project tree.
+                project = pdb.project_for_path(conn, cwd)
+    except Exception:
+        logger.debug("failed to load project context", exc_info=True)
+        return ""
+
+    if project is None or not (project.context or "").strip():
+        return ""
+
+    # Capped like every other context source, but NOT injection-scanned: the
+    # scan exists for files that arrive with a cloned repo, and this text was
+    # typed by the user into their own project — same trust level as config.
+    return _truncate_content(
+        f"## Project: {project.name}\n\n{project.context.strip()}",
+        "project context",
+        context_length=context_length,
+    )
+
+
 def build_context_files_prompt(
     cwd: Optional[str] = None,
     skip_soul: bool = False,
     context_length: Optional[int] = None,
     allow_install_tree_fallback: bool = False,
+    project_id: Optional[str] = None,
 ) -> str:
     """Discover and load context files for the system prompt.
 
@@ -1870,6 +1916,14 @@ def build_context_files_prompt(
             or _load_claude_md(cwd_path, context_length)
             or _load_cursorrules(cwd_path, context_length)
         )
+    # The project's own Agent Context leads: it is the user's standing
+    # instruction for this project, and it applies whether or not the repo
+    # happens to ship an AGENTS.md. Additive, not part of the first-match-wins
+    # chain above.
+    project_agent_context = _load_project_context(project_id, cwd, context_length)
+    if project_agent_context:
+        sections.append(project_agent_context)
+
     if project_context:
         sections.append(project_context)
 

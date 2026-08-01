@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { computed } from 'nanostores'
-import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
+import { type CSSProperties, lazy, type ReactElement, type PointerEvent as ReactPointerEvent, Suspense } from 'react'
 
 import { PREVIEW_RAIL_MAX_WIDTH, PREVIEW_RAIL_MIN_WIDTH } from '@/app/chat/right-rail'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
@@ -8,7 +8,7 @@ import { PALETTE_AREA, type PaletteContribution } from '@/app/command-palette/co
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { IdleMount } from '@/components/idle-mount'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
-import { allPaneIds, group, split } from '@/components/pane-shell/tree/model'
+import { allPaneIds, findGroupOfPane, group, split } from '@/components/pane-shell/tree/model'
 import { LayoutTreeRoot } from '@/components/pane-shell/tree/renderer'
 import type { DoubleTapContext } from '@/components/pane-shell/tree/renderer/drag-session'
 import {
@@ -54,6 +54,7 @@ import {
 import { $filePreviewTarget, $previewTarget, closeRightRail } from '@/store/preview'
 import { $reviewOpen, closeReview, REVIEW_PANE_ID } from '@/store/review'
 import { $currentCwd, $selectedStoredSessionId, $sessions, sessionMatchesStoredId } from '@/store/session'
+import { $sessionTiles, workspaceTabHides } from '@/store/session-states'
 
 import type { SessionDragPayload } from '../chat/composer/inline-refs'
 import { watchRouteTiles } from '../chat/route-tile'
@@ -65,7 +66,11 @@ import {
   WorkspaceTabMenu
 } from '../chat/session-tile'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
-import { $workspaceIsPage } from '../routes'
+import { $landingOpen, $workspaceIsPage } from '../routes'
+
+// The landing is the app's other half, not a page inside it — lazy so the
+// shell's cost stays off the landing's first paint and vice versa.
+const ProjectsLanding = lazy(async () => ({ default: (await import('../projects')).ProjectsLanding }))
 
 import { ComputePane, FilesPane, LogsPane, PreviewRailPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
@@ -637,6 +642,40 @@ $previewTarget.listen(target => target && revealPreview())
 $filePreviewTarget.listen(target => target && revealPreview())
 
 // ---------------------------------------------------------------------------
+// The workspace tab holds the new-chat draft. Now that every session opens as
+// its OWN tab, an untouched draft parked at the head of the strip is just a tab
+// the user can't close — permanent, empty, and named "New session" while the
+// real work sits beside it. So hide its tab while all three hold:
+//
+//   1. the workspace holds a DRAFT, not a session (nothing selected),
+//   2. there is at least one real session tab to show instead, and
+//   3. the workspace is not the tab currently being looked at.
+//
+// (3) is what keeps this from fighting the user: clicking "New session" homes
+// selection to the workspace and fronts it (see the $selectedStoredSessionId
+// listener in session-states), which makes it active — so it is never hidden
+// out from under someone who just asked for it. The draft itself lives in the
+// composer stores, so hiding the tab never discards typed text.
+function syncWorkspaceTabVisibility(): void {
+  const tree = $layoutTree.get()
+  const group = tree ? findGroupOfPane(tree, 'workspace') : null
+
+  setTreePaneHidden(
+    'workspace',
+    workspaceTabHides({
+      hasSessionTabs: $sessionTiles.get().length > 0,
+      holdsDraft: $selectedStoredSessionId.get() === null,
+      isActive: group?.active === 'workspace'
+    })
+  )
+}
+
+$selectedStoredSessionId.listen(syncWorkspaceTabVisibility)
+$sessionTiles.listen(syncWorkspaceTabVisibility)
+$layoutTree.listen(syncWorkspaceTabVisibility)
+syncWorkspaceTabVisibility()
+
+// ---------------------------------------------------------------------------
 
 interface TitlebarSlotProps {
   area: 'titleBar.center' | 'titleBar.left' | 'titleBar.right'
@@ -658,18 +697,15 @@ function TitlebarSlot({ area, className, style }: TitlebarSlotProps) {
   )
 }
 
-export function ContribController() {
-  const sidebarOpen = useStore($sidebarOpen)
-
+/**
+ * The working shell: titlebar band, pane tree, statusbar. Everything here
+ * assumes a project is selected — the sessions sidebar, the file tree and the
+ * terminal all read project scope. The landing renders INSTEAD of this, not
+ * inside it.
+ */
+function ShellFrame() {
   return (
-    <SidebarProvider
-      className="h-screen min-h-0 flex-col bg-background"
-      onOpenChange={setSidebarOpen}
-      open={sidebarOpen}
-      style={{ '--sidebar-width': '100%' } as CSSProperties}
-    >
-      <ContribWiring>
-        <div
+    <div
           className="flex h-screen min-h-0 w-screen flex-col bg-(--ui-bg-chrome) text-(--ui-text-primary)"
           style={{ '--titlebar-height': '0px' } as CSSProperties}
         >
@@ -728,7 +764,37 @@ export function ContribController() {
           {/* The REAL statusbar (model pill, command center, agents, …) with
               statusBar.left/right contributions merged in. */}
           <WiredPane part="statusbar" />
-        </div>
+    </div>
+  )
+}
+
+export function ContribController() {
+  const sidebarOpen = useStore($sidebarOpen)
+  const landingOpen = useStore($landingOpen)
+
+  return (
+    <SidebarProvider
+      className="h-screen min-h-0 flex-col bg-background"
+      onOpenChange={setSidebarOpen}
+      open={sidebarOpen}
+      style={{ '--sidebar-width': '100%' } as CSSProperties}
+    >
+      {/* The swap sits INSIDE ContribWiring on purpose. Everything
+          gateway-bound — the socket, the session stores, streaming, the
+          overlay set, and TitlebarControls (whose traffic lights may never
+          unmount) — lives in the wiring and stays mounted across it. Leaving a
+          project is a re-home, not a reboot (apps/desktop/AGENTS.md). What the
+          landing does drop is the pane furniture, and that is cheap: the
+          layout tree is a module atom hydrated from localStorage, so zone
+          arrangement and widths restore intact on the way back in. */}
+      <ContribWiring>
+        {landingOpen ? (
+          <Suspense fallback={null}>
+            <ProjectsLanding />
+          </Suspense>
+        ) : (
+          <ShellFrame />
+        )}
       </ContribWiring>
     </SidebarProvider>
   )

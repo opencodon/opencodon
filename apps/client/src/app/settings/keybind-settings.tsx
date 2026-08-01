@@ -8,6 +8,7 @@ import { SearchField } from '@/components/ui/search-field'
 import { Tip } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
+import { MESSAGING_UI_ENABLED, PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import {
   allKeybindActions,
   KEYBIND_CATEGORIES,
@@ -39,7 +40,20 @@ export function KeybindSettings() {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   // Subscribe so contributed actions appear/disappear live in the map.
   useContributions(KEYBINDS_AREA)
-  const actionList = allKeybindActions()
+  // Display-only filter. The registry itself keeps the profile actions so
+  // their bindings still resolve — notably ⌘1…⌘9, whose handler activates the
+  // focused pane's tab slot first and only falls through to a profile switch.
+  // Recomputed every render on purpose: `useContributions` above re-renders
+  // when plugins add/remove actions, and memoizing would freeze that list.
+  const allActions = allKeybindActions()
+
+  // Hidden surfaces must not be rebindable: a shortcut row for a page the user
+  // can't reach is an offer the app won't honour. Profiles drops a whole
+  // category; messaging is one row inside `navigation`, so it goes by id.
+  const actionList = allActions
+    .filter(action => PROFILES_UI_ENABLED || action.category !== 'profiles')
+    .filter(action => MESSAGING_UI_ENABLED || action.id !== 'nav.messaging')
+
   const [query, setQuery] = useState('')
 
   const openCombo = bindings[KEYBIND_PANEL_ACTION]?.[0]

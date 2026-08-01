@@ -2,7 +2,7 @@
 opencodon Gateway - Multi-platform messaging integration.
 
 This module provides a unified gateway for connecting the opencodon agent
-to various messaging platforms (Telegram, Discord, WhatsApp, Weixin, and more) with:
+to various messaging platforms (Telegram, Discord, WhatsApp, Slack, and more) with:
 - Session management (persistent conversations with reset policies)
 - Dynamic context injection (agent knows where messages come from)
 - Delivery routing (cron job outputs to appropriate channels)

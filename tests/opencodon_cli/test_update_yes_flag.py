@@ -2,7 +2,7 @@
 
 Covers:
   1. argparse parses the flag
-  2. Config-migration prompt is auto-answered (no input() call) and migrate_config
+  2. Config-reconcile prompt is auto-answered (no input() call) and reconcile_config
      runs with interactive=False so API-key prompts are skipped
   3. Autostash restore prompt is auto-answered (prompt_for_restore == False, no
      input() call) and the stash is applied automatically
@@ -47,12 +47,10 @@ def _make_run_side_effect(
     return side_effect
 
 
-class TestUpdateYesConfigMigration:
-    """--yes auto-answers the config-migration prompt and skips API-key prompts."""
+class TestUpdateYesConfigReconcile:
+    """--yes auto-answers the config prompt and skips API-key prompts."""
 
-    @patch("opencodon_cli.config.migrate_config")
-    @patch("opencodon_cli.config.check_config_version", return_value=(1, 2))
-    @patch("opencodon_cli.config.get_missing_config_fields", return_value=[])
+    @patch("opencodon_cli.config.reconcile_config")
     @patch("opencodon_cli.config.get_missing_env_vars", return_value=["NEW_KEY"])
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -61,15 +59,13 @@ class TestUpdateYesConfigMigration:
         mock_run,
         _mock_which,
         _mock_missing_env,
-        _mock_missing_cfg,
-        _mock_version,
-        mock_migrate,
+        mock_reconcile,
         capsys,
     ):
         mock_run.side_effect = _make_run_side_effect(
             branch="main", verify_ok=True, commit_count="1"
         )
-        mock_migrate.return_value = {"env_added": [], "config_added": []}
+        mock_reconcile.return_value = {"env_added": [], "config_added": [], "warnings": []}
 
         args = SimpleNamespace(yes=True)
 
@@ -78,20 +74,18 @@ class TestUpdateYesConfigMigration:
             # Never prompted the user.
             mock_input.assert_not_called()
 
-        # migrate_config was invoked with interactive=False — API-key prompts
+        # reconcile_config was invoked with interactive=False — API-key prompts
         # are suppressed, matching gateway-mode semantics.
-        assert mock_migrate.call_count == 1
-        _, kwargs = mock_migrate.call_args
+        assert mock_reconcile.call_count == 1
+        _, kwargs = mock_reconcile.call_args
         assert kwargs.get("interactive") is False
 
         out = capsys.readouterr().out
-        assert "--yes: auto-applying config migration" in out
+        assert "--yes: skipping API-key prompts." in out
         # The "Would you like to configure them now?" prompt text never appears.
         assert "Would you like to configure them now?" not in out
 
-    @patch("opencodon_cli.config.migrate_config")
-    @patch("opencodon_cli.config.check_config_version", return_value=(1, 2))
-    @patch("opencodon_cli.config.get_missing_config_fields", return_value=[])
+    @patch("opencodon_cli.config.reconcile_config")
     @patch("opencodon_cli.config.get_missing_env_vars", return_value=["NEW_KEY"])
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -100,16 +94,14 @@ class TestUpdateYesConfigMigration:
         mock_run,
         _mock_which,
         _mock_missing_env,
-        _mock_missing_cfg,
-        _mock_version,
-        mock_migrate,
+        mock_reconcile,
         capsys,
     ):
         """Regression guard: without --yes, the TTY prompt path still fires."""
         mock_run.side_effect = _make_run_side_effect(
             branch="main", verify_ok=True, commit_count="1"
         )
-        mock_migrate.return_value = {"env_added": [], "config_added": []}
+        mock_reconcile.return_value = {"env_added": [], "config_added": [], "warnings": []}
 
         args = SimpleNamespace(yes=False)
 

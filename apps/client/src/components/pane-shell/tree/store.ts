@@ -651,9 +651,15 @@ export function revealTreePane(paneId: string) {
   const hiddenNow = $hiddenTreePanes.get()
 
   if (hiddenNow.has(paneId)) {
+    // Un-hide, then FALL THROUGH to the fronting below. `setTreePaneHidden`
+    // fronts only through `frontPaneInGroup`, which deliberately declines to
+    // steal the active tab from a visible pane — correct for a REACTIVE unhide
+    // (a flag flipping must not yank the user off what they're reading), wrong
+    // here. `revealTreePane` is the user-intent door: "open the side, unhide,
+    // front". Returning early made a reveal silently half-work whenever the
+    // pane happened to be hidden — it reappeared in the strip but stayed
+    // behind whatever tab was already active.
     setTreePaneHidden(paneId, false)
-
-    return
   }
 
   const tree = $layoutTree.get()

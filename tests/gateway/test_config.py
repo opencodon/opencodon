@@ -209,21 +209,21 @@ class TestGetConnectedPlatforms:
         monkeypatch.delenv("DINGTALK_CLIENT_SECRET", raising=False)
         config = GatewayConfig(
             platforms={
-                Platform.DINGTALK: PlatformConfig(enabled=True, extra={}),
+                Platform.WHATSAPP_CLOUD: PlatformConfig(enabled=True, extra={}),
             },
         )
-        assert Platform.DINGTALK not in config.get_connected_platforms()
+        assert Platform.WHATSAPP_CLOUD not in config.get_connected_platforms()
 
     def test_dingtalk_disabled_not_connected(self):
         config = GatewayConfig(
             platforms={
-                Platform.DINGTALK: PlatformConfig(
+                Platform.WHATSAPP_CLOUD: PlatformConfig(
                     enabled=False,
                     extra={"client_id": "cid", "client_secret": "sec"},
                 ),
             },
         )
-        assert Platform.DINGTALK not in config.get_connected_platforms()
+        assert Platform.WHATSAPP_CLOUD not in config.get_connected_platforms()
 
 
 class TestSessionResetPolicy:
@@ -404,14 +404,14 @@ class TestGatewayConfigRoundtrip:
     def test_email_can_opt_into_pairing_for_unauthorized_dm_behavior(self):
         config = GatewayConfig(
             platforms={
-                Platform.EMAIL: PlatformConfig(
+                Platform.WEBHOOK: PlatformConfig(
                     enabled=True,
                     extra={"unauthorized_dm_behavior": "pair"},
                 ),
             },
         )
 
-        assert config.get_unauthorized_dm_behavior(Platform.EMAIL) == "pair"
+        assert config.get_unauthorized_dm_behavior(Platform.WEBHOOK) == "pair"
 
     def test_from_dict_coerces_quoted_false_always_log_local(self):
         restored = GatewayConfig.from_dict({"always_log_local": "false"})
@@ -1885,3 +1885,18 @@ class TestMultiplexProfilesConfig:
             "Explicit top-level false was overridden by nested true — "
             "loader must respect top-level precedence when key is present"
         )
+
+
+class TestPlatformEnum:
+    """Every built-in Platform member must have an adapter behind it: the
+    dashboard enumerates the enum to build its channel catalog, so an unwired
+    member offers the user a connection the gateway would refuse to make."""
+
+    def test_enum_is_exactly_the_wired_platforms(self):
+        from gateway.config import Platform
+
+        wired = {
+            "local", "telegram", "discord", "slack", "whatsapp",
+            "whatsapp_cloud", "api_server", "webhook", "relay",
+        }
+        assert {m.value for m in Platform.__members__.values()} == wired

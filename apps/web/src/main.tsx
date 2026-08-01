@@ -6,4 +6,7 @@ import { installWebBridge } from './web-bridge'
 // is no preload script, so this host supplies the bridge itself.
 installWebBridge()
 
-mount()
+// The browser opens on the project picker: a dashboard tab has no "the app I
+// left open" the way a desktop window does, and every scoped surface (sessions,
+// files, terminal, artifacts) needs a project chosen to be meaningful.
+mount({ home: 'projects' })
