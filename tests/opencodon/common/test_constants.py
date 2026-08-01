@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import opencodon_constants
-from opencodon_constants import (
+from opencodon.common import constants as opencodon_constants
+from opencodon.common.constants import (
     VALID_REASONING_EFFORTS,
     agent_browser_runnable,
     find_opencodon_node_executable,
@@ -539,39 +539,39 @@ class TestResolvePerModelReasoningEffort:
 
     def test_exact_match(self):
         """Exact model string match returns the parsed override."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "xhigh"}
         result = resolve_per_model_reasoning_effort("claude-opus-4.5", overrides)
         assert result == {"enabled": True, "effort": "xhigh"}
 
     def test_none_when_no_matching_key(self):
         """Model not in overrides returns None (caller falls back to global)."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "xhigh"}
         assert resolve_per_model_reasoning_effort("gpt-5", overrides) is None
 
     def test_none_value_returns_disabled(self):
         """Override set to 'none' returns {'enabled': False}."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "none"}
         result = resolve_per_model_reasoning_effort("claude-opus-4.5", overrides)
         assert result == {"enabled": False}
 
     def test_invalid_value_returns_none(self):
         """Override with invalid effort falls back to None (global)."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "banana"}
         assert resolve_per_model_reasoning_effort("claude-opus-4.5", overrides) is None
 
     def test_none_or_empty_overrides_returns_none(self):
         """None or empty overrides dict returns None."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         assert resolve_per_model_reasoning_effort("claude-opus-4.5", None) is None
         assert resolve_per_model_reasoning_effort("claude-opus-4.5", {}) is None
 
     def test_empty_model_returns_none(self):
         """Empty model string returns None."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         assert resolve_per_model_reasoning_effort("", {"gpt-5": "low"}) is None
 
     # --- Spelling tolerance layer ---
@@ -582,14 +582,14 @@ class TestResolvePerModelReasoningEffort:
         normalize_model_for_provider converts claude-opus-4.5 → claude-opus-4-5
         for the anthropic provider. The user's override key should still match.
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "xhigh"}
         result = resolve_per_model_reasoning_effort("claude-opus-4-5", overrides)
         assert result == {"enabled": True, "effort": "xhigh"}
 
     def test_dashes_to_dots_variant(self):
         """User wrote key with dashes; input comes in with dots."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4-5": "high"}
         result = resolve_per_model_reasoning_effort("claude-opus.4.5", overrides)
         assert result == {"enabled": True, "effort": "high"}
@@ -600,7 +600,7 @@ class TestResolvePerModelReasoningEffort:
         E.g. user config: model.default: claude-opus-4.5 (no prefix),
         but override key: anthropic/claude-opus-4.5.
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"anthropic/claude-opus-4.5": "high"}
         result = resolve_per_model_reasoning_effort("claude-opus-4.5", overrides)
         assert result == {"enabled": True, "effort": "high"}
@@ -611,7 +611,7 @@ class TestResolvePerModelReasoningEffort:
         E.g. user config: model.default: anthropic/claude-opus-4.5,
         but override key: claude-opus-4.5 (no prefix).
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "high"}
         result = resolve_per_model_reasoning_effort("anthropic/claude-opus-4.5", overrides)
         assert result == {"enabled": True, "effort": "high"}
@@ -623,7 +623,7 @@ class TestResolvePerModelReasoningEffort:
         creating a triple-prefix. The resolver strips the aggregator
         layer to find the user's two-segment key.
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"anthropic/claude-opus-4.5": "xhigh"}
         result = resolve_per_model_reasoning_effort("openrouter/anthropic/claude-opus-4.5", overrides)
         assert result == {"enabled": True, "effort": "xhigh"}
@@ -634,14 +634,14 @@ class TestResolvePerModelReasoningEffort:
         If both 'claude-opus-4.5' (exact) and 'claude-opus-4-5' (dashes
         variant) are keys, the exact input matches the exact key first.
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "high", "claude-opus-4-5": "xhigh"}
         result = resolve_per_model_reasoning_effort("claude-opus-4.5", overrides)
         assert result == {"enabled": True, "effort": "high"}
 
     def test_none_when_no_variant_matches(self):
         """All variants exhausted without a match returns None."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"gpt-5": "low"}
         assert resolve_per_model_reasoning_effort("claude-opus-4.5", overrides) is None
 
@@ -653,7 +653,7 @@ class TestResolvePerModelReasoningEffort:
         all_dashed = model.replace('.', '-') collapsed version dots,
         making the canonical form unreachable from all-dotted input.
         """
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"claude-opus-4.5": "xhigh"}
         result = resolve_per_model_reasoning_effort("claude-opus.4.5", overrides)
         assert result is not None
@@ -661,7 +661,7 @@ class TestResolvePerModelReasoningEffort:
 
     def test_different_models_do_not_match(self):
         """No false positives: gemini-2.0-flash must not match gemini-flash."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         overrides = {"gemini-flash": "low"}
         assert resolve_per_model_reasoning_effort("gemini-2.0-flash", overrides) is None
 
@@ -685,20 +685,20 @@ class TestResolveReasoningConfig:
         }
 
     def test_per_model_override_wins(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(overrides={"claude-opus-4.5": "xhigh"})
         result = resolve_reasoning_config(cfg, "claude-opus-4.5")
         assert result == {"enabled": True, "effort": "xhigh"}
 
     def test_global_fallback_when_no_override(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort="low", overrides={"claude-opus-4.5": "xhigh"})
         assert resolve_reasoning_config(cfg, "gpt-5") == {"enabled": True, "effort": "low"}
 
     def test_explicit_model_wins_over_config_default(self):
         """The session's effective model (e.g. after a session-only /model
         switch) must be used for override lookup — NOT model.default."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(
             effort="medium",
             overrides={"gpt-5": "low", "claude-opus-4.5": "xhigh"},
@@ -709,13 +709,13 @@ class TestResolveReasoningConfig:
         assert result == {"enabled": True, "effort": "xhigh"}
 
     def test_empty_model_derives_from_config_default(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(overrides={"gpt-5": "high"}, default_model="gpt-5")
         assert resolve_reasoning_config(cfg) == {"enabled": True, "effort": "high"}
 
     def test_empty_model_derives_from_model_alias_key(self):
         """model: {model: ...} alias shape (older configs) also resolves."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = {
             "model": {"model": "gpt-5"},
             "agent": {"reasoning_effort": "medium", "reasoning_overrides": {"gpt-5": "high"}},
@@ -724,7 +724,7 @@ class TestResolveReasoningConfig:
 
     def test_string_model_section(self):
         """Top-level ``model: <string>`` config shape (cron raw-YAML path)."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = {
             "model": "claude-opus-4.5",
             "agent": {"reasoning_effort": "low", "reasoning_overrides": {"claude-opus-4.5": "xhigh"}},
@@ -733,41 +733,41 @@ class TestResolveReasoningConfig:
 
     def test_yaml_false_global_uncoerced(self):
         """YAML boolean False must mean disabled — never coerced to ''."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort=False)
         assert resolve_reasoning_config(cfg, "gpt-5") == {"enabled": False}
 
     def test_yaml_false_not_shadowed_by_other_models_override(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort=False, overrides={"claude-opus-4.5": "xhigh"})
         assert resolve_reasoning_config(cfg, "gpt-5") == {"enabled": False}
 
     def test_override_none_disables_for_model(self):
         """Per-model override value 'none' disables thinking for that model."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort="high", overrides={"gemini-flash": "none"})
         assert resolve_reasoning_config(cfg, "gemini-flash") == {"enabled": False}
 
     def test_unknown_global_returns_none(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort="bogus-level")
         assert resolve_reasoning_config(cfg, "gpt-5") is None
 
     def test_empty_config_returns_none(self):
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         assert resolve_reasoning_config({}) is None
         assert resolve_reasoning_config(None) is None
 
     def test_malformed_sections_tolerated(self):
         """Non-dict agent/model sections must not raise."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         assert resolve_reasoning_config({"agent": "oops", "model": 42}) is None
         assert resolve_reasoning_config({"agent": None, "model": None}) is None
         assert resolve_reasoning_config({"agent": {"reasoning_overrides": "bad"}}) is None
 
     def test_invalid_override_value_falls_back_to_global(self):
         """A junk override value for the matching model falls through to global."""
-        from opencodon_constants import resolve_reasoning_config
+        from opencodon.common.constants import resolve_reasoning_config
         cfg = self._cfg(effort="medium", overrides={"gpt-5": "turbo-max"})
         assert resolve_reasoning_config(cfg, "gpt-5") == {"enabled": True, "effort": "medium"}
 
@@ -810,7 +810,7 @@ class TestReasoningOverridesDefaultConfig:
 
     def test_spelling_tolerant_lookup_works_with_user_config(self):
         """resolve_per_model_reasoning_effort works with user-added overrides."""
-        from opencodon_constants import resolve_per_model_reasoning_effort
+        from opencodon.common.constants import resolve_per_model_reasoning_effort
         # User config with one override, query uses different spelling
         overrides = {
             "anthropic/claude-opus-4.5": "xhigh",  # user wrote with dots

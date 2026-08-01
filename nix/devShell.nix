@@ -28,7 +28,7 @@
         packages = with pkgs; [
           (pkgs.runCommand "opencodon" { } ''
             mkdir -p $out/bin
-            install -Dm755 ${../opencodon} $out/bin/opencodon
+            install -Dm755 ${../bin/opencodon} $out/bin/opencodon
           '')
           (pkgs.runCommand "dev-sandbox" { } ''
             mkdir -p $out/bin

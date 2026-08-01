@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-import opencodon_time
+from opencodon.common import timeutils as opencodon_time
 
 
 def _reset_opencodon_time_cache():

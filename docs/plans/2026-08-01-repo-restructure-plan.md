@@ -99,7 +99,21 @@ Tests lead the changes; they are the steering mechanism, not the afterthought.
   `scripts/install_triage_schedule.sh`, `.fork/` (keep FORK-PLAN.md as a
   historical record). Requires user's machine for launchd unload.
 
-### Phase 1 — Skeleton + leaves
+### Phase 1 — Skeleton + leaves — DONE 2026-08-01
+
+Executed with one deviation: the package lands at repo-root `opencodon/`
+(not `src/opencodon/`) until Phase 3 — a mixed src+flat setuptools layout
+can't express two package roots cleanly, so the `src/` flip happens in
+Phase 3's single packaging change when every package moves. The root
+`opencodon` launcher script moved to `bin/opencodon` to free the name
+(nix/devShell.nix updated). Module renames: `opencodon_constants →
+opencodon/common/constants.py`, `opencodon_logging → logging_setup.py`,
+`opencodon_time → timeutils.py`, `utils → utils.py`, `toolsets →
+opencodon/toolsets.py`. Old paths are sys.modules-aliasing shims (single
+module object — monkeypatching stays coherent). Tests moved to
+`tests/opencodon/` with canonical imports; new characterization tests for
+previously-untested utils helpers (safe_json_loads, env_bool,
+normalize_proxy_url/env_vars) in test_utils_env_proxy_json.py.
 - Create `src/opencodon/`; fix packaging (drop the `py-modules` hack in
   pyproject.toml `[tool.setuptools]`; editable install).
 - `git mv` the dependency-free root modules into `common/`:
