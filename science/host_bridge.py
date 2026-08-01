@@ -210,7 +210,7 @@ class HostBridge:
     # ── handlers ────────────────────────────────────────────────────
 
     def _llm_client(self, model: Optional[str]):
-        from agent.auxiliary_client import get_text_auxiliary_client
+        from opencodon.core.auxiliary_client import get_text_auxiliary_client
 
         client, default_model = get_text_auxiliary_client("science_llm")
         if client is None:
@@ -283,7 +283,7 @@ class HostBridge:
                 f"tool {name!r} is not in the science.host_tools allowlist "
                 f"(config.yaml); allowed: {sorted(allowed) or 'none'}"
             )
-        from model_tools import handle_function_call
+        from opencodon.tools.model_tools import handle_function_call
 
         raw = handle_function_call(name, dict(args), task_id=None)
         try:
@@ -330,7 +330,7 @@ _ANTHROPIC_HOSTS = ("api.anthropic.com",)
 def _configured_model(key: str) -> Optional[str]:
     """``auxiliary.science_llm.<key>`` from config.yaml, if set."""
     try:
-        from agent.auxiliary_client import _get_auxiliary_task_config
+        from opencodon.core.auxiliary_client import _get_auxiliary_task_config
 
         value = _get_auxiliary_task_config("science_llm").get(key)
     except Exception:
@@ -347,7 +347,7 @@ def _configured_cheap_model() -> Optional[str]:
 def _provider_is_anthropic() -> bool:
     """Whether science_llm resolves to Anthropic's own API."""
     try:
-        from agent.auxiliary_client import _resolve_task_provider_model
+        from opencodon.core.auxiliary_client import _resolve_task_provider_model
 
         provider, _model, base_url, _key, _mode = _resolve_task_provider_model(
             "science_llm"

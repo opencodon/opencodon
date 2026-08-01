@@ -76,7 +76,7 @@ class TestBundledPluginsRegister:
 
     def test_all_three_plugins_present_in_registry(self) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import list_providers
+        from opencodon.core.browser_registry import list_providers
 
         names = sorted(p.name for p in list_providers())
         assert names == ["browser-use", "browserbase", "firecrawl"]
@@ -93,7 +93,7 @@ class TestBundledPluginsRegister:
         self, plugin_name: str, expected_display: str
     ) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None, f"plugin {plugin_name!r} not registered"
@@ -107,7 +107,7 @@ class TestBundledPluginsRegister:
     def test_each_plugin_has_setup_schema(self, plugin_name: str) -> None:
         """``get_setup_schema()`` returns a dict the picker can consume."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None
@@ -126,8 +126,8 @@ class TestBundledPluginsRegister:
     def test_each_plugin_implements_full_lifecycle(self, plugin_name: str) -> None:
         """The ABC's three lifecycle methods are all overridden."""
         _ensure_plugins_loaded()
-        from agent.browser_provider import BrowserProvider
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_provider import BrowserProvider
+        from opencodon.core.browser_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None
@@ -152,7 +152,7 @@ class TestIsAvailable:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider("browserbase")
         assert p is not None
@@ -170,7 +170,7 @@ class TestIsAvailable:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider("browserbase")
         assert p is not None
@@ -181,7 +181,7 @@ class TestIsAvailable:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider("browser-use")
         assert p is not None
@@ -191,7 +191,7 @@ class TestIsAvailable:
 
     def test_firecrawl_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider("firecrawl")
         assert p is not None
@@ -211,14 +211,14 @@ class TestRegistryResolution:
     def test_resolve_none_with_no_creds_returns_none(self) -> None:
         """No config, no env → local mode (None)."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         assert _resolve(None) is None
 
     def test_explicit_local_returns_none(self) -> None:
         """``cloud_provider: local`` is a positive choice; short-circuits to None."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         assert _resolve("local") is None
 
@@ -229,7 +229,7 @@ class TestRegistryResolution:
         credentials error rather than silently switching backends.
         """
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         provider = _resolve("browserbase")
         assert provider is not None
@@ -239,7 +239,7 @@ class TestRegistryResolution:
     def test_explicit_firecrawl_returns_provider_even_when_unavailable(self) -> None:
         """Firecrawl behaves the same as browserbase under explicit config."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         provider = _resolve("firecrawl")
         assert provider is not None
@@ -248,7 +248,7 @@ class TestRegistryResolution:
     def test_explicit_unknown_falls_back_to_auto_detect(self) -> None:
         """Rule 1 miss: unknown name → fall through to legacy walk."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         # With no credentials anywhere, auto-detect should also fail.
         assert _resolve("not-a-real-provider") is None
@@ -258,7 +258,7 @@ class TestRegistryResolution:
     ) -> None:
         """Rule 3: walk order is browser-use → browserbase."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         # Both available — browser-use should win.
         monkeypatch.setenv("BROWSER_USE_API_KEY", "k1")
@@ -274,7 +274,7 @@ class TestRegistryResolution:
     ) -> None:
         """Rule 3: browser-use unavailable → browserbase picked."""
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         monkeypatch.setenv("BROWSERBASE_API_KEY", "k")
         monkeypatch.setenv("BROWSERBASE_PROJECT_ID", "p")
@@ -295,7 +295,7 @@ class TestRegistryResolution:
         to a paid cloud browser would be a real behaviour regression.
         """
         _ensure_plugins_loaded()
-        from agent.browser_registry import _resolve
+        from opencodon.core.browser_registry import _resolve
 
         monkeypatch.setenv("FIRECRAWL_API_KEY", "k")
 
@@ -317,7 +317,7 @@ class TestLegacyAbcAliases:
     )
     def test_is_configured_delegates_to_is_available(self, plugin_name: str) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider(plugin_name)
         assert p is not None
@@ -335,7 +335,7 @@ class TestLegacyAbcAliases:
         self, plugin_name: str, expected_label: str
     ) -> None:
         _ensure_plugins_loaded()
-        from agent.browser_registry import get_provider
+        from opencodon.core.browser_registry import get_provider
 
         p = get_provider(plugin_name)
         assert p is not None
@@ -352,7 +352,7 @@ class TestPickerIntegration:
 
     def test_picker_rows_match_registered_plugins(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon_cli.tools_config import _plugin_browser_providers
+        from opencodon.frontends.cli.tools_config import _plugin_browser_providers
 
         rows = _plugin_browser_providers()
         names = sorted(r.get("browser_provider") for r in rows)
@@ -362,7 +362,7 @@ class TestPickerIntegration:
         """Every browser plugin row has post_setup='agent_browser' so
         selecting it triggers the agent-browser CLI install."""
         _ensure_plugins_loaded()
-        from opencodon_cli.tools_config import _plugin_browser_providers
+        from opencodon.frontends.cli.tools_config import _plugin_browser_providers
 
         for row in _plugin_browser_providers():
             assert row.get("post_setup") == "agent_browser", (
@@ -373,7 +373,7 @@ class TestPickerIntegration:
         """`browser_plugin_name` matches `browser_provider` so downstream
         code can route through the registry when it wants to."""
         _ensure_plugins_loaded()
-        from opencodon_cli.tools_config import _plugin_browser_providers
+        from opencodon.frontends.cli.tools_config import _plugin_browser_providers
 
         for row in _plugin_browser_providers():
             assert row.get("browser_plugin_name") == row.get("browser_provider")

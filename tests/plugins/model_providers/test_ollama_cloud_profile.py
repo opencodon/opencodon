@@ -26,7 +26,7 @@ def ollama_cloud_profile():
     # ``model_tools`` triggers plugin discovery on import, which is what
     # registers the Ollama Cloud profile in the global provider registry.
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("ollama-cloud")
     assert profile is not None, "ollama-cloud provider profile must be registered"
@@ -140,7 +140,7 @@ class TestOllamaCloudFullKwargsIntegration:
     """End-to-end: the transport's full kwargs include reasoning_effort."""
 
     def test_full_kwargs_with_xhigh(self, ollama_cloud_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro:cloud",
@@ -158,7 +158,7 @@ class TestOllamaCloudFullKwargsIntegration:
         assert "extra_body" not in kwargs or "reasoning" not in kwargs.get("extra_body", {})
 
     def test_full_kwargs_with_disabled(self, ollama_cloud_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro:cloud",
@@ -229,7 +229,7 @@ class TestOllamaModelSupportsThinking:
         monkeypatch.setattr(httpx, "Client", _Client)
 
     def test_thinking_capability_true(self, monkeypatch):
-        from opencodon_cli.models import ollama_model_supports_thinking
+        from opencodon.frontends.cli.models import ollama_model_supports_thinking
 
         self._patch_show(monkeypatch, capabilities=["completion", "tools", "thinking"])
         assert (
@@ -240,7 +240,7 @@ class TestOllamaModelSupportsThinking:
         )
 
     def test_no_thinking_capability_false(self, monkeypatch):
-        from opencodon_cli.models import ollama_model_supports_thinking
+        from opencodon.frontends.cli.models import ollama_model_supports_thinking
 
         self._patch_show(monkeypatch, capabilities=["completion", "vision"])
         assert (
@@ -249,7 +249,7 @@ class TestOllamaModelSupportsThinking:
         )
 
     def test_probe_failure_returns_none(self, monkeypatch):
-        from opencodon_cli.models import ollama_model_supports_thinking
+        from opencodon.frontends.cli.models import ollama_model_supports_thinking
 
         self._patch_show(monkeypatch, status=404)
         assert (
@@ -257,7 +257,7 @@ class TestOllamaModelSupportsThinking:
         )
 
     def test_exception_returns_none(self, monkeypatch):
-        from opencodon_cli.models import ollama_model_supports_thinking
+        from opencodon.frontends.cli.models import ollama_model_supports_thinking
 
         self._patch_show(monkeypatch, raise_exc=RuntimeError("boom"))
         assert (

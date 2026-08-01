@@ -55,7 +55,7 @@ def test_config_show_no_managed_scope_silent(tmp_path, monkeypatch, capsys):
 
 def test_doctor_reports_managed_scope(homes, capsys):
     # homes fixture has 1 managed config key (model.default) and 0 managed env keys.
-    from opencodon_cli import doctor
+    from opencodon.frontends.cli import doctor
 
     doctor.managed_scope_check()
     out = capsys.readouterr().out.lower()
@@ -67,7 +67,7 @@ def test_doctor_reports_managed_scope(homes, capsys):
 def test_doctor_silent_with_no_managed_scope(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(tmp_path / "nope"))
     from opencodon.config import managed_scope
-    from opencodon_cli import doctor
+    from opencodon.frontends.cli import doctor
 
     managed_scope.invalidate_managed_cache()
     doctor.managed_scope_check()

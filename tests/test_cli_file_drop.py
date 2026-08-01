@@ -4,7 +4,7 @@ dragged/pasted absolute paths from being mistaken for slash commands."""
 
 import pytest
 
-from cli import _detect_file_drop
+from opencodon.frontends.cli.shell import _detect_file_drop
 
 
 # ---------------------------------------------------------------------------

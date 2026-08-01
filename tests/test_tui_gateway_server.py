@@ -13,9 +13,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
-from opencodon_cli.active_sessions import active_session_registry_snapshot
-from opencodon_cli.browser_connect import ChromeDebugLaunch
-from tui_gateway import server
+from opencodon.frontends.cli.active_sessions import active_session_registry_snapshot
+from opencodon.frontends.cli.browser_connect import ChromeDebugLaunch
+from opencodon.frontends.tui import server
 
 
 @pytest.fixture(autouse=True)
@@ -89,7 +89,7 @@ def test_session_context_uses_session_cwd(monkeypatch, tmp_path):
     falling back to os.getcwd() makes agents answer from the desktop app folder
     even when the sidebar/session cwd is a real project.
     """
-    from agent.runtime_cwd import resolve_agent_cwd
+    from opencodon.core.runtime_cwd import resolve_agent_cwd
 
     sid = "cwd-sid"
     session_key = "cwd-key"
@@ -467,9 +467,9 @@ def test_prompt_submit_golden_transcript_matches_flag_off_and_on(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, _session=None: dict(fixed_info))
     monkeypatch.setattr(server, "make_stream_renderer", lambda _cols: None)
     monkeypatch.setattr(server, "render_message", lambda _raw, _cols: None)
-    fake_title = types.ModuleType("agent.title_generator")
+    fake_title = types.ModuleType("opencodon.core.title_generator")
     setattr(fake_title, "maybe_auto_title", lambda *args, **kwargs: None)
-    monkeypatch.setitem(sys.modules, "agent.title_generator", fake_title)
+    monkeypatch.setitem(sys.modules, "opencodon.core.title_generator", fake_title)
 
     def run_flag_off():
         events = []
@@ -539,7 +539,7 @@ def test_session_context_explicit_cwd_for_ephemeral_task(monkeypatch, tmp_path):
     """Background/preview tasks use ephemeral ids absent from `_sessions`, so the
     parent workspace is passed explicitly; it must pin instead of clearing back
     to the gateway launch dir."""
-    from agent.runtime_cwd import resolve_agent_cwd
+    from opencodon.core.runtime_cwd import resolve_agent_cwd
 
     project = tmp_path / "project"
     project.mkdir()
@@ -763,13 +763,13 @@ def test_write_json_drops_detached_ws_frames(monkeypatch):
 
 
 def test_tui_verbose_tool_details_fail_closed_when_redaction_fails(monkeypatch):
-    redact_module = types.ModuleType("agent.redact")
+    redact_module = types.ModuleType("opencodon.core.redact")
 
     def fail_redaction(*_args, **_kwargs):
         raise RuntimeError("redaction unavailable")
 
     setattr(redact_module, "redact_sensitive_text", fail_redaction)
-    monkeypatch.setitem(sys.modules, "agent.redact", redact_module)
+    monkeypatch.setitem(sys.modules, "opencodon.core.redact", redact_module)
 
     assert server._redact_tui_verbose_text("api_key=secret") == ""
     assert server._tool_args_text({"api_key": "secret"}) == ""
@@ -802,13 +802,13 @@ def test_tui_verbose_default_cap_stays_small(monkeypatch):
 
 
 def test_tui_verbose_tool_events_omit_details_when_redaction_fails(monkeypatch):
-    redact_module = types.ModuleType("agent.redact")
+    redact_module = types.ModuleType("opencodon.core.redact")
 
     def fail_redaction(*_args, **_kwargs):
         raise RuntimeError("redaction unavailable")
 
     setattr(redact_module, "redact_sensitive_text", fail_redaction)
-    monkeypatch.setitem(sys.modules, "agent.redact", redact_module)
+    monkeypatch.setitem(sys.modules, "opencodon.core.redact", redact_module)
 
     events: list[tuple[str, str, dict]] = []
     monkeypatch.setattr(
@@ -929,7 +929,7 @@ def test_dispatch_rejects_non_object_params():
 def test_system_battery_returns_reading(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "agent.battery",
+        "opencodon.core.battery",
         types.SimpleNamespace(
             read_battery=lambda: types.SimpleNamespace(
                 available=True, percent=77, plugged=False
@@ -954,7 +954,7 @@ def test_system_battery_fails_open(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "agent.battery",
+        "opencodon.core.battery",
         types.SimpleNamespace(read_battery=boom, battery_category=lambda _s: "dim"),
     )
 
@@ -1006,7 +1006,7 @@ def test_voice_toggle_returns_configured_record_key(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1040,7 +1040,7 @@ def test_voice_toggle_handles_non_dict_voice_cfg(monkeypatch):
     """
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1098,7 +1098,7 @@ def test_voice_record_start_handles_non_dict_voice_cfg(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.voice",
+        "opencodon.frontends.cli.voice",
         types.SimpleNamespace(
             start_continuous=fake_start_continuous, stop_continuous=lambda: None
         ),
@@ -1163,7 +1163,7 @@ def test_voice_record_stop_forces_transcription(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.voice",
+        "opencodon.frontends.cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: None,
             stop_continuous=fake_stop_continuous,
@@ -1185,7 +1185,7 @@ def test_voice_record_stop_forces_transcription(monkeypatch):
 def test_voice_record_stop_updates_event_session_id(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.voice",
+        "opencodon.frontends.cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: True,
             stop_continuous=lambda **_kwargs: None,
@@ -1208,7 +1208,7 @@ def test_voice_record_stop_updates_event_session_id(monkeypatch):
 def test_voice_record_start_reports_busy_when_stop_is_in_progress(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.voice",
+        "opencodon.frontends.cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: False,
             stop_continuous=lambda **_kwargs: None,
@@ -1244,7 +1244,7 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1310,7 +1310,7 @@ def test_load_enabled_toolsets_folds_project_into_focus_posture(monkeypatch):
     # the project tools while sitting in a repo.
     monkeypatch.delenv("OPENCODON_TUI_TOOLSETS", raising=False)
 
-    import agent.coding_context as cc
+    import opencodon.core.coding_context as cc
 
     monkeypatch.setattr(cc, "coding_selection", lambda **_: ["coding", "figma"])
 
@@ -1765,7 +1765,7 @@ def test_live_visible_history_matches_eager_resume_with_real_db(tmp_path):
     projection — both keeping the candidate — so switching to a live session
     shows the same substantive answer a cold resume would.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="tui")
@@ -1797,7 +1797,7 @@ def test_live_visible_history_matches_eager_resume_with_real_db(tmp_path):
 def test_live_visible_history_keeps_candidate_and_new_flushed_turn_real_db(tmp_path):
     """Real-DB variant of the combined case: a candidate from turn 1 AND a
     fully-flushed turn 2 both appear once."""
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="tui")
@@ -1828,7 +1828,7 @@ def test_lazy_child_watch_resume_serves_candidate_inclusive_display(monkeypatch,
     verbatim display projection so a persisted verification candidate is not
     collapsed out of the watch window (#65919 sibling of the warm-payload fix).
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("child1", source="tui")
@@ -1879,7 +1879,7 @@ def test_session_resume_follows_compression_tip(monkeypatch, tmp_path):
     the response generated after compression. session.resume must follow the
     compression tip via resolve_resume_session_id.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     base = int(time.time()) - 10_000
@@ -2064,7 +2064,7 @@ def test_session_resume_profile_uses_profile_db_cwd(monkeypatch, tmp_path):
 
     monkeypatch.setenv("TERMINAL_CWD", str(launch_cwd))
     monkeypatch.setattr(server, "_profile_home", lambda _profile: profile_home)
-    monkeypatch.setattr("opencodon_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("opencodon.state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: launch_db)
     monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
     monkeypatch.setattr(server, "_set_session_context", lambda target: [])
@@ -2079,7 +2079,7 @@ def test_session_resume_profile_uses_profile_db_cwd(monkeypatch, tmp_path):
         lambda _agent, session=None: {"cwd": session.get("cwd") if session else ""},
     )
 
-    import tools.approval as approval
+    import opencodon.tools.approval as approval
 
     monkeypatch.setattr(approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(approval, "load_permanent_allowlist", lambda: None)
@@ -2126,9 +2126,9 @@ def test_session_cwd_set_profile_session_updates_profile_db(monkeypatch, tmp_pat
 
     profile_db = ProfileDB()
 
-    import tools.terminal_tool as terminal_tool
+    import opencodon.tools.terminal_tool as terminal_tool
 
-    monkeypatch.setattr("opencodon_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("opencodon.state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr(terminal_tool, "cleanup_vm", lambda _key: None)
     monkeypatch.setattr(server, "_register_session_cwd", lambda _session: None)
@@ -2227,7 +2227,7 @@ def test_persist_live_session_runtime_preserves_explicit_normal_tier():
 
 
 def test_status_callback_emits_kind_and_text():
-    with patch("tui_gateway.server._emit") as emit:
+    with patch("opencodon.frontends.tui.server._emit") as emit:
         cb = server._agent_cbs("sid")["status_callback"]
         cb("context_pressure", "85% to compaction")
 
@@ -2239,7 +2239,7 @@ def test_status_callback_emits_kind_and_text():
 
 
 def test_status_callback_accepts_single_message_argument():
-    with patch("tui_gateway.server._emit") as emit:
+    with patch("opencodon.frontends.tui.server._emit") as emit:
         cb = server._agent_cbs("sid")["status_callback"]
         cb("thinking...")
 
@@ -2473,10 +2473,10 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
         error_message="",
     )
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model", lambda **kw: result
+        "opencodon.frontends.cli.model_switch.switch_model", lambda **kw: result
     )
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.resolve_persist_behavior",
+        "opencodon.frontends.cli.model_switch.resolve_persist_behavior",
         lambda *a: pytest.fail("persist_override must bypass resolve_persist_behavior"),
     )
     monkeypatch.setattr(
@@ -2484,7 +2484,7 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
         lambda _r: pytest.fail("persist_override=False must not persist"),
     )
     monkeypatch.setattr(
-        "opencodon_cli.model_cost_guard.expensive_model_warning",
+        "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
         lambda *a, **k: None,
     )
     session = {"agent": None}
@@ -2510,7 +2510,7 @@ def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypat
     monkeypatch.delenv("OPENCODON_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
-        "opencodon_cli.models.detect_static_provider_for_model",
+        "opencodon.frontends.cli.models.detect_static_provider_for_model",
         lambda model, provider: None,
     )
 
@@ -2529,7 +2529,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
         return "anthropic", "anthropic/claude-sonnet-4.6"
 
     monkeypatch.setattr(
-        "opencodon_cli.models.detect_static_provider_for_model", fake_detect
+        "opencodon.frontends.cli.models.detect_static_provider_for_model", fake_detect
     )
 
     assert server._resolve_startup_runtime() == (
@@ -2586,7 +2586,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": "openai-codex",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -2595,7 +2595,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
             "credential_pool": None,
         },
     )
-    monkeypatch.setattr("run_agent.AIAgent", fake_agent)
+    monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent)
     monkeypatch.setattr(server, "_load_enabled_toolsets", lambda: ["file"])
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
@@ -2655,7 +2655,7 @@ def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "opencodon_cli.models.fetch_openrouter_models",
+        "opencodon.frontends.cli.models.fetch_openrouter_models",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network lookup should not run")
         ),
@@ -2673,7 +2673,7 @@ def test_startup_runtime_does_not_call_network_detector(monkeypatch):
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "opencodon_cli.models.detect_provider_for_model",
+        "opencodon.frontends.cli.models.detect_provider_for_model",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network detector called")
         ),
@@ -2938,7 +2938,7 @@ def test_init_session_fires_reset_hook(monkeypatch):
         lambda event, session_id, *_args: hooks.append((event, session_id)),
     )
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(_approval, "load_permanent_allowlist", lambda: None)
@@ -3237,7 +3237,7 @@ def test_notification_poller_live_loop_requeues_foreign_completion_for_owner(
     """A foreign live-loop dequeue is handed back to its proven owner."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     delivered = {"a": [], "b": []}
     emitted = []
@@ -3300,7 +3300,7 @@ def test_completion_ownership_lineage_lookup_failure_fails_closed(monkeypatch):
     """A provenance lookup failure cannot turn an addressed event into ours."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _BrokenDB:
         def resolve_resume_session_id(self, _session_key):
@@ -3345,7 +3345,7 @@ def test_notification_poller_live_loop_drops_addressed_orphan(
     """A live poll never injects an addressed event whose owner is gone."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     delivered = []
     emitted = []
@@ -3397,7 +3397,7 @@ def test_notification_poller_drops_orphaned_events(monkeypatch, routing):
     """Addressed completions whose owner is gone are dropped, not hijacked."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     emitted = []
     delivered = []
@@ -3459,7 +3459,7 @@ def test_notification_poller_delivers_owned_events(
     """Direct, UI-origin, and compression-lineage owners are delivered."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _CompressionDB:
         def resolve_resume_session_id(self, key):
@@ -3566,7 +3566,7 @@ def test_run_prompt_submit_requeues_foreign_completion(
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     turns = []
@@ -3605,7 +3605,7 @@ def test_run_prompt_submit_requeues_foreign_completion(
 def test_run_prompt_submit_delivers_completion_observed_by_poll(monkeypatch, tmp_path):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     turns = []
@@ -3647,7 +3647,7 @@ def test_run_prompt_submit_requeues_all_unstarted_notifications_with_real_thread
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(
         monkeypatch, tmp_path, immediate_threads=False
@@ -3740,7 +3740,7 @@ def test_run_prompt_submit_delivers_completion_owned_through_compression_lineage
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _CompressionDB:
         def resolve_resume_session_id(self, key):
@@ -3793,7 +3793,7 @@ def test_run_prompt_submit_delivers_completion_owned_through_compression_lineage
 def test_run_prompt_submit_prefers_origin_ui_session_id(monkeypatch, tmp_path):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     ownership_checks = []
@@ -4371,7 +4371,7 @@ def test_session_create_drops_pending_title_on_valueerror(monkeypatch):
 
 
 def test_config_set_yolo_toggles_session_scope():
-    from tools.approval import clear_session, is_session_yolo_enabled
+    from opencodon.tools.approval import clear_session, is_session_yolo_enabled
 
     server._sessions["sid"] = _session()
     try:
@@ -4570,7 +4570,7 @@ def test_config_set_fast_updates_live_agent_session_scoped(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, *a: {"model": "x"})
     monkeypatch.setattr(server, "_emit", lambda *args: emits.append(args))
     monkeypatch.setattr(
-        "opencodon_cli.models.resolve_fast_mode_overrides",
+        "opencodon.frontends.cli.models.resolve_fast_mode_overrides",
         lambda _model_id: {"service_tier": "priority"},
     )
 
@@ -4649,7 +4649,7 @@ def test_config_set_fast_rejects_unsupported_model(monkeypatch):
         server, "_write_config_key", lambda path, value: writes.append((path, value))
     )
     monkeypatch.setattr(
-        "opencodon_cli.models.resolve_fast_mode_overrides",
+        "opencodon.frontends.cli.models.resolve_fast_mode_overrides",
         lambda _model_id: None,
     )
 
@@ -4970,7 +4970,7 @@ def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
 
 
 def test_setup_status_reports_provider_config(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.main._has_any_provider_configured", lambda: False)
+    monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: False)
 
     resp = server.handle_request({"id": "1", "method": "setup.status", "params": {}})
 
@@ -4992,9 +4992,9 @@ def test_probe_credentials_allows_keyless_custom_runtime():
 
 
 def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.main._has_any_provider_configured", lambda: True)
+    monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "openrouter",
             "api_key": "",
@@ -5014,9 +5014,9 @@ def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
 
 
 def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.main._has_any_provider_configured", lambda: True)
+    monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "custom",
             "api_key": "no-key-required",
@@ -5031,9 +5031,9 @@ def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
 
 
 def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.main._has_any_provider_configured", lambda: False)
+    monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: False)
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "bedrock",
             "api_key": "aws-sdk",
@@ -5049,7 +5049,7 @@ def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypa
 
 def test_setup_runtime_check_honors_requested_provider(monkeypatch):
     """Onboarding must be able to validate the provider the user just connected."""
-    monkeypatch.setattr("opencodon_cli.main._has_any_provider_configured", lambda: True)
+    monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: True)
 
     def fake_resolve(requested=None, **kwargs):
         if requested == "nous":
@@ -5065,7 +5065,7 @@ def test_setup_runtime_check_honors_requested_provider(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         fake_resolve,
     )
 
@@ -5401,7 +5401,7 @@ def test_config_set_model_requires_confirmation_for_expensive_model(monkeypatch)
     agent = _Agent()
     server._sessions["sid"] = _session(agent=agent)
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model", lambda **_kwargs: result
+        "opencodon.frontends.cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -5467,7 +5467,7 @@ def test_config_set_model_global_persists(monkeypatch):
         return result
 
     server._sessions["sid"] = _session(agent=_Agent())
-    monkeypatch.setattr("opencodon_cli.model_switch.switch_model", _switch_model)
+    monkeypatch.setattr("opencodon.frontends.cli.model_switch.switch_model", _switch_model)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
     # _persist_model_switch uses targeted save_config_value writes (#48305) so it
@@ -5516,7 +5516,7 @@ def test_config_set_model_explicit_provider_skips_broken_default_init(monkeypatc
             }
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("opencodon_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -5557,7 +5557,7 @@ def test_config_set_model_explicit_provider_surfaces_selected_provider_errors(mo
             raise RuntimeError("missing anthropic API key")
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("opencodon_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -5615,7 +5615,7 @@ def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
     server._sessions["sid"] = session
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "openrouter")
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model", lambda **_kwargs: result
+        "opencodon.frontends.cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -5676,7 +5676,7 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
     monkeypatch.delenv("OPENCODON_TUI_PROVIDER", raising=False)
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model", lambda **_kwargs: result
+        "opencodon.frontends.cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -5774,7 +5774,7 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
             warning_message="",
         )
 
-    monkeypatch.setattr("opencodon_cli.model_switch.switch_model", fake_switch_model)
+    monkeypatch.setattr("opencodon.frontends.cli.model_switch.switch_model", fake_switch_model)
 
     try:
         resp = server.handle_request(
@@ -5850,7 +5850,7 @@ def test_config_set_model_once_keeps_env_and_records_restore(monkeypatch):
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "openrouter")
     monkeypatch.setenv("OPENCODON_MODEL", "old/model")
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model",
+        "opencodon.frontends.cli.model_switch.switch_model",
         lambda **kwargs: seen.update(kwargs) or result,
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda *args, **kwargs: None)
@@ -5881,7 +5881,7 @@ def test_config_set_model_once_keeps_env_and_records_restore(monkeypatch):
 
 def test_config_set_model_once_requires_live_session(monkeypatch):
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.switch_model",
+        "opencodon.frontends.cli.model_switch.switch_model",
         lambda **_: (_ for _ in ()).throw(AssertionError("switch should not run")),
     )
 
@@ -5927,7 +5927,7 @@ def test_config_set_model_session_switch_clears_pending_once_restore(monkeypatch
     session = _session(agent=Agent())
     session["one_turn_model_restore"] = {"model": "old/model"}
     server._sessions["sid"] = session
-    monkeypatch.setattr("opencodon_cli.model_switch.switch_model", lambda **_kwargs: result)
+    monkeypatch.setattr("opencodon.frontends.cli.model_switch.switch_model", lambda **_kwargs: result)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda *args, **kwargs: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
 
@@ -6117,7 +6117,7 @@ def test_session_compress_uses_compress_helper(monkeypatch):
     )
     monkeypatch.setattr(server, "_session_info", lambda _agent, *a: {"model": "x"})
 
-    with patch("tui_gateway.server._emit") as emit:
+    with patch("opencodon.frontends.tui.server._emit") as emit:
         resp = server.handle_request(
             {"id": "1", "method": "session.compress", "params": {"session_id": "sid"}}
         )
@@ -6295,7 +6295,7 @@ def test_session_compress_reports_aborted_summary_without_success(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, *a: {"model": "x"})
 
     try:
-        with patch("tui_gateway.server._emit"):
+        with patch("opencodon.frontends.tui.server._emit"):
             resp = server.handle_request(
                 {
                     "id": "1",
@@ -6319,7 +6319,7 @@ def test_session_compress_reports_aborted_summary_without_success(monkeypatch):
 
 def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
     """LCM notification follows the TUI's final session-key transition."""
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
     )
 
@@ -6352,7 +6352,7 @@ def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
     )
 
     try:
-        with patch("tui_gateway.server._emit"):
+        with patch("opencodon.frontends.tui.server._emit"):
             server.handle_request(
                 {
                     "id": "1",
@@ -6370,7 +6370,7 @@ def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
 
 
 def test_session_compress_sync_failure_discards_lcm_notification(monkeypatch):
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
     )
 
@@ -6400,7 +6400,7 @@ def test_session_compress_sync_failure_discards_lcm_notification(monkeypatch):
     )
 
     try:
-        with patch("tui_gateway.server._emit"):
+        with patch("opencodon.frontends.tui.server._emit"):
             resp = server.handle_request(
                 {
                     "id": "1",
@@ -6506,7 +6506,7 @@ def test_slash_exec_r7_read_commands_use_metadata_mirror_flag_on(monkeypatch):
 
 
 def test_prompt_submit_sets_approval_session_key(monkeypatch):
-    from tools.approval import get_current_session_key
+    from opencodon.tools.approval import get_current_session_key
 
     captured = {}
 
@@ -6569,7 +6569,7 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
         def start(self):
             self._target()
 
-    fake_ctx = types.ModuleType("agent.context_references")
+    fake_ctx = types.ModuleType("opencodon.core.context_references")
     fake_ctx.preprocess_context_references = (
         lambda message, **kwargs: types.SimpleNamespace(
             blocked=False,
@@ -6579,7 +6579,7 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
             injected_tokens=0,
         )
     )
-    fake_meta = types.ModuleType("agent.model_metadata")
+    fake_meta = types.ModuleType("opencodon.core.model_metadata")
     fake_meta.get_model_context_length = lambda *args, **kwargs: 100000
 
     server._sessions["sid"] = _session(agent=_Agent())
@@ -6587,8 +6587,8 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
     monkeypatch.setattr(server, "make_stream_renderer", lambda cols: None)
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
-    monkeypatch.setitem(sys.modules, "agent.context_references", fake_ctx)
-    monkeypatch.setitem(sys.modules, "agent.model_metadata", fake_meta)
+    monkeypatch.setitem(sys.modules, "opencodon.core.context_references", fake_ctx)
+    monkeypatch.setitem(sys.modules, "opencodon.core.model_metadata", fake_meta)
 
     server.handle_request(
         {
@@ -6602,7 +6602,7 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
 
 
 def test_image_attach_appends_local_image(monkeypatch):
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._IMAGE_EXTENSIONS = {".png"}
     fake_cli._detect_file_drop = lambda raw: {
         "path": Path("/tmp/cat.png"),
@@ -6613,6 +6613,7 @@ def test_image_attach_appends_local_image(monkeypatch):
     fake_cli._resolve_attachment_path = lambda raw: Path("/tmp/cat.png")
 
     server._sessions["sid"] = _session()
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     resp = server.handle_request(
@@ -6630,7 +6631,7 @@ def test_image_attach_appends_local_image(monkeypatch):
 
 def test_image_attach_accepts_unquoted_screenshot_path_with_spaces(monkeypatch):
     screenshot = Path("/tmp/Screenshot 2026-04-21 at 1.04.43 PM.png")
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._IMAGE_EXTENSIONS = {".png"}
     fake_cli._detect_file_drop = lambda raw: {
         "path": screenshot,
@@ -6644,6 +6645,7 @@ def test_image_attach_accepts_unquoted_screenshot_path_with_spaces(monkeypatch):
     fake_cli._resolve_attachment_path = lambda raw: None
 
     server._sessions["sid"] = _session()
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     resp = server.handle_request(
@@ -6664,12 +6666,13 @@ def test_file_attach_uploads_remote_file_into_session_workspace(monkeypatch, tmp
     """Remote case: client path doesn't exist on gateway → decode data_url bytes."""
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: None
     fake_cli._split_path_input = lambda raw: (raw, "")
     fake_cli._resolve_attachment_path = lambda raw: None
 
     server._sessions["sid"] = _session(cwd=str(workspace))
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     try:
@@ -6702,12 +6705,13 @@ def test_file_attach_copies_gateway_visible_file_outside_workspace(monkeypatch, 
     workspace.mkdir()
     source = tmp_path / "outside.txt"
     source.write_text("outside workspace", encoding="utf-8")
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: None
     fake_cli._split_path_input = lambda raw: (raw, "")
     fake_cli._resolve_attachment_path = lambda raw: source
 
     server._sessions["sid"] = _session(cwd=str(workspace))
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     try:
@@ -6734,12 +6738,13 @@ def test_file_attach_uses_in_workspace_file_without_copying(monkeypatch, tmp_pat
     (workspace / "data").mkdir(parents=True)
     source = workspace / "data" / "exam.csv"
     source.write_text("a,b,c\n1,2,3\n", encoding="utf-8")
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: None
     fake_cli._split_path_input = lambda raw: (raw, "")
     fake_cli._resolve_attachment_path = lambda raw: source
 
     server._sessions["sid"] = _session(cwd=str(workspace))
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     try:
@@ -6764,12 +6769,13 @@ def test_file_attach_errors_when_unresolvable_and_no_bytes(monkeypatch, tmp_path
     """Remote path not on gateway and no data_url → actionable error, not a stage."""
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: None
     fake_cli._split_path_input = lambda raw: (raw, "")
     fake_cli._resolve_attachment_path = lambda raw: None
 
     server._sessions["sid"] = _session(cwd=str(workspace))
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     try:
@@ -6791,12 +6797,13 @@ def test_file_attach_quotes_ref_with_spaces(monkeypatch, tmp_path):
     """Staged names with spaces must be backtick-quoted so the @file: ref parses."""
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: None
     fake_cli._split_path_input = lambda raw: (raw, "")
     fake_cli._resolve_attachment_path = lambda raw: None
 
     server._sessions["sid"] = _session(cwd=str(workspace))
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     try:
@@ -6951,7 +6958,7 @@ def test_session_status_reads_live_gateway_agent(monkeypatch):
 
 
 def test_skills_reload_runs_in_gateway_process(monkeypatch):
-    import agent.skill_commands as skill_commands
+    import opencodon.core.skill_commands as skill_commands
 
     called = {}
     monkeypatch.setattr(
@@ -7042,7 +7049,7 @@ def test_plugins_list_surfaces_loader_error(monkeypatch):
 
 def test_complete_slash_surfaces_completer_error(monkeypatch):
     with patch(
-        "opencodon_cli.commands.SlashCommandCompleter",
+        "opencodon.frontends.cli.commands.SlashCommandCompleter",
         side_effect=Exception("no completer"),
     ):
         resp = server.handle_request(
@@ -7054,7 +7061,7 @@ def test_complete_slash_surfaces_completer_error(monkeypatch):
 
 
 def test_input_detect_drop_attaches_image(monkeypatch):
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._detect_file_drop = lambda raw: {
         "path": Path("/tmp/cat.png"),
         "is_image": True,
@@ -7062,6 +7069,7 @@ def test_input_detect_drop_attaches_image(monkeypatch):
     }
 
     server._sessions["sid"] = _session()
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
     resp = server.handle_request(
@@ -7307,9 +7315,9 @@ def test_session_info_includes_mcp_servers(monkeypatch):
         {"name": "filesystem", "transport": "stdio", "tools": 4, "connected": True},
         {"name": "broken", "transport": "stdio", "tools": 0, "connected": False},
     ]
-    fake_mod = types.ModuleType("tools.mcp_tool")
+    fake_mod = types.ModuleType("opencodon.tools.mcp_tool")
     fake_mod.get_mcp_status = lambda: fake_status
-    monkeypatch.setitem(sys.modules, "tools.mcp_tool", fake_mod)
+    monkeypatch.setitem(sys.modules, "opencodon.tools.mcp_tool", fake_mod)
 
     info = server._session_info(types.SimpleNamespace(tools=[], model="", provider="openai-codex"))
 
@@ -8151,7 +8159,7 @@ def test_session_create_close_race_does_not_orphan_worker(monkeypatch):
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: None)
 
     # Shim register/unregister to observe leaks
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(
@@ -8252,7 +8260,7 @@ def test_session_create_no_race_keeps_worker_alive(monkeypatch):
     monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: None)
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(
@@ -8321,7 +8329,7 @@ def test_get_db_degrades_cleanly_when_sessiondb_init_fails(monkeypatch):
             raise RuntimeError("locking protocol")
 
     fake_mod.SessionDB = _BrokenSessionDB
-    monkeypatch.setitem(sys.modules, "opencodon_state", fake_mod)
+    monkeypatch.setitem(sys.modules, "opencodon.state", fake_mod)
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
 
@@ -8355,7 +8363,7 @@ def test_session_create_continues_when_state_db_is_unavailable(monkeypatch):
     monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: emits.append(a))
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(_approval, "load_permanent_allowlist", lambda: None)
@@ -8594,13 +8602,13 @@ def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     )
 
     with patch(
-        "opencodon_cli.model_switch.list_authenticated_providers",
+        "opencodon.frontends.cli.model_switch.list_authenticated_providers",
         return_value=curated_providers,
     ) as listing:
         # If provider_model_ids gets called at all, the handler is still
         # overwriting curated with live — that's the regression we're
         # guarding against.
-        with patch("opencodon_cli.models.provider_model_ids") as live_fetch:
+        with patch("opencodon.frontends.cli.models.provider_model_ids") as live_fetch:
             resp = server._methods["model.options"](99, {"session_id": ""})
 
     assert "result" in resp, resp
@@ -8629,7 +8637,7 @@ def test_model_options_propagates_list_exception(monkeypatch):
         lambda: {"providers": {}, "custom_providers": []},
     )
     with patch(
-        "opencodon_cli.model_switch.list_authenticated_providers",
+        "opencodon.frontends.cli.model_switch.list_authenticated_providers",
         side_effect=RuntimeError("catalog blew up"),
     ):
         resp = server._methods["model.options"](77, {"session_id": ""})
@@ -8639,13 +8647,13 @@ def test_model_options_propagates_list_exception(monkeypatch):
 
 
 def test_model_options_hides_unconfigured_providers_by_default(monkeypatch):
-    from opencodon_cli.inventory import ConfigContext
+    from opencodon.frontends.cli.inventory import ConfigContext
 
     calls = []
 
     monkeypatch.setattr(server, "_resolve_model", lambda: "")
     monkeypatch.setattr(
-        "opencodon_cli.inventory.load_picker_context",
+        "opencodon.frontends.cli.inventory.load_picker_context",
         lambda: ConfigContext(
             current_provider="",
             current_model="",
@@ -8660,7 +8668,7 @@ def test_model_options_hides_unconfigured_providers_by_default(monkeypatch):
         return {"providers": [], "model": "", "provider": ""}
 
     monkeypatch.setattr(
-        "opencodon_cli.inventory.build_models_payload",
+        "opencodon.frontends.cli.inventory.build_models_payload",
         _fake_build_models_payload,
     )
 
@@ -8685,7 +8693,7 @@ def test_model_options_hides_unconfigured_providers_by_default(monkeypatch):
 
 
 def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypatch):
-    from opencodon_cli.inventory import ConfigContext
+    from opencodon.frontends.cli.inventory import ConfigContext
 
     class _Agent:
         provider = "custom"
@@ -8695,7 +8703,7 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
     server._sessions["custom-session"] = _session(agent=_Agent())
     monkeypatch.setattr(server, "_resolve_model", lambda: "")
     monkeypatch.setattr(
-        "opencodon_cli.inventory.load_picker_context",
+        "opencodon.frontends.cli.inventory.load_picker_context",
         lambda: ConfigContext(
             current_provider="custom:local-ollama",
             current_model="qwen3.6:35b-65k",
@@ -8706,11 +8714,11 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
     )
     canonical = Mock(return_value="custom:local-ollama")
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.canonical_custom_identity",
+        "opencodon.frontends.cli.runtime_provider.canonical_custom_identity",
         canonical,
     )
     monkeypatch.setattr(
-        "opencodon_cli.model_switch.list_authenticated_providers",
+        "opencodon.frontends.cli.model_switch.list_authenticated_providers",
         lambda **_kwargs: [
             {
                 "slug": "custom:local-ollama",
@@ -8731,11 +8739,11 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
         ],
     )
     monkeypatch.setattr(
-        "opencodon_cli.auth.is_provider_explicitly_configured",
+        "opencodon.frontends.cli.auth.is_provider_explicitly_configured",
         lambda _slug: False,
     )
-    monkeypatch.setattr("opencodon_cli.inventory._apply_pricing", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("opencodon_cli.inventory._apply_capabilities", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("opencodon.frontends.cli.inventory._apply_pricing", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("opencodon.frontends.cli.inventory._apply_capabilities", lambda *_args, **_kwargs: None)
 
     resp = server._methods["model.options"](
         102,
@@ -8765,7 +8773,7 @@ def test_model_save_key_uses_credential_lifecycle_and_picker_context(monkeypatch
     }
     server._sessions["save-key-session"] = _session(agent=agent)
     monkeypatch.setattr(
-        "opencodon_cli.auth.PROVIDER_REGISTRY",
+        "opencodon.frontends.cli.auth.PROVIDER_REGISTRY",
         {
             "test-provider": types.SimpleNamespace(
                 name="Test Provider",
@@ -8777,14 +8785,14 @@ def test_model_save_key_uses_credential_lifecycle_and_picker_context(monkeypatch
     monkeypatch.setattr("opencodon.config.is_managed", lambda: False)
     save_credential = Mock()
     monkeypatch.setattr(
-        "opencodon_cli.credential_lifecycle.save_provider_env_credential",
+        "opencodon.frontends.cli.credential_lifecycle.save_provider_env_credential",
         save_credential,
     )
     picker_context = Mock(return_value=picker_ctx)
     monkeypatch.setattr(server, "_model_picker_context", picker_context)
     build_payload = Mock(return_value={"providers": [provider]})
     monkeypatch.setattr(
-        "opencodon_cli.inventory.build_models_payload",
+        "opencodon.frontends.cli.inventory.build_models_payload",
         build_payload,
     )
     monkeypatch.setenv(env_var, "previous-value")
@@ -8822,7 +8830,7 @@ def test_model_options_refresh_allows_custom_provider_probes(monkeypatch):
         lambda: {"providers": {}, "custom_providers": []},
     )
     with patch(
-        "opencodon_cli.model_switch.list_authenticated_providers",
+        "opencodon.frontends.cli.model_switch.list_authenticated_providers",
         return_value=[],
     ) as listing:
         resp = server._methods["model.options"](78, {"session_id": "", "refresh": True})
@@ -8870,7 +8878,7 @@ def test_prompt_submit_auto_titles_session_on_complete(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -8913,7 +8921,7 @@ def test_prompt_submit_skips_auto_title_when_interrupted(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -8944,7 +8952,7 @@ def test_prompt_submit_skips_auto_title_when_response_empty(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -9407,7 +9415,7 @@ def test_verification_status_returns_recorded_evidence(tmp_path):
     )
     (project / "pnpm-lock.yaml").write_text("", encoding="utf-8")
     try:
-        from agent.verification_evidence import record_terminal_result
+        from opencodon.core.verification_evidence import record_terminal_result
 
         record_terminal_result(
             command="pnpm run test",
@@ -9440,7 +9448,7 @@ def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tm
     # tmp-root ancestor (e.g. /tmp/package.json left by another tool) would
     # otherwise make _marker_root() resolve tmp_path as a workspace and flip
     # the status to "unverified".
-    import agent.coding_context as coding_context
+    import opencodon.core.coding_context as coding_context
 
     monkeypatch.setattr(coding_context, "project_facts_for", lambda _cwd=None: None)
 
@@ -9549,7 +9557,7 @@ def test_browser_manage_status_does_not_call_get_cdp_override(monkeypatch):
             "_get_cdp_override must not run on /browser status (network I/O)"
         )
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "status"}}
         )
@@ -9572,7 +9580,7 @@ def test_browser_manage_connect_sets_env_and_cleans_twice(monkeypatch):
         cleanup_all_browsers=_cleanup_all,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9598,7 +9606,7 @@ def test_browser_manage_connect_defaults_to_loopback(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         urls = _stub_urlopen_capture(monkeypatch, ok=True)
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
@@ -9625,17 +9633,17 @@ def test_browser_manage_connect_default_local_reports_launch_hint(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
-                "opencodon_cli.browser_connect.launch_chrome_debug",
+                "opencodon.frontends.cli.browser_connect.launch_chrome_debug",
                 return_value=ChromeDebugLaunch(),
             ),
-            patch("opencodon_cli.browser_connect.local_port_in_use", return_value=False),
-            patch("opencodon_cli.browser_connect.manual_chrome_debug_command", return_value=None),
+            patch("opencodon.frontends.cli.browser_connect.local_port_in_use", return_value=False),
+            patch("opencodon.frontends.cli.browser_connect.manual_chrome_debug_command", return_value=None),
             patch(
-                "opencodon_cli.browser_connect.get_chrome_debug_candidates",
+                "opencodon.frontends.cli.browser_connect.get_chrome_debug_candidates",
                 return_value=[],
             ),
         ):
@@ -9684,16 +9692,16 @@ def test_browser_manage_connect_no_session_skips_progress_events(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
-                "opencodon_cli.browser_connect.launch_chrome_debug",
+                "opencodon.frontends.cli.browser_connect.launch_chrome_debug",
                 return_value=ChromeDebugLaunch(),
             ),
-            patch("opencodon_cli.browser_connect.manual_chrome_debug_command", return_value=None),
+            patch("opencodon.frontends.cli.browser_connect.manual_chrome_debug_command", return_value=None),
             patch(
-                "opencodon_cli.browser_connect.get_chrome_debug_candidates",
+                "opencodon.frontends.cli.browser_connect.get_chrome_debug_candidates",
                 return_value=[],
             ),
         ):
@@ -9719,7 +9727,7 @@ def test_browser_manage_connect_handles_null_url(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9781,13 +9789,13 @@ def test_browser_manage_connect_default_local_retries_after_launch(monkeypatch):
 
     monkeypatch.setattr(urllib.request, "urlopen", _opener)
     launched = ChromeDebugLaunch(launched=True)
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with (
             patch(
-                "opencodon_cli.browser_connect.launch_chrome_debug",
+                "opencodon.frontends.cli.browser_connect.launch_chrome_debug",
                 return_value=launched,
             ),
-            patch("opencodon_cli.browser_connect.local_port_in_use", return_value=False),
+            patch("opencodon.frontends.cli.browser_connect.local_port_in_use", return_value=False),
         ):
             resp = server.handle_request(
                 {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
@@ -9829,7 +9837,7 @@ def test_browser_manage_connect_finds_ipv6_only_browser(monkeypatch):
     import urllib.request
 
     monkeypatch.setattr(urllib.request, "urlopen", _opener)
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
         )
@@ -9873,11 +9881,11 @@ def test_browser_manage_connect_squatted_port_launches_on_alternate(monkeypatch)
         launch_ports.append(port)
         return ChromeDebugLaunch(launched=True)
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with (
-            patch("opencodon_cli.browser_connect.launch_chrome_debug", side_effect=_launch),
-            patch("opencodon_cli.browser_connect.local_port_in_use", return_value=True),
-            patch("opencodon_cli.browser_connect.find_free_debug_port", return_value=9223),
+            patch("opencodon.frontends.cli.browser_connect.launch_chrome_debug", side_effect=_launch),
+            patch("opencodon.frontends.cli.browser_connect.local_port_in_use", return_value=True),
+            patch("opencodon.frontends.cli.browser_connect.find_free_debug_port", return_value=9223),
         ):
             resp = server.handle_request(
                 {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
@@ -9900,7 +9908,7 @@ def test_browser_manage_connect_rejects_unreachable_endpoint(monkeypatch):
         ),
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         resp = server.handle_request(
             {
@@ -9925,7 +9933,7 @@ def test_browser_manage_connect_normalizes_bare_host_port(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9951,7 +9959,7 @@ def test_browser_manage_connect_strips_discovery_path(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9983,7 +9991,7 @@ def test_browser_manage_connect_preserves_devtools_browser_endpoint(monkeypatch)
         def __exit__(self, *a):
             return False
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         # If urlopen is reached for a concrete ws endpoint, the test
         # would still pass because _stub_urlopen returned ok=True before;
         # patch it to assert-fail so we prove the HTTP probe is skipped.
@@ -10022,7 +10030,7 @@ def test_browser_manage_connect_local_devtools_ws_preserves_path(monkeypatch):
         def __exit__(self, *a):
             return False
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with patch("socket.create_connection", return_value=_OkSocket()):
             resp = server.handle_request(
                 {
@@ -10091,7 +10099,7 @@ def test_browser_manage_connect_concrete_ws_skips_http_probe(monkeypatch):
         seen_targets.append(addr)
         return _OkSocket()
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         # urlopen would 404/ECONNREFUSED on a real hosted CDP endpoint;
         # asserting it's never called proves the probe was skipped.
         with patch(
@@ -10122,7 +10130,7 @@ def test_browser_manage_connect_concrete_ws_tcp_unreachable(monkeypatch):
     )
     concrete = "ws://offline.example/devtools/browser/missing"
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with patch("socket.create_connection", side_effect=OSError("ECONNREFUSED")):
             resp = server.handle_request(
                 {
@@ -10145,7 +10153,7 @@ def test_browser_manage_disconnect_drops_env_and_cleans(monkeypatch):
         ),
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "disconnect"}}
         )
@@ -10303,7 +10311,7 @@ def _setup_make_agent_mocks(monkeypatch, cfg):
         server, "_resolve_startup_runtime", lambda: ("test-model", None)
     )
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": None,
             "base_url": None,
@@ -10325,7 +10333,7 @@ def _setup_make_agent_mocks(monkeypatch, cfg):
 def test_make_agent_reads_nested_max_turns(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {"agent": {"max_turns": 200}})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 200
@@ -10335,7 +10343,7 @@ def test_make_agent_waits_for_shared_mcp_discovery(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {})
     waited = []
 
-    from opencodon_cli import mcp_startup
+    from opencodon.frontends.cli import mcp_startup
 
     monkeypatch.setattr(
         mcp_startup,
@@ -10343,7 +10351,7 @@ def test_make_agent_waits_for_shared_mcp_discovery(monkeypatch):
         lambda timeout=0.75: waited.append(timeout),
     )
 
-    with patch("run_agent.AIAgent"):
+    with patch("opencodon.core.run_agent.AIAgent"):
         server._make_agent("sid1", "key1")
 
     assert waited == [0.75]
@@ -10354,7 +10362,7 @@ def test_make_agent_nested_max_turns_takes_priority(monkeypatch):
         monkeypatch, {"agent": {"max_turns": 500}, "max_turns": 100}
     )
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 500
@@ -10363,7 +10371,7 @@ def test_make_agent_nested_max_turns_takes_priority(monkeypatch):
 def test_make_agent_defaults_to_90(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 90
@@ -10387,11 +10395,11 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         fake_resolve_runtime_provider,
     )
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent(
             "sid1",
             "key1",
@@ -10411,7 +10419,7 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
 def test_make_agent_handles_null_agent_config(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {"agent": None, "max_turns": 80})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 80
@@ -10492,7 +10500,7 @@ def test_notification_poller_delivers_completion(monkeypatch):
     """Poller picks up completion events and triggers agent turns."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
     emitted = []
@@ -10564,7 +10572,7 @@ def test_notification_poller_skips_consumed(monkeypatch):
     """Already-consumed completions are not dispatched by the poller."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
 
@@ -10619,7 +10627,7 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
     """When the agent is busy, the poller requeues the event."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     emitted = []
 
@@ -10770,7 +10778,7 @@ def test_notification_poller_emits_distinct_watch_matches_once(monkeypatch):
     """Distinct watch matches from one process emit; exact replay is deduped."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
     emitted = []
@@ -10849,8 +10857,9 @@ _PNG_1X1_B64 = (
 
 
 def _attach_bytes_cli(monkeypatch):
-    fake_cli = types.ModuleType("cli")
+    fake_cli = types.ModuleType("opencodon.frontends.cli.shell")
     fake_cli._IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+    monkeypatch.setitem(sys.modules, "opencodon.frontends.cli.shell", fake_cli)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
 
 
@@ -11113,7 +11122,7 @@ def test_close_session_by_id_is_idempotent_and_full(monkeypatch):
 
     monkeypatch.setattr(server, "_finalize_session", _fake_finalize)
     monkeypatch.setattr(
-        "tools.approval.unregister_gateway_notify",
+        "opencodon.tools.approval.unregister_gateway_notify",
         lambda key: calls.__setitem__("unreg", calls["unreg"] + 1), raising=False,
     )
     server._sessions["sid-1"] = {"session_key": "k1", "agent": A(), "slash_worker": W()}
@@ -11537,7 +11546,7 @@ def _sub_rpc(method, params):
 
 # ── _get_usage active_subagents (TUI status-bar ⛓ indicator) ──────────────
 # Mirrors the classic CLI status bar: _get_usage embeds a live count of
-# background/async subagents from tools.async_delegation.active_count() so the
+# background/async subagents from opencodon.tools.async_delegation.active_count() so the
 # Ink status bar can render ⛓ N. Source of truth is the same registry the CLI
 # reads; the field rides the existing per-update `usage` payload.
 
@@ -11550,14 +11559,14 @@ class _BareAgent:
 
 
 def test_get_usage_includes_active_subagents(monkeypatch):
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
     monkeypatch.setattr(ad_mod, "active_count", lambda: 4)
     usage = server._get_usage(_BareAgent())
     assert usage["active_subagents"] == 4
 
 
 def test_get_usage_active_subagents_zero(monkeypatch):
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
     monkeypatch.setattr(ad_mod, "active_count", lambda: 0)
     usage = server._get_usage(_BareAgent())
     assert usage["active_subagents"] == 0
@@ -11565,7 +11574,7 @@ def test_get_usage_active_subagents_zero(monkeypatch):
 
 def test_get_usage_safe_when_active_count_raises(monkeypatch):
     """A raising active_count() must not break the usage payload."""
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
 
     def _boom():
         raise RuntimeError("boom")
@@ -11583,7 +11592,7 @@ def test_persist_model_switch_preserves_sibling_model_keys(tmp_path, monkeypatch
     targeted save_config_value writes instead of rewriting the whole block."""
     import types
     import yaml
-    import cli
+    from opencodon.frontends.cli import shell as cli
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -11623,7 +11632,7 @@ def test_persist_model_switch_clears_stale_base_url(tmp_path, monkeypatch):
     pointing at the old host."""
     import types
     import yaml
-    import cli
+    from opencodon.frontends.cli import shell as cli
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -11659,7 +11668,7 @@ class TestResolveRuntimeWithFallback:
         """When primary resolve succeeds, return its result directly."""
         expected = {"provider": "openai", "api_key": "tok"}
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             lambda **kw: expected,
         )
         resolution = server._resolve_runtime_with_fallback(
@@ -11671,7 +11680,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_tries_fallback_chain(self, monkeypatch):
         """On AuthError from primary, walk fallback_providers chain."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         fallback_runtime = {"provider": "deepseek", "api_key": "fb-tok"}
 
@@ -11681,7 +11690,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11698,7 +11707,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_skips_provider_only_fallback(self, monkeypatch):
         """Auth fallback requires one complete provider/model pair."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         requested = []
         fallback_runtime = {"provider": "openrouter", "api_key": "fb-tok"}
@@ -11710,7 +11719,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11734,7 +11743,7 @@ class TestResolveRuntimeWithFallback:
     def test_fallback_entry_key_env_resolves_api_key(self, monkeypatch):
         """A fallback entry naming its key via key_env passes the resolved
         env value as explicit_api_key (#43861, @VrtxOmega)."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         monkeypatch.setenv("FB_TEST_KEY", "env-resolved-key")
         captured = {}
@@ -11747,7 +11756,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11769,13 +11778,13 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_all_fallbacks_fail_raises(self, monkeypatch):
         """When all fallbacks also fail, re-raise the original AuthError."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         def fake_resolve(**kwargs):
             raise AuthError("No credentials for " + str(kwargs.get("requested")))
 
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11792,7 +11801,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_skips_non_dict_entries(self, monkeypatch):
         """Fallback chain entries that are not dicts are skipped."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         fallback_runtime = {"provider": "anthropic", "api_key": "ant-tok"}
 
@@ -11802,7 +11811,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11825,7 +11834,7 @@ class TestResolveRuntimeWithFallback:
         provider when the primary provider raises AuthError."""
         import types
 
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         captured = {}
         fallback_runtime = {
@@ -11857,10 +11866,10 @@ class TestResolveRuntimeWithFallback:
             },
         )
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
-        monkeypatch.setattr("run_agent.AIAgent", fake_agent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent)
         monkeypatch.setattr(server, "_load_enabled_toolsets", lambda: ["file"])
         monkeypatch.setattr(server, "_get_db", lambda: None)
 
@@ -11957,7 +11966,7 @@ def _fake_tts_modules(monkeypatch, *, requirements=True, playback_stops=None, li
 
     monkeypatch.setitem(
         sys.modules,
-        "tools.tts_tool",
+        "opencodon.tools.tts_tool",
         types.SimpleNamespace(
             check_tts_requirements=lambda: requirements,
             stream_tts_to_speaker=fake_stream,
@@ -11965,7 +11974,7 @@ def _fake_tts_modules(monkeypatch, *, requirements=True, playback_stops=None, li
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             stop_playback=lambda: (playback_stops.append(True) if playback_stops is not None else None),
             listen_for_speech=listen or default_listen,
@@ -12025,7 +12034,7 @@ def test_tts_stream_begin_barges_in_on_previous_pipeline(monkeypatch):
 def test_tts_stream_stop_latches_interruption_for_next_turn(monkeypatch):
     """Cutting live speech (interrupt / typing barge) marks the latch the next
     turn's model note consumes; a mode change (user_barge=False) does not."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12043,7 +12052,7 @@ def test_tts_stream_stop_latches_interruption_for_next_turn(monkeypatch):
 
 def test_tts_stream_stop_after_natural_finish_does_not_latch(monkeypatch):
     """Speech that already finished (done set) isn't an interruption."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12063,7 +12072,7 @@ def test_tts_stream_vad_barge_in_cuts_pipeline_and_submits_capture(monkeypatch, 
     emitted as voice.transcript so the TUI submits it — complete from its
     first syllable, no re-record round trip. The cut also latches the
     speech-interrupted note for the next turn."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12131,6 +12140,6 @@ def test_clarify_callback_uses_configured_timeout(monkeypatch):
 def test_clarify_timeout_seconds_maps_non_positive_to_unlimited(monkeypatch, configured, expected):
     """A ``<= 0`` clarify timeout means unlimited and reaches _block as None
     (ev.wait(None) waits forever) rather than an immediate ev.wait(0) skip."""
-    monkeypatch.setattr("tools.clarify_gateway.get_clarify_timeout", lambda: configured)
+    monkeypatch.setattr("opencodon.tools.clarify_gateway.get_clarify_timeout", lambda: configured)
 
     assert server._clarify_timeout_seconds() == expected

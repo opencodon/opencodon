@@ -9,8 +9,8 @@ reasoning controls in extra_body.
 from typing import Any
 from urllib.parse import urlparse
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 def _is_minimax_global_openai_base_url(base_url: str | None) -> bool:

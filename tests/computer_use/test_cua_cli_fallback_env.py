@@ -12,7 +12,7 @@ secrets that ``_lifecycle_coro``'s primary MCP spawn already strips via
 import json
 from unittest.mock import MagicMock
 
-from tools.computer_use.cua_backend import _CuaDriverSession
+from opencodon.tools.computer_use.cua_backend import _CuaDriverSession
 
 
 def _make_session() -> _CuaDriverSession:
@@ -34,7 +34,7 @@ def test_cli_fallback_strips_provider_secret_from_subprocess_env(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "«redacted:sk-…»")
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.setattr(
-        "tools.computer_use.cua_backend.resolve_cua_driver_cmd",
+        "opencodon.tools.computer_use.cua_backend.resolve_cua_driver_cmd",
         lambda: "/resolved/cua-driver",
     )
 
@@ -61,7 +61,7 @@ def test_cli_fallback_applies_telemetry_policy(monkeypatch):
     other cua-driver spawn site, not just _sanitize_subprocess_env alone."""
     monkeypatch.delenv("OPENCODON_CUA_TELEMETRY", raising=False)
     monkeypatch.setattr(
-        "tools.computer_use.cua_backend.resolve_cua_driver_cmd",
+        "opencodon.tools.computer_use.cua_backend.resolve_cua_driver_cmd",
         lambda: "/resolved/cua-driver",
     )
     captured = {}

@@ -316,7 +316,7 @@ def stage_skill_helpers(workspace: Path) -> int:
     unreadable skills tree must never stop a cell from running.
     """
     try:
-        from tools.skills_hub import _skills_dir
+        from opencodon.tools.skills_hub import _skills_dir
 
         root = Path(_skills_dir())
     except Exception:

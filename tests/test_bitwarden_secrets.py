@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.secret_sources import bitwarden as bw  # noqa: E402
+from opencodon.core.secret_sources import bitwarden as bw  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -646,14 +646,14 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
         return {"MY_BSM_KEY": "from-bsm"}, []
 
     monkeypatch.setattr(
-        "agent.secret_sources.bitwarden.find_bws",
+        "opencodon.core.secret_sources.bitwarden.find_bws",
         lambda **_kw: Path("/fake/bws"),
     )
     monkeypatch.setattr(
-        "agent.secret_sources.bitwarden.fetch_bitwarden_secrets",
+        "opencodon.core.secret_sources.bitwarden.fetch_bitwarden_secrets",
         fake_fetch,
     )
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 

@@ -38,10 +38,10 @@ from pathlib import Path as _Path
 
 sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
 
-from agent.secret_scope import UnscopedSecretError, get_secret
-from gateway.config import Platform, PlatformConfig
-from gateway.platforms.helpers import MessageDeduplicator
-from gateway.platforms.base import (
+from opencodon.core.secret_scope import UnscopedSecretError, get_secret
+from opencodon.frontends.gateway.config import Platform, PlatformConfig
+from opencodon.frontends.gateway.platforms.helpers import MessageDeduplicator
+from opencodon.frontends.gateway.platforms.base import (
     BasePlatformAdapter,
     MessageEvent,
     MessageType,
@@ -156,7 +156,7 @@ def check_slack_requirements() -> bool:
             "SLACK_AVAILABLE": True,
         }
 
-    from tools.lazy_deps import ensure_and_bind
+    from opencodon.tools.lazy_deps import ensure_and_bind
 
     return ensure_and_bind("platform.slack", _import, globals(), prompt=False)
 
@@ -224,7 +224,7 @@ def _rewrite_known_bang_command(text: str) -> str:
         return text
 
     try:
-        from opencodon_cli.commands import is_gateway_known_command
+        from opencodon.frontends.cli.commands import is_gateway_known_command
 
         first_token = text[1:].split(maxsplit=1)[0]
         cmd_name = first_token.split("@", 1)[0].lower()
@@ -1763,7 +1763,7 @@ class SlackAdapter(BasePlatformAdapter):
             # routes the command event through the socket regardless of the
             # manifest's request URL, but it will not deliver an event for
             # a slash command the manifest doesn't declare.
-            from opencodon_cli.commands import slack_native_slashes
+            from opencodon.frontends.cli.commands import slack_native_slashes
             import re as _re
 
             _slash_names = [name for name, _d, _h in slack_native_slashes()]
@@ -2647,8 +2647,8 @@ class SlackAdapter(BasePlatformAdapter):
         )
         try:
             from urllib.parse import unquote as _unquote
-            from gateway.platforms.base import _ssrf_redirect_guard
-            from tools.url_safety import (
+            from opencodon.frontends.gateway.platforms.base import _ssrf_redirect_guard
+            from opencodon.tools.url_safety import (
                 create_ssrf_safe_async_client,
                 is_safe_url as _is_safe_url,
             )
@@ -3297,7 +3297,7 @@ class SlackAdapter(BasePlatformAdapter):
         if not self._app:
             return SendResult(success=False, error="Not connected")
 
-        from tools.url_safety import create_ssrf_safe_async_client, is_safe_url
+        from opencodon.tools.url_safety import create_ssrf_safe_async_client, is_safe_url
 
         if not is_safe_url(image_url):
             logger.warning("[Slack] Blocked unsafe image URL (SSRF protection)")
@@ -3308,7 +3308,7 @@ class SlackAdapter(BasePlatformAdapter):
         try:
             async def _ssrf_redirect_guard(response):
                 """Re-check redirect targets so public URLs cannot bounce into private IPs."""
-                from tools.url_safety import redirect_target_from_response
+                from opencodon.tools.url_safety import redirect_target_from_response
                 redirect_url = redirect_target_from_response(response)
                 if redirect_url and not is_safe_url(redirect_url):
                     raise ValueError("Blocked redirect to private/internal address")
@@ -5103,7 +5103,7 @@ class SlackAdapter(BasePlatformAdapter):
         )
 
         # Per-channel ephemeral prompt
-        from gateway.platforms.base import (
+        from opencodon.frontends.gateway.platforms.base import (
             resolve_channel_prompt,
             resolve_channel_skills,
         )
@@ -5534,7 +5534,7 @@ class SlackAdapter(BasePlatformAdapter):
         auth_fn = getattr(runner, "_is_user_authorized", None)
         if callable(auth_fn):
             try:
-                from gateway.session import SessionSource
+                from opencodon.frontends.gateway.session import SessionSource
 
                 source = SessionSource(
                     platform=Platform.SLACK,
@@ -5558,7 +5558,7 @@ class SlackAdapter(BasePlatformAdapter):
         def _env(name: str) -> str:
             # Multiplex: profile .env is in secret_scope, not process environ.
             try:
-                from agent.secret_scope import get_secret
+                from opencodon.core.secret_scope import get_secret
 
                 val = get_secret(name)
                 if val is not None and str(val).strip():
@@ -5679,7 +5679,7 @@ class SlackAdapter(BasePlatformAdapter):
 
         # Resolve via the module-level primitive and post any follow-up.
         try:
-            from tools import slash_confirm as _slash_confirm_mod
+            from opencodon.tools import slash_confirm as _slash_confirm_mod
 
             result_text = await _slash_confirm_mod.resolve(
                 session_key, confirm_id, choice
@@ -5781,7 +5781,7 @@ class SlackAdapter(BasePlatformAdapter):
         # after, so a click that lands past the approval timeout (count == 0)
         # shows "expired" instead of falsely claiming the command was approved.
         try:
-            from tools.approval import resolve_gateway_approval
+            from opencodon.tools.approval import resolve_gateway_approval
 
             count = resolve_gateway_approval(session_key, choice)
             logger.info(
@@ -5920,7 +5920,7 @@ class SlackAdapter(BasePlatformAdapter):
                 original_text = block.get("text", {}).get("text", "")
                 break
 
-        from tools import clarify_gateway as _clarify_mod
+        from opencodon.tools import clarify_gateway as _clarify_mod
 
         # "Other" → enter text-capture mode.  The gateway's text-intercept
         # resolves the clarify from the user's next typed message, so there is
@@ -6399,7 +6399,7 @@ class SlackAdapter(BasePlatformAdapter):
             # Empty slash_name falls into this branch for backward compat
             # with any caller that didn't populate command["command"].
             legacy_text = raw_text.strip()
-            from opencodon_cli.commands import slack_subcommand_map
+            from opencodon.frontends.cli.commands import slack_subcommand_map
 
             subcommand_map = slack_subcommand_map()
             subcommand_map["compact"] = "/compress"
@@ -6545,7 +6545,7 @@ class SlackAdapter(BasePlatformAdapter):
         if not session_store:
             return None
         try:
-            from gateway.session import SessionSource, build_session_key
+            from opencodon.frontends.gateway.session import SessionSource, build_session_key
 
             source = SessionSource(
                 platform=Platform.SLACK,
@@ -6714,7 +6714,7 @@ class SlackAdapter(BasePlatformAdapter):
             return False
 
         try:
-            from gateway.session import SessionSource
+            from opencodon.frontends.gateway.session import SessionSource
 
             source = SessionSource(
                 platform=Platform.SLACK,
@@ -6754,8 +6754,8 @@ class SlackAdapter(BasePlatformAdapter):
     ) -> str:
         """Download a Slack file using the bot token for auth, with retry."""
         import httpx
-        from gateway.platforms.base import _ssrf_redirect_guard, safe_url_for_log
-        from tools.url_safety import is_safe_url
+        from opencodon.frontends.gateway.platforms.base import _ssrf_redirect_guard, safe_url_for_log
+        from opencodon.tools.url_safety import is_safe_url
 
         # SSRF guard: the download attaches the bot token, so a URL that
         # resolves to (or 3xx-redirects into) a private/internal address would
@@ -6799,11 +6799,11 @@ class SlackAdapter(BasePlatformAdapter):
                         )
 
                     if audio:
-                        from gateway.platforms.base import cache_audio_from_bytes
+                        from opencodon.frontends.gateway.platforms.base import cache_audio_from_bytes
 
                         return cache_audio_from_bytes(response.content, ext)
                     else:
-                        from gateway.platforms.base import cache_image_from_bytes
+                        from opencodon.frontends.gateway.platforms.base import cache_image_from_bytes
 
                         return cache_image_from_bytes(response.content, ext)
                 except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
@@ -6826,8 +6826,8 @@ class SlackAdapter(BasePlatformAdapter):
     async def _download_slack_file_bytes(self, url: str, team_id: str = "") -> bytes:
         """Download a Slack file and return raw bytes, with retry."""
         import httpx
-        from gateway.platforms.base import _ssrf_redirect_guard, safe_url_for_log
-        from tools.url_safety import is_safe_url
+        from opencodon.frontends.gateway.platforms.base import _ssrf_redirect_guard, safe_url_for_log
+        from opencodon.tools.url_safety import is_safe_url
 
         # SSRF guard (CWE-918): see _download_slack_file. This sibling path
         # also attaches the bot token and must validate the destination plus
@@ -7152,7 +7152,7 @@ async def _resolve_slack_user_dm(token: str, user_id: str) -> Optional[str]:
     except ImportError:
         return None
     try:
-        from gateway.platforms.base import proxy_kwargs_for_aiohttp
+        from opencodon.frontends.gateway.platforms.base import proxy_kwargs_for_aiohttp
 
         _proxy = resolve_proxy_url()
         _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
@@ -7412,7 +7412,7 @@ async def _standalone_send(
         return {"error": "aiohttp not installed. Run: pip install aiohttp"}
 
     try:
-        from gateway.platforms.base import proxy_kwargs_for_aiohttp
+        from opencodon.frontends.gateway.platforms.base import proxy_kwargs_for_aiohttp
 
         _proxy = resolve_proxy_url()
         _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
@@ -7453,7 +7453,7 @@ def interactive_setup() -> None:
     """
     from pathlib import Path
     from opencodon.config import get_env_value, save_env_value
-    from opencodon_cli.cli_output import (
+    from opencodon.frontends.cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -7466,7 +7466,7 @@ def interactive_setup() -> None:
         """Generate the Slack manifest, write it under OPENCODON_HOME, and print
         paste-into-Slack instructions. Failures are non-fatal."""
         try:
-            from opencodon_cli.slack_cli import _build_full_manifest
+            from opencodon.frontends.cli.slack_cli import _build_full_manifest
             from opencodon_constants import get_opencodon_home
             import json as _json
 
@@ -7619,7 +7619,7 @@ def _is_connected(config) -> bool:
     can suppress ambient ``SLACK_BOT_TOKEN`` env vars. Matches what the legacy
     ``Platform.SLACK`` connected-check did before this migration.
     """
-    import opencodon_cli.gateway as gateway_mod
+    import opencodon.frontends.cli.gateway as gateway_mod
 
     return bool((gateway_mod.get_env_value("SLACK_BOT_TOKEN") or "").strip())
 

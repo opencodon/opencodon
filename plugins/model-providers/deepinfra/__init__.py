@@ -8,8 +8,8 @@ their respective plugin subsystems (``plugins/image_gen/deepinfra`` and
 the TTS/STT dispatchers in ``tools/``).
 """
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 class _DeepInfraProfile(ProviderProfile):
@@ -34,7 +34,7 @@ class _DeepInfraProfile(ProviderProfile):
         if not (os.environ.get("DEEPINFRA_API_KEY") or "").strip():
             return None
         try:
-            from opencodon_cli.models import _fetch_deepinfra_models_by_tag
+            from opencodon.frontends.cli.models import _fetch_deepinfra_models_by_tag
             items = _fetch_deepinfra_models_by_tag("chat")
         except Exception:
             return None

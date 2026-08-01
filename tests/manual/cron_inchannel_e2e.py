@@ -45,10 +45,10 @@ def _fresh_home():
 HOME = _fresh_home()
 
 # Import AFTER OPENCODON_HOME is set.
-import cron.scheduler as sched  # noqa: E402
-import gateway.mirror as mirror  # noqa: E402
-from gateway.config import GatewayConfig, Platform  # noqa: E402
-from gateway.session import SessionStore, SessionSource, build_session_key  # noqa: E402
+import opencodon.cron.scheduler as sched  # noqa: E402
+import opencodon.frontends.gateway.mirror as mirror  # noqa: E402
+from opencodon.frontends.gateway.config import GatewayConfig, Platform  # noqa: E402
+from opencodon.frontends.gateway.session import SessionStore, SessionSource, build_session_key  # noqa: E402
 
 # Force mirror.py's module-level index path to our temp home (it may have bound
 # a different get_opencodon_home() at import if something imported it earlier).
@@ -121,7 +121,7 @@ def _brief_in_transcript(store, sid):
     """Best-effort read of the session transcript to confirm the brief landed."""
     # Try the SQLite DB first (the mirror writes both JSONL + SQLite).
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         db = SessionDB()
         msgs = db.get_messages(sid)
         for m in msgs:

@@ -41,7 +41,7 @@ def _seed(home, managed, *, user, mgd):
 def test_gateway_run_loader_honors_managed(homes, monkeypatch):
     home, managed = homes
     _seed(home, managed, user="model:\n  default: user/m\n", mgd="model:\n  default: org/m\n")
-    import gateway.run as gr
+    import opencodon.frontends.gateway.run as gr
 
     monkeypatch.setattr(gr, "_opencodon_home", home, raising=False)
     cfg = gr._load_gateway_config()
@@ -56,7 +56,7 @@ def test_gateway_config_loader_honors_managed(homes, monkeypatch):
         user="group_sessions_per_user: false\n",
         mgd="group_sessions_per_user: true\n",
     )
-    import gateway.config as gc
+    import opencodon.frontends.gateway.config as gc
 
     # load_gateway_config resolves home via get_opencodon_home() (OPENCODON_HOME env).
     cfg = gc.load_gateway_config()
@@ -67,7 +67,7 @@ def test_gateway_config_loader_honors_managed(homes, monkeypatch):
 def test_tui_loader_honors_managed(homes, monkeypatch):
     home, managed = homes
     _seed(home, managed, user="display:\n  skin: user\n", mgd="display:\n  skin: charizard\n")
-    import tui_gateway.server as ts
+    import opencodon.frontends.tui.server as ts
 
     monkeypatch.setattr(ts, "_opencodon_home", home, raising=False)
     monkeypatch.setattr(ts, "_cfg_cache", None, raising=False)
@@ -81,7 +81,7 @@ def test_tui_loader_does_not_persist_managed_back(homes, monkeypatch):
     """The TUI caches RAW config so _save_cfg never writes managed values to disk."""
     home, managed = homes
     _seed(home, managed, user="display:\n  skin: user\n", mgd="display:\n  skin: charizard\n")
-    import tui_gateway.server as ts
+    import opencodon.frontends.tui.server as ts
 
     monkeypatch.setattr(ts, "_opencodon_home", home, raising=False)
     monkeypatch.setattr(ts, "_cfg_cache", None, raising=False)

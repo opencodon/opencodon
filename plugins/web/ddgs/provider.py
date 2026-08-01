@@ -27,7 +27,7 @@ import sys
 import time
 from typing import Any, Dict, Optional
 
-from agent.web_search_provider import WebSearchProvider
+from opencodon.core.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def _run_ddgs_search_bounded(query: str, safe_limit: int) -> list[dict[str, Any]
     ``_SearchInterrupted``, or ``RuntimeError``.
     """
     # Imported lazily so plugin import stays light for ``opencodon tools`` probes.
-    from tools.interrupt import is_interrupted
+    from opencodon.tools.interrupt import is_interrupted
 
     global _last_worker_proc
 
@@ -156,7 +156,7 @@ def _run_ddgs_search_bounded(query: str, safe_limit: int) -> list[dict[str, Any]
     if _test_hook:
         request["test_hook"] = _test_hook
 
-    from tools.environments.local import _sanitize_subprocess_env
+    from opencodon.tools.environments.local import _sanitize_subprocess_env
 
     env = _sanitize_subprocess_env(dict(os.environ))
     if _test_hook:

@@ -320,7 +320,7 @@ def _load_provider_from_dir(provider_dir: Path) -> Optional["CronScheduler"]:  #
             logger.debug("register() failed for %s: %s", name, e)
 
     # Fallback: find a CronScheduler subclass and instantiate it
-    from cron.scheduler_provider import CronScheduler
+    from opencodon.cron.scheduler_provider import CronScheduler
     for attr_name in dir(mod):
         attr = getattr(mod, attr_name, None)
         if (isinstance(attr, type) and issubclass(attr, CronScheduler)

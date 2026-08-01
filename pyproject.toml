@@ -279,16 +279,18 @@ requires = ["setuptools>=83.0.0,<84"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-opencodon = "opencodon_cli.main:main"
-opencodon-agent = "run_agent:main"
-opencodon-acp = "acp_adapter.entry:main"
+opencodon = "opencodon.frontends.cli.main:main"
+opencodon-agent = "opencodon.core.run_agent:main"
+opencodon-acp = "opencodon.frontends.acp.entry:main"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 # Top-level single-file modules (not packages). Without this, uv2nix's
 # sealed venv is missing opencodon_constants, run_agent, etc.
 py-modules = ["run_agent", "model_tools", "toolsets", "cli", "opencodon_bootstrap", "opencodon_constants", "opencodon_state", "opencodon_time", "opencodon_logging", "utils", "mcp_serve"]
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["opencodon", "opencodon.*", "agent", "agent.*", "tools", "tools.*", "opencodon_cli", "opencodon_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "science", "science.*"]
 
 [tool.setuptools.package-data]
@@ -297,7 +299,7 @@ include = ["opencodon", "opencodon.*", "agent", "agent.*", "tools", "tools.*", "
 # status phrases fall back to the tiny hardcoded set and the Telegram
 # topic-setup image disappears. Loaded via Path(__file__).parent / "assets"
 # in gateway/status_phrases.py and gateway/run.py.
-gateway = ["assets/**/*"]
+"opencodon.frontends.gateway" = ["assets/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

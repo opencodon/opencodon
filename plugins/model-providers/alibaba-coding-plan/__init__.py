@@ -4,8 +4,8 @@ Separate from the standard `alibaba` profile because it hits a different
 endpoint (coding-intl.dashscope.aliyuncs.com) with a dedicated API key tier.
 """
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 alibaba_coding_plan = ProviderProfile(
     name="alibaba-coding-plan",

@@ -10,8 +10,8 @@ fall through to the shared owner when no local thread exists.
 import threading
 import time
 
-from opencodon_cli import mcp_startup
-from tui_gateway import entry
+from opencodon.frontends.cli import mcp_startup
+from opencodon.frontends.tui import entry
 
 
 def test_wait_falls_through_to_shared_owner(monkeypatch):

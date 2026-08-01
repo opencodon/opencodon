@@ -1,8 +1,8 @@
 """GMI Cloud provider profile."""
 
-from opencodon_cli import __version__ as _OPENCODON_VERSION
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.frontends.cli import __version__ as _OPENCODON_VERSION
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 gmi = ProviderProfile(
     name="gmi",

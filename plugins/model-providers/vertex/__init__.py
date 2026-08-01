@@ -19,8 +19,8 @@ api_key provider that would mistake a credentials-file path for a key.
 
 from typing import Any
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 class VertexProfile(ProviderProfile):
@@ -32,7 +32,7 @@ class VertexProfile(ProviderProfile):
         """Emit ``extra_body.google.thinking_config`` for the OpenAI-compat
         Vertex surface, mirroring the ``gemini`` provider's behavior.
         """
-        from agent.transports.chat_completions import (
+        from opencodon.core.transports.chat_completions import (
             _build_gemini_thinking_config,
             _snake_case_gemini_thinking_config,
         )

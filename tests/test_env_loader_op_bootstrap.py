@@ -33,8 +33,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from opencodon_cli import env_loader  # noqa: E402
-import agent.credential_pool as credential_pool  # noqa: E402
+from opencodon.frontends.cli import env_loader  # noqa: E402
+import opencodon.core.credential_pool as credential_pool  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +121,7 @@ def _seed_openrouter_token(monkeypatch, dotenv_value, environ_value):
         monkeypatch.setenv("OPENROUTER_API_KEY", environ_value)
     # Never treat the synthetic source as suppressed.
     monkeypatch.setattr(
-        "opencodon_cli.auth.is_source_suppressed", lambda _p, _s: False
+        "opencodon.frontends.cli.auth.is_source_suppressed", lambda _p, _s: False
     )
 
     entries: list = []

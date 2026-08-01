@@ -21,8 +21,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 def _model_supports_thinking(model: str | None) -> bool:

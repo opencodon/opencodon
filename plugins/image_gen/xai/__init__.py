@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,
@@ -34,7 +34,7 @@ from agent.image_gen_provider import (
     save_url_image,
     success_response,
 )
-from tools.xai_http import (
+from opencodon.tools.xai_http import (
     build_xai_storage_options,
     opencodon_xai_user_agent,
     maybe_mark_xai_storage_notice_seen,
@@ -139,7 +139,7 @@ def _xai_image_field(source: str) -> Dict[str, str]:
 
     # Enforce the shared credential-read guard before reading local bytes
     # (same boundary the OpenAI / OpenRouter / Codex image providers apply).
-    from agent.file_safety import raise_if_read_blocked
+    from opencodon.core.file_safety import raise_if_read_blocked
 
     raise_if_read_blocked(source)
     with open(_os.path.expanduser(source), "rb") as fh:  # windows-footgun: ok

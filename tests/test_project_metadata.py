@@ -75,7 +75,7 @@ def test_pyproject_aiohttp_pins_match_lazy_slack_pin():
     downgrades aiohttp, reopening the CVEs the lazy pin fixed (#31817) —
     only for Slack's lazy refresh to upgrade it again on next use.
     """
-    from tools.lazy_deps import LAZY_DEPS
+    from opencodon.tools.lazy_deps import LAZY_DEPS
 
     optional_dependencies = _load_optional_dependencies()
     lazy_aiohttp = _exact_pins(LAZY_DEPS["platform.slack"])["aiohttp"]
@@ -112,7 +112,7 @@ def test_pyproject_pins_match_lazy_deps_pins():
     refresh to re-upgrade it on next feature use. The lazy pin is the
     security-current source of truth; extras must track it.
     """
-    from tools.lazy_deps import LAZY_DEPS
+    from opencodon.tools.lazy_deps import LAZY_DEPS
 
     optional_dependencies = _load_optional_dependencies()
 

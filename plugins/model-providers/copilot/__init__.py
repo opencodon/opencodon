@@ -12,8 +12,8 @@ Key quirks for the chat_completions subset:
 
 from typing import Any
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 class CopilotProfile(ProviderProfile):
@@ -30,7 +30,7 @@ class CopilotProfile(ProviderProfile):
         extra_body: dict[str, Any] = {}
         if supports_reasoning and model:
             try:
-                from opencodon_cli.models import github_model_reasoning_efforts
+                from opencodon.frontends.cli.models import github_model_reasoning_efforts
 
                 supported_efforts = github_model_reasoning_efforts(model)
                 if supported_efforts and reasoning_config:

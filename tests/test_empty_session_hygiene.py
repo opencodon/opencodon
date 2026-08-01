@@ -9,7 +9,7 @@ no messages, no title, and no child sessions.
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 @pytest.fixture()
@@ -109,7 +109,7 @@ class TestCLIDiscardSessionIfEmpty:
     """Wiring tests for OpencodonCLI._discard_session_if_empty."""
 
     def _make_cli(self, db):
-        from cli import OpencodonCLI
+        from opencodon.frontends.cli.shell import OpencodonCLI
 
         cli = OpencodonCLI.__new__(OpencodonCLI)
         cli._session_db = db

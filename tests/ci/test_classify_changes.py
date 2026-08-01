@@ -64,7 +64,7 @@ CASES = {
     "dockerfile → docker meta": (["Dockerfile"], _lanes(docker_meta=True)),
     # Unknown top-level file keeps Python on rather than risk a silent skip.
     "unknown toplevel → python": (["Makefile"], _lanes(python=True)),
-    "mixed docs+python → python": (["README.md", "agent/x.py"], _lanes(python=True, scan=True)),
+    "mixed docs+python → python": (["README.md", "src/opencodon/core/x.py"], _lanes(python=True, scan=True)),
     "mixed docs+frontend → frontend": (["README.md", "apps/x.tsx"], _lanes(frontend=True)),
     # Supply-chain lanes
     ".pth file → scan": (["evil.pth"], _lanes(python=True, scan=True)),

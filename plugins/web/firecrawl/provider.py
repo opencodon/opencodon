@@ -42,9 +42,9 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from agent.web_search_provider import WebSearchProvider
-from tools.url_safety import is_safe_url
-from tools.website_policy import check_website_access
+from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.tools.url_safety import is_safe_url
+from opencodon.tools.website_policy import check_website_access
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 # trees) on a cold CLI. We only need it when the backend is actually
 # "firecrawl", so defer the import to first use via a callable proxy.
 #
-# Tests that do ``patch("tools.web_tools.Firecrawl", ...)`` continue to
+# Tests that do ``patch("opencodon.tools.web_tools.Firecrawl", ...)`` continue to
 # work because tools/web_tools.py re-exports ``Firecrawl`` from this
 # module — so the patched name still references the same proxy instance.
 
@@ -71,7 +71,7 @@ def _load_firecrawl_cls() -> type:
     global _FIRECRAWL_CLS_CACHE
     if _FIRECRAWL_CLS_CACHE is None:
         try:
-            from tools.lazy_deps import ensure as _lazy_ensure
+            from opencodon.tools.lazy_deps import ensure as _lazy_ensure
 
             _lazy_ensure("search.firecrawl", prompt=False)
         except ImportError:
@@ -166,7 +166,7 @@ def _get_firecrawl_client() -> Any:
     is likewise looked up via :mod:`tools.web_tools` so tests patching
     ``tools.web_tools.Firecrawl`` see their mock.
     """
-    import tools.web_tools as _wt
+    import opencodon.tools.web_tools as _wt
 
     direct_config = _get_direct_firecrawl_config()
     if direct_config is None:
@@ -191,7 +191,7 @@ def _reset_client_for_tests() -> None:
     Clears the canonical slots on :mod:`tools.web_tools` (where
     :func:`_get_firecrawl_client` reads/writes them).
     """
-    import tools.web_tools as _wt
+    import opencodon.tools.web_tools as _wt
 
     _wt._firecrawl_client = None
     _wt._firecrawl_client_config = None
@@ -322,7 +322,7 @@ class FirecrawlWebSearchProvider(WebSearchProvider):
         envelope. Only in-flight errors are caught and surfaced as
         ``{"success": False, "error": ...}``.
         """
-        from tools.interrupt import is_interrupted
+        from opencodon.tools.interrupt import is_interrupted
 
         if is_interrupted():
             return {"success": False, "error": "Interrupted"}
@@ -355,7 +355,7 @@ class FirecrawlWebSearchProvider(WebSearchProvider):
         (timeout, SSRF block, scrape error, policy block) become items
         with an ``error`` field rather than raising.
         """
-        from tools.interrupt import is_interrupted as _is_interrupted
+        from opencodon.tools.interrupt import is_interrupted as _is_interrupted
 
         if _is_interrupted():
             return [{"url": u, "error": "Interrupted", "title": ""} for u in urls]

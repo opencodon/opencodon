@@ -1,11 +1,11 @@
-"""Tests for agent.retry_utils jittered backoff."""
+"""Tests for opencodon.core.retry_utils jittered backoff."""
 
 import threading
 
-import agent.retry_utils as retry_utils
+import opencodon.core.retry_utils as retry_utils
 from types import SimpleNamespace
 
-from agent.retry_utils import adaptive_rate_limit_backoff, is_zai_coding_overload_error, jittered_backoff
+from opencodon.core.retry_utils import adaptive_rate_limit_backoff, is_zai_coding_overload_error, jittered_backoff
 
 
 def test_backoff_is_exponential():
@@ -216,7 +216,7 @@ def test_zai_overload_retry_ceiling_exceeds_short_attempts():
     """Invariant: the ceiling must sit above the short-retry threshold, or the
     long-backoff tier is unreachable and the whole schedule is dead code
     (the original bug: default api_max_retries == short_attempts == 3)."""
-    from agent.retry_utils import (
+    from opencodon.core.retry_utils import (
         zai_coding_overload_retry_ceiling,
         _ZAI_CODING_OVERLOAD_LONG_BACKOFF,
     )
@@ -238,7 +238,7 @@ def test_zai_overload_ceiling_makes_long_tier_reachable(monkeypatch):
     extended ceiling, at least one attempt reaches the long-backoff tier and the
     full 30/60/90/120s schedule is exercised."""
     monkeypatch.setattr(retry_utils, "jittered_backoff", lambda *a, **kw: kw["base_delay"])
-    from agent.retry_utils import zai_coding_overload_retry_ceiling
+    from opencodon.core.retry_utils import zai_coding_overload_retry_ceiling
 
     err = _zai_overload_error()
     ceiling = zai_coding_overload_retry_ceiling()

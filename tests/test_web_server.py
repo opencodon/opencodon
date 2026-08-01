@@ -9,7 +9,7 @@ import contextlib
 
 import uvicorn
 
-from opencodon_cli import web_server
+from opencodon.frontends.cli import web_server
 
 
 def _stub_uvicorn(monkeypatch):

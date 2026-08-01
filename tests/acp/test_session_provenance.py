@@ -9,8 +9,8 @@ import time
 
 import pytest
 
-from acp_adapter.provenance import build_session_provenance, session_provenance_meta
-from opencodon_state import SessionDB
+from opencodon.frontends.acp.provenance import build_session_provenance, session_provenance_meta
+from opencodon.state import SessionDB
 
 
 @pytest.fixture()

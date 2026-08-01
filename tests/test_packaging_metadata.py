@@ -196,7 +196,7 @@ def _lazy_deps_pinned_specs():
     Parsing rather than importing keeps this test free of
     tools/lazy_deps.py's runtime imports and side effects.
     """
-    src = (REPO_ROOT / "tools" / "lazy_deps.py").read_text(encoding="utf-8")
+    src = (REPO_ROOT / "src" / "opencodon" / "tools" / "lazy_deps.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     specs: list[str] = []
     for node in ast.walk(tree):
@@ -258,7 +258,7 @@ def _lazy_deps_by_feature():
     Same parse-don't-import rationale as _lazy_deps_pinned_specs, but keeps the
     feature -> specs grouping so per-feature coverage can be asserted.
     """
-    src = (REPO_ROOT / "tools" / "lazy_deps.py").read_text(encoding="utf-8")
+    src = (REPO_ROOT / "src" / "opencodon" / "tools" / "lazy_deps.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     for node in ast.walk(tree):
         targets = (

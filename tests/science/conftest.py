@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 from science.blobstore import BlobStore
 from science.bridge import bootstrap_kernel
 from science.kernels import (

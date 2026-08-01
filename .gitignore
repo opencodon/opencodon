@@ -169,3 +169,6 @@ native/fts5_cjk/*.so
 # Local-only working docs kept out of the published repo (design drafts,
 # planning notes). Retained on disk for reference; never committed.
 /.archive/
+
+# built browser UI (vite outDir) — never commit
+src/opencodon/frontends/cli/web_dist/

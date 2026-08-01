@@ -28,7 +28,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     resolve_aspect_ratio,
@@ -60,14 +60,14 @@ class FalImageGenProvider(ImageGenProvider):
         # gateway resolves a fal-queue origin. Both checks come from the
         # legacy module so this provider tracks whatever logic ships
         # there.
-        import tools.image_generation_tool as _it
+        import opencodon.tools.image_generation_tool as _it
         try:
             return bool(_it.check_fal_api_key())
         except Exception:  # noqa: BLE001 — defensive; never break the picker
             return False
 
     def list_models(self) -> List[Dict[str, Any]]:
-        import tools.image_generation_tool as _it
+        import opencodon.tools.image_generation_tool as _it
         return [
             {
                 "id": model_id,
@@ -80,7 +80,7 @@ class FalImageGenProvider(ImageGenProvider):
         ]
 
     def default_model(self) -> Optional[str]:
-        import tools.image_generation_tool as _it
+        import opencodon.tools.image_generation_tool as _it
         return _it.DEFAULT_MODEL
 
     def get_setup_schema(self) -> Dict[str, Any]:
@@ -102,7 +102,7 @@ class FalImageGenProvider(ImageGenProvider):
         # selected FAL model (each model entry declares an edit_endpoint or
         # not). Report the active model's actual surface so the dynamic tool
         # schema is accurate.
-        import tools.image_generation_tool as _it
+        import opencodon.tools.image_generation_tool as _it
 
         try:
             _model_id, meta = _it._resolve_fal_model()
@@ -132,7 +132,7 @@ class FalImageGenProvider(ImageGenProvider):
         its JSON-string response into the provider-ABC dict format consumed by
         ``_dispatch_to_plugin_provider``.
         """
-        import tools.image_generation_tool as _it
+        import opencodon.tools.image_generation_tool as _it
 
         aspect = resolve_aspect_ratio(aspect_ratio)
         passthrough = {

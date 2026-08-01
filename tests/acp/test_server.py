@@ -35,10 +35,10 @@ from acp.schema import (
     UsageUpdate,
     UserMessageChunk,
 )
-from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID
-from acp_adapter.server import OpencodonACPAgent, OPENCODON_VERSION
-from acp_adapter.session import SessionManager
-from opencodon_state import SessionDB
+from opencodon.frontends.acp.auth import TERMINAL_SETUP_AUTH_METHOD_ID
+from opencodon.frontends.acp.server import OpencodonACPAgent, OPENCODON_VERSION
+from opencodon.frontends.acp.session import SessionManager
+from opencodon.state import SessionDB
 
 
 @pytest.fixture()
@@ -126,8 +126,8 @@ class TestInitialize:
 
     @pytest.mark.asyncio
     async def test_initialize_advertises_provider_and_terminal_auth_methods(self, agent, monkeypatch):
-        monkeypatch.setattr("acp_adapter.auth.detect_provider", lambda: "openrouter")
-        monkeypatch.setattr("acp_adapter.server.detect_provider", lambda: "openrouter")
+        monkeypatch.setattr("opencodon.frontends.acp.auth.detect_provider", lambda: "openrouter")
+        monkeypatch.setattr("opencodon.frontends.acp.server.detect_provider", lambda: "openrouter")
 
         resp = await agent.initialize(protocol_version=1)
         payloads = [method.model_dump(by_alias=True, exclude_none=True) for method in resp.auth_methods]
@@ -140,8 +140,8 @@ class TestInitialize:
 
     @pytest.mark.asyncio
     async def test_initialize_advertises_terminal_setup_auth_when_no_provider(self, agent, monkeypatch):
-        monkeypatch.setattr("acp_adapter.auth.detect_provider", lambda: None)
-        monkeypatch.setattr("acp_adapter.server.detect_provider", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.acp.auth.detect_provider", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.acp.server.detect_provider", lambda: None)
 
         resp = await agent.initialize(protocol_version=1)
         payloads = [method.model_dump(by_alias=True, exclude_none=True) for method in resp.auth_methods]
@@ -169,7 +169,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_with_matching_method_id(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="openrouter")
@@ -178,7 +178,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_is_case_insensitive(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="OpenRouter")
@@ -187,7 +187,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_rejects_mismatched_method_id(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="totally-invalid-method")
@@ -196,7 +196,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_without_provider(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: None,
         )
         resp = await agent.authenticate(method_id="openrouter")
@@ -205,7 +205,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_accepts_terminal_setup_after_provider_configured(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id=TERMINAL_SETUP_AUTH_METHOD_ID)
@@ -214,7 +214,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_rejects_terminal_setup_without_provider(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: None,
         )
         resp = await agent.authenticate(method_id=TERMINAL_SETUP_AUTH_METHOD_ID)
@@ -245,7 +245,7 @@ class TestSessionOps:
         acp_agent = OpencodonACPAgent(session_manager=manager)
 
         with patch(
-            "opencodon_cli.models.curated_models_for_provider",
+            "opencodon.frontends.cli.models.curated_models_for_provider",
             return_value=[("gpt-5.4", "recommended"), ("gpt-5.4-mini", "")],
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
@@ -306,7 +306,7 @@ class TestSessionOps:
         state.agent.tools = [{"type": "function", "function": {"name": "demo"}}]
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             update = agent._build_usage_update(state)
@@ -325,7 +325,7 @@ class TestSessionOps:
         agent._conn = mock_conn
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             await agent._send_usage_update(state)
@@ -431,7 +431,7 @@ class TestSessionOps:
         message. Detection falls back to content, so this holds even for a
         DB-reloaded session that lost the in-process metadata flag.
         """
-        from agent.context_compressor import SUMMARY_PREFIX
+        from opencodon.core.context_compressor import SUMMARY_PREFIX
 
         mock_conn = MagicMock(spec=acp.Client)
         mock_conn.session_update = AsyncMock()
@@ -466,7 +466,7 @@ class TestSessionOps:
         (whichever role keeps alternation valid), so the assistant replay
         branch must flag it too — not just the user branch.
         """
-        from agent.context_compressor import SUMMARY_PREFIX
+        from opencodon.core.context_compressor import SUMMARY_PREFIX
 
         mock_conn = MagicMock(spec=acp.Client)
         mock_conn.session_update = AsyncMock()
@@ -502,7 +502,7 @@ class TestSessionOps:
         compactionSummary — so a client that collapses standalone summaries
         cannot hide the preserved turn content.
         """
-        from agent.context_compressor import (
+        from opencodon.core.context_compressor import (
             _MERGED_PRIOR_CONTEXT_HEADER,
             _MERGED_SUMMARY_DELIMITER,
             _SUMMARY_END_MARKER,
@@ -884,7 +884,7 @@ class TestSessionOps:
         async def boom(_state):
             raise RuntimeError("simulated replay helper crash")
 
-        with caplog.at_level("WARNING", logger="acp_adapter.server"):
+        with caplog.at_level("WARNING", logger="opencodon.frontends.acp.server"):
             with patch.object(agent, "_replay_session_history", side_effect=boom):
                 resp = await agent.load_session(cwd="/tmp", session_id=new_resp.session_id)
 
@@ -901,7 +901,7 @@ class TestSessionOps:
         async def boom(_state):
             raise RuntimeError("simulated replay helper crash")
 
-        with caplog.at_level("WARNING", logger="acp_adapter.server"):
+        with caplog.at_level("WARNING", logger="opencodon.frontends.acp.server"):
             with patch.object(agent, "_replay_session_history", side_effect=boom):
                 resp = await agent.resume_session(cwd="/tmp", session_id=new_resp.session_id)
 
@@ -956,7 +956,7 @@ class TestListAndFork:
 
     @pytest.mark.asyncio
     async def test_list_sessions_pagination_first_page(self, agent):
-        from acp_adapter import server as acp_server
+        from opencodon.frontends.acp import server as acp_server
 
         infos = [
             {"session_id": f"s{i}", "cwd": "/tmp", "title": None, "updated_at": 0.0}
@@ -1086,7 +1086,7 @@ class TestSessionConfiguration:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the parser so this test doesn't depend on live
@@ -1094,16 +1094,16 @@ class TestSessionConfiguration:
         # (sibling of the same hardening on
         # ``test_model_switch_uses_requested_provider``).
         monkeypatch.setattr(
-            "opencodon_cli.models.parse_model_input",
+            "opencodon.frontends.cli.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon_cli.models.detect_provider_for_model",
+            "opencodon.frontends.cli.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             acp_agent = OpencodonACPAgent(session_manager=manager)
             state = manager.create_session(cwd="/tmp")
             result = await acp_agent.set_session_model(
@@ -1242,7 +1242,7 @@ class TestPrompt:
         mock_conn.session_update = AsyncMock()
         agent._conn = mock_conn
 
-        with patch("agent.title_generator.maybe_auto_title") as mock_title:
+        with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
             prompt = [TextContentBlock(type="text", text="please do a long task")]
             resp = await agent.prompt(prompt=prompt, session_id=new_resp.session_id)
 
@@ -1460,7 +1460,7 @@ class TestPrompt:
         mock_conn.session_update = AsyncMock()
         agent._conn = mock_conn
 
-        with patch("agent.title_generator.maybe_auto_title") as mock_title:
+        with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
             prompt = [TextContentBlock(type="text", text="fix the broken ACP history")]
             await agent.prompt(prompt=prompt, session_id=new_resp.session_id)
 
@@ -1500,7 +1500,7 @@ class TestPrompt:
             db.set_session_title(session_id, "Fix Zed titles")
             kwargs["title_callback"]("Fix Zed titles")
 
-        with patch("agent.title_generator.maybe_auto_title", side_effect=fake_auto_title):
+        with patch("opencodon.core.title_generator.maybe_auto_title", side_effect=fake_auto_title):
             mock_conn.session_update.reset_mock()
             await agent.prompt(
                 session_id=resp.session_id,
@@ -1640,7 +1640,7 @@ class TestSlashCommands:
         state.agent.tools = [{"type": "function", "function": {"name": "demo"}}]
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             result = agent._handle_slash_command("/context", state)
@@ -1658,7 +1658,7 @@ class TestSlashCommands:
         )
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=82_000,
         ):
             result = agent._handle_slash_command("/context", state)
@@ -1693,7 +1693,7 @@ class TestSlashCommands:
 
         with (
             patch.object(agent.session_manager, "save_session") as mock_save,
-            patch("acp_adapter.server.logger") as mock_logger,
+            patch("opencodon.frontends.acp.server.logger") as mock_logger,
         ):
             result = agent._handle_slash_command("/reset", state)
 
@@ -1737,7 +1737,7 @@ class TestSlashCommands:
         with (
             patch.object(agent.session_manager, "save_session") as mock_save,
             patch(
-                "agent.model_metadata.estimate_request_tokens_rough",
+                "opencodon.core.model_metadata.estimate_request_tokens_rough",
                 side_effect=[40, 12],
             ),
         ):
@@ -1783,7 +1783,7 @@ class TestSlashCommands:
         with (
             patch.object(agent.session_manager, "save_session"),
             patch(
-                "agent.model_metadata.estimate_request_tokens_rough",
+                "opencodon.core.model_metadata.estimate_request_tokens_rough",
                 side_effect=[40, 12],
             ),
         ):
@@ -1866,7 +1866,7 @@ class TestSlashCommands:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the model-string parser independently of the live
@@ -1876,16 +1876,16 @@ class TestSlashCommands:
         # ``anthropic``) flakes this one — observed once in CI as
         # ``'custom' == 'anthropic'``.
         monkeypatch.setattr(
-            "opencodon_cli.models.parse_model_input",
+            "opencodon.frontends.cli.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon_cli.models.detect_provider_for_model",
+            "opencodon.frontends.cli.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             acp_agent = OpencodonACPAgent(session_manager=manager)
             state = manager.create_session(cwd="/tmp")
             result = acp_agent._cmd_model("anthropic:claude-sonnet-4-6", state)
@@ -1943,8 +1943,8 @@ class TestRegisterSessionMcpServers:
             registered_config.update(config_map)
             return ["mcp_test_server_tool1"]
 
-        with patch("tools.mcp_tool.register_mcp_servers", side_effect=capture_register), \
-             patch("model_tools.get_tool_definitions", return_value=[]):
+        with patch("opencodon.tools.mcp_tool.register_mcp_servers", side_effect=capture_register), \
+             patch("opencodon.tools.model_tools.get_tool_definitions", return_value=[]):
             await agent._register_session_mcp_servers(state, [server])
 
         assert "test-server" in registered_config
@@ -1975,8 +1975,8 @@ class TestRegisterSessionMcpServers:
             registered_config.update(config_map)
             return []
 
-        with patch("tools.mcp_tool.register_mcp_servers", side_effect=capture_register), \
-             patch("model_tools.get_tool_definitions", return_value=[]):
+        with patch("opencodon.tools.mcp_tool.register_mcp_servers", side_effect=capture_register), \
+             patch("opencodon.tools.model_tools.get_tool_definitions", return_value=[]):
             await agent._register_session_mcp_servers(state, [server])
 
         assert "http-server" in registered_config
@@ -2014,8 +2014,8 @@ class TestRegisterSessionMcpServers:
             {"function": {"name": "terminal"}},
         ]
 
-        with patch("tools.mcp_tool.register_mcp_servers", return_value=["mcp_srv_search"]), \
-             patch("model_tools.get_tool_definitions", return_value=fake_tools) as mock_defs:
+        with patch("opencodon.tools.mcp_tool.register_mcp_servers", return_value=["mcp_srv_search"]), \
+             patch("opencodon.tools.model_tools.get_tool_definitions", return_value=fake_tools) as mock_defs:
             await agent._register_session_mcp_servers(state, [server])
 
         mock_defs.assert_called_once_with(
@@ -2055,6 +2055,6 @@ class TestRegisterSessionMcpServers:
             env=[],
         )
 
-        with patch("tools.mcp_tool.register_mcp_servers", side_effect=RuntimeError("boom")):
+        with patch("opencodon.tools.mcp_tool.register_mcp_servers", side_effect=RuntimeError("boom")):
             # Should not raise
             await agent._register_session_mcp_servers(state, [server])

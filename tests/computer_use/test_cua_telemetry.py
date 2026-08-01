@@ -12,7 +12,7 @@ snapshots.
 
 from unittest.mock import patch
 
-from tools.computer_use import cua_backend
+from opencodon.tools.computer_use import cua_backend
 
 
 _VAR = "CUA_DRIVER_RS_TELEMETRY_ENABLED"

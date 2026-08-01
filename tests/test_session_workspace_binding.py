@@ -6,7 +6,7 @@ coarse workspace identity derived from fields already recorded on sessions
 NOT part of the key.
 """
 
-from opencodon_state import workspace_key
+from opencodon.state import workspace_key
 
 
 def test_repo_root_is_the_key_when_known():

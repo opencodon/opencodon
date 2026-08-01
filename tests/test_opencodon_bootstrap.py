@@ -240,11 +240,13 @@ class TestEntryPointsImportBootstrap:
     # Entry points that invoke opencodon as a process.  Each one must
     # import opencodon_bootstrap before doing any file I/O or stdout writes.
     ENTRY_POINTS = [
-        "opencodon_cli/main.py",   # opencodon CLI (console_script)
-        "run_agent.py",          # opencodon (console_script)
-        "acp_adapter/entry.py",  # opencodon-acp (console_script)
-        "gateway/run.py",        # gateway
-        "cli.py",                # legacy direct-launch CLI
+        "src/opencodon/frontends/cli/main.py",   # opencodon CLI (console_script)
+        "src/opencodon/core/run_agent.py",       # opencodon-agent (console_script)
+        "src/opencodon/frontends/acp/entry.py",  # opencodon-acp (console_script)
+        "src/opencodon/frontends/gateway/run.py",  # gateway
+        "src/opencodon/frontends/cli/shell.py",  # legacy direct-launch CLI
+        "src/cli.py",                # root shim, still a process entry
+        "src/run_agent.py",          # root shim (console_script on old installs)
     ]
 
     @pytest.mark.parametrize("path", ENTRY_POINTS)

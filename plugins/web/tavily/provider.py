@@ -27,7 +27,7 @@ import logging
 import os
 from typing import Any, Dict, List
 
-from agent.web_search_provider import WebSearchProvider
+from opencodon.core.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def _tavily_request(endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     import httpx
 
-    from agent.web_search_provider import get_provider_env
+    from opencodon.core.web_search_provider import get_provider_env
 
     api_key = get_provider_env("TAVILY_API_KEY")
     if not api_key:
@@ -140,7 +140,7 @@ class TavilyWebSearchProvider(WebSearchProvider):
 
     def is_available(self) -> bool:
         """Return True when ``TAVILY_API_KEY`` is set to a non-empty value."""
-        from agent.web_search_provider import get_provider_env
+        from opencodon.core.web_search_provider import get_provider_env
 
         return bool(get_provider_env("TAVILY_API_KEY"))
 
@@ -153,7 +153,7 @@ class TavilyWebSearchProvider(WebSearchProvider):
     def search(self, query: str, limit: int = 5) -> Dict[str, Any]:
         """Execute a Tavily search."""
         try:
-            from tools.interrupt import is_interrupted
+            from opencodon.tools.interrupt import is_interrupted
 
             if is_interrupted():
                 return {"success": False, "error": "Interrupted"}
@@ -182,7 +182,7 @@ class TavilyWebSearchProvider(WebSearchProvider):
         list-of-results shape; per-URL failures become items with ``error``.
         """
         try:
-            from tools.interrupt import is_interrupted
+            from opencodon.tools.interrupt import is_interrupted
 
             if is_interrupted():
                 return [

@@ -67,7 +67,7 @@ import secrets
 import time
 from typing import Any, Optional
 
-from opencodon_cli.dashboard_auth import (
+from opencodon.frontends.cli.dashboard_auth import (
     DashboardAuthProvider,
     InvalidCredentialsError,
     LoginStart,

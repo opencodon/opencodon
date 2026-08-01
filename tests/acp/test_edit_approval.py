@@ -6,14 +6,14 @@ import json
 import tempfile
 from pathlib import Path
 
-from acp_adapter.edit_approval import (
+from opencodon.frontends.acp.edit_approval import (
     EditProposal,
     build_acp_edit_tool_call,
     clear_edit_approval_requester,
     set_edit_approval_requester,
     should_auto_approve_edit,
 )
-from model_tools import handle_function_call
+from opencodon.tools.model_tools import handle_function_call
 
 
 def teardown_function() -> None:

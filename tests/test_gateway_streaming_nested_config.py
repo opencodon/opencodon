@@ -6,14 +6,14 @@ from unittest.mock import patch, MagicMock
 
 def _load_with_yaml_dict(yaml_dict: dict):
     """Patch filesystem so load_gateway_config() sees *yaml_dict* as config.yaml."""
-    from gateway.config import load_gateway_config
+    from opencodon.frontends.gateway.config import load_gateway_config
 
     fake_home = Path("/tmp/fake_opencodon_home_25676")
 
     def fake_exists(self):
         return str(self).endswith("config.yaml")
 
-    with patch("gateway.config.get_opencodon_home", return_value=fake_home), \
+    with patch("opencodon.frontends.gateway.config.get_opencodon_home", return_value=fake_home), \
          patch.object(Path, "exists", fake_exists), \
          patch("builtins.open", create=True) as mock_file:
         mock_file.return_value.__enter__ = lambda s: s
@@ -52,21 +52,21 @@ class TestStreamingModeAlias:
     """
 
     def test_mode_auto_enables_streaming(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"mode": "auto"})
         assert sc.enabled is True
         assert sc.transport == "auto"
 
     def test_mode_edit_enables_streaming(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"mode": "edit"})
         assert sc.enabled is True
         assert sc.transport == "edit"
 
     def test_mode_off_disables_streaming(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"mode": "off"})
         assert sc.enabled is False
@@ -74,7 +74,7 @@ class TestStreamingModeAlias:
 
     def test_mode_with_extra_keys_still_enables(self):
         """Real-world block: mode plus unrelated preloader_frames."""
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict(
             {"mode": "auto", "preloader_frames": ["a", "b"]}
@@ -83,7 +83,7 @@ class TestStreamingModeAlias:
         assert sc.transport == "auto"
 
     def test_explicit_enabled_overrides_mode(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"mode": "auto", "enabled": False})
         assert sc.enabled is False
@@ -96,14 +96,14 @@ class TestStreamingModeAlias:
         With ``mode: off`` the master switch is off even though ``transport``
         selects the draft path — ``enabled`` is inferred from ``mode`` only.
         """
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"mode": "off", "transport": "draft"})
         assert sc.transport == "draft"
         assert sc.enabled is False
 
     def test_empty_block_stays_disabled(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({})
         assert sc.enabled is False
@@ -111,7 +111,7 @@ class TestStreamingModeAlias:
     def test_transport_only_does_not_enable(self):
         """``streaming.enabled`` is the documented master switch, so a bare
         ``transport`` must not flip streaming on by itself."""
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         sc = StreamingConfig.from_dict({"transport": "edit"})
         assert sc.enabled is False
@@ -129,7 +129,7 @@ class TestStreamingYamlBooleanQuirk:
     """
 
     def test_mode_bare_off_boolean_disables(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         # yaml.safe_load("off") -> False
         sc = StreamingConfig.from_dict({"mode": False})
@@ -137,7 +137,7 @@ class TestStreamingYamlBooleanQuirk:
         assert sc.transport == "off"
 
     def test_mode_bare_on_boolean_enables(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         # yaml.safe_load("on") -> True
         sc = StreamingConfig.from_dict({"mode": True})
@@ -145,7 +145,7 @@ class TestStreamingYamlBooleanQuirk:
         assert sc.transport == "auto"
 
     def test_transport_bare_off_boolean_normalizes(self):
-        from gateway.config import StreamingConfig
+        from opencodon.frontends.gateway.config import StreamingConfig
 
         # transport alone never enables, but the token must still normalize.
         sc = StreamingConfig.from_dict({"transport": False})

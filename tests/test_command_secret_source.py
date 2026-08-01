@@ -34,14 +34,14 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.secret_sources.command import (  # noqa: E402
+from opencodon.core.secret_sources.command import (  # noqa: E402
     apply_command_secrets,
     get_command_secret,
     list_command_secrets,
     parse_secret_output,
     unquote_dotenv_value,
 )
-from opencodon_cli import env_loader  # noqa: E402
+from opencodon.frontends.cli import env_loader  # noqa: E402
 
 
 pytestmark = pytest.mark.skipif(
@@ -277,7 +277,7 @@ def test_apply_empty_command_sets_error(tmp_path):
 
 @pytest.fixture(autouse=True)
 def _clean_registry():
-    from agent.secret_sources import registry
+    from opencodon.core.secret_sources import registry
     registry._reset_registry_for_tests()
     yield
     registry._reset_registry_for_tests()
@@ -352,8 +352,8 @@ def test_registry_failing_helper_does_not_block_startup(tmp_path, monkeypatch):
 def test_registry_command_composes_with_other_sources(tmp_path, monkeypatch):
     """Multi-source is first-class: the command source and a second bulk
     source both apply in ONE pass; first claim wins on a contested var."""
-    from agent.secret_sources import registry
-    from agent.secret_sources.base import FetchResult, SecretSource
+    from opencodon.core.secret_sources import registry
+    from opencodon.core.secret_sources.base import FetchResult, SecretSource
 
     class _OtherVault(SecretSource):
         name = "othervault"

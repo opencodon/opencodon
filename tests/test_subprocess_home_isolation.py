@@ -189,7 +189,7 @@ class TestMakeRunEnvHomeInjection:
         monkeypatch.setenv("HOME", str(real_home))
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
-        from tools.environments.local import _make_run_env
+        from opencodon.tools.environments.local import _make_run_env
         result = _make_run_env({})
 
         assert result["HOME"] == str(real_home)
@@ -207,7 +207,7 @@ class TestMakeRunEnvHomeInjection:
         monkeypatch.setenv("HOME", str(real_home))
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
-        from tools.environments.local import _make_run_env
+        from opencodon.tools.environments.local import _make_run_env
         result = _make_run_env({})
 
         assert result["HOME"] == str(opencodon_home / "home")
@@ -221,7 +221,7 @@ class TestMakeRunEnvHomeInjection:
         monkeypatch.setenv("HOME", "/root")
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
-        from tools.environments.local import _make_run_env
+        from opencodon.tools.environments.local import _make_run_env
         result = _make_run_env({})
 
         assert result["HOME"] == "/root"
@@ -231,7 +231,7 @@ class TestMakeRunEnvHomeInjection:
         monkeypatch.setenv("HOME", "/home/user")
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
-        from tools.environments.local import _make_run_env
+        from opencodon.tools.environments.local import _make_run_env
         result = _make_run_env({})
 
         assert result["HOME"] == "/home/user"
@@ -248,7 +248,7 @@ class TestMakeRunEnvHomeInjection:
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
         from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
-        from tools.environments.local import _make_run_env
+        from opencodon.tools.environments.local import _make_run_env
 
         token = set_opencodon_home_override(profile)
         try:
@@ -277,7 +277,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
         base_env = {"HOME": str(real_home), "PATH": "/usr/bin", "USER": "root"}
-        from tools.environments.local import _sanitize_subprocess_env
+        from opencodon.tools.environments.local import _sanitize_subprocess_env
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(real_home)
@@ -294,7 +294,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
         base_env = {"HOME": str(real_home), "PATH": "/usr/bin", "USER": "root"}
-        from tools.environments.local import _sanitize_subprocess_env
+        from opencodon.tools.environments.local import _sanitize_subprocess_env
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(opencodon_home / "home")
@@ -306,7 +306,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
         base_env = {"HOME": "/root", "PATH": "/usr/bin"}
-        from tools.environments.local import _sanitize_subprocess_env
+        from opencodon.tools.environments.local import _sanitize_subprocess_env
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == "/root"
@@ -322,7 +322,7 @@ class TestSanitizeSubprocessEnvHomeInjection:
 
         base_env = {"HOME": "/root", "PATH": "/usr/bin"}
         from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
-        from tools.environments.local import _sanitize_subprocess_env
+        from opencodon.tools.environments.local import _sanitize_subprocess_env
 
         token = set_opencodon_home_override(profile)
         try:
@@ -342,7 +342,7 @@ class TestProfileBootstrap:
     """Verify new profiles get a home/ subdirectory."""
 
     def test_profile_dirs_includes_home(self):
-        from opencodon_cli.profiles import _PROFILE_DIRS
+        from opencodon.frontends.cli.profiles import _PROFILE_DIRS
         assert "home" in _PROFILE_DIRS
 
     def test_create_profile_bootstraps_home_dir(self, tmp_path, monkeypatch):
@@ -352,7 +352,7 @@ class TestProfileBootstrap:
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("OPENCODON_HOME", str(home))
 
-        from opencodon_cli.profiles import create_profile
+        from opencodon.frontends.cli.profiles import create_profile
         profile_dir = create_profile("testbot", no_alias=True)
         assert (profile_dir / "home").is_dir()
 

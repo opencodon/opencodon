@@ -649,8 +649,8 @@ def _live_system_guard(request, monkeypatch):
         "opencodon-gateway",
         "opencodon.service",
         "opencodon_cli.main gateway",
-        "opencodon_cli/main.py gateway",
-        "gateway/run.py",
+        "src/opencodon_cli/main.py gateway",
+        "src/opencodon/frontends/gateway/run.py",
         "opencodon gateway",
     )
     _MUTATING_VERBS = (

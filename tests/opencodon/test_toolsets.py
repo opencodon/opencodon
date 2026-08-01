@@ -1,6 +1,6 @@
 """Tests for toolsets.py — toolset resolution, validation, and composition."""
 
-from tools.registry import ToolRegistry
+from opencodon.tools.registry import ToolRegistry
 from opencodon.toolsets import (
     TOOLSETS,
     get_toolset,
@@ -40,7 +40,7 @@ class TestGetToolset:
             handler=_dummy_handler,
         )
 
-        monkeypatch.setattr("tools.registry.registry", reg)
+        monkeypatch.setattr("opencodon.tools.registry.registry", reg)
 
         ts = get_toolset("web")
         assert ts is not None
@@ -92,7 +92,7 @@ class TestResolveToolset:
             handler=_dummy_handler,
         )
 
-        monkeypatch.setattr("tools.registry.registry", reg)
+        monkeypatch.setattr("opencodon.tools.registry.registry", reg)
 
         assert resolve_toolset("plugin_example") == ["plugin_a", "plugin_b"]
 
@@ -140,7 +140,7 @@ class TestValidateToolset:
         )
         reg.register_toolset_alias("dynserver", "mcp-dynserver")
 
-        monkeypatch.setattr("tools.registry.registry", reg)
+        monkeypatch.setattr("opencodon.tools.registry.registry", reg)
 
         assert validate_toolset("dynserver") is True
         assert validate_toolset("mcp-dynserver") is True
@@ -190,7 +190,7 @@ class TestRegistryOwnedToolsets:
             handler=_dummy_handler,
         )
 
-        monkeypatch.setattr("tools.registry.registry", reg)
+        monkeypatch.setattr("opencodon.tools.registry.registry", reg)
 
         assert validate_toolset("test-live-toolset") is True
         assert get_toolset("test-live-toolset")["tools"] == ["test_live_toolset_tool"]
@@ -240,7 +240,7 @@ class TestPluginToolsets:
             handler=_dummy_handler,
         )
 
-        monkeypatch.setattr("tools.registry.registry", reg)
+        monkeypatch.setattr("opencodon.tools.registry.registry", reg)
 
         all_toolsets = get_all_toolsets()
         assert "plugin_bundle" in all_toolsets
@@ -260,7 +260,7 @@ class TestResolveToolsetIncludeRegistry:
     by platform reverse-mapping. Regression harness for issue #49622."""
 
     def test_include_registry_false_excludes_registry_tools(self):
-        from tools.registry import discover_builtin_tools
+        from opencodon.tools.registry import discover_builtin_tools
         discover_builtin_tools()  # registers read_terminal into 'terminal'
 
         merged = set(resolve_toolset("terminal"))

@@ -27,7 +27,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,
@@ -147,7 +147,7 @@ def _load_image_bytes(ref: str) -> Tuple[bytes, str]:
             ext = header.split("image/", 1)[1].split(";", 1)[0] or "png"
         return base64.b64decode(b64), f"image.{ext}"
     # Local file path — enforce the shared credential-read guard before reading.
-    from agent.file_safety import raise_if_read_blocked
+    from opencodon.core.file_safety import raise_if_read_blocked
 
     raise_if_read_blocked(ref)
     with open(ref, "rb") as fh:

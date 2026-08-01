@@ -11,8 +11,8 @@ path produces the same extra_body shape the legacy flag path did.
 
 from typing import Any
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 class GeminiProfile(ProviderProfile):
@@ -24,7 +24,7 @@ class GeminiProfile(ProviderProfile):
         """Emit extra_body.thinking_config (native) or extra_body.extra_body.google.thinking_config
         (OpenAI-compat /openai subpath), mirroring the legacy path's behavior.
         """
-        from agent.transports.chat_completions import (
+        from opencodon.core.transports.chat_completions import (
             _build_gemini_thinking_config,
             _is_gemini_openai_compat_base_url,
             _snake_case_gemini_thinking_config,

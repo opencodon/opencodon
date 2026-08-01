@@ -317,10 +317,10 @@ class TestGatewayMode:
         """gateway.log does NOT capture records from tools.*, agent.*, etc."""
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gateway")
 
-        tool_logger = logging.getLogger("tools.terminal_tool")
+        tool_logger = logging.getLogger("opencodon.tools.terminal_tool")
         tool_logger.info("running command")
 
-        agent_logger = logging.getLogger("agent.context_compressor")
+        agent_logger = logging.getLogger("opencodon.core.context_compressor")
         agent_logger.info("compressing context")
 
         opencodon_logging.flush_log_queue()
@@ -336,7 +336,7 @@ class TestGatewayMode:
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gateway")
 
         gw_logger = logging.getLogger("gateway.run")
-        file_logger = logging.getLogger("tools.file_tools")
+        file_logger = logging.getLogger("opencodon.tools.file_tools")
         # Ensure propagation and levels are clean (cross-test pollution defense)
         gw_logger.propagate = True
         file_logger.propagate = True
@@ -384,8 +384,8 @@ class TestGuiMode:
     def test_gui_log_receives_only_gui_components(self, opencodon_home):
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gui")
 
-        logging.getLogger("opencodon_cli.web_server").info("dashboard online")
-        logging.getLogger("tui_gateway.ws").info("ws connected")
+        logging.getLogger("opencodon.frontends.cli.web_server").info("dashboard online")
+        logging.getLogger("opencodon.frontends.tui.ws").info("ws connected")
         logging.getLogger("gateway.run").info("gateway event")
 
         opencodon_logging.flush_log_queue()
@@ -556,12 +556,12 @@ class TestComponentFilter:
     def test_blocks_non_matching(self):
         f = opencodon_logging._ComponentFilter(("gateway",))
         record = logging.LogRecord(
-            "tools.terminal_tool", logging.INFO, "", 0, "msg", (), None
+            "opencodon.tools.terminal_tool", logging.INFO, "", 0, "msg", (), None
         )
         assert f.filter(record) is False
 
     def test_multiple_prefixes(self):
-        f = opencodon_logging._ComponentFilter(("agent", "run_agent", "model_tools"))
+        f = opencodon_logging._ComponentFilter(("agent", "opencodon.core", "run_agent", "model_tools"))
         assert f.filter(logging.LogRecord(
             "agent.compressor", logging.INFO, "", 0, "", (), None
         ))
@@ -599,7 +599,9 @@ class TestComponentPrefixes:
         assert "model_tools" in prefixes
 
     def test_tools_prefix(self):
-        assert ("tools",) == opencodon_logging.COMPONENT_PREFIXES["tools"]
+        prefixes = opencodon_logging.COMPONENT_PREFIXES["tools"]
+        assert "tools" in prefixes
+        assert "opencodon.tools" in prefixes
 
     def test_cli_prefix(self):
         prefixes = opencodon_logging.COMPONENT_PREFIXES["cli"]
@@ -607,11 +609,13 @@ class TestComponentPrefixes:
         assert "cli" in prefixes
 
     def test_cron_prefix(self):
-        assert ("cron",) == opencodon_logging.COMPONENT_PREFIXES["cron"]
+        prefixes = opencodon_logging.COMPONENT_PREFIXES["cron"]
+        assert "cron" in prefixes
+        assert "opencodon.cron" in prefixes
 
     def test_gui_prefix(self):
         prefixes = opencodon_logging.COMPONENT_PREFIXES["gui"]
-        assert "opencodon_cli.web_server" in prefixes
+        assert "opencodon.frontends.cli.web_server" in prefixes
         assert "tui_gateway" in prefixes
 
 

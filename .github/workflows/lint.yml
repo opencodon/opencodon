@@ -166,7 +166,7 @@ jobs:
       - name: lint-imports
         # PYTHONPATH=. so the repo's root packages resolve without
         # installing the project.
-        run: PYTHONPATH=. lint-imports
+        run: PYTHONPATH=src lint-imports
 
   windows-footguns:
     # Static guardrails on Windows-unsafe Python primitives — os.kill(pid, 0),

@@ -14,7 +14,7 @@ accepts extra_headers).
 
 import pytest
 
-from run_agent import AIAgent
+from opencodon.core.run_agent import AIAgent
 
 
 def _tool_defs(*names):
@@ -35,9 +35,9 @@ class _FakeOpenAI:
 
 def _make_agent(monkeypatch, base_url, api_mode="chat_completions"):
     """Create an AIAgent pointing at the given base_url."""
-    monkeypatch.setattr("run_agent.get_tool_definitions", lambda **kw: _tool_defs("web_search"))
-    monkeypatch.setattr("run_agent.check_toolset_requirements", lambda: {})
-    monkeypatch.setattr("run_agent.OpenAI", _FakeOpenAI)
+    monkeypatch.setattr("opencodon.core.run_agent.get_tool_definitions", lambda **kw: _tool_defs("web_search"))
+    monkeypatch.setattr("opencodon.core.run_agent.check_toolset_requirements", lambda: {})
+    monkeypatch.setattr("opencodon.core.run_agent.OpenAI", _FakeOpenAI)
     return AIAgent(
         api_key="test-key",
         base_url=base_url,
@@ -136,13 +136,13 @@ class TestHeaderValues:
     """copilot_default_headers(is_agent_turn=...) sets x-initiator correctly."""
 
     def test_default_is_agent(self):
-        from opencodon_cli.models import copilot_default_headers
+        from opencodon.frontends.cli.models import copilot_default_headers
         assert copilot_default_headers()["x-initiator"] == "agent"
 
     def test_user_turn(self):
-        from opencodon_cli.models import copilot_default_headers
+        from opencodon.frontends.cli.models import copilot_default_headers
         assert copilot_default_headers(is_agent_turn=False)["x-initiator"] == "user"
 
     def test_agent_turn_explicit(self):
-        from opencodon_cli.models import copilot_default_headers
+        from opencodon.frontends.cli.models import copilot_default_headers
         assert copilot_default_headers(is_agent_turn=True)["x-initiator"] == "agent"

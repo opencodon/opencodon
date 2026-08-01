@@ -11,15 +11,15 @@ from unittest import mock
 
 import pytest
 
-from agent.secret_sources import bitwarden as bw
-from agent.secret_sources import onepassword as op
-from agent.secret_sources.base import ErrorKind, SecretSource
-from agent.secret_sources.bitwarden import (
+from opencodon.core.secret_sources import bitwarden as bw
+from opencodon.core.secret_sources import onepassword as op
+from opencodon.core.secret_sources.base import ErrorKind, SecretSource
+from opencodon.core.secret_sources.bitwarden import (
     BitwardenSource,
     _classify_bws_error,
     _summarize_bws_stderr,
 )
-from agent.secret_sources.onepassword import OnePasswordSource
+from opencodon.core.secret_sources.onepassword import OnePasswordSource
 
 
 _BWS_INVALID_CLIENT_DUMP = """\
@@ -157,8 +157,8 @@ def test_remediation_never_raises_on_junk_cfg():
 
 
 def test_env_loader_prints_remediation_hint(tmp_path, monkeypatch, capsys):
-    from opencodon_cli import env_loader
-    from agent.secret_sources import registry
+    from opencodon.frontends.cli import env_loader
+    from opencodon.core.secret_sources import registry
 
     registry._reset_registry_for_tests()
     env_loader.reset_secret_source_cache()
@@ -194,8 +194,8 @@ def test_env_loader_prints_remediation_hint(tmp_path, monkeypatch, capsys):
 
 def test_env_loader_hint_survives_broken_remediation(tmp_path, monkeypatch, capsys):
     """A plugin source whose remediation() raises must not break startup."""
-    from opencodon_cli import env_loader
-    from agent.secret_sources import registry
+    from opencodon.frontends.cli import env_loader
+    from opencodon.core.secret_sources import registry
 
     class _Broken(SecretSource):
         name = "brokensrc"
@@ -203,7 +203,7 @@ def test_env_loader_hint_survives_broken_remediation(tmp_path, monkeypatch, caps
         shape = "bulk"
 
         def fetch(self, cfg, home_path):
-            from agent.secret_sources.base import FetchResult
+            from opencodon.core.secret_sources.base import FetchResult
             res = FetchResult()
             res.error = "kaput"
             res.error_kind = ErrorKind.AUTH_FAILED

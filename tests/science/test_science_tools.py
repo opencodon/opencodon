@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-import tools.science_tools as science_tools
+import opencodon.tools.science_tools as science_tools
 from science.runtime import set_science_runtime
 
 
@@ -31,7 +31,7 @@ class TestRegistration:
             assert name in toolset["tools"]
 
     def test_tools_are_registered(self):
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         for name in ("run_code", "list_artifacts", "artifact_lineage"):
             assert registry.get_entry(name) is not None

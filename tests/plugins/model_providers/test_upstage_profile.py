@@ -20,7 +20,7 @@ def upstage_profile():
     honest about the actual registration path (name + alias resolution).
     """
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("upstage")
     assert profile is not None, "upstage provider profile must be registered"
@@ -37,7 +37,7 @@ class TestUpstageProfile:
 
     def test_solar_alias_resolves(self):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         assert providers.get_provider_profile("solar") is upstage_profile_singleton()
 
@@ -181,6 +181,6 @@ class TestUpstageReasoning:
 
 
 def upstage_profile_singleton():
-    import providers
+    from opencodon import providers
 
     return providers.get_provider_profile("upstage")

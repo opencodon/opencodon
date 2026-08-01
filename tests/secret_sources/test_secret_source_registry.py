@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.secret_sources.base import (  # noqa: E402
+from opencodon.core.secret_sources.base import (  # noqa: E402
     SECRET_SOURCE_API_VERSION,
     ErrorKind,
     FetchResult,
@@ -28,8 +28,8 @@ from agent.secret_sources.base import (  # noqa: E402
     run_secret_cli,
     scrub_ansi,
 )
-from agent.secret_sources import registry as reg  # noqa: E402
-from agent.secret_sources.bitwarden import BitwardenSource  # noqa: E402
+from opencodon.core.secret_sources import registry as reg  # noqa: E402
+from opencodon.core.secret_sources.bitwarden import BitwardenSource  # noqa: E402
 from tests.secret_sources.conformance import SecretSourceConformance  # noqa: E402
 
 
@@ -393,7 +393,7 @@ class TestBitwardenSource:
 
     def test_fetch_delegates_to_fetch_bitwarden_secrets(self, tmp_path, monkeypatch):
         monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.token")
-        import agent.secret_sources.bitwarden as bw
+        import opencodon.core.secret_sources.bitwarden as bw
 
         monkeypatch.setattr(bw, "find_bws", lambda **kw: Path("/fake/bws"))
         captured = {}
@@ -417,7 +417,7 @@ class TestBitwardenSource:
 
     def test_fetch_runtime_error_classified(self, tmp_path, monkeypatch):
         monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.token")
-        import agent.secret_sources.bitwarden as bw
+        import opencodon.core.secret_sources.bitwarden as bw
 
         monkeypatch.setattr(bw, "find_bws", lambda **kw: Path("/fake/bws"))
 
@@ -433,7 +433,7 @@ class TestBitwardenSource:
     def test_e2e_through_orchestrator(self, tmp_path, monkeypatch):
         """Full path: registry → BitwardenSource → env, with fetch mocked."""
         monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.token")
-        import agent.secret_sources.bitwarden as bw
+        import opencodon.core.secret_sources.bitwarden as bw
 
         monkeypatch.setattr(bw, "find_bws", lambda **kw: Path("/fake/bws"))
         monkeypatch.setattr(
@@ -461,7 +461,7 @@ class TestBitwardenConformance(SecretSourceConformance):
     @pytest.fixture
     def source(self, monkeypatch):
         # Never hit the network / auto-install path in conformance runs.
-        import agent.secret_sources.bitwarden as bw
+        import opencodon.core.secret_sources.bitwarden as bw
 
         monkeypatch.setattr(bw, "find_bws", lambda **kw: None)
         monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
@@ -475,7 +475,7 @@ class TestBitwardenConformance(SecretSourceConformance):
 
 class TestOnePasswordSource:
     def test_identity(self):
-        from agent.secret_sources.onepassword import OnePasswordSource
+        from opencodon.core.secret_sources.onepassword import OnePasswordSource
 
         src = OnePasswordSource()
         assert src.name == "onepassword"
@@ -483,14 +483,14 @@ class TestOnePasswordSource:
         assert src.scheme == "op"
 
     def test_override_existing_defaults_true(self):
-        from agent.secret_sources.onepassword import OnePasswordSource
+        from opencodon.core.secret_sources.onepassword import OnePasswordSource
 
         src = OnePasswordSource()
         assert src.override_existing({}) is True
         assert src.override_existing({"override_existing": False}) is False
 
     def test_protected_vars_track_token_env(self):
-        from agent.secret_sources.onepassword import OnePasswordSource
+        from opencodon.core.secret_sources.onepassword import OnePasswordSource
 
         src = OnePasswordSource()
         assert src.protected_env_vars({}) == frozenset(
@@ -501,13 +501,13 @@ class TestOnePasswordSource:
         ) == frozenset({"MY_OP_TOKEN"})
 
     def test_fetch_empty_map_not_configured(self, tmp_path):
-        from agent.secret_sources.onepassword import OnePasswordSource
+        from opencodon.core.secret_sources.onepassword import OnePasswordSource
 
         result = OnePasswordSource().fetch({"enabled": True}, tmp_path)
         assert result.error_kind is ErrorKind.NOT_CONFIGURED
 
     def test_fetch_missing_binary(self, tmp_path, monkeypatch):
-        import agent.secret_sources.onepassword as op
+        import opencodon.core.secret_sources.onepassword as op
 
         monkeypatch.setattr(op, "find_op", lambda *_a, **_kw: None)
         result = op.OnePasswordSource().fetch(
@@ -516,7 +516,7 @@ class TestOnePasswordSource:
         assert result.error_kind is ErrorKind.BINARY_MISSING
 
     def test_fetch_delegates_and_passes_config(self, tmp_path, monkeypatch):
-        import agent.secret_sources.onepassword as op
+        import opencodon.core.secret_sources.onepassword as op
 
         monkeypatch.setattr(op, "find_op", lambda *_a, **_kw: Path("/fake/op"))
         captured = {}
@@ -537,7 +537,7 @@ class TestOnePasswordSource:
         assert captured["token_env"] == "MY_TOK"
 
     def test_invalid_refs_warned_not_fatal(self, tmp_path, monkeypatch):
-        import agent.secret_sources.onepassword as op
+        import opencodon.core.secret_sources.onepassword as op
 
         monkeypatch.setattr(op, "find_op", lambda *_a, **_kw: Path("/fake/op"))
         monkeypatch.setattr(op, "fetch_onepassword_secrets",
@@ -555,8 +555,8 @@ class TestOnePasswordSource:
         self, tmp_path, monkeypatch
     ):
         """The headline multi-source scenario: both vaults claim the same var."""
-        import agent.secret_sources.bitwarden as bw
-        import agent.secret_sources.onepassword as op
+        import opencodon.core.secret_sources.bitwarden as bw
+        import opencodon.core.secret_sources.onepassword as op
 
         monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.token")
         monkeypatch.setattr(bw, "find_bws", lambda **kw: Path("/fake/bws"))
@@ -593,7 +593,7 @@ class TestOnePasswordSource:
 class TestOnePasswordConformance(SecretSourceConformance):
     @pytest.fixture
     def source(self, monkeypatch):
-        import agent.secret_sources.onepassword as op
+        import opencodon.core.secret_sources.onepassword as op
 
         monkeypatch.setattr(op, "find_op", lambda *_a, **_kw: None)
         monkeypatch.delenv("OP_SERVICE_ACCOUNT_TOKEN", raising=False)

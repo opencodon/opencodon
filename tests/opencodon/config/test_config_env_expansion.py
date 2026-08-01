@@ -156,7 +156,7 @@ class TestLoadCliConfigExpansion:
 
         monkeypatch.setattr("cli._opencodon_home", tmp_path)
 
-        from cli import load_cli_config
+        from opencodon.frontends.cli.shell import load_cli_config
         config = load_cli_config()
 
         assert isinstance(config["terminal"], dict)
@@ -175,7 +175,7 @@ class TestLoadCliConfigExpansion:
         # Patch the opencodon home so load_cli_config finds our test config
         monkeypatch.setattr("cli._opencodon_home", tmp_path)
 
-        from cli import load_cli_config
+        from opencodon.frontends.cli.shell import load_cli_config
         config = load_cli_config()
 
         assert config["auxiliary"]["vision"]["api_key"] == "vis-key-123"
@@ -192,7 +192,7 @@ class TestLoadCliConfigExpansion:
         monkeypatch.delenv("UNSET_CLI_VAR_ABC", raising=False)
         monkeypatch.setattr("cli._opencodon_home", tmp_path)
 
-        from cli import load_cli_config
+        from opencodon.frontends.cli.shell import load_cli_config
         config = load_cli_config()
 
         assert config["auxiliary"]["vision"]["api_key"] == "${UNSET_CLI_VAR_ABC}"

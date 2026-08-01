@@ -8,9 +8,9 @@ from types import SimpleNamespace
 import pytest
 from unittest.mock import MagicMock, patch
 
-from acp_adapter import session as acp_session
-from acp_adapter.session import SessionManager, SessionState
-from opencodon_state import SessionDB
+from opencodon.frontends.acp import session as acp_session
+from opencodon.frontends.acp.session import SessionManager, SessionState
+from opencodon.state import SessionDB
 
 
 def _mock_agent():
@@ -39,7 +39,7 @@ class TestCreateSession:
 
     def test_create_session_registers_task_cwd(self, manager, monkeypatch):
         calls = []
-        monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: calls.append((task_id, cwd)))
+        monkeypatch.setattr("opencodon.frontends.acp.session._register_task_cwd", lambda task_id, cwd: calls.append((task_id, cwd)))
         state = manager.create_session(cwd="/tmp/work")
         assert calls == [(state.session_id, "/tmp/work")]
 
@@ -53,7 +53,7 @@ class TestCreateSession:
 
         monkeypatch.setattr("opencodon_constants._wsl_detected", True)
         monkeypatch.setattr(
-            "tools.terminal_tool.register_task_env_overrides",
+            "opencodon.tools.terminal_tool.register_task_env_overrides",
             fake_register_task_env_overrides,
         )
 
@@ -84,9 +84,9 @@ class TestCreateSession:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
-            "acp_adapter.session.load_config",
+            "opencodon.frontends.acp.session.load_config",
             lambda: {
                 "model": {
                     "default": "fake-model",
@@ -107,7 +107,7 @@ class TestCreateSession:
             },
         )
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             lambda requested=None: {
                 "provider": requested,
                 "api_mode": "codex_responses",
@@ -115,7 +115,7 @@ class TestCreateSession:
                 "api_key": "test-key",
             },
         )
-        monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
+        monkeypatch.setattr("opencodon.frontends.acp.session._register_task_cwd", lambda task_id, cwd: None)
 
         state = SessionManager(db=None).create_session(cwd="/tmp/project")
 
@@ -429,12 +429,12 @@ class TestPersistence:
             },
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             manager.create_session(cwd="/work")
 
@@ -707,12 +707,12 @@ class TestPersistence:
             "model": {"provider": runtime_choice["provider"], "default": "test-model"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             state = manager.create_session(cwd="/work")
             manager.save_session(state.session_id)
@@ -747,12 +747,12 @@ class TestPersistence:
             "model": {"provider": "openrouter", "default": "test-model"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             state = manager.create_session(cwd="/work")
 

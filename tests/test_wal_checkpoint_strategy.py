@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 @pytest.fixture()

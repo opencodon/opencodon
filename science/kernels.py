@@ -40,7 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from tools.ansi_strip import strip_ansi
+from opencodon.tools.ansi_strip import strip_ansi
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ def kernels_available() -> bool:
     if kernels_installed():
         return True
     try:
-        from tools.lazy_deps import _allow_lazy_installs
+        from opencodon.tools.lazy_deps import _allow_lazy_installs
 
         return _allow_lazy_installs()
     except Exception:
@@ -92,7 +92,7 @@ def ensure_kernels() -> None:
     """
     if kernels_installed():
         return
-    from tools.lazy_deps import ensure
+    from opencodon.tools.lazy_deps import ensure
 
     ensure("tool.science", prompt=False)
 

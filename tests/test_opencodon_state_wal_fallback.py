@@ -18,8 +18,8 @@ from unittest.mock import patch
 
 import pytest
 
-import opencodon_state
-from opencodon_state import (
+from opencodon import state as opencodon_state
+from opencodon.state import (
     SessionDB,
     apply_wal_with_fallback,
     format_session_db_unavailable,
@@ -299,7 +299,7 @@ class TestGetLastInitError:
         def gated_connect(*args, **kwargs):
             return real_connect(str(target), factory=_BothPragmasFailConnection, **kwargs)
 
-        with patch("opencodon_state.sqlite3.connect", side_effect=gated_connect):
+        with patch("opencodon.state.sqlite3.connect", side_effect=gated_connect):
             with pytest.raises(sqlite3.OperationalError):
                 SessionDB(db_path=target)
 
@@ -350,7 +350,7 @@ class TestSessionDbUsesWalFallback:
         def gated_connect(*args, **kwargs):
             return real_connect(str(target), factory=factory, **kwargs)
 
-        with patch("opencodon_state.sqlite3.connect", side_effect=gated_connect):
+        with patch("opencodon.state.sqlite3.connect", side_effect=gated_connect):
             db = SessionDB(db_path=target)
 
         try:

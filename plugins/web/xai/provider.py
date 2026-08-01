@@ -37,8 +37,8 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from agent.web_search_provider import WebSearchProvider
-from tools.xai_http import (
+from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.tools.xai_http import (
     has_xai_credentials,
     opencodon_xai_user_agent,
     resolve_xai_http_credentials,
@@ -152,7 +152,7 @@ class XAIWebSearchProvider(WebSearchProvider):
         on success, ``{"success": False, "error": str}`` on failure.
         """
         try:
-            from tools.interrupt import is_interrupted
+            from opencodon.tools.interrupt import is_interrupted
 
             if is_interrupted():
                 return {"success": False, "error": "Interrupted"}

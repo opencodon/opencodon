@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 
-from tui_gateway.loop_noise import (
+from opencodon.frontends.tui.loop_noise import (
     _is_benign_teardown,
     install_loop_noise_filter,
 )

@@ -26,7 +26,7 @@ def copilot_profile():
     ``ProviderProfile`` the assertions below collapse.
     """
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("copilot")
     assert profile is not None, "copilot provider profile must be registered"
@@ -35,7 +35,7 @@ def copilot_profile():
 
 def _patch_efforts(monkeypatch, efforts):
     """Stub the catalog lookup the profile calls for supported efforts."""
-    import opencodon_cli.models as models_mod
+    import opencodon.frontends.cli.models as models_mod
     monkeypatch.setattr(
         models_mod, "github_model_reasoning_efforts", lambda model: list(efforts)
     )

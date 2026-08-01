@@ -31,7 +31,7 @@ def _redact_telegram_error_text(error: object) -> str:
     if not text:
         return text
     try:
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         return redact_sensitive_text(text, force=True)
     except Exception:
@@ -250,9 +250,9 @@ import sys
 from pathlib import Path as _Path
 sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
 
-from gateway.authz_mixin import _coerce_allow_set
-from gateway.config import Platform, PlatformConfig
-from gateway.platforms.base import (
+from opencodon.frontends.gateway.authz_mixin import _coerce_allow_set
+from opencodon.frontends.gateway.config import Platform, PlatformConfig
+from opencodon.frontends.gateway.platforms.base import (
     BasePlatformAdapter,
     MessageEvent,
     MessageType,
@@ -380,7 +380,7 @@ def check_telegram_requirements() -> bool:
     if TELEGRAM_AVAILABLE:
         return True
     try:
-        from tools.lazy_deps import ensure as _lazy_ensure
+        from opencodon.tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("platform.telegram", prompt=False)
     except Exception:
         return False
@@ -478,7 +478,7 @@ def _separate_chunk_indicator_from_fence(text: str) -> str:
 # The shared convert_table_to_bullets() in gateway.platforms.helpers handles
 # the full conversion (detection + rendering); Telegram just calls it.
 
-from gateway.platforms.helpers import (
+from opencodon.frontends.gateway.platforms.helpers import (
     TABLE_SEPARATOR_RE as _TABLE_SEPARATOR_RE,
     convert_table_to_bullets as _wrap_markdown_tables,
 )
@@ -888,7 +888,7 @@ class TelegramAdapter(BasePlatformAdapter):
         auth_fn = getattr(runner, "_is_user_authorized", None)
         if callable(auth_fn):
             try:
-                from gateway.session import SessionSource
+                from opencodon.frontends.gateway.session import SessionSource
 
                 normalized_chat_type = str(chat_type or "dm").strip().lower() or "dm"
                 if normalized_chat_type == "private":
@@ -930,7 +930,7 @@ class TelegramAdapter(BasePlatformAdapter):
         carry no ``from_user``) so a removed/unauthorized channel cannot
         inject content via the broadcast path either.
         """
-        from gateway.session import SessionSource
+        from opencodon.frontends.gateway.session import SessionSource
 
         user = getattr(message, "from_user", None)
         chat = getattr(message, "chat", None)
@@ -1838,7 +1838,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # Telegram won't echo rich content in reply_to_message, so remember
             # what we sent — replies to this message resolve via this index.
             try:
-                from gateway import rich_sent_store
+                from opencodon.frontends.gateway import rich_sent_store
                 rich_sent_store.record(str(chat_id), str(message_id), content)
             except Exception:
                 pass
@@ -1926,7 +1926,7 @@ class TelegramAdapter(BasePlatformAdapter):
         # final finalized via editMessageText is otherwise never recorded, and
         # replies to it would have no native echo to recover from.
         try:
-            from gateway import rich_sent_store
+            from opencodon.frontends.gateway import rich_sent_store
             rich_sent_store.record(str(chat_id), str(message_id), content)
         except Exception:
             pass
@@ -3338,7 +3338,7 @@ class TelegramAdapter(BasePlatformAdapter):
                     BotCommandScopeAllGroupChats,
                     BotCommandScopeDefault,
                 )
-                from opencodon_cli.commands import telegram_menu_commands, telegram_menu_max_commands
+                from opencodon.frontends.cli.commands import telegram_menu_commands, telegram_menu_max_commands
                 if not self._bot:
                     return
                 # Telegram allows up to 100 commands but has an undocumented
@@ -3502,7 +3502,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # keepalive sockets drain aggressively, while preserving PTB's
             # max_connections (= connection_pool_size). httpx_kwargs is spread
             # last into PTB's client kwargs, so `limits` here wins.
-            from gateway.platforms._http_client_limits import platform_httpx_limits
+            from opencodon.frontends.gateway.platforms._http_client_limits import platform_httpx_limits
 
             _base_limits = platform_httpx_limits()
             if _base_limits is not None:
@@ -5253,7 +5253,7 @@ class TelegramAdapter(BasePlatformAdapter):
             return SendResult(success=False, error="Not connected")
 
         try:
-            from opencodon_cli.providers import get_label
+            from opencodon.frontends.cli.providers import get_label
         except ImportError:
             def get_label(slug):
                 return slug
@@ -5442,7 +5442,7 @@ class TelegramAdapter(BasePlatformAdapter):
         so all surfaces stay consistent.
         """
         try:
-            from opencodon_cli.models import group_providers
+            from opencodon.frontends.cli.models import group_providers
         except Exception:
             group_providers = None
 
@@ -5553,7 +5553,7 @@ class TelegramAdapter(BasePlatformAdapter):
             return
 
         try:
-            from opencodon_cli.providers import get_label
+            from opencodon.frontends.cli.providers import get_label
         except ImportError:
             def get_label(slug):
                 return slug
@@ -5734,7 +5734,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 return
 
             try:
-                from opencodon_cli.model_cost_guard import expensive_model_warning
+                from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -5799,7 +5799,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # --- Provider group selected: show member providers ---
             group_id = data[4:]
             try:
-                from opencodon_cli.models import PROVIDER_GROUPS
+                from opencodon.frontends.cli.models import PROVIDER_GROUPS
                 _label, _desc, member_slugs = PROVIDER_GROUPS.get(group_id, ("", "", []))
             except Exception:
                 _label, member_slugs = "", []
@@ -5981,7 +5981,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # the command was already denied and will not run (#63501
                 # regression follow-up: 60s waits made stale taps common).
                 try:
-                    from tools.approval import resolve_gateway_approval
+                    from opencodon.tools.approval import resolve_gateway_approval
                     count = resolve_gateway_approval(session_key, choice)
                     logger.info(
                         "Telegram button resolved %d approval(s) for session %s (choice=%s, user=%s)",
@@ -6076,7 +6076,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # loop and (if it returns a string) send it as a follow-up
                 # message in the same chat.
                 try:
-                    from tools import slash_confirm as _slash_confirm_mod
+                    from opencodon.tools import slash_confirm as _slash_confirm_mod
                     result_text = await _slash_confirm_mod.resolve(
                         session_key, confirm_id, choice,
                     )
@@ -6163,7 +6163,7 @@ class TelegramAdapter(BasePlatformAdapter):
                     # is cleared by something else.
                     flipped = False
                     try:
-                        from tools.clarify_gateway import mark_awaiting_text
+                        from opencodon.tools.clarify_gateway import mark_awaiting_text
                         flipped = mark_awaiting_text(clarify_id)
                     except Exception as exc:
                         logger.warning("[%s] mark_awaiting_text failed: %s", self.name, exc)
@@ -6198,7 +6198,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # has been cleaned up (race with timeout / session reset).
                 resolved_text: Optional[str] = None
                 try:
-                    from tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
+                    from opencodon.tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
                     entry = _clarify_entries.get(clarify_id)
                     if entry and entry.choices and 0 <= idx < len(entry.choices):
                         resolved_text = entry.choices[idx]
@@ -6214,7 +6214,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # Pop state and resolve
                 self._clarify_state.pop(clarify_id, None)
                 try:
-                    from tools.clarify_gateway import resolve_gateway_clarify
+                    from opencodon.tools.clarify_gateway import resolve_gateway_clarify
                     resolved = resolve_gateway_clarify(clarify_id, resolved_text)
                 except Exception as exc:
                     logger.error("[%s] resolve_gateway_clarify failed: %s", self.name, exc)
@@ -6885,7 +6885,7 @@ class TelegramAdapter(BasePlatformAdapter):
         if not self._bot:
             return SendResult(success=False, error="Not connected")
 
-        from tools.url_safety import is_safe_url
+        from opencodon.tools.url_safety import is_safe_url
         if not is_safe_url(image_url):
             logger.warning("[%s] Blocked unsafe image URL (SSRF protection)", self.name)
             return await super().send_image(chat_id, image_url, caption, reply_to, metadata=metadata)
@@ -6925,8 +6925,8 @@ class TelegramAdapter(BasePlatformAdapter):
             )
             # Fallback: download and upload as file (supports up to 10MB)
             try:
-                from gateway.platforms.base import _ssrf_redirect_guard
-                from tools.url_safety import create_ssrf_safe_async_client
+                from opencodon.frontends.gateway.platforms.base import _ssrf_redirect_guard
+                from opencodon.tools.url_safety import create_ssrf_safe_async_client
 
                 async with create_ssrf_safe_async_client(
                     timeout=30.0,
@@ -7827,7 +7827,7 @@ class TelegramAdapter(BasePlatformAdapter):
         ``_max_doc_bytes`` limit as the addressed document path. Oversized or
         unsupported attachments are noted in the transcript without downloading.
         """
-        from gateway.platforms.base import cache_media_bytes
+        from opencodon.frontends.gateway.platforms.base import cache_media_bytes
 
         source, filename, mime, kind = self._observed_media_source(msg)
         if source is None:
@@ -7878,7 +7878,7 @@ class TelegramAdapter(BasePlatformAdapter):
 
     async def _cache_replied_media(self, msg: Any, event: MessageEvent) -> None:
         """Cache media from the message this turn replies to, if any."""
-        from gateway.platforms.base import cache_media_bytes
+        from opencodon.frontends.gateway.platforms.base import cache_media_bytes
 
         reply_msg = getattr(msg, "reply_to_message", None)
         if reply_msg is None:
@@ -8141,7 +8141,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 if chat_id in self._forum_command_registered:
                     return
                 from telegram import BotCommand, BotCommandScopeChat
-                from opencodon_cli.commands import telegram_menu_commands, telegram_menu_max_commands
+                from opencodon.frontends.cli.commands import telegram_menu_commands, telegram_menu_max_commands
                 menu_commands, _ = telegram_menu_commands(max_commands=telegram_menu_max_commands())
                 bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]
                 await self._bot.set_my_commands(bot_commands, scope=BotCommandScopeChat(chat_id=chat_id))
@@ -8273,7 +8273,7 @@ class TelegramAdapter(BasePlatformAdapter):
         coalesce on (and dispatch to) the recovered lane rather than the
         raw inbound ``message_thread_id`` Telegram may have attached.
         """
-        from gateway.session import build_session_key
+        from opencodon.frontends.gateway.session import build_session_key
         self._apply_topic_recovery(event)
         return build_session_key(
             event.source,
@@ -8371,7 +8371,7 @@ class TelegramAdapter(BasePlatformAdapter):
 
     def _photo_batch_key(self, event: MessageEvent, msg: Message) -> str:
         """Return a batching key for Telegram photos/albums."""
-        from gateway.session import build_session_key
+        from opencodon.frontends.gateway.session import build_session_key
         session_key = build_session_key(
             event.source,
             group_sessions_per_user=self.config.extra.get("group_sessions_per_user", True),
@@ -8754,7 +8754,7 @@ class TelegramAdapter(BasePlatformAdapter):
         the description by file_unique_id. For animated/video stickers, we inject
         a placeholder noting the emoji.
         """
-        from gateway.sticker_cache import (
+        from opencodon.frontends.gateway.sticker_cache import (
             get_cached_description,
             cache_sticker_description,
             build_sticker_injection,
@@ -8787,7 +8787,7 @@ class TelegramAdapter(BasePlatformAdapter):
             cached_path = cache_image_from_bytes(bytes(image_bytes), ext=".webp")
             logger.info("[Telegram] Analyzing sticker at %s", cached_path)
 
-            from tools.vision_tools import vision_analyze_tool
+            from opencodon.tools.vision_tools import vision_analyze_tool
             result_json = await vision_analyze_tool(
                 image_url=cached_path,
                 user_prompt=STICKER_VISION_PROMPT,
@@ -9121,7 +9121,7 @@ class TelegramAdapter(BasePlatformAdapter):
                     reply_to_text = self._extract_rich_reply_text(message.reply_to_message)
                 if not reply_to_text:
                     try:
-                        from gateway import rich_sent_store
+                        from opencodon.frontends.gateway import rich_sent_store
                         reply_to_text = rich_sent_store.lookup(
                             str(chat.id), reply_to_id
                         )
@@ -9129,7 +9129,7 @@ class TelegramAdapter(BasePlatformAdapter):
                         reply_to_text = None
 
         # Per-channel/topic ephemeral prompt
-        from gateway.platforms.base import resolve_channel_prompt
+        from opencodon.frontends.gateway.platforms.base import resolve_channel_prompt
         _chat_id_str = str(chat.id)
         _channel_prompt = resolve_channel_prompt(
             self.config.extra,
@@ -9254,8 +9254,8 @@ def _resolve_notifications_mode() -> str:
     mode = os.getenv("OPENCODON_TELEGRAM_NOTIFICATIONS", "")
     if not mode:
         try:
-            from gateway.config import load_gateway_config
-            from gateway.run import cfg_get
+            from opencodon.frontends.gateway.config import load_gateway_config
+            from opencodon.frontends.gateway.run import cfg_get
             _gw_cfg = load_gateway_config()
             _raw = cfg_get(_gw_cfg, "display", "platforms", "telegram", "notifications")
             if _raw not in {None, ""}:
@@ -9295,7 +9295,7 @@ def _is_connected(config) -> bool:
     """
     token = getattr(config, "token", None)
     if not token:
-        import opencodon_cli.gateway as gateway_mod
+        import opencodon.frontends.cli.gateway as gateway_mod
         token = gateway_mod.get_env_value("TELEGRAM_BOT_TOKEN") or ""
     return bool(str(token).strip())
 
@@ -9319,7 +9319,7 @@ async def _standalone_send(
     disable_link_previews = bool(
         getattr(pconfig, "extra", {}) and pconfig.extra.get("disable_link_previews")
     )
-    from tools.send_message_tool import _send_telegram
+    from opencodon.tools.send_message_tool import _send_telegram
     return await _send_telegram(
         token,
         chat_id,
@@ -9339,7 +9339,7 @@ def interactive_setup() -> None:
     behavior is preserved without duplicating ~150 lines. Replaces the
     _PLATFORMS["telegram"] static dict dispatch in opencodon_cli/gateway.py.
     """
-    from opencodon_cli import setup as _setup_mod
+    from opencodon.frontends.cli import setup as _setup_mod
     _setup_mod._setup_telegram()
 
 

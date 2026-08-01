@@ -32,7 +32,7 @@ def minimax_profile(request):
     ``ProviderProfile``, every assertion below collapses.
     """
     import model_tools  # noqa: F401  -- triggers plugin discovery
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile(request.param)
     assert profile is not None, f"{request.param} provider profile must be registered"
@@ -70,7 +70,7 @@ class TestMinimaxAuxModelM3:
         self, provider_id, expected
     ):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile(provider_id)
         assert profile is not None
@@ -80,7 +80,7 @@ class TestMinimaxAuxModelM3:
         )
 
     def test_consumer_api_returns_non_empty_for_each_provider(self, minimax_profile):
-        from agent.auxiliary_client import _get_aux_model_for_provider
+        from opencodon.core.auxiliary_client import _get_aux_model_for_provider
 
         profile, provider_id = minimax_profile
         resolved = _get_aux_model_for_provider(provider_id)
@@ -109,7 +109,7 @@ class TestMinimaxAuxModelNotHighspeed:
     @pytest.mark.parametrize("provider_id", ["minimax", "minimax-cn", "minimax-oauth"])
     def test_default_aux_model_is_not_highspeed(self, provider_id):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile(provider_id)
         assert profile is not None
@@ -125,7 +125,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
 
     def test_m3_openai_route_requests_reasoning_split_by_default(self):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None
@@ -139,7 +139,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
 
     def test_m3_openai_route_maps_explicit_effort_to_adaptive_only(self):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None
@@ -156,7 +156,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
 
     def test_m3_openai_route_does_not_send_reasoning_effort(self):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None
@@ -172,7 +172,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
 
     def test_m3_openai_route_can_disable_thinking(self):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None
@@ -199,7 +199,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
         self, model, base_url
     ):
         import model_tools  # noqa: F401
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None
@@ -213,8 +213,8 @@ class TestMinimaxM3OpenAIReasoningWireShape:
 
     def test_transport_threads_base_url_to_profile(self):
         import model_tools  # noqa: F401
-        import providers
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon import providers
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None

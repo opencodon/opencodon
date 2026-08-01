@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from opencodon_cli import web_server
+from opencodon.frontends.cli import web_server
 
 
 class FakeBridge:

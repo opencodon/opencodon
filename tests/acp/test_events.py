@@ -11,7 +11,7 @@ import pytest
 import acp
 from acp.schema import AgentPlanUpdate
 
-from acp_adapter.events import (
+from opencodon.frontends.acp.events import (
     _build_plan_update_from_todo_result,
     _send_update,
     make_message_cb,
@@ -52,7 +52,7 @@ class TestToolProgressCallback:
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
 
         # Run callback in the event loop context
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -76,7 +76,7 @@ class TestToolProgressCallback:
 
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -93,7 +93,7 @@ class TestToolProgressCallback:
 
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -111,7 +111,7 @@ class TestToolProgressCallback:
         progress_cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
         step_cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -139,7 +139,7 @@ class TestThinkingCallback:
 
         cb = make_thinking_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -154,7 +154,7 @@ class TestThinkingCallback:
 
         cb = make_thinking_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             cb("")
 
         mock_rcts.assert_not_called()
@@ -173,7 +173,7 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, {})
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -191,7 +191,7 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, {})
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             cb(1, [{"name": "unknown_tool", "result": "ok"}])
 
         mock_rcts.assert_not_called()
@@ -203,7 +203,7 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, {})
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -222,8 +222,8 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, {})
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
-             patch("acp_adapter.events.build_tool_complete") as mock_btc:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
+             patch("opencodon.frontends.acp.events.build_tool_complete") as mock_btc:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -244,8 +244,8 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, {})
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
-             patch("acp_adapter.events.build_tool_complete") as mock_btc:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
+             patch("opencodon.frontends.acp.events.build_tool_complete") as mock_btc:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -263,8 +263,8 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
-             patch("acp_adapter.events.build_tool_complete") as mock_btc:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
+             patch("opencodon.frontends.acp.events.build_tool_complete") as mock_btc:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -284,9 +284,9 @@ class TestStepCallback:
         tool_call_meta = {}
         loop = event_loop_fixture
 
-        with patch("acp_adapter.events.make_tool_call_id", return_value="tc-meta"), \
-             patch("acp_adapter.events._send_update") as mock_send, \
-             patch("agent.display.capture_local_edit_snapshot", return_value="snapshot"):
+        with patch("opencodon.frontends.acp.events.make_tool_call_id", return_value="tc-meta"), \
+             patch("opencodon.frontends.acp.events._send_update") as mock_send, \
+             patch("opencodon.core.display.capture_local_edit_snapshot", return_value="snapshot"):
             cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
             cb("tool.started", "write_file", None, {"path": "diff-test.txt", "content": "hello"})
 
@@ -311,7 +311,7 @@ class TestStepCallback:
             '],"summary":{"total":3}}'
         )
 
-        with patch("acp_adapter.events._send_update") as mock_send:
+        with patch("opencodon.frontends.acp.events._send_update") as mock_send:
             cb(1, [{"name": "todo", "result": todo_result}])
 
         updates = [call.args[3] for call in mock_send.call_args_list]
@@ -358,7 +358,7 @@ class TestMessageCallback:
 
         cb = make_message_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             future = MagicMock(spec=Future)
             future.result.return_value = None
             mock_rcts.return_value = future
@@ -373,7 +373,7 @@ class TestMessageCallback:
 
         cb = make_message_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
+        with patch("opencodon.frontends.acp.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
             cb("")
 
         mock_rcts.assert_not_called()
@@ -402,7 +402,7 @@ class TestSendUpdate:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             with patch(
-                "agent.async_utils.asyncio.run_coroutine_threadsafe",
+                "opencodon.core.async_utils.asyncio.run_coroutine_threadsafe",
                 side_effect=RuntimeError("scheduler down"),
             ):
                 _send_update(conn, "session-1", event_loop_fixture, {"type": "noop"})
