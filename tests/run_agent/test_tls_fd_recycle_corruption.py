@@ -1,7 +1,7 @@
 """Regressions for issue #29507 — cross-thread close of the per-request OpenAI
 client could release a TLS socket FD whose integer was still cached in the
 owning httpx worker's SSL BIO. The kernel then recycled the FD into the next
-``open()`` (e.g. the kanban dispatcher's ``kanban.db``), and the worker's
+``open()`` (e.g. another thread's SQLite file), and the worker's
 delayed TLS flush wrote a 24-byte TLS application-data record on top of the
 SQLite header.
 
@@ -64,7 +64,7 @@ def test_force_close_tcp_sockets_shutdown_only_no_close():
     """The smoking-gun guarantee: shutdown is called, close is NOT.
 
     If a future refactor reintroduces ``sock.close()`` here, the
-    FD-recycling race that corrupted ``kanban.db`` (issue #29507) will
+    FD-recycling race that corrupted a SQLite store (issue #29507) will
     re-open. Pin the contract explicitly.
     """
     from agent.agent_runtime_helpers import force_close_tcp_sockets
@@ -78,7 +78,7 @@ def test_force_close_tcp_sockets_shutdown_only_no_close():
     assert sock.shutdown_calls == 1, "shutdown() must run — it's how we unblock the worker"
     assert sock.close_calls == 0, (
         "close() must NOT run from this helper — releasing the FD here is the "
-        "race that wrote TLS bytes into kanban.db (#29507)"
+        "race that wrote TLS bytes into a SQLite file (#29507)"
     )
 
 

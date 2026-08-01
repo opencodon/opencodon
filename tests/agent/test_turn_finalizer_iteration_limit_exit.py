@@ -267,35 +267,6 @@ def test_pending_response_does_not_mask_later_terminal_exit(
     assert agent._handle_max_iterations_called is False
 
 
-def test_pending_response_records_kanban_timeout(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
-    monkeypatch.setenv("OPENCODON_KANBAN_TASK", "task-123")
-    record = MagicMock(name="record_task_failure")
-    conn = SimpleNamespace(close=lambda: None)
-    monkeypatch.setattr("opencodon_cli.kanban_db.connect", lambda: conn)
-    monkeypatch.setattr("opencodon_cli.kanban_db._record_task_failure", record)
-    agent = _LimitAgent()
-
-    result = _finalize(
-        agent,
-        final_response=None,
-        exit_reason="unknown",
-        pending_verification_response="composed report",
-    )
-
-    assert result["turn_exit_reason"] == "max_iterations_reached(60/60)"
-    record.assert_called_once_with(
-        conn,
-        "task-123",
-        error=(
-            "Iteration budget exhausted (60/60) — task could not complete "
-            "within the allowed iterations"
-        ),
-        outcome="timed_out",
-        release_claim=True,
-        end_run=True,
-        event_payload_extra={"budget_used": 60, "budget_max": 60},
-    )
 
 
 def test_published_pending_candidate_is_not_duplicated_by_finalizer(monkeypatch):

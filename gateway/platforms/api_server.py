@@ -495,7 +495,7 @@ class ResponseStore:
             self._db_path = None
         # Use shared WAL-fallback helper so response_store.db degrades
         # gracefully on NFS/SMB/FUSE-mounted OPENCODON_HOME (same filesystem
-        # issue addressed for state.db/kanban.db — see
+        # issue addressed for state.db — see
         # opencodon_state._WAL_INCOMPAT_MARKERS).
         from opencodon_state import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="response_store.db")

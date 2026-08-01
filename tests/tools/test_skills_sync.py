@@ -191,7 +191,7 @@ class TestRmtreeWritableScopeGuard:
     root — through a bad join, a missing default, a malicious
     bundled-manifest entry, or a stale path in scope after an
     exception — the result is a silent ``shutil.rmtree(~/.opencodon/)``
-    that destroys the user's ``.env``, ``MEMORY.md``, ``kanban.db``,
+    that destroys the user's ``.env``, ``MEMORY.md``, ``state.db``,
     custom skills, scripts, and the rest of the install in one go
     (#48200).
 
@@ -231,7 +231,7 @@ class TestRmtreeWritableScopeGuard:
         opencodon.mkdir()
         skills = opencodon / "skills"
         skills.mkdir()
-        not_skills = opencodon / "kanban.db"  # any non-skills path
+        not_skills = opencodon / "state.db"  # any non-skills path
         not_skills.mkdir()
         with patch("tools.skills_sync.SKILLS_DIR", skills):
             with pytest.raises(ValueError, match="refusing to rmtree"):

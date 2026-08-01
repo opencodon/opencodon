@@ -2408,7 +2408,7 @@ def _blank_slate_minimal_toolsets(config: dict):
     2. ``agent.disabled_toolsets`` — a global hard-suppression list (applied last
        in ``_get_platform_tools``, overriding every other path including the
        non-configurable platform-toolset recovery that would otherwise re-add
-       toolsets like ``kanban``). We list every known toolset except the two we
+       runtime-gated toolsets). We list every known toolset except the two we
        keep, guaranteeing a true blank slate regardless of platform/recovery
        quirks. The user re-enables any of them later via ``opencodon tools`` (which
        rewrites ``platform_toolsets``) or by editing ``agent.disabled_toolsets``.
@@ -2424,7 +2424,7 @@ def _blank_slate_minimal_toolsets(config: dict):
         all_keys.update(k for k, _, _ in CONFIGURABLE_TOOLSETS)
         all_keys.update(_get_plugin_toolset_keys())
         # Plain (non-composite) TOOLSETS entries — catches recovered toolsets
-        # like ``kanban`` that aren't in CONFIGURABLE_TOOLSETS but get re-added.
+        # that aren't in CONFIGURABLE_TOOLSETS but get re-added.
         for k, tdef in TOOLSETS.items():
             if k.startswith(("opencodon-", "opencodon-")):
                 continue  # platform composites — not user-facing toolsets

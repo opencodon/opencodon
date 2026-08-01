@@ -730,7 +730,7 @@ def _rmtree_writable(path: Path) -> None:
     """
     # Defense in depth (#48200): refuse to rmtree anything outside
     # ``OPENCODON_HOME/skills/`` to prevent the catastrophic wipe of
-    # ``~/.opencodon/`` (``.env``, ``MEMORY.md``, ``kanban.db``, custom
+    # ``~/.opencodon/`` (``.env``, ``MEMORY.md``, ``state.db``, custom
     # skills, scripts, …) that an earlier incident observed. Five call
     # sites in this file invoke this helper; if any one of them ever
     # computes a destination outside the skills root — through a bad

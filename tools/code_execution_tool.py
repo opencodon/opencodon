@@ -139,7 +139,7 @@ def _truncate_stdout_text(stdout_text: str) -> Tuple[str, Dict[str, Any]]:
 #
 # NB: the broad "OPENCODON_" prefix was deliberately removed (#27303) — it leaked
 # OPENCODON_*-named config that lacks a secret substring (e.g. OPENCODON_BASE_URL,
-# OPENCODON_KANBAN_DB, OPENCODON_*_WEBHOOK).  The child only needs the few
+# OPENCODON_*_WEBHOOK).  The child only needs the few
 # location/profile vars in _OPENCODON_CHILD_ALLOWED below; OPENCODON_RPC_SOCKET /
 # OPENCODON_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
 _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM",
@@ -228,7 +228,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     # Non-secret OPENCODON_* vars dropped by the tightened allowlist (#27303). The
     # broad "OPENCODON_" prefix used to pass these through; now only the
     # operational set does. The drop is intentional (those vars can carry
-    # config like OPENCODON_KANBAN_DB / OPENCODON_BASE_URL), but a sandbox script
+    # config like OPENCODON_BASE_URL), but a sandbox script
     # that imports a repo module reading one at import time would otherwise see
     # it silently unset. Surface the drop once so the behavior change is
     # diagnosable and points at the env_passthrough opt-in escape hatch.

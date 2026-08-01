@@ -14,7 +14,6 @@ all key off these exact strings:
   - auto/discovered project id ... the repo root path
   - repo node id ................. the repo root path
   - main branch lane id .......... ``<repoRoot>::branch::<branch>`` (or ``::branch::``)
-  - kanban bucket lane id ........ ``<repoRoot>::kanban``
   - linked worktree lane id ...... the worktree path
 
 The one correctness upgrade over the client version: linked worktrees are folded
@@ -34,10 +33,6 @@ from typing import Any, Callable, Optional
 # cwd is not in a git repo (or cannot be probed, e.g. a remote backend).
 Resolve = Callable[[str], Optional[dict]]
 
-# Only KANBAN-TASK worktrees (`<repo>/.worktrees/t_<hex>`, the `t_…` id kanban_db
-# mints) collapse into one lane; user-named "New worktree" dirs under
-# `.worktrees/` stay as their own lanes.
-_KANBAN_DIR_RE = re.compile(r"^(.*[/\\]\.worktrees)[/\\]t_[0-9a-f]+[/\\]?$")
 _TRUNK_BRANCHES = {"main", "master", "trunk", "develop"}
 DEFAULT_BRANCH_LABEL = "main"
 
@@ -45,10 +40,6 @@ DEFAULT_BRANCH_LABEL = "main"
 def _branch_lane_id(repo_root: str, branch: str = "") -> str:
     """The one definition of a main-checkout lane id (must match the desktop)."""
     return f"{repo_root}::branch::{(branch or '').strip()}"
-
-
-def _kanban_lane_id(repo_root: str) -> str:
-    return f"{repo_root}::kanban"
 
 
 # ---------------------------------------------------------------------------
@@ -89,22 +80,16 @@ def _lane_key(path_or_lane: str) -> str:
     Branch labels remain byte-preserved; repo/worktree paths follow platform path
     identity so equivalent Windows spellings do not create duplicate lanes.
     """
-    for marker in ("::branch::", "::kanban"):
-        if marker in path_or_lane:
-            root, suffix = path_or_lane.split(marker, 1)
-            return f"{_path_key(root)}{marker}{suffix}"
+    marker = "::branch::"
+    if marker in path_or_lane:
+        root, suffix = path_or_lane.split(marker, 1)
+        return f"{_path_key(root)}{marker}{suffix}"
     return _path_key(path_or_lane)
 
 
 def base_name(path: str) -> str:
     segs = _segments(path)
     return segs[-1] if segs else ""
-
-
-def kanban_worktree_dir(path: str) -> Optional[str]:
-    """The ``<repo>/.worktrees`` dir for a ``.../.worktrees/<task>`` path, else None."""
-    m = _KANBAN_DIR_RE.match(path or "")
-    return m.group(1) if m else None
 
 
 def _is_path_under(folder: str, target: str) -> bool:
@@ -132,7 +117,6 @@ def _placement(
     lane_label: str,
     lane_path: str,
     is_main: bool,
-    is_kanban: bool,
 ) -> dict:
     return {
         "repo_key": repo_root,
@@ -142,7 +126,6 @@ def _placement(
         "lane_label": lane_label,
         "lane_path": lane_path,
         "is_main": is_main,
-        "is_kanban": is_kanban,
     }
 
 
@@ -152,17 +135,12 @@ def _place_by_heuristic(path: str) -> Optional[dict]:
     if not base:
         return None
 
-    kanban_dir = kanban_worktree_dir(path)
-    if kanban_dir:
-        repo_path = re.sub(r"[/\\]+$", "", _with_base_name(kanban_dir, ""))
-        return _placement(repo_path, _kanban_lane_id(repo_path), "kanban", kanban_dir, False, True)
-
     m = re.match(r"^(.+)-wt-(.+)$", base)
     if m:
         repo_path = _with_base_name(path, m.group(1))
-        return _placement(repo_path, path, m.group(2), path, False, False)
+        return _placement(repo_path, path, m.group(2), path, False)
 
-    return _placement(path, path, base, path, True, False)
+    return _placement(path, path, base, path, True)
 
 
 def _place(cwd: str, branch: str, resolve: Optional[Resolve], persisted_root: str) -> Optional[dict]:
@@ -177,23 +155,16 @@ def _place(cwd: str, branch: str, resolve: Optional[Resolve], persisted_root: st
             # Unrecorded branch folds into the one trunk lane, so a repo never
             # shows two "main" lanes (recorded "main" + the empty-branch bucket).
             b = (branch or "").strip() or DEFAULT_BRANCH_LABEL
-            return _placement(repo_root, _branch_lane_id(repo_root, b), b, repo_root, True, False)
-
-        kanban_dir = kanban_worktree_dir(worktree_root)
-        if kanban_dir:
-            return _placement(repo_root, _kanban_lane_id(repo_root), "kanban", kanban_dir, False, True)
+            return _placement(repo_root, _branch_lane_id(repo_root, b), b, repo_root, True)
 
         label = base_name(worktree_root) or worktree_root
-        return _placement(repo_root, worktree_root, label, worktree_root, False, False)
+        return _placement(repo_root, worktree_root, label, worktree_root, False)
 
     # No live probe: trust the backend-persisted root (group by it, split main by
-    # the session's recorded branch). Kanban tasks still collapse by path shape.
+    # the session's recorded branch).
     if persisted_root:
-        kanban_dir = kanban_worktree_dir(cwd)
-        if kanban_dir:
-            return _placement(persisted_root, _kanban_lane_id(persisted_root), "kanban", kanban_dir, False, True)
         b = (branch or "").strip() or DEFAULT_BRANCH_LABEL
-        return _placement(persisted_root, _branch_lane_id(persisted_root, b), b, persisted_root, True, False)
+        return _placement(persisted_root, _branch_lane_id(persisted_root, b), b, persisted_root, True)
 
     return _place_by_heuristic(cwd)
 
@@ -214,14 +185,12 @@ def _session_repo_root(session: dict, resolve: Optional[Resolve]) -> str:
 
 
 def _lane_sort_key(group: dict) -> tuple:
-    # Trunk pins to the top; the kanban aggregate sinks to the bottom; the rest
-    # (branches + linked worktrees) sort by most-recent activity, then label.
+    # Trunk pins to the top; the rest (branches + linked worktrees) sort by
+    # most-recent activity, then label.
     is_trunk = bool(group.get("isMain")) and group["label"].lower() in _TRUNK_BRANCHES
-    is_kanban = bool(group.get("isKanban"))
     activity = max((_session_time(s) for s in group.get("sessions") or []), default=0.0)
     return (
         0 if is_trunk else 1,
-        1 if is_kanban else 0,
         -activity,
         group["label"].lower(),
     )
@@ -294,7 +263,6 @@ def _build_repos(sessions: list[dict], resolve: Optional[Resolve], hydrate: bool
                     "label": placement["lane_label"],
                     "path": placement["lane_path"],
                     "isMain": placement["is_main"],
-                    "isKanban": placement["is_kanban"],
                     "sessions": [],
                 },
                 "repo_key": placement["repo_key"],

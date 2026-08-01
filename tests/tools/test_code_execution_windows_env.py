@@ -321,7 +321,7 @@ class TestPosixEquivalence:
         "OPENCODON_PROFILE": "default",                 # allowlisted → kept
         "OPENCODON_INTERACTIVE": "1",                   # not allowlisted → dropped
         "OPENCODON_BASE_URL": "https://api.internal",   # not allowlisted → dropped
-        "OPENCODON_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
+        "OPENCODON_CRON_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
         # Secret-substring blocks
         "OPENAI_API_KEY": "sk-xxx",
         "GITHUB_TOKEN": "ghp_xxx",

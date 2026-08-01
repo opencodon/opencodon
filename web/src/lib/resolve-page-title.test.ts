@@ -23,8 +23,8 @@ describe("resolvePageTitle", () => {
   });
 
   it("still prefers a plugin's own label", () => {
-    const tabs = [{ path: "/kanban", label: "Kanban" }];
-    expect(resolvePageTitle("/kanban", t, tabs)).toBe("Kanban");
+    const tabs = [{ path: "/notes", label: "Notes" }];
+    expect(resolvePageTitle("/notes", t, tabs)).toBe("Notes");
   });
 
   it("falls back to a capitalised segment for unknown routes", () => {

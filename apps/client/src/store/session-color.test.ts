@@ -32,7 +32,6 @@ function makeSession(cwd: null | string, overrides: Partial<SessionInfo> = {}): 
 function makeProject(id: string, folders: string[], color: null | string): ProjectInfo {
   return {
     archived: false,
-    board_slug: null,
     color,
     created_at: 0,
     description: null,

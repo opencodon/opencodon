@@ -181,15 +181,6 @@ def test_active_pointer(conn):
     assert pdb.get_active_id(conn) is None
 
 
-def test_branch_name_for_is_deterministic():
-    proj = pdb.Project(id="p_1", slug="web-app", name="Web App", created_at=0)
-
-    assert pdb.branch_name_for(proj, "t_abc") == "web-app/t_abc"
-    assert pdb.branch_name_for(proj, "t_abc", title="Add login!") == "web-app/t_abc-add-login"
-    # Stable across calls.
-    assert pdb.branch_name_for(proj, "t_abc") == pdb.branch_name_for(proj, "t_abc")
-
-
 def test_per_profile_isolation(tmp_path):
     # Two distinct DB paths stand in for two profiles' OPENCODON_HOME.
     a = pdb.connect(db_path=tmp_path / "a" / "projects.db")

@@ -103,38 +103,6 @@ def _has_provider_env_config(content: str) -> bool:
     return any(key in content for key in _PROVIDER_ENV_HINTS)
 
 
-def _is_kanban_worker_env_gate(item: dict) -> bool:
-    """Return True when Kanban is unavailable only because this is not a worker process."""
-    if item.get("name") != "kanban":
-        return False
-    if os.environ.get("OPENCODON_KANBAN_TASK"):
-        return False
-
-    tools = item.get("tools") or []
-    return bool(tools) and all(str(tool).startswith("kanban_") for tool in tools)
-
-
-def _doctor_tool_availability_detail(toolset: str) -> str:
-    """Optional explanatory suffix for toolsets whose doctor status needs context."""
-    if toolset == "kanban" and not os.environ.get("OPENCODON_KANBAN_TASK"):
-        return "(runtime-gated; loaded only for dispatcher-spawned workers)"
-    return ""
-
-
-def _apply_doctor_tool_availability_overrides(available: list[str], unavailable: list[dict]) -> tuple[list[str], list[dict]]:
-    """Adjust runtime-gated tool availability for doctor diagnostics."""
-    updated_available = list(available)
-    updated_unavailable = []
-    for item in unavailable:
-        name = item.get("name")
-        if _is_kanban_worker_env_gate(item):
-            if "kanban" not in updated_available:
-                updated_available.append("kanban")
-            continue
-        updated_unavailable.append(item)
-    return updated_available, updated_unavailable
-
-
 def _has_healthy_oauth_fallback_for_apikey_provider(provider_label: str) -> bool:
     """Return True when a direct API-key probe failure is non-blocking.
 
@@ -2251,11 +2219,10 @@ def run_doctor(args):
         from model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
         
         available, unavailable = check_tool_availability()
-        available, unavailable = _apply_doctor_tool_availability_overrides(available, unavailable)
         
         for tid in available:
             info = TOOLSET_REQUIREMENTS.get(tid, {})
-            check_ok(info.get("name", tid), _doctor_tool_availability_detail(tid))
+            check_ok(info.get("name", tid))
         
         for item in unavailable:
             env_vars = item.get("missing_vars") or item.get("env_vars") or []

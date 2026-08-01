@@ -3808,7 +3808,7 @@ async function ensureRuntime(backend) {
 }
 
 // Assemble a single-file multipart/form-data body (FastAPI `UploadFile`
-// endpoints, e.g. kanban attachments). Hand-rolled because node's http has no
+// endpoints, e.g. plugin attachments). Hand-rolled because node's http has no
 // FormData and the payload is one file — a dependency would be overkill.
 function multipartBody(upload) {
   const boundary = `----opencodon-${crypto.randomBytes(12).toString('hex')}`

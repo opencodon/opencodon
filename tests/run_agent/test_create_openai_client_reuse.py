@@ -194,7 +194,7 @@ def test_force_close_tcp_sockets_descends_httpcore_1_connection_wrapper():
 
     Post-#29507: the helper must shut sockets down but must NOT release the
     FD via ``sock.close()`` — that race recycled FDs into unrelated file
-    descriptors (kanban.db) and let TLS bytes overwrite SQLite headers. The
+    descriptors (a SQLite store) and let TLS bytes overwrite its headers. The
     owning httpx thread is responsible for closing FDs on its own unwind.
     """
     from agent.agent_runtime_helpers import force_close_tcp_sockets

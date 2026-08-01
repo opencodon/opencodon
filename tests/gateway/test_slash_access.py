@@ -45,7 +45,7 @@ class TestPolicyFromExtra:
         )
         assert p.is_admin("111") is True
         assert p.can_run("111", "stop") is True
-        assert p.can_run("111", "kanban") is True
+        assert p.can_run("111", "cron") is True
 
     def test_non_admin_runs_only_listed_commands(self):
         p = policy_from_extra(
@@ -59,7 +59,7 @@ class TestPolicyFromExtra:
         assert p.can_run("999", "status") is True
         assert p.can_run("999", "model") is True
         assert p.can_run("999", "stop") is False
-        assert p.can_run("999", "kanban") is False
+        assert p.can_run("999", "cron") is False
 
     def test_always_allowed_floor_for_non_admin(self):
         # /help and /whoami always reachable so users can see what they can do.
@@ -198,7 +198,7 @@ class TestPolicyForSource:
         assert p.is_admin("111") is True
         assert p.can_run("999", "status") is True
         assert p.can_run("999", "help") is True  # always-allowed floor
-        assert p.can_run("999", "kanban") is False
+        assert p.can_run("999", "cron") is False
 
     def test_group_chat_type_resolves_to_group_scope(self):
         cfg = GatewayConfig(

@@ -52,7 +52,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     The user-plugin source is preferred over a transient
     ``OPENCODON_BUNDLED_PLUGINS`` override because the bundled dir is
     resolved per-call (other tests in the suite implicitly rely on the
-    real bundled plugins — kanban, opencodon-achievements, model providers
+    real bundled plugins — opencodon-achievements, model providers
     — being available, and globally swapping that root would yank them
     all). User plugins are first in the discovery search order, so
     laying down the fixture here is enough.
@@ -7190,8 +7190,8 @@ class TestPluginAPIAuth:
 
     def test_plugin_route_requires_auth(self):
         """Plugin API routes should return 401 without a valid session token."""
-        # Use a known plugin route (kanban board)
-        resp = self.client.get("/api/plugins/kanban/board")
+        # Use a known plugin route.
+        resp = self.client.get("/api/plugins/disk-cleanup/overview")
         assert resp.status_code == 401
 
     def test_plugin_route_allows_auth(self):
@@ -7214,34 +7214,33 @@ class TestPluginAPIAuth:
 
     def test_plugin_post_requires_auth(self):
         """Plugin POST routes should return 401 without a valid session token."""
-        resp = self.client.post("/api/plugins/kanban/tasks", json={"title": "test"})
+        resp = self.client.post("/api/plugins/example/tasks", json={"title": "test"})
         assert resp.status_code == 401
 
     def test_plugin_patch_requires_auth(self):
         """Plugin PATCH routes should return 401 without a valid session token.
 
         PATCH is the mutation method most commonly used by the dashboard for
-        kanban task edits — explicitly cover it so a future middleware
+        plugin resource edits — explicitly cover it so a future middleware
         regression that whitelists non-GET methods can't sneak through.
         """
         resp = self.client.patch(
-            "/api/plugins/kanban/tasks/t_fake",
+            "/api/plugins/example/tasks/t_fake",
             json={"title": "renamed"},
         )
         assert resp.status_code == 401
 
     def test_plugin_delete_requires_auth(self):
         """Plugin DELETE routes should return 401 without a valid session token."""
-        resp = self.client.delete("/api/plugins/kanban/tasks/t_fake")
+        resp = self.client.delete("/api/plugins/example/tasks/t_fake")
         assert resp.status_code == 401
 
-    def test_non_kanban_plugin_route_requires_auth(self):
-        """Auth must be plugin-agnostic, not kanban-specific.
+    def test_arbitrary_plugin_route_requires_auth(self):
+        """Auth must be plugin-agnostic, not per-plugin.
 
         The middleware fix is at the gate level (no per-plugin allowlist),
-        so any plugin's API surface — kanban, disk-cleanup, future
-        plugins — must require the session token. Hit a non-kanban plugin
-        path to lock that in.
+        so any plugin's API surface — disk-cleanup, future plugins — must
+        require the session token. Hit another plugin path to lock that in.
         """
         # Real plugin path (disk-cleanup is bundled).
         resp = self.client.get("/api/plugins/disk-cleanup/overview")
@@ -7253,7 +7252,7 @@ class TestPluginAPIAuth:
         assert resp.status_code == 401
 
     def test_plugin_websocket_unaffected_by_http_middleware(self):
-        """The kanban /events WebSocket has its own ``?token=`` check;
+        """A plugin /events WebSocket has its own ``?token=`` check;
         the HTTP middleware change must not start gating WS upgrades.
 
         Starlette doesn't run HTTP middleware on WebSocket upgrades anyway,
@@ -7266,13 +7265,13 @@ class TestPluginAPIAuth:
         # (its own _check_ws_token), NOT 401 from the HTTP middleware.
         try:
             with self.client.websocket_connect(
-                "/api/plugins/kanban/events"
+                "/api/plugins/example/events"
             ):
                 pass  # if we got here without disconnect, the WS accepted us
         except WebSocketDisconnect:
             pass  # expected — WS endpoint rejected via its own check
         except Exception:
-            # The kanban plugin may not be mounted in this test environment,
+            # The plugin may not be mounted in this test environment,
             # in which case the route doesn't exist at all (3xx/4xx during
             # upgrade). That's fine for this regression — it only matters
             # that the HTTP middleware didn't start intercepting WS upgrades.

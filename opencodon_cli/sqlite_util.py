@@ -1,7 +1,7 @@
-"""Shared SQLite primitives for the small per-profile / board stores.
+"""Shared SQLite primitives for the small per-profile stores.
 
-The projects and kanban stores open WAL SQLite files with the same IMMEDIATE
-write transaction. One definition here keeps the two stores from drifting.
+These stores open WAL SQLite files with the same IMMEDIATE write
+transaction. One definition here keeps them from drifting.
 """
 
 from __future__ import annotations
