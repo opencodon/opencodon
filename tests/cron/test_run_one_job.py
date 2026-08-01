@@ -128,7 +128,7 @@ def test_run_one_job_installs_secret_scope_under_multiplex(monkeypatch, tmp_path
     Behavior contract: a scope is present during run_job and absent after,
     regardless of the concrete secret values.
     """
-    from agent import secret_scope as ss
+    from opencodon.core import secret_scope as ss
 
     # Point cron's home resolution at a profile whose .env carries a secret.
     (tmp_path / ".env").write_text("OPENROUTER_BASE_URL=https://openrouter.ai/api/v1\n")
@@ -194,7 +194,7 @@ def test_run_one_job_delivers_before_agent_teardown(monkeypatch):
     monkeypatch.setattr(s, "mark_job_run", lambda *a, **k: None)
     # cleanup_stale_async_clients is imported lazily inside _teardown_cron_agent;
     # stub it so the teardown records its own marker without touching real caches.
-    import agent.auxiliary_client as aux
+    import opencodon.core.auxiliary_client as aux
     monkeypatch.setattr(aux, "cleanup_stale_async_clients",
                         lambda: order.append("cleanup_stale"))
 
@@ -227,7 +227,7 @@ def test_run_one_job_tears_down_deferred_agent_when_delivery_raises(monkeypatch)
     monkeypatch.setattr(s, "save_job_output", lambda jid, out: f"/tmp/{jid}.txt")
     monkeypatch.setattr(s, "_deliver_result", boom_deliver)
     monkeypatch.setattr(s, "mark_job_run", lambda *a, **k: None)
-    import agent.auxiliary_client as aux
+    import opencodon.core.auxiliary_client as aux
     monkeypatch.setattr(aux, "cleanup_stale_async_clients",
                         lambda: order.append("cleanup_stale"))
 
@@ -263,7 +263,7 @@ def test_run_one_job_tears_down_deferred_agent_when_save_raises(monkeypatch):
     monkeypatch.setattr(s, "_deliver_result",
                         lambda *a, **k: order.append("deliver"))
     monkeypatch.setattr(s, "mark_job_run", lambda *a, **k: None)
-    import agent.auxiliary_client as aux
+    import opencodon.core.auxiliary_client as aux
     monkeypatch.setattr(aux, "cleanup_stale_async_clients",
                         lambda: order.append("cleanup_stale"))
 

@@ -85,7 +85,7 @@ class TestAgentLoopSourceStillHasCarveOut:
 
     def test_run_agent_excludes_jsondecodeerror_from_local_validation(self):
         import inspect
-        from agent import conversation_loop
+        from opencodon.core import conversation_loop
         # The agent loop body lives in agent/conversation_loop.py after
         # the run_agent.py refactor.  Assert the carve-out is present in
         # the extracted module specifically — if it ever moves back or
@@ -146,7 +146,7 @@ class TestAgentLoopSourceHasNoneTypeCarveOut:
 
     def test_conversation_loop_excludes_nonetype_not_iterable_from_local_validation(self):
         import inspect
-        from agent import conversation_loop
+        from opencodon.core import conversation_loop
         src = inspect.getsource(conversation_loop)
         assert "is_local_validation_error" in src
         # The specific check must be present.

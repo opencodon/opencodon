@@ -98,7 +98,7 @@ with open(config_path, "w") as f:
 # Fresh import — must not have anything cached from prior runs.
 for name in list(sys.modules):
     if (name.startswith("tools.")
-            or name.startswith("agent.")
+            or name.startswith(("agent.", "opencodon."))
             or name.startswith("plugins.")
             or name.startswith("opencodon_cli.")):
         sys.modules.pop(name, None)
@@ -106,8 +106,8 @@ for name in list(sys.modules):
 # Try importing tts_registry — only exists on PR side.
 have_plugin_hook = False
 try:
-    from agent import tts_registry
-    from agent.tts_provider import TTSProvider
+    from opencodon.core import tts_registry
+    from opencodon.core.tts_provider import TTSProvider
     have_plugin_hook = True
 
     if plugin_register == "yes":

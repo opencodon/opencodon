@@ -44,7 +44,7 @@ _CDP_PRIVATE_PAGE_ALLOWED_METHODS = {
 
 def _redact_cdp_output(value: Any) -> Any:
     """Redact browser-originated CDP result data before returning it."""
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
 
     if isinstance(value, str):
         return redact_sensitive_text(value, force=True)
@@ -367,7 +367,7 @@ def _browser_cdp_via_supervisor(
         )
 
     try:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         fut = safe_schedule_threadsafe(_do_cdp(), loop)
         if fut is None:
             return tool_error(

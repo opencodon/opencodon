@@ -27,7 +27,7 @@ from opencodon_constants import (
 from opencodon.config.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
 from tools.environments.local import opencodon_subprocess_env
-from agent.replay_cleanup import sanitize_replay_history
+from opencodon.core.replay_cleanup import sanitize_replay_history
 from tui_gateway import git_probe
 from tui_gateway.transport import (
     StdioTransport,
@@ -1440,7 +1440,7 @@ def _status_update(sid: str, kind: str, text: str | None = None):
     # drivers (desktop app) can show an explicit "Summarizing…" indicator —
     # otherwise a mid-turn compaction looks like the transcript reset itself.
     if out_kind == "lifecycle":
-        from agent.conversation_compression import COMPACTION_STATUS_MARKER
+        from opencodon.core.conversation_compression import COMPACTION_STATUS_MARKER
 
         if COMPACTION_STATUS_MARKER in body:
             out_kind = "compacting"
@@ -3156,7 +3156,7 @@ def _load_enabled_toolsets() -> list[str] | None:
     # CLI_CONFIG instead, purely to avoid a redundant read).
     if not explicit:
         try:
-            from agent.coding_context import coding_selection
+            from opencodon.core.coding_context import coding_selection
 
             selection = coding_selection(platform=_resolve_session_platform())
             if selection is not None:
@@ -3654,10 +3654,10 @@ def _compress_session_history(
     before_messages: list | None = None,
     history_version: int | None = None,
 ) -> tuple[int, dict]:
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         finalize_context_engine_compression_notification,
     )
-    from agent.model_metadata import estimate_request_tokens_rough
+    from opencodon.core.model_metadata import estimate_request_tokens_rough
 
     agent = session["agent"]
     # Snapshot history under the lock so the LLM-bound compression call
@@ -4123,7 +4123,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
 
 def _tool_ctx(name: str, args: dict) -> str:
     try:
-        from agent.display import build_tool_label
+        from opencodon.core.display import build_tool_label
 
         return build_tool_label(name, args, max_len=80) or ""
     except Exception:
@@ -4189,7 +4189,7 @@ def _cap_tui_verbose_text(text: str) -> str:
 
 def _redact_tui_verbose_text(text: str) -> str:
     try:
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         redacted = redact_sensitive_text(str(text), force=True)
     except Exception:
@@ -4207,7 +4207,7 @@ def _tool_args_text(args: dict) -> str:
 
 def _tool_result_text(result: object) -> str:
     try:
-        from agent.tool_dispatch_helpers import _multimodal_text_summary
+        from opencodon.core.tool_dispatch_helpers import _multimodal_text_summary
 
         raw = _multimodal_text_summary(result)
     except Exception:
@@ -4267,7 +4267,7 @@ def _on_tool_start(sid: str, tool_call_id: str, name: str, args: dict):
     session = _sessions.get(sid)
     if session is not None:
         try:
-            from agent.display import capture_local_edit_snapshot
+            from opencodon.core.display import capture_local_edit_snapshot
 
             snapshot = capture_local_edit_snapshot(name, args)
             if snapshot is not None:
@@ -4320,7 +4320,7 @@ def _on_tool_complete(sid: str, tool_call_id: str, name: str, args: dict, result
         except Exception:
             pass
     try:
-        from agent.display import render_edit_diff_with_delta
+        from opencodon.core.display import render_edit_diff_with_delta
 
         rendered: list[str] = []
         if render_edit_diff_with_delta(
@@ -5245,7 +5245,7 @@ def _make_agent(
     system_prompt = _prompt_text(agent_cfg.get("system_prompt", ""))
     startup_skills = _parse_tui_skills_env()
     if startup_skills:
-        from agent.skill_commands import build_preloaded_skills_prompt
+        from opencodon.core.skill_commands import build_preloaded_skills_prompt
 
         skills_prompt, loaded_skills, missing_skills = build_preloaded_skills_prompt(
             startup_skills,
@@ -5507,7 +5507,7 @@ def _resolve_checkpoint_hash(mgr, cwd: str, ref: str) -> str:
 
 def _active_image_routing_identity(agent: Any) -> tuple[str, str]:
     """Return the live provider/model, falling back before agent startup."""
-    from agent.auxiliary_client import _read_main_model, _read_main_provider
+    from opencodon.core.auxiliary_client import _read_main_model, _read_main_provider
 
     return (
         getattr(agent, "provider", "") or _read_main_provider(),
@@ -6328,7 +6328,7 @@ def _(rid, params: dict) -> dict:
     re-sniffing. ``{"facts": null}`` means the cwd isn't a code workspace.
     """
     try:
-        from agent.coding_context import project_facts_for
+        from opencodon.core.coding_context import project_facts_for
 
         return _ok(rid, {"facts": project_facts_for(params.get("cwd"))})
     except Exception:
@@ -6344,7 +6344,7 @@ def _(rid, params: dict) -> dict:
     upgrades targeted evidence into a repository-wide guarantee.
     """
     try:
-        from agent.verification_evidence import verification_status
+        from opencodon.core.verification_evidence import verification_status
 
         return _ok(
             rid,
@@ -7339,7 +7339,7 @@ def _(rid, params: dict) -> dict:
     main_runtime = _main_runtime_from_agent(session.get("agent")) if session else None
 
     try:
-        from agent.oneshot import run_oneshot
+        from opencodon.core.oneshot import run_oneshot
 
         text = run_oneshot(
             instructions=instructions,
@@ -7535,7 +7535,7 @@ def _(rid, params: dict) -> dict:
     with session["history_lock"]:
         history = list(session.get("history", []))
     try:
-        from agent.context_breakdown import compute_session_context_breakdown
+        from opencodon.core.context_breakdown import compute_session_context_breakdown
 
         payload = compute_session_context_breakdown(agent, history)
     except Exception as exc:
@@ -7710,15 +7710,15 @@ def _(rid, params: dict) -> dict:
         return _err(
             rid, 4009, "session busy — /interrupt the current turn before /compress"
         )
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         finalize_context_engine_compression_notification,
     )
 
     sid = params.get("session_id", "")
     focus_topic = str(params.get("focus_topic", "") or "").strip()
     try:
-        from agent.manual_compression_feedback import summarize_manual_compression
-        from agent.model_metadata import estimate_request_tokens_rough
+        from opencodon.core.manual_compression_feedback import summarize_manual_compression
+        from opencodon.core.model_metadata import estimate_request_tokens_rough
 
         with session["history_lock"]:
             before_messages = list(session.get("history", []))
@@ -8968,8 +8968,8 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             prompt = text
 
             if isinstance(prompt, str) and "@" in prompt:
-                from agent.context_references import preprocess_context_references
-                from agent.model_metadata import get_model_context_length
+                from opencodon.core.context_references import preprocess_context_references
+                from opencodon.core.model_metadata import get_model_context_length
 
                 ctx_len = get_model_context_length(
                     getattr(agent, "model", "") or _resolve_model(),
@@ -9006,7 +9006,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             run_message: Any = prompt
             if images:
                 try:
-                    from agent.image_routing import (
+                    from opencodon.core.image_routing import (
                         decide_image_input_mode,
                         build_native_content_parts,
                     )
@@ -9312,7 +9312,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                 and text.strip()
             ):
                 try:
-                    from agent.title_generator import maybe_auto_title
+                    from opencodon.core.title_generator import maybe_auto_title
 
                     _title_key = session.get("session_key") or sid
                     # Snapshot the runtime identity; the validator lets the
@@ -11856,7 +11856,7 @@ def _(rid, params: dict) -> dict:
     while the battery indicator is enabled.
     """
     try:
-        from agent.battery import battery_category, read_battery
+        from opencodon.core.battery import battery_category, read_battery
 
         batt = read_battery()
         return _ok(
@@ -12291,7 +12291,7 @@ def _(rid, params: dict) -> dict:
 
         skill_count = 0
         try:
-            from agent.skill_commands import scan_skill_commands
+            from opencodon.core.skill_commands import scan_skill_commands
 
             for k, info in sorted(scan_skill_commands().items()):
                 d = str(info.get("description", "Skill"))
@@ -12429,7 +12429,7 @@ def _(rid, params: dict) -> dict:
                 + (r.stderr or "")
             ).strip()[:4000]
             if output:
-                from agent.redact import redact_sensitive_text
+                from opencodon.core.redact import redact_sensitive_text
                 output = redact_sensitive_text(output)
             if r.returncode != 0:
                 return _err(
@@ -12455,7 +12455,7 @@ def _(rid, params: dict) -> dict:
         pass
 
     try:
-        from agent.skill_bundles import (
+        from opencodon.core.skill_bundles import (
             build_bundle_invocation_message,
             get_skill_bundles,
             resolve_bundle_command_key,
@@ -12501,7 +12501,7 @@ def _(rid, params: dict) -> dict:
         )
 
     try:
-        from agent.skill_commands import (
+        from opencodon.core.skill_commands import (
             scan_skill_commands,
             build_skill_invocation_message,
         )
@@ -12538,7 +12538,7 @@ def _(rid, params: dict) -> dict:
         # normal agent turn. The live agent gathers whatever the user
         # described (dirs, URLs, this conversation, pasted text) with its own
         # tools and authors the skill via skill_manage. Works on any backend.
-        from agent.learn_prompt import build_learn_prompt
+        from opencodon.core.learn_prompt import build_learn_prompt
 
         return _ok(rid, {"type": "send", "message": build_learn_prompt(arg)})
     if name == "moa":
@@ -12856,7 +12856,7 @@ def _(rid, params: dict) -> dict:
             return _err(
                 rid, 4009, "session busy — /interrupt the current turn before /compress"
             )
-        from agent.conversation_compression import (
+        from opencodon.core.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
 
@@ -12884,8 +12884,8 @@ def _(rid, params: dict) -> dict:
                 {"type": "exec", "output": str(ack.get("output") or "")},
             )
         try:
-            from agent.manual_compression_feedback import summarize_manual_compression
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
 
             with session["history_lock"]:
                 before_messages = list(session.get("history", []))
@@ -13399,8 +13399,8 @@ def _(rid, params: dict) -> dict:
         from prompt_toolkit.document import Document
         from prompt_toolkit.formatted_text import to_plain_text
 
-        from agent.skill_commands import get_skill_commands
-        from agent.skill_bundles import get_skill_bundles
+        from opencodon.core.skill_commands import get_skill_commands
+        from opencodon.core.skill_bundles import get_skill_bundles
 
         completer = SlashCommandCompleter(
             skill_commands_provider=lambda: get_skill_commands(),
@@ -13981,9 +13981,9 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
             # compressed + emitted session.info and returned "", so the TUI
             # showed no "compressed N → M messages / ~X → ~Y tokens" stats
             # while CLI and gateway both did.
-            from agent.manual_compression_feedback import summarize_manual_compression
-            from agent.model_metadata import estimate_request_tokens_rough
-            from agent.conversation_compression import (
+            from opencodon.core.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.conversation_compression import (
                 finalize_context_engine_compression_notification,
             )
 
@@ -14045,7 +14045,7 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
             process_registry.kill_all()
     except Exception as e:
         if name == "compress" and agent:
-            from agent.conversation_compression import (
+            from opencodon.core.conversation_compression import (
                 finalize_context_engine_compression_notification,
             )
 
@@ -14106,7 +14106,7 @@ def _(rid, params: dict) -> dict:
             )
 
     try:
-        from agent.skill_bundles import resolve_bundle_command_key
+        from opencodon.core.skill_bundles import resolve_bundle_command_key
         from opencodon_cli.commands import resolve_command
 
         _bundle_key = (
@@ -14127,7 +14127,7 @@ def _(rid, params: dict) -> dict:
         pass
 
     try:
-        from agent.skill_commands import get_skill_commands
+        from opencodon.core.skill_commands import get_skill_commands
 
         _cmd_key = f"/{_cmd_base}"
         if _cmd_key in get_skill_commands():
@@ -15258,8 +15258,8 @@ def _(rid, params: dict) -> dict:
     except (TypeError, ValueError):
         cols, rows, frames = 80, 24, 48
     try:
-        from agent.learning_graph import build_learning_graph
-        from agent.learning_graph_render import render_frames
+        from opencodon.core.learning_graph import build_learning_graph
+        from opencodon.core.learning_graph_render import render_frames
 
         payload = build_learning_graph()
         return _ok(rid, render_frames(payload, cols=max(20, cols), rows=max(10, rows), frames=frames))
@@ -15271,7 +15271,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Current content of a journey node, for an edit prefill."""
     try:
-        from agent.learning_mutations import node_detail
+        from opencodon.core.learning_mutations import node_detail
 
         return _ok(rid, node_detail(str(params.get("id", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15282,7 +15282,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Delete a journey node — skills are archived (restorable), memories removed."""
     try:
-        from agent.learning_mutations import delete_node
+        from opencodon.core.learning_mutations import delete_node
 
         return _ok(rid, delete_node(str(params.get("id", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15293,7 +15293,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Rewrite a journey node's content (SKILL.md or memory chunk)."""
     try:
-        from agent.learning_mutations import edit_node
+        from opencodon.core.learning_mutations import edit_node
 
         return _ok(rid, edit_node(str(params.get("id", "")), str(params.get("content", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15362,7 +15362,7 @@ def _(rid, params: dict) -> dict:
 @method("skills.reload")
 def _(rid, params: dict) -> dict:
     try:
-        from agent.skill_commands import reload_skills
+        from opencodon.core.skill_commands import reload_skills
 
         result = reload_skills()
         added = result.get("added") or []

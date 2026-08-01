@@ -642,7 +642,7 @@ class ComputeHost:
                 # no-op when the mirror already emitted or discarded it.
                 try:
                     from tui_gateway import server as _server
-                    from agent.conversation_compression import (
+                    from opencodon.core.conversation_compression import (
                         finalize_context_engine_compression_notification,
                     )
 

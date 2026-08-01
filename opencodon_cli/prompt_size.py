@@ -64,7 +64,7 @@ def compute_prompt_breakdown(platform: str = "cli") -> Dict[str, Any]:
     ``user_profile``, ``tools`` (count + json bytes), and ``sections`` (a list
     of (label, chars, bytes) for the three prompt tiers).
     """
-    from agent.system_prompt import build_system_prompt, build_system_prompt_parts
+    from opencodon.core.system_prompt import build_system_prompt, build_system_prompt_parts
 
     agent = _build_inspection_agent(platform)
 

@@ -239,7 +239,7 @@ class TestCredentialPoolEndpoints:
         assert entry["token_preview"] != "sk-or-abcdef1234"
 
         # CLI parity: the raw, usable key is retrievable via the pool API.
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
 
         raw = load_pool("openrouter").entries()
         assert raw[0].access_token == "sk-or-abcdef1234"
@@ -261,7 +261,7 @@ class TestCredentialPoolEndpoints:
         The endpoint must mirror `opencodon auth remove`: clean up the backing
         source and suppress (provider, source).
         """
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         from opencodon_cli.auth import is_source_suppressed
         from opencodon.config import save_env_value
 
@@ -290,7 +290,7 @@ class TestCredentialPoolEndpoints:
         provider so a user who deleted a credential and re-adds one isn't
         silently blocked from env re-seeding.
         """
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         from opencodon_cli.auth import is_source_suppressed
         from opencodon.config import save_env_value
 
@@ -334,7 +334,7 @@ class TestCredentialPoolEndpoints:
 
     def test_delete_does_not_clobber_other_providers(self):
         """Deleting one provider's env entry leaves other providers' rows alone."""
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         from opencodon_cli.auth import _load_auth_store, read_credential_pool
         from opencodon.config import save_env_value
 

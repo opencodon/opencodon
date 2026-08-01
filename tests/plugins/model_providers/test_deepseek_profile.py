@@ -153,7 +153,7 @@ class TestDeepSeekFullKwargsIntegration:
     """
 
     def test_full_kwargs_match_live_wire_shape(self, deepseek_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro",
@@ -169,7 +169,7 @@ class TestDeepSeekFullKwargsIntegration:
         assert kwargs["extra_body"] == {"thinking": {"type": "enabled"}}
 
     def test_v3_chat_full_kwargs_omit_thinking(self, deepseek_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-chat",
@@ -199,9 +199,9 @@ class TestDeepSeekAuxModel:
         assert deepseek_profile.default_aux_model == "deepseek-chat"
 
     def test_consumer_api_returns_deepseek_chat(self):
-        from agent.auxiliary_client import _get_aux_model_for_provider
+        from opencodon.core.auxiliary_client import _get_aux_model_for_provider
         assert _get_aux_model_for_provider("deepseek") == "deepseek-chat"
 
     def test_consumer_api_returns_non_empty(self):
-        from agent.auxiliary_client import _get_aux_model_for_provider
+        from opencodon.core.auxiliary_client import _get_aux_model_for_provider
         assert _get_aux_model_for_provider("deepseek") != ""

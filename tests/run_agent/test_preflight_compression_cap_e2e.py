@@ -122,7 +122,7 @@ def test_preflight_runs_fourth_compaction_pass_at_cap_six(monkeypatch, tmp_path)
 
     with (
         patch(
-            "agent.turn_context.estimate_request_tokens_rough",
+            "opencodon.core.turn_context.estimate_request_tokens_rough",
             side_effect=_shrinking_estimate,
         ),
         patch.object(agent, "_compress_context", side_effect=_fake_compress),
@@ -172,7 +172,7 @@ def test_preflight_still_stops_at_default_three(monkeypatch, tmp_path):
 
     with (
         patch(
-            "agent.turn_context.estimate_request_tokens_rough",
+            "opencodon.core.turn_context.estimate_request_tokens_rough",
             side_effect=_shrinking_estimate,
         ),
         patch.object(agent, "_compress_context", side_effect=_fake_compress),

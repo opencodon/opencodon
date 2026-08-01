@@ -57,7 +57,7 @@ class TestXAIProviderIdentity:
         assert XAIWebSearchProvider().name == "xai"
 
     def test_implements_web_search_provider(self):
-        from agent.web_search_provider import WebSearchProvider
+        from opencodon.core.web_search_provider import WebSearchProvider
         from plugins.web.xai.provider import XAIWebSearchProvider
         assert issubclass(XAIWebSearchProvider, WebSearchProvider)
 

@@ -6,11 +6,11 @@ from opencodon.config import load_env, save_env_value
 def test_run_anthropic_oauth_flow_prefers_claude_code_credentials(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setattr(
-        "agent.anthropic_adapter.run_oauth_setup_token",
+        "opencodon.core.anthropic_adapter.run_oauth_setup_token",
         lambda: "sk-ant-oat01-from-claude-setup",
     )
     monkeypatch.setattr(
-        "agent.anthropic_adapter.read_claude_code_credentials",
+        "opencodon.core.anthropic_adapter.read_claude_code_credentials",
         lambda: {
             "accessToken": "cc-access-token",
             "refreshToken": "cc-refresh-token",
@@ -18,7 +18,7 @@ def test_run_anthropic_oauth_flow_prefers_claude_code_credentials(tmp_path, monk
         },
     )
     monkeypatch.setattr(
-        "agent.anthropic_adapter.is_claude_code_token_valid",
+        "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
         lambda creds: True,
     )
 
@@ -36,9 +36,9 @@ def test_run_anthropic_oauth_flow_prefers_claude_code_credentials(tmp_path, monk
 
 def test_run_anthropic_oauth_flow_manual_token_still_persists(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-    monkeypatch.setattr("agent.anthropic_adapter.run_oauth_setup_token", lambda: None)
-    monkeypatch.setattr("agent.anthropic_adapter.read_claude_code_credentials", lambda: None)
-    monkeypatch.setattr("agent.anthropic_adapter.is_claude_code_token_valid", lambda creds: False)
+    monkeypatch.setattr("opencodon.core.anthropic_adapter.run_oauth_setup_token", lambda: None)
+    monkeypatch.setattr("opencodon.core.anthropic_adapter.read_claude_code_credentials", lambda: None)
+    monkeypatch.setattr("opencodon.core.anthropic_adapter.is_claude_code_token_valid", lambda creds: False)
     monkeypatch.setattr("builtins.input", lambda _prompt="": "sk-ant-oat01-manual-token")
     monkeypatch.setattr(
         "opencodon_cli.secret_prompt.masked_secret_prompt",

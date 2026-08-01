@@ -26,8 +26,8 @@ import threading
 import time
 from pathlib import Path
 
-from agent.memory_manager import sanitize_context
-from agent.message_sanitization import _sanitize_surrogates
+from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.message_sanitization import _sanitize_surrogates
 from opencodon_constants import get_opencodon_home
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
@@ -6494,7 +6494,7 @@ class SessionDB:
             # Lazy import: opencodon_state already depends on agent.* (see
             # sanitize_context above), but keep this optional path from
             # widening the import surface at module load.
-            from agent.agent_runtime_helpers import repair_message_sequence
+            from opencodon.core.agent_runtime_helpers import repair_message_sequence
 
             repaired = repair_message_sequence(None, messages)
             if repaired:

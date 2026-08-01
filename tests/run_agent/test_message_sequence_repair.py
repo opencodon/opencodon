@@ -300,7 +300,7 @@ def test_repair_preserves_system_messages():
 
 # ── repair_message_sequence_with_cursor (#44837) ───────────────────────────
 
-from agent.agent_runtime_helpers import repair_message_sequence_with_cursor
+from opencodon.core.agent_runtime_helpers import repair_message_sequence_with_cursor
 
 
 def test_cursor_clamped_when_compaction_shrinks_below_cursor():
@@ -634,7 +634,7 @@ def test_repair_deduplicates_duplicate_tool_results():
     repair_message_sequence consumes the id from known_tool_ids on first match
     so the duplicate falls into the repair/drop branch (#58327, kernel #55436).
     """
-    from agent.agent_runtime_helpers import repair_message_sequence
+    from opencodon.core.agent_runtime_helpers import repair_message_sequence
 
     agent = _bare_agent()
     messages = [
@@ -655,7 +655,7 @@ def test_repair_deduplicates_duplicate_tool_results():
 def test_sanitize_deduplicates_duplicate_tool_results():
     """sanitize_api_messages (final pre-API chokepoint) drops duplicate tool
     results sharing a tool_call_id."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "user", "content": "hi"},
@@ -674,7 +674,7 @@ def test_sanitize_deduplicates_duplicate_tool_results():
 def test_sanitize_deduplicates_duplicate_assistant_tool_call_ids():
     """sanitize_api_messages collapses duplicate tool_calls sharing an id
     WITHIN a single assistant message (the message[6] shape from #58327)."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "assistant", "content": None, "tool_calls": [
@@ -694,7 +694,7 @@ def test_sanitize_deduplicates_duplicate_assistant_tool_call_ids():
 def test_sanitize_preserves_distinct_tool_call_ids():
     """Negative control: legitimate DISTINCT tool_call_ids must NOT be dropped
     (guards against over-dedup)."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "assistant", "content": None, "tool_calls": [
@@ -720,7 +720,7 @@ def test_sanitize_drops_empty_tool_calls_array():
     semantically "no tool calls", so the key is dropped while content is
     preserved.
     """
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "user", "content": "hi"},
@@ -735,7 +735,7 @@ def test_sanitize_drops_empty_tool_calls_array():
 def test_sanitize_drops_non_list_tool_calls():
     """A malformed non-list ``tool_calls`` (e.g. None under the key) is also
     dropped so it can't reach a strict provider."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "assistant", "content": "text", "tool_calls": None},
@@ -747,7 +747,7 @@ def test_sanitize_drops_non_list_tool_calls():
 def test_sanitize_does_not_mutate_original_on_empty_tool_calls():
     """Stripping must be non-destructive: the caller's message dicts (the
     persisted trajectory) keep their original ``tool_calls`` key."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     original_assistant = {"role": "assistant", "content": "answer", "tool_calls": []}
     messages = [{"role": "user", "content": "hi"}, original_assistant]
@@ -758,7 +758,7 @@ def test_sanitize_does_not_mutate_original_on_empty_tool_calls():
 def test_sanitize_preserves_populated_tool_calls():
     """Negative control: a non-empty tool_calls array (with its matching tool
     result) must survive untouched."""
-    from agent.agent_runtime_helpers import sanitize_api_messages
+    from opencodon.core.agent_runtime_helpers import sanitize_api_messages
 
     messages = [
         {"role": "assistant", "content": None, "tool_calls": [

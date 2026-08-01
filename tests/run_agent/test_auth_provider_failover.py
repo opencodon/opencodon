@@ -18,8 +18,8 @@ fell through to "switch providers manually" advice and never called
 from unittest.mock import MagicMock, patch
 
 from run_agent import AIAgent
-from agent.error_classifier import classify_api_error, FailoverReason
-from agent.turn_retry_state import TurnRetryState
+from opencodon.core.error_classifier import classify_api_error, FailoverReason
+from opencodon.core.turn_retry_state import TurnRetryState
 
 
 def _make_agent(fallback_model=None):
@@ -94,7 +94,7 @@ class TestAuthFailoverActivation:
         assert self._should_failover(agent, classified, retry) is True
         # And the activation primitive actually advances on an auth reason.
         with patch(
-            "agent.auxiliary_client.resolve_provider_client",
+            "opencodon.core.auxiliary_client.resolve_provider_client",
             return_value=(_mock_client(), "gpt-4o"),
         ):
             advanced = agent._try_activate_fallback(reason=classified.reason)

@@ -71,7 +71,7 @@ def test_frontmatter_slug_matched_even_when_dir_name_differs(
         "tools.skills_tool._get_disabled_skill_names",
         return_value={"Stable Diffusion Image Generation"},
     ), patch(
-        "agent.skill_utils.get_all_skills_dirs",
+        "opencodon.core.skill_utils.get_all_skills_dirs",
         return_value=[tmp_skills],
     ):
         msg = gateway_run._check_unavailable_skill("stable-diffusion-image-generation")
@@ -95,7 +95,7 @@ def test_unknown_command_still_returns_none(
     with patch(
         "tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
-        "agent.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
+        "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
     ):
         assert gateway_run._check_unavailable_skill("no-such-skill") is None
 
@@ -111,7 +111,7 @@ def test_matched_but_not_disabled_returns_none(
     with patch(
         "tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
-        "agent.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
+        "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
     ):
         assert gateway_run._check_unavailable_skill("ascii-art") is None
 
@@ -128,7 +128,7 @@ def test_slug_normalization_strips_non_alnum(
         "tools.skills_tool._get_disabled_skill_names",
         return_value={"C++ Code Review"},
     ), patch(
-        "agent.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
+        "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
     ):
         msg = gateway_run._check_unavailable_skill("c-code-review")
 
@@ -173,7 +173,7 @@ def test_optional_skill_uses_frontmatter_slug(
     with patch(
         "tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
-        "agent.skill_utils.get_all_skills_dirs", return_value=[empty_skills]
+        "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[empty_skills]
     ):
         msg = gateway_run._check_unavailable_skill("stable-diffusion-image-generation")
 

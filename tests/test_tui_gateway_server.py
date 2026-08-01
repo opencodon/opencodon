@@ -89,7 +89,7 @@ def test_session_context_uses_session_cwd(monkeypatch, tmp_path):
     falling back to os.getcwd() makes agents answer from the desktop app folder
     even when the sidebar/session cwd is a real project.
     """
-    from agent.runtime_cwd import resolve_agent_cwd
+    from opencodon.core.runtime_cwd import resolve_agent_cwd
 
     sid = "cwd-sid"
     session_key = "cwd-key"
@@ -467,9 +467,9 @@ def test_prompt_submit_golden_transcript_matches_flag_off_and_on(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, _session=None: dict(fixed_info))
     monkeypatch.setattr(server, "make_stream_renderer", lambda _cols: None)
     monkeypatch.setattr(server, "render_message", lambda _raw, _cols: None)
-    fake_title = types.ModuleType("agent.title_generator")
+    fake_title = types.ModuleType("opencodon.core.title_generator")
     setattr(fake_title, "maybe_auto_title", lambda *args, **kwargs: None)
-    monkeypatch.setitem(sys.modules, "agent.title_generator", fake_title)
+    monkeypatch.setitem(sys.modules, "opencodon.core.title_generator", fake_title)
 
     def run_flag_off():
         events = []
@@ -539,7 +539,7 @@ def test_session_context_explicit_cwd_for_ephemeral_task(monkeypatch, tmp_path):
     """Background/preview tasks use ephemeral ids absent from `_sessions`, so the
     parent workspace is passed explicitly; it must pin instead of clearing back
     to the gateway launch dir."""
-    from agent.runtime_cwd import resolve_agent_cwd
+    from opencodon.core.runtime_cwd import resolve_agent_cwd
 
     project = tmp_path / "project"
     project.mkdir()
@@ -763,13 +763,13 @@ def test_write_json_drops_detached_ws_frames(monkeypatch):
 
 
 def test_tui_verbose_tool_details_fail_closed_when_redaction_fails(monkeypatch):
-    redact_module = types.ModuleType("agent.redact")
+    redact_module = types.ModuleType("opencodon.core.redact")
 
     def fail_redaction(*_args, **_kwargs):
         raise RuntimeError("redaction unavailable")
 
     setattr(redact_module, "redact_sensitive_text", fail_redaction)
-    monkeypatch.setitem(sys.modules, "agent.redact", redact_module)
+    monkeypatch.setitem(sys.modules, "opencodon.core.redact", redact_module)
 
     assert server._redact_tui_verbose_text("api_key=secret") == ""
     assert server._tool_args_text({"api_key": "secret"}) == ""
@@ -802,13 +802,13 @@ def test_tui_verbose_default_cap_stays_small(monkeypatch):
 
 
 def test_tui_verbose_tool_events_omit_details_when_redaction_fails(monkeypatch):
-    redact_module = types.ModuleType("agent.redact")
+    redact_module = types.ModuleType("opencodon.core.redact")
 
     def fail_redaction(*_args, **_kwargs):
         raise RuntimeError("redaction unavailable")
 
     setattr(redact_module, "redact_sensitive_text", fail_redaction)
-    monkeypatch.setitem(sys.modules, "agent.redact", redact_module)
+    monkeypatch.setitem(sys.modules, "opencodon.core.redact", redact_module)
 
     events: list[tuple[str, str, dict]] = []
     monkeypatch.setattr(
@@ -929,7 +929,7 @@ def test_dispatch_rejects_non_object_params():
 def test_system_battery_returns_reading(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "agent.battery",
+        "opencodon.core.battery",
         types.SimpleNamespace(
             read_battery=lambda: types.SimpleNamespace(
                 available=True, percent=77, plugged=False
@@ -954,7 +954,7 @@ def test_system_battery_fails_open(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "agent.battery",
+        "opencodon.core.battery",
         types.SimpleNamespace(read_battery=boom, battery_category=lambda _s: "dim"),
     )
 
@@ -1310,7 +1310,7 @@ def test_load_enabled_toolsets_folds_project_into_focus_posture(monkeypatch):
     # the project tools while sitting in a repo.
     monkeypatch.delenv("OPENCODON_TUI_TOOLSETS", raising=False)
 
-    import agent.coding_context as cc
+    import opencodon.core.coding_context as cc
 
     monkeypatch.setattr(cc, "coding_selection", lambda **_: ["coding", "figma"])
 
@@ -6319,7 +6319,7 @@ def test_session_compress_reports_aborted_summary_without_success(monkeypatch):
 
 def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
     """LCM notification follows the TUI's final session-key transition."""
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
     )
 
@@ -6370,7 +6370,7 @@ def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
 
 
 def test_session_compress_sync_failure_discards_lcm_notification(monkeypatch):
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
     )
 
@@ -6569,7 +6569,7 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
         def start(self):
             self._target()
 
-    fake_ctx = types.ModuleType("agent.context_references")
+    fake_ctx = types.ModuleType("opencodon.core.context_references")
     fake_ctx.preprocess_context_references = (
         lambda message, **kwargs: types.SimpleNamespace(
             blocked=False,
@@ -6579,7 +6579,7 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
             injected_tokens=0,
         )
     )
-    fake_meta = types.ModuleType("agent.model_metadata")
+    fake_meta = types.ModuleType("opencodon.core.model_metadata")
     fake_meta.get_model_context_length = lambda *args, **kwargs: 100000
 
     server._sessions["sid"] = _session(agent=_Agent())
@@ -6587,8 +6587,8 @@ def test_prompt_submit_expands_context_refs(monkeypatch):
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
     monkeypatch.setattr(server, "make_stream_renderer", lambda cols: None)
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
-    monkeypatch.setitem(sys.modules, "agent.context_references", fake_ctx)
-    monkeypatch.setitem(sys.modules, "agent.model_metadata", fake_meta)
+    monkeypatch.setitem(sys.modules, "opencodon.core.context_references", fake_ctx)
+    monkeypatch.setitem(sys.modules, "opencodon.core.model_metadata", fake_meta)
 
     server.handle_request(
         {
@@ -6951,7 +6951,7 @@ def test_session_status_reads_live_gateway_agent(monkeypatch):
 
 
 def test_skills_reload_runs_in_gateway_process(monkeypatch):
-    import agent.skill_commands as skill_commands
+    import opencodon.core.skill_commands as skill_commands
 
     called = {}
     monkeypatch.setattr(
@@ -8870,7 +8870,7 @@ def test_prompt_submit_auto_titles_session_on_complete(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -8913,7 +8913,7 @@ def test_prompt_submit_skips_auto_title_when_interrupted(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -8944,7 +8944,7 @@ def test_prompt_submit_skips_auto_title_when_response_empty(monkeypatch):
     monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         server.handle_request(
             {
                 "id": "1",
@@ -9407,7 +9407,7 @@ def test_verification_status_returns_recorded_evidence(tmp_path):
     )
     (project / "pnpm-lock.yaml").write_text("", encoding="utf-8")
     try:
-        from agent.verification_evidence import record_terminal_result
+        from opencodon.core.verification_evidence import record_terminal_result
 
         record_terminal_result(
             command="pnpm run test",
@@ -9440,7 +9440,7 @@ def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tm
     # tmp-root ancestor (e.g. /tmp/package.json left by another tool) would
     # otherwise make _marker_root() resolve tmp_path as a workspace and flip
     # the status to "unverified".
-    import agent.coding_context as coding_context
+    import opencodon.core.coding_context as coding_context
 
     monkeypatch.setattr(coding_context, "project_facts_for", lambda _cwd=None: None)
 

@@ -521,7 +521,7 @@ class TestReapplyReasoningEchoForProviderSwitch:
         ]
 
     def test_switch_to_deepseek_pads_bare_turns(self) -> None:
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         agent = _make_agent(provider="deepseek", model="deepseek-v4-pro")
         msgs = self._codex_built_history()
@@ -539,7 +539,7 @@ class TestReapplyReasoningEchoForProviderSwitch:
         the fallback request 400/422s ("Extra inputs are not permitted").
         Refs #45655 — DeepSeek primary → Mistral fallback 422 on the " " pad.
         """
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         agent = _make_agent(
             provider="openai-codex",
@@ -555,7 +555,7 @@ class TestReapplyReasoningEchoForProviderSwitch:
         assert "reasoning_content" not in msgs[4]
 
     def test_idempotent(self) -> None:
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         agent = _make_agent(provider="deepseek", model="deepseek-v4-pro")
         msgs = self._codex_built_history()
@@ -563,7 +563,7 @@ class TestReapplyReasoningEchoForProviderSwitch:
         assert reapply_reasoning_echo_for_provider(agent, msgs) == 0
 
     def test_non_assistant_messages_untouched(self) -> None:
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         agent = _make_agent(provider="deepseek", model="deepseek-v4-pro")
         msgs = self._codex_built_history()
@@ -606,7 +606,7 @@ class TestReasoningPrimaryToStrictFallback:
         ]
 
     def test_mistral_fallback_strips_space_pad(self) -> None:
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         mistral = _make_agent(
             provider="mistral",
@@ -622,7 +622,7 @@ class TestReasoningPrimaryToStrictFallback:
     def test_roundtrip_back_to_deepseek_repads(self) -> None:
         """Strict fallback strips, then switching back to DeepSeek re-pads —
         no regression on the #15748 echo-back requirement."""
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
 
         msgs = self._deepseek_built_history()
         mistral = _make_agent(

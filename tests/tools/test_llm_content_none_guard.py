@@ -15,7 +15,7 @@ import types
 
 import pytest
 
-from agent.auxiliary_client import extract_content_or_reasoning
+from opencodon.core.auxiliary_client import extract_content_or_reasoning
 
 
 # ── helpers ────────────────────────────────────────────────────────────────

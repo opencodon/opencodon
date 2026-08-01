@@ -24,7 +24,7 @@ class TestCredentialPoolPreservedOnAutoDetect:
     def test_anthropic_pool_preserved_with_url_auto_detect(self):
         """When provider=None and base_url=api.anthropic.com, the passed
         credential_pool should remain attached after auto-detection."""
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
 
         # Build a minimal agent-like object (like tests use object.__new__)
         from run_agent import AIAgent
@@ -35,17 +35,17 @@ class TestCredentialPoolPreservedOnAutoDetect:
 
         pool = SimpleNamespace(provider="anthropic")
 
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(None, None)), \
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(None, None)), \
              patch("run_agent.get_tool_definitions", return_value=[]), \
-             patch('agent.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('agent.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('agent.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('agent.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('agent.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
-             patch('agent.iteration_budget.IterationBudget'), \
+             patch('opencodon.core.iteration_budget.IterationBudget'), \
              patch('opencodon.config.cfg_get', return_value=None):
 
             init_agent(
@@ -80,7 +80,7 @@ class TestCredentialPoolPreservedOnAutoDetect:
     def test_codex_pool_preserved_with_url_auto_detect(self):
         """When provider=None and base_url=chatgpt.com/backend-api/codex, the
         passed credential_pool should remain attached."""
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
         from run_agent import AIAgent
         agent = object.__new__(AIAgent)
         agent._base_url = ""
@@ -89,18 +89,18 @@ class TestCredentialPoolPreservedOnAutoDetect:
 
         pool = SimpleNamespace(provider="openai-codex")
 
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://chatgpt.com/backend-api/codex"), None)), \
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://chatgpt.com/backend-api/codex"), None)), \
              patch("run_agent.get_tool_definitions", return_value=[]), \
              patch("run_agent.OpenAI", return_value=MagicMock()), \
-             patch('agent.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('agent.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('agent.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('agent.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('agent.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
-             patch('agent.iteration_budget.IterationBudget'), \
+             patch('opencodon.core.iteration_budget.IterationBudget'), \
              patch('opencodon.config.cfg_get', return_value=None):
 
             init_agent(
@@ -130,7 +130,7 @@ class TestCredentialPoolPreservedOnAutoDetect:
     def test_xai_pool_preserved_with_url_auto_detect(self):
         """When provider=None and base_url=api.x.ai, the passed
         credential_pool should remain attached."""
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
         from run_agent import AIAgent
         agent = object.__new__(AIAgent)
         agent._base_url = ""
@@ -139,18 +139,18 @@ class TestCredentialPoolPreservedOnAutoDetect:
 
         pool = SimpleNamespace(provider="xai")
 
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://api.x.ai"), None)), \
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://api.x.ai"), None)), \
              patch("run_agent.get_tool_definitions", return_value=[]), \
              patch("run_agent.OpenAI", return_value=MagicMock()), \
-             patch('agent.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('agent.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('agent.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('agent.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('agent.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
-             patch('agent.iteration_budget.IterationBudget'), \
+             patch('opencodon.core.iteration_budget.IterationBudget'), \
              patch('opencodon.config.cfg_get', return_value=None):
 
             init_agent(

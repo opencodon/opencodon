@@ -20,7 +20,7 @@ assignment, so they fail if either contract regresses.
 import time
 from types import SimpleNamespace
 
-from agent.iteration_budget import IterationBudget
+from opencodon.core.iteration_budget import IterationBudget
 
 
 def _make_cached_agent(max_iterations: int) -> SimpleNamespace:

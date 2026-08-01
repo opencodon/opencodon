@@ -130,7 +130,7 @@ def test_background_review_summarizer_receives_captured_messages_after_close(mon
     disappear. The fix snapshots ``_session_messages`` before teardown.
     """
     import json
-    import agent.background_review as bg_review
+    import opencodon.core.background_review as bg_review
 
     review_tool_message = {
         "role": "tool",
@@ -367,7 +367,7 @@ def test_background_review_fork_skips_external_memory_plugins(monkeypatch):
 
 import json as _json
 
-from agent.background_review import summarize_background_review_actions
+from opencodon.core.background_review import summarize_background_review_actions
 
 
 def _memory_add_review():

@@ -2289,7 +2289,7 @@ def _redact_process_result(result: dict) -> dict:
     """
     if not isinstance(result, dict):
         return result
-    from agent.redact import redact_sensitive_text, redact_terminal_output
+    from opencodon.core.redact import redact_sensitive_text, redact_terminal_output
 
     command = result.get("command") or ""
     for field in ("output", "output_preview"):

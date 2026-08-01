@@ -80,7 +80,7 @@ class TestMinimaxAuxModelM3:
         )
 
     def test_consumer_api_returns_non_empty_for_each_provider(self, minimax_profile):
-        from agent.auxiliary_client import _get_aux_model_for_provider
+        from opencodon.core.auxiliary_client import _get_aux_model_for_provider
 
         profile, provider_id = minimax_profile
         resolved = _get_aux_model_for_provider(provider_id)
@@ -214,7 +214,7 @@ class TestMinimaxM3OpenAIReasoningWireShape:
     def test_transport_threads_base_url_to_profile(self):
         import model_tools  # noqa: F401
         import providers
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         profile = providers.get_provider_profile("minimax")
         assert profile is not None

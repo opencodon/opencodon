@@ -67,7 +67,7 @@ class TestSmartApproval:
         response = SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content="APPROVE"))]
         )
-        with mock_patch("agent.auxiliary_client.call_llm", return_value=response) as mock_call:
+        with mock_patch("opencodon.core.auxiliary_client.call_llm", return_value=response) as mock_call:
             result = _smart_approve("python -c \"print('hello')\"", "script execution via -c flag")
 
         assert result == "approve"

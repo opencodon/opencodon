@@ -92,13 +92,13 @@ import threading
 import queue
 
 def CanonicalUsage(*args, **kwargs):
-    from agent.usage_pricing import CanonicalUsage as _CanonicalUsage
+    from opencodon.core.usage_pricing import CanonicalUsage as _CanonicalUsage
 
     return _CanonicalUsage(*args, **kwargs)
 
 
 def estimate_usage_cost(*args, **kwargs):
-    from agent.usage_pricing import estimate_usage_cost as _estimate_usage_cost
+    from opencodon.core.usage_pricing import estimate_usage_cost as _estimate_usage_cost
 
     return _estimate_usage_cost(*args, **kwargs)
 
@@ -189,19 +189,19 @@ def format_token_count_compact(*args, **kwargs):
 
 
 def is_table_divider(*args, **kwargs):
-    from agent.markdown_tables import is_table_divider as _is_table_divider
+    from opencodon.core.markdown_tables import is_table_divider as _is_table_divider
 
     return _is_table_divider(*args, **kwargs)
 
 
 def looks_like_table_row(*args, **kwargs):
-    from agent.markdown_tables import looks_like_table_row as _looks_like_table_row
+    from opencodon.core.markdown_tables import looks_like_table_row as _looks_like_table_row
 
     return _looks_like_table_row(*args, **kwargs)
 
 
 def realign_markdown_tables(*args, **kwargs):
-    from agent.markdown_tables import realign_markdown_tables as _realign_markdown_tables
+    from opencodon.core.markdown_tables import realign_markdown_tables as _realign_markdown_tables
 
     return _realign_markdown_tables(*args, **kwargs)
 # NOTE: `from agent.account_usage import ...` is deliberately NOT at module
@@ -811,7 +811,7 @@ except Exception:
 
 # Initialize tool preview length from config
 try:
-    from agent.display import set_tool_preview_max_len
+    from opencodon.core.display import set_tool_preview_max_len
     _tpl = CLI_CONFIG.get("display", {}).get("tool_preview_length", 0)
     set_tool_preview_max_len(int(_tpl) if _tpl else 0)
 except Exception:
@@ -819,7 +819,7 @@ except Exception:
 
 # Initialize friendly tool labels from config (default on)
 try:
-    from agent.display import set_friendly_tool_labels
+    from opencodon.core.display import set_friendly_tool_labels
     _ftl = CLI_CONFIG.get("display", {}).get("friendly_tool_labels", True)
     set_friendly_tool_labels(bool(_ftl))
 except Exception:
@@ -1038,7 +1038,7 @@ def _prepare_deferred_agent_startup() -> None:
             exc_info=True,
         )
     try:
-        from agent.shell_hooks import register_from_config
+        from opencodon.core.shell_hooks import register_from_config
         from opencodon.config import load_config
 
         register_from_config(load_config(), accept_hooks=_accept_hooks)
@@ -1197,7 +1197,7 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
     # AsyncHttpxClientWrapper.__del__ doesn't fire on a closed event loop
     # and trigger prompt_toolkit's "Press ENTER to continue..." handler.
     try:
-        from agent.auxiliary_client import shutdown_cached_clients
+        from opencodon.core.auxiliary_client import shutdown_cached_clients
         shutdown_cached_clients()
     except Exception:
         pass
@@ -3623,7 +3623,7 @@ _skill_bundles = None
 def _ensure_skill_commands() -> dict:
     global _skill_commands
     if _skill_commands is None:
-        from agent.skill_commands import scan_skill_commands
+        from opencodon.core.skill_commands import scan_skill_commands
 
         _skill_commands = scan_skill_commands()
     return _skill_commands
@@ -3634,13 +3634,13 @@ def get_skill_commands() -> dict:
 
 
 def build_skill_invocation_message(*args, **kwargs):
-    from agent.skill_commands import build_skill_invocation_message as _impl
+    from opencodon.core.skill_commands import build_skill_invocation_message as _impl
 
     return _impl(*args, **kwargs)
 
 
 def build_preloaded_skills_prompt(*args, **kwargs):
-    from agent.skill_commands import build_preloaded_skills_prompt as _impl
+    from opencodon.core.skill_commands import build_preloaded_skills_prompt as _impl
 
     return _impl(*args, **kwargs)
 
@@ -3648,14 +3648,14 @@ def build_preloaded_skills_prompt(*args, **kwargs):
 def get_skill_bundles() -> dict:
     global _skill_bundles
     if _skill_bundles is None:
-        from agent.skill_bundles import get_skill_bundles as _impl
+        from opencodon.core.skill_bundles import get_skill_bundles as _impl
 
         _skill_bundles = _impl()
     return _skill_bundles
 
 
 def build_bundle_invocation_message(*args, **kwargs):
-    from agent.skill_bundles import build_bundle_invocation_message as _impl
+    from opencodon.core.skill_bundles import build_bundle_invocation_message as _impl
 
     return _impl(*args, **kwargs)
 
@@ -4517,7 +4517,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         arg = parts[1].strip().lower() if len(parts) > 1 else ""
 
         try:
-            from agent.battery import format_battery, read_battery
+            from opencodon.core.battery import format_battery, read_battery
             reading = read_battery(use_cache=False)
         except Exception:
             reading = None
@@ -4689,7 +4689,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # every status-bar repaint is cheap.
         if getattr(self, "_battery_visible", False):
             try:
-                from agent.battery import (
+                from opencodon.core.battery import (
                     battery_category,
                     format_battery,
                     read_battery,
@@ -6129,7 +6129,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         # Warn about low context lengths (common with local servers). Keep
         # this tied to the runtime guard so guidance cannot drift again.
-        from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
+        from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
         if ctx_len and ctx_len < MINIMUM_CONTEXT_LENGTH:
             self._console_print()
             self._console_print(
@@ -6665,7 +6665,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         
         # ``self.api_key`` may be a callable (Azure Foundry Entra ID bearer
         # provider). Never invoke it; just identify the auth surface.
-        from agent.azure_identity_adapter import is_token_provider
+        from opencodon.core.azure_identity_adapter import is_token_provider
         if is_token_provider(self.api_key):
             api_key_display = "Microsoft Entra ID"
         elif isinstance(self.api_key, str) and len(self.api_key) > 12:
@@ -8989,7 +8989,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                             )
                             output = result.stdout.strip() or result.stderr.strip()
                             if output:
-                                from agent.redact import redact_sensitive_text
+                                from opencodon.core.redact import redact_sensitive_text
                                 output = redact_sensitive_text(output)
                                 self._console_print(_rich_text_from_ansi(output))
                             else:
@@ -9058,7 +9058,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # Stacked slash-skill invocations: `/skill-a /skill-b do XYZ`
                 # loads every leading skill (up to 5), not just the first.
                 # Inspired by Claude Code v2.1.199.
-                from agent.skill_commands import (
+                from opencodon.core.skill_commands import (
                     build_stacked_skill_invocation_message,
                     split_stacked_skill_commands,
                 )
@@ -9571,7 +9571,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             split_history_for_partial_compress,
             summarize_compress_preview,
         )
-        from agent.conversation_compression import (
+        from opencodon.core.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
 
@@ -9599,7 +9599,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 return
 
         if preview:
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
             _sys_prompt = getattr(self.agent, "_cached_system_prompt", "") or ""
             _tools = getattr(self.agent, "tools", None) or None
             approx_tokens = estimate_request_tokens_rough(
@@ -9621,8 +9621,8 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         original_count = len(self.conversation_history)
         with self._busy_command("Compressing context..."):
             try:
-                from agent.model_metadata import estimate_request_tokens_rough
-                from agent.manual_compression_feedback import summarize_manual_compression
+                from opencodon.core.model_metadata import estimate_request_tokens_rough
+                from opencodon.core.manual_compression_feedback import summarize_manual_compression
                 original_history = list(self.conversation_history)
 
                 # Boundary-aware split: only the head is summarized; the
@@ -9761,7 +9761,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         base_url = (getattr(self.agent, "base_url", None) if self.agent else None) or getattr(self, "base_url", None)
         api_key = (getattr(self.agent, "api_key", None) if self.agent else None) or getattr(self, "api_key", None)
 
-        from agent.account_usage import redeem_codex_reset_credit
+        from opencodon.core.account_usage import redeem_codex_reset_credit
 
         print("  ⏳ Checking banked reset credits...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
@@ -9793,7 +9793,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # ── Rate limits (shown first when available) ────────────────
         rl_state = agent.get_rate_limit_state()
         if rl_state and rl_state.has_data:
-            from agent.rate_limit_tracker import format_rate_limit_display
+            from opencodon.core.rate_limit_tracker import format_rate_limit_display
             print()
             print(format_rate_limit_display(rl_state))
             print()
@@ -9838,7 +9838,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         base_url = getattr(agent, "base_url", None) or getattr(self, "base_url", None)
         api_key = getattr(agent, "api_key", None) or getattr(self, "api_key", None)
         # Lazy import — pulls the OpenAI SDK chain, only needed here.
-        from agent.account_usage import fetch_account_usage, render_account_usage_lines
+        from opencodon.core.account_usage import fetch_account_usage, render_account_usage_lines
         account_snapshot = None
         if provider:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
@@ -9895,7 +9895,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         try:
             from opencodon_state import SessionDB
-            from agent.insights import InsightsEngine
+            from opencodon.core.insights import InsightsEngine
 
             db = SessionDB()
             engine = InsightsEngine(db)
@@ -10326,7 +10326,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         prompt caching intact.
         """
         try:
-            from agent.skill_commands import reload_skills, get_skill_commands
+            from opencodon.core.skill_commands import reload_skills, get_skill_commands
 
             if not self._command_running:
                 print("🔄 Reloading skills...")
@@ -10406,7 +10406,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             self._stream_box_opened = False
         self._close_reasoning_box()
 
-        from agent.display import get_tool_emoji
+        from opencodon.core.display import get_tool_emoji
         emoji = get_tool_emoji(tool_name, default="⚡")
         _cprint(f"  ┊ {emoji} preparing {tool_name}…")
 
@@ -10484,7 +10484,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     return
                 self._last_scrollback_tool = function_name
                 try:
-                    from agent.display import get_cute_tool_message
+                    from opencodon.core.display import get_cute_tool_message
                     line = get_cute_tool_message(function_name, stored_args, duration, result=kwargs.get("result"))
                     _cprint(f"  {line}")
                 except Exception:
@@ -10501,7 +10501,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                         and self.tool_progress_mode == "all"
                         and duration >= 30.0
                     ):
-                        from agent.onboarding import (
+                        from opencodon.core.onboarding import (
                             TOOL_PROGRESS_FLAG,
                             is_seen,
                             mark_seen,
@@ -10519,10 +10519,10 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if event_type != "tool.started":
             return
         if function_name and not function_name.startswith("_"):
-            from agent.display import get_tool_emoji
+            from opencodon.core.display import get_tool_emoji
             emoji = get_tool_emoji(function_name)
             label = preview or function_name
-            from agent.display import get_tool_preview_max_len
+            from opencodon.core.display import get_tool_preview_max_len
             _pl = get_tool_preview_max_len()
             if _pl > 0 and len(label) > _pl:
                 label = label[:_pl - 3] + "..."
@@ -10537,7 +10537,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _on_tool_start(self, tool_call_id: str, function_name: str, function_args: dict):
         """Capture local before-state for write-capable tools."""
         try:
-            from agent.display import capture_local_edit_snapshot
+            from opencodon.core.display import capture_local_edit_snapshot
 
             snapshot = capture_local_edit_snapshot(function_name, function_args)
             if snapshot is not None:
@@ -10564,7 +10564,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     pass
         snapshot = self._pending_edit_snapshots.pop(tool_call_id, None)
         try:
-            from agent.display import render_edit_diff_with_delta
+            from opencodon.core.display import render_edit_diff_with_delta
 
             render_edit_diff_with_delta(
                 function_name,
@@ -11679,7 +11679,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # See agent/image_routing.py for the decision table.
         if images:
             try:
-                from agent.image_routing import (
+                from opencodon.core.image_routing import (
                     build_native_content_parts,
                     decide_image_input_mode,
                 )
@@ -11731,8 +11731,8 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Expand @ context references (e.g. @file:main.py, @diff, @folder:src/)
         if isinstance(message, str) and "@" in message:
             try:
-                from agent.context_references import preprocess_context_references
-                from agent.model_metadata import get_model_context_length
+                from opencodon.core.context_references import preprocess_context_references
+                from opencodon.core.model_metadata import get_model_context_length
                 _ctx_len = get_model_context_length(
                     self.model, base_url=self.base_url or "", api_key=self.api_key or "",
                     provider=self.provider or "",
@@ -12099,7 +12099,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # to a per-thread event loop; if that loop is now closed, those
             # clients' __del__ would crash prompt_toolkit's loop on GC.
             try:
-                from agent.auxiliary_client import cleanup_stale_async_clients
+                from opencodon.core.auxiliary_client import cleanup_stale_async_clients
                 cleanup_stale_async_clients()
             except Exception:
                 pass
@@ -12144,7 +12144,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # Auto-generate session title after first exchange (non-blocking)
             if response and result and not result.get("failed") and not result.get("partial"):
                 try:
-                    from agent.title_generator import maybe_auto_title
+                    from opencodon.core.title_generator import maybe_auto_title
                     # Route title-generation failures through the agent's
                     # user-visible warning channel so a depleted auxiliary
                     # provider doesn't silently leave sessions untitled
@@ -12494,7 +12494,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # durable transcript never leaves a NULL system_prompt cache entry.
             if getattr(agent, "_cached_system_prompt", None) is None:
                 try:
-                    from agent.conversation_loop import _restore_or_build_system_prompt
+                    from opencodon.core.conversation_loop import _restore_or_build_system_prompt
 
                     _restore_or_build_system_prompt(agent, None, conversation_history)
                 except Exception:
@@ -12911,7 +12911,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # never blocks the interactive loop.  Best-effort; any failure is
         # swallowed to avoid breaking session startup.
         try:
-            from agent.curator import maybe_run_curator
+            from opencodon.core.curator import maybe_run_curator
             maybe_run_curator(
                 idle_for_seconds=float("inf"),  # CLI startup = fully idle
                 on_summary=lambda msg: self._console_print(
@@ -13223,7 +13223,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     # again.  Guarded for exceptions so onboarding can't break
                     # the input loop.
                     try:
-                        from agent.onboarding import (
+                        from opencodon.core.onboarding import (
                             BUSY_INPUT_FLAG,
                             busy_input_hint_cli,
                             is_seen,
@@ -15483,7 +15483,7 @@ def main(
         # workspace. See agent/coding_context.py.
         _coding = None
         try:
-            from agent.coding_context import coding_selection
+            from opencodon.core.coding_context import coding_selection
             _coding = coding_selection(platform="cli", config=CLI_CONFIG)
         except Exception:
             _coding = None
@@ -15630,10 +15630,10 @@ def main(
                         _img_mode = "text"
                         _build_parts = None
                         try:
-                            from agent.image_routing import (
+                            from opencodon.core.image_routing import (
                                 build_native_content_parts as _build_parts,  # noqa: F811
                             )
-                            from agent.image_routing import decide_image_input_mode
+                            from opencodon.core.image_routing import decide_image_input_mode
                             from opencodon.config import load_config
 
                             _img_mode = decide_image_input_mode(

@@ -29,7 +29,7 @@ def curator_env(tmp_path, monkeypatch, capsys):
 
     import opencodon_constants
     importlib.reload(opencodon_constants)
-    from agent import curator
+    from opencodon.core import curator
     importlib.reload(curator)
     from opencodon_cli import main as opencodon_main
     importlib.reload(opencodon_main)

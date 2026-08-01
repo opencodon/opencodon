@@ -232,10 +232,10 @@ class TestAgentSwitchModelDefenseInDepth:
             raise _Sentinel("strip verified")
 
         with patch(
-            "agent.anthropic_adapter.build_anthropic_client",
+            "opencodon.core.anthropic_adapter.build_anthropic_client",
             side_effect=_raise_after_capture,
-        ), patch("agent.anthropic_adapter.resolve_anthropic_token", return_value=""), patch(
-            "agent.anthropic_adapter._is_oauth_token", return_value=False
+        ), patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value=""), patch(
+            "opencodon.core.anthropic_adapter._is_oauth_token", return_value=False
         ):
             with pytest.raises(_Sentinel):
                 agent.switch_model(

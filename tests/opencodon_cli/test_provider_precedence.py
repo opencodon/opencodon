@@ -25,7 +25,7 @@ def _config(monkeypatch, model_cfg):
 
 def _no_aws(monkeypatch):
     # Neutralize any ambient AWS creds so Bedrock auto-detect can't interfere.
-    monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
+    monkeypatch.setattr("opencodon.core.bedrock_adapter.has_aws_credentials", lambda: False)
 
 
 def _clear_provider_env(monkeypatch):
@@ -113,5 +113,5 @@ class TestProviderPrecedence:
             def has_credentials(self):
                 return True
 
-        monkeypatch.setattr("agent.credential_pool.load_pool", lambda name: _Pool())
+        monkeypatch.setattr("opencodon.core.credential_pool.load_pool", lambda name: _Pool())
         assert resolve_provider("auto") == "openrouter"

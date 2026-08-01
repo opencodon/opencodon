@@ -334,7 +334,7 @@ class PluginContext:
 
         See :mod:`agent.plugin_llm` for the full surface."""
         if self._llm is None:
-            from agent.plugin_llm import PluginLlm
+            from opencodon.core.plugin_llm import PluginLlm
             plugin_id = self.manifest.key or self.manifest.name
             self._llm = PluginLlm(plugin_id=plugin_id)
         return self._llm
@@ -604,7 +604,7 @@ class PluginContext:
             )
             return
         # Defer the import to avoid circular deps at module level
-        from agent.context_engine import ContextEngine
+        from opencodon.core.context_engine import ContextEngine
         if not isinstance(engine, ContextEngine):
             logger.warning(
                 "Plugin '%s' tried to register a context engine that does not "
@@ -629,8 +629,8 @@ class PluginContext:
         ``config.yaml`` matches against when routing ``image_generate``
         tool calls.
         """
-        from agent.image_gen_provider import ImageGenProvider
-        from agent.image_gen_registry import register_provider
+        from opencodon.core.image_gen_provider import ImageGenProvider
+        from opencodon.core.image_gen_registry import register_provider
 
         if not isinstance(provider, ImageGenProvider):
             logger.warning(
@@ -697,8 +697,8 @@ class PluginContext:
         matches against when routing ``web_search`` / ``web_extract``
         tool calls.
         """
-        from agent.web_search_provider import WebSearchProvider
-        from agent.web_search_registry import register_provider as _register_web_provider
+        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.web_search_registry import register_provider as _register_web_provider
 
         if not isinstance(provider, WebSearchProvider):
             logger.warning(
@@ -729,8 +729,8 @@ class PluginContext:
         subsystem's dispatcher (:func:`tools.browser_tool._get_cloud_provider`)
         consults the registry built up by these calls.
         """
-        from agent.browser_provider import BrowserProvider
-        from agent.browser_registry import register_provider as _register_browser_provider
+        from opencodon.core.browser_provider import BrowserProvider
+        from opencodon.core.browser_registry import register_provider as _register_browser_provider
 
         if not isinstance(provider, BrowserProvider):
             logger.warning(
@@ -776,8 +776,8 @@ class PluginContext:
         set), and a ``fetch()`` that never raises and never prompts.
         See the base-module docstring for the full contract.
         """
-        from agent.secret_sources.base import SecretSource
-        from agent.secret_sources.registry import register_source
+        from opencodon.core.secret_sources.base import SecretSource
+        from opencodon.core.secret_sources.registry import register_source
 
         if not isinstance(source, SecretSource):
             logger.warning(
@@ -814,8 +814,8 @@ class PluginContext:
         Coexists with the command-provider registry rather than
         replacing it — see issue #30398 for the full design rationale.
         """
-        from agent.tts_provider import TTSProvider
-        from agent.tts_registry import register_provider as _register_tts_provider
+        from opencodon.core.tts_provider import TTSProvider
+        from opencodon.core.tts_registry import register_provider as _register_tts_provider
 
         if not isinstance(provider, TTSProvider):
             logger.warning(
@@ -858,8 +858,8 @@ class PluginContext:
         engines (OpenRouter, SenseAudio, Gemini-STT, custom proprietary
         backends).
         """
-        from agent.transcription_provider import TranscriptionProvider
-        from agent.transcription_registry import register_provider as _register_stt_provider
+        from opencodon.core.transcription_provider import TranscriptionProvider
+        from opencodon.core.transcription_registry import register_provider as _register_stt_provider
 
         if not isinstance(provider, TranscriptionProvider):
             logger.warning(
@@ -1161,7 +1161,7 @@ class PluginContext:
             ValueError: if *name* contains ``':'`` or invalid characters.
             FileNotFoundError: if *path* does not exist.
         """
-        from agent.skill_utils import _NAMESPACE_RE
+        from opencodon.core.skill_utils import _NAMESPACE_RE
 
         if ":" in name:
             raise ValueError(

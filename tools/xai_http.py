@@ -260,7 +260,7 @@ def resolve_xai_http_credentials(
     not whichever entry its strategy would otherwise select first.
     """
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         import opencodon_cli.auth as auth_mod
 
         pool = load_pool("xai-oauth")

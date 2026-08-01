@@ -73,7 +73,7 @@ async def test_gateway_stop_waits_for_cron_before_final_tool_kill():
         patch("cron.scheduler.get_running_job_ids", side_effect=_cron_in_flight),
         patch("gateway.status.remove_pid_file"),
         patch("gateway.status.write_runtime_status"),
-        patch("agent.auxiliary_client.shutdown_cached_clients"),
+        patch("opencodon.core.auxiliary_client.shutdown_cached_clients"),
         patch("tools.process_registry.process_registry") as registry_mock,
     ):
         registry_mock.kill_all.side_effect = _fake_kill_all

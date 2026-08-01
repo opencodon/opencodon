@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Optional
 
 from opencodon_cli import profiles as profiles_mod
-from agent.skill_utils import is_excluded_skill_path
+from opencodon.core.skill_utils import is_excluded_skill_path
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ def describe_profile(
         model, provider = None, None
 
     try:
-        from agent.auxiliary_client import call_llm  # type: ignore
+        from opencodon.core.auxiliary_client import call_llm  # type: ignore
     except Exception as exc:
         logger.debug("describe: auxiliary client import failed: %s", exc)
         return DescribeOutcome(canon, False, "auxiliary client unavailable")

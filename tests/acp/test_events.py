@@ -286,7 +286,7 @@ class TestStepCallback:
 
         with patch("acp_adapter.events.make_tool_call_id", return_value="tc-meta"), \
              patch("acp_adapter.events._send_update") as mock_send, \
-             patch("agent.display.capture_local_edit_snapshot", return_value="snapshot"):
+             patch("opencodon.core.display.capture_local_edit_snapshot", return_value="snapshot"):
             cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids, tool_call_meta)
             cb("tool.started", "write_file", None, {"path": "diff-test.txt", "content": "hello"})
 
@@ -402,7 +402,7 @@ class TestSendUpdate:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             with patch(
-                "agent.async_utils.asyncio.run_coroutine_threadsafe",
+                "opencodon.core.async_utils.asyncio.run_coroutine_threadsafe",
                 side_effect=RuntimeError("scheduler down"),
             ):
                 _send_update(conn, "session-1", event_loop_fixture, {"type": "noop"})

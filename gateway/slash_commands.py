@@ -28,9 +28,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from agent.account_usage import fetch_account_usage, render_account_usage_lines
-from agent.i18n import t
-from agent.turn_context import extract_api_content_sidecar
+from opencodon.core.account_usage import fetch_account_usage, render_account_usage_lines
+from opencodon.core.i18n import t
+from opencodon.core.turn_context import extract_api_content_sidecar
 from gateway.config import HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import EphemeralReply, MessageEvent, MessageType
 from gateway.session import (
@@ -1202,7 +1202,7 @@ class GatewaySlashCommandsMixin:
             *gateway_help_lines(),
         ]
         try:
-            from agent.skill_commands import get_skill_commands
+            from opencodon.core.skill_commands import get_skill_commands
             skill_cmds = get_skill_commands()
             if skill_cmds:
                 lines.append(t("gateway.help.skill_header", count=len(skill_cmds)))
@@ -1235,7 +1235,7 @@ class GatewaySlashCommandsMixin:
         # Build combined entry list: built-in commands + skill commands
         entries = list(gateway_help_lines())
         try:
-            from agent.skill_commands import get_skill_commands
+            from opencodon.core.skill_commands import get_skill_commands
             skill_cmds = get_skill_commands()
             if skill_cmds:
                 entries.append("")
@@ -3221,7 +3221,7 @@ class GatewaySlashCommandsMixin:
             split_history_for_partial_compress,
             summarize_compress_preview,
         )
-        from agent.conversation_compression import (
+        from opencodon.core.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
         _raw_args = (event.get_command_args() or "").strip()
@@ -3241,7 +3241,7 @@ class GatewaySlashCommandsMixin:
 
         if _preview:
             # Report what WOULD be compressed — no agent, no writes.
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
             _pv_msgs = [
                 {"role": m.get("role"), "content": m.get("content")}
                 for m in history
@@ -3258,8 +3258,8 @@ class GatewaySlashCommandsMixin:
 
         try:
             from run_agent import AIAgent
-            from agent.manual_compression_feedback import summarize_manual_compression
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
 
             session_key = self._session_key_for_source(source)
             # Preserve the same platform + stable gateway session identity that a
@@ -3456,7 +3456,7 @@ class GatewaySlashCommandsMixin:
                 # Force-redact provider exception text at this UI boundary
                 # even when global redaction is disabled.
                 if _summary_err:
-                    from agent.redact import redact_sensitive_text
+                    from opencodon.core.redact import redact_sensitive_text
                     _summary_err = redact_sensitive_text(_summary_err, force=True)
                 # Separately: did the user's CONFIGURED aux model fail
                 # and we recovered via main?  Surface that as an info
@@ -3970,7 +3970,7 @@ class GatewaySlashCommandsMixin:
         empty list and never raises on failure so /usage stays robust.
         """
         try:
-            from agent.context_breakdown import compute_session_context_breakdown
+            from opencodon.core.context_breakdown import compute_session_context_breakdown
 
             history: list[dict] = []
             try:
@@ -4056,7 +4056,7 @@ class GatewaySlashCommandsMixin:
             if normalized_provider != "openai-codex":
                 return t("gateway.usage.reset_wrong_provider")
             force = "--force" in args[1:]
-            from agent.account_usage import redeem_codex_reset_credit
+            from opencodon.core.account_usage import redeem_codex_reset_credit
 
             result = await asyncio.to_thread(
                 redeem_codex_reset_credit,
@@ -4088,7 +4088,7 @@ class GatewaySlashCommandsMixin:
             # Rate limits (when available from provider headers)
             rl_state = agent.get_rate_limit_state()
             if rl_state and rl_state.has_data:
-                from agent.rate_limit_tracker import format_rate_limit_compact
+                from opencodon.core.rate_limit_tracker import format_rate_limit_compact
                 lines.append(t("gateway.usage.rate_limits", state=format_rate_limit_compact(rl_state)))
                 lines.append("")
 
@@ -4133,7 +4133,7 @@ class GatewaySlashCommandsMixin:
         session_entry = await self.async_session_store.get_or_create_session(source)
         history = await self.async_session_store.load_transcript(session_entry.session_id)
         if history:
-            from agent.model_metadata import estimate_messages_tokens_rough
+            from opencodon.core.model_metadata import estimate_messages_tokens_rough
             msgs = [m for m in history if m.get("role") in {"user", "assistant"} and m.get("content")]
             approx = estimate_messages_tokens_rough(msgs)
             lines = [
@@ -4182,7 +4182,7 @@ class GatewaySlashCommandsMixin:
 
         try:
             from opencodon_state import SessionDB
-            from agent.insights import InsightsEngine
+            from opencodon.core.insights import InsightsEngine
 
             loop = asyncio.get_running_loop()
 
@@ -4279,7 +4279,7 @@ class GatewaySlashCommandsMixin:
         """
         loop = asyncio.get_running_loop()
         try:
-            from agent.skill_commands import reload_skills
+            from opencodon.core.skill_commands import reload_skills
 
             result = await loop.run_in_executor(None, reload_skills)
             added = result.get("added", [])      # [{"name", "description"}, ...]
@@ -4370,7 +4370,7 @@ class GatewaySlashCommandsMixin:
         invoking the bundle's own ``/<slug>`` command, not by this one.
         """
         try:
-            from agent.skill_bundles import list_bundles, _bundles_dir
+            from opencodon.core.skill_bundles import list_bundles, _bundles_dir
         except Exception as exc:
             logger.warning("Bundles command unavailable: %s", exc)
             return f"Bundles subsystem unavailable: {exc}"

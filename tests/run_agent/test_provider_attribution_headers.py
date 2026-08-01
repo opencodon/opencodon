@@ -93,7 +93,7 @@ def test_routed_client_preserves_openai_sdk_custom_headers(mock_openai):
         _custom_headers={"X-BILLING-INVOKE-ORIGIN": "OpencodonAgent"},
     )
 
-    with patch("agent.auxiliary_client.resolve_provider_client", return_value=(
+    with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(
         routed_client,
         "nvidia/test-model",
     )):
@@ -118,7 +118,7 @@ def test_routed_client_preserves_openai_sdk_default_headers(mock_openai):
         default_headers={"copilot-integration-id": "vscode-chat"},
     )
 
-    with patch("agent.auxiliary_client.resolve_provider_client", return_value=(
+    with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(
         routed_client,
         "claude-opus-4.7",
     )):

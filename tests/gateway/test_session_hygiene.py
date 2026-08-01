@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 
-from agent.model_metadata import estimate_messages_tokens_rough
+from opencodon.core.model_metadata import estimate_messages_tokens_rough
 from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.base import BasePlatformAdapter, MessageEvent, SendResult
 from gateway.session import SessionEntry, SessionSource
@@ -367,7 +367,7 @@ async def test_session_hygiene_messages_stay_in_originating_topic(monkeypatch, t
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "795544298")
@@ -470,7 +470,7 @@ async def test_session_hygiene_preserves_transcript_when_no_rotation(monkeypatch
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "795544298")
@@ -568,7 +568,7 @@ async def test_session_hygiene_preserves_transcript_when_in_place_configured_but
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "795544298")
@@ -674,7 +674,7 @@ async def test_session_hygiene_warns_user_when_compression_aborts(monkeypatch, t
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "795544298")
@@ -794,7 +794,7 @@ async def test_session_hygiene_informs_user_when_aux_model_fails_but_recovers(mo
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "795544298")
@@ -929,7 +929,7 @@ async def test_session_hygiene_forces_in_place_compaction_with_bound_session_db(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"}
     )
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
 
@@ -1049,7 +1049,7 @@ async def test_session_hygiene_honors_configurable_hard_message_limit(
     # won't trigger for 12 short messages — hard-limit must be the ONLY
     # thing firing compression.
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 1_000_000,
     )
 
@@ -1149,7 +1149,7 @@ async def test_session_hygiene_default_hard_message_limit_does_not_fire_at_12_me
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"}
     )
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 1_000_000,
     )
 

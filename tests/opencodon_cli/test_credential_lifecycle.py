@@ -141,7 +141,7 @@ def test_delete_survives_pool_reload(opencodon_home):
     assert resp.status_code == 200
 
     # Simulate restart: reload the pool from disk the way startup does.
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     entries = load_pool("zai").entries()
     assert entries == [], f"stale entries resurrected: {[e.source for e in entries]}"

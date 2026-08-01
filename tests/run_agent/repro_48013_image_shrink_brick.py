@@ -40,7 +40,7 @@ if str(_REPO_ROOT) not in sys.path:
 PIL = pytest.importorskip("PIL", reason="Pillow required for the real-resize proof")
 from PIL import Image, ImageDraw  # noqa: E402
 
-from agent.conversation_compression import (  # noqa: E402
+from opencodon.core.conversation_compression import (  # noqa: E402
     try_shrink_image_parts_in_messages,
 )
 

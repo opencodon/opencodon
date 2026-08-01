@@ -89,7 +89,7 @@ from gateway.platforms.base import (
     is_network_accessible,
     validate_media_delivery_path,
 )
-from agent.redact import redact_sensitive_text
+from opencodon.core.redact import redact_sensitive_text
 from gateway.readiness import collect_runtime_readiness
 
 logger = logging.getLogger(__name__)
@@ -1486,7 +1486,7 @@ class APIServerAdapter(BasePlatformAdapter):
         """
         if not profile:
             try:
-                from agent.secret_scope import is_multiplex_active
+                from opencodon.core.secret_scope import is_multiplex_active
 
                 if is_multiplex_active():
                     from gateway.run import _profile_runtime_scope
@@ -2866,7 +2866,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 if not tool_call_id or function_name.startswith("_"):
                     return
                 _started_tool_call_ids.add(tool_call_id)
-                from agent.display import build_tool_preview, get_tool_emoji
+                from opencodon.core.display import build_tool_preview, get_tool_emoji
                 label = build_tool_preview(function_name, function_args) or function_name
                 _stream_q.put(("__tool_progress__", {
                     "tool": function_name,

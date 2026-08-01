@@ -40,7 +40,7 @@ def fake_opencodon(tmp_path, monkeypatch):
     import opencodon_constants
     monkeypatch.setattr(opencodon_constants, "get_default_opencodon_root", lambda: root)
 
-    import agent.file_safety as fs
+    import opencodon.core.file_safety as fs
     monkeypatch.setattr(fs, "_opencodon_home_path", lambda: sec_home)
     monkeypatch.setattr(fs, "_opencodon_root_path", lambda: root)
 
@@ -231,11 +231,11 @@ class TestSystemPromptActiveProfile:
         """When active profile is 'default', the prompt names it and warns
         about ~/.opencodon/profiles/<name>/."""
         # Don't set OPENCODON_HOME — falls back to default.
-        import agent.file_safety as fs
+        import opencodon.core.file_safety as fs
         monkeypatch.setattr(fs, "_opencodon_home_path", lambda: tmp_path / "fake")
         monkeypatch.setattr(fs, "_opencodon_root_path", lambda: tmp_path / "fake")
 
-        from agent.file_safety import _resolve_active_profile_name
+        from opencodon.core.file_safety import _resolve_active_profile_name
         assert _resolve_active_profile_name() == "default"
         # Build the line manually to pin the contract — the prompt builder
         # is too heavy to instantiate end-to-end in a unit test.

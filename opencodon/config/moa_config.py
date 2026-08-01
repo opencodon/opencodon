@@ -295,7 +295,7 @@ def resolve_moa_preset(config: Any, name: str | None = None) -> dict[str, Any]:
     preset_name = str(name or cfg.get("default_preset") or DEFAULT_MOA_PRESET_NAME).strip()
     preset = cfg["presets"].get(preset_name)
     if preset is None:
-        from agent.errors import MoAPresetNotFoundError
+        from opencodon.core.errors import MoAPresetNotFoundError
 
         available = ", ".join(cfg["presets"]) or "(none)"
         raise MoAPresetNotFoundError(

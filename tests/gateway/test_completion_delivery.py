@@ -611,7 +611,7 @@ def test_unobserved_normal_completion_still_notifies(monkeypatch):
 
 
 def test_autonomous_completion_redacts_real_command_and_output_secrets(monkeypatch):
-    import agent.redact as redact_module
+    import opencodon.core.redact as redact_module
     import tools.process_registry as pr_module
 
     secret = "abc123randomopaquetokenvalue999"

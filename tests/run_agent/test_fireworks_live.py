@@ -28,7 +28,7 @@ pytestmark = [
 
 def _resolve_runtime_client(provider="fireworks"):
     """Build the Fireworks client the way the opencodon runtime does."""
-    from agent.auxiliary_client import resolve_provider_client
+    from opencodon.core.auxiliary_client import resolve_provider_client
 
     client, model = resolve_provider_client(provider)
     assert client is not None, "opencodon failed to build a Fireworks client"

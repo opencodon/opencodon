@@ -94,7 +94,7 @@ from .whatsapp_identity import (
     canonical_whatsapp_identifier,
 )
 from utils import atomic_replace
-from agent.turn_context import extract_api_content_sidecar
+from opencodon.core.turn_context import extract_api_content_sidecar
 
 # Session keys/ids flow into filesystem paths downstream (e.g.
 # ``sessions_dir / f"{session_id}.json"`` in opencodon_state, request-dump

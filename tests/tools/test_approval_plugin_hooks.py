@@ -250,7 +250,7 @@ class TestSmartModeFiresHooks:
             return f"redacted:{text}"
 
         with (
-            patch("agent.redact.redact_sensitive_text", side_effect=redact),
+            patch("opencodon.core.redact.redact_sensitive_text", side_effect=redact),
             patch("opencodon.plugins_runtime.invoke_hook"),
         ):
             result = guard(value, "local")
@@ -291,7 +291,7 @@ class TestSmartModeFiresHooks:
             return text
 
         with (
-            patch("agent.redact.redact_sensitive_text", side_effect=fail_observer_redaction),
+            patch("opencodon.core.redact.redact_sensitive_text", side_effect=fail_observer_redaction),
             patch(
                 "opencodon.plugins_runtime.invoke_hook",
                 side_effect=lambda name, **kwargs: captured.append((name, kwargs)),

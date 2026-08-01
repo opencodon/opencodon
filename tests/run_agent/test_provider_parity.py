@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from agent.codex_responses_adapter import _chat_content_to_responses_parts, _chat_messages_to_responses_input, _normalize_codex_response, _preflight_codex_input_items
+from opencodon.core.codex_responses_adapter import _chat_content_to_responses_parts, _chat_messages_to_responses_input, _normalize_codex_response, _preflight_codex_input_items
 
 sys.modules.setdefault("fire", types.SimpleNamespace(Fire=lambda *a, **k: None))
 sys.modules.setdefault("firecrawl", types.SimpleNamespace(Firecrawl=object))
@@ -58,7 +58,7 @@ class _FakeOpenAI:
 
 @pytest.fixture(autouse=True)
 def _reset_auxiliary_provider_state():
-    from agent.auxiliary_client import _reset_aux_unhealthy_cache
+    from opencodon.core.auxiliary_client import _reset_aux_unhealthy_cache
 
     _reset_aux_unhealthy_cache()
     yield
@@ -982,8 +982,8 @@ class TestAuxiliaryClientProviderPriority:
 
     def test_openrouter_always_wins(self, monkeypatch):
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
-        from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client.OpenAI") as mock:
+        from opencodon.core.auxiliary_client import get_text_auxiliary_client
+        with patch("opencodon.core.auxiliary_client.OpenAI") as mock:
             client, model = get_text_auxiliary_client()
         assert model == "google/gemini-3-flash-preview"
         assert "openrouter" in str(mock.call_args.kwargs["base_url"]).lower()
@@ -998,10 +998,10 @@ class TestAuxiliaryClientProviderPriority:
         """
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "local-key")
-        from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client._resolve_custom_runtime",
+        from opencodon.core.auxiliary_client import get_text_auxiliary_client
+        with patch("opencodon.core.auxiliary_client._resolve_custom_runtime",
                    return_value=("http://localhost:1234/v1", "local-key")), \
-             patch("agent.auxiliary_client.OpenAI") as mock:
+             patch("opencodon.core.auxiliary_client.OpenAI") as mock:
             client, model = get_text_auxiliary_client()
         assert mock.call_args.kwargs["base_url"] == "http://localhost:1234/v1"
 
@@ -1017,9 +1017,9 @@ class TestAuxiliaryClientProviderPriority:
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client._read_codex_access_token", return_value="codex-tok"), \
-             patch("agent.auxiliary_client.OpenAI"):
+        from opencodon.core.auxiliary_client import get_text_auxiliary_client
+        with patch("opencodon.core.auxiliary_client._read_codex_access_token", return_value="codex-tok"), \
+             patch("opencodon.core.auxiliary_client.OpenAI"):
             client, model = get_text_auxiliary_client()
         assert client is None
         assert model is None

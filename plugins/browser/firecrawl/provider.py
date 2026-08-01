@@ -33,7 +33,7 @@ from typing import Any, Dict
 
 import requests
 
-from agent.browser_provider import BrowserProvider
+from opencodon.core.browser_provider import BrowserProvider
 
 logger = logging.getLogger(__name__)
 

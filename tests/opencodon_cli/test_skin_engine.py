@@ -263,25 +263,25 @@ class TestUserSkins:
 
 class TestDisplayIntegration:
     def test_get_skin_tool_prefix_default(self):
-        from agent.display import get_skin_tool_prefix
+        from opencodon.core.display import get_skin_tool_prefix
         assert get_skin_tool_prefix() == "┊"
 
     def test_get_skin_tool_prefix_custom(self):
         from opencodon_cli.skin_engine import set_active_skin
-        from agent.display import get_skin_tool_prefix
+        from opencodon.core.display import get_skin_tool_prefix
         set_active_skin("ares")
         assert get_skin_tool_prefix() == "╎"
 
     def test_tool_message_uses_skin_prefix(self):
         from opencodon_cli.skin_engine import set_active_skin
-        from agent.display import get_cute_tool_message
+        from opencodon.core.display import get_cute_tool_message
         set_active_skin("ares")
         msg = get_cute_tool_message("terminal", {"command": "ls"}, 0.5)
         assert msg.startswith("╎")
         assert "┊" not in msg
 
     def test_tool_message_default_prefix(self):
-        from agent.display import get_cute_tool_message
+        from opencodon.core.display import get_cute_tool_message
         msg = get_cute_tool_message("terminal", {"command": "ls"}, 0.5)
         assert msg.startswith("┊")
 

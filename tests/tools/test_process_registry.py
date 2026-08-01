@@ -2185,7 +2185,7 @@ class TestHandleProcessRedaction:
     """
 
     def _setup(self, monkeypatch, command, output):
-        import agent.redact as _r
+        import opencodon.core.redact as _r
         monkeypatch.setattr(_r, "_REDACT_ENABLED", True)
         from tools import process_registry as pr
         reg = ProcessRegistry()
@@ -2217,7 +2217,7 @@ class TestHandleProcessRedaction:
         assert "abc123def456" not in out["output_preview"]
 
     def test_disabled_passes_through(self, monkeypatch):
-        import agent.redact as _r
+        import opencodon.core.redact as _r
         monkeypatch.setattr(_r, "_REDACT_ENABLED", False)
         from tools import process_registry as pr
         reg = ProcessRegistry()

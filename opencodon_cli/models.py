@@ -172,7 +172,7 @@ def _xai_curated_models() -> list[str]:
     Mirrors ``_codex_curated_models()``'s role for openai-codex.
     """
     try:
-        from agent.models_dev import _load_disk_cache
+        from opencodon.core.models_dev import _load_disk_cache
         data = _load_disk_cache()
         xai = data.get("xai") if isinstance(data, dict) else None
         models = xai.get("models") if isinstance(xai, dict) else None
@@ -1138,7 +1138,7 @@ def _fireworks_pricing_from_models_dev(
 
     result: dict[str, dict[str, str]] = {}
     try:
-        from agent.models_dev import _get_provider_models
+        from opencodon.core.models_dev import _get_provider_models
 
         models = _get_provider_models("fireworks") or {}
         for mid, entry in models.items():
@@ -1825,7 +1825,7 @@ def _merge_with_models_dev(provider: str, curated: list[str]) -> list[str]:
     returned unchanged — this is the offline/CI fallback path.
     """
     try:
-        from agent.models_dev import list_agentic_models
+        from opencodon.core.models_dev import list_agentic_models
         mdev = list_agentic_models(provider)
     except Exception:
         mdev = []
@@ -2010,7 +2010,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     # below — bedrock is not expected to appear in that table.
     if normalized == "bedrock":
         try:
-            from agent.bedrock_adapter import bedrock_model_ids_or_none
+            from opencodon.core.bedrock_adapter import bedrock_model_ids_or_none
             ids = bedrock_model_ids_or_none()
             if ids is not None:
                 return ids
@@ -2294,7 +2294,7 @@ def _fetch_anthropic_models(
     Returns sorted model IDs or None.
     """
     try:
-        from agent.anthropic_adapter import resolve_anthropic_token, _is_oauth_token
+        from opencodon.core.anthropic_adapter import resolve_anthropic_token, _is_oauth_token
     except ImportError:
         return None
 
@@ -2306,7 +2306,7 @@ def _fetch_anthropic_models(
     is_oauth = _is_oauth_token(token)
     if is_oauth:
         headers["Authorization"] = f"Bearer {token}"
-        from agent.anthropic_adapter import _COMMON_BETAS, _OAUTH_ONLY_BETAS, _CONTEXT_1M_BETA
+        from opencodon.core.anthropic_adapter import _COMMON_BETAS, _OAUTH_ONLY_BETAS, _CONTEXT_1M_BETA
         headers["anthropic-beta"] = ",".join(_COMMON_BETAS + _OAUTH_ONLY_BETAS)
     else:
         headers["x-api-key"] = token
@@ -3569,7 +3569,7 @@ def fetch_ollama_cloud_models(
     # 3. models.dev registry
     mdev_models: list[str] = []
     try:
-        from agent.models_dev import list_agentic_models
+        from opencodon.core.models_dev import list_agentic_models
         mdev_models = list_agentic_models("ollama-cloud")
     except Exception:
         pass
@@ -4046,7 +4046,7 @@ def validate_requested_model(
     # AWS SDK control plane (ListFoundationModels + ListInferenceProfiles).
     if normalized == "bedrock":
         try:
-            from agent.bedrock_adapter import discover_bedrock_models, resolve_bedrock_region
+            from opencodon.core.bedrock_adapter import discover_bedrock_models, resolve_bedrock_region
             region = resolve_bedrock_region()
             discovered = discover_bedrock_models(region)
             discovered_ids = {m["id"] for m in discovered}

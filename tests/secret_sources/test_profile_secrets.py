@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from agent.secret_sources import registry
-from agent.secret_sources.base import ErrorKind, FetchResult, SecretSource
+from opencodon.core.secret_sources import registry
+from opencodon.core.secret_sources.base import ErrorKind, FetchResult, SecretSource
 
 
 class _FakeBulk(SecretSource):

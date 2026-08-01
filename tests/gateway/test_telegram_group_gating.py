@@ -259,7 +259,7 @@ def test_observed_group_context_replays_as_current_message_context_not_user_turn
 
 
 def test_observed_group_context_does_not_hide_current_user_turn_behind_history_offset():
-    from agent.agent_runtime_helpers import repair_message_sequence
+    from opencodon.core.agent_runtime_helpers import repair_message_sequence
     from gateway.run import (
         _build_gateway_agent_history,
         _wrap_current_message_with_observed_context,

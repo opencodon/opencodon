@@ -659,7 +659,7 @@ def test_run_codex_stream_returns_collected_items_when_stream_ends_without_termi
 
 
 def test_consume_codex_stream_routes_commentary_phase_deltas_to_reasoning(monkeypatch):
-    from agent.codex_runtime import _consume_codex_event_stream
+    from opencodon.core.codex_runtime import _consume_codex_event_stream
 
     commentary_item = SimpleNamespace(
         type="message",
@@ -705,7 +705,7 @@ def test_consume_codex_stream_routes_commentary_phase_deltas_to_reasoning(monkey
 
 
 def test_consume_codex_stream_separates_commentary_from_analysis(monkeypatch):
-    from agent.codex_runtime import _consume_codex_event_stream
+    from opencodon.core.codex_runtime import _consume_codex_event_stream
 
     commentary_item = SimpleNamespace(
         type="message",
@@ -748,7 +748,7 @@ def test_consume_codex_stream_separates_commentary_from_analysis(monkeypatch):
 
 
 def test_consume_codex_stream_keeps_final_answer_phase_deltas(monkeypatch):
-    from agent.codex_runtime import _consume_codex_event_stream
+    from opencodon.core.codex_runtime import _consume_codex_event_stream
 
     streamed = []
     response = _consume_codex_event_stream(
@@ -770,10 +770,10 @@ def test_consume_codex_stream_keeps_final_answer_phase_deltas(monkeypatch):
 
 
 def test_run_codex_stream_delivers_redacted_commentary_once(monkeypatch):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     agent = _build_agent(monkeypatch)
-    monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
+    monkeypatch.setattr("opencodon.core.redact._REDACT_ENABLED", True)
     delivered = []
     reasoning_streamed = []
     agent.interim_assistant_callback = (
@@ -839,7 +839,7 @@ def test_run_codex_stream_delivers_redacted_commentary_once(monkeypatch):
 
 
 def test_run_codex_stream_multiple_commentary_items_are_not_reemitted(monkeypatch):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     agent = _build_agent(monkeypatch)
     delivered = []
@@ -1617,7 +1617,7 @@ def test_run_conversation_codex_tool_round_trip(monkeypatch):
 
 def test_chat_messages_to_responses_input_uses_call_id_for_function_call(monkeypatch):
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
     items = _chat_messages_to_responses_input(
         [
             {"role": "user", "content": "Run terminal"},
@@ -1646,7 +1646,7 @@ def test_chat_messages_to_responses_input_uses_call_id_for_function_call(monkeyp
 
 def test_chat_messages_to_responses_input_accepts_call_pipe_fc_ids(monkeypatch):
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
     items = _chat_messages_to_responses_input(
         [
             {"role": "user", "content": "Run terminal"},
@@ -1675,7 +1675,7 @@ def test_chat_messages_to_responses_input_accepts_call_pipe_fc_ids(monkeypatch):
 
 def test_preflight_codex_api_kwargs_strips_optional_function_call_id(monkeypatch):
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+    from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
     preflight = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5-codex",
@@ -1704,7 +1704,7 @@ def test_preflight_codex_api_kwargs_rejects_function_call_output_without_call_id
     agent = _build_agent(monkeypatch)
 
     with pytest.raises(ValueError, match="function_call_output is missing call_id"):
-        from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
         _preflight_codex_api_kwargs(
             {
                 "model": "gpt-5-codex",
@@ -1722,7 +1722,7 @@ def test_preflight_codex_api_kwargs_rejects_unsupported_request_fields(monkeypat
     kwargs["some_unknown_field"] = "value"
 
     with pytest.raises(ValueError, match="unsupported field"):
-        from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
         _preflight_codex_api_kwargs(kwargs)
 
 
@@ -1734,7 +1734,7 @@ def test_preflight_codex_api_kwargs_allows_reasoning_and_temperature(monkeypatch
     kwargs["temperature"] = 0.7
     kwargs["max_output_tokens"] = 4096
 
-    from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+    from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
     result = _preflight_codex_api_kwargs(kwargs)
     assert result["reasoning"] == {"effort": "high", "summary": "auto"}
     assert result["include"] == ["reasoning.encrypted_content"]
@@ -1747,7 +1747,7 @@ def test_preflight_codex_api_kwargs_allows_service_tier(monkeypatch):
     kwargs = _codex_request_kwargs()
     kwargs["service_tier"] = "priority"
 
-    from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+    from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
     result = _preflight_codex_api_kwargs(kwargs)
     assert result["service_tier"] == "priority"
 
@@ -1758,7 +1758,7 @@ def test_preflight_codex_api_kwargs_preserves_positive_timeout(monkeypatch):
     kwargs = _codex_request_kwargs()
     kwargs["timeout"] = 600.0
 
-    from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+    from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
     result = _preflight_codex_api_kwargs(kwargs)
     assert result["timeout"] == 600.0
 
@@ -1766,7 +1766,7 @@ def test_preflight_codex_api_kwargs_preserves_positive_timeout(monkeypatch):
 def test_preflight_codex_api_kwargs_drops_invalid_timeout(monkeypatch):
     """Zero, negative, inf, and booleans are all dropped — not passed to SDK."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _preflight_codex_api_kwargs
+    from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
 
     for bad in (0, -1, float("inf"), True, False, "300", None):
         kwargs = _codex_request_kwargs()
@@ -2086,7 +2086,7 @@ def test_codex_incomplete_opaque_state_updated_in_place(monkeypatch):
 
 def test_normalize_codex_response_marks_commentary_only_message_as_incomplete(monkeypatch):
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     assistant_message, finish_reason = _normalize_codex_response(
         _codex_commentary_message_response("I'll inspect the repository first.")
     )
@@ -2101,7 +2101,7 @@ def test_normalize_codex_response_marks_commentary_only_message_as_incomplete(mo
 
 def test_normalize_codex_response_does_not_fallback_to_output_text_for_commentary_only(monkeypatch):
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = _codex_commentary_message_response("I’ll call the tool now.")
     response.output_text = "I’ll call the tool now."
@@ -2114,7 +2114,7 @@ def test_normalize_codex_response_does_not_fallback_to_output_text_for_commentar
     assert assistant_message.codex_message_items[0]["phase"] == "commentary"
 
 def test_normalize_codex_response_final_answer_overrides_top_level_incomplete(monkeypatch):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     assistant_message, finish_reason = _normalize_codex_response(
         _codex_final_answer_with_top_level_incomplete_response(
@@ -2127,7 +2127,7 @@ def test_normalize_codex_response_final_answer_overrides_top_level_incomplete(mo
 
 
 def test_normalize_codex_response_top_level_incomplete_without_final_answer_stays_incomplete(monkeypatch):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2151,7 +2151,7 @@ def test_normalize_codex_response_top_level_incomplete_without_final_answer_stay
 def test_normalize_codex_response_final_answer_does_not_override_streaming_status(
     monkeypatch, top_level_status
 ):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2173,7 +2173,7 @@ def test_normalize_codex_response_final_answer_does_not_override_streaming_statu
 
 
 def test_normalize_codex_response_final_answer_does_not_override_per_item_in_progress(monkeypatch):
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2202,7 +2202,7 @@ def test_normalize_codex_response_final_answer_does_not_override_per_item_in_pro
 def test_normalize_codex_response_preserves_message_status_for_replay(monkeypatch):
     """Incomplete Codex output messages must not be replayed as completed."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2235,7 +2235,7 @@ def test_normalize_codex_response_detects_leaked_tool_call_text(monkeypatch):
     tools actually ran, parent can't audit the claim.
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     leaked_content = (
         "I'll check the official page directly.\n"
@@ -2272,7 +2272,7 @@ def test_normalize_codex_response_ignores_tool_call_text_when_real_tool_call_pre
     structured call — don't wipe content that came alongside a real tool use.
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2308,7 +2308,7 @@ def test_normalize_codex_response_no_leak_passes_through(monkeypatch):
     """Sanity: normal assistant content that doesn't contain the leak pattern
     is returned verbatim with finish_reason=stop."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     response = SimpleNamespace(
         output=[
@@ -2430,7 +2430,7 @@ def test_interim_commentary_preserves_assistant_content(monkeypatch):
 def test_interim_commentary_precedes_content_from_real_codex_normalization(monkeypatch):
     """Structured commentary wins over final-answer content on tool turns."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     observed = {}
     agent.interim_assistant_callback = lambda text, *, already_streamed=False: observed.update(
@@ -2454,7 +2454,7 @@ def test_interim_commentary_precedes_content_from_real_codex_normalization(monke
 
 def test_interim_commentary_redacts_secrets_from_codex_commentary_items(monkeypatch):
     agent = _build_agent(monkeypatch)
-    monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
+    monkeypatch.setattr("opencodon.core.redact._REDACT_ENABLED", True)
     observed = []
     agent.interim_assistant_callback = (
         lambda text, *, already_streamed=False: observed.append(text)
@@ -2961,7 +2961,7 @@ def test_normalize_codex_response_marks_reasoning_only_as_incomplete(monkeypatch
     where issuer_kind="codex_backend" preserves the old behavior.
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     assistant_message, finish_reason = _normalize_codex_response(
         _codex_reasoning_only_response(), issuer_kind="codex_backend"
     )
@@ -2982,7 +2982,7 @@ def test_normalize_codex_response_reasoning_only_completed_is_stop_for_other_bac
     upstream#64434
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     response = _codex_reasoning_only_response()
     assistant_message, finish_reason = _normalize_codex_response(
         response, issuer_kind="other:example-relay"
@@ -3001,7 +3001,7 @@ def test_normalize_codex_response_reasoning_only_completed_is_stop_without_issue
     says status='completed', reasoning-only should be treated as 'stop'.
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     response = _codex_reasoning_only_response()
     assistant_message, finish_reason = _normalize_codex_response(response)
 
@@ -3012,7 +3012,7 @@ def test_normalize_codex_response_reasoning_only_completed_is_stop_without_issue
 def test_normalize_codex_response_reasoning_only_stays_incomplete_for_xai_backend(monkeypatch):
     """xAI backend also preserves incomplete for reasoning-only (same as Codex)."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     response = _codex_reasoning_only_response()
     assistant_message, finish_reason = _normalize_codex_response(
         response, issuer_kind="xai_responses"
@@ -3031,7 +3031,7 @@ def test_normalize_codex_response_reasoning_only_stays_incomplete_for_github_bac
     trust response.status='completed' as terminal.
     """
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     response = _codex_reasoning_only_response()
     assistant_message, finish_reason = _normalize_codex_response(
         response, issuer_kind="github_responses"
@@ -3063,7 +3063,7 @@ def test_normalize_codex_response_reasoning_with_content_is_stop(monkeypatch):
         status="completed",
         model="gpt-5-codex",
     )
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
     assistant_message, finish_reason = _normalize_codex_response(response)
 
     assert finish_reason == "stop"
@@ -3149,7 +3149,7 @@ def test_chat_messages_to_responses_input_reasoning_only_has_following_item(monk
             ],
         },
     ]
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
     items = _chat_messages_to_responses_input(messages)
 
     # Find the reasoning item
@@ -3166,7 +3166,7 @@ def test_chat_messages_to_responses_input_reasoning_only_has_following_item(monk
 def test_codex_message_item_status_survives_conversion_and_preflight(monkeypatch):
     """Stored Codex assistant message statuses must survive replay normalization."""
     agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import (
+    from opencodon.core.codex_responses_adapter import (
         _chat_messages_to_responses_input,
         _preflight_codex_input_items,
     )
@@ -3350,7 +3350,7 @@ def test_chat_messages_to_responses_input_deduplicates_reasoning_ids(monkeypatch
             ],
         },
     ]
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
     items = _chat_messages_to_responses_input(messages)
 
     reasoning_items = [it for it in items if it.get("type") == "reasoning"]
@@ -3377,7 +3377,7 @@ def test_preflight_codex_input_deduplicates_reasoning_ids(monkeypatch):
         {"type": "reasoning", "id": "rs_zzz", "encrypted_content": "enc_b"},
         {"role": "assistant", "content": "done"},
     ]
-    from agent.codex_responses_adapter import _preflight_codex_input_items
+    from opencodon.core.codex_responses_adapter import _preflight_codex_input_items
     normalized = _preflight_codex_input_items(raw_input)
 
     reasoning_items = [it for it in normalized if it.get("type") == "reasoning"]

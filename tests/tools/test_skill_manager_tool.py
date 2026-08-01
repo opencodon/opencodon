@@ -28,7 +28,7 @@ def _skill_dir(tmp_path):
     """Patch both SKILLS_DIR and get_all_skills_dirs so _find_skill searches
     only the temp directory — not the real ~/.opencodon/skills/."""
     with patch("tools.skill_manager_tool.SKILLS_DIR", tmp_path), \
-         patch("agent.skill_utils.get_all_skills_dirs", return_value=[tmp_path]):
+         patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_path]):
         yield
 
 
@@ -239,7 +239,7 @@ class TestCreateSkill:
         skills_dir.mkdir()
 
         with patch("tools.skill_manager_tool.SKILLS_DIR", skills_dir), \
-             patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_dir]):
+             patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[skills_dir]):
             result = _create_skill("my-skill", VALID_SKILL_CONTENT, category="../escape")
 
         assert result["success"] is False
@@ -252,7 +252,7 @@ class TestCreateSkill:
         outside = tmp_path / "outside"
 
         with patch("tools.skill_manager_tool.SKILLS_DIR", skills_dir), \
-             patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_dir]):
+             patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[skills_dir]):
             result = _create_skill("my-skill", VALID_SKILL_CONTENT, category=str(outside))
 
         assert result["success"] is False
@@ -742,7 +742,7 @@ def _two_roots(local_dir: Path, external_dir: Path):
     """Patch the skill manager so local SKILLS_DIR = local_dir and
     get_all_skills_dirs() returns [local_dir, external_dir] in order."""
     with patch("tools.skill_manager_tool.SKILLS_DIR", local_dir), \
-         patch("agent.skill_utils.get_all_skills_dirs",
+         patch("opencodon.core.skill_utils.get_all_skills_dirs",
                return_value=[local_dir, external_dir]):
         yield
 
@@ -894,7 +894,7 @@ class TestExternalSkillMutations:
         token = set_current_write_origin(BACKGROUND_REVIEW)
         try:
             with _two_roots(local, external), patch(
-                "agent.skill_utils.get_external_skills_dirs",
+                "opencodon.core.skill_utils.get_external_skills_dirs",
                 return_value=[external.resolve()],
             ):
                 raw = skill_manage(
@@ -1029,10 +1029,10 @@ class TestExternalSkillMutations:
                 mark_background_review_skill_read(tmp_path / "agent-skill" / "SKILL.md")
                 with patch(
                     "tools.skill_usage.load_usage",
-                    return_value={"agent-skill": {"created_by": "agent", "use_count": 5}},
+                    return_value={"agent-skill": {"created_by": "opencodon", "core", "use_count": 5}},
                 ), patch(
                     "tools.skill_usage.get_record",
-                    side_effect=lambda n: {"created_by": "agent", "use_count": 5} if n == "agent-skill" else {},
+                    side_effect=lambda n: {"created_by": "opencodon", "core", "use_count": 5} if n == "agent-skill" else {},
                 ), patch(
                     "tools.skill_usage.is_curation_eligible", return_value=True,
                 ), patch(
@@ -1192,7 +1192,7 @@ class TestDeleteSkillRmtreeGuard:
         evil.symlink_to(victim, target_is_directory=True)
         try:
             with patch("tools.skill_manager_tool.SKILLS_DIR", skills), \
-                 patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills]), \
+                 patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[skills]), \
                  patch("tools.skill_manager_tool._find_skill",
                        return_value={"path": evil}):
                 result = _delete_skill("evil-skill", absorbed_into="")
@@ -1207,7 +1207,7 @@ class TestDeleteSkillRmtreeGuard:
         """If discovery ever hands back the skills root, refuse — rmtree would
         wipe every installed skill."""
         with patch("tools.skill_manager_tool.SKILLS_DIR", tmp_path), \
-             patch("agent.skill_utils.get_all_skills_dirs", return_value=[tmp_path]), \
+             patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_path]), \
              patch("tools.skill_manager_tool._find_skill",
                    return_value={"path": tmp_path}):
             result = _delete_skill("root-attack", absorbed_into="")
@@ -1223,7 +1223,7 @@ class TestDeleteSkillRmtreeGuard:
         outside.mkdir()
         (outside / "SKILL.md").write_text("x")
         with patch("tools.skill_manager_tool.SKILLS_DIR", skills), \
-             patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills]), \
+             patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[skills]), \
              patch("tools.skill_manager_tool._find_skill",
                    return_value={"path": outside}):
             result = _delete_skill("outside", absorbed_into="")
@@ -1252,7 +1252,7 @@ def _curator_pass(tmp_path, *, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     with patch("tools.skill_manager_tool.SKILLS_DIR", skills_root), \
          patch("tools.skills_tool.SKILLS_DIR", skills_root), \
-         patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_root]), \
+         patch("opencodon.core.skill_utils.get_all_skills_dirs", return_value=[skills_root]), \
          patch("tools.skill_provenance.is_background_review", return_value=True):
         yield skills_root
 

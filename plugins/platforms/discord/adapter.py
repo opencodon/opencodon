@@ -28,7 +28,7 @@ from contextlib import suppress
 from typing import Callable, Dict, List, Optional, Any, Tuple
 from urllib.parse import urljoin
 
-from agent.async_utils import (
+from opencodon.core.async_utils import (
     consume_detached_task_result as _consume_background_task_result,
 )
 

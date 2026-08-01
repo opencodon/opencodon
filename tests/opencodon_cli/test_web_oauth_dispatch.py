@@ -547,7 +547,7 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     """
     from opencodon_cli import auth as auth_mod
     from opencodon_cli import web_server as ws
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.delenv("OPENCODON_XAI_BASE_URL", raising=False)

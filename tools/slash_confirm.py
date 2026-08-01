@@ -153,7 +153,7 @@ def resolve_sync_compat(
     Prefer the async ``resolve()`` from an async context.
     """
     try:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         fut = safe_schedule_threadsafe(
             resolve(session_key, confirm_id, choice), loop,
             logger=logger,

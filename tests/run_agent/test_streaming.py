@@ -775,7 +775,7 @@ class TestStreamingFallback:
     @patch("run_agent.AIAgent._close_request_openai_client")
     def test_zero_chunk_stream_retried_as_transient(self, mock_close, mock_create):
         """A stream that yields no chunks gets the same retry budget as a drop."""
-        from agent.errors import EmptyStreamError
+        from opencodon.core.errors import EmptyStreamError
         from run_agent import AIAgent
 
         mock_client = MagicMock()
@@ -1308,7 +1308,7 @@ class TestAnthropicStreamCallbacks:
         """An eventless Anthropic stream with an empty final Message gets the
         same transient retry budget as the chat_completions zero-chunk guard
         (parity follow-up to #64420)."""
-        from agent.errors import EmptyStreamError
+        from opencodon.core.errors import EmptyStreamError
         from run_agent import AIAgent
 
         agent = AIAgent(
@@ -1354,7 +1354,7 @@ class TestAnthropicStreamCallbacks:
         get_final_message() raises AssertionError (final snapshot is None).
         That must be normalized to EmptyStreamError and retried as
         transient — not surface as a raw AssertionError."""
-        from agent.errors import EmptyStreamError
+        from opencodon.core.errors import EmptyStreamError
         from run_agent import AIAgent
 
         agent = AIAgent(
@@ -1794,7 +1794,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("run_agent.get_tool_definitions", return_value=[])
     @patch("run_agent.check_toolset_requirements", return_value={})
-    @patch("agent.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
     def test_provider_name_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1825,7 +1825,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("run_agent.get_tool_definitions", return_value=[])
     @patch("run_agent.check_toolset_requirements", return_value={})
-    @patch("agent.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
     def test_acp_base_url_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1846,7 +1846,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("run_agent.get_tool_definitions", return_value=[])
     @patch("run_agent.check_toolset_requirements", return_value={})
-    @patch("agent.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
     def test_acp_tcp_url_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1939,7 +1939,7 @@ class TestBedrockIamStreamingFallback:
         }
 
         with patch(
-            "agent.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             response = agent._interruptible_streaming_api_call(
@@ -1965,7 +1965,7 @@ class TestBedrockIamStreamingFallback:
         )
 
         with patch(
-            "agent.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             with pytest.raises(ClientError):
@@ -2006,7 +2006,7 @@ def test_on_event_fires_per_bedrock_event():
     """FIX 1: on_event fires once for EVERY yielded Bedrock event — text,
     tool-input delta, messageStop, and metadata alike — providing wire-level
     liveness (not just text deltas)."""
-    from agent.bedrock_adapter import stream_converse_with_callbacks
+    from opencodon.core.bedrock_adapter import stream_converse_with_callbacks
 
     events = [
         {"contentBlockDelta": {"delta": {"text": "a"}}},
@@ -2028,7 +2028,7 @@ def test_on_event_fires_per_bedrock_event():
 
 def test_on_event_exception_is_swallowed():
     """FIX 1: a raising on_event callback must never abort the stream."""
-    from agent.bedrock_adapter import stream_converse_with_callbacks
+    from opencodon.core.bedrock_adapter import stream_converse_with_callbacks
 
     events = [{"messageStop": {"stopReason": "end_turn"}}]
 
@@ -2080,7 +2080,7 @@ class TestBedrockStreamLivenessWatchdog:
 
         try:
             with patch(
-                "agent.bedrock_adapter._get_bedrock_runtime_client",
+                "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
                 return_value=client,
             ):
                 with pytest.raises(TimeoutError):
@@ -2105,7 +2105,7 @@ class TestBedrockStreamLivenessWatchdog:
 
         client = MagicMock()
         with patch(
-            "agent.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             with pytest.raises(RuntimeError, match="unresponsive"):
@@ -2134,7 +2134,7 @@ class TestBedrockStreamLivenessWatchdog:
         client.converse_stream.return_value = {"stream": iter(events)}
 
         with patch(
-            "agent.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             response = agent._interruptible_streaming_api_call(
@@ -2168,7 +2168,7 @@ class TestBedrockReasoningStaleFloor:
         ],
     )
     def test_bedrock_reasoning_models_resolve_floor(self, model_id, expected):
-        from agent.chat_completion_helpers import _bedrock_reasoning_stale_floor
+        from opencodon.core.chat_completion_helpers import _bedrock_reasoning_stale_floor
 
         assert _bedrock_reasoning_stale_floor(model_id) == expected
 
@@ -2183,6 +2183,6 @@ class TestBedrockReasoningStaleFloor:
         ],
     )
     def test_non_reasoning_bedrock_models_return_none(self, model_id):
-        from agent.chat_completion_helpers import _bedrock_reasoning_stale_floor
+        from opencodon.core.chat_completion_helpers import _bedrock_reasoning_stale_floor
 
         assert _bedrock_reasoning_stale_floor(model_id) is None

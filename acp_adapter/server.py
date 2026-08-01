@@ -74,7 +74,7 @@ from acp_adapter.permissions import make_approval_callback
 from acp_adapter.provenance import session_provenance_meta
 from acp_adapter.session import SessionManager, SessionState, _expand_acp_enabled_toolsets
 from acp_adapter.tools import build_tool_complete, build_tool_start
-from agent.context_compressor import (
+from opencodon.core.context_compressor import (
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
@@ -682,7 +682,7 @@ class OpencodonACPAgent(acp.Agent):
             return None
 
         try:
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
 
             used = estimate_request_tokens_rough(
                 state.history,
@@ -832,7 +832,7 @@ class OpencodonACPAgent(acp.Agent):
 
         try:
             from model_tools import get_tool_definitions
-            from agent.memory_manager import inject_memory_provider_tools
+            from opencodon.core.memory_manager import inject_memory_provider_tools
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
                 getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"],
@@ -1711,14 +1711,14 @@ class OpencodonACPAgent(acp.Agent):
         interrupted = bool(result.get("interrupted")) or cancelled
         # opencodon' local "waiting for model response" interrupt status is metadata,
         # not assistant prose — clients get cancellation from stop_reason instead.
-        from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
+        from opencodon.core.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 
         suppress_interrupt_response = interrupted and final_response.startswith(
             INTERRUPT_WAITING_FOR_MODEL_PREFIX
         )
         if final_response and not suppress_interrupt_response:
             try:
-                from agent.title_generator import maybe_auto_title
+                from opencodon.core.title_generator import maybe_auto_title
 
                 def _notify_title_update(_title: str) -> None:
                     if conn:
@@ -1914,7 +1914,7 @@ class OpencodonACPAgent(acp.Agent):
         try:
             from model_tools import get_tool_definitions
             from types import SimpleNamespace
-            from agent.memory_manager import inject_memory_provider_tools
+            from opencodon.core.memory_manager import inject_memory_provider_tools
 
             toolsets = _expand_acp_enabled_toolsets(
                 getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"]
@@ -1964,7 +1964,7 @@ class OpencodonACPAgent(acp.Agent):
         threshold_tokens = int(getattr(compressor, "threshold_tokens", 0) or 0)
 
         try:
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
 
             system_prompt = getattr(agent, "_cached_system_prompt", "") or ""
             tools = getattr(agent, "tools", None) or None
@@ -2057,7 +2057,7 @@ class OpencodonACPAgent(acp.Agent):
             if not hasattr(agent, "_compress_context"):
                 return "Context compression not available for this agent."
 
-            from agent.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.model_metadata import estimate_request_tokens_rough
 
             original_count = len(state.history)
             # Include system prompt + tool schemas so the figure reflects real

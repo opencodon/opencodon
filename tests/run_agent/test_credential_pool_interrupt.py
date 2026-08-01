@@ -5,8 +5,8 @@ still rotate if the current credential is already marked exhausted.
 """
 from unittest.mock import MagicMock, patch
 
-from agent.credential_pool import PooledCredential, STATUS_EXHAUSTED
-from agent.error_classifier import FailoverReason
+from opencodon.core.credential_pool import PooledCredential, STATUS_EXHAUSTED
+from opencodon.core.error_classifier import FailoverReason
 
 
 def _make_entry(idx, **overrides):

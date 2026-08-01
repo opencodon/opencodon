@@ -374,9 +374,9 @@ class TestRoutingDecisionWiring:
                 }
             },
         }
-        with patch("agent.auxiliary_client._read_main_provider",
+        with patch("opencodon.core.auxiliary_client._read_main_provider",
                    return_value="openrouter"), \
-             patch("agent.auxiliary_client._read_main_model",
+             patch("opencodon.core.auxiliary_client._read_main_model",
                    return_value="tencent/hy3-preview"), \
              patch("opencodon.config.load_config", return_value=cfg):
             assert cu_tool._should_route_through_aux_vision() is True
@@ -387,9 +387,9 @@ class TestRoutingDecisionWiring:
         cfg = {
             "model": {"default": "claude-opus-4-5", "provider": "anthropic"},
         }
-        with patch("agent.auxiliary_client._read_main_provider",
+        with patch("opencodon.core.auxiliary_client._read_main_provider",
                    return_value="anthropic"), \
-             patch("agent.auxiliary_client._read_main_model",
+             patch("opencodon.core.auxiliary_client._read_main_model",
                    return_value="claude-opus-4-5"), \
              patch("opencodon.config.load_config", return_value=cfg), \
              patch("tools.computer_use.vision_routing._lookup_supports_vision",
@@ -412,9 +412,9 @@ class TestRoutingDecisionWiring:
         from tools.computer_use import tool as cu_tool
         from tools.computer_use import vision_routing as vr_mod
 
-        with patch("agent.auxiliary_client._read_main_provider",
+        with patch("opencodon.core.auxiliary_client._read_main_provider",
                    return_value="openrouter"), \
-             patch("agent.auxiliary_client._read_main_model",
+             patch("opencodon.core.auxiliary_client._read_main_model",
                    return_value="x"), \
              patch("opencodon.config.load_config", return_value={}), \
              patch.object(vr_mod, "should_route_capture_to_aux_vision",

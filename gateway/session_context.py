@@ -206,7 +206,7 @@ def set_session_vars(
         _SESSION_ASYNC_DELIVERY.set(bool(async_delivery)),
     ]
     try:
-        from agent.runtime_cwd import set_session_cwd
+        from opencodon.core.runtime_cwd import set_session_cwd
 
         set_session_cwd(cwd)
     except Exception:
@@ -246,7 +246,7 @@ def clear_session_vars(tokens: list) -> None:
     # stateless adapter.
     _SESSION_ASYNC_DELIVERY.set(_UNSET)
     try:
-        from agent.runtime_cwd import clear_session_cwd
+        from opencodon.core.runtime_cwd import clear_session_cwd
 
         clear_session_cwd()
     except Exception:
@@ -294,7 +294,7 @@ def reset_session_vars() -> None:
     # which resets this var on the handler-exit path for the symmetric concern.
     _SESSION_ASYNC_DELIVERY.set(_UNSET)
     try:
-        from agent.runtime_cwd import clear_session_cwd
+        from opencodon.core.runtime_cwd import clear_session_cwd
 
         clear_session_cwd()
     except Exception:

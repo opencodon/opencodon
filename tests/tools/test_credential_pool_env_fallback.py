@@ -71,7 +71,7 @@ class TestCredentialPoolSeedsFromDotEnv:
         _write_env_file(isolated_opencodon_home, DEEPSEEK_API_KEY="sk-dotenv-only-12345")
         assert "DEEPSEEK_API_KEY" not in os.environ
 
-        from agent.credential_pool import _seed_from_env
+        from opencodon.core.credential_pool import _seed_from_env
         entries = []
         changed, active_sources = _seed_from_env("deepseek", entries)
 
@@ -88,7 +88,7 @@ class TestCredentialPoolSeedsFromDotEnv:
         _write_env_file(isolated_opencodon_home, OPENROUTER_API_KEY="sk-or-dotenv-abc")
         assert "OPENROUTER_API_KEY" not in os.environ
 
-        from agent.credential_pool import _seed_from_env
+        from opencodon.core.credential_pool import _seed_from_env
         entries = []
         changed, active_sources = _seed_from_env("openrouter", entries)
 
@@ -100,7 +100,7 @@ class TestCredentialPoolSeedsFromDotEnv:
 
     def test_empty_dotenv_no_entries(self, isolated_opencodon_home):
         """No .env file, no env vars → no entries seeded (and no crash)."""
-        from agent.credential_pool import _seed_from_env
+        from opencodon.core.credential_pool import _seed_from_env
         entries = []
         changed, active_sources = _seed_from_env("deepseek", entries)
         assert changed is False
@@ -116,7 +116,7 @@ class TestCredentialPoolSeedsFromDotEnv:
         _write_env_file(isolated_opencodon_home, DEEPSEEK_API_KEY="sk-dotenv-fresh")
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-env-stale-xyz")
 
-        from agent.credential_pool import _seed_from_env
+        from opencodon.core.credential_pool import _seed_from_env
         entries = []
         changed, _ = _seed_from_env("deepseek", entries)
 
@@ -192,7 +192,7 @@ class TestAuthCredentialPoolFallback:
         mock_pool.peek.return_value = mock_entry
 
         from opencodon_cli.auth import _resolve_api_key_provider_secret
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool):
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool):
             key, source = _resolve_api_key_provider_secret(
                 provider_id="deepseek",
                 pconfig=_make_pconfig(),
@@ -206,7 +206,7 @@ class TestAuthCredentialPoolFallback:
         mock_pool.has_credentials.return_value = False
 
         from opencodon_cli.auth import _resolve_api_key_provider_secret
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool):
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool):
             key, source = _resolve_api_key_provider_secret(
                 provider_id="deepseek",
                 pconfig=_make_pconfig(),
@@ -221,7 +221,7 @@ class TestAuthCredentialPoolFallback:
         mock_pool.has_credentials.return_value = True
 
         from opencodon_cli.auth import _resolve_api_key_provider_secret
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool) as mp:
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool) as mp:
             key, source = _resolve_api_key_provider_secret(
                 provider_id="deepseek",
                 pconfig=_make_pconfig(),
@@ -240,7 +240,7 @@ class TestAuthCredentialPoolFallback:
         mock_pool.has_credentials.return_value = True
 
         from opencodon_cli.auth import _resolve_api_key_provider_secret
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool) as mp:
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool) as mp:
             key, source = _resolve_api_key_provider_secret(
                 provider_id="deepseek",
                 pconfig=_make_pconfig(),
@@ -265,7 +265,7 @@ class TestAnthropicEnvAuthTypeClassification:
     """
 
     def _seed(self, env_var, token):
-        from agent.credential_pool import _seed_from_env
+        from opencodon.core.credential_pool import _seed_from_env
         entries = []
         _seed_from_env("anthropic", entries)
         # The seeded entry whose label is the env var we wrote.
@@ -275,7 +275,7 @@ class TestAnthropicEnvAuthTypeClassification:
 
     def test_oauth_token_classified_as_oauth(self, isolated_opencodon_home):
         """sk-ant-oat- token from CLAUDE_CODE_OAUTH_TOKEN → AUTH_TYPE_OAUTH."""
-        from agent.credential_pool import AUTH_TYPE_OAUTH
+        from opencodon.core.credential_pool import AUTH_TYPE_OAUTH
         _write_env_file(isolated_opencodon_home, CLAUDE_CODE_OAUTH_TOKEN="sk-ant-oat-fake-12345")
         entry = self._seed("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat-fake-12345")
         assert entry.auth_type == AUTH_TYPE_OAUTH
@@ -285,14 +285,14 @@ class TestAnthropicEnvAuthTypeClassification:
 
         This is the bug the fix targets: previously this was tagged OAuth.
         """
-        from agent.credential_pool import AUTH_TYPE_API_KEY
+        from opencodon.core.credential_pool import AUTH_TYPE_API_KEY
         _write_env_file(isolated_opencodon_home, ANTHROPIC_API_KEY="sk-ant-admin-fake-12345")
         entry = self._seed("ANTHROPIC_API_KEY", "sk-ant-admin-fake-12345")
         assert entry.auth_type == AUTH_TYPE_API_KEY
 
     def test_standard_api_key_classified_as_api_key(self, isolated_opencodon_home):
         """sk-ant-api- key → AUTH_TYPE_API_KEY (unchanged behaviour)."""
-        from agent.credential_pool import AUTH_TYPE_API_KEY
+        from opencodon.core.credential_pool import AUTH_TYPE_API_KEY
         _write_env_file(isolated_opencodon_home, ANTHROPIC_API_KEY="sk-ant-api-fake-12345")
         entry = self._seed("ANTHROPIC_API_KEY", "sk-ant-api-fake-12345")
         assert entry.auth_type == AUTH_TYPE_API_KEY

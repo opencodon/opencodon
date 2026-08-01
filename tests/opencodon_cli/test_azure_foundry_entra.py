@@ -30,7 +30,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _reset_credential_cache():
-    from agent.azure_identity_adapter import reset_credential_cache
+    from opencodon.core.azure_identity_adapter import reset_credential_cache
     reset_credential_cache()
     yield
     reset_credential_cache()
@@ -40,7 +40,7 @@ def _reset_credential_cache():
 def fake_azure_identity(monkeypatch):
     """Identical fake to test_azure_identity_adapter — keeps Azure SDK
     out of these tests so they run in CI without the package installed."""
-    from agent import azure_identity_adapter as _adapter
+    from opencodon.core import azure_identity_adapter as _adapter
 
     last = {"scope": None, "kwargs": None, "credential_count": 0}
 
@@ -150,7 +150,7 @@ class TestResolveAzureFoundryRuntimeEntra:
         ``cognitiveservices.azure.com`` scope is the control-plane
         audience and is rejected for inference by newer resources."""
         from opencodon_cli.runtime_provider import _resolve_azure_foundry_runtime
-        from agent.azure_identity_adapter import SCOPE_AI_AZURE_DEFAULT
+        from opencodon.core.azure_identity_adapter import SCOPE_AI_AZURE_DEFAULT
         _resolve_azure_foundry_runtime(
             requested_provider="azure-foundry",
             model_cfg={
@@ -340,7 +340,7 @@ class TestAzureFoundryAuthStatus:
         # token provider — if the code path tried to mint, the SDK
         # missing would raise.
         monkeypatch.setattr(
-            "agent.azure_identity_adapter.has_azure_identity_installed",
+            "opencodon.core.azure_identity_adapter.has_azure_identity_installed",
             lambda: True,
         )
         info = _auth._get_azure_foundry_auth_status()
@@ -362,7 +362,7 @@ class TestAzureFoundryAuthStatus:
             },
         )
         monkeypatch.setattr(
-            "agent.azure_identity_adapter.has_azure_identity_installed",
+            "opencodon.core.azure_identity_adapter.has_azure_identity_installed",
             lambda: False,
         )
         info = _auth._get_azure_foundry_auth_status()

@@ -265,8 +265,8 @@ def test_passthrough_kwargs_to_base(monkeypatch):
 
 def test_current_custom_endpoint_passthrough_marks_current_row(monkeypatch):
     """Interactive picker should preserve current custom endpoint semantics."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.PROVIDER_TO_MODELS_DEV", {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     monkeypatch.setattr("opencodon_cli.models.fetch_openrouter_models",
                         lambda *a, **kw: [])
@@ -323,7 +323,7 @@ def _stub_kimi_discovery(monkeypatch, *, canonical):
     offline and deterministic. ``canonical`` is the CANONICAL_PROVIDERS list
     the 2b cross-check pass should iterate.
     """
-    import agent.models_dev as md
+    import opencodon.core.models_dev as md
     import opencodon_cli.models as hm
 
     kimi_map = {

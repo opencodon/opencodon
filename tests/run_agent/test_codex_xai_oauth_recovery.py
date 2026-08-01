@@ -456,7 +456,7 @@ def test_classify_api_error_stream_event_grok_subscription_is_auth():
     return auth/non-retryable so _is_entitlement_failure can stop the loop.
     """
     from run_agent import _StreamErrorEvent
-    from agent.error_classifier import classify_api_error, FailoverReason
+    from opencodon.core.error_classifier import classify_api_error, FailoverReason
 
     err = _StreamErrorEvent(
         "You have either run out of available resources or do not have an "
@@ -472,7 +472,7 @@ def test_classify_api_error_stream_event_grok_subscription_is_auth():
 def test_classify_api_error_stream_event_resources_exhausted_grok_is_auth():
     """'out of available resources' + 'grok' variant also classifies as auth."""
     from run_agent import _StreamErrorEvent
-    from agent.error_classifier import classify_api_error, FailoverReason
+    from opencodon.core.error_classifier import classify_api_error, FailoverReason
 
     err = _StreamErrorEvent(
         "You have run out of available resources for Grok.",
@@ -485,7 +485,7 @@ def test_classify_api_error_stream_event_resources_exhausted_grok_is_auth():
 def test_classify_api_error_stream_event_unrelated_not_reclassified():
     """An unrelated _StreamErrorEvent must not be caught by the xAI guard."""
     from run_agent import _StreamErrorEvent
-    from agent.error_classifier import classify_api_error, FailoverReason
+    from opencodon.core.error_classifier import classify_api_error, FailoverReason
 
     err = _StreamErrorEvent("Internal server error — try again later")
     result = classify_api_error(err, provider="xai-oauth", model="grok-4.3")
@@ -514,7 +514,7 @@ def _assistant_msg_with_encrypted_reasoning(text="hi from grok", encrypted="enc_
 
 def test_codex_reasoning_replay_default_includes_encrypted_content():
     """Native Codex backend (default) must still replay encrypted reasoning."""
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -537,7 +537,7 @@ def test_codex_reasoning_replay_includes_encrypted_content_for_xai():
     cross-turn coherence — that's the whole point of the partnership
     integration.
     """
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -567,7 +567,7 @@ def test_codex_transport_xai_request_includes_encrypted_content():
     This is the request-side half of the May 2026 reversal: we ask xAI
     to echo back encrypted reasoning so the next turn can replay it.
     """
-    from agent.transports.codex import ResponsesApiTransport
+    from opencodon.core.transports.codex import ResponsesApiTransport
 
     transport = ResponsesApiTransport()
     kwargs = transport.build_kwargs(
@@ -586,7 +586,7 @@ def test_codex_transport_xai_request_includes_encrypted_content():
 
 def test_codex_transport_xai_replays_reasoning_in_input():
     """End-to-end: build_kwargs on xAI must replay prior encrypted reasoning."""
-    from agent.transports.codex import ResponsesApiTransport
+    from opencodon.core.transports.codex import ResponsesApiTransport
 
     transport = ResponsesApiTransport()
     kwargs = transport.build_kwargs(
@@ -610,7 +610,7 @@ def test_codex_transport_xai_replays_reasoning_in_input():
 
 def test_codex_transport_native_codex_still_replays_reasoning_in_input():
     """Regression guard: openai-codex must keep the existing replay path."""
-    from agent.transports.codex import ResponsesApiTransport
+    from opencodon.core.transports.codex import ResponsesApiTransport
 
     transport = ResponsesApiTransport()
     kwargs = transport.build_kwargs(
@@ -698,7 +698,7 @@ def test_recover_with_credential_pool_skips_refresh_on_entitlement_403():
     the entitlement guard, recovery returns False so the error surfaces
     normally with the friendly hint from _summarize_api_error.
     """
-    from agent.error_classifier import FailoverReason
+    from opencodon.core.error_classifier import FailoverReason
 
     agent = _make_codex_agent()
 
@@ -737,7 +737,7 @@ def test_recover_with_credential_pool_skips_refresh_on_entitlement_403():
 
 def test_recover_with_credential_pool_rotates_on_xai_spending_limit_403():
     """xAI's explicit spending-limit 403 must rotate, not hit the entitlement guard."""
-    from agent.error_classifier import FailoverReason, classify_api_error
+    from opencodon.core.error_classifier import FailoverReason, classify_api_error
 
     agent = _make_codex_agent()
     next_entry = MagicMock(id="healthy-account")
@@ -808,7 +808,7 @@ def test_recover_with_credential_pool_skips_refresh_on_bare_403_for_xai_oauth():
     path would happily mint a fresh token, get a fresh 403, and spin.
     """
     from run_agent import AIAgent
-    from agent.error_classifier import FailoverReason
+    from opencodon.core.error_classifier import FailoverReason
 
     agent = _make_codex_agent()
     assert agent.provider == "xai-oauth"
@@ -850,7 +850,7 @@ def test_recover_with_credential_pool_skips_refresh_on_bare_403_for_xai_oauth():
 
 def test_recover_with_credential_pool_still_refreshes_genuine_auth_failure():
     """Regression guard: legitimate auth errors must still trigger refresh."""
-    from agent.error_classifier import FailoverReason
+    from opencodon.core.error_classifier import FailoverReason
 
     agent = _make_codex_agent()
 
@@ -1031,7 +1031,7 @@ def test_recover_with_credential_pool_refreshes_on_xai_bad_credentials_403():
     the very body that pre-fix tripped the entitlement classifier
     and short-circuited the refresh path.
     """
-    from agent.error_classifier import FailoverReason
+    from opencodon.core.error_classifier import FailoverReason
 
     agent = _make_codex_agent()
 
@@ -1087,7 +1087,7 @@ def test_recover_with_credential_pool_still_blocks_real_entitlement():
     survive the new disambiguator.  A real unsubscribed-account body
     has no WKE suffix and no OAuth2-validation phrase, so the
     classifier still classifies it as entitlement and short-circuits."""
-    from agent.error_classifier import FailoverReason
+    from opencodon.core.error_classifier import FailoverReason
 
     agent = _make_codex_agent()
 
@@ -1139,7 +1139,7 @@ def test_grok_4_3_context_length_is_1m():
     opencodon' substring-match fallback used to return 256k (from the
     "grok-4" catch-all) which under-reported the model's real capacity.
     """
-    from agent.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     # The entry exists with the expected value.
     assert DEFAULT_CONTEXT_LENGTHS["grok-4.3"] == 1_000_000
@@ -1160,7 +1160,7 @@ def test_grok_4_3_context_length_is_1m():
 
 def test_grok_4_still_resolves_to_256k():
     """Regression guard: grok-4 (non-.3) must still resolve to 256k."""
-    from agent.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     for slug in ("grok-4", "grok-4-0709"):
         matched_key = max(
@@ -1182,7 +1182,7 @@ def test_grok_composer_context_length_is_200k():
     the input+output budget at ~262144, but the usable context (what we
     track) is 200k.
     """
-    from agent.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     assert DEFAULT_CONTEXT_LENGTHS["grok-composer"] == 200_000
     slug = "grok-composer-2.5-fast"
@@ -1231,7 +1231,7 @@ def test_cross_issuer_reasoning_is_dropped_on_replay():
     swap that returned invalid_encrypted_content on every turn after the
     user changed model mid-session.
     """
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1254,7 +1254,7 @@ def test_same_issuer_reasoning_is_still_replayed():
     """Same-endpoint reasoning replay is the documented happy path (May 2026
     reversal). The cross-issuer guard must not regress it.
     """
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1276,7 +1276,7 @@ def test_unstamped_reasoning_is_replayed_for_backwards_compat():
     """Reasoning items persisted before this patch don't carry _issuer_kind.
     They must still be replayed (legacy-compatible behaviour).
     """
-    from agent.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1309,7 +1309,7 @@ def test_normalize_codex_response_stamps_issuer_on_reasoning():
     """
     from types import SimpleNamespace
 
-    from agent.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.codex_responses_adapter import _normalize_codex_response
 
     reasoning_item = SimpleNamespace(
         type="reasoning",
@@ -1336,7 +1336,7 @@ def test_transport_round_trip_drops_foreign_reasoning():
     """Full transport flow: build_kwargs against codex_backend after grok turns
     must produce an `input` array that contains zero foreign reasoning items.
     """
-    from agent.transports.codex import ResponsesApiTransport
+    from opencodon.core.transports.codex import ResponsesApiTransport
 
     transport = ResponsesApiTransport()
     messages = [

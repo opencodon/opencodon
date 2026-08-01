@@ -89,7 +89,7 @@ class TestPrimaryRuntimeSnapshot:
             patch("run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
-            patch("agent.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-test-12345678",
@@ -130,7 +130,7 @@ class TestRestorePrimaryRuntime:
 
         # Simulate fallback activation
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
 
         assert agent._fallback_activated is True
@@ -156,7 +156,7 @@ class TestRestorePrimaryRuntime:
         )
         # Advance through the chain
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
 
         assert agent._fallback_index == 1  # consumed one entry
@@ -175,7 +175,7 @@ class TestRestorePrimaryRuntime:
 
         # Simulate fallback modifying compressor
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
 
         # Manually simulate compressor being changed (as _try_activate_fallback does)
@@ -228,7 +228,7 @@ class TestRestorePrimaryRuntime:
         )
         original_base_url = agent.base_url
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
         agent._credential_pool = _Pool()
         agent._swap_credential = MagicMock()
@@ -278,7 +278,7 @@ class TestRestorePrimaryRuntime:
         primary_provider = agent.provider
         mock_client = _mock_resolve(base_url="https://api.deepseek.com/v1")
         with patch(
-            "agent.auxiliary_client.resolve_provider_client",
+            "opencodon.core.auxiliary_client.resolve_provider_client",
             return_value=(mock_client, None),
         ):
             agent._try_activate_fallback()
@@ -291,7 +291,7 @@ class TestRestorePrimaryRuntime:
         primary_pool.has_available.return_value = False
         with (
             patch("run_agent.OpenAI", return_value=MagicMock()),
-            patch("agent.credential_pool.load_pool", return_value=primary_pool) as load_pool,
+            patch("opencodon.core.credential_pool.load_pool", return_value=primary_pool) as load_pool,
         ):
             result = agent._restore_primary_runtime()
 
@@ -317,7 +317,7 @@ class TestRestorePrimaryRuntime:
         with (
             patch("run_agent.OpenAI", return_value=MagicMock()),
             patch(
-                "agent.credential_pool.load_pool",
+                "opencodon.core.credential_pool.load_pool",
                 side_effect=RuntimeError("auth store unavailable"),
             ),
         ):
@@ -355,7 +355,7 @@ class TestRestorePrimaryRuntime:
 
         with (
             patch(
-                "agent.credential_pool.get_custom_provider_pool_key",
+                "opencodon.core.credential_pool.get_custom_provider_pool_key",
                 return_value="custom:myllm",
             ),
             patch("run_agent.OpenAI", return_value=MagicMock()),
@@ -395,7 +395,7 @@ class TestRestorePrimaryRuntime:
 
         with (
             patch(
-                "agent.credential_pool.get_custom_provider_pool_key",
+                "opencodon.core.credential_pool.get_custom_provider_pool_key",
                 return_value="custom:myllm",  # primary resolves to a DIFFERENT key
             ),
             patch("run_agent.OpenAI", return_value=MagicMock()),
@@ -625,7 +625,7 @@ class TestRestoreInRunConversation:
 
         # Turn 1: activate fallback
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             assert agent._try_activate_fallback() is True
 
         assert agent._fallback_activated is True
@@ -656,7 +656,7 @@ class TestRateLimitCooldown:
             fallback_model={"provider": "openrouter", "model": "anthropic/claude-sonnet-4"},
         )
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
 
         assert agent._fallback_activated is True
@@ -674,7 +674,7 @@ class TestRateLimitCooldown:
             fallback_model={"provider": "openrouter", "model": "anthropic/claude-sonnet-4"},
         )
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback()
 
         assert agent._fallback_activated is True
@@ -696,7 +696,7 @@ class TestRateLimitCooldown:
         )
         before = time.monotonic()
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             agent._try_activate_fallback(reason=FailoverReason.rate_limit)
 
         assert hasattr(agent, "_rate_limited_until")
@@ -712,7 +712,7 @@ class TestRateLimitCooldown:
             ],
         )
         mock_client = _mock_resolve()
-        with patch("agent.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
+        with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)):
             # First call: leaving primary → cooldown should be set
             agent._try_activate_fallback(reason=FailoverReason.rate_limit)
             first_cooldown = getattr(agent, "_rate_limited_until", 0)

@@ -400,7 +400,7 @@ def _print_setup_summary(config: dict, opencodon_home):
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
-        from agent.auxiliary_client import get_available_vision_backends
+        from opencodon.core.auxiliary_client import get_available_vision_backends
 
         _vision_backends = get_available_vision_backends()
     except Exception:
@@ -489,7 +489,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         # setups don't show as "missing FAL_KEY".
         _img_backend = None
         try:
-            from agent.image_gen_registry import list_providers
+            from opencodon.core.image_gen_registry import list_providers
             from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()

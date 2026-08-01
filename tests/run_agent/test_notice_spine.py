@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-from agent.notices import AgentNotice
+from opencodon.core.notices import AgentNotice
 from run_agent import AIAgent
 
 
@@ -102,12 +102,12 @@ class TestSignatureThreading:
         assert "notice_clear_callback" in sig.parameters
 
     def test_init_agent_exposes_notice_callback(self):
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
         sig = inspect.signature(init_agent)
         assert "notice_callback" in sig.parameters
 
     def test_init_agent_exposes_notice_clear_callback(self):
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
         sig = inspect.signature(init_agent)
         assert "notice_clear_callback" in sig.parameters
 

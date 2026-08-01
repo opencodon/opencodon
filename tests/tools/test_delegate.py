@@ -1880,7 +1880,7 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
         mock_pool = MagicMock()
         mock_pool.has_credentials.return_value = True
 
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool):
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool):
             result = _resolve_child_credential_pool("anthropic", parent)
 
         self.assertIs(result, mock_pool)
@@ -1891,7 +1891,7 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
         mock_pool = MagicMock()
         mock_pool.has_credentials.return_value = False
 
-        with patch("agent.credential_pool.load_pool", return_value=mock_pool):
+        with patch("opencodon.core.credential_pool.load_pool", return_value=mock_pool):
             result = _resolve_child_credential_pool("anthropic", parent)
 
         self.assertIsNone(result)
@@ -1900,7 +1900,7 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
         parent = _make_mock_parent()
         parent._credential_pool = MagicMock()
 
-        with patch("agent.credential_pool.load_pool", side_effect=Exception("disk error")):
+        with patch("opencodon.core.credential_pool.load_pool", side_effect=Exception("disk error")):
             result = _resolve_child_credential_pool("anthropic", parent)
 
         self.assertIsNone(result)
@@ -1924,8 +1924,8 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
                 "https://endpoint-b.example.com/v1": "custom:endpoint-b",
             }.get(base_url)
 
-        with patch("agent.credential_pool.get_custom_provider_pool_key", side_effect=fake_key), \
-             patch("agent.credential_pool.load_pool", return_value=child_pool) as load_mock:
+        with patch("opencodon.core.credential_pool.get_custom_provider_pool_key", side_effect=fake_key), \
+             patch("opencodon.core.credential_pool.load_pool", return_value=child_pool) as load_mock:
             result = _resolve_child_credential_pool(
                 "custom", parent, "https://endpoint-b.example.com/v1"
             )
@@ -1944,7 +1944,7 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
         parent._credential_pool = MagicMock(name="parent_custom_a_pool")
 
         with patch(
-            "agent.credential_pool.get_custom_provider_pool_key",
+            "opencodon.core.credential_pool.get_custom_provider_pool_key",
             return_value="custom:endpoint-a",
         ):
             result = _resolve_child_credential_pool(
@@ -1963,7 +1963,7 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
         parent._credential_pool = MagicMock(name="parent_custom_a_pool")
 
         with patch(
-            "agent.credential_pool.get_custom_provider_pool_key",
+            "opencodon.core.credential_pool.get_custom_provider_pool_key",
             return_value=None,
         ):
             result = _resolve_child_credential_pool(

@@ -247,7 +247,7 @@ def test_main_top_level_tui_accepts_toolsets(monkeypatch, main_mod):
     monkeypatch.setattr(config_mod, "get_container_exec_info", lambda: None)
     monkeypatch.setitem(
         sys.modules,
-        "agent.shell_hooks",
+        "opencodon.core.shell_hooks",
         types.SimpleNamespace(
             register_from_config=lambda _cfg, accept_hooks=False: None
         ),
@@ -629,7 +629,7 @@ def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     monkeypatch.setattr(config_mod, "get_container_exec_info", lambda: None)
     monkeypatch.setitem(
         sys.modules,
-        "agent.shell_hooks",
+        "opencodon.core.shell_hooks",
         types.SimpleNamespace(
             register_from_config=lambda _cfg, accept_hooks=False: None
         ),
@@ -897,8 +897,8 @@ def test_run_and_exit_oneshot_cleans_global_runtime_before_hard_exit(
     )
     monkeypatch.setitem(
         sys.modules,
-        "agent.auxiliary_client",
-        _mod("agent.auxiliary_client", shutdown_cached_clients=lambda: events.append("aux")),
+        "opencodon.core.auxiliary_client",
+        _mod("opencodon.core.auxiliary_client", shutdown_cached_clients=lambda: events.append("aux")),
     )
     monkeypatch.setattr(
         main_mod, "_exit_after_oneshot", lambda rc: events.append(f"exit:{rc}")
@@ -944,7 +944,7 @@ def test_run_and_exit_oneshot_still_exits_when_global_cleanup_raises(
     )
     monkeypatch.setitem(
         sys.modules,
-        "agent.auxiliary_client",
+        "opencodon.core.auxiliary_client",
         types.SimpleNamespace(shutdown_cached_clients=lambda: events.append("aux")),
     )
     monkeypatch.setattr(

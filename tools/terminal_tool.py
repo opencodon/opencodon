@@ -2808,7 +2808,7 @@ def terminal_tool(
             # (code_file=False) to mask opaque tokens with no vendor prefix.
             # Real prefixes, auth headers, JWTs, private keys are masked in
             # both modes. See issue #43025.
-            from agent.redact import redact_terminal_output
+            from opencodon.core.redact import redact_terminal_output
             output = redact_terminal_output(output.strip(), command) if output else ""
 
             # Interpret non-zero exit codes that aren't real errors
@@ -2821,7 +2821,7 @@ def terminal_tool(
                 "error": None,
             }
             try:
-                from agent.verification_evidence import record_terminal_result
+                from opencodon.core.verification_evidence import record_terminal_result
 
                 evidence = record_terminal_result(
                     command=command,

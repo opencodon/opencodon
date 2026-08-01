@@ -118,7 +118,7 @@ class TestStartupPlatformIsolation:
         with patch("gateway.status.write_runtime_status"):
             with patch("opencodon.plugins_runtime.discover_plugins"):
                 with patch("opencodon.config.load_config", return_value={}):
-                    with patch("agent.shell_hooks.register_from_config"):
+                    with patch("opencodon.core.shell_hooks.register_from_config"):
                         with patch(
                             "tools.process_registry.process_registry.recover_from_checkpoint",
                             return_value=0,

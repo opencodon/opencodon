@@ -115,7 +115,7 @@ def test_generate_xai_tts_sends_auxiliary_rewriter_output_to_api(
     monkeypatch.setenv("XAI_API_KEY", "test-xai-key")
     monkeypatch.setattr("requests.post", fake_post)
     monkeypatch.setattr(
-        "agent.auxiliary_client.call_llm", lambda *a, **kw: fake_response
+        "opencodon.core.auxiliary_client.call_llm", lambda *a, **kw: fake_response
     )
 
     out = tmp_path / "out.mp3"
@@ -141,7 +141,7 @@ def test_auto_speech_tags_calls_auxiliary_rewriter_with_tts_audio_tags_task():
         choices=[SimpleNamespace(message=SimpleNamespace(content="[warmly] Hi."))]
     )
 
-    with patch("agent.auxiliary_client.call_llm", return_value=response) as mock_call:
+    with patch("opencodon.core.auxiliary_client.call_llm", return_value=response) as mock_call:
         result = _apply_xai_auto_speech_tags(
             "Bonjour Monsieur Talbot. Ceci est un test de réponse vocale."
         )
@@ -188,7 +188,7 @@ def test_auto_speech_tags_strips_markdown_fences_from_rewriter_output():
         choices=[SimpleNamespace(message=SimpleNamespace(content=fenced))]
     )
 
-    with patch("agent.auxiliary_client.call_llm", return_value=response):
+    with patch("opencodon.core.auxiliary_client.call_llm", return_value=response):
         result = _apply_xai_auto_speech_tags(
             "Bonjour Monsieur Talbot. Ceci est un test de réponse vocale."
         )
@@ -203,7 +203,7 @@ def test_auto_speech_tags_strips_markdown_fence_with_language_hint():
         choices=[SimpleNamespace(message=SimpleNamespace(content=fenced))]
     )
 
-    with patch("agent.auxiliary_client.call_llm", return_value=response):
+    with patch("opencodon.core.auxiliary_client.call_llm", return_value=response):
         result = _apply_xai_auto_speech_tags(
             "Bonjour Monsieur Talbot. Ceci est un test de réponse vocale."
         )
@@ -219,7 +219,7 @@ def test_auto_speech_tags_falls_back_to_local_on_auxiliary_exception(caplog):
     import logging
 
     with caplog.at_level(logging.DEBUG, logger="tools.tts_tool"), patch(
-        "agent.auxiliary_client.call_llm",
+        "opencodon.core.auxiliary_client.call_llm",
         side_effect=RuntimeError("upstream provider timed out"),
     ):
         result = _apply_xai_auto_speech_tags(
@@ -241,7 +241,7 @@ def test_auto_speech_tags_falls_back_to_local_when_rewriter_returns_empty():
     )
 
     with patch(
-        "agent.auxiliary_client.call_llm", return_value=empty_response
+        "opencodon.core.auxiliary_client.call_llm", return_value=empty_response
     ):
         result = _apply_xai_auto_speech_tags(
             "Bonjour Monsieur Talbot. Ceci est un test de réponse vocale."
@@ -259,7 +259,7 @@ def test_auto_speech_tags_skips_auxiliary_when_input_has_explicit_tags():
     """
     tagged = "Bonjour. [pause] <whisper>Déjà balisé.</whisper>"
 
-    with patch("agent.auxiliary_client.call_llm") as mock_call:
+    with patch("opencodon.core.auxiliary_client.call_llm") as mock_call:
         result = _apply_xai_auto_speech_tags(tagged)
 
     mock_call.assert_not_called()
@@ -269,7 +269,7 @@ def test_auto_speech_tags_skips_auxiliary_when_input_has_explicit_tags():
 
 
 def test_auto_speech_tags_skips_auxiliary_for_empty_input():
-    with patch("agent.auxiliary_client.call_llm") as mock_call:
+    with patch("opencodon.core.auxiliary_client.call_llm") as mock_call:
         assert _apply_xai_auto_speech_tags("") == ""
         assert _apply_xai_auto_speech_tags("   \n  ") == "   \n  "
 
@@ -278,7 +278,7 @@ def test_auto_speech_tags_skips_auxiliary_for_empty_input():
 
 def test_auto_speech_tags_skips_auxiliary_for_whitespace_only_input():
     """Whitespace-only input short-circuits before the rewriter runs."""
-    with patch("agent.auxiliary_client.call_llm") as mock_call:
+    with patch("opencodon.core.auxiliary_client.call_llm") as mock_call:
         assert _apply_xai_auto_speech_tags("   ") == "   "
 
     mock_call.assert_not_called()
@@ -292,7 +292,7 @@ def test_auto_speech_tags_falls_back_to_local_on_malformed_rewriter_response(
     conservative local pass rather than crash.
     """
     with patch(
-        "agent.auxiliary_client.call_llm", return_value=bad_response
+        "opencodon.core.auxiliary_client.call_llm", return_value=bad_response
     ):
         result = _apply_xai_auto_speech_tags(
             "Bonjour Monsieur Talbot. Ceci est un test de réponse vocale."

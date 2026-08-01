@@ -23,7 +23,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from agent.secret_sources import bitwarden as bw
+from opencodon.core.secret_sources import bitwarden as bw
 from opencodon.config import (
     get_env_path,
     load_config,

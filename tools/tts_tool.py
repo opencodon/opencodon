@@ -515,7 +515,7 @@ def _dispatch_to_plugin_provider(
     if _is_command_provider_config(_get_named_provider_config(tts_config, key)):
         return None
     try:
-        from agent.tts_registry import get_provider
+        from opencodon.core.tts_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -577,7 +577,7 @@ def _plugin_provider_is_voice_compatible(provider: str) -> bool:
     if key in BUILTIN_TTS_PROVIDERS:
         return False
     try:
-        from agent.tts_registry import get_provider
+        from opencodon.core.tts_registry import get_provider
 
         plugin_provider = get_provider(key)
         if plugin_provider is None:
@@ -1281,7 +1281,7 @@ def _apply_xai_auto_speech_tags(text: str) -> str:
         "- Return only the tagged TTS script."
     )
     try:
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
 
         response = call_llm(
             task="tts_audio_tags",
@@ -1735,7 +1735,7 @@ def _rewrite_gemini_tts_audio_tags(text: str, persona_prompt: str = "") -> str:
         f"{transcript}"
     )
     try:
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
 
         response = call_llm(
             task=GEMINI_AUDIO_TAG_REWRITE_TASK,
@@ -2665,7 +2665,7 @@ def check_tts_requirements() -> bool:
         return _check_piper_available()
 
     try:
-        from agent.tts_registry import get_provider
+        from opencodon.core.tts_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()

@@ -320,7 +320,7 @@ class TestGatewayMode:
         tool_logger = logging.getLogger("tools.terminal_tool")
         tool_logger.info("running command")
 
-        agent_logger = logging.getLogger("agent.context_compressor")
+        agent_logger = logging.getLogger("opencodon.core.context_compressor")
         agent_logger.info("compressing context")
 
         opencodon_logging.flush_log_queue()
@@ -561,7 +561,7 @@ class TestComponentFilter:
         assert f.filter(record) is False
 
     def test_multiple_prefixes(self):
-        f = opencodon_logging._ComponentFilter(("agent", "run_agent", "model_tools"))
+        f = opencodon_logging._ComponentFilter(("agent", "opencodon.core", "run_agent", "model_tools"))
         assert f.filter(logging.LogRecord(
             "agent.compressor", logging.INFO, "", 0, "", (), None
         ))

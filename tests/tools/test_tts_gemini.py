@@ -355,7 +355,7 @@ class TestGenerateGeminiTts:
         }
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        with patch("agent.auxiliary_client.call_llm") as mock_call_llm, \
+        with patch("opencodon.core.auxiliary_client.call_llm") as mock_call_llm, \
              patch("requests.post", return_value=mock_gemini_response) as mock_post:
             _generate_gemini_tts("Hi there.", str(tmp_path / "test.wav"), config)
 
@@ -389,7 +389,7 @@ class TestGenerateGeminiTts:
         }
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        with patch("agent.auxiliary_client.call_llm", return_value=response) as mock_call_llm, \
+        with patch("opencodon.core.auxiliary_client.call_llm", return_value=response) as mock_call_llm, \
              patch("requests.post", return_value=mock_gemini_response) as mock_post:
             _generate_gemini_tts("Hi there.", str(tmp_path / "test.wav"), config)
 
@@ -418,7 +418,7 @@ class TestGenerateGeminiTts:
         }
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        with patch("agent.auxiliary_client.call_llm") as mock_call_llm, \
+        with patch("opencodon.core.auxiliary_client.call_llm") as mock_call_llm, \
              patch("requests.post", return_value=mock_gemini_response) as mock_post:
             _generate_gemini_tts("Hi there.", str(tmp_path / "test.wav"), config)
 
@@ -440,7 +440,7 @@ class TestGenerateGeminiTts:
         }
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        with patch("agent.auxiliary_client.call_llm", side_effect=RuntimeError("boom")), \
+        with patch("opencodon.core.auxiliary_client.call_llm", side_effect=RuntimeError("boom")), \
              patch("requests.post", return_value=mock_gemini_response) as mock_post:
             _generate_gemini_tts("Hi there.", str(tmp_path / "test.wav"), config)
 

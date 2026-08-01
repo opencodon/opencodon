@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.conversation_compression import (
+from opencodon.core.conversation_compression import (
     finalize_context_engine_compression_notification,
 )
 

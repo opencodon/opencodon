@@ -383,7 +383,7 @@ def test_pool_entry_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     pool = load_pool("openai-codex")
     monkeypatch.setattr(
@@ -400,7 +400,7 @@ def test_pool_entry_stays_frozen_when_probe_negative(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     pool = load_pool("openai-codex")
     monkeypatch.setattr(
@@ -421,7 +421,7 @@ def test_pool_probe_not_fired_for_non_quota_exhaustion(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path / "opencodon", store)
 
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     pool = load_pool("openai-codex")
     probes = []
@@ -441,7 +441,7 @@ def test_pool_readonly_enumeration_does_not_probe(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path / "opencodon", _pool_only_rate_limited_store())
 
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     pool = load_pool("openai-codex")
     probes = []
@@ -465,7 +465,7 @@ def test_redeem_reset_clears_pool_cooldowns(tmp_path, monkeypatch):
     _write_auth_store(opencodon_home, _pool_only_rate_limited_store())
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-    from agent import account_usage
+    from opencodon.core import account_usage
 
     class _FakeResetClient:
         def __init__(self, **kwargs):

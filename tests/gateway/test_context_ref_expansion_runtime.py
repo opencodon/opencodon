@@ -23,7 +23,7 @@ from contextlib import contextmanager
 import pytest
 
 import gateway.run as gateway_run
-from agent.context_references import ContextReferenceResult
+from opencodon.core.context_references import ContextReferenceResult
 from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.base import MessageEvent
 from gateway.run import GatewayRunner
@@ -108,7 +108,7 @@ async def test_at_reference_reaches_preprocessor_with_real_context_length(
             expanded=True,
         )
 
-    import agent.context_references as ctx_mod
+    import opencodon.core.context_references as ctx_mod
 
     monkeypatch.setattr(ctx_mod, "preprocess_context_references_async", _fake_preprocess)
 
@@ -159,13 +159,13 @@ async def test_at_reference_resolves_model_via_session_runtime(monkeypatch):
         captured_runtime_call["config_context_length"] = config_context_length
         return config_context_length or 128000
 
-    import agent.model_metadata as model_meta_mod
+    import opencodon.core.model_metadata as model_meta_mod
 
     monkeypatch.setattr(
         model_meta_mod, "get_model_context_length_async", _fake_get_ctx_len
     )
 
-    import agent.context_references as ctx_mod
+    import opencodon.core.context_references as ctx_mod
 
     async def _passthrough_preprocess(message, *, cwd, context_length, url_fetcher=None, allowed_root=None):
         return ContextReferenceResult(message=message, original_message=message)
@@ -258,8 +258,8 @@ async def test_at_reference_passes_compatible_custom_provider_context(monkeypatc
     )
 
     import opencodon.config as config_mod
-    import agent.model_metadata as model_meta_mod
-    import agent.context_references as ctx_mod
+    import opencodon.core.model_metadata as model_meta_mod
+    import opencodon.core.context_references as ctx_mod
 
     monkeypatch.setattr(config_mod, "get_compatible_custom_providers", lambda _cfg: custom_providers)
 
@@ -301,8 +301,8 @@ async def test_at_reference_applies_custom_runtime_budget_to_preprocessor(monkey
     ))
 
     import opencodon.config as config_mod
-    import agent.model_metadata as model_meta_mod
-    import agent.context_references as ctx_mod
+    import opencodon.core.model_metadata as model_meta_mod
+    import opencodon.core.context_references as ctx_mod
 
     monkeypatch.setattr(config_mod, "get_compatible_custom_providers", lambda _cfg: custom_providers)
     monkeypatch.setattr(config_mod, "get_custom_provider_context_length", lambda **_kwargs: 32768)
@@ -342,8 +342,8 @@ async def test_at_reference_ignores_global_context_for_session_model_override(mo
         {"provider": "openai", "api_key": "test", "base_url": "https://api.openai.com/v1"},
     ))
 
-    import agent.model_metadata as model_meta_mod
-    import agent.context_references as ctx_mod
+    import opencodon.core.model_metadata as model_meta_mod
+    import opencodon.core.context_references as ctx_mod
 
     async def _fake_get_context(_model, **kwargs):
         captured["config_context_length"] = kwargs["config_context_length"]
@@ -393,8 +393,8 @@ async def test_at_reference_ignores_global_context_for_runtime_route_override(mo
         ),
     )
 
-    import agent.context_references as ctx_mod
-    import agent.model_metadata as model_meta_mod
+    import opencodon.core.context_references as ctx_mod
+    import opencodon.core.model_metadata as model_meta_mod
 
     async def _fake_get_context(_model, **kwargs):
         captured["config_context_length"] = kwargs["config_context_length"]

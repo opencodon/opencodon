@@ -125,7 +125,7 @@ async def resolve_image_source(src: str, ctx: ResolveContext) -> ResolvedImage:
         # best-effort (guard unavailability must not break image loading);
         # a real block always propagates.
         try:
-            from agent.file_safety import raise_if_read_blocked
+            from opencodon.core.file_safety import raise_if_read_blocked
         except Exception:  # noqa: BLE001 — guard unavailable: proceed
             raise_if_read_blocked = None
         if raise_if_read_blocked is not None:

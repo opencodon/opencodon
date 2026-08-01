@@ -25,8 +25,8 @@ from opencodon_cli.models import (
     normalize_provider,
     provider_model_ids,
 )
-from agent.auxiliary_client import resolve_provider_client
-from agent.model_metadata import get_model_context_length
+from opencodon.core.auxiliary_client import resolve_provider_client
+from opencodon.core.model_metadata import get_model_context_length
 
 
 @pytest.fixture(autouse=True)
@@ -221,34 +221,34 @@ class TestGmiDoctor:
 
 class TestGmiModelMetadata:
     def test_url_to_provider(self):
-        from agent.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.model_metadata import _URL_TO_PROVIDER
 
         assert _URL_TO_PROVIDER.get("api.gmi-serving.com") == "gmi"
 
     def test_provider_prefixes(self):
-        from agent.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
 
         assert "gmi" in _PROVIDER_PREFIXES
         assert "gmi-cloud" in _PROVIDER_PREFIXES
         assert "gmicloud" in _PROVIDER_PREFIXES
 
     def test_infer_from_url(self):
-        from agent.model_metadata import _infer_provider_from_url
+        from opencodon.core.model_metadata import _infer_provider_from_url
 
         assert _infer_provider_from_url("https://api.gmi-serving.com/v1") == "gmi"
 
     def test_known_gmi_endpoint_still_uses_endpoint_metadata(self):
         with patch(
-            "agent.model_metadata.get_cached_context_length",
+            "opencodon.core.model_metadata.get_cached_context_length",
             return_value=None,
         ), patch(
-            "agent.model_metadata.fetch_endpoint_model_metadata",
+            "opencodon.core.model_metadata.fetch_endpoint_model_metadata",
             return_value={"anthropic/claude-opus-4.6": {"context_length": 409600}},
         ), patch(
-            "agent.models_dev.lookup_models_dev_context",
+            "opencodon.core.models_dev.lookup_models_dev_context",
             return_value=None,
         ), patch(
-            "agent.model_metadata.fetch_model_metadata",
+            "opencodon.core.model_metadata.fetch_model_metadata",
             return_value={},
         ):
             result = get_model_context_length(
@@ -265,7 +265,7 @@ class TestGmiAuxiliary:
     def test_resolve_provider_client_uses_gmi_aux_default(self, monkeypatch):
         monkeypatch.setenv("GMI_API_KEY", "gmi-test-key")
 
-        with patch("agent.auxiliary_client.OpenAI") as mock_openai:
+        with patch("opencodon.core.auxiliary_client.OpenAI") as mock_openai:
             mock_openai.return_value = object()
             client, model = resolve_provider_client("gmi")
 
@@ -293,7 +293,7 @@ class TestGmiAuxiliary:
     def test_resolve_provider_client_accepts_gmi_alias(self, monkeypatch):
         monkeypatch.setenv("GMI_API_KEY", "gmi-test-key")
 
-        with patch("agent.auxiliary_client.OpenAI") as mock_openai:
+        with patch("opencodon.core.auxiliary_client.OpenAI") as mock_openai:
             mock_openai.return_value = object()
             client, model = resolve_provider_client("gmi-cloud")
 

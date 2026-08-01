@@ -286,7 +286,7 @@ class TestComposedPromptByteStability:
     def test_codex_cache_key_constant_across_turns(self):
         """The codex transport content-addresses its prompt cache key from
         (instructions + tools); pinned ephemeral bytes keep it warm."""
-        from agent.transports.codex import _content_cache_key
+        from opencodon.core.transports.codex import _content_cache_key
 
         runner = _make_runner()
         tools = [{"type": "function", "name": "read_file"}]

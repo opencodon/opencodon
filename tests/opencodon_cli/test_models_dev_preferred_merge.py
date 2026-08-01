@@ -31,7 +31,7 @@ from opencodon_cli.models import (
 class TestMergeHelper:
     def test_merge_empty_mdev_returns_curated(self):
         """When models.dev returns nothing, curated list is preserved verbatim."""
-        with patch("agent.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
             out = _merge_with_models_dev("opencode-go", ["mimo-v2-pro", "kimi-k2.6"])
         assert out == ["mimo-v2-pro", "kimi-k2.6"]
 
@@ -40,7 +40,7 @@ class TestMergeHelper:
         def boom(_provider):
             raise RuntimeError("network down")
 
-        with patch("agent.models_dev.list_agentic_models", side_effect=boom):
+        with patch("opencodon.core.models_dev.list_agentic_models", side_effect=boom):
             out = _merge_with_models_dev("opencode-go", ["mimo-v2-pro"])
         assert out == ["mimo-v2-pro"]
 
@@ -48,7 +48,7 @@ class TestMergeHelper:
         """models.dev entries come first; curated-only entries are appended."""
         mdev = ["mimo-v2.5-pro", "mimo-v2-pro", "kimi-k2.6"]
         curated = ["kimi-k2.6", "kimi-k2.5", "mimo-v2-pro"]  # kimi-k2.5 is curated-only
-        with patch("agent.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
             out = _merge_with_models_dev("opencode-go", curated)
         # models.dev entries first (in order), then curated-only entries
         assert out == ["mimo-v2.5-pro", "mimo-v2-pro", "kimi-k2.6", "kimi-k2.5"]
@@ -57,7 +57,7 @@ class TestMergeHelper:
         """Dedup is case-insensitive but preserves the first occurrence's casing."""
         mdev = ["MiniMax-M2.7"]
         curated = ["minimax-m2.7", "minimax-m2.5"]
-        with patch("agent.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
             out = _merge_with_models_dev("minimax", curated)
         # models.dev casing wins since it came first
         assert out == ["MiniMax-M2.7", "minimax-m2.5"]
@@ -70,7 +70,7 @@ class TestProviderModelIdsPreferred:
     def test_opencode_go_includes_fresh_models_dev_entries(self):
         """provider_model_ids('opencode-go') adds models.dev entries on top."""
         mdev = ["mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "kimi-k2.6"]
-        with patch("agent.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
             out = provider_model_ids("opencode-go")
         # Fresh models must surface (this is exactly the reported bug fix:
         # mimo-v2.5-pro should be pickable on opencode-go).
@@ -82,7 +82,7 @@ class TestProviderModelIdsPreferred:
 
     def test_opencode_go_offline_falls_back_to_curated(self):
         """Offline models.dev → curated-only list, no crash."""
-        with patch("agent.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
             out = provider_model_ids("opencode-go")
         # Curated floor (see opencodon_cli/models.py _PROVIDER_MODELS["opencode-go"])
         assert "mimo-v2-pro" in out
@@ -92,7 +92,7 @@ class TestProviderModelIdsPreferred:
         """opencode-zen follows the same pattern as opencode-go."""
         assert "opencode-zen" in _MODELS_DEV_PREFERRED
         mdev = ["claude-opus-4-7", "kimi-k2.6", "glm-5.1"]
-        with patch("agent.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
             out = provider_model_ids("opencode-zen")
         assert "claude-opus-4-7" in out
         assert "kimi-k2.6" in out
@@ -100,7 +100,7 @@ class TestProviderModelIdsPreferred:
     def test_kimi_coding_offline_catalog_includes_k3(self):
         """Native Kimi users must see the newest models without live catalog help."""
         assert "kimi-coding" not in _MODELS_DEV_PREFERRED
-        with patch("agent.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
             out = provider_model_ids("kimi-coding")
         assert "kimi-k3" in out
         assert "kimi-k2.7-code" in out

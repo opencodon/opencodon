@@ -1022,7 +1022,7 @@ def test_credential_pool_seeds_xai_oauth_from_singleton(tmp_path, monkeypatch):
 
     Device code is the only supported xAI OAuth flow, so the singleton is
     always surfaced as ``device_code``."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     fresh = _jwt_with_exp(int(time.time()) + 2 * 60 * 60)
@@ -1042,7 +1042,7 @@ def test_credential_pool_seeds_xai_oauth_from_singleton(tmp_path, monkeypatch):
 
 def test_credential_pool_seeds_xai_oauth_device_code_source(tmp_path, monkeypatch):
     """Device-code xAI logins should show a device_code source in auth list."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     fresh = _jwt_with_exp(int(time.time()) + 2 * 60 * 60)
@@ -1061,7 +1061,7 @@ def test_credential_pool_seeds_xai_oauth_device_code_source(tmp_path, monkeypatc
 
 
 def test_credential_pool_does_not_seed_when_singleton_missing_access_token(tmp_path, monkeypatch):
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -1082,7 +1082,7 @@ def test_credential_pool_does_not_seed_when_singleton_missing_access_token(tmp_p
 
 
 def test_credential_pool_device_code_seed_respects_suppression(tmp_path, monkeypatch):
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
     from opencodon_cli.auth import suppress_credential_source
 
     opencodon_home = tmp_path / "opencodon"
@@ -1114,7 +1114,7 @@ def test_auth_remove_xai_oauth_clears_singleton_and_sticks(tmp_path, monkeypatch
     nothing to clean up" branch. That branch is correct for ``manual``
     entries (pool-only) but wrong for singleton-seeded ``device_code``
     entries (auth.json singleton survives the in-memory removal)."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
     from opencodon_cli.auth_commands import auth_remove_command
     from types import SimpleNamespace
 
@@ -1164,7 +1164,7 @@ def test_login_xai_oauth_relogin_clears_suppression_and_reseeds(tmp_path, monkey
     """
     from types import SimpleNamespace
 
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
     from opencodon_cli.auth import (
         _login_xai_oauth,
         is_source_suppressed,
@@ -1231,7 +1231,7 @@ def test_pool_sync_back_writes_to_singleton(tmp_path, monkeypatch):
     must be written back to providers["xai-oauth"] so that
     resolve_xai_oauth_runtime_credentials() (which reads the singleton)
     doesn't keep using the consumed refresh token."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     expired = _jwt_with_exp(int(time.time()) - 10)
@@ -1294,7 +1294,7 @@ def test_runtime_provider_uses_pool_entry_for_xai_oauth(tmp_path, monkeypatch):
 def test_runtime_provider_default_base_url_when_pool_entry_missing_url(tmp_path, monkeypatch):
     """Edge case: a pool entry that somehow has an empty base_url should still
     surface the default xAI inference base URL instead of an empty string."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1339,7 +1339,7 @@ def test_pool_entry_needs_refresh_when_jwt_within_skew(tmp_path, monkeypatch):
     is within the XAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS window — otherwise a
     near-expired token will hit the API and 401 unnecessarily.  Mirrors the
     Codex skew-window behavior."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     from opencodon_cli.auth import XAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS
     import uuid
 
@@ -1369,7 +1369,7 @@ def test_pool_entry_needs_refresh_when_jwt_within_skew(tmp_path, monkeypatch):
 
 def test_pool_entry_no_refresh_for_fresh_jwt(tmp_path, monkeypatch):
     """A fresh JWT beyond the skew window must NOT trigger proactive refresh."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1398,7 +1398,7 @@ def test_pool_select_proactively_refreshes_expiring_token(tmp_path, monkeypatch)
     """End-to-end: pool.select() with refresh=True on an expiring entry must
     return the refreshed token.  This is the proactive path that runs BEFORE
     the API call — separate from the 401-reactive path."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1452,7 +1452,7 @@ def test_pool_try_refresh_current_handles_xai_oauth(tmp_path, monkeypatch):
     must work for xai-oauth alongside openai-codex — otherwise mid-call
     expirations get propagated as hard failures instead of being retried with
     fresh tokens."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1506,7 +1506,7 @@ def test_pool_refresh_marks_entry_exhausted_on_failure(tmp_path, monkeypatch):
     rather than silently retaining stale tokens.  This is critical for the
     failover path — _recover_with_credential_pool rotates to the next entry
     only if try_refresh_current returns None."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     from opencodon_cli.auth import AuthError
     import uuid
 
@@ -1546,7 +1546,7 @@ def test_pool_seeded_entry_sync_back_after_refresh(tmp_path, monkeypatch):
     """When an entry seeded from the singleton (source='device_code')
     is refreshed by the pool, the new tokens must be written back so a
     fresh process load doesn't re-seed the now-consumed refresh token."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     near_expiry = _jwt_with_exp(int(time.time()) + 30)
@@ -1590,7 +1590,7 @@ def test_pool_refresh_adopts_singleton_tokens_when_consumed_elsewhere(tmp_path, 
     Mirrors the proactive sync codex/nous already perform for the same
     reason, and is what makes the pool actually safe to share across
     profiles + opencodon processes."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     in_memory_at = _jwt_with_exp(int(time.time()) + 30)  # near-expiry
@@ -1643,7 +1643,7 @@ def test_pool_refresh_recovers_when_other_process_already_refreshed(tmp_path, mo
     consumed-token error; we must re-check auth.json, find the fresh pair
     (written by the racing process), and adopt it instead of marking the
     entry exhausted."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     in_memory_at = _jwt_with_exp(int(time.time()) + 30)
@@ -1690,7 +1690,7 @@ def test_pool_exhausted_xai_entry_recovers_after_singleton_refresh(tmp_path, mon
     refreshes), the next ``_available_entries`` pass must adopt the fresh
     auth.json tokens instead of leaving the entry frozen until the
     cooldown elapses.  Mirrors the codex/nous self-heal pattern."""
-    from agent.credential_pool import load_pool, STATUS_EXHAUSTED
+    from opencodon.core.credential_pool import load_pool, STATUS_EXHAUSTED
     from dataclasses import replace
 
     opencodon_home = tmp_path / "opencodon"
@@ -1744,7 +1744,7 @@ def test_pool_manual_xai_entry_not_synced_from_singleton(tmp_path, monkeypatch):
     ``opencodon auth add xai-oauth``) own their own refresh-token lifecycle
     and must not be silently overwritten when the user logs in via
     ``opencodon model``."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1781,7 +1781,7 @@ def test_pool_manual_entry_does_not_sync_back_to_singleton(tmp_path, monkeypatch
     independent credentials and must NOT write to the singleton.  Sync-back
     is restricted to entries seeded from the singleton.  Otherwise adding a
     second pool credential would silently overwrite the user's main login."""
-    from agent.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
+    from opencodon.core.credential_pool import load_pool, AUTH_TYPE_OAUTH, PooledCredential
     import uuid
 
     opencodon_home = tmp_path / "opencodon"
@@ -1849,7 +1849,7 @@ def test_auxiliary_client_routes_xai_oauth_through_responses_api(tmp_path, monke
 
     Pin the routing contract: ``resolve_provider_client("xai-oauth", model)``
     must return a non-None client wrapping the xAI Responses API."""
-    from agent.auxiliary_client import (
+    from opencodon.core.auxiliary_client import (
         CodexAuxiliaryClient,
         resolve_provider_client,
     )
@@ -1880,7 +1880,7 @@ def test_auxiliary_client_xai_oauth_returns_none_when_unauthenticated(tmp_path, 
     must return ``(None, None)`` so ``_resolve_auto`` falls through to the
     next provider in the chain instead of crashing or constructing a
     misconfigured client."""
-    from agent.auxiliary_client import resolve_provider_client
+    from opencodon.core.auxiliary_client import resolve_provider_client
 
     opencodon_home = tmp_path / "opencodon"
     opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -1896,7 +1896,7 @@ def test_auxiliary_client_xai_oauth_requires_explicit_model(tmp_path, monkeypatc
     """xAI's Responses API has no safe "cheap aux model" default —
     pinning one would silently rot the same way Codex's did.  Callers
     must pass an explicit model (auxiliary.<task>.model in config.yaml)."""
-    from agent.auxiliary_client import resolve_provider_client
+    from opencodon.core.auxiliary_client import resolve_provider_client
 
     opencodon_home = tmp_path / "opencodon"
     fresh = _jwt_with_exp(int(time.time()) + 2 * 60 * 60)
@@ -1921,7 +1921,7 @@ def test_pool_sync_back_preserves_active_provider(tmp_path, monkeypatch):
     provider (visible to ``opencodon auth status``, ``opencodon setup``, and the
     ``opencodon`` no-arg dispatcher).  Pin the ``set_active=False`` contract so
     no future refactor regresses to the legacy semantic."""
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
 
     opencodon_home = tmp_path / "opencodon"
     near_expiry = _jwt_with_exp(int(time.time()) + 30)

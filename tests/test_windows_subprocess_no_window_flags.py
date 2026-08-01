@@ -349,7 +349,7 @@ def test_tui_gateway_fuzzy_file_listing_hides_git_windows(monkeypatch):
 def test_coding_context_git_delegates_to_bounded_probe(monkeypatch):
     """_git wires cwd/args through the shared bounded helper (hidden-window flags
     reach the spawn on Windows), stringifying the Path cwd."""
-    from agent import coding_context
+    from opencodon.core import coding_context
     from opencodon_cli import _subprocess_compat
 
     spawns = []
@@ -366,7 +366,7 @@ def test_coding_context_git_delegates_to_bounded_probe(monkeypatch):
 
 
 def test_context_reference_git_and_rg_hide_windows(monkeypatch):
-    from agent import context_references
+    from opencodon.core import context_references
 
     captured = []
 
@@ -516,7 +516,7 @@ def test_gateway_force_kill_hides_taskkill_window(monkeypatch):
 
 
 def test_shell_hooks_hide_hook_command_windows(monkeypatch):
-    from agent import shell_hooks
+    from opencodon.core import shell_hooks
 
     captured = []
 
@@ -538,7 +538,7 @@ def test_shell_hooks_hide_hook_command_windows(monkeypatch):
 
 
 def test_inline_skill_shell_hides_bash_window(monkeypatch):
-    from agent import skill_preprocessing
+    from opencodon.core import skill_preprocessing
 
     captured = []
 

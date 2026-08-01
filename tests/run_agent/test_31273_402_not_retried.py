@@ -45,7 +45,7 @@ class TestBillingTriggersClientErrorAbort:
         both — or, better, refactor the predicate into a shared helper
         and have both sites import it.
         """
-        from agent.error_classifier import FailoverReason
+        from opencodon.core.error_classifier import FailoverReason
 
         return (
             is_local_validation_error
@@ -65,7 +65,7 @@ class TestBillingTriggersClientErrorAbort:
 
     def test_billing_now_aborts_the_loop(self):
         """402 with no fallback / no pool entry → ``is_client_error`` True."""
-        from agent.error_classifier import FailoverReason
+        from opencodon.core.error_classifier import FailoverReason
 
         # This is what classify_api_error() returns for a plain 402:
         #   reason=billing, retryable=False, should_compress=False
@@ -79,7 +79,7 @@ class TestBillingTriggersClientErrorAbort:
 
     def test_rate_limit_still_retries(self):
         """Sanity check: rate_limit must still fall through to backoff retry."""
-        from agent.error_classifier import FailoverReason
+        from opencodon.core.error_classifier import FailoverReason
 
         # 429 / transient 402 / rate-limited usage: must NOT abort,
         # because Retry-After backoff and pool rotation are the right
@@ -91,7 +91,7 @@ class TestBillingTriggersClientErrorAbort:
 
     def test_local_validation_error_still_aborts(self):
         """Sanity check: bare ValueError/TypeError still abort."""
-        from agent.error_classifier import FailoverReason
+        from opencodon.core.error_classifier import FailoverReason
 
         assert self._mirror_is_client_error(
             classified_retryable=True,
@@ -102,7 +102,7 @@ class TestBillingTriggersClientErrorAbort:
     def test_context_overflow_still_falls_through_to_compression(self):
         """Sanity check: context-overflow must NOT be classified as
         client error — compression is the recovery path."""
-        from agent.error_classifier import FailoverReason
+        from opencodon.core.error_classifier import FailoverReason
 
         assert not self._mirror_is_client_error(
             classified_retryable=True,
@@ -119,7 +119,7 @@ class TestSourceStillHasBillingExclusionRemoved:
 
     def test_conversation_loop_omits_billing_from_client_error_exclusion(self):
         import inspect
-        from agent import conversation_loop
+        from opencodon.core import conversation_loop
 
         src = inspect.getsource(conversation_loop)
 

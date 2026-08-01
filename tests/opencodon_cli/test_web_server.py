@@ -5694,7 +5694,7 @@ class TestModelInfoEndpoint:
             }
         })
 
-        with patch("agent.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5711,7 +5711,7 @@ class TestModelInfoEndpoint:
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"}
         })
 
-        with patch("agent.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5736,7 +5736,7 @@ class TestModelInfoEndpoint:
             "model": "anthropic/claude-sonnet-4"
         })
 
-        with patch("agent.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5760,8 +5760,8 @@ class TestModelInfoEndpoint:
         mock_caps.max_output_tokens = 32000
         mock_caps.model_family = "claude-opus"
 
-        with patch("agent.model_metadata.get_model_context_length", return_value=200000), \
-             patch("agent.models_dev.get_model_capabilities", return_value=mock_caps):
+        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000), \
+             patch("opencodon.core.models_dev.get_model_capabilities", return_value=mock_caps):
             resp = self.client.get("/api/model/info")
 
         caps = resp.json()["capabilities"]
@@ -5779,7 +5779,7 @@ class TestModelInfoEndpoint:
             "model": "some/obscure-model"
         })
 
-        with patch("agent.model_metadata.get_model_context_length", side_effect=Exception("boom")):
+        with patch("opencodon.core.model_metadata.get_model_context_length", side_effect=Exception("boom")):
             resp = self.client.get("/api/model/info")
 
         assert resp.status_code == 200

@@ -11,7 +11,7 @@ the conversation thread instead of the interrupt worker.
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from agent.chat_completion_helpers import (
+from opencodon.core.chat_completion_helpers import (
     direct_api_call,
     should_use_direct_api_call,
 )

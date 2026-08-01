@@ -159,14 +159,14 @@ class TestGetCustomProviderContextLength:
 
 
 class TestGetModelContextLengthHonorsOverride:
-    """agent.model_metadata.get_model_context_length must honor the
+    """opencodon.core.model_metadata.get_model_context_length must honor the
     custom_providers override at step 0b — before any probe, cache hit,
     or models.dev lookup can override it.
     """
 
     def _mock_all_probes(self):
         """Context manager that disables every downstream resolution step."""
-        from agent import model_metadata as _mm
+        from opencodon.core import model_metadata as _mm
         return [
             patch.object(_mm, "get_cached_context_length", return_value=None),
             patch.object(_mm, "fetch_endpoint_model_metadata", return_value={}),
@@ -176,7 +176,7 @@ class TestGetModelContextLengthHonorsOverride:
         ]
 
     def test_custom_providers_override_wins_over_default_fallback(self):
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
         custom = [
             {
                 "base_url": "https://example.invalid/v1",
@@ -204,7 +204,7 @@ class TestGetModelContextLengthHonorsOverride:
         Users who set both should see the top-level value — that's the
         documented precedence and matches the long-standing step-0 behavior.
         """
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
         custom = [
             {
                 "base_url": "https://example.invalid/v1",
@@ -224,7 +224,7 @@ class TestGetModelContextLengthHonorsOverride:
         """With custom_providers=None and all probes disabled, resolver
         returns DEFAULT_FALLBACK_CONTEXT (256K after the stepdown bump).
         """
-        from agent.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
+        from opencodon.core.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
         patches = self._mock_all_probes()
         for p in patches:
             p.start()
@@ -244,7 +244,7 @@ class TestGetModelContextLengthHonorsOverride:
 class TestContextProbeTiers:
     def test_256k_is_top_tier_and_default(self):
         """The stepdown probe starts at 256K and 256K is the new default."""
-        from agent.model_metadata import CONTEXT_PROBE_TIERS, DEFAULT_FALLBACK_CONTEXT
+        from opencodon.core.model_metadata import CONTEXT_PROBE_TIERS, DEFAULT_FALLBACK_CONTEXT
 
         assert CONTEXT_PROBE_TIERS[0] == 256_000
         assert DEFAULT_FALLBACK_CONTEXT == 256_000

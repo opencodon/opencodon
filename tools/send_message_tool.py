@@ -14,8 +14,8 @@ import ssl
 import time
 from email.utils import formatdate
 
-from agent.redact import redact_sensitive_text
-from agent.secret_scope import get_secret
+from opencodon.core.redact import redact_sensitive_text
+from opencodon.core.secret_scope import get_secret
 
 logger = logging.getLogger(__name__)
 

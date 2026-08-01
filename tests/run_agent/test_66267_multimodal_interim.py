@@ -38,7 +38,7 @@ import pytest
 
 def _make_agent():
     """Minimal AIAgent with the real text helpers the fix relies on."""
-    from agent.message_sanitization import _sanitize_surrogates
+    from opencodon.core.message_sanitization import _sanitize_surrogates
     from run_agent import AIAgent
 
     agent = MagicMock(spec=AIAgent)
@@ -76,7 +76,7 @@ def _vision_tool_result(text="The image shows a red stop sign."):
 class TestBuildAssistantMessageMultimodal:
     def test_list_content_does_not_crash(self):
         """A list content (vision result) must build without TypeError."""
-        from agent.chat_completion_helpers import build_assistant_message
+        from opencodon.core.chat_completion_helpers import build_assistant_message
 
         agent = _make_agent()
         sdk_msg = SimpleNamespace(
@@ -99,7 +99,7 @@ class TestBuildAssistantMessageMultimodal:
 
     def test_inline_think_in_list_content_is_extracted_and_stripped(self):
         """Inline <think> inside a list content: reasoning captured, content clean."""
-        from agent.chat_completion_helpers import build_assistant_message
+        from opencodon.core.chat_completion_helpers import build_assistant_message
 
         agent = _make_agent()
         sdk_msg = SimpleNamespace(
@@ -121,7 +121,7 @@ class TestBuildAssistantMessageMultimodal:
 
     def test_str_content_still_works(self):
         """Regression guard: plain string content is unchanged in behavior."""
-        from agent.chat_completion_helpers import build_assistant_message
+        from opencodon.core.chat_completion_helpers import build_assistant_message
 
         agent = _make_agent()
         sdk_msg = SimpleNamespace(

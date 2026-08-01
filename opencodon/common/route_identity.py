@@ -64,7 +64,7 @@ def should_clear_context_pin(
     if configured_model and configured_model != str(active_model or "").strip():
         return True
     try:
-        from agent.agent_init import _context_route_mismatch
+        from opencodon.core.agent_init import _context_route_mismatch
 
         return _context_route_mismatch(
             configured_base_url,

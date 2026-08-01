@@ -10,7 +10,7 @@ from opencodon_cli.model_switch import list_authenticated_providers
 def test_copilot_picker_uses_live_catalog_when_available():
     live_models = ["gpt-5.4", "claude-sonnet-4.6", "gemini-3.1-pro-preview"]
 
-    with patch("agent.models_dev.fetch_models_dev", return_value={}), \
+    with patch("opencodon.core.models_dev.fetch_models_dev", return_value={}), \
          patch("opencodon_cli.models._resolve_copilot_catalog_api_key", return_value="gh-token"), \
          patch("opencodon_cli.models._fetch_github_models", return_value=live_models):
         providers = list_authenticated_providers(current_provider="openrouter", max_models=50)

@@ -1,39 +1,11 @@
-"""Best-effort early import for the OpenAI SDK's native streaming parser.
+"""Compat shim — real module: ``opencodon.core.jiter_preload`` (restructure Phase 3a).
 
-The OpenAI SDK imports ``jiter`` while constructing streaming chat-completion
-responses.  On some Windows installs the native extension can be imported
-directly from the opencodon venv, but the first import fails when it happens later
-inside the threaded streaming request path.  Loading it once during agent
-package import avoids that import-order failure while preserving the normal
-SDK error path for genuinely missing or broken installs.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-import importlib
+import opencodon.core.jiter_preload as _real
 
-_JITER_PRELOADED = False
-_JITER_PRELOAD_ERROR: Exception | None = None
-
-
-def preload_jiter_native_extension() -> bool:
-    """Import jiter's native extension early if it is available."""
-
-    global _JITER_PRELOADED, _JITER_PRELOAD_ERROR
-
-    if _JITER_PRELOADED:
-        return True
-
-    try:
-        importlib.import_module("jiter.jiter")
-        from jiter import from_json as _from_json  # noqa: F401
-    except Exception as exc:
-        _JITER_PRELOAD_ERROR = exc
-        return False
-
-    _JITER_PRELOADED = True
-    _JITER_PRELOAD_ERROR = None
-    return True
-
-
-preload_jiter_native_extension()
+sys.modules[__name__] = _real

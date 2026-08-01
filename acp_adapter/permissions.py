@@ -135,7 +135,7 @@ def make_approval_callback(
         smart_denied: bool = False,
         **_: object,
     ) -> str:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
 
         options = _build_permission_options(
             allow_permanent=allow_permanent,

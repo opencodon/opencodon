@@ -39,7 +39,7 @@ moa:
             return _response("reference advice")
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
     agent = AIAgent(
         api_key="moa-virtual-provider",
@@ -116,7 +116,7 @@ moa:
             return _response("reference advice")
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
     agent = AIAgent(
         api_key="moa-virtual-provider",
@@ -149,7 +149,7 @@ def test_moa_slots_routed_through_resolve_runtime_provider(monkeypatch):
     provider's actual API surface (anthropic_messages, max_completion_tokens,
     custom endpoints) applies — same as if the model were the acting model.
     """
-    from agent import moa_loop
+    from opencodon.core import moa_loop
 
     resolved = []
 
@@ -183,8 +183,8 @@ def test_moa_codex_slot_preserves_provider_identity(monkeypatch):
     collapsed, the Codex auxiliary branch — Cloudflare headers + Responses
     adapter for chatgpt.com/backend-api/codex — would be bypassed.
     """
-    from agent import moa_loop
-    from agent.auxiliary_client import _resolve_task_provider_model
+    from opencodon.core import moa_loop
+    from opencodon.core.auxiliary_client import _resolve_task_provider_model
 
     def fake_resolve(*, requested, target_model=None):
         return {
@@ -232,8 +232,8 @@ def test_moa_provider_backed_slot_survives_aux_resolution(monkeypatch, provider)
     they're covered by their own dedicated tests. This case covers the
     forward-the-resolved-endpoint path for providers that are NOT in the set.
     """
-    from agent import moa_loop
-    from agent.auxiliary_client import _resolve_task_provider_model
+    from opencodon.core import moa_loop
+    from opencodon.core.auxiliary_client import _resolve_task_provider_model
 
     def fake_resolve(*, requested, target_model=None):
         return {
@@ -264,7 +264,7 @@ def test_moa_provider_backed_slot_survives_aux_resolution(monkeypatch, provider)
 def test_moa_slot_runtime_falls_back_on_resolution_error(monkeypatch):
     """A slot whose provider can't be resolved still attempts the call with the
     bare provider/model rather than aborting the whole MoA turn."""
-    from agent import moa_loop
+    from opencodon.core import moa_loop
 
     def boom(*, requested, target_model=None):
         raise RuntimeError("unknown provider")
@@ -288,7 +288,7 @@ def test_reference_messages_drops_system_but_renders_tools_as_text():
     tool_calls arrays (strict providers reject those), while the reference
     still has the full picture. The view ends on a user turn.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "system", "content": "huge opencodon system prompt"},
@@ -328,7 +328,7 @@ def test_reference_messages_ends_with_user_not_assistant_prefill():
     turn asking for judgement rather than DELETING the agent's latest context —
     the reference must still see the current state to advise on it.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "user", "content": "q1"},
@@ -357,7 +357,7 @@ def test_reference_messages_ends_with_user_not_assistant_prefill():
 
 def test_reference_messages_truncates_large_tool_results():
     """Large tool results are previewed head+tail, not replayed verbatim."""
-    from agent.moa_loop import _REFERENCE_TOOL_RESULT_BUDGET, _reference_messages
+    from opencodon.core.moa_loop import _REFERENCE_TOOL_RESULT_BUDGET, _reference_messages
 
     huge = "A" * (_REFERENCE_TOOL_RESULT_BUDGET * 3)
     messages = [
@@ -379,7 +379,7 @@ def test_reference_messages_truncates_large_tool_results():
 
 def test_reference_messages_fresh_user_turn_ends_on_that_user():
     """A fresh user prompt with no agent action yet ends on that user turn."""
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "system", "content": "sys"},
@@ -404,7 +404,7 @@ def test_reference_messages_drops_empty_user_turns():
     view fails on one reference and passes on another. The renderer must emit
     NO empty user turn, mirroring how empty assistant turns are dropped.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "system", "content": "sys"},
@@ -438,7 +438,7 @@ def test_run_reference_prepends_advisory_system_prompt(monkeypatch):
     doesn't have. The system prompt reframes it as an analyst advising the
     aggregator, and the advisory transcript still ends on a user turn.
     """
-    from agent.moa_loop import _REFERENCE_SYSTEM_PROMPT, _run_reference
+    from opencodon.core.moa_loop import _REFERENCE_SYSTEM_PROMPT, _run_reference
 
     captured = {}
 
@@ -446,7 +446,7 @@ def test_run_reference_prepends_advisory_system_prompt(monkeypatch):
         captured.update(kwargs)
         return _response("advice")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
     label, text, _acct = _run_reference(
         {"provider": "openai-codex", "model": "gpt-5.5"},
@@ -484,9 +484,9 @@ moa:
         calls.append(kwargs)
         return _response("ok")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     facade.create(
@@ -550,9 +550,9 @@ moa:
         calls.append(kwargs)
         return _response("aggregator only")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     facade.create(messages=[{"role": "user", "content": "question"}], tools=[{"type": "function"}])
@@ -573,7 +573,7 @@ def test_references_run_in_parallel(monkeypatch):
     """
     import time
 
-    from agent import moa_loop
+    from opencodon.core import moa_loop
 
     # Force _extract_text down its fallback path (no transport normalize).
     monkeypatch.setattr(moa_loop, "get_transport", lambda *_a, **_k: None)
@@ -648,9 +648,9 @@ def test_moa_facade_emits_reference_then_aggregating(monkeypatch, tmp_path):
             return _response(f"advice from {kwargs['model']}")
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     events = []
     facade = MoAChatCompletions("review", reference_callback=lambda ev, **kw: events.append((ev, kw)))
@@ -689,9 +689,9 @@ def test_moa_facade_reruns_references_on_new_tool_result(monkeypatch, tmp_path):
             return _response("advice")
         return _response("acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     events = []
     facade = MoAChatCompletions("review", reference_callback=lambda ev, **kw: events.append(ev))
@@ -729,9 +729,9 @@ def test_moa_facade_reruns_references_on_new_turn(monkeypatch, tmp_path):
             return _response("advice")
         return _response("acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     facade.create(messages=[{"role": "user", "content": "turn one"}], tools=[])
@@ -751,8 +751,8 @@ def test_slot_runtime_anthropic_oauth_routes_through_provider_branch(monkeypatch
     to provider=custom (which would send the token as x-api-key → bare 429) is
     _resolve_task_provider_model via _preserve_provider_with_base_url.
     """
-    from agent import moa_loop
-    from agent.auxiliary_client import _resolve_task_provider_model
+    from opencodon.core import moa_loop
+    from opencodon.core.auxiliary_client import _resolve_task_provider_model
 
     def fake_resolve(*, requested, target_model=None):
         return {
@@ -813,20 +813,20 @@ def test_run_reference_captures_usage_and_cost(monkeypatch):
     Before this, _run_reference discarded response.usage entirely, so the
     advisor fan-out was invisible to cost tracking.
     """
-    from agent.moa_loop import _RefAccounting, _run_reference
-    from agent.usage_pricing import CanonicalUsage
+    from opencodon.core.moa_loop import _RefAccounting, _run_reference
+    from opencodon.core.usage_pricing import CanonicalUsage
 
     monkeypatch.setattr(
-        "agent.moa_loop.call_llm",
+        "opencodon.core.moa_loop.call_llm",
         lambda **kw: _response_with_usage(prompt=1000, completion=200, cached=400),
     )
     # Keep runtime resolution + pricing deterministic.
     monkeypatch.setattr(
-        "agent.moa_loop._slot_runtime",
+        "opencodon.core.moa_loop._slot_runtime",
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "agent.usage_pricing.estimate_usage_cost",
+        "opencodon.core.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.0123, status="estimated", source="table"),
     )
 
@@ -878,17 +878,17 @@ moa:
             return _response_with_usage(prompt=1000, completion=100, cached=0)
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
     monkeypatch.setattr(
-        "agent.moa_loop._slot_runtime",
+        "opencodon.core.moa_loop._slot_runtime",
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "agent.usage_pricing.estimate_usage_cost",
+        "opencodon.core.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.01, status="estimated", source="table"),
     )
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     facade.create(messages=[{"role": "user", "content": "turn one"}], tools=[])
@@ -915,7 +915,7 @@ moa:
 
 def test_canonical_usage_add():
     """CanonicalUsage sums per bucket (used to fold advisor tokens in)."""
-    from agent.usage_pricing import CanonicalUsage
+    from opencodon.core.usage_pricing import CanonicalUsage
 
     a = CanonicalUsage(input_tokens=100, output_tokens=20, cache_read_tokens=5)
     b = CanonicalUsage(input_tokens=50, output_tokens=10, cache_write_tokens=3)
@@ -965,17 +965,17 @@ moa:
             return _response_with_usage(content=f"advice from {model}", prompt=500, completion=80)
         return _response("AGGREGATOR FINAL ANSWER")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
     monkeypatch.setattr(
-        "agent.moa_loop._slot_runtime",
+        "opencodon.core.moa_loop._slot_runtime",
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "agent.usage_pricing.estimate_usage_cost",
+        "opencodon.core.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.001, status="estimated", source="table"),
     )
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     # Non-streaming create() → aggregator output captured inline.
@@ -1041,13 +1041,13 @@ moa:
             return _response_with_usage(content="advice")
         return _response("acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
     monkeypatch.setattr(
-        "agent.moa_loop._slot_runtime",
+        "opencodon.core.moa_loop._slot_runtime",
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
 
-    from agent.moa_loop import MoAChatCompletions
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     facade = MoAChatCompletions("review")
     facade.create(messages=[{"role": "user", "content": "hi"}], tools=[])
@@ -1064,7 +1064,7 @@ def test_reference_guidance_appended_at_end_in_tool_loop():
     prompt prefix early and defeat the server's KV-cache reuse, forcing a full
     re-prefill of the whole conversation on every tool-loop step.
     """
-    from agent.moa_loop import _attach_reference_guidance
+    from opencodon.core.moa_loop import _attach_reference_guidance
 
     messages = [
         {"role": "system", "content": "system prompt"},
@@ -1085,7 +1085,7 @@ def test_reference_guidance_appended_at_end_in_tool_loop():
 
 def test_reference_guidance_merges_into_trailing_user_in_plain_chat():
     """Plain chat ends on the user turn, so the block merges there (still at end)."""
-    from agent.moa_loop import _attach_reference_guidance
+    from opencodon.core.moa_loop import _attach_reference_guidance
 
     messages = [
         {"role": "system", "content": "system prompt"},
@@ -1111,8 +1111,8 @@ def test_reference_messages_flattens_cache_decorated_content():
     models answered "no user request is present" (live incident, Jul 14 2026,
     preset "closed", session 20260714_001520_28157b).
     """
-    from agent.moa_loop import _reference_messages
-    from agent.prompt_caching import apply_anthropic_cache_control
+    from opencodon.core.moa_loop import _reference_messages
+    from opencodon.core.prompt_caching import apply_anthropic_cache_control
 
     plain = [
         {"role": "system", "content": "opencodon system prompt"},
@@ -1139,7 +1139,7 @@ def test_reference_messages_flattens_multimodal_user_turn():
     Image parts carry no advisory text and are skipped; the text part must
     survive. Previously the whole turn flattened to "".
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "user", "content": [
@@ -1162,7 +1162,7 @@ def test_reference_messages_image_only_user_turn_gets_placeholder():
     skipping the turn would misalign user/assistant alternation in the view —
     so a placeholder stands in for the non-text content.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "user", "content": [
@@ -1187,7 +1187,7 @@ def test_reference_messages_flattens_structured_assistant_and_tool_content():
     assistant turns arrive as lists; their text must reach the references and
     their image parts must not leak.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "user", "content": "check the screen"},
@@ -1220,7 +1220,7 @@ def test_reference_guidance_appends_text_part_to_decorated_trailing_user():
     part (cached prefix stays byte-stable, no consecutive-user-turn 400s), not
     silently dropped and not added as a second user message.
     """
-    from agent.moa_loop import _attach_reference_guidance
+    from opencodon.core.moa_loop import _attach_reference_guidance
 
     marked_part = {
         "type": "text",
@@ -1252,7 +1252,7 @@ def test_reference_messages_drops_whitespace_only_string_user_turn():
     providers (Kimi/Moonshot 'role user must not be empty'), and
     placeholdering it would fabricate an attachment that never existed.
     """
-    from agent.moa_loop import _reference_messages
+    from opencodon.core.moa_loop import _reference_messages
 
     messages = [
         {"role": "user", "content": "   "},
@@ -1312,9 +1312,9 @@ moa:
         aggregator_request_tokens.append(fake_estimate(kwargs["messages"]))
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
-    monkeypatch.setattr("agent.turn_context.estimate_request_tokens_rough", fake_estimate)
-    monkeypatch.setattr("agent.conversation_loop.estimate_request_tokens_rough", fake_estimate)
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
+    monkeypatch.setattr("opencodon.core.turn_context.estimate_request_tokens_rough", fake_estimate)
+    monkeypatch.setattr("opencodon.core.conversation_loop.estimate_request_tokens_rough", fake_estimate)
 
     agent = AIAgent(
         api_key="moa-virtual-provider",
@@ -1351,7 +1351,7 @@ moa:
 
 def test_prepared_aggregator_preserves_reasoning_config(monkeypatch):
     """Prepared MoA requests retain the acting aggregator reasoning policy."""
-    from agent import moa_loop
+    from opencodon.core import moa_loop
 
     captured = {}
     expected_reasoning = {"enabled": True, "effort": "high"}

@@ -309,7 +309,7 @@ class TestExternalDirsIndexing:
         ext_dir = self._setup_external(tmp_path)
 
         with self._patches(bundled, skills_dir, manifest_file):
-            with patch("agent.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
+            with patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
                 result = sync_skills(quiet=True)
 
         assert "clair-qa" in result["shadowed_by_external"]
@@ -331,7 +331,7 @@ class TestExternalDirsIndexing:
         ext_dir = self._setup_external(tmp_path)
 
         with self._patches(bundled, skills_dir, manifest_file):
-            with patch("agent.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
+            with patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
                 sync_skills(quiet=True)
                 manifest = _read_manifest()
 
@@ -354,7 +354,7 @@ class TestExternalDirsIndexing:
         (shadow / "SKILL.md").write_text("# bundled clair")
 
         with self._patches(bundled, skills_dir, manifest_file):
-            with patch("agent.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
+            with patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
                 result = sync_skills(quiet=True)
 
         assert "clair-qa" in result["shadowed_by_external"]
@@ -373,7 +373,7 @@ class TestExternalDirsIndexing:
         (custom / "SKILL.md").write_text("# my own customized clair")
 
         with self._patches(bundled, skills_dir, manifest_file):
-            with patch("agent.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
+            with patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[ext_dir]):
                 result = sync_skills(quiet=True)
 
         assert "clair-qa" in result["shadowed_by_external"]
@@ -387,7 +387,7 @@ class TestExternalDirsIndexing:
         manifest_file = skills_dir / ".bundled_manifest"
 
         with self._patches(bundled, skills_dir, manifest_file):
-            with patch("agent.skill_utils.get_external_skills_dirs", return_value=[]):
+            with patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[]):
                 result = sync_skills(quiet=True)
 
         assert "clair-qa" in result["copied"]

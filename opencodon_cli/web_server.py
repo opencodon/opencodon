@@ -1122,9 +1122,9 @@ def _custom_provider_options(
     # registries reject such registrations.
     try:
         if kind == "tts":
-            from agent.tts_registry import list_providers as _list_voice_providers
+            from opencodon.core.tts_registry import list_providers as _list_voice_providers
         else:
-            from agent.transcription_registry import list_providers as _list_voice_providers
+            from opencodon.core.transcription_registry import list_providers as _list_voice_providers
         for _p in _list_voice_providers():
             _add(getattr(_p, "name", None))
     except Exception:  # pragma: no cover - registry import should not break schema
@@ -3405,7 +3405,7 @@ async def get_system_stats():
 @app.get("/api/curator")
 async def get_curator_status():
     try:
-        from agent import curator
+        from opencodon.core import curator
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Curator unavailable: {exc}")
     try:
@@ -3429,7 +3429,7 @@ class CuratorPause(BaseModel):
 
 @app.put("/api/curator/paused")
 async def set_curator_paused(body: CuratorPause):
-    from agent import curator
+    from opencodon.core import curator
 
     curator.set_paused(bool(body.paused))
     return {"ok": True, "paused": bool(body.paused)}
@@ -3453,7 +3453,7 @@ async def get_learning_graph(profile: Optional[str] = None):
     graph links derived from skill relations and memory-skill overlap.
     """
     try:
-        from agent.learning_graph import build_learning_graph
+        from opencodon.core.learning_graph import build_learning_graph
 
         with _profile_scope(profile):
             return build_learning_graph()
@@ -3476,7 +3476,7 @@ class LearningNodeEdit(BaseModel):
 @app.get("/api/learning/node")
 async def get_learning_node(id: str, profile: Optional[str] = None):
     """Current content of a journey node (skill SKILL.md or memory chunk), for an edit prefill."""
-    from agent.learning_mutations import node_detail
+    from opencodon.core.learning_mutations import node_detail
 
     with _profile_scope(profile):
         res = node_detail(id)
@@ -3488,7 +3488,7 @@ async def get_learning_node(id: str, profile: Optional[str] = None):
 @app.delete("/api/learning/node")
 async def delete_learning_node(body: LearningNodeRef):
     """Delete a journey node — skills are archived (restorable), memories removed."""
-    from agent.learning_mutations import delete_node
+    from opencodon.core.learning_mutations import delete_node
 
     with _profile_scope(body.profile):
         res = delete_node(body.id)
@@ -3500,7 +3500,7 @@ async def delete_learning_node(body: LearningNodeRef):
 @app.put("/api/learning/node")
 async def update_learning_node(body: LearningNodeEdit):
     """Rewrite a journey node's content (SKILL.md or memory chunk)."""
-    from agent.learning_mutations import edit_node
+    from opencodon.core.learning_mutations import edit_node
 
     with _profile_scope(body.profile):
         res = edit_node(body.id, body.content)
@@ -6000,7 +6000,7 @@ def _coerce_schema_field(field: Dict[str, Any], raw: Any) -> Any:
 def _save_memory_provider_native_config(name: str, provider: Any, values: Dict[str, Any]) -> None:
     if provider is not None and hasattr(provider, "save_config"):
         try:
-            from agent.memory_provider import MemoryProvider as _BaseMemoryProvider
+            from opencodon.core.memory_provider import MemoryProvider as _BaseMemoryProvider
         except Exception:
             provider.save_config(values, str(get_opencodon_home()))
             return
@@ -6310,7 +6310,7 @@ def get_model_info(profile: Optional[str] = None):
         # Resolve auto-detected context length (pass config_ctx=None to get
         # purely auto-detected value, then separately report the override)
         try:
-            from agent.model_metadata import get_model_context_length
+            from opencodon.core.model_metadata import get_model_context_length
             auto_ctx = get_model_context_length(
                 model=model_name,
                 base_url=base_url,
@@ -6330,7 +6330,7 @@ def get_model_info(profile: Optional[str] = None):
         # Try to get model capabilities from models.dev
         caps = {}
         try:
-            from agent.models_dev import get_model_capabilities
+            from opencodon.core.models_dev import get_model_capabilities
             mc = get_model_capabilities(provider=provider, model=model_name)
             if mc is not None:
                 caps = {
@@ -8746,7 +8746,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     double-counts the token and shadows a real ANTHROPIC_API_KEY.
     """
     try:
-        from agent.anthropic_adapter import (
+        from opencodon.core.anthropic_adapter import (
             read_opencodon_oauth_credentials,
             _get_opencodon_oauth_file,
         )
@@ -8811,7 +8811,7 @@ def _claude_code_only_status() -> Dict[str, Any]:
     when they also have a separate opencodon-managed PKCE login.
     """
     try:
-        from agent.anthropic_adapter import read_claude_code_credentials
+        from opencodon.core.anthropic_adapter import read_claude_code_credentials
         creds = read_claude_code_credentials()
     except Exception:
         creds = None
@@ -9183,7 +9183,7 @@ async def disconnect_oauth_provider(
         if provider_id == "anthropic":
             cleared = False
             try:
-                from agent.anthropic_adapter import _get_opencodon_oauth_file
+                from opencodon.core.anthropic_adapter import _get_opencodon_oauth_file
                 oauth_file = _get_opencodon_oauth_file()
                 if oauth_file.exists():
                     oauth_file.unlink()
@@ -9253,7 +9253,7 @@ _oauth_sessions_lock = threading.Lock()
 # Guarded so opencodon web still starts if anthropic_adapter is unavailable;
 # Phase 2 endpoints will return 501 in that case.
 try:
-    from agent.anthropic_adapter import (
+    from opencodon.core.anthropic_adapter import (
         _OAUTH_CLIENT_ID as _ANTHROPIC_OAUTH_CLIENT_ID,
         _OAUTH_TOKEN_URL as _ANTHROPIC_OAUTH_TOKEN_URL,
         _OAUTH_TOKEN_URLS as _ANTHROPIC_OAUTH_TOKEN_URLS,
@@ -9328,7 +9328,7 @@ def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_a
     Mirrors what auth_commands.add_command does so the dashboard flow leaves
     the system in the same state as ``opencodon auth add anthropic``.
     """
-    from agent.anthropic_adapter import _get_opencodon_oauth_file
+    from opencodon.core.anthropic_adapter import _get_opencodon_oauth_file
     oauth_file = _get_opencodon_oauth_file()
     payload = {
         "accessToken": access_token,
@@ -9348,7 +9348,7 @@ def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_a
     # the file write — pool registration only matters for the rotation
     # strategy, not for runtime credential resolution.
     try:
-        from agent.credential_pool import (
+        from opencodon.core.credential_pool import (
             PooledCredential,
             load_pool,
             AUTH_TYPE_OAUTH,
@@ -11633,7 +11633,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
         _save_mcp_server,
     )
     try:
-        from agent.secret_scope import (
+        from opencodon.core.secret_scope import (
             build_profile_secret_scope,
             reset_secret_scope,
             set_secret_scope,
@@ -12335,7 +12335,7 @@ def _pool_entry_summary(entry: Any, index: int) -> Dict[str, Any]:
 
 @app.get("/api/credentials/pool")
 async def list_credential_pool():
-    from agent.credential_pool import load_pool
+    from opencodon.core.credential_pool import load_pool
     from opencodon_cli.auth import read_credential_pool
 
     providers = []
@@ -12363,7 +12363,7 @@ async def list_credential_pool():
 @app.post("/api/credentials/pool")
 async def add_credential_pool_entry(body: CredentialPoolAdd):
     import uuid as _uuid
-    from agent.credential_pool import (
+    from opencodon.core.credential_pool import (
         load_pool,
         PooledCredential,
         AUTH_TYPE_API_KEY,
@@ -12425,8 +12425,8 @@ async def remove_credential_pool_entry(provider: str, index: int):
     it.  Manual entries have no registered step — nothing external to clean,
     no suppression needed (they aren't re-seeded).
     """
-    from agent.credential_pool import load_pool
-    from agent.credential_sources import find_removal_step
+    from opencodon.core.credential_pool import load_pool
+    from opencodon.core.credential_sources import find_removal_step
     from opencodon_cli.auth import suppress_credential_source
 
     provider = (provider or "").strip().lower()
@@ -12774,7 +12774,7 @@ async def list_hooks():
     form can offer them.
     """
     from opencodon.config import load_config as _load_config
-    from agent import shell_hooks
+    from opencodon.core import shell_hooks
 
     try:
         from opencodon.plugins_runtime import VALID_HOOKS
@@ -12833,7 +12833,7 @@ async def create_hook(body: HookCreate):
     consent in the allowlist so the hook actually fires.  Takes effect on the
     next session / gateway restart.
     """
-    from agent import shell_hooks
+    from opencodon.core import shell_hooks
 
     event = (body.event or "").strip()
     command = (body.command or "").strip()
@@ -12889,7 +12889,7 @@ class HookDelete(BaseModel):
 @app.delete("/api/ops/hooks")
 async def delete_hook(body: HookDelete):
     """Remove a hook from config.yaml and revoke its consent allowlist entry."""
-    from agent import shell_hooks
+    from opencodon.core import shell_hooks
 
     event = (body.event or "").strip()
     command = (body.command or "").strip()
@@ -14212,7 +14212,7 @@ def _clear_skills_prompt_cache() -> None:
     up by the next session without a manual cache reset.
     """
     try:
-        from agent.prompt_builder import clear_skills_system_prompt_cache
+        from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
         clear_skills_system_prompt_cache(clear_snapshot=True)
     except Exception:
         pass
@@ -15289,7 +15289,7 @@ def _aux_task_summary(aux_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _get_usage_analytics(days: int = 30, profile: Optional[str] = None):
-    from agent.insights import InsightsEngine
+    from opencodon.core.insights import InsightsEngine
 
     db = _open_session_db_for_profile(profile)
     try:
@@ -15496,7 +15496,7 @@ def _get_models_analytics(days: int = 30, profile: Optional[str] = None):
             model_name = row["model"]
             caps = {}
             try:
-                from agent.models_dev import get_model_capabilities
+                from opencodon.core.models_dev import get_model_capabilities
                 mc = get_model_capabilities(provider=provider, model=model_name)
                 if mc is not None:
                     caps = {

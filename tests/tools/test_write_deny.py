@@ -110,7 +110,7 @@ class TestWriteDenyPrefixes:
         fake_etc.mkdir(parents=True)
         target = str(fake_etc / "evil.service")
         # Patch the prefix builder to include our tmp_path prefix
-        import agent.file_safety as _fs
+        import opencodon.core.file_safety as _fs
         _orig = _fs.build_write_denied_prefixes
         _extra_prefix = str(tmp_path / "etc" / "systemd") + os.sep
         def _patched(home):

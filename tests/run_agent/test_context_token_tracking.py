@@ -40,10 +40,10 @@ class _FakeOpenAIClient:
 def _make_agent(monkeypatch, api_mode, provider, response_fn):
     _patch_bootstrap(monkeypatch)
     if api_mode == "anthropic_messages":
-        monkeypatch.setattr("agent.anthropic_adapter.build_anthropic_client", lambda k, b=None, **kwargs: _FakeAnthropicClient())
+        monkeypatch.setattr("opencodon.core.anthropic_adapter.build_anthropic_client", lambda k, b=None, **kwargs: _FakeAnthropicClient())
     if provider == "openai-codex":
         monkeypatch.setattr(
-            "agent.auxiliary_client.resolve_provider_client",
+            "opencodon.core.auxiliary_client.resolve_provider_client",
             lambda *a, **kw: (_FakeOpenAIClient(), "test-model"),
         )
 

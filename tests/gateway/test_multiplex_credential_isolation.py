@@ -9,7 +9,7 @@ import pytest
 
 from pathlib import Path
 
-from agent import secret_scope as ss
+from opencodon.core import secret_scope as ss
 
 
 @pytest.fixture(autouse=True)

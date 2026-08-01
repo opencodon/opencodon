@@ -286,7 +286,7 @@ def test_get_auxiliary_task_config_layers_plugin_defaults(
 ):
     """Plugin-declared defaults appear when user has no config entry."""
     from pathlib import Path
-    from agent.auxiliary_client import _get_auxiliary_task_config
+    from opencodon.core.auxiliary_client import _get_auxiliary_task_config
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -314,7 +314,7 @@ def test_get_auxiliary_task_config_user_config_wins_over_plugin_defaults(
     """User's config.yaml entry overrides plugin-declared defaults."""
     from pathlib import Path
     from opencodon.config import load_config, save_config
-    from agent.auxiliary_client import _get_auxiliary_task_config
+    from opencodon.core.auxiliary_client import _get_auxiliary_task_config
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -344,7 +344,7 @@ def test_get_auxiliary_task_config_unknown_task_returns_empty(
     tmp_path, monkeypatch, patched_manager
 ):
     from pathlib import Path
-    from agent.auxiliary_client import _get_auxiliary_task_config
+    from opencodon.core.auxiliary_client import _get_auxiliary_task_config
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

@@ -9,8 +9,8 @@ floor (75% for <512K models) still applies on top of per-model overrides.
 
 from unittest.mock import patch
 
-from agent.context_compressor import ContextCompressor, resolve_model_threshold
-from agent.context_engine import ContextEngine
+from opencodon.core.context_compressor import ContextCompressor, resolve_model_threshold
+from opencodon.core.context_engine import ContextEngine
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ class TestResolveModelThreshold:
 # ---------------------------------------------------------------------------
 
 class TestContextCompressorModelThresholds:
-    @patch("agent.context_compressor.get_model_context_length", return_value=1_000_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=1_000_000)
     def test_init_large_context_with_override(self, _mock):
         """Large context (>=512K) + per-model override: override applies directly."""
         cc = ContextCompressor(
@@ -68,7 +68,7 @@ class TestContextCompressorModelThresholds:
         assert cc.threshold_percent == 0.40
         assert cc.threshold_tokens == int(1_000_000 * 0.40)
 
-    @patch("agent.context_compressor.get_model_context_length", return_value=1_000_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=1_000_000)
     def test_init_large_context_no_match(self, _mock):
         """Large context + no matching override: global threshold used."""
         cc = ContextCompressor(
@@ -80,7 +80,7 @@ class TestContextCompressorModelThresholds:
         assert cc.threshold_percent == 0.50
         assert cc.threshold_tokens == int(1_000_000 * 0.50)
 
-    @patch("agent.context_compressor.get_model_context_length", return_value=256_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=256_000)
     def test_init_small_context_override_below_floor(self, _mock):
         """Small context (<512K) + override below 75%: floor wins (raise-only)."""
         cc = ContextCompressor(
@@ -93,7 +93,7 @@ class TestContextCompressorModelThresholds:
         assert cc.threshold_percent == 0.75
         assert cc.threshold_tokens == int(256_000 * 0.75)
 
-    @patch("agent.context_compressor.get_model_context_length", return_value=256_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=256_000)
     def test_init_small_context_override_above_floor(self, _mock):
         """Small context + override above 75%: override wins."""
         cc = ContextCompressor(
@@ -105,7 +105,7 @@ class TestContextCompressorModelThresholds:
         # 256K < 512K → floor at 0.75; override 0.80 > 0.75, so override wins
         assert cc.threshold_percent == 0.80
 
-    @patch("agent.context_compressor.get_model_context_length", return_value=256_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=256_000)
     def test_init_no_model_thresholds_dict(self, _mock):
         """Empty model_thresholds dict = backward compatible."""
         cc = ContextCompressor(
@@ -117,7 +117,7 @@ class TestContextCompressorModelThresholds:
         assert cc.threshold_percent == 0.75
         assert cc.model_thresholds == {}
 
-    @patch("agent.context_compressor.get_model_context_length", return_value=256_000)
+    @patch("opencodon.core.context_compressor.get_model_context_length", return_value=256_000)
     def test_init_none_model_thresholds(self, _mock):
         """Passing None for model_thresholds is safe."""
         cc = ContextCompressor(
@@ -128,7 +128,7 @@ class TestContextCompressorModelThresholds:
         )
         assert cc.model_thresholds == {}
 
-    @patch("agent.context_compressor.get_model_context_length")
+    @patch("opencodon.core.context_compressor.get_model_context_length")
     def test_update_model_re_resolves_threshold(self, mock_ctx):
         """Switching models re-resolves the per-model threshold + re-applies floor."""
         mock_ctx.return_value = 256_000
@@ -151,7 +151,7 @@ class TestContextCompressorModelThresholds:
         assert cc.threshold_percent == 0.25
         assert cc.threshold_tokens == int(1_000_000 * 0.25)
 
-    @patch("agent.context_compressor.get_model_context_length")
+    @patch("opencodon.core.context_compressor.get_model_context_length")
     def test_update_model_falls_back_to_global(self, mock_ctx):
         """Switching to a model with no override uses the global threshold."""
         mock_ctx.return_value = 1_000_000

@@ -329,7 +329,7 @@ def test_chat_multimodal_note_persists_clean_input_once(tmp_path, monkeypatch):
         captured.update(kwargs)
         # Drive production turn setup and the real SQLite persistence seam,
         # then return a normal CLI result without starting a provider loop.
-        from agent.turn_context import build_turn_context
+        from opencodon.core.turn_context import build_turn_context
 
         agent.quiet_mode = True
         agent.max_iterations = 1

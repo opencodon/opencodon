@@ -875,7 +875,7 @@ def test_build_models_payload_keeps_static_provider_models_from_providers_dict()
     )
     with (
         patch("opencodon.config.load_config", return_value=cfg),
-        patch("agent.models_dev.fetch_models_dev", return_value={}),
+        patch("opencodon.core.models_dev.fetch_models_dev", return_value={}),
         patch("opencodon_cli.providers.OPENCODON_OVERLAYS", {}),
         patch(
             "opencodon_cli.models.fetch_api_models",

@@ -257,7 +257,7 @@ def test_routed_review_fork_does_not_inherit_reasoning_config():
     ``_cached_system_prompt`` inheritance.
     """
     import run_agent
-    import agent.background_review as bg_review
+    import opencodon.core.background_review as bg_review
 
     agent_stub = _make_agent_stub(run_agent.AIAgent)
 

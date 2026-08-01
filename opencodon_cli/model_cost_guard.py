@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
-from agent.models_dev import ModelInfo
+from opencodon.core.models_dev import ModelInfo
 
 
 INPUT_COST_WARNING_THRESHOLD = Decimal("20")
@@ -74,7 +74,7 @@ def expensive_model_warning(
     input_cost, output_cost, source = _pricing_from_model_info(model_info)
     if input_cost is None and output_cost is None and provider:
         try:
-            from agent.models_dev import get_model_info
+            from opencodon.core.models_dev import get_model_info
 
             input_cost, output_cost, source = _pricing_from_model_info(
                 get_model_info(provider, model)
@@ -83,7 +83,7 @@ def expensive_model_warning(
             pass
     if input_cost is None and output_cost is None:
         try:
-            from agent.usage_pricing import get_pricing_entry
+            from opencodon.core.usage_pricing import get_pricing_entry
 
             entry = get_pricing_entry(
                 model,

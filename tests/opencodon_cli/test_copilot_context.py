@@ -112,21 +112,21 @@ class TestModelMetadataCopilotIntegration:
 
     @patch("opencodon_cli.models.fetch_github_model_catalog", return_value=_SAMPLE_CATALOG)
     def test_copilot_provider_uses_live_api(self, mock_fetch):
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
 
         ctx = get_model_context_length("claude-opus-4.6-1m", provider="copilot")
         assert ctx == 1_000_000
 
     @patch("opencodon_cli.models.fetch_github_model_catalog", return_value=_SAMPLE_CATALOG)
     def test_copilot_acp_provider_uses_live_api(self, mock_fetch):
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
 
         ctx = get_model_context_length("claude-sonnet-4", provider="copilot-acp")
         assert ctx == 200_000
 
     @patch("opencodon_cli.models.fetch_github_model_catalog", return_value=None)
     def test_falls_through_when_catalog_unavailable(self, mock_fetch):
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
 
         # Should not raise, should fall through to models.dev or defaults
         ctx = get_model_context_length("gpt-4.1", provider="copilot")

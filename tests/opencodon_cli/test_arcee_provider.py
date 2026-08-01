@@ -154,11 +154,11 @@ class TestArceeNormalization:
 
 class TestArceeURLMapping:
     def test_url_to_provider(self):
-        from agent.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("api.arcee.ai") == "arcee"
 
     def test_provider_prefixes(self):
-        from agent.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
         assert "arcee" in _PROVIDER_PREFIXES
         assert "arcee-ai" in _PROVIDER_PREFIXES
         assert "arceeai" in _PROVIDER_PREFIXES
@@ -191,5 +191,5 @@ class TestArceeProvidersModule:
 class TestArceeAuxiliary:
     def test_main_model_first_design(self):
         """Arcee uses main-model-first — no entry in _API_KEY_PROVIDER_AUX_MODELS."""
-        from agent.auxiliary_client import _API_KEY_PROVIDER_AUX_MODELS
+        from opencodon.core.auxiliary_client import _API_KEY_PROVIDER_AUX_MODELS
         assert "arcee" not in _API_KEY_PROVIDER_AUX_MODELS

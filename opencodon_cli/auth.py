@@ -47,7 +47,7 @@ from opencodon.config import (
     require_readable_config_before_write,
 )
 from opencodon_constants import OPENROUTER_BASE_URL, secure_parent_dir
-from agent.credential_persistence import sanitize_borrowed_credential_payload
+from opencodon.core.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_replace, atomic_yaml_write, env_float, is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -566,7 +566,7 @@ def _resolve_api_key_provider_secret(
 
     # Fallback: try credential pool (e.g. zai key stored via auth.json)
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         pool = load_pool(provider_id)
         if pool and pool.has_credentials():
             entry = pool.peek()
@@ -1452,7 +1452,7 @@ def _merge_disk_cooldown_state(
     if not isinstance(disk_entry, dict):
         return entry
     try:
-        from agent.credential_pool import (
+        from opencodon.core.credential_pool import (
             PooledCredential,
             STATUS_DEAD,
             STATUS_EXHAUSTED,
@@ -1910,7 +1910,7 @@ def resolve_provider(
     # env-var check above only covers keys exported as OPENROUTER_API_KEY /
     # OPENAI_API_KEY. See issue #42130.
     try:
-        from agent.credential_pool import load_pool as _load_pool
+        from opencodon.core.credential_pool import load_pool as _load_pool
 
         if _load_pool("openrouter").has_credentials():
             return "openrouter"
@@ -1977,7 +1977,7 @@ def resolve_provider(
     # AWS Bedrock — detect via boto3 credential chain (IAM roles, SSO, env vars).
     # This runs after API-key providers so explicit keys always win.
     try:
-        from agent.bedrock_adapter import has_aws_credentials
+        from opencodon.core.bedrock_adapter import has_aws_credentials
         if has_aws_credentials():
             return "bedrock"
     except ImportError:
@@ -4130,7 +4130,7 @@ def get_codex_auth_status() -> Dict[str, Any]:
     # Check credential pool first — this is where `opencodon auth` and
     # `opencodon model` store device_code tokens.
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         pool = load_pool("openai-codex")
         if pool and pool.has_credentials():
             entry = pool.select()
@@ -4188,7 +4188,7 @@ def get_codex_auth_status() -> Dict[str, Any]:
 
 def get_xai_oauth_auth_status() -> Dict[str, Any]:
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
 
         pool = load_pool("xai-oauth")
         if pool and pool.has_credentials():
@@ -4316,7 +4316,7 @@ def get_auth_status(provider_id: Optional[str] = None) -> Dict[str, Any]:
     # AWS SDK providers (Bedrock) — check via boto3 credential chain
     if pconfig and pconfig.auth_type == "aws_sdk":
         try:
-            from agent.bedrock_adapter import has_aws_credentials
+            from opencodon.core.bedrock_adapter import has_aws_credentials
             return {"logged_in": has_aws_credentials(), "provider": target}
         except ImportError:
             return {"logged_in": False, "provider": target, "error": "boto3 not installed"}
@@ -4356,7 +4356,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
 
     if auth_mode == "entra_id":
         try:
-            from agent.azure_identity_adapter import (
+            from opencodon.core.azure_identity_adapter import (
                 EntraIdentityConfig,
                 SCOPE_AI_AZURE_DEFAULT,
                 has_azure_identity_installed,

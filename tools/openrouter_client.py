@@ -20,7 +20,7 @@ def get_async_client():
     """
     global _client
     if _client is None:
-        from agent.auxiliary_client import resolve_provider_client
+        from opencodon.core.auxiliary_client import resolve_provider_client
         client, _model = resolve_provider_client("openrouter", async_mode=True)
         if client is None:
             raise ValueError("OPENROUTER_API_KEY environment variable not set")

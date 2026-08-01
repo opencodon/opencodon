@@ -22,7 +22,7 @@ def _run_show_insights(command: str):
     db = MagicMock()
     _InsightsEngineStub.calls = []
     with patch("opencodon_state.SessionDB", return_value=db), \
-         patch("agent.insights.InsightsEngine", _InsightsEngineStub):
+         patch("opencodon.core.insights.InsightsEngine", _InsightsEngineStub):
         cli_obj._show_insights(command)
     return _InsightsEngineStub.calls, db
 

@@ -40,7 +40,7 @@ def _fast_retry_backoff(monkeypatch):
     # invalid-response / server-error retries burn real wall-clock
     # seconds per retry. Patch both for full coverage.
     try:
-        from agent import conversation_loop as _conv_loop
+        from opencodon.core import conversation_loop as _conv_loop
         monkeypatch.setattr(_conv_loop, "jittered_backoff", lambda *a, **k: 0.0)
     except ImportError:
         pass

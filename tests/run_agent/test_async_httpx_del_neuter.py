@@ -27,7 +27,7 @@ class TestNeuterAsyncHttpxDel:
 
     def test_del_becomes_noop(self):
         """After neuter, __del__ should do nothing (no RuntimeError)."""
-        from agent.auxiliary_client import neuter_async_httpx_del
+        from opencodon.core.auxiliary_client import neuter_async_httpx_del
 
         try:
             from openai._base_client import AsyncHttpxClientWrapper
@@ -49,7 +49,7 @@ class TestNeuterAsyncHttpxDel:
 
     def test_neuter_idempotent(self):
         """Calling neuter twice doesn't break anything."""
-        from agent.auxiliary_client import neuter_async_httpx_del
+        from opencodon.core.auxiliary_client import neuter_async_httpx_del
 
         try:
             from openai._base_client import AsyncHttpxClientWrapper
@@ -70,7 +70,7 @@ class TestNeuterAsyncHttpxDel:
 
     def test_neuter_graceful_without_sdk(self):
         """neuter_async_httpx_del doesn't raise if the openai SDK isn't installed."""
-        from agent.auxiliary_client import neuter_async_httpx_del
+        from opencodon.core.auxiliary_client import neuter_async_httpx_del
 
         with patch.dict("sys.modules", {"openai._base_client": None}):
             # Should not raise
@@ -86,7 +86,7 @@ class TestCleanupStaleAsyncClients:
 
     def test_removes_stale_entries(self):
         """Entries with a closed loop should be evicted."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_lock,
             cleanup_stale_async_clients,
@@ -116,7 +116,7 @@ class TestCleanupStaleAsyncClients:
 
     def test_keeps_live_entries(self):
         """Entries with an open loop should be preserved."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_lock,
             cleanup_stale_async_clients,
@@ -140,7 +140,7 @@ class TestCleanupStaleAsyncClients:
 
     def test_keeps_entries_without_loop(self):
         """Sync entries (cached_loop=None) should be preserved."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_lock,
             cleanup_stale_async_clients,
@@ -174,7 +174,7 @@ class TestClientCacheBoundedGrowth:
 
     def test_same_key_replaces_stale_loop_entry(self):
         """When the loop changes, the old entry should be replaced, not duplicated."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_key,
             _client_cache_lock,
@@ -199,7 +199,7 @@ class TestClientCacheBoundedGrowth:
 
         try:
             # Now call _get_cached_client — should detect stale loop and evict
-            with patch("agent.auxiliary_client.resolve_provider_client") as mock_resolve:
+            with patch("opencodon.core.auxiliary_client.resolve_provider_client") as mock_resolve:
                 mock_resolve.return_value = (MagicMock(), "new-model")
                 client, model = _get_cached_client(
                     "test_replace", async_mode=True,
@@ -215,7 +215,7 @@ class TestClientCacheBoundedGrowth:
 
     def test_different_loops_do_not_grow_cache(self):
         """Multiple event loops for the same provider should NOT create multiple entries."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_lock,
         )
@@ -255,7 +255,7 @@ class TestClientCacheBoundedGrowth:
 
     def test_max_cache_size_eviction(self):
         """Cache should not exceed _CLIENT_CACHE_MAX_SIZE."""
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _client_cache,
             _client_cache_lock,
             _CLIENT_CACHE_MAX_SIZE,

@@ -177,7 +177,7 @@ class TestRunCleanupWiring(unittest.TestCase):
                 ),
                 patch("tools.mcp_tool.shutdown_mcp_servers", lambda *a, **k: None),
                 patch(
-                    "agent.auxiliary_client.shutdown_cached_clients",
+                    "opencodon.core.auxiliary_client.shutdown_cached_clients",
                     lambda *a, **k: None,
                 ),
                 patch("opencodon.plugins_runtime.invoke_hook", lambda *a, **k: None),

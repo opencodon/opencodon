@@ -46,7 +46,7 @@ class TestBraveFreeProviderIsConfigured:
         assert BraveFreeWebSearchProvider().name == "brave-free"
 
     def test_implements_web_search_provider(self):
-        from agent.web_search_provider import WebSearchProvider
+        from opencodon.core.web_search_provider import WebSearchProvider
         from plugins.web.brave_free.provider import BraveFreeWebSearchProvider
         assert issubclass(BraveFreeWebSearchProvider, WebSearchProvider)
 
@@ -247,7 +247,7 @@ class TestBraveFreeSearchOnlyErrors:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from agent.web_search_registry import _reset_for_tests
+        from opencodon.core.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     def test_web_extract_returns_search_only_error(self, monkeypatch):

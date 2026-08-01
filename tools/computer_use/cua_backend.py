@@ -823,7 +823,7 @@ class _AsyncBridge:
             raise RuntimeError("cua-driver asyncio bridge failed to start")
 
     def run(self, coro, timeout: Optional[float] = 30.0) -> Any:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         if not self._loop or not self._thread or not self._thread.is_alive():
             if asyncio.iscoroutine(coro):
                 coro.close()

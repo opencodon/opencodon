@@ -205,7 +205,7 @@ class TestOpenCodeGoFullKwargsIntegration:
     """End-to-end transport kwargs include the profile-provided controls."""
 
     def test_kimi_reasoning_reaches_extra_body_and_top_level(self, opencode_go_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="kimi-k2.6",
@@ -221,7 +221,7 @@ class TestOpenCodeGoFullKwargsIntegration:
     def test_deepseek_thinking_reaches_extra_body_and_top_level(
         self, opencode_go_profile
     ):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro",

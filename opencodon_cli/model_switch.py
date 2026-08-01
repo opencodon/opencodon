@@ -37,7 +37,7 @@ from opencodon_cli.providers import (
 from opencodon.common.model_normalize import (
     normalize_model_for_provider,
 )
-from agent.models_dev import (
+from opencodon.core.models_dev import (
     ModelCapabilities,
     ModelInfo,
     get_model_capabilities,
@@ -833,7 +833,7 @@ def resolve_display_context_length(
             config_context_length = None
 
     try:
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
         ctx = get_model_context_length(
             model,
             base_url=base_url or "",
@@ -1549,7 +1549,7 @@ def _credential_pool_is_usable(provider: str, *, raw_pool_present: bool = False)
     authoritative: an all-exhausted/dead pool is not authenticated.
     """
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
 
         pool = load_pool(provider)
         if pool.has_credentials():
@@ -1662,7 +1662,7 @@ def list_authenticated_providers(
     endpoint.
     """
     import os
-    from agent.models_dev import (
+    from opencodon.core.models_dev import (
         PROVIDER_TO_MODELS_DEV,
         fetch_models_dev,
         get_provider_info as _mdev_pinfo,
@@ -1765,7 +1765,7 @@ def list_authenticated_providers(
         if slug_norm != current_norm:
             return False
         try:
-            from agent.bedrock_adapter import has_aws_credentials
+            from opencodon.core.bedrock_adapter import has_aws_credentials
             return bool(has_aws_credentials())
         except Exception:
             return False
@@ -1971,7 +1971,7 @@ def list_authenticated_providers(
             # provider is silently hidden from the /model picker even when
             # fully configured.
             try:
-                from agent.vertex_adapter import has_vertex_credentials
+                from opencodon.core.vertex_adapter import has_vertex_credentials
                 has_creds = has_vertex_credentials()
             except Exception as exc:
                 logger.debug("Vertex credential check failed: %s", exc)
@@ -2014,7 +2014,7 @@ def list_authenticated_providers(
                     # model under the same provider may work even when all keys
                     # are in cooldown.
                     try:
-                        from agent.credential_pool import load_pool
+                        from opencodon.core.credential_pool import load_pool
                         _pool = load_pool(opencodon_slug)
                         if _pool.has_credentials():
                             has_creds = True
@@ -2031,7 +2031,7 @@ def list_authenticated_providers(
         # configured.
         if not has_creds and opencodon_slug == "anthropic":
             try:
-                from agent.anthropic_adapter import (
+                from opencodon.core.anthropic_adapter import (
                     read_claude_code_credentials,
                     read_opencodon_oauth_credentials,
                 )

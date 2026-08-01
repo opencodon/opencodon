@@ -24,7 +24,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,
@@ -94,7 +94,7 @@ def _to_image_url_part(ref: str) -> Optional[str]:
         return ref
     path = Path(ref)
     # Enforce the shared credential-read guard before inlining local bytes.
-    from agent.file_safety import raise_if_read_blocked
+    from opencodon.core.file_safety import raise_if_read_blocked
 
     raise_if_read_blocked(ref)
     try:

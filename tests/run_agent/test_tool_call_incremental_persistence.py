@@ -28,7 +28,7 @@ from pathlib import Path
 import tempfile
 from unittest.mock import MagicMock, patch
 
-from agent.tool_dispatch_helpers import make_tool_result_message
+from opencodon.core.tool_dispatch_helpers import make_tool_result_message
 from run_agent import AIAgent
 
 
@@ -57,7 +57,7 @@ def _make_agent():
         patch("run_agent.check_toolset_requirements", return_value={}),
         patch("run_agent.OpenAI"),
         patch("run_agent._opencodon_home", opencodon_home),
-        patch("agent.model_metadata.fetch_model_metadata", return_value={}),
+        patch("opencodon.core.model_metadata.fetch_model_metadata", return_value={}),
     ):
         agent = AIAgent(
             api_key="test-key",
@@ -174,7 +174,7 @@ def test_execute_tool_calls_sequential_flushes_each_tool_result_before_next_disp
     with (
         patch("run_agent.handle_function_call", side_effect=_fake_dispatch) as disp,
         patch(
-            "agent.tool_executor.maybe_persist_tool_result",
+            "opencodon.core.tool_executor.maybe_persist_tool_result",
             side_effect=lambda **kwargs: kwargs["content"],
         ),
     ):
@@ -232,7 +232,7 @@ def test_execute_tool_calls_concurrent_flushes_each_tool_result_in_order():
     with (
         patch.object(agent, "_invoke_tool", side_effect=_fake_invoke) as inv,
         patch(
-            "agent.tool_executor.maybe_persist_tool_result",
+            "opencodon.core.tool_executor.maybe_persist_tool_result",
             side_effect=lambda **kwargs: kwargs["content"],
         ),
     ):

@@ -4414,7 +4414,7 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     config.yaml.  Returns a list of dicts suitable for prompting.
     """
     try:
-        from agent.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
+        from opencodon.core.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
     except Exception:
         return []
 
@@ -5357,7 +5357,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
             print()
             config = read_raw_config()
             try:
-                from agent.skill_utils import SKILL_CONFIG_PREFIX
+                from opencodon.core.skill_utils import SKILL_CONFIG_PREFIX
             except Exception:
                 SKILL_CONFIG_PREFIX = "skills.config"
             for var in missing_skill_config:
@@ -7061,7 +7061,7 @@ def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
     if val:
         return val
     try:
-        from agent.secret_scope import (
+        from opencodon.core.secret_scope import (
             UnscopedSecretError,
             get_secret as _get_secret,
         )
@@ -7086,7 +7086,7 @@ def redact_key(key: str) -> str:
     Thin wrapper over :func:`agent.redact.mask_secret` — preserves the
     "(not set)" placeholder in dim color for the empty case.
     """
-    from agent.redact import mask_secret
+    from opencodon.core.redact import mask_secret
     return mask_secret(key, empty=color("(not set)", Colors.DIM))
 
 
@@ -7126,7 +7126,7 @@ def redact_config_value(value: Any, _depth: int = 0) -> Any:
     redactor, and opaque tokens (e.g. Cloudflare ``cfut_...``) don't match the
     vendor-prefix regexes either, so structural key-name masking is required.
     """
-    from agent.redact import mask_secret
+    from opencodon.core.redact import mask_secret
 
     # Defensive bound on recursion depth for pathological/cyclic configs.
     if _depth > 20:
@@ -7336,7 +7336,7 @@ def show_config():
     
     # Skill config
     try:
-        from agent.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
+        from opencodon.core.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
         skill_vars = discover_all_skill_config_vars()
         if skill_vars:
             resolved = resolve_skill_config_values(skill_vars)
@@ -7706,7 +7706,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     # print the raw secret to the terminal.
     _leaf_key = key.rsplit(".", 1)[-1].lower()
     if _leaf_key in _SECRET_CONFIG_KEYS and isinstance(value, str) and value:
-        from agent.redact import mask_secret
+        from opencodon.core.redact import mask_secret
         _display_value = mask_secret(value)
     else:
         _display_value = value

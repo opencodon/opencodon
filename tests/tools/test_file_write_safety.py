@@ -172,7 +172,7 @@ class TestGetWriteDeniedError:
     """get_write_denied_error() should distinguish credential vs safe-root blocks."""
 
     def test_credential_path_message(self):
-        from agent.file_safety import get_write_denied_error
+        from opencodon.core.file_safety import get_write_denied_error
 
         err = get_write_denied_error(os.path.expanduser("~/.ssh/id_rsa"))
         assert err is not None
@@ -180,7 +180,7 @@ class TestGetWriteDeniedError:
         assert "OPENCODON_WRITE_SAFE_ROOT" not in err
 
     def test_safe_root_message(self, tmp_path: Path, monkeypatch):
-        from agent.file_safety import get_write_denied_error
+        from opencodon.core.file_safety import get_write_denied_error
 
         safe_root = tmp_path / "workspace"
         outside = tmp_path / "outside.txt"
@@ -194,7 +194,7 @@ class TestGetWriteDeniedError:
         assert "protected system/credential file" not in err
 
     def test_allowed_path_returns_none(self, tmp_path: Path):
-        from agent.file_safety import get_write_denied_error
+        from opencodon.core.file_safety import get_write_denied_error
 
         target = tmp_path / "ok.txt"
         assert get_write_denied_error(str(target)) is None

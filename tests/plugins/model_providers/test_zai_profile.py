@@ -207,7 +207,7 @@ class TestZaiFullKwargsIntegration:
     """End-to-end: the transport's full kwargs carry the reasoning wiring."""
 
     def test_disabled_reaches_the_wire(self, zai_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="glm-5",
@@ -221,7 +221,7 @@ class TestZaiFullKwargsIntegration:
         assert kwargs["extra_body"]["thinking"] == {"type": "disabled"}
 
     def test_no_preference_keeps_wire_clean(self, zai_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="glm-5",
@@ -235,7 +235,7 @@ class TestZaiFullKwargsIntegration:
         assert "thinking" not in kwargs.get("extra_body", {})
 
     def test_glm_5_2_effort_reaches_top_level(self, zai_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="glm-5.2",

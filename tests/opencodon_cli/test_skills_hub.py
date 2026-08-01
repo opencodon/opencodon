@@ -157,7 +157,7 @@ def test_do_list_filter_builtin(three_source_env):
 def test_do_list_renders_status_column(three_source_env, monkeypatch):
     """Every list row should carry an enabled/disabled status (new in PR that
     answered Mr Mochizuki's 'I just want to see what's live' question)."""
-    from agent import skill_utils
+    from opencodon.core import skill_utils
 
     monkeypatch.setattr(skill_utils, "get_disabled_skill_names", lambda platform=None: set())
     output = _capture()
@@ -169,7 +169,7 @@ def test_do_list_renders_status_column(three_source_env, monkeypatch):
 
 
 def test_do_list_marks_disabled_skills(three_source_env, monkeypatch):
-    from agent import skill_utils
+    from opencodon.core import skill_utils
 
     # Simulate `skills.disabled: [hub-skill]` in config.
     monkeypatch.setattr(
@@ -185,7 +185,7 @@ def test_do_list_marks_disabled_skills(three_source_env, monkeypatch):
 
 
 def test_do_list_enabled_only_hides_disabled(three_source_env, monkeypatch):
-    from agent import skill_utils
+    from opencodon.core import skill_utils
 
     monkeypatch.setattr(
         skill_utils, "get_disabled_skill_names",
@@ -208,7 +208,7 @@ def test_do_list_platform_env_is_ignored(three_source_env, monkeypatch):
     OPENCODON_HOME (swapped by -p), so it must NOT pass a platform arg to
     ``get_disabled_skill_names`` — otherwise per-platform overrides
     would silently leak in from OPENCODON_PLATFORM env."""
-    from agent import skill_utils
+    from opencodon.core import skill_utils
 
     seen = {}
 

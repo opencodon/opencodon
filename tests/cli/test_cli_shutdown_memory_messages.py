@@ -567,7 +567,7 @@ def test_cli_close_preserves_clean_staged_user_across_noted_worker_turn(tmp_path
     # A queued model/skills note changes only the API message. The worker
     # reuses the marked clean dict, so the normal persistence seam cannot append
     # a second noted user row.
-    from agent.turn_context import build_turn_context
+    from opencodon.core.turn_context import build_turn_context
 
     agent.quiet_mode = True
     agent.max_iterations = 1
@@ -633,7 +633,7 @@ def test_cli_close_builds_prompt_before_creating_first_session_row(tmp_path, mon
     """First-turn close persistence must not leave a NULL prompt snapshot."""
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
-    import agent.conversation_loop as loop_mod
+    import opencodon.core.conversation_loop as loop_mod
     import cli as cli_mod
     from opencodon_state import SessionDB
 

@@ -32,8 +32,8 @@ from typing import Optional
 
 import pytest
 
-from agent import tts_registry
-from agent.tts_provider import TTSProvider
+from opencodon.core import tts_registry
+from opencodon.core.tts_provider import TTSProvider
 from tools import tts_tool
 
 

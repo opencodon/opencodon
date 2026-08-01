@@ -103,7 +103,7 @@ def format_secret_source_suffix(env_var: str) -> str:
     # Fall back to the raw source name for labels the registry doesn't
     # know (stale provenance from an uninstalled plugin, tests).
     try:
-        from agent.secret_sources.registry import get_source
+        from opencodon.core.secret_sources.registry import get_source
 
         registered = get_source(source)
         if registered is not None and registered.label:
@@ -425,7 +425,7 @@ def _apply_external_secret_sources(home_path: Path) -> None:
         return
 
     try:
-        from agent.secret_sources.registry import apply_all
+        from opencodon.core.secret_sources.registry import apply_all
     except ImportError:
         return
 
@@ -489,7 +489,7 @@ def _remediation_hint(source_name: str, error_kind, secrets_cfg: dict) -> str:
     a status line.
     """
     try:
-        from agent.secret_sources.registry import get_source
+        from opencodon.core.secret_sources.registry import get_source
 
         source = get_source(source_name)
         if source is None:

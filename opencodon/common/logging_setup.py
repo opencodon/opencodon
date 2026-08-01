@@ -239,9 +239,14 @@ COMPONENT_PREFIXES = {
     # still gateway components and their logs belong in gateway.log / match
     # ``opencodon logs --component gateway``.
     "gateway": ("gateway", "opencodon_plugins", "plugins.platforms"),
-    "agent": ("agent", "run_agent", "model_tools", "batch_runner"),
+    # "opencodon.core" is the canonical home of the ex-``agent`` package
+    # (restructure Phase 3a); the old prefix stays until the shims retire.
+    "agent": ("agent", "opencodon.core", "run_agent", "model_tools", "batch_runner"),
     "tools": ("tools",),
-    "cli": ("opencodon_cli", "cli"),
+    # opencodon.config / common / plugins_runtime moved out of opencodon_cli
+    # in Phase 2 — their loggers renamed with them.
+    "cli": ("opencodon_cli", "cli", "opencodon.config", "opencodon.common",
+            "opencodon.plugins_runtime"),
     "cron": ("cron",),
     "gui": (
         "opencodon_cli.web_server",
@@ -313,7 +318,7 @@ def setup_logging(
     backups = backup_count or cfg_backup or 3
 
     # Lazy import to avoid circular dependency at module load time.
-    from agent.redact import RedactingFormatter
+    from opencodon.core.redact import RedactingFormatter
 
     root = logging.getLogger()
 
@@ -381,7 +386,7 @@ def setup_verbose_logging() -> None:
 
     Called by ``AIAgent.__init__()`` when ``verbose_logging=True``.
     """
-    from agent.redact import RedactingFormatter
+    from opencodon.core.redact import RedactingFormatter
 
     root = logging.getLogger()
 

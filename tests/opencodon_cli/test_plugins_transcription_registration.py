@@ -59,7 +59,7 @@ class TestRegisterTranscriptionProvider:
     def test_accepts_valid_provider(self):
         from opencodon.plugins_runtime import PluginManager
 
-        from agent import transcription_registry
+        from opencodon.core import transcription_registry
         transcription_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])
@@ -91,7 +91,7 @@ class TestRegisterTranscriptionProvider:
     def test_rejects_non_provider(self, caplog):
         from opencodon.plugins_runtime import PluginManager
 
-        from agent import transcription_registry
+        from opencodon.core import transcription_registry
         transcription_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])
@@ -116,7 +116,7 @@ class TestRegisterTranscriptionProvider:
     def test_rejects_builtin_shadow(self, caplog):
         from opencodon.plugins_runtime import PluginManager
 
-        from agent import transcription_registry
+        from opencodon.core import transcription_registry
         transcription_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])

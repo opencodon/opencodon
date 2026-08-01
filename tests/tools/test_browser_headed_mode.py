@@ -88,13 +88,13 @@ def _make_agent(verbose=False):
 
 class TestCleanupTaskResourcesHeadedSkip:
     def test_headless_still_cleans_browser(self):
-        from agent.chat_completion_helpers import cleanup_task_resources
+        from opencodon.core.chat_completion_helpers import cleanup_task_resources
         with (
             patch("tools.browser_tool._is_headed_mode", return_value=False),
             patch("run_agent.cleanup_vm"),
             patch("run_agent.cleanup_browser") as mock_cb,
             patch(
-                "agent.chat_completion_helpers.is_persistent_env",
+                "opencodon.core.chat_completion_helpers.is_persistent_env",
                 return_value=False,
             ),
         ):
@@ -102,13 +102,13 @@ class TestCleanupTaskResourcesHeadedSkip:
             mock_cb.assert_called_once_with("task-x")
 
     def test_headed_skips_browser_cleanup(self):
-        from agent.chat_completion_helpers import cleanup_task_resources
+        from opencodon.core.chat_completion_helpers import cleanup_task_resources
         with (
             patch("tools.browser_tool._is_headed_mode", return_value=True),
             patch("run_agent.cleanup_vm"),
             patch("run_agent.cleanup_browser") as mock_cb,
             patch(
-                "agent.chat_completion_helpers.is_persistent_env",
+                "opencodon.core.chat_completion_helpers.is_persistent_env",
                 return_value=False,
             ),
         ):
@@ -117,7 +117,7 @@ class TestCleanupTaskResourcesHeadedSkip:
 
     def test_headed_env_var_fallback_when_import_fails(self):
         """If browser_tool import blows up, the env var still gates the skip."""
-        from agent.chat_completion_helpers import cleanup_task_resources
+        from opencodon.core.chat_completion_helpers import cleanup_task_resources
         with (
             patch(
                 "tools.browser_tool._is_headed_mode",
@@ -127,7 +127,7 @@ class TestCleanupTaskResourcesHeadedSkip:
             patch("run_agent.cleanup_vm"),
             patch("run_agent.cleanup_browser") as mock_cb,
             patch(
-                "agent.chat_completion_helpers.is_persistent_env",
+                "opencodon.core.chat_completion_helpers.is_persistent_env",
                 return_value=False,
             ),
         ):
@@ -136,13 +136,13 @@ class TestCleanupTaskResourcesHeadedSkip:
 
     def test_headed_does_not_skip_vm_cleanup(self):
         """Headed mode only affects the browser; VM teardown is untouched."""
-        from agent.chat_completion_helpers import cleanup_task_resources
+        from opencodon.core.chat_completion_helpers import cleanup_task_resources
         with (
             patch("tools.browser_tool._is_headed_mode", return_value=True),
             patch("run_agent.cleanup_vm") as mock_vm,
             patch("run_agent.cleanup_browser"),
             patch(
-                "agent.chat_completion_helpers.is_persistent_env",
+                "opencodon.core.chat_completion_helpers.is_persistent_env",
                 return_value=False,
             ),
         ):

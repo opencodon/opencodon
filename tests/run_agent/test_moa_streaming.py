@@ -51,8 +51,8 @@ def _facade(monkeypatch, tmp_path, on_call=None):
             return _response("reference advice")
         return _response("aggregator acted")
 
-    monkeypatch.setattr("agent.moa_loop.call_llm", fake_call_llm)
-    from agent.moa_loop import MoAChatCompletions
+    monkeypatch.setattr("opencodon.core.moa_loop.call_llm", fake_call_llm)
+    from opencodon.core.moa_loop import MoAChatCompletions
 
     return MoAChatCompletions("review"), calls
 
@@ -148,7 +148,7 @@ def test_call_llm_stream_returns_raw_stream_and_skips_validation(monkeypatch):
     """call_llm(stream=True) returns the client's raw stream object directly,
     attaches stream/stream_options to the request, and does NOT run response
     validation (which assumes a complete response)."""
-    from agent import auxiliary_client as ac
+    from opencodon.core import auxiliary_client as ac
 
     captured = {}
 
@@ -189,7 +189,7 @@ def test_call_llm_stream_returns_raw_stream_and_skips_validation(monkeypatch):
 def test_call_llm_non_stream_still_validates(monkeypatch):
     """Sanity: stream=False keeps the validated path (regression guard for the
     early-return not leaking into normal calls)."""
-    from agent import auxiliary_client as ac
+    from opencodon.core import auxiliary_client as ac
 
     class _Completions:
         def create(self, **kwargs):

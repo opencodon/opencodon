@@ -70,7 +70,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from agent.skill_utils import is_excluded_skill_path
+from opencodon.core.skill_utils import is_excluded_skill_path
 
 
 # ---------------------------------------------------------------------------

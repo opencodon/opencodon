@@ -112,7 +112,7 @@ def _cleanup_oneshot_runtime() -> None:
     except BaseException:
         pass
     try:
-        from agent.auxiliary_client import shutdown_cached_clients
+        from opencodon.core.auxiliary_client import shutdown_cached_clients
         shutdown_cached_clients()
     except Exception:
         pass
@@ -1046,7 +1046,7 @@ def _has_any_provider_configured() -> bool:
     # being installed doesn't mean the user wants opencodon to use their tokens.
     if _has_opencodon_config:
         try:
-            from agent.anthropic_adapter import (
+            from opencodon.core.anthropic_adapter import (
                 read_claude_code_credentials,
                 is_claude_code_token_valid,
             )
@@ -4374,7 +4374,7 @@ def _stepfun_base_url_for_region(region: str) -> str:
 
 def _run_anthropic_oauth_flow(save_env_value):
     """Run the Claude OAuth setup-token flow. Returns True if credentials were saved."""
-    from agent.anthropic_adapter import (
+    from opencodon.core.anthropic_adapter import (
         run_oauth_setup_token,
         read_claude_code_credentials,
         is_claude_code_token_valid,
@@ -6379,7 +6379,7 @@ def _print_curator_first_run_notice() -> None:
     to preview or disable before then. Silent on steady state.
     """
     try:
-        from agent import curator
+        from opencodon.core import curator
     except Exception:
         return
     try:
@@ -6539,7 +6539,7 @@ def _print_curator_recent_run_notice() -> None:
     no rename information to display (no archives).
     """
     try:
-        from agent import curator
+        from opencodon.core import curator
     except Exception:
         return
     try:
@@ -13498,7 +13498,7 @@ def _prepare_agent_startup(args) -> None:
             )
     try:
         from opencodon.config import load_config
-        from agent.shell_hooks import register_from_config
+        from opencodon.core.shell_hooks import register_from_config
 
         register_from_config(load_config(), accept_hooks=_accept_hooks)
     except Exception:
@@ -13748,7 +13748,7 @@ def cmd_tools(args):
 def cmd_insights(args):
     try:
         from opencodon_state import SessionDB
-        from agent.insights import InsightsEngine
+        from opencodon.core.insights import InsightsEngine
 
         db = SessionDB()
         engine = InsightsEngine(db)
@@ -13951,7 +13951,7 @@ def main():
     # lsp command
     # =========================================================================
     try:
-        from agent.lsp.cli import register_subparser as _lsp_register
+        from opencodon.core.lsp.cli import register_subparser as _lsp_register
         _lsp_register(subparsers)
     except Exception as _lsp_err:  # noqa: BLE001
         # LSP is optional infrastructure — never let a registration
@@ -15010,7 +15010,7 @@ def main():
                     db.close()
                     return
 
-                from agent.trace_upload import (
+                from opencodon.core.trace_upload import (
                     TraceRedactionError,
                     build_trace_jsonl,
                     upload_session_trace,

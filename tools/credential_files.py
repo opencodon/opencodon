@@ -29,7 +29,7 @@ from typing import Dict, List, Optional
 from opencodon.config import cfg_get
 
 try:  # pragma: no cover - exercised via the fail-closed test below
-    from agent.file_safety import get_read_block_error
+    from opencodon.core.file_safety import get_read_block_error
 except ImportError:  # noqa: F401 - sentinel consumed in register_credential_file
     get_read_block_error = None  # type: ignore[assignment]
 
@@ -275,7 +275,7 @@ def get_skills_directory_mount(
 
     # Mount external skill dirs
     try:
-        from agent.skill_utils import get_external_skills_dirs
+        from opencodon.core.skill_utils import get_external_skills_dirs
         for idx, ext_dir in enumerate(get_external_skills_dirs()):
             if ext_dir.is_dir():
                 host_path = _safe_skills_path(ext_dir)
@@ -362,7 +362,7 @@ def iter_skills_files(
 
     # Include external skill dirs
     try:
-        from agent.skill_utils import get_external_skills_dirs
+        from opencodon.core.skill_utils import get_external_skills_dirs
         for idx, ext_dir in enumerate(get_external_skills_dirs()):
             if not ext_dir.is_dir():
                 continue

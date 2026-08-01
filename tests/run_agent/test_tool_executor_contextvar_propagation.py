@@ -152,7 +152,7 @@ def test_run_agent_concurrent_executor_wraps_submit_with_copy_context():
     import inspect
 
     import run_agent
-    from agent import tool_executor as tool_executor_module
+    from opencodon.core import tool_executor as tool_executor_module
 
     # Source for both modules — the concurrent-executor body lives in
     # ``agent/tool_executor.py`` after the run_agent.py refactor (PR

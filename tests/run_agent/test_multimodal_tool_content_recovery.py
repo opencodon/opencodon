@@ -26,7 +26,7 @@ upstream#27344
 from __future__ import annotations
 
 
-from agent.error_classifier import FailoverReason, classify_api_error
+from opencodon.core.error_classifier import FailoverReason, classify_api_error
 
 
 class _FakeApiError(Exception):

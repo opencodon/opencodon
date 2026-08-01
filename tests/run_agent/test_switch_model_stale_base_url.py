@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from run_agent import AIAgent
-from agent.context_compressor import ContextCompressor
+from opencodon.core.context_compressor import ContextCompressor
 
 
 def _make_agent_with_compressor(provider="copilot", base_url="https://api.githubcopilot.com") -> AIAgent:
@@ -39,7 +39,7 @@ def _make_agent_with_compressor(provider="copilot", base_url="https://api.github
     return agent
 
 
-@patch("agent.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_model_rejects_stale_base_url_on_provider_change(mock_ctx_len):
     """A provider change with no resolved base_url must fail loud instead of
     silently keeping the previous provider's endpoint (#47828)."""
@@ -55,7 +55,7 @@ def test_switch_model_rejects_stale_base_url_on_provider_change(mock_ctx_len):
     assert agent.model == "claude-opus-4.8"
 
 
-@patch("agent.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_model_allows_empty_base_url_for_same_provider(mock_ctx_len):
     """Re-selecting the SAME provider (e.g. a credential-only refresh) with no
     new base_url must keep the current URL — this is not a provider change."""
@@ -68,7 +68,7 @@ def test_switch_model_allows_empty_base_url_for_same_provider(mock_ctx_len):
     assert agent.model == "new-model"
 
 
-@patch("agent.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_model_applies_new_base_url_on_provider_change(mock_ctx_len):
     """The normal, resolved-correctly path must still work: new provider +
     new base_url is applied as-is."""

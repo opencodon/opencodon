@@ -1514,7 +1514,7 @@ class SamplingHandler:
         model = self._resolve_model(getattr(params, "modelPreferences", None))
 
         # Get auxiliary LLM client via centralized router
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
 
         # Model whitelist check (we need to resolve model before calling)
         resolved_model = model or self.model_override or ""
@@ -4290,7 +4290,7 @@ def _run_on_mcp_loop(coro_or_factory, timeout: float = 30):
     interrupts while the MCP work is still running on the background loop.
     """
     from tools.interrupt import is_interrupted
-    from agent.async_utils import safe_schedule_threadsafe
+    from opencodon.core.async_utils import safe_schedule_threadsafe
 
     with _lock:
         loop = _mcp_loop
@@ -4376,7 +4376,7 @@ def _interpolate_env_vars(value):
     which may hold another profile's), falling back to ``os.environ``
     otherwise. Unset vars keep the literal placeholder, as before.
     """
-    from agent.secret_scope import get_secret as _get_secret
+    from opencodon.core.secret_scope import get_secret as _get_secret
 
     if isinstance(value, str):
         def _replace(m):
@@ -6120,7 +6120,7 @@ def _reinject_post_build_tools(agent, tools_list: list, name_set: set) -> set:
         get_mem_schemas = getattr(memory_manager, "get_all_tool_schemas", None) if memory_manager else None
         if callable(get_mem_schemas):
             # Honor the same enablement gate inject_memory_provider_tools uses.
-            from agent.memory_manager import memory_provider_tools_enabled
+            from opencodon.core.memory_manager import memory_provider_tools_enabled
             if "memory" in name_set or memory_provider_tools_enabled(getattr(agent, "enabled_toolsets", None)):
                 for schema in get_mem_schemas():
                     if isinstance(schema, dict):
@@ -6200,7 +6200,7 @@ def shutdown_mcp_servers():
     with _lock:
         loop = _mcp_loop
     if loop is not None and loop.is_running():
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         future = safe_schedule_threadsafe(
             _shutdown(), loop,
             logger=logger,

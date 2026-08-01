@@ -896,7 +896,7 @@ def judge_goal(
         return "continue", "empty response (nothing to evaluate)", False, None, False
 
     try:
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
     except Exception as exc:
         logger.debug("goal judge: auxiliary client import failed: %s", exc)
         return "continue", "auxiliary client unavailable", False, None, False
@@ -1010,7 +1010,7 @@ def draft_contract(objective: str, *, timeout: float = DEFAULT_JUDGE_TIMEOUT) ->
         return None
 
     try:
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
     except Exception as exc:
         logger.debug("goal draft: auxiliary client import failed: %s", exc)
         return None

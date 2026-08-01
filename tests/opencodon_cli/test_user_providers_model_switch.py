@@ -19,7 +19,7 @@ def test_list_authenticated_providers_includes_full_models_list_from_user_provid
     
     Regression test: previously only default_model was shown in /model picker.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     
     user_providers = {
@@ -59,7 +59,7 @@ def test_list_authenticated_providers_includes_full_models_list_from_user_provid
 
 def test_list_authenticated_providers_dedupes_models_when_default_in_list(monkeypatch):
     """When default_model is also in models list, don't duplicate."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     
     user_providers = {
@@ -94,7 +94,7 @@ def test_list_authenticated_providers_enumerates_dict_format_models(monkeypatch)
     list-format ``models:`` and silently dropped dict-format entries,
     even though opencodon's own writer and downstream readers use dict format.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     user_providers = {
@@ -138,7 +138,7 @@ def test_list_authenticated_providers_uses_live_models_for_user_provider(monkeyp
     showing only the configured subset in the /model picker, even though their
     /v1/models endpoint exposed newly added models.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     monkeypatch.setenv("CRS_TEST_KEY", "sk-test")
 
@@ -182,7 +182,7 @@ def test_list_authenticated_providers_uses_live_models_for_user_provider(monkeyp
 
 def test_user_provider_live_model_probe_uses_extra_headers(monkeypatch):
     """providers.<name>.extra_headers must also apply to live /models probes."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     calls = []
@@ -234,7 +234,7 @@ def test_user_provider_live_model_probe_uses_extra_headers(monkeypatch):
 def test_list_authenticated_providers_dict_models_without_default_model(monkeypatch):
     """Dict-format ``models:`` without a ``default_model`` must still expose
     every dict key, not collapse to an empty list."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     user_providers = {
@@ -266,7 +266,7 @@ def test_list_authenticated_providers_dict_models_without_default_model(monkeypa
 def test_list_authenticated_providers_dict_models_dedupe_with_default(monkeypatch):
     """When ``default_model`` is also a key in the ``models:`` dict, it must
     appear exactly once (list already had this for list-format models)."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     user_providers = {
@@ -314,7 +314,7 @@ def test_list_authenticated_providers_openai_alias_not_emitted_as_phantom(monkey
     config entry — both of which carry api.openai.com. See model-picker bug."""
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setattr(
-        "agent.models_dev.fetch_models_dev",
+        "opencodon.core.models_dev.fetch_models_dev",
         lambda: {"openai": {"env": ["OPENAI_API_KEY"]}},
     )
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
@@ -388,7 +388,7 @@ def test_switch_model_user_config_openai_does_not_hop_to_openrouter(monkeypatch)
 
 def test_list_authenticated_providers_user_openai_official_url_fallback(monkeypatch):
     """User providers: api.openai.com with no models list uses native curated fallback."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     user_providers = {
@@ -411,7 +411,7 @@ def test_list_authenticated_providers_user_openai_official_url_fallback(monkeypa
 
 def test_list_authenticated_providers_fallback_to_default_only(monkeypatch):
     """When no models array is provided, should fall back to default_model."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     
     user_providers = {
@@ -448,7 +448,7 @@ def test_list_authenticated_providers_accepts_base_url_and_singular_model(monkey
     ``default_model``, so new-shape entries written by opencodon's own writer
     surfaced with empty ``api_url`` and no default.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     user_providers = {
@@ -482,7 +482,7 @@ def test_list_authenticated_providers_exposes_bare_direct_custom_config(monkeypa
     providers:/custom_providers entry, but it is still a valid runtime target
     and must remain visible in Desktop's model picker.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     providers = list_authenticated_providers(
@@ -512,7 +512,7 @@ def test_list_authenticated_providers_dedupes_when_user_and_custom_overlap(monke
     Regression: section 3 previously had no ``seen_slugs`` check, so
     overlapping entries produced two picker rows for the same provider.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     providers = list_authenticated_providers(
@@ -552,7 +552,7 @@ def test_list_authenticated_providers_no_duplicate_labels_across_schemas(monkeyp
     emitted ``custom:openrouter`` rows for the same endpoint — both labelled
     identically, bypassing ``seen_slugs`` dedup because the slug shapes differ.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     shared_entries = [
@@ -603,7 +603,7 @@ def test_list_authenticated_providers_hides_custom_shadowing_builtin_endpoint(mo
     """
     monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-test")
     monkeypatch.setattr(
-        "agent.models_dev.fetch_models_dev",
+        "opencodon.core.models_dev.fetch_models_dev",
         lambda: {
             "alibaba": {
                 "name": "Alibaba Cloud (DashScope)",
@@ -649,7 +649,7 @@ def test_list_authenticated_providers_keeps_custom_with_distinct_endpoint(monkey
     built-in is also authenticated."""
     monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-test")
     monkeypatch.setattr(
-        "agent.models_dev.fetch_models_dev",
+        "opencodon.core.models_dev.fetch_models_dev",
         lambda: {
             "alibaba": {
                 "name": "Alibaba Cloud (DashScope)",
@@ -693,7 +693,7 @@ def test_list_authenticated_providers_dedup_honors_base_url_env_override(monkeyp
         "https://custom-dashscope.example.com/v1",
     )
     monkeypatch.setattr(
-        "agent.models_dev.fetch_models_dev",
+        "opencodon.core.models_dev.fetch_models_dev",
         lambda: {
             "alibaba": {
                 "name": "Alibaba Cloud (DashScope)",
@@ -1133,7 +1133,7 @@ def test_section3_probes_no_key_endpoint_without_explicit_models(monkeypatch):
     vLLM) that don't require auth previously showed an empty/minimal model
     list because section 3 gated probing on ``api_url and api_key``.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     probed = {}
@@ -1173,7 +1173,7 @@ def test_section3_probes_no_key_endpoint_without_explicit_models(monkeypatch):
 def test_section3_skips_probe_when_no_key_but_explicit_models(monkeypatch):
     """A no-key endpoint WITH an explicit models: list is the user narrowing a
     public endpoint to a subset — skip live discovery and keep the list."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
 
     def _fail_fetch(api_key, api_url, **kwargs):
@@ -1211,7 +1211,7 @@ def test_current_custom_model_is_surfaced_in_builtin_provider_row(monkeypatch):
     curated catalog. The current model is now injected at the front of the
     current provider's list.
     """
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     # Pin a small curated catalog so the assertion is deterministic.
@@ -1239,7 +1239,7 @@ def test_current_custom_model_is_surfaced_in_builtin_provider_row(monkeypatch):
 def test_current_custom_model_not_leaked_into_other_provider_rows(monkeypatch):
     """The current model is only injected into the CURRENT provider's row,
     never into other providers (which can't serve it)."""
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("opencodon_cli.providers.OPENCODON_OVERLAYS", {})
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     monkeypatch.setenv("NOUS_API_KEY", "sk-test")

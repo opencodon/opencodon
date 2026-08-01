@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
+from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
 
 
 @pytest.fixture

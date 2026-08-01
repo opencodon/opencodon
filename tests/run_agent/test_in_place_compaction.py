@@ -62,7 +62,7 @@ class TestInPlaceCompaction:
     def test_in_place_keeps_same_session_id(self):
         """In-place mode: id unchanged, no child row, no rename, history kept."""
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -127,7 +127,7 @@ class TestInPlaceCompaction:
     def test_in_place_alternation_preserved(self):
         """The compacted list must not introduce consecutive same-role messages."""
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -147,7 +147,7 @@ class TestInPlaceCompaction:
         deletes (wasted writes). The current-turn tail survives via the
         compressor's `compressed` output, not the flush."""
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -167,7 +167,7 @@ class TestInPlaceCompaction:
         """Rotation MUST pre-flush so current-turn messages survive in the
         preserved old (parent) session before it is ended (#47202)."""
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -190,7 +190,7 @@ class TestRotationFallbackWhenFlagOff:
         #38763). With in_place=False explicitly set, legacy rotation is
         unchanged — forks a renamed continuation session."""
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")
@@ -231,7 +231,7 @@ class TestInPlaceSignalForGateway:
 
     def test_signal_set_on_in_place_unset_on_rotation(self):
         from opencodon_state import SessionDB
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
 
         with tempfile.TemporaryDirectory() as tmp:
             db = SessionDB(db_path=Path(tmp) / "t.db")

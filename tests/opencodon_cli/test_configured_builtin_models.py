@@ -8,11 +8,11 @@ from opencodon_cli.model_switch import list_authenticated_providers
 def _provider_row(configured_models, *, max_models=None):
     with (
         patch(
-            "agent.models_dev.fetch_models_dev",
+            "opencodon.core.models_dev.fetch_models_dev",
             return_value={"deepseek": {"env": ["DEEPSEEK_API_KEY"], "name": "DeepSeek"}},
         ),
         patch(
-            "agent.models_dev.PROVIDER_TO_MODELS_DEV",
+            "opencodon.core.models_dev.PROVIDER_TO_MODELS_DEV",
             {"deepseek": "deepseek"},
         ),
         patch(

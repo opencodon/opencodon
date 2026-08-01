@@ -27,7 +27,7 @@ def _patch_opencode_pool(monkeypatch, *, available: bool):
     """Make the opencode-go aggregator look configured but with a pool whose
     only credential is (un)available, depending on ``available``."""
     import opencodon_cli.auth as auth
-    import agent.credential_pool as cp
+    import opencodon.core.credential_pool as cp
 
     monkeypatch.setattr(
         auth,
@@ -83,7 +83,7 @@ def test_opaque_legacy_pool_value_stays_visible(monkeypatch):
     from opencodon_cli.model_switch import _credential_pool_is_usable
 
     monkeypatch.setattr(
-        "agent.credential_pool.load_pool",
+        "opencodon.core.credential_pool.load_pool",
         lambda _provider: type(
             "EmptyPool",
             (),

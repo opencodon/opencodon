@@ -94,7 +94,7 @@ class TestNormalizeMainRuntimePreservesCallable:
     inherit Entra ID auth from the main agent."""
 
     def test_callable_api_key_survives_normalization(self):
-        from agent.auxiliary_client import _normalize_main_runtime
+        from opencodon.core.auxiliary_client import _normalize_main_runtime
 
         def provider():
             return "jwt"
@@ -111,7 +111,7 @@ class TestNormalizeMainRuntimePreservesCallable:
         assert normalized["auth_mode"] == "entra_id"
 
     def test_string_api_key_still_works(self):
-        from agent.auxiliary_client import _normalize_main_runtime
+        from opencodon.core.auxiliary_client import _normalize_main_runtime
         normalized = _normalize_main_runtime({
             "provider": "azure-foundry",
             "api_key": "sk-static",
@@ -119,7 +119,7 @@ class TestNormalizeMainRuntimePreservesCallable:
         assert normalized["api_key"] == "sk-static"
 
     def test_normalization_drops_empty_string_but_preserves_callable(self):
-        from agent.auxiliary_client import _normalize_main_runtime
+        from opencodon.core.auxiliary_client import _normalize_main_runtime
 
         def provider():
             return ""
@@ -136,7 +136,7 @@ class TestNormalizeMainRuntimePreservesCallable:
         assert "model" not in normalized
 
     def test_unknown_field_dropped(self):
-        from agent.auxiliary_client import _normalize_main_runtime, _MAIN_RUNTIME_FIELDS
+        from opencodon.core.auxiliary_client import _normalize_main_runtime, _MAIN_RUNTIME_FIELDS
         normalized = _normalize_main_runtime({
             "provider": "azure-foundry",
             "api_key": "k",
@@ -262,7 +262,7 @@ class TestInlinedDisplayMasks:
         crash ``len(api_key)``."""
         from pathlib import Path
         src = (Path(__file__).resolve().parent.parent.parent
-               / "agent" / "agent_init.py").read_text()
+               / "opencodon" / "core" / "agent_init.py").read_text()
         assert src.count("is_token_provider(") >= 2, (
             "agent/agent_init.py must guard BOTH masked-banner paths "
             "(chat_completions and anthropic_messages) with "
@@ -322,7 +322,7 @@ class TestInlinedDisplayMasks:
         Anthropic-style mode that's a callable; slicing crashes."""
         from pathlib import Path
         src = (Path(__file__).resolve().parent.parent.parent
-               / "agent" / "conversation_loop.py").read_text()
+               / "opencodon" / "core" / "conversation_loop.py").read_text()
         # The Anthropic 401 block now branches on is_token_provider
         # before slicing the key.
         assert "Microsoft Entra ID (httpx event hook)" in src, (

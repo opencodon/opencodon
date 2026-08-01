@@ -280,7 +280,7 @@ async def test_run_agent_passes_discord_auto_thread_title_callback(monkeypatch, 
     import opencodon_cli.tools_config as tools_config
     monkeypatch.setattr(tools_config, "_get_platform_tools", lambda user_config, platform_key: {"core"})
 
-    with patch("agent.title_generator.maybe_auto_title") as mock_title:
+    with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
         await runner._run_agent(
             message="raw user prompt",
             context_prompt="",

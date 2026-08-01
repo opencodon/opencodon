@@ -329,7 +329,7 @@ class TestOneTurnNeverPersisted:
             encoding="utf-8",
         )
         monkeypatch.setattr(gateway_run, "_opencodon_home", opencodon_home)
-        monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+        monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.model_switch.switch_model",
             lambda **kw: ModelSwitchResult(

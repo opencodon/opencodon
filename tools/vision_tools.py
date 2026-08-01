@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Dict, Optional
 from urllib.parse import urlparse
 import httpx
-from agent.auxiliary_client import async_call_llm, extract_content_or_reasoning
+from opencodon.core.auxiliary_client import async_call_llm, extract_content_or_reasoning
 from opencodon_constants import get_opencodon_dir
 from tools.debug_helpers import DebugSession
 from tools.website_policy import check_website_access
@@ -844,8 +844,8 @@ def _should_use_native_vision_fast_path() -> bool:
     the caller falls back to the legacy aux-LLM path.
     """
     try:
-        from agent.auxiliary_client import _read_main_provider, _read_main_model
-        from agent.image_routing import decide_image_input_mode, _lookup_supports_vision
+        from opencodon.core.auxiliary_client import _read_main_provider, _read_main_model
+        from opencodon.core.image_routing import decide_image_input_mode, _lookup_supports_vision
         from opencodon.config import load_config
 
         provider = _read_main_provider()
@@ -1371,7 +1371,7 @@ def check_vision_requirements() -> bool:
     when the auto chain would have served the request (issue #31179).
     """
     try:
-        from agent.auxiliary_client import resolve_vision_provider_client
+        from opencodon.core.auxiliary_client import resolve_vision_provider_client
     except ImportError:
         return False
     try:
@@ -1671,7 +1671,7 @@ async def video_analyze_tool(
         local_path = Path(os.path.expanduser(resolved_url))
 
         if local_path.is_file():
-            from agent.file_safety import raise_if_read_blocked
+            from opencodon.core.file_safety import raise_if_read_blocked
             raise_if_read_blocked(str(local_path))
             logger.info("Using local video file: %s", video_url)
             temp_video_path = local_path

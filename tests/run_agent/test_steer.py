@@ -11,7 +11,7 @@ import threading
 
 import pytest
 
-from agent.prompt_builder import STEER_MARKER_OPEN, format_steer_marker
+from opencodon.core.prompt_builder import STEER_MARKER_OPEN, format_steer_marker
 from run_agent import AIAgent
 
 
@@ -198,7 +198,7 @@ class TestActiveTurnRedirect:
 
 class TestActiveTurnRedirectCheckpoint:
     def test_assistant_tail_puts_correction_last(self):
-        from agent.conversation_loop import _apply_active_turn_redirect
+        from opencodon.core.conversation_loop import _apply_active_turn_redirect
 
         agent = _bare_agent()
         agent._current_streamed_reasoning_text = "Shown reasoning."
@@ -432,7 +432,7 @@ class TestSteerMarkerContract:
         """The system-prompt note tells the model which marker to trust; it
         must reference the exact open/close the injector emits, or the model
         trusts a marker that never appears (and vice-versa)."""
-        from agent.prompt_builder import STEER_CHANNEL_NOTE, STEER_MARKER_CLOSE
+        from opencodon.core.prompt_builder import STEER_CHANNEL_NOTE, STEER_MARKER_CLOSE
 
         emitted = format_steer_marker("hi")
         assert STEER_MARKER_OPEN in emitted and STEER_MARKER_CLOSE in emitted

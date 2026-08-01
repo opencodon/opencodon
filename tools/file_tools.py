@@ -10,7 +10,7 @@ import sys
 import threading
 from pathlib import Path, PurePosixPath
 
-from agent.file_safety import get_read_block_error
+from opencodon.core.file_safety import get_read_block_error
 from tools.binary_extensions import has_binary_extension
 from tools.file_operations import (
     ShellFileOperations,
@@ -18,7 +18,7 @@ from tools.file_operations import (
     normalize_search_pagination,
 )
 from tools import file_state
-from agent.redact import redact_sensitive_text
+from opencodon.core.redact import redact_sensitive_text
 
 logger = logging.getLogger(__name__)
 
@@ -685,7 +685,7 @@ def _check_cross_profile_path(filepath: str, task_id: str = "default") -> str | 
     for the detection rules.
     """
     try:
-        from agent.file_safety import (
+        from opencodon.core.file_safety import (
             get_container_mirror_warning,
             get_cross_profile_warning,
             get_sandbox_mirror_warning,
@@ -1545,8 +1545,8 @@ def _mark_verification_stale(
     if not paths:
         return
     try:
-        from agent.coding_context import project_facts_for
-        from agent.verification_evidence import mark_workspace_edited
+        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.verification_evidence import mark_workspace_edited
 
         cwd = None
         for path in paths:

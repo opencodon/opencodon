@@ -87,7 +87,7 @@ def _lookup_user_declared_supports_vision(
 ) -> Optional[bool]:
     """Return config-declared ``supports_vision`` for the active route."""
     try:
-        from agent.image_routing import _supports_vision_override
+        from opencodon.core.image_routing import _supports_vision_override
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug(
             "computer_use vision_routing: config override lookup import failed: %s",
@@ -113,7 +113,7 @@ def _lookup_supports_vision(
     if not provider or not model:
         return None
     try:
-        from agent.image_routing import _lookup_supports_vision as _lookup_image_supports
+        from opencodon.core.image_routing import _lookup_supports_vision as _lookup_image_supports
     except Exception:
         _lookup_image_supports = None
     if _lookup_image_supports is not None:
@@ -127,7 +127,7 @@ def _lookup_supports_vision(
             )
             return None
     try:
-        from agent.models_dev import get_model_capabilities
+        from opencodon.core.models_dev import get_model_capabilities
         caps = get_model_capabilities(provider, model)
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug(

@@ -443,7 +443,7 @@ class TestBrowserVisionConfig:
 
     def test_browser_vision_native_fast_path_returns_multimodal(self, tmp_path):
         """supports_vision override → screenshot attached natively, no aux call."""
-        from agent.auxiliary_client import clear_runtime_main, set_runtime_main
+        from opencodon.core.auxiliary_client import clear_runtime_main, set_runtime_main
         from tools.browser_tool import browser_vision
 
         shots_dir, screenshot = self._setup_screenshot(tmp_path)
@@ -482,7 +482,7 @@ class TestBrowserVisionConfig:
 
     def test_browser_vision_text_mode_blocks_native_fast_path(self, tmp_path):
         """Explicit text routing → aux LLM used even with supports_vision."""
-        from agent.auxiliary_client import clear_runtime_main, set_runtime_main
+        from opencodon.core.auxiliary_client import clear_runtime_main, set_runtime_main
         from tools.browser_tool import browser_vision
 
         shots_dir, screenshot = self._setup_screenshot(tmp_path)

@@ -574,7 +574,7 @@ def _resolve_active_context_length() -> int:
         model_id = (model_cfg.get("model") or model_cfg.get("default") or "").strip()
         if not model_id:
             return 0
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
         # Honor explicit `model.context_length` in config.yaml — short-circuits
         # the OpenRouter /models probe at get_model_context_length step 0, so
         # non-OpenRouter providers don't pay the ~2-3s OpenRouter fetch at every

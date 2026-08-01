@@ -576,7 +576,7 @@ def test_sessions_export_trace_stdout(monkeypatch, capsys):
 def test_sessions_export_trace_upload_routes_to_uploader(monkeypatch, capsys):
     import opencodon_cli.main as main_mod
     import opencodon_state
-    from agent import trace_upload as trace_mod
+    from opencodon.core import trace_upload as trace_mod
 
     captured = {}
     monkeypatch.setattr(opencodon_state, "SessionDB", lambda: _trace_fake_db(captured))

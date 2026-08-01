@@ -379,8 +379,8 @@ def check_certificates() -> None:
     a wall of tracebacks on the first outbound HTTPS call.
     """
     try:
-        from agent.ssl_guard import verify_ca_bundle_with_fallback
-        from agent.errors import SSLConfigurationError
+        from opencodon.core.ssl_guard import verify_ca_bundle_with_fallback
+        from opencodon.core.errors import SSLConfigurationError
         verify_ca_bundle_with_fallback()
         check_ok("SSL CA certificate bundle is valid")
     except SSLConfigurationError as e:
@@ -1870,7 +1870,7 @@ def run_doctor(args):
             return _ConnectivityResult("Anthropic API", [], [])
         try:
             import httpx
-            from agent.anthropic_adapter import (
+            from opencodon.core.anthropic_adapter import (
                 _is_oauth_token,
                 _COMMON_BETAS,
                 _OAUTH_ONLY_BETAS,
@@ -1960,7 +1960,7 @@ def run_doctor(args):
             # with no /v1) don't support /models. Rewrite to OpenAI-compat
             # /v1 surface for health checks.
             if base and base.rstrip("/").endswith("/anthropic"):
-                from agent.auxiliary_client import _to_openai_base_url
+                from opencodon.core.auxiliary_client import _to_openai_base_url
                 base = _to_openai_base_url(base)
             if base_url_host_matches(base, "api.kimi.com") and base.rstrip("/").endswith("/coding"):
                 base = base.rstrip("/") + "/v1"
@@ -2019,7 +2019,7 @@ def run_doctor(args):
 
     def _probe_bedrock() -> _ConnectivityResult:
         try:
-            from agent.bedrock_adapter import (
+            from opencodon.core.bedrock_adapter import (
                 has_aws_credentials,
                 resolve_aws_auth_env_var,
                 resolve_bedrock_region,
@@ -2094,7 +2094,7 @@ def run_doctor(args):
             return _ConnectivityResult("Azure Foundry (Entra ID)", [], [])
 
         try:
-            from agent.azure_identity_adapter import (
+            from opencodon.core.azure_identity_adapter import (
                 EntraIdentityConfig,
                 SCOPE_AI_AZURE_DEFAULT,
                 describe_active_credential,

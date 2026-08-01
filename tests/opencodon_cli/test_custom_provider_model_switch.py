@@ -39,7 +39,7 @@ class TestCustomProviderModelSwitch:
         """Switching custom endpoints must not leave the old model.api_key
         credential selectable from the previous endpoint's pool."""
         import yaml
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
         from opencodon_cli.auth import read_credential_pool, write_credential_pool
         from opencodon_cli.main import _model_flow_custom
 

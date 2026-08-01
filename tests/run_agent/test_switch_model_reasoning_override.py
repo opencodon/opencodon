@@ -45,7 +45,7 @@ class TestSwitchModelReasoningOverride:
 
     def test_primary_runtime_includes_reasoning_config(self):
         """After switch_model, _primary_runtime should contain reasoning_config key."""
-        from agent.agent_runtime_helpers import switch_model
+        from opencodon.core.agent_runtime_helpers import switch_model
 
         agent = self._make_fake_agent()
 
@@ -77,7 +77,7 @@ class TestSwitchModelReasoningOverride:
 
     def test_reasoning_config_resolves_to_override_on_switch(self):
         """switch_model should resolve reasoning_config to per-model override."""
-        from agent.agent_runtime_helpers import switch_model
+        from opencodon.core.agent_runtime_helpers import switch_model
 
         agent = self._make_fake_agent()
 
@@ -109,7 +109,7 @@ class TestSwitchModelReasoningOverride:
 
     def test_reasoning_config_falls_back_to_global(self):
         """switch_model should fall back to global when no override for new model."""
-        from agent.agent_runtime_helpers import switch_model
+        from opencodon.core.agent_runtime_helpers import switch_model
 
         agent = self._make_fake_agent()
 
@@ -140,7 +140,7 @@ class TestSwitchModelReasoningOverride:
 
     def test_restore_primary_runtime_restores_reasoning(self):
         """restore_primary_runtime should restore reasoning_config from snapshot."""
-        from agent.agent_runtime_helpers import restore_primary_runtime
+        from opencodon.core.agent_runtime_helpers import restore_primary_runtime
 
         agent = MagicMock()
         agent._primary_runtime = {
@@ -192,7 +192,7 @@ class TestSwitchModelReasoningOverride:
         re-enabling thinking. The raw value must pass through so
         parse_reasoning_effort(False) returns {'enabled': False}.
         """
-        from agent.agent_runtime_helpers import switch_model
+        from opencodon.core.agent_runtime_helpers import switch_model
 
         agent = self._make_fake_agent()
 

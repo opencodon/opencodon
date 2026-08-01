@@ -17,28 +17,28 @@ import pytest
 
 class TestParseQualifiedName:
     def test_with_colon(self):
-        from agent.skill_utils import parse_qualified_name
+        from opencodon.core.skill_utils import parse_qualified_name
 
         ns, bare = parse_qualified_name("superpowers:writing-plans")
         assert ns == "superpowers"
         assert bare == "writing-plans"
 
     def test_without_colon(self):
-        from agent.skill_utils import parse_qualified_name
+        from opencodon.core.skill_utils import parse_qualified_name
 
         ns, bare = parse_qualified_name("my-skill")
         assert ns is None
         assert bare == "my-skill"
 
     def test_multiple_colons_splits_on_first(self):
-        from agent.skill_utils import parse_qualified_name
+        from opencodon.core.skill_utils import parse_qualified_name
 
         ns, bare = parse_qualified_name("a:b:c")
         assert ns == "a"
         assert bare == "b:c"
 
     def test_empty_string(self):
-        from agent.skill_utils import parse_qualified_name
+        from opencodon.core.skill_utils import parse_qualified_name
 
         ns, bare = parse_qualified_name("")
         assert ns is None
@@ -47,7 +47,7 @@ class TestParseQualifiedName:
 
 class TestIsValidNamespace:
     def test_valid(self):
-        from agent.skill_utils import is_valid_namespace
+        from opencodon.core.skill_utils import is_valid_namespace
 
         assert is_valid_namespace("superpowers")
         assert is_valid_namespace("my-plugin")
@@ -55,7 +55,7 @@ class TestIsValidNamespace:
         assert is_valid_namespace("Plugin123")
 
     def test_invalid(self):
-        from agent.skill_utils import is_valid_namespace
+        from opencodon.core.skill_utils import is_valid_namespace
 
         assert not is_valid_namespace("")
         assert not is_valid_namespace(None)

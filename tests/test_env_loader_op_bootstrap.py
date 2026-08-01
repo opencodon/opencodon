@@ -34,7 +34,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from opencodon_cli import env_loader  # noqa: E402
-import agent.credential_pool as credential_pool  # noqa: E402
+import opencodon.core.credential_pool as credential_pool  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

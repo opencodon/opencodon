@@ -29,7 +29,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from opencodon_constants import get_bundled_skills_dir, get_opencodon_home, get_optional_skills_dir
-from agent.skill_utils import is_excluded_skill_path
+from opencodon.core.skill_utils import is_excluded_skill_path
 from typing import Dict, List, Optional, Set, Tuple
 from utils import atomic_replace
 
@@ -71,7 +71,7 @@ def _build_external_skill_index() -> Set[str]:
     Used to prevent sync_skills from shadowing externally-delegated skills.
     """
     try:
-        from agent.skill_utils import get_external_skills_dirs, _external_dirs_cache_clear
+        from opencodon.core.skill_utils import get_external_skills_dirs, _external_dirs_cache_clear
     except ImportError:
         return set()
 

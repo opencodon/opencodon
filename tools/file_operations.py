@@ -34,7 +34,7 @@ from typing import Optional, List, Dict, Any, ClassVar
 from pathlib import Path
 from tools.binary_extensions import BINARY_EXTENSIONS
 
-from agent.file_safety import (
+from opencodon.core.file_safety import (
     build_write_denied_paths,
     build_write_denied_prefixes,
     get_write_denied_error,
@@ -1914,7 +1914,7 @@ class ShellFileOperations(FileOperations):
         if not ext:
             return False
         try:
-            from agent.lsp.servers import SERVERS
+            from opencodon.core.lsp.servers import SERVERS
         except Exception:  # noqa: BLE001
             return False
         ext_lower = ext.lower()
@@ -1943,7 +1943,7 @@ class ShellFileOperations(FileOperations):
         if not self._lsp_local_only():
             return False
         try:
-            from agent.lsp import get_service
+            from opencodon.core.lsp import get_service
         except Exception:  # noqa: BLE001
             return False
         try:
@@ -1969,7 +1969,7 @@ class ShellFileOperations(FileOperations):
         if not self._lsp_local_only():
             return
         try:
-            from agent.lsp import get_service
+            from opencodon.core.lsp import get_service
             svc = get_service()
         except Exception:  # noqa: BLE001
             return
@@ -2010,7 +2010,7 @@ class ShellFileOperations(FileOperations):
         if not self._lsp_local_only():
             return ""
         try:
-            from agent.lsp import get_service
+            from opencodon.core.lsp import get_service
         except Exception:  # noqa: BLE001
             return ""
         try:
@@ -2026,7 +2026,7 @@ class ShellFileOperations(FileOperations):
         line_shift = None
         if pre_content is not None and post_content is not None and pre_content != post_content:
             try:
-                from agent.lsp.range_shift import build_line_shift
+                from opencodon.core.lsp.range_shift import build_line_shift
                 line_shift = build_line_shift(pre_content, post_content)
             except Exception:  # noqa: BLE001
                 line_shift = None
@@ -2038,7 +2038,7 @@ class ShellFileOperations(FileOperations):
         if not diagnostics:
             return ""
         try:
-            from agent.lsp.reporter import report_for_file, truncate
+            from opencodon.core.lsp.reporter import report_for_file, truncate
             block = report_for_file(path, diagnostics)
             if not block:
                 return ""

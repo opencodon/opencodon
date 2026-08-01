@@ -68,7 +68,7 @@ def test_prepare_agent_startup_backgrounds_blocking_mcp_for_chat(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "agent.shell_hooks",
+        "opencodon.core.shell_hooks",
         types.SimpleNamespace(register_from_config=lambda *_a, **_k: None),
     )
     # Stub mcp_oauth so the background thread doesn't pay the real (cold,
@@ -161,7 +161,7 @@ def test_prepare_agent_startup_skips_mcp_bootstrap_for_tui_chat(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "agent.shell_hooks",
+        "opencodon.core.shell_hooks",
         types.SimpleNamespace(register_from_config=lambda *_a, **_k: None),
     )
     monkeypatch.setitem(

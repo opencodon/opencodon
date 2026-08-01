@@ -9,7 +9,7 @@ import pytest
 def _ensure_redaction_enabled(monkeypatch):
     """Ensure redaction is active regardless of host OPENCODON_REDACT_SECRETS."""
     monkeypatch.delenv("OPENCODON_REDACT_SECRETS", raising=False)
-    monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
+    monkeypatch.setattr("opencodon.core.redact._REDACT_ENABLED", True)
 
 
 class TestBrowserSecretExfil:
@@ -150,8 +150,8 @@ class TestWebExtractSecretExfil:
 
     @pytest.mark.asyncio
     async def test_normalizes_non_ascii_url_before_extract_provider(self, monkeypatch):
-        from agent.web_search_provider import WebSearchProvider
-        from agent import web_search_registry
+        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core import web_search_registry
         from tools import web_tools
 
         class FakeExtractProvider(WebSearchProvider):
@@ -292,7 +292,7 @@ class TestCamofoxAnnotationRedaction:
 
     def test_annotation_context_secrets_redacted(self):
         """Secrets in accessibility tree annotation should be masked."""
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         fake_token = "ghp_" + "FAKEGITHUBTOKEN12345678901234"
         annotation = (
@@ -308,7 +308,7 @@ class TestCamofoxAnnotationRedaction:
 
     def test_annotation_env_dump_redacted(self):
         """Env var dump in annotation context should be redacted."""
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         fake_anth = "sk-" + "ant" + "-" + "ANTHROPICFAKEKEY123456789ABC"
         fake_oai = "sk-" + "proj" + "-" + "OPENAIFAKEKEY99887766554433"

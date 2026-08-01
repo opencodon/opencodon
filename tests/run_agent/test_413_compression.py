@@ -15,8 +15,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 
-from agent.context_compressor import SUMMARY_PREFIX
-from agent.conversation_compression import COMPACTION_DONE_STATUS, COMPACTION_STATUS
+from opencodon.core.context_compressor import SUMMARY_PREFIX
+from opencodon.core.conversation_compression import COMPACTION_DONE_STATUS, COMPACTION_STATUS
 from run_agent import AIAgent
 import run_agent
 
@@ -850,8 +850,8 @@ class TestPreflightCompression:
         agent.status_callback = lambda ev, msg: status_messages.append((ev, msg))
 
         with (
-            patch("agent.turn_context.estimate_request_tokens_rough", return_value=114_000),
-            patch("agent.conversation_loop.estimate_request_tokens_rough", return_value=114_000),
+            patch("opencodon.core.turn_context.estimate_request_tokens_rough", return_value=114_000),
+            patch("opencodon.core.conversation_loop.estimate_request_tokens_rough", return_value=114_000),
             patch.object(agent, "_compress_context") as mock_compress,
             patch.object(agent, "_persist_session"),
             patch.object(agent, "_save_trajectory"),
@@ -902,8 +902,8 @@ class TestPreflightCompression:
             return 125_000 if _rough_calls["n"] == 1 else 40_000
 
         with (
-            patch("agent.turn_context.estimate_request_tokens_rough", side_effect=_rough_estimate),
-            patch("agent.conversation_loop.estimate_request_tokens_rough", side_effect=_rough_estimate),
+            patch("opencodon.core.turn_context.estimate_request_tokens_rough", side_effect=_rough_estimate),
+            patch("opencodon.core.conversation_loop.estimate_request_tokens_rough", side_effect=_rough_estimate),
             patch.object(agent, "_compress_context") as mock_compress,
             patch.object(agent, "_persist_session"),
             patch.object(agent, "_save_trajectory"),
@@ -1027,10 +1027,10 @@ class TestPreflightCompression:
         agent.client.chat.completions.create.side_effect = [ok_resp]
 
         with (
-            patch("agent.turn_context.estimate_request_tokens_rough", return_value=144_669),
-            patch("agent.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.turn_context.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
             patch(
-                "agent.conversation_loop.estimate_messages_tokens_rough",
+                "opencodon.core.conversation_loop.estimate_messages_tokens_rough",
                 return_value=144_669,
             ),
             # Compression no-ops (returns input unchanged) — mirrors an aux
@@ -1072,8 +1072,8 @@ class TestPreflightCompression:
         agent.client.chat.completions.create.side_effect = [ok_resp]
 
         with (
-            patch("agent.turn_context.estimate_request_tokens_rough", return_value=144_669),
-            patch("agent.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.turn_context.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
             patch.object(agent, "_compress_context", side_effect=lambda msgs, *a, **k: (msgs, agent._cached_system_prompt)),
             patch.object(agent, "_persist_session"),
             patch.object(agent, "_save_trajectory"),
@@ -1102,10 +1102,10 @@ class TestPreflightCompression:
             return messages[:-1], agent._cached_system_prompt
 
         with (
-            patch("agent.turn_context.estimate_request_tokens_rough", return_value=144_669),
-            patch("agent.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.turn_context.estimate_request_tokens_rough", return_value=144_669),
+            patch("opencodon.core.conversation_loop.estimate_request_tokens_rough", return_value=144_669),
             patch(
-                "agent.conversation_loop.estimate_messages_tokens_rough",
+                "opencodon.core.conversation_loop.estimate_messages_tokens_rough",
                 return_value=144_669,
             ),
             patch.object(
@@ -1162,15 +1162,15 @@ class TestPreflightCompression:
 
         with (
             patch(
-                "agent.turn_context.estimate_request_tokens_rough",
+                "opencodon.core.turn_context.estimate_request_tokens_rough",
                 return_value=144_669,
             ),
             patch(
-                "agent.conversation_loop.estimate_request_tokens_rough",
+                "opencodon.core.conversation_loop.estimate_request_tokens_rough",
                 return_value=144_669,
             ),
             patch(
-                "agent.conversation_loop.estimate_messages_tokens_rough",
+                "opencodon.core.conversation_loop.estimate_messages_tokens_rough",
                 return_value=144_669,
             ),
             patch.object(
@@ -1261,7 +1261,7 @@ class TestToolResultPreflightCompression:
 
         with (
             patch(
-                "agent.conversation_loop.estimate_messages_tokens_rough",
+                "opencodon.core.conversation_loop.estimate_messages_tokens_rough",
                 side_effect=lambda *_a, **_k: next(assembled_estimates),
             ),
             patch("run_agent.handle_function_call", return_value="x" * 100_000),

@@ -135,7 +135,7 @@ def _prepare_smart_approval_observer(
     the auxiliary LLM from making its decision.
     """
     try:
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         hook_command = redact_sensitive_text(command, force=True)
         hook_description = redact_sensitive_text(description, force=True)
@@ -2309,7 +2309,7 @@ def prompt_dangerous_approval(command: str, description: str,
     # `command` is still what executes after approval; only the displayed
     # copy is scrubbed. Reuses the same redaction module used for memory
     # and log sanitization so tokens mask consistently across surfaces.
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
     display_command = redact_sensitive_text(command)
     display_description = redact_sensitive_text(description)
 
@@ -2356,7 +2356,7 @@ def prompt_dangerous_approval(command: str, description: str,
     try:
         # Resolve the active UI language once per prompt so we don't re-read
         # config/YAML inside the retry loop below.
-        from agent.i18n import t
+        from opencodon.core.i18n import t
         while True:
             print()
             print(f"  {t('approval.dangerous_header', description=display_description)}")
@@ -2594,7 +2594,7 @@ def _smart_approve(command: str, description: str) -> str:
     (openai/codex#13860).
     """
     try:
-        from agent.auxiliary_client import call_llm
+        from opencodon.core.auxiliary_client import call_llm
 
         # Strip shell comments to remove the easiest injection vector.
         sanitized_command = _strip_shell_comments(command)
@@ -2773,7 +2773,7 @@ def _run_approval_gate(
             notify_cb = _gateway_notify_cbs.get(session_key)
 
         if notify_cb is not None:
-            from agent.redact import redact_sensitive_text
+            from opencodon.core.redact import redact_sensitive_text
             approval_data = {
                 "command": redact_sensitive_text(display_target),
                 "pattern_key": pattern_key,
@@ -3465,7 +3465,7 @@ def check_all_command_guards(command: str, env_type: str,
             # via the closure below, so redaction is display-only. Approval
             # persistence keys off pattern_key (not the command text), so the
             # allowlist is unaffected.
-            from agent.redact import redact_sensitive_text
+            from opencodon.core.redact import redact_sensitive_text
             approval_data = {
                 "command": redact_sensitive_text(command),
                 "pattern_key": primary_key,
@@ -3555,7 +3555,7 @@ def check_all_command_guards(command: str, env_type: str,
         # Return approval_required for backward compat. Redact secrets in the
         # user-facing copy — the raw `command` is preserved for execution and
         # the allowlist keys off pattern_key, so redaction is display-only.
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
         _disp_command = redact_sensitive_text(command)
         _disp_combined_desc = redact_sensitive_text(combined_desc)
         pending_data = {
@@ -3769,7 +3769,7 @@ def check_execute_code_guard(code: str, env_type: str,
     # screenshottable. The raw `command`/`code` are still what get assessed by
     # smart approval and executed; redaction is display-only. Approval
     # persistence keys off pattern_key, so the allowlist is unaffected.
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
     display_command = redact_sensitive_text(command)
     display_code = redact_sensitive_text(code)
     display_description = redact_sensitive_text(description)

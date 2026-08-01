@@ -11,7 +11,7 @@ Pure-function / config-driven; no live model calls.
 from typing import Any
 from unittest.mock import patch
 
-from agent import background_review as br
+from opencodon.core import background_review as br
 
 
 def _msg(role, content, tool_calls=None):

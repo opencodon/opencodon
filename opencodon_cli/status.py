@@ -31,7 +31,7 @@ def redact_key(key: str) -> str:
     output (previously this variant was missing the DIM color —
     consolidated via PR that also introduced ``mask_secret``).
     """
-    from agent.redact import mask_secret
+    from opencodon.core.redact import mask_secret
     return mask_secret(key, empty=color("(not set)", Colors.DIM))
 
 

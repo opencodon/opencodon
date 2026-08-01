@@ -226,7 +226,7 @@ def redact_session_data(session: dict[str, Any]) -> dict[str, Any]:
     ``security.redact_secrets`` preference — an explicit ``--redact`` export
     must never emit raw secrets.
     """
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
 
     def _clean(value: Any) -> Any:
         if isinstance(value, str):

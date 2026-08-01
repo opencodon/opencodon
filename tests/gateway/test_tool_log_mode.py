@@ -69,7 +69,7 @@ async def test_write_tool_log_writes_and_rotates_handler(tmp_path, monkeypatch):
     import logging
     from logging.handlers import RotatingFileHandler
 
-    from agent.redact import RedactingFormatter
+    from opencodon.core.redact import RedactingFormatter
 
     log_dir = tmp_path / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)

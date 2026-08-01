@@ -328,7 +328,7 @@ class TestResolveProvider:
         # the specific "GitHub token alone shouldn't auto-pick copilot"
         # behavior, not the Bedrock fallback.
         monkeypatch.setattr(
-            "agent.bedrock_adapter.has_aws_credentials",
+            "opencodon.core.bedrock_adapter.has_aws_credentials",
             lambda env=None: False,
         )
         monkeypatch.setenv("GITHUB_TOKEN", "gh-test-token")
@@ -780,11 +780,11 @@ class TestHasAnyProviderConfigured:
         monkeypatch.setattr("opencodon_cli.auth.get_auth_status", lambda _pid: {})
         # Simulate valid Claude Code credentials
         monkeypatch.setattr(
-            "agent.anthropic_adapter.read_claude_code_credentials",
+            "opencodon.core.anthropic_adapter.read_claude_code_credentials",
             lambda: {"accessToken": "sk-ant-test", "refreshToken": "ref-tok"},
         )
         monkeypatch.setattr(
-            "agent.anthropic_adapter.is_claude_code_token_valid",
+            "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
             lambda creds: True,
         )
         from opencodon_cli.main import _has_any_provider_configured
@@ -893,11 +893,11 @@ class TestHasAnyProviderConfigured:
             monkeypatch.delenv(var, raising=False)
         # Simulate valid Claude Code credentials
         monkeypatch.setattr(
-            "agent.anthropic_adapter.read_claude_code_credentials",
+            "opencodon.core.anthropic_adapter.read_claude_code_credentials",
             lambda: {"accessToken": "sk-ant-test", "refreshToken": "ref-tok"},
         )
         monkeypatch.setattr(
-            "agent.anthropic_adapter.is_claude_code_token_valid",
+            "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
             lambda creds: True,
         )
         from opencodon_cli.main import _has_any_provider_configured
@@ -1084,7 +1084,7 @@ class TestHuggingFaceModels:
     def test_model_metadata_has_context_lengths(self):
         """Every HF model should have a context length entry."""
         from opencodon_cli.models import _PROVIDER_MODELS
-        from agent.model_metadata import DEFAULT_CONTEXT_LENGTHS
+        from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
         lower_keys = {k.lower() for k in DEFAULT_CONTEXT_LENGTHS}
         hf_models = _PROVIDER_MODELS["huggingface"]
         for model in hf_models:
@@ -1182,21 +1182,21 @@ class TestNovitaProvider:
         assert _PROVIDER_LABELS["novita"] == "NovitaAI"
 
     def test_novita_in_provider_prefixes(self):
-        from agent.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
         assert "novita" in _PROVIDER_PREFIXES
 
     def test_novita_url_to_provider(self):
-        from agent.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("api.novita.ai") == "novita"
 
     def test_context_size_in_context_length_keys(self):
         """Novita /v1/models uses 'context_size' as the context length key."""
-        from agent.model_metadata import _CONTEXT_LENGTH_KEYS
+        from opencodon.core.model_metadata import _CONTEXT_LENGTH_KEYS
         assert "context_size" in _CONTEXT_LENGTH_KEYS
 
     def test_novita_pricing_unit_conversion(self):
         """Novita returns prices in 0.0001 USD per Mtok; divide by 10_000 * 1_000_000."""
-        from agent.model_metadata import _extract_pricing
+        from opencodon.core.model_metadata import _extract_pricing
         # Sample shape from real Novita /v1/models response
         payload = {
             "id": "deepseek/deepseek-v3-0324",
@@ -1648,7 +1648,7 @@ class TestDeepInfraProviderProfile:
 
     def test_profile_registered_with_alias_and_aux(self):
         from providers import get_provider_profile
-        from agent.auxiliary_client import _get_aux_model_for_provider
+        from opencodon.core.auxiliary_client import _get_aux_model_for_provider
         from opencodon_cli.auth import PROVIDER_REGISTRY, resolve_provider
         from opencodon.config import OPTIONAL_ENV_VARS
         from opencodon_cli.models import CANONICAL_PROVIDERS

@@ -113,7 +113,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
     )
 
     # Stub the fetch layer under the SecretSource adapter.
-    import agent.secret_sources.bitwarden as bw_module
+    import opencodon.core.secret_sources.bitwarden as bw_module
 
     monkeypatch.setattr(bw_module, "find_bws", lambda **_kw: Path("/fake/bws"))
     monkeypatch.setattr(
@@ -122,7 +122,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
         lambda **_kw: ({"ANTHROPIC_API_KEY": "sk-ant-test"}, []),
     )
 
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 
@@ -179,11 +179,11 @@ def test_apply_external_secret_sources_dedupes_within_process(tmp_path, monkeypa
         call_count["n"] += 1
         return {"ANTHROPIC_API_KEY": "sk-ant-test"}, []
 
-    import agent.secret_sources.bitwarden as bw_module
+    import opencodon.core.secret_sources.bitwarden as bw_module
     monkeypatch.setattr(bw_module, "find_bws", lambda **_kw: Path("/fake/bws"))
     monkeypatch.setattr(bw_module, "fetch_bitwarden_secrets", _fake_fetch)
 
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 
@@ -226,7 +226,7 @@ def test_apply_external_secret_sources_status_line_suppresses_secret_names(
         encoding="utf-8",
     )
 
-    import agent.secret_sources.bitwarden as bw_module
+    import opencodon.core.secret_sources.bitwarden as bw_module
 
     monkeypatch.setattr(bw_module, "find_bws", lambda **_kw: Path("/fake/bws"))
     monkeypatch.setattr(
@@ -238,7 +238,7 @@ def test_apply_external_secret_sources_status_line_suppresses_secret_names(
         ),
     )
 
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 
@@ -252,14 +252,14 @@ def test_apply_external_secret_sources_status_line_suppresses_secret_names(
 
 def test_external_secret_values_are_isolated_between_homes(tmp_path, monkeypatch):
     """A later apply for the same key must not mutate an earlier home snapshot."""
-    from agent.secret_scope import build_profile_secret_scope
-    from agent.secret_sources.base import FetchResult
-    from agent.secret_sources.registry import (
+    from opencodon.core.secret_scope import build_profile_secret_scope
+    from opencodon.core.secret_sources.base import FetchResult
+    from opencodon.core.secret_sources.registry import (
         AppliedVar,
         ApplyReport,
         SourceReport,
     )
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     home_a = tmp_path / "profile-a"
     home_b = tmp_path / "profile-b"
@@ -335,7 +335,7 @@ def test_apply_external_secret_sources_records_onepassword_origin(tmp_path, monk
         encoding="utf-8",
     )
 
-    import agent.secret_sources.onepassword as op_module
+    import opencodon.core.secret_sources.onepassword as op_module
 
     monkeypatch.setattr(op_module, "find_op", lambda *_a, **_kw: Path("/fake/op"))
     monkeypatch.setattr(
@@ -344,7 +344,7 @@ def test_apply_external_secret_sources_records_onepassword_origin(tmp_path, monk
         lambda **_kw: ({"ANTHROPIC_API_KEY": "sk-ant-test"}, []),
     )
 
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 
@@ -398,11 +398,11 @@ def test_apply_external_secret_sources_bad_ttl_does_not_crash(tmp_path, monkeypa
         captured.update(kwargs)
         return {}, []
 
-    import agent.secret_sources.onepassword as op_module
+    import opencodon.core.secret_sources.onepassword as op_module
     monkeypatch.setattr(op_module, "find_op", lambda *_a, **_kw: Path("/fake/op"))
     monkeypatch.setattr(op_module, "fetch_onepassword_secrets", _fake_fetch)
 
-    from agent.secret_sources import registry as reg_module
+    from opencodon.core.secret_sources import registry as reg_module
 
     reg_module._reset_registry_for_tests()
 

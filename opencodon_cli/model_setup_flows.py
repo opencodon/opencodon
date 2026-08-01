@@ -88,7 +88,7 @@ def _prune_replaced_custom_model_config_credentials(
     can be selected before the freshly saved config is tried.
     """
     try:
-        from agent.credential_pool import (
+        from opencodon.core.credential_pool import (
             CUSTOM_POOL_PREFIX,
             get_custom_provider_pool_key,
         )
@@ -956,7 +956,7 @@ def _model_flow_azure_foundry(config, current_model=""):
 
     if use_entra:
         try:
-            from agent.azure_identity_adapter import (
+            from opencodon.core.azure_identity_adapter import (
                 EntraIdentityConfig,
                 SCOPE_AI_AZURE_DEFAULT,
                 build_token_provider,
@@ -2020,7 +2020,7 @@ def _model_flow_bedrock(config, current_model=""):
 
     # 1. Check for AWS credentials
     try:
-        from agent.bedrock_adapter import (
+        from opencodon.core.bedrock_adapter import (
             has_aws_credentials,
             resolve_aws_auth_env_var,
             resolve_bedrock_region,
@@ -2415,7 +2415,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     # errors fall through without blocking.
     if provider_id == "gemini" and existing_key:
         try:
-            from agent.gemini_native_adapter import probe_gemini_tier
+            from opencodon.core.gemini_native_adapter import probe_gemini_tier
         except Exception:
             probe_gemini_tier = None
         if probe_gemini_tier is not None:
@@ -2557,7 +2557,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         else:
             mdev_models: list = []
             try:
-                from agent.models_dev import list_agentic_models
+                from opencodon.core.models_dev import list_agentic_models
 
                 mdev_models = list_agentic_models(provider_id)
             except Exception:
@@ -2582,7 +2582,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         # Try models.dev first — returns tool-capable models, filtered for noise
         mdev_models: list = []
         try:
-            from agent.models_dev import list_agentic_models
+            from opencodon.core.models_dev import list_agentic_models
 
             mdev_models = list_agentic_models(provider_id)
         except Exception:
@@ -2706,7 +2706,7 @@ def _model_flow_anthropic(config, current_model=""):
     existing_key = get_anthropic_key()
     cc_available = False
     try:
-        from agent.anthropic_adapter import (
+        from opencodon.core.anthropic_adapter import (
             read_claude_code_credentials,
             is_claude_code_token_valid,
             _is_oauth_token,

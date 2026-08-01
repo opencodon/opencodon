@@ -146,7 +146,7 @@ class WSTransport:
         # it can never overtake the tokens that preceded it. The send is
         # scheduled INSIDE the lock so the on-the-wire order matches the buffer
         # order even if the coalesce timer fires on the loop at the same moment.
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         with self._token_lock:
             self._pending_tokens.append(line)
             batch = self._pending_tokens

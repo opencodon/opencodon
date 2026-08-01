@@ -398,7 +398,7 @@ def _redact_log_text(text: str) -> str:
     """
     if not text:
         return text
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
 
     text = redact_sensitive_text(text, force=True)
     return _EMAIL_ADDRESS_RE.sub("[REDACTED_EMAIL]", text)

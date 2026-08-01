@@ -388,7 +388,7 @@ class TestCamofoxVisionConfig:
 
         with (
             patch("tools.browser_camofox.open", create=True) as mock_open,
-            patch("agent.auxiliary_client.call_llm", return_value=mock_response) as mock_llm,
+            patch("opencodon.core.auxiliary_client.call_llm", return_value=mock_response) as mock_llm,
             patch("tools.browser_camofox.load_config", return_value={"auxiliary": {"vision": {"temperature": 1, "timeout": 45}}}),
         ):
             mock_open.return_value.__enter__.return_value.read.return_value = b"fakepng"
@@ -420,7 +420,7 @@ class TestCamofoxVisionConfig:
 
         with (
             patch("tools.browser_camofox.open", create=True) as mock_open,
-            patch("agent.auxiliary_client.call_llm", return_value=mock_response) as mock_llm,
+            patch("opencodon.core.auxiliary_client.call_llm", return_value=mock_response) as mock_llm,
             patch("tools.browser_camofox.load_config", return_value={"auxiliary": {"vision": {}}}),
         ):
             mock_open.return_value.__enter__.return_value.read.return_value = b"fakepng"

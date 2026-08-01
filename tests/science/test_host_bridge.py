@@ -226,7 +226,7 @@ class TestCheapModel:
             raise RuntimeError("config unreadable")
 
         monkeypatch.setattr(
-            "agent.auxiliary_client._get_auxiliary_task_config", boom
+            "opencodon.core.auxiliary_client._get_auxiliary_task_config", boom
         )
         assert host_bridge._configured_cheap_model() is None
 

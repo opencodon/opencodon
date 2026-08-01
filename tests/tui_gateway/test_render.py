@@ -6,11 +6,11 @@ from tui_gateway.render import make_stream_renderer, render_diff, render_message
 
 
 def _stub_rich(mock_mod):
-    return patch.dict("sys.modules", {"agent.rich_output": mock_mod})
+    return patch.dict("sys.modules", {"opencodon.core.rich_output": mock_mod})
 
 
 def _no_rich():
-    return patch.dict("sys.modules", {"agent.rich_output": None})
+    return patch.dict("sys.modules", {"opencodon.core.rich_output": None})
 
 
 # ── render_message ───────────────────────────────────────────────────

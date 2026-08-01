@@ -19,8 +19,8 @@ class _DummyPool:
 @pytest.fixture
 def oauth_file(monkeypatch, tmp_path):
     target = tmp_path / '.anthropic_oauth.json'
-    monkeypatch.setattr('agent.anthropic_adapter._get_opencodon_oauth_file', lambda: target)
-    monkeypatch.setattr('agent.credential_pool.load_pool', lambda _provider: _DummyPool())
+    monkeypatch.setattr('opencodon.core.anthropic_adapter._get_opencodon_oauth_file', lambda: target)
+    monkeypatch.setattr('opencodon.core.credential_pool.load_pool', lambda _provider: _DummyPool())
     return target
 
 

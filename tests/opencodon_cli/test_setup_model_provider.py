@@ -172,7 +172,7 @@ def test_setup_copilot_acp_skips_same_provider_pool_step(tmp_path, monkeypatch):
     monkeypatch.setattr("opencodon_cli.setup.prompt_yes_no", fake_prompt_yes_no)
     monkeypatch.setattr("opencodon_cli.setup.prompt", lambda *args, **kwargs: "")
     monkeypatch.setattr("opencodon_cli.auth.get_active_provider", lambda: None)
-    monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: [])
+    monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: [])
 
     setup_model_provider(config)
 
@@ -279,7 +279,7 @@ def test_setup_summary_marks_anthropic_auth_as_vision_available(tmp_path, monkey
     _clear_provider_env(monkeypatch)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-key")
     monkeypatch.setattr("shutil.which", lambda _name: None)
-    monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: ["anthropic"])
+    monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: ["anthropic"])
 
     _print_setup_summary(load_config(), tmp_path)
     output = capsys.readouterr().out
@@ -295,7 +295,7 @@ def test_setup_summary_shows_camofox_when_browser_feature_is_camofox(tmp_path, m
     cfg.setdefault("browser", {})["cloud_provider"] = "Camofox"
     save_config(cfg)
     monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: True)
-    monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: [])
+    monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
     output = capsys.readouterr().out
@@ -311,7 +311,7 @@ def test_setup_summary_does_not_mark_incomplete_browserbase_as_available(tmp_pat
     cfg.setdefault("browser", {})["cloud_provider"] = "Browserbase"
     save_config(cfg)
     monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: False)
-    monkeypatch.setattr("agent.auxiliary_client.get_available_vision_backends", lambda: [])
+    monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
     output = capsys.readouterr().out
@@ -347,7 +347,7 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     monkeypatch.setattr("tools.browser_tool._chromium_installed", lambda: False)
     monkeypatch.setattr("tools.browser_tool._using_lightpanda_engine", lambda: False)
     monkeypatch.setattr(
-        "agent.auxiliary_client.get_available_vision_backends", lambda: []
+        "opencodon.core.auxiliary_client.get_available_vision_backends", lambda: []
     )
 
     _print_setup_summary(load_config(), tmp_path)

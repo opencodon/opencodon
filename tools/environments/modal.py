@@ -144,7 +144,7 @@ class _AsyncWorker:
         self._loop.run_forever()
 
     def run_coroutine(self, coro, timeout=600):
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
         if self._loop is None or self._loop.is_closed():
             if asyncio.iscoroutine(coro):
                 coro.close()

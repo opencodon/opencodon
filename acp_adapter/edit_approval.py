@@ -294,7 +294,7 @@ def make_acp_edit_approval_requester(
 
     def _requester(proposal: EditProposal) -> bool:
         from acp.schema import PermissionOption
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
 
         if auto_approve_getter is not None:
             try:

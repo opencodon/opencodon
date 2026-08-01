@@ -1,6 +1,6 @@
 import pytest
 
-from agent.errors import MoAPresetNotFoundError
+from opencodon.core.errors import MoAPresetNotFoundError
 from opencodon.config.moa_config import (
     DEFAULT_MOA_AGGREGATOR,
     DEFAULT_MOA_PRESET_NAME,
@@ -235,7 +235,7 @@ def test_resolve_missing_moa_preset_does_not_silently_fallback():
 
 
 def test_missing_moa_preset_is_non_retryable():
-    from agent.error_classifier import FailoverReason, classify_api_error
+    from opencodon.core.error_classifier import FailoverReason, classify_api_error
 
     result = classify_api_error(
         MoAPresetNotFoundError("MoA preset 'old' was not found"),

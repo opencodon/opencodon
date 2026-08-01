@@ -1,8 +1,8 @@
-"""Agent internals -- extracted modules from run_agent.py.
+"""Compat shim package: ``agent`` -> ``opencodon.core`` (restructure Phase 3a).
 
-These modules contain pure utility functions and self-contained classes
-that were previously embedded in the 3,600-line run_agent.py. Extracting
-them makes run_agent.py focused on the AIAgent orchestrator class.
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving its import-time side effects). Deleted in
+Phase 5.
 """
 
-from . import jiter_preload as _jiter_preload  # noqa: F401
+import opencodon.core as _real  # noqa: F401

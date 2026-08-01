@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-import agent.secret_scope as secret_scope
+import opencodon.core.secret_scope as secret_scope
 from gateway.config import Platform, PlatformConfig
 from gateway.run import GatewayRunner
 from gateway.platforms.base import (

@@ -27,7 +27,7 @@ class TestResolveDisplayContextLength:
         """gpt-5.5 on openai-codex must show Codex's 272K cap, not models.dev's 1.05M."""
         fake_mi = _FakeModelInfo(1_050_000)  # what models.dev reports
         with patch(
-            "agent.model_metadata.get_model_context_length",
+            "opencodon.core.model_metadata.get_model_context_length",
             return_value=272_000,  # what Codex OAuth actually enforces
         ):
             ctx = resolve_display_context_length(
@@ -44,7 +44,7 @@ class TestResolveDisplayContextLength:
     def test_falls_back_to_model_info_when_resolver_returns_none(self):
         fake_mi = _FakeModelInfo(1_048_576)
         with patch(
-            "agent.model_metadata.get_model_context_length", return_value=None
+            "opencodon.core.model_metadata.get_model_context_length", return_value=None
         ):
             ctx = resolve_display_context_length(
                 "some-model",
@@ -55,7 +55,7 @@ class TestResolveDisplayContextLength:
 
     def test_returns_none_when_both_sources_empty(self):
         with patch(
-            "agent.model_metadata.get_model_context_length", return_value=None
+            "opencodon.core.model_metadata.get_model_context_length", return_value=None
         ):
             ctx = resolve_display_context_length(
                 "unknown-model",
@@ -67,7 +67,7 @@ class TestResolveDisplayContextLength:
     def test_resolver_exception_falls_back_to_model_info(self):
         fake_mi = _FakeModelInfo(200_000)
         with patch(
-            "agent.model_metadata.get_model_context_length",
+            "opencodon.core.model_metadata.get_model_context_length",
             side_effect=RuntimeError("network down"),
         ):
             ctx = resolve_display_context_length(
@@ -80,7 +80,7 @@ class TestResolveDisplayContextLength:
         reports a bigger window."""
         fake_mi = _FakeModelInfo(2_000_000)
         with patch(
-            "agent.model_metadata.get_model_context_length", return_value=128_000
+            "opencodon.core.model_metadata.get_model_context_length", return_value=128_000
         ):
             ctx = resolve_display_context_length(
                 "capped-model",
@@ -104,7 +104,7 @@ class TestResolveDisplayContextLength:
         # Real resolver call — no mock — so the override path is exercised
         # through agent.model_metadata.get_model_context_length.
         from unittest.mock import patch as _p
-        from agent import model_metadata as _mm
+        from opencodon.core import model_metadata as _mm
         with _p.object(_mm, "get_cached_context_length", return_value=None), \
              _p.object(_mm, "fetch_endpoint_model_metadata", return_value={}), \
              _p.object(_mm, "fetch_model_metadata", return_value={}), \
@@ -133,7 +133,7 @@ class TestResolveDisplayContextLength:
             }
         ]
         from unittest.mock import patch as _p
-        from agent import model_metadata as _mm
+        from opencodon.core import model_metadata as _mm
         with _p.object(_mm, "get_cached_context_length", return_value=None), \
              _p.object(_mm, "fetch_endpoint_model_metadata", return_value={}), \
              _p.object(_mm, "fetch_model_metadata", return_value={}), \
@@ -153,7 +153,7 @@ class TestResolveDisplayContextLength:
         probe-down default (256K) instead of the configured per-model
         context_length."""
         from unittest.mock import patch as _p
-        from agent import model_metadata as _mm
+        from opencodon.core import model_metadata as _mm
         with _p.object(_mm, "get_cached_context_length", return_value=None), \
              _p.object(_mm, "fetch_endpoint_model_metadata", return_value={}), \
              _p.object(_mm, "fetch_model_metadata", return_value={}), \
@@ -176,7 +176,7 @@ class TestResolveDisplayContextLength:
 
     def test_global_context_is_scoped_to_configured_route(self):
         with patch(
-            "agent.model_metadata.get_model_context_length",
+            "opencodon.core.model_metadata.get_model_context_length",
             return_value=256_000,
         ) as resolver:
             ctx = resolve_display_context_length(

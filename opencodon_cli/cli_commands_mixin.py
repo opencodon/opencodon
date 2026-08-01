@@ -28,7 +28,7 @@ from rich.markup import escape as _escape
 from rich.panel import Panel
 
 from opencodon_constants import display_opencodon_home, is_termux as _is_termux_environment
-from agent.turn_context import extract_api_content_sidecar
+from opencodon.core.turn_context import extract_api_content_sidecar
 from opencodon_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
     discover_local_cdp_url,
@@ -1386,7 +1386,7 @@ class CLICommandsMixin:
         authors the skill via ``skill_manage``. No engine, no model-tool
         footprint, works on any terminal backend.
         """
-        from agent.learn_prompt import build_learn_prompt
+        from opencodon.core.learn_prompt import build_learn_prompt
 
         # Everything after the command word is the open-ended request.
         parts = cmd.strip().split(None, 1)
@@ -1599,7 +1599,7 @@ class CLICommandsMixin:
         """
         from cli import ChatConsole, _BOLD, _DIM, _RST, _accent_hex, _cprint
         try:
-            from agent.skill_bundles import list_bundles, _bundles_dir
+            from opencodon.core.skill_bundles import list_bundles, _bundles_dir
         except Exception as exc:
             _cprint(f"\033[1;31mBundle subsystem unavailable: {exc}{_RST}")
             return

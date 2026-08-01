@@ -45,9 +45,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Awaitable, Callable, Dict, Optional, Any, List, Union, cast
 
-from agent.async_utils import consume_detached_task_result, safe_schedule_threadsafe
-from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
-from agent.i18n import t
+from opencodon.core.async_utils import consume_detached_task_result, safe_schedule_threadsafe
+from opencodon.core.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
+from opencodon.core.i18n import t
 from opencodon.config import cfg_get
 from opencodon_cli.fallback_config import get_fallback_chain
 
@@ -331,7 +331,7 @@ def _redact_gateway_user_facing_secrets(text: str) -> str:
     """
     redacted = str(text or "")
     try:
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         redacted = redact_sensitive_text(redacted, force=True)
     except Exception:
@@ -354,7 +354,7 @@ def _redact_approval_command(cmd: "str | None") -> str:
     off. Module-level so the wiring is unit-testable (the call site is a deeply
     nested gateway closure that cannot be driven directly).
     """
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
 
     return redact_sensitive_text(str(cmd or ""), force=True)
 
@@ -1094,7 +1094,7 @@ _AUTO_APPEND_MEDIA_TOOL_NAMES = {
 # surface (this messaging gateway AND the TUI/WebUI gateway) shares one
 # implementation.  Re-exported under the historical private names so existing
 # call sites and tests keep working.
-from agent.replay_cleanup import (  # noqa: E402
+from opencodon.core.replay_cleanup import (  # noqa: E402
     strip_interrupted_tool_tails as _strip_interrupted_tool_tails,
     strip_dangling_tool_call_tail as _strip_dangling_tool_call_tail,
     strip_stale_dangerous_confirmations as _strip_stale_dangerous_confirmations,
@@ -1414,7 +1414,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
     the process-global ``os.environ`` here would defeat that isolation and leak
     the default profile's keys to every profile's turns and subprocesses.
     """
-    from agent.secret_scope import is_multiplex_active
+    from opencodon.core.secret_scope import is_multiplex_active
     if is_multiplex_active():
         # Credentials are resolved from the active profile's secret scope, not
         # os.environ. Still honor config.yaml's agent.max_turns bridge below
@@ -1523,7 +1523,7 @@ def _profile_runtime_scope(profile_home: "Path"):
     from inheriting cross-profile secrets.
     """
     from opencodon_constants import set_opencodon_home_override, reset_opencodon_home_override
-    from agent.secret_scope import (
+    from opencodon.core.secret_scope import (
         build_profile_secret_scope,
         set_secret_scope,
         reset_secret_scope,
@@ -2443,7 +2443,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
     normalized = command_name.lower().replace("_", "-")
     try:
         from tools.skills_tool import _get_disabled_skill_names
-        from agent.skill_utils import get_all_skills_dirs, is_excluded_skill_path
+        from opencodon.core.skill_utils import get_all_skills_dirs, is_excluded_skill_path
         disabled = _get_disabled_skill_names()
 
         # Check disabled skills across all dirs (local + external)
@@ -3082,7 +3082,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # credential read, so a missed migration crashes loudly instead of
         # leaking a cross-profile value (Workstream A). Inert when off.
         try:
-            from agent.secret_scope import set_multiplex_active
+            from opencodon.core.secret_scope import set_multiplex_active
             set_multiplex_active(bool(getattr(self.config, "multiplex_profiles", False)))
         except Exception:
             logger.debug("could not set multiplex-active flag", exc_info=True)
@@ -6131,7 +6131,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # queue/interrupt knob.  Flag is persisted to config.yaml so it never
         # fires again on this install.
         try:
-            from agent.onboarding import (
+            from opencodon.core.onboarding import (
                 BUSY_INPUT_FLAG,
                 busy_input_hint_gateway,
                 is_seen,
@@ -6603,7 +6603,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # any entries whose event loop is now dead so their httpx transports do
         # not accumulate across gateway turns.
         try:
-            from agent.auxiliary_client import cleanup_stale_async_clients
+            from opencodon.core.auxiliary_client import cleanup_stale_async_clients
             cleanup_stale_async_clients()
         except Exception:
             pass
@@ -7584,7 +7584,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # Failures are logged but must never block gateway startup.
         try:
             from opencodon.config import load_config
-            from agent.shell_hooks import register_from_config
+            from opencodon.core.shell_hooks import register_from_config
             register_from_config(load_config(), accept_hooks=False)
         except Exception:
             logger.debug(
@@ -9211,7 +9211,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # async httpx transports until they hit EMFILE on macOS's default
             # RLIMIT_NOFILE=256.  See #14210.
             try:
-                from agent.auxiliary_client import shutdown_cached_clients
+                from opencodon.core.auxiliary_client import shutdown_cached_clients
                 shutdown_cached_clients()
             except Exception as _e:
                 logger.debug("shutdown_cached_clients error: %s", _e)
@@ -11042,7 +11042,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # web_extract, this conversation, pasted text) and authors the skill
             # via skill_manage. Mirrors the /blueprint fall-through so role
             # alternation is preserved. No engine, works on any backend.
-            from agent.learn_prompt import build_learn_prompt
+            from opencodon.core.learn_prompt import build_learn_prompt
 
             _learn_req = event.get_command_args().strip()
             _ack = (
@@ -11302,7 +11302,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                             output = (stdout or stderr).decode().strip()
                             # Redact any remaining sensitive patterns in output
                             if output:
-                                from agent.redact import redact_sensitive_text
+                                from opencodon.core.redact import redact_sensitive_text
                                 output = redact_sensitive_text(output)
                             return output if output else "Command returned no output."
                         except asyncio.TimeoutError:
@@ -11351,7 +11351,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # /<bundle> loads multiple skills at once. Mirrors CLI dispatch.
             _bundle_handled = False
             try:
-                from agent.skill_bundles import (
+                from opencodon.core.skill_bundles import (
                     build_bundle_invocation_message,
                     resolve_bundle_command_key,
                 )
@@ -11383,7 +11383,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if command and not locals().get("_bundle_handled", False):
             try:
-                from agent.skill_commands import (
+                from opencodon.core.skill_commands import (
                     get_skill_commands,
                     build_skill_invocation_message,
                     resolve_skill_command_key,
@@ -11398,7 +11398,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     _skill_name = skill_cmds[cmd_key].get("name", "")
                     _plat = source.platform.value if source.platform else None
                     if _plat and _skill_name:
-                        from agent.skill_utils import get_disabled_skill_names as _get_plat_disabled
+                        from opencodon.core.skill_utils import get_disabled_skill_names as _get_plat_disabled
                         if _skill_name in _get_plat_disabled(platform=_plat):
                             return (
                                 f"The **{_skill_name}** skill is disabled for {_plat}.\n"
@@ -11409,7 +11409,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     # XYZ` loads every leading skill (up to 5), not just the
                     # first. Inspired by Claude Code v2.1.199. Mirrors CLI.
                     try:
-                        from agent.skill_commands import (
+                        from opencodon.core.skill_commands import (
                             build_stacked_skill_invocation_message as _build_stacked,
                             split_stacked_skill_commands,
                         )
@@ -11427,7 +11427,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                         # leading one above) against the same disabled list,
                         # or a skill an operator disabled for this platform
                         # still gets its full content loaded via the stack.
-                        from agent.skill_utils import get_disabled_skill_names as _get_plat_disabled
+                        from opencodon.core.skill_utils import get_disabled_skill_names as _get_plat_disabled
                         _plat_disabled = _get_plat_disabled(platform=_plat)
                         _disabled_extra = [
                             skill_cmds.get(k, {}).get("name", "")
@@ -11777,7 +11777,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                             exc_info=True,
                         )
 
-                    from agent.auxiliary_client import scoped_runtime_main
+                    from opencodon.core.auxiliary_client import scoped_runtime_main
 
                     with scoped_runtime_main(vision_runtime):
                         message_text = await self._enrich_message_with_vision(
@@ -11941,8 +11941,8 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if "@" in message_text:
             try:
-                from agent.context_references import preprocess_context_references_async
-                from agent.model_metadata import get_model_context_length_async
+                from opencodon.core.context_references import preprocess_context_references_async
+                from opencodon.core.model_metadata import get_model_context_length_async
 
                 _msg_cwd = os.environ.get("TERMINAL_CWD", os.path.expanduser("~"))
                 _msg_config_ctx = None
@@ -12372,7 +12372,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         if _is_new_session and _auto:
             _skill_names = [_auto] if isinstance(_auto, str) else list(_auto)
             try:
-                from agent.skill_commands import _load_skill_payload, _build_skill_message
+                from opencodon.core.skill_commands import _load_skill_payload, _build_skill_message
                 _combined_parts: list[str] = []
                 _loaded_names: list[str] = []
                 for _sname in _skill_names:
@@ -12446,7 +12446,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         #    means hygiene fires a bit early — safe and harmless.
         # -----------------------------------------------------------------
         if history and len(history) >= 4:
-            from agent.model_metadata import (
+            from opencodon.core.model_metadata import (
                 estimate_messages_tokens_rough,
                 get_model_context_length_async,
             )
@@ -12810,7 +12810,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                                         # Force-redact: provider exception text
                                         # may contain credentials; this message
                                         # reaches gateway users directly.
-                                        from agent.redact import redact_sensitive_text
+                                        from opencodon.core.redact import redact_sensitive_text
                                         _err = redact_sensitive_text(_err, force=True)
                                         _warn_msg = (
                                             "⚠️ Context compression aborted "
@@ -12885,7 +12885,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # The offer fires at most once (onboarding.seen flag); set
             # onboarding.profile_build: off in config.yaml to disable.
             try:
-                from agent.onboarding import (
+                from opencodon.core.onboarding import (
                     PROFILE_BUILD_FLAG,
                     is_seen,
                     mark_seen,
@@ -12917,7 +12917,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # scope / PlatformConfig, not process os.environ.
             home_env = ""
             try:
-                from agent.secret_scope import get_secret
+                from opencodon.core.secret_scope import get_secret
 
                 home_env = (get_secret(env_key) or "").strip() if env_key else ""
             except Exception:
@@ -13805,7 +13805,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         users can immediately see if context detection went wrong (e.g.
         local models falling to the 128K default).
         """
-        from agent.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
+        from opencodon.core.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
 
         model = _resolve_gateway_model()
         config_context_length = None
@@ -16590,8 +16590,8 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         only the persisted default model.
         """
         try:
-            from agent.image_routing import decide_image_input_mode
-            from agent.auxiliary_client import _read_main_model, _read_main_provider
+            from opencodon.core.image_routing import decide_image_input_mode
+            from opencodon.core.auxiliary_client import _read_main_model, _read_main_provider
             from opencodon.config import load_config
 
             cfg = user_config if isinstance(user_config, dict) else load_config()
@@ -16650,7 +16650,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             The enriched message string with vision descriptions prepended.
         """
         from tools.vision_tools import vision_analyze_tool
-        from agent.memory_manager import sanitize_context
+        from opencodon.core.memory_manager import sanitize_context
 
         analysis_prompt = (
             "Describe everything visible in this image in thorough detail. "
@@ -17364,7 +17364,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # (#10156) — a status check must not suppress this delivery turn.
                 from tools.process_registry import format_process_notification, process_registry as _pr_check
                 if agent_notify and not _pr_check.is_completion_consumed(session_id):
-                    from agent.redact import redact_terminal_output
+                    from opencodon.core.redact import redact_terminal_output
                     from tools.ansi_strip import strip_ansi
                     _command = getattr(session, "command", "") or ""
                     _raw = strip_ansi(session.output_buffer) if session.output_buffer else ""
@@ -17421,7 +17421,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 if should_notify:
                     new_output = session.output_buffer[-1000:] if session.output_buffer else ""
                     if new_output:
-                        from agent.redact import redact_terminal_output
+                        from opencodon.core.redact import redact_terminal_output
                         new_output = redact_terminal_output(
                             new_output, getattr(session, "command", "") or ""
                         )
@@ -17451,7 +17451,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # Skip periodic updates for agent_notify watchers (they only care about completion)
                 new_output = session.output_buffer[-500:] if session.output_buffer else ""
                 if new_output:
-                    from agent.redact import redact_terminal_output
+                    from opencodon.core.redact import redact_terminal_output
                     new_output = redact_terminal_output(
                         new_output, getattr(session, "command", "") or ""
                     )
@@ -19126,7 +19126,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         # Apply tool preview length config (0 = no limit)
         try:
-            from agent.display import set_tool_preview_max_len
+            from opencodon.core.display import set_tool_preview_max_len
             _tpl = resolve_display_setting(user_config, platform_key, "tool_preview_length", 0)
             set_tool_preview_max_len(int(_tpl) if _tpl else 0)
         except Exception:
@@ -19134,7 +19134,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         # Apply friendly tool labels config (default on) — per-platform aware
         try:
-            from agent.display import set_friendly_tool_labels
+            from opencodon.core.display import set_friendly_tool_labels
             _ftl = resolve_display_setting(user_config, platform_key, "friendly_tool_labels", True)
             set_friendly_tool_labels(bool(_ftl))
         except Exception:
@@ -19327,7 +19327,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             ):
                 try:
                     if event_type == "tool.started" and tool_name and _run_still_current():
-                        from agent.display import build_status_phrase
+                        from opencodon.core.display import build_status_phrase
                         _phrase = build_status_phrase(
                             tool_name,
                             args if _live_status_mode == "full" else None,
@@ -19362,7 +19362,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 try:
                     duration = kwargs.get("duration") or 0
                     if duration >= _LONG_TOOL_THRESHOLD_S and progress_mode == "all":
-                        from agent.onboarding import (
+                        from opencodon.core.onboarding import (
                             TOOL_PROGRESS_FLAG,
                             is_seen,
                             mark_seen,
@@ -19437,7 +19437,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             last_tool[0] = tool_name
 
             # Build progress message with primary argument preview
-            from agent.display import get_tool_emoji
+            from opencodon.core.display import get_tool_emoji
             emoji = get_tool_emoji(tool_name, default="⚙️")
 
             # Markdown-capable platforms render a terminal command as a fenced
@@ -19466,7 +19466,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 and isinstance(args.get("command"), str)
                 and args["command"].strip()
             ):
-                from agent.display import get_tool_preview_max_len
+                from opencodon.core.display import get_tool_preview_max_len
                 _cmd_full = args["command"].rstrip()
                 # Consecutive terminal calls: drop the repeated
                 # "💻 terminal" header so back-to-back commands render as
@@ -19495,7 +19495,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     return
                 last_was_terminal_block[0] = False
                 if args:
-                    from agent.display import get_tool_preview_max_len
+                    from opencodon.core.display import get_tool_preview_max_len
                     _pl = get_tool_preview_max_len()
                     args_str = json.dumps(args, ensure_ascii=False, default=str)
                     # When tool_preview_length is 0 (default), don't truncate
@@ -19520,7 +19520,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 msg = _code_block_short
                 last_was_terminal_block[0] = True
             elif preview:
-                from agent.display import (
+                from opencodon.core.display import (
                     get_tool_preview_max_len,
                     get_tool_verb,
                     tool_verb_connector,
@@ -19595,7 +19595,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 return
             from logging.handlers import RotatingFileHandler
 
-            from agent.redact import RedactingFormatter
+            from opencodon.core.redact import RedactingFormatter
 
             log_dir = _opencodon_home / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
@@ -21044,7 +21044,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 _native_imgs = self._consume_pending_native_image_paths(session_key)
                 if _native_imgs:
                     try:
-                        from agent.image_routing import build_native_content_parts
+                        from opencodon.core.image_routing import build_native_content_parts
                         _parts, _skipped = build_native_content_parts(
                             message,
                             _native_imgs,
@@ -21288,7 +21288,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # Auto-generate session title after first exchange (non-blocking)
             if final_response and self._session_db:
                 try:
-                    from agent.title_generator import maybe_auto_title
+                    from opencodon.core.title_generator import maybe_auto_title
                     all_msgs = result_holder[0].get("messages", []) if result_holder[0] else []
                     # In Gateway mode, auto-title failures must NOT be
                     # surfaced as user-visible messages (fixes #23246).
@@ -22493,7 +22493,7 @@ def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop
         # real work only fires once per config interval.
         if tick_count % CURATOR_EVERY == 0:
             try:
-                from agent.curator import maybe_run_curator
+                from opencodon.core.curator import maybe_run_curator
                 maybe_run_curator(
                     idle_for_seconds=float("inf"),
                     on_summary=lambda msg: logger.info("curator: %s", msg),
@@ -22782,7 +22782,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # verbosity=1    (-v):         INFO and above
     # verbosity=2+   (-vv/-vvv):   DEBUG
     if verbosity is not None:
-        from agent.redact import RedactingFormatter
+        from opencodon.core.redact import RedactingFormatter
 
         _stderr_level = {0: logging.WARNING, 1: logging.INFO}.get(verbosity, logging.DEBUG)
         _stderr_handler = logging.StreamHandler(_safe_stderr())

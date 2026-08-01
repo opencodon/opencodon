@@ -23,10 +23,10 @@ def _result(*, model: str = "small-model") -> ModelSwitchResult:
 
 
 def _compressor(monkeypatch, *, context_length: int = 200_000):
-    from agent.context_compressor import ContextCompressor
+    from opencodon.core.context_compressor import ContextCompressor
 
     monkeypatch.setattr(
-        "agent.context_compressor.get_model_context_length",
+        "opencodon.core.context_compressor.get_model_context_length",
         lambda *a, **k: context_length,
     )
     return ContextCompressor(
@@ -110,7 +110,7 @@ def test_cross_route_switch_does_not_inherit_current_context_pin(monkeypatch):
         return kwargs["config_context_length"] or 32_000
 
     monkeypatch.setattr(
-        "agent.model_metadata.get_model_context_length",
+        "opencodon.core.model_metadata.get_model_context_length",
         _resolve_metadata,
     )
     monkeypatch.setattr(
@@ -158,11 +158,11 @@ def test_custom_provider_context_avoids_false_shrink_warning(monkeypatch):
     # Force the probe-down path that hit the "qwen" → 131072 catalog match
     # when custom_providers was not threaded through.
     monkeypatch.setattr(
-        "agent.model_metadata._resolve_endpoint_context_length",
+        "opencodon.core.model_metadata._resolve_endpoint_context_length",
         lambda *a, **k: None,
     )
     monkeypatch.setattr(
-        "agent.model_metadata._query_ollama_api_show",
+        "opencodon.core.model_metadata._query_ollama_api_show",
         lambda *a, **k: None,
     )
     monkeypatch.setattr(

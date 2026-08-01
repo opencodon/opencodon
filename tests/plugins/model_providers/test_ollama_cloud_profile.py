@@ -140,7 +140,7 @@ class TestOllamaCloudFullKwargsIntegration:
     """End-to-end: the transport's full kwargs include reasoning_effort."""
 
     def test_full_kwargs_with_xhigh(self, ollama_cloud_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro:cloud",
@@ -158,7 +158,7 @@ class TestOllamaCloudFullKwargsIntegration:
         assert "extra_body" not in kwargs or "reasoning" not in kwargs.get("extra_body", {})
 
     def test_full_kwargs_with_disabled(self, ollama_cloud_profile):
-        from agent.transports.chat_completions import ChatCompletionsTransport
+        from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro:cloud",

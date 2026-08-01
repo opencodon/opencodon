@@ -31,7 +31,7 @@ def _redact_telegram_error_text(error: object) -> str:
     if not text:
         return text
     try:
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         return redact_sensitive_text(text, force=True)
     except Exception:

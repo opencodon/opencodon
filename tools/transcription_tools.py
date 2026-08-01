@@ -944,7 +944,7 @@ def _dispatch_to_plugin_provider(
     ):
         return None
     try:
-        from agent.transcription_registry import get_provider
+        from opencodon.core.transcription_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()

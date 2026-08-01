@@ -280,17 +280,17 @@ class TestTencentTokenhubURLMapping:
     """Test URL → provider inference for Tencent TokenHub endpoints."""
 
     def test_url_to_provider(self):
-        from agent.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("tokenhub.tencentmaas.com") == "tencent-tokenhub"
 
     def test_provider_prefixes(self):
-        from agent.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
         assert "tencent-tokenhub" in _PROVIDER_PREFIXES
         assert "tencent" in _PROVIDER_PREFIXES
         assert "tokenhub" in _PROVIDER_PREFIXES
 
     def test_infer_from_url(self):
-        from agent.model_metadata import _infer_provider_from_url
+        from opencodon.core.model_metadata import _infer_provider_from_url
         assert _infer_provider_from_url("https://tokenhub.tencentmaas.com/v1") == "tencent-tokenhub"
 
 
@@ -310,7 +310,7 @@ class TestTencentTokenhubContextLength:
     """
 
     def test_hy3_preview_has_registered_context_length(self):
-        from agent.model_metadata import get_model_context_length
+        from opencodon.core.model_metadata import get_model_context_length
         ctx = get_model_context_length("hy3-preview")
         assert isinstance(ctx, int)
         assert ctx >= 4096, f"hy3-preview context length looks unset/wrong: {ctx}"
@@ -362,12 +362,12 @@ class TestTencentTokenhubAuxiliary:
     """Tencent TokenHub auxiliary model routing."""
 
     def test_aux_model_registered(self):
-        from agent.auxiliary_client import _API_KEY_PROVIDER_AUX_MODELS
+        from opencodon.core.auxiliary_client import _API_KEY_PROVIDER_AUX_MODELS
         assert "tencent-tokenhub" in _API_KEY_PROVIDER_AUX_MODELS
         assert _API_KEY_PROVIDER_AUX_MODELS["tencent-tokenhub"] == "hy3-preview"
 
     def test_aux_aliases(self):
-        from agent.auxiliary_client import _PROVIDER_ALIASES
+        from opencodon.core.auxiliary_client import _PROVIDER_ALIASES
         assert _PROVIDER_ALIASES.get("tencent") == "tencent-tokenhub"
         assert _PROVIDER_ALIASES.get("tokenhub") == "tencent-tokenhub"
 

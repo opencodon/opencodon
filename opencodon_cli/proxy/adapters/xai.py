@@ -6,7 +6,7 @@ import logging
 import threading
 from typing import FrozenSet, Optional
 
-from agent.credential_pool import CredentialPool, PooledCredential, load_pool
+from opencodon.core.credential_pool import CredentialPool, PooledCredential, load_pool
 from opencodon_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 from opencodon_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 

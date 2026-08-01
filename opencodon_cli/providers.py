@@ -443,7 +443,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
 
     # Try to get models.dev data
     try:
-        from agent.models_dev import get_provider_info as _mdev_provider
+        from opencodon.core.models_dev import get_provider_info as _mdev_provider
         mdev_info = _mdev_provider(canonical)
     except Exception:
         mdev_info = None
@@ -826,7 +826,7 @@ def resolve_provider_full(
 
     # 3. Try models.dev directly (for providers not in our ALIASES)
     try:
-        from agent.models_dev import get_provider_info as _mdev_provider
+        from opencodon.core.models_dev import get_provider_info as _mdev_provider
         mdev_info = _mdev_provider(canonical)
         if mdev_info is not None:
             return ProviderDef(

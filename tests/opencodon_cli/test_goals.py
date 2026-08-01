@@ -166,7 +166,7 @@ class TestJudgeGoal:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             side_effect=RuntimeError("No LLM provider configured"),
         ):
             verdict, _, _, _wd, _tf = goals.judge_goal("my goal", "my response")
@@ -177,7 +177,7 @@ class TestJudgeGoal:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             side_effect=RuntimeError("boom"),
         ):
             verdict, reason, _, _wd, _tf = goals.judge_goal("goal", "response")
@@ -188,7 +188,7 @@ class TestJudgeGoal:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             return_value=MagicMock(
                 choices=[MagicMock(message=MagicMock(content='{"done": true, "reason": "achieved"}'))]
             ),
@@ -201,7 +201,7 @@ class TestJudgeGoal:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             return_value=MagicMock(
                 choices=[MagicMock(message=MagicMock(content='{"done": false, "reason": "not yet"}'))]
             ),
@@ -435,7 +435,7 @@ class TestJudgeParseFailureAutoPause:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             side_effect=RuntimeError("connection reset"),
         ):
             verdict, _, parse_failed, _wd, transport_failed = goals.judge_goal(
@@ -450,7 +450,7 @@ class TestJudgeParseFailureAutoPause:
         from opencodon_cli import goals
 
         with patch(
-            "agent.auxiliary_client.call_llm",
+            "opencodon.core.auxiliary_client.call_llm",
             return_value=MagicMock(choices=[MagicMock(message=MagicMock(content=""))]),
         ):
             verdict, _, parse_failed, _wd, _tf = goals.judge_goal("goal", "response")
@@ -755,7 +755,7 @@ class TestJudgeGoalWithSubgoals:
             captured.update(kwargs)
             return _FakeResp()
 
-        with patch("agent.auxiliary_client.call_llm", side_effect=_fake_call_llm):
+        with patch("opencodon.core.auxiliary_client.call_llm", side_effect=_fake_call_llm):
             verdict, reason, parse_failed, _wd, _tf = goals.judge_goal(
                 "ship the feature",
                 "ok shipped",
@@ -787,7 +787,7 @@ class TestJudgeGoalWithSubgoals:
             captured.update(kwargs)
             return _FakeResp()
 
-        with patch("agent.auxiliary_client.call_llm", side_effect=_fake_call_llm):
+        with patch("opencodon.core.auxiliary_client.call_llm", side_effect=_fake_call_llm):
             goals.judge_goal("ship it", "done", subgoals=None)
 
         sent_messages = captured.get("messages") or []
@@ -1370,7 +1370,7 @@ class TestJudgeWithContract:
         from opencodon_cli.goals import GoalContract
 
         captured = {}
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    side_effect=self._fake_call_llm(captured)):
             goals.judge_goal(
                 "ship it", "I think it's done",
@@ -1389,7 +1389,7 @@ class TestJudgeWithContract:
         from opencodon_cli.goals import GoalContract
 
         captured = {}
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    side_effect=self._fake_call_llm(captured)):
             goals.judge_goal(
                 "ship it", "done",
@@ -1418,7 +1418,7 @@ class TestDraftContract:
             message = _FakeMsg()
         class _FakeResp:
             choices = [_FakeChoice()]
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    return_value=_FakeResp()):
             contract = goals.draft_contract("Migrate auth to JWT")
         assert contract is not None
@@ -1436,7 +1436,7 @@ class TestDraftContract:
             message = _FakeMsg()
         class _FakeResp:
             choices = [_FakeChoice()]
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    return_value=_FakeResp()):
             assert goals.draft_contract("anything") is None
 
@@ -1444,7 +1444,7 @@ class TestDraftContract:
         from unittest.mock import patch
         from opencodon_cli import goals
 
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    side_effect=RuntimeError("No LLM provider configured")):
             assert goals.draft_contract("anything") is None
 
@@ -1484,7 +1484,7 @@ class TestContractAndBackgroundCompose:
             "session_id": "ci-watch", "pid": 4242, "status": "running",
             "command": "wait_for_pr_green.sh 50501", "trigger": "exit",
         }]
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    side_effect=self._capture_call_llm(captured)):
             verdict, reason, parse_failed, wait_directive, _tf = goals.judge_goal(
                 "ship the PR",
@@ -1511,7 +1511,7 @@ class TestContractAndBackgroundCompose:
 
         captured = {}
         bg = [{"session_id": "ci", "pid": 4242, "status": "running", "command": "ci", "trigger": "exit"}]
-        with patch("agent.auxiliary_client.call_llm",
+        with patch("opencodon.core.auxiliary_client.call_llm",
                    side_effect=self._capture_call_llm(
                        captured,
                        content='{"verdict": "done", "reason": "CI is green, evidence shown"}',

@@ -88,7 +88,7 @@ with open(config_path, "w") as f:
 # Fresh import — must not have anything cached from prior runs.
 for name in list(sys.modules):
     if (name.startswith("tools.")
-            or name.startswith("agent.")
+            or name.startswith(("agent.", "opencodon."))
             or name.startswith("plugins.")
             or name.startswith("opencodon_cli.")):
         sys.modules.pop(name, None)
@@ -96,8 +96,8 @@ for name in list(sys.modules):
 # Try importing transcription_registry — only exists on PR side.
 have_plugin_hook = False
 try:
-    from agent import transcription_registry
-    from agent.transcription_provider import TranscriptionProvider
+    from opencodon.core import transcription_registry
+    from opencodon.core.transcription_provider import TranscriptionProvider
     have_plugin_hook = True
 
     if plugin_register == "yes":

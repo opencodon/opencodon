@@ -79,7 +79,7 @@ def test_nonstream_wait_loop_emits_explained_notice(tmp_path, monkeypatch):
     """After ~30s with no response, interruptible_api_call rewrites the live
     line with an explanation (model name, elapsed, overload hint, recovery
     deadline) instead of a bare 'waiting for non-streaming response'."""
-    from agent import chat_completion_helpers as h
+    from opencodon.core import chat_completion_helpers as h
 
     seen: list = []
     agent = _make_agent(tmp_path, monkeypatch, thinking_callback=seen.append)

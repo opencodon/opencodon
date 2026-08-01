@@ -117,7 +117,7 @@ def test_finalize_single_query_signal_window_does_not_reemit_during_atexit(monke
     monkeypatch.setattr(cli, "_cleanup_all_terminals", lambda: None)
     monkeypatch.setattr(cli, "_cleanup_all_browsers", lambda: None)
     monkeypatch.setattr("tools.mcp_tool.shutdown_mcp_servers", lambda: None)
-    monkeypatch.setattr("agent.auxiliary_client.shutdown_cached_clients", lambda: None)
+    monkeypatch.setattr("opencodon.core.auxiliary_client.shutdown_cached_clients", lambda: None)
 
     cli._run_cleanup()
 

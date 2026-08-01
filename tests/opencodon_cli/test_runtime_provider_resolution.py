@@ -200,7 +200,7 @@ def test_resolve_runtime_provider_anthropic_explicit_override_skips_pool(monkeyp
     )
     monkeypatch.setattr(rp, "load_pool", _unexpected_pool)
     monkeypatch.setattr(
-        "agent.anthropic_adapter.resolve_anthropic_token",
+        "opencodon.core.anthropic_adapter.resolve_anthropic_token",
         _unexpected_anthropic_token,
     )
 
@@ -2442,7 +2442,7 @@ class TestAzureAnthropicEnvVarHint:
             called["resolve_anthropic_token"] = True
             return "token-from-resolver"
         monkeypatch.setattr(
-            "agent.anthropic_adapter.resolve_anthropic_token",
+            "opencodon.core.anthropic_adapter.resolve_anthropic_token",
             _fake_resolve,
         )
 
@@ -3008,7 +3008,7 @@ def _patch_bedrock(monkeypatch, config_default=""):
     ``model.default`` — kept non-Claude here to prove ``target_model`` (not the
     stale config default) drives the api_mode decision.
     """
-    import agent.bedrock_adapter as ba
+    import opencodon.core.bedrock_adapter as ba
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "bedrock")
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"default": config_default})

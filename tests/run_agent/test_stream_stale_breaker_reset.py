@@ -137,7 +137,7 @@ def test_fallback_activation_resets_stale_streak():
     agent._consecutive_stale_streams = 7
 
     with patch(
-        "agent.auxiliary_client.resolve_provider_client",
+        "opencodon.core.auxiliary_client.resolve_provider_client",
         return_value=(_mock_client(), "resolved"),
     ):
         assert agent._try_activate_fallback() is True
@@ -163,7 +163,7 @@ def test_restore_primary_runtime_resets_stale_streak():
     agent = _make_fallback_agent(fallback_model=fbs)
 
     with patch(
-        "agent.auxiliary_client.resolve_provider_client",
+        "opencodon.core.auxiliary_client.resolve_provider_client",
         return_value=(_mock_client(), "resolved"),
     ):
         assert agent._try_activate_fallback() is True

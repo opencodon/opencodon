@@ -1324,7 +1324,7 @@ class TestMessageStorage:
     def test_replace_messages_persists_tool_name(self, db):
         """`replace_messages` (used by /retry, /undo, /compress) must write
         tool_name to the DB for messages built by make_tool_result_message."""
-        from agent.tool_dispatch_helpers import make_tool_result_message
+        from opencodon.core.tool_dispatch_helpers import make_tool_result_message
         db.create_session(session_id="s1", source="cli")
         db.replace_messages(
             "s1",
@@ -1339,7 +1339,7 @@ class TestMessageStorage:
         assert tool_msg["tool_name"] == "web_search"
 
     def test_tool_effect_disposition_round_trips_through_session_db(self, db):
-        from agent.tool_dispatch_helpers import make_tool_result_message
+        from opencodon.core.tool_dispatch_helpers import make_tool_result_message
 
         db.create_session(session_id="s1", source="cli")
         db.replace_messages(

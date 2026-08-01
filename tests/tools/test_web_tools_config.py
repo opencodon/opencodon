@@ -348,7 +348,7 @@ class TestWebSearchSchema:
         fake_provider.name = "parallel"
 
         with patch("tools.web_tools._get_search_backend", return_value="parallel"), \
-             patch("agent.web_search_registry.get_provider", return_value=fake_provider), \
+             patch("opencodon.core.web_search_registry.get_provider", return_value=fake_provider), \
              patch("tools.interrupt.is_interrupted", return_value=False), \
              patch.object(tools.web_tools._debug, "log_call"), \
              patch.object(tools.web_tools._debug, "save"):
@@ -376,7 +376,7 @@ class TestWebSearchErrorHandling:
         fake_provider.name = "firecrawl"
 
         with patch("tools.web_tools._get_search_backend", return_value="firecrawl"), \
-             patch("agent.web_search_registry.get_provider", return_value=fake_provider), \
+             patch("opencodon.core.web_search_registry.get_provider", return_value=fake_provider), \
              patch("tools.interrupt.is_interrupted", return_value=False), \
              patch.object(tools.web_tools._debug, "log_call") as mock_log_call, \
              patch.object(tools.web_tools._debug, "save"):
@@ -521,7 +521,7 @@ class TestNonBuiltinProviderAvailability:
         Python 3.13 __bases__ deallocator issue with nested class
         reassignment.
         """
-        from agent.web_search_provider import WebSearchProvider
+        from opencodon.core.web_search_provider import WebSearchProvider
 
         class FakePluginProvider(WebSearchProvider):
             @property
@@ -543,13 +543,13 @@ class TestNonBuiltinProviderAvailability:
         """Strip all built-in web provider env vars and reset the registry."""
         for key in self._WEB_ENV_KEYS:
             os.environ.pop(key, None)
-        from agent.web_search_registry import _reset_for_tests, register_provider
+        from opencodon.core.web_search_registry import _reset_for_tests, register_provider
         _reset_for_tests()
         register_provider(self._create_fake_provider())
 
     def teardown_method(self):
         """Reset the registry and restore env after each test."""
-        from agent.web_search_registry import _reset_for_tests
+        from opencodon.core.web_search_registry import _reset_for_tests
         _reset_for_tests()
         for key in self._WEB_ENV_KEYS:
             os.environ.pop(key, None)
@@ -680,7 +680,7 @@ class TestSiblingProvidersEnvResolution:
 
     def test_get_provider_env_falls_back_to_os_environ(self, monkeypatch):
         """When the config layer has no value, process env still wins."""
-        from agent.web_search_provider import get_provider_env
+        from opencodon.core.web_search_provider import get_provider_env
 
         monkeypatch.setenv("WSP_TEST_FALLBACK_KEY", "  from-process-env  ")
         with patch("opencodon.config.get_env_value", return_value=None):
@@ -689,6 +689,6 @@ class TestSiblingProvidersEnvResolution:
     def test_get_provider_env_unset_returns_empty(self, monkeypatch):
         monkeypatch.delenv("WSP_TEST_UNSET_KEY", raising=False)
         with patch("opencodon.config.get_env_value", return_value=None):
-            from agent.web_search_provider import get_provider_env
+            from opencodon.core.web_search_provider import get_provider_env
 
             assert get_provider_env("WSP_TEST_UNSET_KEY") == ""

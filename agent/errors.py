@@ -1,13 +1,11 @@
-class SSLConfigurationError(Exception):
-    """Raised when SSL/TLS certificate bundle configuration fails."""
-    pass
+"""Compat shim — real module: ``opencodon.core.errors`` (restructure Phase 3a).
 
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
+"""
 
-class EmptyStreamError(RuntimeError):
-    """Raised when a provider closes a stream without yielding a response."""
+import sys
 
-    pass
+import opencodon.core.errors as _real
 
-
-class MoAPresetNotFoundError(ValueError):
-    """Raised when a persisted MoA preset no longer exists in config."""
+sys.modules[__name__] = _real

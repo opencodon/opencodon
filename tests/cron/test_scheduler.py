@@ -1377,7 +1377,7 @@ class TestRunJobSessionPersistence:
                  },
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls, \
-             patch("agent.auxiliary_client.cleanup_stale_async_clients") as cleanup_mock:
+             patch("opencodon.core.auxiliary_client.cleanup_stale_async_clients") as cleanup_mock:
             mock_agent = MagicMock()
             mock_agent.run_conversation.return_value = {"final_response": "ok"}
             mock_agent_cls.return_value = mock_agent
@@ -4787,7 +4787,7 @@ class TestCronDeliveryMirror:
             fut.result.return_value = "9001"
             return fut
 
-        with patch("agent.async_utils.safe_schedule_threadsafe", side_effect=_run_now):
+        with patch("opencodon.core.async_utils.safe_schedule_threadsafe", side_effect=_run_now):
             tid = _open_continuable_cron_thread(
                 {"id": "j1", "name": "Brief"}, adapter, "123", loop=MagicMock(),
             )
@@ -4808,7 +4808,7 @@ class TestCronDeliveryMirror:
             coro.close()
             return fut
 
-        with patch("agent.async_utils.safe_schedule_threadsafe", side_effect=_run_now):
+        with patch("opencodon.core.async_utils.safe_schedule_threadsafe", side_effect=_run_now):
             tid = _open_continuable_cron_thread(
                 {"id": "j1", "name": "Brief"}, adapter, "123", loop=MagicMock(),
             )

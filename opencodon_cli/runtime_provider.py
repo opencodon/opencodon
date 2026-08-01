@@ -11,14 +11,14 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 from opencodon_cli import auth as auth_mod
-from agent.credential_pool import (
+from opencodon.core.credential_pool import (
     CredentialPool,
     PooledCredential,
     credential_pool_matches_provider,
     get_custom_provider_pool_key,
     load_pool,
 )
-from agent.secret_scope import get_secret as _get_secret
+from opencodon.core.secret_scope import get_secret as _get_secret
 from opencodon_cli.auth import (
     AuthError,
     DEFAULT_CODEX_BASE_URL,
@@ -1250,7 +1250,7 @@ def _resolve_azure_foundry_runtime(
             auth_mode = "api_key"
         else:
             try:
-                from agent.azure_identity_adapter import (
+                from opencodon.core.azure_identity_adapter import (
                     EntraIdentityConfig,
                     SCOPE_AI_AZURE_DEFAULT,
                     build_token_provider,
@@ -1349,7 +1349,7 @@ def _resolve_explicit_runtime(
         base_url = explicit_base_url or cfg_base_url or "https://api.anthropic.com"
         api_key = explicit_api_key
         if not api_key:
-            from agent.anthropic_adapter import resolve_anthropic_token
+            from opencodon.core.anthropic_adapter import resolve_anthropic_token
 
             api_key = resolve_anthropic_token()
             if not api_key:
@@ -1544,7 +1544,7 @@ def resolve_runtime_provider(
     # margin) by get_vertex_config(); mid-session expiry is additionally
     # recovered on 401 by run_agent._try_refresh_vertex_client_credentials().
     if requested_provider in ("vertex", "google-vertex", "vertex-ai", "gcp-vertex", "vertexai"):
-        from agent.vertex_adapter import get_vertex_config
+        from opencodon.core.vertex_adapter import get_vertex_config
 
         token, base_url = get_vertex_config()
         if not token or not base_url:
@@ -1819,7 +1819,7 @@ def resolve_runtime_provider(
                     "config.yaml model section at a custom env var."
                 )
         else:
-            from agent.anthropic_adapter import resolve_anthropic_token
+            from opencodon.core.anthropic_adapter import resolve_anthropic_token
             token = resolve_anthropic_token()
             if not token:
                 raise AuthError(
@@ -1837,7 +1837,7 @@ def resolve_runtime_provider(
 
     # AWS Bedrock (native Converse API via boto3)
     if provider == "bedrock":
-        from agent.bedrock_adapter import (
+        from opencodon.core.bedrock_adapter import (
             has_aws_credentials,
             resolve_aws_auth_env_var,
             resolve_bedrock_region,

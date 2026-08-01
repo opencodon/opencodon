@@ -694,7 +694,7 @@ class WebhookAdapter(BasePlatformAdapter):
         skills = route_config.get("skills", [])
         if skills:
             try:
-                from agent.skill_commands import (
+                from opencodon.core.skill_commands import (
                     build_skill_invocation_message,
                     get_skill_commands,
                 )

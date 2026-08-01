@@ -994,7 +994,7 @@ def _build_child_progress_callback(
                 if preview and len(preview) > 35
                 else (preview or "")
             )
-            from agent.display import get_tool_emoji
+            from opencodon.core.display import get_tool_emoji
 
             emoji = get_tool_emoji(tool_name or "")
             line = f" {prefix}├─ {emoji} {tool_name}"
@@ -3106,7 +3106,7 @@ def _resolve_child_credential_pool(
     # resolve to the same custom:<name> pool key.
     if effective_provider == "custom":
         try:
-            from agent.credential_pool import get_custom_provider_pool_key, load_pool
+            from opencodon.core.credential_pool import get_custom_provider_pool_key, load_pool
 
             child_key = get_custom_provider_pool_key(effective_base_url)
             if child_key is None:
@@ -3143,7 +3143,7 @@ def _resolve_child_credential_pool(
         return parent_pool
 
     try:
-        from agent.credential_pool import load_pool
+        from opencodon.core.credential_pool import load_pool
 
         pool = load_pool(effective_provider)
         if pool is not None and pool.has_credentials():

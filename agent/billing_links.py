@@ -1,101 +1,11 @@
-"""Provider-agnostic billing/credit recovery links.
+"""Compat shim — real module: ``opencodon.core.billing_links`` (restructure Phase 3a).
 
-Maps a billing-classified failure onto a recovery link + label. *Detection*
-is not done here — that is :mod:`agent.error_classifier`
-(``FailoverReason.billing``), the single source of truth for "credit wall vs.
-rate limit / auth / transport". The resulting :class:`BillingBlock` rides the
-turn result and the gateway ``message.complete`` event so every surface (CLI,
-TUI, desktop) renders one structured signal instead of re-parsing error text.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from dataclasses import asdict, dataclass
-from typing import Optional
+import opencodon.core.billing_links as _real
 
-from utils import base_url_host_matches
-
-
-@dataclass
-class BillingBlock:
-    """Structured billing-wall descriptor shared across every surface.
-
-    ``billing_url`` is the deep link the user actually needs to add credit with
-    the failing provider; ``None`` when we have no link for that provider.
-    """
-
-    provider: str
-    provider_label: str
-    model: str
-    billing_url: Optional[str]
-    message: str
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-
-@dataclass(frozen=True)
-class _Provider:
-    label: str
-    url: str
-    slugs: tuple[str, ...]
-    hosts: tuple[str, ...] = ()
-
-
-# Single source of truth: internal slug(s) + base_url host(s) → billing page.
-# Curated "add credits / manage billing" landing pages, not marketing homes.
-# Hosts back the OpenAI-compatible fallback where the slug is a generic bucket
-# (e.g. "openai_compatible") but base_url reveals the real upstream. An unknown
-# provider degrades to a readable label with no invented URL.
-_PROVIDERS: tuple[_Provider, ...] = (
-    _Provider("OpenAI", "https://platform.openai.com/settings/organization/billing", ("openai",), ("api.openai.com",)),
-    _Provider("Anthropic", "https://console.anthropic.com/settings/billing", ("anthropic",), ("api.anthropic.com",)),
-    _Provider("OpenRouter", "https://openrouter.ai/settings/credits", ("openrouter",), ("openrouter.ai",)),
-    _Provider("xAI", "https://console.x.ai/team/default/billing", ("xai", "xai-oauth"), ("api.x.ai",)),
-    _Provider("DeepSeek", "https://platform.deepseek.com/top_up", ("deepseek",), ("api.deepseek.com",)),
-    _Provider("Groq", "https://console.groq.com/settings/billing", ("groq",), ("api.groq.com",)),
-    _Provider("Mistral", "https://console.mistral.ai/billing", ("mistral",), ("api.mistral.ai",)),
-    _Provider("Together AI", "https://api.together.ai/settings/billing", ("together",), ("api.together.ai", "api.together.xyz")),
-    _Provider("Fireworks AI", "https://fireworks.ai/account/billing", ("fireworks",), ("fireworks.ai",)),
-    _Provider("Perplexity", "https://www.perplexity.ai/settings/api", ("perplexity",), ("perplexity.ai",)),
-    _Provider("Google AI", "https://aistudio.google.com/app/billing", ("google", "gemini"), ("generativelanguage.googleapis.com",)),
-    _Provider("Cohere", "https://dashboard.cohere.com/billing", ("cohere",)),
-    _Provider("Moonshot AI", "https://platform.moonshot.ai/console/pay", ("moonshot",)),
-    _Provider("NVIDIA", "https://build.nvidia.com/settings/billing", ("nvidia",)),
-)
-
-_BY_SLUG: dict[str, _Provider] = {slug: p for p in _PROVIDERS for slug in p.slugs}
-
-
-def _resolve_provider_link(slug: str, base_url: str) -> tuple[str, Optional[str]]:
-    """Resolve ``(label, url)``: exact slug → base_url host → readable-label fallback."""
-    hit = _BY_SLUG.get(slug)
-    if hit:
-        return hit.label, hit.url
-
-    base = str(base_url or "")
-    for p in _PROVIDERS:
-        if any(base_url_host_matches(base, host) for host in p.hosts):
-            return p.label, p.url
-
-    return slug.replace("_", " ").replace("-", " ").strip().title() or "your provider", None
-
-
-def build_billing_block(
-    *,
-    provider: str,
-    base_url: str,
-    model: str,
-    message: str = "",
-) -> BillingBlock:
-    """Build the billing descriptor for a billing-classified failure.
-
-    ``message`` is the guidance already assembled by the agent loop
-    (:func:`agent.conversation_loop._billing_or_entitlement_message`), carried
-    through unchanged so every surface shows identical copy.
-    """
-    slug = (provider or "").strip().lower()
-    model = (model or "").strip()
-
-    label, url = _resolve_provider_link(slug, base_url)
-    return BillingBlock(slug, label, model, url, message or "")
+sys.modules[__name__] = _real

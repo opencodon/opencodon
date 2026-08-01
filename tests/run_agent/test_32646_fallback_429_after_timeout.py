@@ -26,7 +26,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from agent.turn_retry_state import TurnRetryState
+from opencodon.core.turn_retry_state import TurnRetryState
 from run_agent import AIAgent
 
 
@@ -143,7 +143,7 @@ class TestFallbackChainResetOnTransportRecovery:
 
         with (
             patch(
-                "agent.auxiliary_client.resolve_provider_client",
+                "opencodon.core.auxiliary_client.resolve_provider_client",
                 return_value=(mock_fb_client, "glm-4.7"),
             ),
             patch(
@@ -265,16 +265,16 @@ class TestFallbackChainResetOnTransportRecovery:
             patch.object(agent, "_save_trajectory"),
             patch.object(agent, "_cleanup_task_resources"),
             patch("run_agent.OpenAI", return_value=MagicMock()),
-            patch("agent.agent_runtime_helpers.time.sleep"),
+            patch("opencodon.core.agent_runtime_helpers.time.sleep"),
             patch(
-                "agent.auxiliary_client.resolve_provider_client",
+                "opencodon.core.auxiliary_client.resolve_provider_client",
                 return_value=(mock_fb_client, "glm-4.7"),
             ) as mock_resolve,
             patch(
                 "opencodon.common.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
-            patch("agent.model_metadata.get_model_context_length", return_value=200000),
+            patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000),
         ):
             result = agent.run_conversation("hello")
 

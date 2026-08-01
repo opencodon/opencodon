@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.context_engine import ContextEngine
+from opencodon.core.context_engine import ContextEngine
 from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.base import MessageEvent
 from gateway.session import SessionEntry, SessionSource, build_session_key
@@ -132,7 +132,7 @@ async def test_compress_works_with_plugin_context_engine():
         patch("gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("run_agent.AIAgent", return_value=agent_instance),
-        patch("agent.model_metadata.estimate_messages_tokens_rough", return_value=100),
+        patch("opencodon.core.model_metadata.estimate_messages_tokens_rough", return_value=100),
     ):
         result = await runner._handle_compress_command(_make_event("/compress"))
 
@@ -166,7 +166,7 @@ async def test_compress_respects_plugin_has_content_to_compress_false():
         patch("gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("run_agent.AIAgent", return_value=agent_instance),
-        patch("agent.model_metadata.estimate_messages_tokens_rough", return_value=100),
+        patch("opencodon.core.model_metadata.estimate_messages_tokens_rough", return_value=100),
     ):
         result = await runner._handle_compress_command(_make_event("/compress"))
 

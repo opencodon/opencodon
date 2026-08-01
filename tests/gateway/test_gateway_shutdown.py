@@ -41,7 +41,7 @@ def test_cleanup_agent_resources_reaps_stale_aux_clients():
     runner, _adapter = make_restart_runner()
     agent = MagicMock()
 
-    with patch("agent.auxiliary_client.cleanup_stale_async_clients") as cleanup_mock:
+    with patch("opencodon.core.auxiliary_client.cleanup_stale_async_clients") as cleanup_mock:
         runner._cleanup_agent_resources(agent)
 
     agent.shutdown_memory_provider.assert_called_once()
@@ -77,7 +77,7 @@ async def test_gateway_stop_interrupts_running_agents_and_cancels_adapter_tasks(
     with (
         patch("gateway.status.remove_pid_file"),
         patch("gateway.status.write_runtime_status"),
-        patch("agent.auxiliary_client.shutdown_cached_clients") as shutdown_cached_clients,
+        patch("opencodon.core.auxiliary_client.shutdown_cached_clients") as shutdown_cached_clients,
     ):
         await runner.stop()
 

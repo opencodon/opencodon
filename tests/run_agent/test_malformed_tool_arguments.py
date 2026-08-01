@@ -82,7 +82,7 @@ def test_malformed_arguments_are_rejected_without_blocking_valid_sibling(
         patch("run_agent.handle_function_call", side_effect=fake_dispatch),
         patch.object(agent, "_invoke_tool", side_effect=fake_dispatch),
         patch(
-            "agent.tool_executor.maybe_persist_tool_result",
+            "opencodon.core.tool_executor.maybe_persist_tool_result",
             side_effect=lambda **kwargs: kwargs["content"],
         ),
     ):

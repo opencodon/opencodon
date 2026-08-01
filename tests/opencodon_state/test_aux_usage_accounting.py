@@ -188,7 +188,7 @@ class TestSchemaMigrationV22:
 
 class TestAmbientAccountingContext:
     def test_record_aux_usage_writes_through_context(self, db):
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             record_aux_usage,
             reset_accounting_context,
             set_accounting_context,
@@ -208,7 +208,7 @@ class TestAmbientAccountingContext:
         assert rows[0]["output_tokens"] == 20
 
     def test_noop_outside_context(self, db):
-        from agent.aux_accounting import record_aux_usage
+        from opencodon.core.aux_accounting import record_aux_usage
 
         db.create_session("s1", source="cli")
         record_aux_usage(_mk_response(), "vision")
@@ -217,7 +217,7 @@ class TestAmbientAccountingContext:
     def test_moa_tasks_excluded(self, db):
         """MoA advisor usage is already folded into the main-loop delta by
         conversation_loop — recording it here would double-count."""
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             record_aux_usage,
             reset_accounting_context,
             set_accounting_context,
@@ -233,7 +233,7 @@ class TestAmbientAccountingContext:
         assert _usage_rows(db, "s1") == []
 
     def test_no_usage_object_is_noop(self, db):
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             record_aux_usage,
             reset_accounting_context,
             set_accounting_context,
@@ -249,7 +249,7 @@ class TestAmbientAccountingContext:
         assert _usage_rows(db, "s1") == []
 
     def test_recording_failure_never_raises(self, db):
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             record_aux_usage,
             reset_accounting_context,
             set_accounting_context,
@@ -267,11 +267,11 @@ class TestAmbientAccountingContext:
 
     def test_validate_llm_response_records(self, db):
         """The aux client's validation chokepoint feeds the recorder."""
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             reset_accounting_context,
             set_accounting_context,
         )
-        from agent.auxiliary_client import _validate_llm_response
+        from opencodon.core.auxiliary_client import _validate_llm_response
 
         db.create_session("s1", source="cli")
         token = set_accounting_context(db, "s1")
@@ -288,7 +288,7 @@ class TestAmbientAccountingContext:
     def test_context_isolated_between_copied_contexts(self, db):
         import contextvars
 
-        from agent.aux_accounting import get_accounting_context, set_accounting_context
+        from opencodon.core.aux_accounting import get_accounting_context, set_accounting_context
 
         def _set_and_get(sid):
             set_accounting_context(db, sid)
@@ -346,7 +346,7 @@ class TestInsightsAuxTotals:
     def test_overview_totals_include_aux_usage(self, db):
         """`opencodon insights` overview must count aux tokens, not just the
         sessions counters (issues #58592, #9979)."""
-        from agent.insights import InsightsEngine
+        from opencodon.core.insights import InsightsEngine
 
         db.create_session("s1", source="cli")
         db.update_token_counts(
@@ -366,7 +366,7 @@ class TestInsightsAuxTotals:
 
     def test_overview_totals_not_double_counted_with_absolute_updates(self, db):
         """Gateway absolute overwrites + aux rows must not inflate totals."""
-        from agent.insights import InsightsEngine
+        from opencodon.core.insights import InsightsEngine
 
         db.create_session("s2", source="telegram")
         db.update_token_counts(

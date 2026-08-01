@@ -760,7 +760,7 @@ def _open_continuable_cron_thread(
     task_name = job.get("name") or job.get("id", "cron")
     thread_name = f"opencodon — {task_name}"
     try:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
 
         coro = create_thread(str(chat_id), thread_name)
         future = safe_schedule_threadsafe(coro, loop)  # type: ignore[arg-type]
@@ -1344,7 +1344,7 @@ def _send_media_via_adapter(
             else:
                 coro = adapter.send_document(chat_id=chat_id, file_path=media_path, metadata=metadata)
 
-            from agent.async_utils import safe_schedule_threadsafe
+            from opencodon.core.async_utils import safe_schedule_threadsafe
             future = safe_schedule_threadsafe(coro, loop)
             if future is None:
                 logger.warning(
@@ -1417,7 +1417,7 @@ def _is_channel_dm_topic(
     if not callable(get_chat_info):
         return False
     try:
-        from agent.async_utils import safe_schedule_threadsafe
+        from opencodon.core.async_utils import safe_schedule_threadsafe
 
         future = safe_schedule_threadsafe(
             get_chat_info(runtime_adapter, str(chat_id)), loop,  # type: ignore[arg-type]
@@ -1770,7 +1770,7 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
                 adapter_ok = True
                 timed_out = False
                 if text_to_send:
-                    from agent.async_utils import safe_schedule_threadsafe
+                    from opencodon.core.async_utils import safe_schedule_threadsafe
 
                     router = DeliveryRouter(config, adapters)
                     route_target = DeliveryTarget(
@@ -2261,7 +2261,7 @@ def _run_job_script(script_path: str) -> tuple[bool, str]:
 
         # Redact secrets from both stdout and stderr before any return path.
         try:
-            from agent.redact import redact_sensitive_text
+            from opencodon.core.redact import redact_sensitive_text
             stdout = redact_sensitive_text(stdout)
             stderr = redact_sensitive_text(stderr)
         except Exception as e:
@@ -2507,8 +2507,8 @@ def _build_job_prompt(job: dict, prerun_script: Optional[tuple] = None) -> str:
 
     from tools.skills_tool import skill_view
     from tools.skill_usage import bump_use
-    from agent.skill_bundles import build_bundle_invocation_message, resolve_bundle_command_key
-    from agent.skill_utils import normalize_skill_lookup_name
+    from opencodon.core.skill_bundles import build_bundle_invocation_message, resolve_bundle_command_key
+    from opencodon.core.skill_utils import normalize_skill_lookup_name
 
     parts = []
     skipped: list[str] = []
@@ -3344,7 +3344,7 @@ def run_job(
         runtime_provider = str(runtime.get("provider") or "").strip().lower()
         if runtime_provider:
             try:
-                from agent.credential_pool import load_pool
+                from opencodon.core.credential_pool import load_pool
                 pool = load_pool(runtime_provider)
                 if pool.has_credentials():
                     credential_pool = pool
@@ -3771,7 +3771,7 @@ def _teardown_cron_agent(agent, job_id: str) -> None:
     # httpx clients cached under that loop are now unusable — reap them
     # so their transports don't accumulate in the process-global cache.
     try:
-        from agent.auxiliary_client import cleanup_stale_async_clients
+        from opencodon.core.auxiliary_client import cleanup_stale_async_clients
         cleanup_stale_async_clients()
     except Exception as e:
         logger.debug("Job '%s': failed to reap stale auxiliary clients: %s", job_id, e)
@@ -3826,7 +3826,7 @@ def run_one_job(job: dict, *, adapters=None, loop=None, verbose: bool = False) -
         # resolve_runtime_provider() raised UnscopedSecretError before model
         # selection, breaking every cron job. Mirrors the per-turn pattern in
         # gateway/run.py (_profile_runtime_scope).
-        from agent.secret_scope import (
+        from opencodon.core.secret_scope import (
             build_profile_secret_scope,
             reset_secret_scope,
             set_secret_scope,

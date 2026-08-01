@@ -1955,7 +1955,7 @@ def _toolset_has_keys(
 
     if ts_key == "vision":
         try:
-            from agent.auxiliary_client import resolve_vision_provider_client
+            from opencodon.core.auxiliary_client import resolve_vision_provider_client
 
             _provider, client, _model = resolve_vision_provider_client()
             return client is not None
@@ -2130,7 +2130,7 @@ def _plugin_image_gen_providers() -> list[dict]:
     this function to dedupe against (see issue #26241).
     """
     try:
-        from agent.image_gen_registry import list_providers
+        from opencodon.core.image_gen_registry import list_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2183,7 +2183,7 @@ def _plugin_web_search_providers() -> list[dict]:
     source of provider rows for the Web Search & Extract category.
     """
     try:
-        from agent.web_search_registry import list_providers as _list_web_providers
+        from opencodon.core.web_search_registry import list_providers as _list_web_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2229,7 +2229,7 @@ def web_provider_capabilities(backend: str) -> list:
     test contexts, and firecrawl itself supports both).
     """
     try:
-        from agent.web_search_registry import get_provider
+        from opencodon.core.web_search_registry import get_provider
 
         provider = get_provider(backend)
         if provider is not None:
@@ -2265,7 +2265,7 @@ def _plugin_browser_providers() -> list[dict]:
     setup / write paths can route through the registry when they want to.
     """
     try:
-        from agent.browser_registry import list_providers as _list_browser_providers
+        from opencodon.core.browser_registry import list_providers as _list_browser_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2316,7 +2316,7 @@ def _plugin_tts_providers() -> list[dict]:
     through. Filtering here keeps the picker invariant.
     """
     try:
-        from agent.tts_registry import _BUILTIN_NAMES, list_providers
+        from opencodon.core.tts_registry import _BUILTIN_NAMES, list_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2604,7 +2604,7 @@ def _toolset_needs_configuration_prompt(
         if fal_key_is_configured():
             return False
         try:
-            from agent.image_gen_registry import list_providers
+            from opencodon.core.image_gen_registry import list_providers
             from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
@@ -2857,7 +2857,7 @@ def _plugin_image_gen_catalog(plugin_name: str):
     ``({}, None)`` if the provider isn't registered or has no models.
     """
     try:
-        from agent.image_gen_registry import get_provider
+        from opencodon.core.image_gen_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()

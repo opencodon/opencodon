@@ -7,7 +7,7 @@ a behavioral regression.
 """
 
 import pytest
-from agent.transports.chat_completions import ChatCompletionsTransport
+from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 from providers import get_provider_profile
 
 

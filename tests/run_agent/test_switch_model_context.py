@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from run_agent import AIAgent
-from agent.agent_init import _normalize_route_base_url
-from agent.context_compressor import ContextCompressor
+from opencodon.core.agent_init import _normalize_route_base_url
+from opencodon.core.context_compressor import ContextCompressor
 
 
 class _StubStartupCompressor:
@@ -102,7 +102,7 @@ def _make_direct_start_agent(
         patch("run_agent.get_tool_definitions", return_value=[]),
         patch("run_agent.check_toolset_requirements", return_value={}),
         patch("run_agent.OpenAI"),
-        patch("agent.agent_init.ContextCompressor", new=_StubStartupCompressor),
+        patch("opencodon.core.agent_init.ContextCompressor", new=_StubStartupCompressor),
     ):
         return AIAgent(
             model=model,
@@ -149,7 +149,7 @@ def _make_agent_with_compressor(config_context_length=None) -> AIAgent:
     return agent
 
 
-@patch("agent.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_model_clears_previous_config_context_length(mock_ctx_len):
     """Switching models must not reuse the previous model.context_length override."""
     agent = _make_agent_with_compressor(config_context_length=32_768)
@@ -174,7 +174,7 @@ def test_switch_model_without_config_context_length():
     """When switching models without config override, config_context_length should be None."""
     agent = _make_agent_with_compressor(config_context_length=None)
 
-    with patch("agent.model_metadata.get_model_context_length", return_value=128_000) as mock_ctx_len:
+    with patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000) as mock_ctx_len:
         # Switch model
         agent.switch_model("new-model", "openrouter", api_key="sk-new", base_url="https://openrouter.ai/api/v1")
 
@@ -269,7 +269,7 @@ def test_direct_start_drops_context_when_configured_route_has_no_active_url():
     routed_client = MagicMock(api_key="fake-test-token", base_url="")
 
     with patch(
-        "agent.auxiliary_client.resolve_provider_client",
+        "opencodon.core.auxiliary_client.resolve_provider_client",
         return_value=(routed_client, "shared-model"),
     ):
         agent = _make_direct_start_agent(
@@ -715,7 +715,7 @@ def test_direct_start_preserves_context_for_registry_provider_alias():
 
     routed_client = MagicMock(api_key="fake-test-token", base_url="")
     with patch(
-        "agent.auxiliary_client.resolve_provider_client",
+        "opencodon.core.auxiliary_client.resolve_provider_client",
         return_value=(routed_client, "kimi-k3"),
     ):
         agent = _make_direct_start_agent(

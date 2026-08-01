@@ -134,7 +134,7 @@ def test_parser_accepts_safe_mode_on_root_and_chat():
 
 def test_shell_hooks_skipped(monkeypatch):
     monkeypatch.setenv("OPENCODON_SAFE_MODE", "1")
-    from agent.shell_hooks import register_from_config
+    from opencodon.core.shell_hooks import register_from_config
 
     cfg = {
         "hooks": {
@@ -147,7 +147,7 @@ def test_shell_hooks_skipped(monkeypatch):
 
 
 def test_shell_hooks_register_without_safe_mode(monkeypatch):
-    import agent.shell_hooks as sh
+    import opencodon.core.shell_hooks as sh
 
     cfg = {
         "hooks": {

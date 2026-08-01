@@ -151,7 +151,7 @@ def test_provider_context_is_strictly_sanitized_before_plugin_engine(monkeypatch
 
     # Provider-to-engine handoff is an external-LLM egress boundary, so it
     # remains strict even when display/log redaction was explicitly disabled.
-    monkeypatch.setattr("agent.redact._REDACT_ENABLED", False)
+    monkeypatch.setattr("opencodon.core.redact._REDACT_ENABLED", False)
     agent._compress_context(_messages(), "sys", approx_tokens=100_000)
 
     assert len(received) == 1

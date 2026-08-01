@@ -268,7 +268,7 @@ class WebhookRouteProcessor:
         stdout = (result.stdout or "").strip()
         stderr = (result.stderr or "").strip()
         try:
-            from agent.redact import redact_sensitive_text
+            from opencodon.core.redact import redact_sensitive_text
 
             stdout = redact_sensitive_text(stdout)
             stderr = redact_sensitive_text(stderr)

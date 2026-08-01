@@ -269,7 +269,7 @@ def _apply_capabilities(rows: list[dict]) -> None:
     from opencodon_cli.models import model_supports_fast_mode
 
     try:
-        from agent.models_dev import get_model_capabilities
+        from opencodon.core.models_dev import get_model_capabilities
     except Exception:
         get_model_capabilities = None  # type: ignore[assignment]
 

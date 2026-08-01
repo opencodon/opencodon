@@ -2,7 +2,7 @@
 per-platform ``skills.platform_disabled`` gate.
 
 ``/skill-a /skill-b do XYZ`` loads every leading skill (up to 5), not just
-the first (``agent.skill_commands.split_stacked_skill_commands`` /
+the first (``opencodon.core.skill_commands.split_stacked_skill_commands`` /
 ``build_stacked_skill_invocation_message``). ``gateway.run.GatewayRunner.
 _handle_message`` already re-checks the FIRST skill against the
 per-platform disabled list before dispatch (``get_skill_commands()`` only
@@ -99,7 +99,7 @@ def skills_env(tmp_path, monkeypatch):
     skills_dir.mkdir()
     import tools.skills_tool as skills_tool_module
     monkeypatch.setattr(skills_tool_module, "SKILLS_DIR", skills_dir)
-    import agent.skill_commands as skill_commands_mod
+    import opencodon.core.skill_commands as skill_commands_mod
     skill_commands_mod._skill_commands = {}
     skill_commands_mod._skill_commands_platform = None
     return skills_dir
@@ -111,7 +111,7 @@ async def test_stacked_second_skill_disabled_for_platform_is_blocked(monkeypatch
     skill is disabled for the message's platform — it must not silently load
     that skill's content just because only the first skill was checked."""
     import gateway.run as gateway_run
-    import agent.skill_utils as skill_utils_mod
+    import opencodon.core.skill_utils as skill_utils_mod
 
     _make_skill(skills_env, "allowed-skill")
     _make_skill(skills_env, "disabled-skill")
@@ -140,7 +140,7 @@ async def test_stacked_all_enabled_skills_still_load(monkeypatch, skills_env):
     """Positive control: the new platform-disabled check must not over-block
     a stacked invocation where every skill is actually enabled."""
     import gateway.run as gateway_run
-    import agent.skill_utils as skill_utils_mod
+    import opencodon.core.skill_utils as skill_utils_mod
 
     _make_skill(skills_env, "alpha-skill", body="ALPHA BODY MARKER")
     _make_skill(skills_env, "beta-skill", body="BETA BODY MARKER")

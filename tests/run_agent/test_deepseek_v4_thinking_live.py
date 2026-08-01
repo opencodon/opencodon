@@ -207,7 +207,7 @@ def test_deepseek_v4_thinking_tool_call_replay_round_trip(live_model: str):
         },
     ]
 
-    from agent.transports.chat_completions import ChatCompletionsTransport
+    from opencodon.core.transports.chat_completions import ChatCompletionsTransport
 
     api_messages = ChatCompletionsTransport().convert_messages(messages)
     _print_trace(

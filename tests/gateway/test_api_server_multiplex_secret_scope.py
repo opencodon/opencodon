@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from agent import secret_scope as ss
+from opencodon.core import secret_scope as ss
 from gateway.config import PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
 

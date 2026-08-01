@@ -197,7 +197,7 @@ def test_force_close_tcp_sockets_descends_httpcore_1_connection_wrapper():
     descriptors (a SQLite store) and let TLS bytes overwrite its headers. The
     owning httpx thread is responsible for closing FDs on its own unwind.
     """
-    from agent.agent_runtime_helpers import force_close_tcp_sockets
+    from opencodon.core.agent_runtime_helpers import force_close_tcp_sockets
 
     class FakeSocket:
         def __init__(self):

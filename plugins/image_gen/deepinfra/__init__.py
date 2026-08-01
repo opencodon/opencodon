@@ -31,7 +31,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,

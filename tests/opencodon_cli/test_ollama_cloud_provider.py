@@ -6,8 +6,8 @@ from unittest.mock import patch, MagicMock
 from opencodon_cli.auth import PROVIDER_REGISTRY, resolve_provider, resolve_api_key_provider_credentials
 from opencodon_cli.models import _PROVIDER_MODELS, _PROVIDER_LABELS, _PROVIDER_ALIASES, normalize_provider
 from opencodon.common.model_normalize import normalize_model_for_provider
-from agent.model_metadata import _URL_TO_PROVIDER, _PROVIDER_PREFIXES
-from agent.models_dev import PROVIDER_TO_MODELS_DEV, list_agentic_models
+from opencodon.core.model_metadata import _URL_TO_PROVIDER, _PROVIDER_PREFIXES
+from opencodon.core.models_dev import PROVIDER_TO_MODELS_DEV, list_agentic_models
 
 
 # ── Provider Registry ──
@@ -129,7 +129,7 @@ class TestOllamaCloudModelCatalog:
             }
         }
         with patch("opencodon_cli.models.fetch_api_models", return_value=["qwen3.5:397b"]), \
-             patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = provider_model_ids("ollama-cloud", force_refresh=True)
 
         assert len(result) > 0
@@ -155,7 +155,7 @@ class TestOllamaCloudModelPicker:
             }
         }
         with patch("opencodon_cli.models.fetch_api_models", return_value=["qwen3.5:397b"]), \
-             patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             providers = list_authenticated_providers(current_provider="ollama-cloud")
 
         ollama = next((p for p in providers if p["slug"] == "ollama-cloud"), None)
@@ -193,7 +193,7 @@ class TestOllamaCloudMergedDiscovery:
             }
         }
         with patch("opencodon_cli.models.fetch_api_models", return_value=["qwen3.5:397b", "glm-5"]), \
-             patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         # Live models first, then models.dev additions (deduped)
@@ -217,7 +217,7 @@ class TestOllamaCloudMergedDiscovery:
                 }
             }
         }
-        with patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert result == ["glm-5"]
@@ -230,7 +230,7 @@ class TestOllamaCloudMergedDiscovery:
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         with patch("opencodon_cli.models.fetch_api_models", return_value=["model-a"]) as mock_api, \
-             patch("agent.models_dev.fetch_models_dev", return_value={}):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value={}):
             first = fetch_ollama_cloud_models(force_refresh=True)
             assert first == ["model-a"]
             assert mock_api.call_count == 1
@@ -248,7 +248,7 @@ class TestOllamaCloudMergedDiscovery:
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         with patch("opencodon_cli.models.fetch_api_models", return_value=["model-a"]) as mock_api, \
-             patch("agent.models_dev.fetch_models_dev", return_value={}):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value={}):
             fetch_ollama_cloud_models(force_refresh=True)
             fetch_ollama_cloud_models(force_refresh=True)
             assert mock_api.call_count == 2
@@ -273,7 +273,7 @@ class TestOllamaCloudMergedDiscovery:
             json.dump(data, f)
 
         with patch("opencodon_cli.models.fetch_api_models", return_value=None), \
-             patch("agent.models_dev.fetch_models_dev", return_value={}):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value={}):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert result == ["stale-model"]
@@ -285,7 +285,7 @@ class TestOllamaCloudMergedDiscovery:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
 
-        with patch("agent.models_dev.fetch_models_dev", return_value={}):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value={}):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert result == []
@@ -336,7 +336,7 @@ class TestOllamaCloudModelsDev:
                 }
             }
         }
-        with patch("agent.models_dev.fetch_models_dev", return_value=mock_data):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_data):
             result = list_agentic_models("ollama-cloud")
         assert "qwen3.5:397b" in result
         assert "glm-5" in result
@@ -421,7 +421,7 @@ class TestOllamaCloudSuffixStripping:
                 "models": {"kimi-k2.6:cloud": {"tool_call": True}}
             }
         }
-        with patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert "kimi-k2.6" in result
@@ -439,7 +439,7 @@ class TestOllamaCloudSuffixStripping:
                 "models": {"qwen3-coder:480b-cloud": {"tool_call": True}}
             }
         }
-        with patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert "qwen3-coder:480b" in result
@@ -461,7 +461,7 @@ class TestOllamaCloudSuffixStripping:
             }
         }
         with patch("opencodon_cli.models.fetch_api_models", return_value=["kimi-k2.6", "glm-5.1"]), \
-             patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+             patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert result.count("kimi-k2.6") == 1
@@ -481,7 +481,7 @@ class TestOllamaCloudSuffixStripping:
                 "models": {"nemotron-3-nano:30b": {"tool_call": True}}
             }
         }
-        with patch("agent.models_dev.fetch_models_dev", return_value=mock_mdev):
+        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=mock_mdev):
             result = fetch_ollama_cloud_models(force_refresh=True)
 
         assert "nemotron-3-nano:30b" in result

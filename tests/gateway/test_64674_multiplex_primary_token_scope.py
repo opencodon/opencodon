@@ -25,7 +25,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 
 @pytest.fixture(autouse=True)
 def _reset_multiplex_flag():
-    from agent import secret_scope as ss
+    from opencodon.core import secret_scope as ss
 
     ss.set_multiplex_active(False)
     yield

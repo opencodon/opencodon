@@ -48,3 +48,14 @@ def test_platform_plugin_env_var_injection_sees_real_plugins_dir():
     from opencodon.config import get_project_root
 
     assert (get_project_root() / "plugins" / "platforms").is_dir()
+
+
+def test_core_repo_root_anchors_resolve():
+    # agent/ -> opencodon/core/ move (Phase 3a) changed __file__ depth; these
+    # three modules compute repo-level paths from __file__.
+    from opencodon.core import runtime_cwd, i18n
+    from opencodon.config import get_project_root
+
+    root = get_project_root()
+    assert runtime_cwd._PACKAGE_ROOT == root
+    assert (root / "locales").is_dir()

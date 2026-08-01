@@ -306,7 +306,7 @@ class TestSessionOps:
         state.agent.tools = [{"type": "function", "function": {"name": "demo"}}]
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             update = agent._build_usage_update(state)
@@ -325,7 +325,7 @@ class TestSessionOps:
         agent._conn = mock_conn
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             await agent._send_usage_update(state)
@@ -431,7 +431,7 @@ class TestSessionOps:
         message. Detection falls back to content, so this holds even for a
         DB-reloaded session that lost the in-process metadata flag.
         """
-        from agent.context_compressor import SUMMARY_PREFIX
+        from opencodon.core.context_compressor import SUMMARY_PREFIX
 
         mock_conn = MagicMock(spec=acp.Client)
         mock_conn.session_update = AsyncMock()
@@ -466,7 +466,7 @@ class TestSessionOps:
         (whichever role keeps alternation valid), so the assistant replay
         branch must flag it too — not just the user branch.
         """
-        from agent.context_compressor import SUMMARY_PREFIX
+        from opencodon.core.context_compressor import SUMMARY_PREFIX
 
         mock_conn = MagicMock(spec=acp.Client)
         mock_conn.session_update = AsyncMock()
@@ -502,7 +502,7 @@ class TestSessionOps:
         compactionSummary — so a client that collapses standalone summaries
         cannot hide the preserved turn content.
         """
-        from agent.context_compressor import (
+        from opencodon.core.context_compressor import (
             _MERGED_PRIOR_CONTEXT_HEADER,
             _MERGED_SUMMARY_DELIMITER,
             _SUMMARY_END_MARKER,
@@ -1242,7 +1242,7 @@ class TestPrompt:
         mock_conn.session_update = AsyncMock()
         agent._conn = mock_conn
 
-        with patch("agent.title_generator.maybe_auto_title") as mock_title:
+        with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
             prompt = [TextContentBlock(type="text", text="please do a long task")]
             resp = await agent.prompt(prompt=prompt, session_id=new_resp.session_id)
 
@@ -1460,7 +1460,7 @@ class TestPrompt:
         mock_conn.session_update = AsyncMock()
         agent._conn = mock_conn
 
-        with patch("agent.title_generator.maybe_auto_title") as mock_title:
+        with patch("opencodon.core.title_generator.maybe_auto_title") as mock_title:
             prompt = [TextContentBlock(type="text", text="fix the broken ACP history")]
             await agent.prompt(prompt=prompt, session_id=new_resp.session_id)
 
@@ -1500,7 +1500,7 @@ class TestPrompt:
             db.set_session_title(session_id, "Fix Zed titles")
             kwargs["title_callback"]("Fix Zed titles")
 
-        with patch("agent.title_generator.maybe_auto_title", side_effect=fake_auto_title):
+        with patch("opencodon.core.title_generator.maybe_auto_title", side_effect=fake_auto_title):
             mock_conn.session_update.reset_mock()
             await agent.prompt(
                 session_id=resp.session_id,
@@ -1640,7 +1640,7 @@ class TestSlashCommands:
         state.agent.tools = [{"type": "function", "function": {"name": "demo"}}]
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=25_000,
         ):
             result = agent._handle_slash_command("/context", state)
@@ -1658,7 +1658,7 @@ class TestSlashCommands:
         )
 
         with patch(
-            "agent.model_metadata.estimate_request_tokens_rough",
+            "opencodon.core.model_metadata.estimate_request_tokens_rough",
             return_value=82_000,
         ):
             result = agent._handle_slash_command("/context", state)
@@ -1737,7 +1737,7 @@ class TestSlashCommands:
         with (
             patch.object(agent.session_manager, "save_session") as mock_save,
             patch(
-                "agent.model_metadata.estimate_request_tokens_rough",
+                "opencodon.core.model_metadata.estimate_request_tokens_rough",
                 side_effect=[40, 12],
             ),
         ):
@@ -1783,7 +1783,7 @@ class TestSlashCommands:
         with (
             patch.object(agent.session_manager, "save_session"),
             patch(
-                "agent.model_metadata.estimate_request_tokens_rough",
+                "opencodon.core.model_metadata.estimate_request_tokens_rough",
                 side_effect=[40, 12],
             ),
         ):

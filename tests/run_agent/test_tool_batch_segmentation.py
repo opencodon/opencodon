@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from run_agent import AIAgent
-from agent.tool_dispatch_helpers import (
+from opencodon.core.tool_dispatch_helpers import (
     _plan_tool_batch_segments,
     _should_parallelize_tool_batch,
 )
@@ -412,7 +412,7 @@ class TestPathCanonicalization:
     def test_relative_and_absolute_same_target_use_separate_segments(self, tmp_path):
         """A relative path resolved against execution_cwd and an absolute path
         pointing to the same file must be detected as overlapping."""
-        from agent.tool_dispatch_helpers import (
+        from opencodon.core.tool_dispatch_helpers import (
             _canonical_path,
             _paths_overlap,
         )
@@ -431,7 +431,7 @@ class TestPathCanonicalization:
         """A symlink alias and the real path must be detected as overlapping
         so they are never placed in the same parallel segment."""
         import os
-        from agent.tool_dispatch_helpers import (
+        from opencodon.core.tool_dispatch_helpers import (
             _canonical_path,
             _paths_overlap,
         )
@@ -455,7 +455,7 @@ class TestPathCanonicalization:
     def test_execution_cwd_used_over_process_cwd(self, tmp_path, monkeypatch):
         """_extract_parallel_scope_path must use execution_cwd, not
         process cwd, when resolving relative paths."""
-        from agent.tool_dispatch_helpers import (
+        from opencodon.core.tool_dispatch_helpers import (
             _extract_parallel_scope_path,
             _paths_overlap,
         )
@@ -487,7 +487,7 @@ class TestPathCanonicalization:
         """Symlink parent + not-yet-created leaf file must still be detected
         as overlapping — write_file targets may not exist at planning time."""
         import os
-        from agent.tool_dispatch_helpers import _canonical_path, _paths_overlap
+        from opencodon.core.tool_dispatch_helpers import _canonical_path, _paths_overlap
 
         real_dir = tmp_path / "real"
         real_dir.mkdir()
@@ -510,7 +510,7 @@ class TestPathCanonicalization:
     def test_case_insensitive_paths_overlap_windows(self, tmp_path):
         """On Windows, FILE.txt and file.txt are the same file — they must
         be detected as overlapping after normcase() canonicalisation."""
-        from agent.tool_dispatch_helpers import _canonical_path, _paths_overlap
+        from opencodon.core.tool_dispatch_helpers import _canonical_path, _paths_overlap
 
         upper = _canonical_path(str(tmp_path / "FILE.txt"), execution_cwd=tmp_path)
         lower = _canonical_path(str(tmp_path / "file.txt"), execution_cwd=tmp_path)

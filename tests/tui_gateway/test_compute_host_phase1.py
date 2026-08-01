@@ -430,7 +430,7 @@ def test_compute_host_compress_control_notifies_engine_after_commit(monkeypatch)
     """The compute-host slash.compress route must fire the context-engine
     boundary hook exactly once, and only AFTER the host commits the compressed
     history + session-key sync (salvaged #65670, extended to this route)."""
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
         finalize_context_engine_compression_notification,
     )
@@ -501,7 +501,7 @@ def test_compute_host_compress_control_failure_discards_notification(monkeypatch
     """When the host-side compress mirror fails after compression queued the
     boundary notification, the pending hook must be discarded — never left to
     fire against a boundary the host rejected."""
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
         finalize_context_engine_compression_notification,
     )
@@ -567,7 +567,7 @@ def test_compute_host_compact_alias_routes_to_compress_mirror(monkeypatch):
     """slash.compress control frames forward the user's raw alias verbatim;
     /compact must reach the compress mirror (and its deferred-notification
     finalize wiring), not silently no-op."""
-    from agent.conversation_compression import (
+    from opencodon.core.conversation_compression import (
         _queue_context_engine_compression_notification,
     )
     from tui_gateway import server

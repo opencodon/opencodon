@@ -108,12 +108,12 @@ def _session_source_for_agent(platform: Optional[str]) -> str:
 # `mock.patch("run_agent.<X>")`, `from run_agent import <X>` in production
 # siblings, or the `_ra().<X>` indirection in agent/system_prompt.py — none
 # of which ruff's in-module usage scan can see.
-from agent.process_bootstrap import (
+from opencodon.core.process_bootstrap import (
     OpenAI,  # noqa: F401  # re-exported for tests that mock.patch("run_agent.OpenAI")
     _SafeWriter,  # noqa: F401  # re-exported for tests that `from run_agent import _SafeWriter`
     _get_proxy_for_base_url,
 )
-from agent.iteration_budget import IterationBudget
+from opencodon.core.iteration_budget import IterationBudget
 
 
 from opencodon.config.env_loader import load_opencodon_dotenv
@@ -145,30 +145,30 @@ from tools.browser_tool import cleanup_browser
 
 
 # Agent internals extracted to agent/ package for modularity
-from agent.memory_manager import sanitize_context
-from agent.error_classifier import FailoverReason
-from agent.redact import redact_sensitive_text
-from agent.message_content import flatten_message_text
-from agent.model_metadata import (
+from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.error_classifier import FailoverReason
+from opencodon.core.redact import redact_sensitive_text
+from opencodon.core.message_content import flatten_message_text
+from opencodon.core.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
-from agent.usage_pricing import normalize_usage
+from opencodon.core.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from agent.context_compressor import (  # noqa: F401
+from opencodon.core.context_compressor import (  # noqa: F401
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
-from agent.retry_utils import jittered_backoff  # noqa: F401
-from agent.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("run_agent.<name>") / from run_agent import <name>
+from opencodon.core.retry_utils import jittered_backoff  # noqa: F401
+from opencodon.core.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
     build_skills_system_prompt,
     build_context_files_prompt,
     build_environment_hints,
     load_soul_md,
 )
-from agent.process_bootstrap import _get_proxy_from_env  # noqa: F401
-from agent.message_sanitization import (  # noqa: F401
+from opencodon.core.process_bootstrap import _get_proxy_from_env  # noqa: F401
+from opencodon.core.message_sanitization import (  # noqa: F401
     _SURROGATE_RE,
     _sanitize_surrogates,
     _sanitize_structure_surrogates,
@@ -181,26 +181,26 @@ from agent.message_sanitization import (  # noqa: F401
     _strip_images_from_messages,
     _sanitize_structure_non_ascii,
 )
-from agent.codex_responses_adapter import (
+from opencodon.core.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
     _split_responses_tool_id as _codex_split_responses_tool_id,
     _summarize_user_message_for_log,  # also used by _sync_external_memory_for_turn (memory boundary)
 )
-from agent.tool_guardrails import (
+from opencodon.core.tool_guardrails import (
     ToolGuardrailDecision,
     append_toolguard_guidance,
     toolguard_synthetic_result,
 )
-from agent.tool_result_classification import (
+from opencodon.core.tool_result_classification import (
     FILE_MUTATING_TOOL_NAMES as _FILE_MUTATING_TOOLS,
     file_mutation_result_landed,
 )
-from agent.trajectory import (
+from opencodon.core.trajectory import (
     convert_scratchpad_to_think,
     save_trajectory as _save_trajectory_to_file,
 )
-from agent.tool_dispatch_helpers import (
+from opencodon.core.tool_dispatch_helpers import (
     _should_parallelize_tool_batch,  # noqa: F401  # re-exported for tests that `from run_agent import _should_parallelize_tool_batch`
     _is_destructive_command,  # noqa: F401  # re-exported for tests that access `run_agent._is_destructive_command`
     _extract_parallel_scope_path,  # noqa: F401  # re-exported for tests that `from run_agent import _extract_parallel_scope_path`
@@ -492,7 +492,7 @@ class AIAgent:
         pass_session_id: bool = False,
     ):
         """Forwarder — see ``agent.agent_init.init_agent``."""
-        from agent.agent_init import init_agent
+        from opencodon.core.agent_init import init_agent
         init_agent(
             self,
             base_url=base_url,
@@ -780,7 +780,7 @@ class AIAgent:
             logger.debug("LM Studio explicit preload skipped: lmstudio_load_mode=jit")
             return
         try:
-            from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
+            from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
             from opencodon_cli.models import ensure_lmstudio_model_loaded
             if config_context_length is None:
                 config_context_length = getattr(self, "_config_context_length", None)
@@ -808,7 +808,7 @@ class AIAgent:
 
     def switch_model(self, new_model, new_provider, api_key='', base_url='', api_mode=''):
         """Forwarder — see ``agent.agent_runtime_helpers.switch_model``."""
-        from agent.agent_runtime_helpers import switch_model
+        from opencodon.core.agent_runtime_helpers import switch_model
         return switch_model(self, new_model, new_provider, api_key, base_url, api_mode)
 
     def _safe_print(self, *args, **kwargs):
@@ -1110,25 +1110,25 @@ class AIAgent:
 
     # Stream-diagnostic class header preserved for backward compat —
     # actual list lives in ``agent.stream_diag.STREAM_DIAG_HEADERS``.
-    from agent.stream_diag import STREAM_DIAG_HEADERS as _STREAM_DIAG_HEADERS  # noqa: E402
+    from opencodon.core.stream_diag import STREAM_DIAG_HEADERS as _STREAM_DIAG_HEADERS  # noqa: E402
 
     @staticmethod
     def _stream_diag_init() -> Dict[str, Any]:
         """Forwarder — see ``agent.stream_diag.stream_diag_init``."""
-        from agent.stream_diag import stream_diag_init
+        from opencodon.core.stream_diag import stream_diag_init
         return stream_diag_init()
 
     def _stream_diag_capture_response(
         self, diag: Dict[str, Any], http_response: Any
     ) -> None:
         """Forwarder — see ``agent.stream_diag.stream_diag_capture_response``."""
-        from agent.stream_diag import stream_diag_capture_response
+        from opencodon.core.stream_diag import stream_diag_capture_response
         stream_diag_capture_response(self, diag, http_response)
 
     @staticmethod
     def _flatten_exception_chain(error: BaseException) -> str:
         """Forwarder — see ``agent.stream_diag.flatten_exception_chain``."""
-        from agent.stream_diag import flatten_exception_chain
+        from opencodon.core.stream_diag import flatten_exception_chain
         return flatten_exception_chain(error)
 
     def _is_provider_stream_parse_error(self, error: BaseException) -> bool:
@@ -1160,7 +1160,7 @@ class AIAgent:
         diag: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Forwarder — see ``agent.stream_diag.log_stream_retry``."""
-        from agent.stream_diag import log_stream_retry
+        from opencodon.core.stream_diag import log_stream_retry
         log_stream_retry(
             self, kind=kind, error=error, attempt=attempt,
             max_attempts=max_attempts, mid_tool_call=mid_tool_call, diag=diag,
@@ -1176,7 +1176,7 @@ class AIAgent:
         diag: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Forwarder — see ``agent.stream_diag.emit_stream_drop``."""
-        from agent.stream_diag import emit_stream_drop
+        from opencodon.core.stream_diag import emit_stream_drop
         emit_stream_drop(
             self, error=error, attempt=attempt, max_attempts=max_attempts,
             mid_tool_call=mid_tool_call, diag=diag,
@@ -1206,12 +1206,12 @@ class AIAgent:
 
     def _check_compression_model_feasibility(self) -> None:
         """Forwarder — see ``agent.conversation_compression.check_compression_model_feasibility``."""
-        from agent.conversation_compression import check_compression_model_feasibility
+        from opencodon.core.conversation_compression import check_compression_model_feasibility
         check_compression_model_feasibility(self)
 
     def _replay_compression_warning(self) -> None:
         """Forwarder — see ``agent.conversation_compression.replay_compression_warning``."""
-        from agent.conversation_compression import replay_compression_warning
+        from opencodon.core.conversation_compression import replay_compression_warning
         replay_compression_warning(self)
 
     def _is_direct_openai_url(self, base_url: str = None) -> bool:
@@ -1306,7 +1306,7 @@ class AIAgent:
         # short-circuit in _compute_non_stream_stale_timeout does not
         # disable stale detection for users running reasoning models on a
         # local NIM endpoint.
-        from agent.reasoning_timeouts import get_reasoning_stale_timeout_floor
+        from opencodon.core.reasoning_timeouts import get_reasoning_stale_timeout_floor
         reasoning_floor = get_reasoning_stale_timeout_floor(self.model)
         if reasoning_floor is not None:
             return reasoning_floor, False
@@ -1326,7 +1326,7 @@ class AIAgent:
         if uses_implicit_default and base_url and is_local_endpoint(base_url):
             return float("inf")
 
-        from agent.chat_completion_helpers import estimate_request_context_tokens
+        from opencodon.core.chat_completion_helpers import estimate_request_context_tokens
         est_tokens = estimate_request_context_tokens(api_payload)
         if est_tokens > 100_000:
             return max(stale_base, 240.0)
@@ -1406,7 +1406,7 @@ class AIAgent:
         model: Optional[str] = None,
     ) -> tuple[bool, bool]:
         """Forwarder — see ``agent.agent_runtime_helpers.anthropic_prompt_cache_policy``."""
-        from agent.agent_runtime_helpers import anthropic_prompt_cache_policy
+        from opencodon.core.agent_runtime_helpers import anthropic_prompt_cache_policy
         return anthropic_prompt_cache_policy(self, provider=provider, base_url=base_url, api_mode=api_mode, model=model)
 
     @staticmethod
@@ -1511,7 +1511,7 @@ class AIAgent:
 
     def _strip_think_blocks(self, content: str) -> str:
         """Forwarder — see ``agent.agent_runtime_helpers.strip_think_blocks``."""
-        from agent.agent_runtime_helpers import strip_think_blocks
+        from opencodon.core.agent_runtime_helpers import strip_think_blocks
         return strip_think_blocks(self, content)
 
     @staticmethod
@@ -1595,25 +1595,25 @@ class AIAgent:
         require_workspace: bool = True,
     ) -> bool:
         """Forwarder — see ``agent.agent_runtime_helpers.looks_like_codex_intermediate_ack``."""
-        from agent.agent_runtime_helpers import looks_like_codex_intermediate_ack
+        from opencodon.core.agent_runtime_helpers import looks_like_codex_intermediate_ack
         return looks_like_codex_intermediate_ack(
             self, user_message, assistant_content, messages, require_workspace
         )
 
     def _extract_reasoning(self, assistant_message) -> Optional[str]:
         """Forwarder — see ``agent.agent_runtime_helpers.extract_reasoning``."""
-        from agent.agent_runtime_helpers import extract_reasoning
+        from opencodon.core.agent_runtime_helpers import extract_reasoning
         return extract_reasoning(self, assistant_message)
 
     def _cleanup_task_resources(self, task_id: str) -> None:
         """Forwarder — see ``agent.chat_completion_helpers.cleanup_task_resources``."""
-        from agent.chat_completion_helpers import cleanup_task_resources
+        from opencodon.core.chat_completion_helpers import cleanup_task_resources
         return cleanup_task_resources(self, task_id)
 
     # ------------------------------------------------------------------
     # Background memory/skill review — prompts live in agent.background_review
     # ------------------------------------------------------------------
-    from agent.background_review import (
+    from opencodon.core.background_review import (
         _MEMORY_REVIEW_PROMPT,
         _SKILL_REVIEW_PROMPT,
         _COMBINED_REVIEW_PROMPT,
@@ -1626,7 +1626,7 @@ class AIAgent:
         notification_mode: str = "on",
     ) -> List[str]:
         """Forwarder — see ``agent.background_review.summarize_background_review_actions``."""
-        from agent.background_review import summarize_background_review_actions
+        from opencodon.core.background_review import summarize_background_review_actions
         return summarize_background_review_actions(
             review_messages,
             prior_snapshot,
@@ -1647,7 +1647,7 @@ class AIAgent:
         here so existing tests that patch ``run_agent.threading.Thread``
         keep working.
         """
-        from agent.background_review import spawn_background_review_thread
+        from opencodon.core.background_review import spawn_background_review_thread
         from tools.thread_context import propagate_context_to_thread
         target, _prompt = spawn_background_review_thread(
             self,
@@ -1671,7 +1671,7 @@ class AIAgent:
         tool_call_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Forwarder — see ``agent.background_review.build_memory_write_metadata``."""
-        from agent.background_review import build_memory_write_metadata
+        from opencodon.core.background_review import build_memory_write_metadata
         return build_memory_write_metadata(
             self,
             write_origin=write_origin,
@@ -1728,7 +1728,7 @@ class AIAgent:
         # Close and turn-start persistence can run on separate CLI threads; the
         # marker test-and-append below must be one critical section or both can
         # observe the same unmarked dict and write duplicate durable rows.
-        from agent.agent_runtime_helpers import note_turn_persisted
+        from opencodon.core.agent_runtime_helpers import note_turn_persisted
 
         persist_lock = getattr(self, "_session_persist_lock", None)
         if persist_lock is None:
@@ -1801,7 +1801,7 @@ class AIAgent:
 
     def _repair_message_sequence(self, messages: List[Dict]) -> int:
         """Forwarder — see ``agent.agent_runtime_helpers.repair_message_sequence``."""
-        from agent.agent_runtime_helpers import repair_message_sequence
+        from opencodon.core.agent_runtime_helpers import repair_message_sequence
         return repair_message_sequence(self, messages)
 
     def _flush_messages_to_session_db(
@@ -2076,12 +2076,12 @@ class AIAgent:
 
     def _format_tools_for_system_message(self) -> str:
         """Forwarder — see ``agent.system_prompt.format_tools_for_system_message``."""
-        from agent.system_prompt import format_tools_for_system_message
+        from opencodon.core.system_prompt import format_tools_for_system_message
         return format_tools_for_system_message(self)
 
     def _convert_to_trajectory_format(self, messages: List[Dict[str, Any]], user_query: str, completed: bool) -> List[Dict[str, Any]]:
         """Forwarder — see ``agent.agent_runtime_helpers.convert_to_trajectory_format``."""
-        from agent.agent_runtime_helpers import convert_to_trajectory_format
+        from opencodon.core.agent_runtime_helpers import convert_to_trajectory_format
         return convert_to_trajectory_format(self, messages, user_query, completed)
 
     def _save_trajectory(self, messages: List[Dict[str, Any]], user_query: str, completed: bool):
@@ -2366,7 +2366,7 @@ class AIAgent:
     @staticmethod
     def _extract_api_error_context(error: Exception) -> Dict[str, Any]:
         """Forwarder — see ``agent.agent_runtime_helpers.extract_api_error_context``."""
-        from agent.agent_runtime_helpers import extract_api_error_context
+        from opencodon.core.agent_runtime_helpers import extract_api_error_context
         return extract_api_error_context(error)
 
     def _usage_summary_for_api_request_hook(self, response: Any) -> Optional[Dict[str, Any]]:
@@ -2641,7 +2641,7 @@ class AIAgent:
         error: Optional[Exception] = None,
     ) -> Optional[Path]:
         """Forwarder — see ``agent.agent_runtime_helpers.dump_api_request_debug``."""
-        from agent.agent_runtime_helpers import dump_api_request_debug
+        from opencodon.core.agent_runtime_helpers import dump_api_request_debug
         return dump_api_request_debug(self, api_kwargs, reason=reason, error=error)
 
     @staticmethod
@@ -3325,7 +3325,7 @@ class AIAgent:
 
     def _apply_pending_steer_to_tool_results(self, messages: list, num_tool_msgs: int) -> None:
         """Forwarder — see ``agent.agent_runtime_helpers.apply_pending_steer_to_tool_results``."""
-        from agent.agent_runtime_helpers import apply_pending_steer_to_tool_results
+        from opencodon.core.agent_runtime_helpers import apply_pending_steer_to_tool_results
         return apply_pending_steer_to_tool_results(self, messages, num_tool_msgs)
 
     def _touch_activity(self, desc: str) -> None:
@@ -3345,7 +3345,7 @@ class AIAgent:
         if not headers:
             return
         try:
-            from agent.rate_limit_tracker import parse_rate_limit_headers
+            from opencodon.core.rate_limit_tracker import parse_rate_limit_headers
             state = parse_rate_limit_headers(headers, provider=self.provider)
             if state is not None:
                 self._rate_limit_state = state
@@ -3757,12 +3757,12 @@ class AIAgent:
 
     def _build_system_prompt_parts(self, system_message: str = None) -> Dict[str, str]:
         """Forwarder — see ``agent.system_prompt.build_system_prompt_parts``."""
-        from agent.system_prompt import build_system_prompt_parts
+        from opencodon.core.system_prompt import build_system_prompt_parts
         return build_system_prompt_parts(self, system_message=system_message)
 
     def _build_system_prompt(self, system_message: str = None) -> str:
         """Forwarder — see ``agent.system_prompt.build_system_prompt``."""
-        from agent.system_prompt import build_system_prompt
+        from opencodon.core.system_prompt import build_system_prompt
         return build_system_prompt(self, system_message=system_message)
 
     @staticmethod
@@ -3794,7 +3794,7 @@ class AIAgent:
     @staticmethod
     def _sanitize_api_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Forwarder — see ``agent.agent_runtime_helpers.sanitize_api_messages``."""
-        from agent.agent_runtime_helpers import sanitize_api_messages
+        from opencodon.core.agent_runtime_helpers import sanitize_api_messages
         return sanitize_api_messages(messages)
 
     @staticmethod
@@ -3872,7 +3872,7 @@ class AIAgent:
         drop_codex_reasoning_items: bool = True,
     ) -> List[Dict[str, Any]]:
         """Forwarder — see ``agent.agent_runtime_helpers.drop_thinking_only_and_merge_users``."""
-        from agent.agent_runtime_helpers import drop_thinking_only_and_merge_users
+        from opencodon.core.agent_runtime_helpers import drop_thinking_only_and_merge_users
         return drop_thinking_only_and_merge_users(
             messages,
             drop_codex_reasoning_items=drop_codex_reasoning_items,
@@ -3929,12 +3929,12 @@ class AIAgent:
 
     def _repair_tool_call(self, tool_name: str) -> str | None:
         """Forwarder — see ``agent.agent_runtime_helpers.repair_tool_call``."""
-        from agent.agent_runtime_helpers import repair_tool_call
+        from opencodon.core.agent_runtime_helpers import repair_tool_call
         return repair_tool_call(self, tool_name)
 
     def _invalidate_system_prompt(self):
         """Forwarder — see ``agent.system_prompt.invalidate_system_prompt``."""
-        from agent.system_prompt import invalidate_system_prompt
+        from opencodon.core.system_prompt import invalidate_system_prompt
         invalidate_system_prompt(self)
 
     @staticmethod
@@ -4082,13 +4082,13 @@ class AIAgent:
 
     def _create_openai_client(self, client_kwargs: dict, *, reason: str, shared: bool) -> Any:
         """Forwarder — see ``agent.agent_runtime_helpers.create_openai_client``."""
-        from agent.agent_runtime_helpers import create_openai_client
+        from opencodon.core.agent_runtime_helpers import create_openai_client
         return create_openai_client(self, client_kwargs, reason=reason, shared=shared)
 
     @staticmethod
     def _force_close_tcp_sockets(client: Any) -> int:
         """Forwarder — see ``agent.agent_runtime_helpers.force_close_tcp_sockets``."""
-        from agent.agent_runtime_helpers import force_close_tcp_sockets
+        from opencodon.core.agent_runtime_helpers import force_close_tcp_sockets
         return force_close_tcp_sockets(client)
 
     def _close_openai_client(self, client: Any, *, reason: str, shared: bool) -> None:
@@ -4162,7 +4162,7 @@ class AIAgent:
 
     def _cleanup_dead_connections(self) -> bool:
         """Forwarder — see ``agent.agent_runtime_helpers.cleanup_dead_connections``."""
-        from agent.agent_runtime_helpers import cleanup_dead_connections
+        from opencodon.core.agent_runtime_helpers import cleanup_dead_connections
         return cleanup_dead_connections(self)
 
     @staticmethod
@@ -4282,11 +4282,11 @@ class AIAgent:
             self._try_refresh_anthropic_client_credentials()
         _drop_1m = bool(getattr(self, "_oauth_1m_beta_disabled", False))
         if getattr(self, "provider", None) == "bedrock":
-            from agent.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
             region = getattr(self, "_bedrock_region", "us-east-1") or "us-east-1"
             client = build_anthropic_bedrock_client(region)
         else:
-            from agent.anthropic_adapter import build_anthropic_client
+            from opencodon.core.anthropic_adapter import build_anthropic_client
             client = build_anthropic_client(
                 self._anthropic_api_key,
                 getattr(self, "_anthropic_base_url", None),
@@ -4360,12 +4360,12 @@ class AIAgent:
 
     def _run_codex_stream(self, api_kwargs: dict, client: Any = None, on_first_delta: callable = None):
         """Forwarder — see ``agent.codex_runtime.run_codex_stream``."""
-        from agent.codex_runtime import run_codex_stream
+        from opencodon.core.codex_runtime import run_codex_stream
         return run_codex_stream(self, api_kwargs, client, on_first_delta)
 
     def _run_codex_create_stream_fallback(self, api_kwargs: dict, client: Any = None):
         """Forwarder — see ``agent.codex_runtime.run_codex_create_stream_fallback``."""
-        from agent.codex_runtime import run_codex_create_stream_fallback
+        from opencodon.core.codex_runtime import run_codex_create_stream_fallback
         return run_codex_create_stream_fallback(self, api_kwargs, client)
 
     def _try_refresh_codex_client_credentials(self, *, force: bool = True) -> bool:
@@ -4456,7 +4456,7 @@ class AIAgent:
             return False
 
         try:
-            from agent.vertex_adapter import get_vertex_config
+            from opencodon.core.vertex_adapter import get_vertex_config
 
             token, base_url = get_vertex_config()
         except Exception as exc:
@@ -4528,7 +4528,7 @@ class AIAgent:
             return False
 
         try:
-            from agent.anthropic_adapter import resolve_anthropic_token, build_anthropic_client
+            from opencodon.core.anthropic_adapter import resolve_anthropic_token, build_anthropic_client
 
             new_token = resolve_anthropic_token()
         except Exception as exc:
@@ -4561,7 +4561,7 @@ class AIAgent:
         # Only treat as OAuth on native Anthropic; third-party endpoints using
         # the Anthropic protocol must not trip OAuth paths (#1739 & third-party
         # identity-injection guard).
-        from agent.anthropic_adapter import _is_oauth_token
+        from opencodon.core.anthropic_adapter import _is_oauth_token
         self._is_anthropic_oauth = _is_oauth_token(new_token) if self.provider == "anthropic" else False
         return True
 
@@ -4571,7 +4571,7 @@ class AIAgent:
         *,
         apply_user_headers: bool = True,
     ) -> None:
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             build_nvidia_nim_headers,
             build_or_headers,
         )
@@ -4591,7 +4591,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "portal.qwen.ai"):
             self._client_kwargs["default_headers"] = _qwen_portal_headers()
         elif base_url_host_matches(base_url, "chatgpt.com"):
-            from agent.auxiliary_client import _codex_cloudflare_headers
+            from opencodon.core.auxiliary_client import _codex_cloudflare_headers
             self._client_kwargs["default_headers"] = _codex_cloudflare_headers(
                 self._client_kwargs.get("api_key", "")
             )
@@ -4654,7 +4654,7 @@ class AIAgent:
         """
         if self.api_mode in ("anthropic_messages", "bedrock_converse"):
             return
-        from agent.auxiliary_client import (
+        from opencodon.core.auxiliary_client import (
             _apply_user_default_headers as _merge_user_headers,
         )
         merged = _merge_user_headers(self._client_kwargs.get("default_headers"))
@@ -4671,7 +4671,7 @@ class AIAgent:
         )
 
         if self.api_mode == "anthropic_messages":
-            from agent.anthropic_adapter import build_anthropic_client, _is_oauth_token
+            from opencodon.core.anthropic_adapter import build_anthropic_client, _is_oauth_token
 
             try:
                 self._anthropic_client.close()
@@ -4727,7 +4727,7 @@ class AIAgent:
         error_context: Optional[Dict[str, Any]] = None,
     ) -> tuple[bool, bool]:
         """Forwarder — see ``agent.agent_runtime_helpers.recover_with_credential_pool``."""
-        from agent.agent_runtime_helpers import recover_with_credential_pool
+        from opencodon.core.agent_runtime_helpers import recover_with_credential_pool
         return recover_with_credential_pool(self, status_code=status_code, has_retried_429=has_retried_429, classified_reason=classified_reason, error_context=error_context)
 
     def _credential_pool_may_recover_rate_limit(self) -> bool:
@@ -4746,7 +4746,7 @@ class AIAgent:
         # Defensive: strip Responses-only kwargs that can leak in under an
         # api_mode-flip race (the Anthropic SDK raises a non-retryable
         # TypeError on them). See #31673.
-        from agent.anthropic_adapter import create_anthropic_message
+        from opencodon.core.anthropic_adapter import create_anthropic_message
         return create_anthropic_message(
             client or self._anthropic_client,
             api_kwargs,
@@ -4768,11 +4768,11 @@ class AIAgent:
         """
         _drop_1m = bool(getattr(self, "_oauth_1m_beta_disabled", False))
         if getattr(self, "provider", None) == "bedrock":
-            from agent.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
             region = getattr(self, "_bedrock_region", "us-east-1") or "us-east-1"
             self._anthropic_client = build_anthropic_bedrock_client(region)
         else:
-            from agent.anthropic_adapter import build_anthropic_client
+            from opencodon.core.anthropic_adapter import build_anthropic_client
             self._anthropic_client = build_anthropic_client(
                 self._anthropic_api_key,
                 getattr(self, "_anthropic_base_url", None),
@@ -4782,7 +4782,7 @@ class AIAgent:
 
     def _interruptible_api_call(self, api_kwargs: dict):
         """Forwarder — see ``agent.chat_completion_helpers.interruptible_api_call``."""
-        from agent.chat_completion_helpers import interruptible_api_call
+        from opencodon.core.chat_completion_helpers import interruptible_api_call
         return interruptible_api_call(self, api_kwargs)
 
     # ── Unified streaming API call ─────────────────────────────────────────
@@ -5204,12 +5204,12 @@ class AIAgent:
         self, api_kwargs: dict, *, on_first_delta: callable = None
     ):
         """Forwarder — see ``agent.chat_completion_helpers.interruptible_streaming_api_call``."""
-        from agent.chat_completion_helpers import interruptible_streaming_api_call
+        from opencodon.core.chat_completion_helpers import interruptible_streaming_api_call
         return interruptible_streaming_api_call(self, api_kwargs, on_first_delta=on_first_delta)
 
     def _try_activate_fallback(self, reason: "FailoverReason | None" = None) -> bool:
         """Forwarder — see ``agent.chat_completion_helpers.try_activate_fallback``."""
-        from agent.chat_completion_helpers import try_activate_fallback
+        from opencodon.core.chat_completion_helpers import try_activate_fallback
         return try_activate_fallback(self, reason)
 
     def _has_pending_fallback(self) -> bool:
@@ -5228,14 +5228,14 @@ class AIAgent:
 
     def _restore_primary_runtime(self) -> bool:
         """Forwarder — see ``agent.agent_runtime_helpers.restore_primary_runtime``."""
-        from agent.agent_runtime_helpers import restore_primary_runtime
+        from opencodon.core.agent_runtime_helpers import restore_primary_runtime
         return restore_primary_runtime(self)
 
     def _try_recover_primary_transport(
         self, api_error: Exception, *, retry_count: int, max_retries: int,
     ) -> bool:
         """Forwarder — see ``agent.agent_runtime_helpers.try_recover_primary_transport``."""
-        from agent.agent_runtime_helpers import try_recover_primary_transport
+        from opencodon.core.agent_runtime_helpers import try_recover_primary_transport
         return try_recover_primary_transport(self, api_error, retry_count=retry_count, max_retries=max_retries)
 
     @staticmethod
@@ -5354,7 +5354,7 @@ class AIAgent:
         """
         try:
             from opencodon.config import load_config
-            from agent.image_routing import _lookup_supports_vision
+            from opencodon.core.image_routing import _lookup_supports_vision
             cfg = load_config()
             provider = (getattr(self, "provider", "") or "").strip()
             model = (getattr(self, "model", "") or "").strip()
@@ -5436,7 +5436,7 @@ class AIAgent:
             self._transport_cache = cache
         t = cache.get(mode)
         if t is None:
-            from agent.transports import get_transport
+            from opencodon.core.transports import get_transport
             t = get_transport(mode)
             cache[mode] = t
         return t
@@ -5571,7 +5571,7 @@ class AIAgent:
         max_dimension: int = 8000,
     ) -> bool:
         """Forwarder — see ``agent.conversation_compression.try_shrink_image_parts_in_messages``."""
-        from agent.conversation_compression import try_shrink_image_parts_in_messages
+        from opencodon.core.conversation_compression import try_shrink_image_parts_in_messages
         return try_shrink_image_parts_in_messages(
             api_messages,
             max_dimension=max_dimension,
@@ -5766,7 +5766,7 @@ class AIAgent:
 
     def _build_api_kwargs(self, api_messages: list) -> dict:
         """Forwarder — see ``agent.chat_completion_helpers.build_api_kwargs``."""
-        from agent.chat_completion_helpers import build_api_kwargs
+        from opencodon.core.chat_completion_helpers import build_api_kwargs
         return build_api_kwargs(self, api_messages)
 
     def _supports_reasoning_extra_body(self) -> bool:
@@ -5887,7 +5887,7 @@ class AIAgent:
         directly, bypassing the transport. Share the helper so the two paths
         can't drift on effort resolution and clamping.
         """
-        from agent.lmstudio_reasoning import resolve_lmstudio_effort
+        from opencodon.core.lmstudio_reasoning import resolve_lmstudio_effort
         return resolve_lmstudio_effort(
             self.reasoning_config,
             self._lmstudio_reasoning_options_cached(),
@@ -5927,7 +5927,7 @@ class AIAgent:
 
     def _build_assistant_message(self, assistant_message, finish_reason: str) -> dict:
         """Forwarder — see ``agent.chat_completion_helpers.build_assistant_message``."""
-        from agent.chat_completion_helpers import build_assistant_message
+        from opencodon.core.chat_completion_helpers import build_assistant_message
         return build_assistant_message(self, assistant_message, finish_reason)
 
     def _needs_thinking_reasoning_pad(self) -> bool:
@@ -6010,12 +6010,12 @@ class AIAgent:
 
     def _copy_reasoning_content_for_api(self, source_msg: dict, api_msg: dict) -> None:
         """Forwarder — see ``agent.agent_runtime_helpers.copy_reasoning_content_for_api``."""
-        from agent.agent_runtime_helpers import copy_reasoning_content_for_api
+        from opencodon.core.agent_runtime_helpers import copy_reasoning_content_for_api
         return copy_reasoning_content_for_api(self, source_msg, api_msg)
 
     def _reapply_reasoning_echo_for_provider(self, api_messages: list) -> int:
         """Forwarder — see ``agent.agent_runtime_helpers.reapply_reasoning_echo_for_provider``."""
-        from agent.agent_runtime_helpers import reapply_reasoning_echo_for_provider
+        from opencodon.core.agent_runtime_helpers import reapply_reasoning_echo_for_provider
         return reapply_reasoning_echo_for_provider(self, api_messages)
 
     @staticmethod
@@ -6044,7 +6044,7 @@ class AIAgent:
         tool_calls = api_msg.get("tool_calls")
         if not isinstance(tool_calls, list):
             return api_msg
-        from agent.transports.chat_completions import _model_consumes_thought_signature
+        from opencodon.core.transports.chat_completions import _model_consumes_thought_signature
         _STRIP_KEYS = {"call_id", "response_item_id"}
         if not _model_consumes_thought_signature(model):
             _STRIP_KEYS = _STRIP_KEYS | {"extra_content"}
@@ -6063,7 +6063,7 @@ class AIAgent:
         session_id: str = None,
     ) -> int:
         """Forwarder — see ``agent.agent_runtime_helpers.sanitize_tool_call_arguments``."""
-        from agent.agent_runtime_helpers import sanitize_tool_call_arguments
+        from opencodon.core.agent_runtime_helpers import sanitize_tool_call_arguments
         return sanitize_tool_call_arguments(messages, logger=logger, session_id=session_id)
 
     def _should_sanitize_tool_calls(self) -> bool:
@@ -6097,7 +6097,7 @@ class AIAgent:
         auto-compress abort.  Auto-compress callers use the default
         ``force=False``.
         """
-        from agent.conversation_compression import compress_context
+        from opencodon.core.conversation_compression import compress_context
         return compress_context(
             self, messages, system_message,
             approx_tokens=approx_tokens, task_id=task_id, focus_topic=focus_topic,
@@ -6164,7 +6164,7 @@ class AIAgent:
                     assistant_message, messages, effective_task_id, api_call_count
                 )
 
-            from agent.tool_dispatch_helpers import _plan_tool_batch_segments
+            from opencodon.core.tool_dispatch_helpers import _plan_tool_batch_segments
             _active_env = get_active_env(effective_task_id)
             _exec_cwd = Path(_active_env.cwd) if _active_env is not None and _active_env.cwd else None
             segments = _plan_tool_batch_segments(tool_calls, execution_cwd=_exec_cwd)
@@ -6179,7 +6179,7 @@ class AIAgent:
                     assistant_message, messages, effective_task_id, api_call_count
                 )
 
-            from agent.tool_executor import execute_tool_calls_segmented
+            from opencodon.core.tool_executor import execute_tool_calls_segmented
             return execute_tool_calls_segmented(
                 self, assistant_message, messages, effective_task_id, api_call_count,
                 segments=segments,
@@ -6225,7 +6225,7 @@ class AIAgent:
                      skip_tool_request_middleware: bool = False,
                      tool_request_middleware_trace: Optional[list[dict[str, Any]]] = None) -> str:
         """Forwarder — see ``agent.agent_runtime_helpers.invoke_tool``."""
-        from agent.agent_runtime_helpers import invoke_tool
+        from opencodon.core.agent_runtime_helpers import invoke_tool
         return invoke_tool(
             self,
             function_name,
@@ -6265,17 +6265,17 @@ class AIAgent:
 
     def _execute_tool_calls_concurrent(self, assistant_message, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
         """Forwarder — see ``agent.tool_executor.execute_tool_calls_concurrent``."""
-        from agent.tool_executor import execute_tool_calls_concurrent
+        from opencodon.core.tool_executor import execute_tool_calls_concurrent
         return execute_tool_calls_concurrent(self, assistant_message, messages, effective_task_id, api_call_count)
 
     def _execute_tool_calls_sequential(self, assistant_message, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
         """Forwarder — see ``agent.tool_executor.execute_tool_calls_sequential``."""
-        from agent.tool_executor import execute_tool_calls_sequential
+        from opencodon.core.tool_executor import execute_tool_calls_sequential
         return execute_tool_calls_sequential(self, assistant_message, messages, effective_task_id, api_call_count)
 
     def _handle_max_iterations(self, messages: list, api_call_count: int) -> str:
         """Forwarder — see ``agent.chat_completion_helpers.handle_max_iterations``."""
-        from agent.chat_completion_helpers import handle_max_iterations
+        from opencodon.core.chat_completion_helpers import handle_max_iterations
         return handle_max_iterations(self, messages, api_call_count)
 
     def _conversation_root_id(self) -> Optional[str]:
@@ -6319,11 +6319,11 @@ class AIAgent:
         moa_config: Optional[dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Forwarder — see ``agent.conversation_loop.run_conversation``."""
-        from agent.aux_accounting import (
+        from opencodon.core.aux_accounting import (
             reset_accounting_context,
             set_accounting_context,
         )
-        from agent.conversation_loop import run_conversation
+        from opencodon.core.conversation_loop import run_conversation
         # Publish the session accounting handles so auxiliary
         # calls record their token usage into session_model_usage (task
         # dimension) — the fix for aux spend being invisible in analytics
@@ -6331,7 +6331,7 @@ class AIAgent:
         acct_token = set_accounting_context(
             getattr(self, "_session_db", None), getattr(self, "session_id", None)
         )
-        from agent.auxiliary_client import scoped_runtime_main
+        from opencodon.core.auxiliary_client import scoped_runtime_main
 
         # The outer token restores the caller's Context even though turn setup
         # replaces the value with the live runtime after fallback restoration.

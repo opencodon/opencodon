@@ -133,7 +133,7 @@ class TestSmartApprovePromptHardening(unittest.TestCase):
         call_args = mock_call_llm.call_args
         return call_args.kwargs.get("messages") or call_args[1].get("messages", [])
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_uses_system_message_with_anti_injection(self, mock_call_llm):
         """The guard LLM call must use a system message with anti-injection warning."""
         mock_call_llm.return_value = self._make_response("ESCALATE")
@@ -152,7 +152,7 @@ class TestSmartApprovePromptHardening(unittest.TestCase):
         assert "UNTRUSTED" in sys_content
         assert "ignore" in sys_content.lower()
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_command_is_xml_fenced(self, mock_call_llm):
         """The command must be wrapped in <command> XML tags."""
         mock_call_llm.return_value = self._make_response("DENY")
@@ -163,7 +163,7 @@ class TestSmartApprovePromptHardening(unittest.TestCase):
         assert "<command>" in user_content
         assert "</command>" in user_content
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_injection_payload_stripped_before_llm(self, mock_call_llm):
         """Shell comment injection payloads must be stripped before reaching the LLM."""
         mock_call_llm.return_value = self._make_response("ESCALATE")
@@ -183,23 +183,23 @@ class TestSmartApprovePromptHardening(unittest.TestCase):
         # But the actual dangerous command must still be present
         assert "rm -rf /critical/data" in user_content
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_exception_escalates(self, mock_call_llm):
         """On any exception, must escalate (fail safe)."""
         mock_call_llm.side_effect = RuntimeError("connection failed")
         assert _smart_approve("rm -rf /", "recursive delete") == "escalate"
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_approve_response(self, mock_call_llm):
         mock_call_llm.return_value = self._make_response("APPROVE")
         assert _smart_approve("python -c 'print(1)'", "script execution") == "approve"
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_deny_response(self, mock_call_llm):
         mock_call_llm.return_value = self._make_response("DENY")
         assert _smart_approve("rm -rf /", "recursive delete") == "deny"
 
-    @patch("agent.auxiliary_client.call_llm")
+    @patch("opencodon.core.auxiliary_client.call_llm")
     def test_ambiguous_response_escalates(self, mock_call_llm):
         """Unrecognizable LLM output must default to escalate (fail safe)."""
         mock_call_llm.return_value = self._make_response("I think this is probably fine")

@@ -178,10 +178,10 @@ class TestSkillsInjection:
 
         # The imports are lazy (inside the handler), so patch the source module
         with patch(
-            "agent.skill_commands.build_skill_invocation_message",
+            "opencodon.core.skill_commands.build_skill_invocation_message",
             return_value=skill_content,
         ) as mock_build, patch(
-            "agent.skill_commands.get_skill_commands",
+            "opencodon.core.skill_commands.get_skill_commands",
             return_value={"/code-review": {"name": "code-review"}},
         ):
             app = _create_app(adapter)

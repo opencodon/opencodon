@@ -43,7 +43,7 @@ def test_google_vertex_not_confused_with_gemini():
 
 
 def test_resolve_runtime_provider_mints_token(monkeypatch):
-    import agent.vertex_adapter as va
+    import opencodon.core.vertex_adapter as va
     from opencodon_cli import runtime_provider as rp
 
     monkeypatch.setattr(
@@ -59,7 +59,7 @@ def test_resolve_runtime_provider_mints_token(monkeypatch):
 
 
 def test_resolve_runtime_provider_alias(monkeypatch):
-    import agent.vertex_adapter as va
+    import opencodon.core.vertex_adapter as va
     from opencodon_cli import runtime_provider as rp
 
     monkeypatch.setattr(va, "get_vertex_config", lambda: ("t", "https://aiplatform.googleapis.com/v1beta1/projects/p/locations/global/endpoints/openapi"))
@@ -68,7 +68,7 @@ def test_resolve_runtime_provider_alias(monkeypatch):
 
 
 def test_resolve_runtime_provider_raises_autherror_when_unresolved(monkeypatch):
-    import agent.vertex_adapter as va
+    import opencodon.core.vertex_adapter as va
     from opencodon_cli import runtime_provider as rp
     from opencodon_cli.auth import AuthError
 

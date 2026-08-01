@@ -69,7 +69,7 @@ class TestRedactApiErrorText:
     def test_redacts_regardless_of_global_redaction_setting(self):
         # force=True must mask even when global redaction is disabled.
         secret = "sk-forced-redaction-0987654321"
-        with patch("agent.redact._REDACT_ENABLED", False):
+        with patch("opencodon.core.redact._REDACT_ENABLED", False):
             out = _redact_api_error_text(Exception(f"boom AWS_SECRET_ACCESS_KEY={secret}"))
         assert secret not in out
 

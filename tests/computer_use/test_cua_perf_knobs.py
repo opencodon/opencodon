@@ -45,10 +45,10 @@ def test_aux_vision_route_caches_per_provider_model(monkeypatch):
     calls = {"n": 0}
 
     monkeypatch.setattr(
-        "agent.auxiliary_client._read_main_provider", lambda: "openai"
+        "opencodon.core.auxiliary_client._read_main_provider", lambda: "openai"
     )
     monkeypatch.setattr(
-        "agent.auxiliary_client._read_main_model", lambda: "gpt-test"
+        "opencodon.core.auxiliary_client._read_main_model", lambda: "gpt-test"
     )
 
     def fake_load():

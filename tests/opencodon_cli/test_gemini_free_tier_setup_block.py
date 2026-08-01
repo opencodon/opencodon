@@ -39,7 +39,7 @@ class TestGeminiSetupFreeTierBlock:
 
         # Mock the probe to claim this is a free-tier key
         with patch(
-            "agent.gemini_native_adapter.probe_gemini_tier",
+            "opencodon.core.gemini_native_adapter.probe_gemini_tier",
             return_value="free",
         ), patch(
             "opencodon_cli.auth._prompt_model_selection",
@@ -72,7 +72,7 @@ class TestGeminiSetupFreeTierBlock:
         from opencodon.config import load_config
 
         with patch(
-            "agent.gemini_native_adapter.probe_gemini_tier",
+            "opencodon.core.gemini_native_adapter.probe_gemini_tier",
             return_value="paid",
         ), patch(
             "opencodon_cli.auth._prompt_model_selection",
@@ -101,7 +101,7 @@ class TestGeminiSetupFreeTierBlock:
         from opencodon.config import load_config
 
         with patch(
-            "agent.gemini_native_adapter.probe_gemini_tier",
+            "opencodon.core.gemini_native_adapter.probe_gemini_tier",
             return_value="unknown",
         ), patch(
             "opencodon_cli.auth._prompt_model_selection",
@@ -129,7 +129,7 @@ class TestGeminiSetupFreeTierBlock:
         from opencodon.config import load_config
 
         with patch(
-            "agent.gemini_native_adapter.probe_gemini_tier",
+            "opencodon.core.gemini_native_adapter.probe_gemini_tier",
         ) as mock_probe, patch(
             "opencodon_cli.auth._prompt_model_selection",
             return_value="deepseek-chat",

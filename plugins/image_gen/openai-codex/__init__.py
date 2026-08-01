@@ -27,7 +27,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from agent.image_gen_provider import (
+from opencodon.core.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,
@@ -173,7 +173,7 @@ def _read_codex_access_token() -> Optional[str]:
     expiry, credential pool selection, and JWT decoding stay in one place.
     """
     try:
-        from agent.auxiliary_client import _read_codex_access_token as _reader
+        from opencodon.core.auxiliary_client import _read_codex_access_token as _reader
 
         token = _reader()
         if isinstance(token, str) and token.strip():
@@ -194,7 +194,7 @@ def _sniff_image_mime(raw: bytes) -> Optional[str]:
     also recognizes) are rejected here so they fail locally with a clear
     error instead of an opaque server-side HTTP 400.
     """
-    from agent.image_routing import _sniff_mime_from_bytes
+    from opencodon.core.image_routing import _sniff_mime_from_bytes
 
     mime = _sniff_mime_from_bytes(raw)
     if mime in _ACCEPTED_INPUT_MIME:
@@ -223,7 +223,7 @@ def _data_url_to_input_image_url(value: str) -> str:
 def _local_image_to_data_url(value: str) -> str:
     """Read a local image path and return a validated data:image URL."""
     try:
-        from agent.file_safety import get_read_block_error
+        from opencodon.core.file_safety import get_read_block_error
 
         blocked = get_read_block_error(value)
         if blocked:
@@ -396,7 +396,7 @@ def _collect_image_b64(
 ) -> Optional[str]:
     """Stream a Codex Responses image_generation call and return the b64 image."""
     import httpx
-    from agent.auxiliary_client import _codex_cloudflare_headers
+    from opencodon.core.auxiliary_client import _codex_cloudflare_headers
 
     headers = _codex_cloudflare_headers(token)
     headers.update({

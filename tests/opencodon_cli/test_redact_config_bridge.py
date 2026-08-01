@@ -3,7 +3,7 @@
 Bug: `agent/redact.py` snapshots `_REDACT_ENABLED` from the env var
 `OPENCODON_REDACT_SECRETS` at module-import time. `opencodon_cli/main.py` at
 line ~174 calls `setup_logging(mode="cli")` which transitively imports
-`agent.redact` — BEFORE any config bridge ran. So if a user set
+`opencodon.core.redact` — BEFORE any config bridge ran. So if a user set
 `security.redact_secrets: false` in config.yaml (instead of as an env var
 in .env), the toggle was silently ignored in both `opencodon chat` and
 `opencodon gateway run`.
@@ -47,8 +47,8 @@ def test_redact_secrets_false_in_config_yaml_is_honored(tmp_path):
         os.environ.pop("OPENCODON_REDACT_SECRETS", None)
         sys.path.insert(0, %r)
         import opencodon_cli.main  # triggers the bridge + setup_logging
-        import agent.redact
-        print(f"REDACT_ENABLED={agent.redact._REDACT_ENABLED}")
+        import opencodon.core.redact
+        print(f"REDACT_ENABLED={opencodon.core.redact._REDACT_ENABLED}")
         print(f"ENV_VAR={os.environ.get('OPENCODON_REDACT_SECRETS', '<unset>')}")
         """
     ) % str(REPO_ROOT)
@@ -91,8 +91,8 @@ def test_redact_secrets_default_true_when_unset(tmp_path):
         os.environ.pop("OPENCODON_REDACT_SECRETS", None)
         sys.path.insert(0, %r)
         import opencodon_cli.main
-        import agent.redact
-        print(f"REDACT_ENABLED={agent.redact._REDACT_ENABLED}")
+        import opencodon.core.redact
+        print(f"REDACT_ENABLED={opencodon.core.redact._REDACT_ENABLED}")
         """
     ) % str(REPO_ROOT)
 
@@ -133,8 +133,8 @@ def test_redact_secrets_true_in_config_yaml_is_honored(tmp_path):
         os.environ.pop("OPENCODON_REDACT_SECRETS", None)
         sys.path.insert(0, %r)
         import opencodon_cli.main
-        import agent.redact
-        print(f"REDACT_ENABLED={agent.redact._REDACT_ENABLED}")
+        import opencodon.core.redact
+        print(f"REDACT_ENABLED={opencodon.core.redact._REDACT_ENABLED}")
         print(f"ENV_VAR={os.environ.get('OPENCODON_REDACT_SECRETS', '<unset>')}")
         """
     ) % str(REPO_ROOT)
@@ -179,8 +179,8 @@ def test_dotenv_redact_secrets_beats_config_yaml(tmp_path):
         os.environ.pop("OPENCODON_REDACT_SECRETS", None)
         sys.path.insert(0, %r)
         import opencodon_cli.main
-        import agent.redact
-        print(f"REDACT_ENABLED={agent.redact._REDACT_ENABLED}")
+        import opencodon.core.redact
+        print(f"REDACT_ENABLED={opencodon.core.redact._REDACT_ENABLED}")
         print(f"ENV_VAR={os.environ.get('OPENCODON_REDACT_SECRETS', '<unset>')}")
         """
     ) % str(REPO_ROOT)

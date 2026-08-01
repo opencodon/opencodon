@@ -58,7 +58,7 @@ def _load_module():
     if REPO_ROOT not in sys.path:
         sys.path.insert(0, REPO_ROOT)
     try:
-        return importlib.import_module("agent.background_review")
+        return importlib.import_module("opencodon.core.background_review")
     except Exception:
         return None
 
