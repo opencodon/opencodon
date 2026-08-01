@@ -2163,7 +2163,7 @@ def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
 # ────────────────────────────────────────────────────────────────────────
 # Light/dark terminal mode detection.
 #
-# Mirrors ui-tui/src/theme.ts detectLightMode().  Used to decide whether
+# Mirrors apps/tui/src/theme.ts detectLightMode().  Used to decide whether
 # to remap "near-white" skin colors (e.g. #FFF8DC banner_text, #B8860B
 # banner_dim) to darker equivalents that are readable on a light
 # Terminal.app / iTerm2 background.

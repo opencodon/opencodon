@@ -158,10 +158,10 @@ class TestCmdUpdateNpmLockfileCache:
         monkeypatch.setattr(hm, "PROJECT_ROOT", tmp_path)
         (tmp_path / "package-lock.json").write_text('{"lockfileVersion": 3}')
         (tmp_path / "package.json").write_text(
-            '{"workspaces": ["apps/*", "ui-tui"]}'
+            '{"workspaces": ["apps/*", "apps/tui"]}'
         )
-        (tmp_path / "ui-tui").mkdir()
-        (tmp_path / "ui-tui" / "package.json").write_text("{}")
+        (tmp_path / "apps/tui").mkdir(parents=True)
+        (tmp_path / "apps/tui" / "package.json").write_text("{}")
         (tmp_path / "apps" / "desktop").mkdir(parents=True)
         (tmp_path / "apps" / "desktop" / "package.json").write_text("{}")
         (tmp_path / "node_modules").mkdir()
@@ -177,7 +177,7 @@ class TestCmdUpdateNpmLockfileCache:
         # …and so does a literal-listed one.
         hm._record_npm_lockfile_hash(tmp_path)
         assert hm._npm_lockfile_changed(tmp_path) is False
-        (tmp_path / "ui-tui" / "package.json").write_text('{"name": "x"}')
+        (tmp_path / "apps/tui" / "package.json").write_text('{"name": "x"}')
         assert hm._npm_lockfile_changed(tmp_path) is True
 
     def test_new_workspace_added_defeats_skip(self, tmp_path, monkeypatch):
@@ -428,7 +428,7 @@ class TestCmdUpdateBranchFallback:
         # cmd_update runs npm commands in these locations:
         #   1. repo root  — root-only install (--workspaces=false)
         #   2. repo root  — workspace install
-        #                  (--workspace ui-tui --workspace @opencodon/web)
+        #                  (--workspace opencodon-tui --workspace @opencodon/web)
         #   3. apps/web/  — npm ci --silent (if lockfile not at root)
         #                  via _build_web_ui (subprocess.run)
         #   4. apps/web/  — npm run build (_run_with_idle_timeout)
@@ -459,7 +459,7 @@ class TestCmdUpdateBranchFallback:
             "--no-audit",
             "--progress=false",
             "--workspace",
-            "ui-tui",
+            "opencodon-tui",
             "--workspace",
             "@opencodon/web",
         ]

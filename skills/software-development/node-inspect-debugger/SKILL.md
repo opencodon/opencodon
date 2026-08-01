@@ -7,7 +7,7 @@ license: MIT
 platforms: [linux, macos, windows]
 metadata:
   opencodon:
-    tags: [debugging, nodejs, node-inspect, cdp, breakpoints, ui-tui]
+    tags: [debugging, nodejs, node-inspect, cdp, breakpoints, tui]
     related_skills: [systematic-debugging, python-debugpy, debugging-opencodon-tui-commands]
 ---
 
@@ -27,7 +27,7 @@ Two tools, pick one:
 ## When to Use
 
 - A Node test fails and you need to see intermediate state
-- ui-tui crashes or behaves wrong and you want to inspect React/Ink state pre-render
+- The TUI crashes or behaves wrong and you want to inspect React/Ink state pre-render
 - tui_gateway child processes (`_SlashWorker`, PTY bridge workers) misbehave
 - You need to inspect a value in a closure that `console.log` can't reach without patching
 - Perf: attach to a running process to capture a CPU profile or heap snapshot
@@ -167,23 +167,23 @@ Run it:
 node /tmp/cdp-debug.js
 ```
 
-opencodon-specific note: `chrome-remote-interface` is NOT in `ui-tui/package.json`. Install it to a throwaway location if you don't want to dirty the project:
+opencodon-specific note: `chrome-remote-interface` is NOT in `apps/tui/package.json`. Install it to a throwaway location if you don't want to dirty the project:
 
 ```bash
 mkdir -p /tmp/cdp-tools && cd /tmp/cdp-tools && npm i chrome-remote-interface
 NODE_PATH=/tmp/cdp-tools/node_modules node /tmp/cdp-debug.js
 ```
 
-## Debugging opencodon ui-tui
+## Debugging the opencodon TUI
 
 The TUI is built Ink + tsx. Two common scenarios:
 
 ### Debugging a single Ink component under dev
 
-`ui-tui/package.json` has `npm run dev` (tsx --watch). Add `--inspect-brk` by running tsx directly:
+`apps/tui/package.json` has `npm run dev` (tsx --watch). Add `--inspect-brk` by running tsx directly:
 
 ```bash
-cd /home/bb/opencodon/ui-tui
+cd /home/bb/opencodon/apps/tui
 npm run build    # produce dist/ once so transpile isn't needed on first load
 node --inspect-brk dist/entry.js
 # In another terminal:
@@ -206,7 +206,7 @@ The TUI spawns Node from the Python CLI. Easiest path:
 ```bash
 # 1. Launch TUI
 opencodon --tui &
-TUI_PID=$(pgrep -f 'ui-tui/dist/entry' | head -1)
+TUI_PID=$(pgrep -f 'apps/tui/dist/entry' | head -1)
 
 # 2. Enable inspector on that Node PID
 kill -SIGUSR1 "$TUI_PID"
@@ -222,12 +222,12 @@ Interacting with the TUI (typing in its window) continues to advance execution; 
 
 ### Debugging `_SlashWorker` / PTY child processes
 
-Those are Python, not Node — use the `python-debugpy` skill for them. Only Node portions (Ink UI, tui_gateway client, tsx-run tests under `ui-tui/`) use this skill.
+Those are Python, not Node — use the `python-debugpy` skill for them. Only Node portions (Ink UI, tui_gateway client, tsx-run tests under `apps/tui/`) use this skill.
 
 ## Running Vitest Tests Under the Debugger
 
 ```bash
-cd /home/bb/opencodon/ui-tui
+cd /home/bb/opencodon/apps/tui
 # Run a single test file paused on entry
 node --inspect-brk ./node_modules/vitest/vitest.mjs run --no-file-parallelism src/app/foo.test.tsx
 ```

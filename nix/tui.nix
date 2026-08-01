@@ -3,12 +3,12 @@
 let
   npm = opencodonNpmLib.mkNpmPassthru {
     dirs = [
-      "ui-tui"
+      "apps/tui"
       "apps/shared"
     ];
   };
 
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
+  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/apps/tui/package.json"));
   version = packageJson.version;
 in
 pkgs.buildNpmPackage (npm // {
@@ -20,18 +20,18 @@ pkgs.buildNpmPackage (npm // {
   buildPhase = ''
     # esbuild bundles everything — no need for tsc or vite.
     # Run from the workspace root where node_modules/ lives.
-    node ui-tui/scripts/build.mjs
+    node apps/tui/scripts/build.mjs
   '';
 
   installPhase = ''
     runHook preInstall
 
     mkdir -p $out/lib/opencodon-tui
-    # esbuild writes to ui-tui/dist/ from the source root (no cd).
-    cp -r ui-tui/dist $out/lib/opencodon-tui/dist
+    # esbuild writes to apps/tui/dist/ from the source root (no cd).
+    cp -r apps/tui/dist $out/lib/opencodon-tui/dist
 
     # package.json kept for "type": "module" resolution on `node dist/entry.js`.
-    cp ui-tui/package.json $out/lib/opencodon-tui/
+    cp apps/tui/package.json $out/lib/opencodon-tui/
 
     runHook postInstall
   '';

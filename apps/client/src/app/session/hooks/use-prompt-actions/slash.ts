@@ -341,7 +341,7 @@ export function useSlashCommand(deps: SlashCommandDeps) {
         },
         // /compress (alias /compact) runs the gateway's dedicated
         // session.compress RPC — the TUI's path
-        // (ui-tui/src/app/slash/commands/session.ts). It must NOT go through
+        // (apps/tui/src/app/slash/commands/session.ts). It must NOT go through
         // runExec: compressing a large session outlives the slash worker's pipe
         // timeout (45s) and the desktop's 30s WS default, and the resulting
         // slash.exec error cascaded into command.dispatch's misleading "not a

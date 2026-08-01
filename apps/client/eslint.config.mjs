@@ -7,7 +7,7 @@ export default [
   {
     // This is a browser renderer — it legitimately uses browser globals
     // (window, document, etc). Re-add them here; the shared config omits
-    // globals.browser so terminal-only workspaces (ui-tui) don't get them.
+    // globals.browser so terminal-only workspaces (apps/tui) don't get them.
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       globals: {

@@ -1568,8 +1568,9 @@ def _workspace_root(dir: Path, *, root_hint: Optional[Path] = None) -> Path:
     the root (standalone project or prebuilt-bundle layout).
 
     Candidates are *root_hint* (when given) then ``dir.parent``.  The hint
-    exists because not every member sits directly under the root — ``ui-tui``
-    does, ``apps/web`` is two levels down.  Deliberately NOT a blind walk up
+    exists because no member sits directly under the root any more — both
+    ``apps/tui`` and ``apps/web`` are two levels down, so ``dir.parent`` is
+    ``apps/``, which carries no lockfile.  Deliberately NOT a blind walk up
     the tree: an ancestor that merely happens to hold a ``package-lock.json``
     (a scratch directory, a parent project, a pytest tmp root) is not this
     package's workspace root, and adopting it would run ``npm`` against a
@@ -1588,6 +1589,18 @@ def _workspace_root(dir: Path, *, root_hint: Optional[Path] = None) -> Path:
         if candidate != dir and (candidate / "package-lock.json").is_file():
             return candidate
     return dir
+
+
+def _workspace_root_hint(member_dir: Path) -> Path:
+    """Best guess at the workspace root for a member directory.
+
+    Members under ``apps/`` (``apps/tui``, ``apps/web``) sit two levels below
+    the root, so ``member_dir.parent`` is ``apps/`` — which carries no
+    lockfile.  Everything else is assumed to sit directly under the root.
+    Feed the result to :func:`_workspace_root` as ``root_hint``; it still
+    verifies a ``package-lock.json`` is actually there before adopting it.
+    """
+    return member_dir.parent.parent if member_dir.parent.name == "apps" else member_dir.parent
 
 
 def _termux_workspace_install_context(
@@ -1633,9 +1646,9 @@ def _tui_need_npm_install(root: Path) -> bool:
 
     With npm workspaces the single ``package-lock.json`` and the hoisted
     ``node_modules/`` live at the workspace root (the parent of the
-    ``ui-tui/`` directory).  The lockfile / ink / marker checks use that
+    ``apps/tui/`` directory).  The lockfile / ink / marker checks use that
     workspace root; only the prebuilt-bundle sentinel stays relative to
-    *root* (``ui-tui/dist/entry.js``).
+    *root* (``apps/tui/dist/entry.js``).
 
     Compares ``package-lock.json`` against ``node_modules/.package-lock.json``
     (npm's hidden lockfile) by **content**, not mtime: git checkouts and npm
@@ -1658,7 +1671,7 @@ def _tui_need_npm_install(root: Path) -> bool:
     # shipped, dist/entry.js is the single runtime artefact.
     entry = root / "dist" / "entry.js"
     # With npm workspaces the lockfile lives at the workspace root.
-    ws_root = _workspace_root(root)
+    ws_root = _workspace_root(root, root_hint=_workspace_root_hint(root))
     lock = ws_root / "package-lock.json"
     if entry.is_file() and not lock.is_file():
         return False
@@ -1727,7 +1740,7 @@ _TUI_BUILD_INPUT_SUFFIXES = frozenset(
 
 
 def _iter_tui_build_inputs(root: Path):
-    """Yield source/config files that affect ``ui-tui/dist/entry.js``."""
+    """Yield source/config files that affect ``apps/tui/dist/entry.js``."""
     for rel in _TUI_BUILD_INPUT_FILES:
         path = root / rel
         if path.is_file():
@@ -1837,23 +1850,42 @@ def _find_bundled_tui(opencodon_cli_dir: Path | None = None) -> Path | None:
 
 
 def _restore_tui_workspace(tui_dir: Path) -> bool:
-    """Try to restore a missing ``ui-tui/`` from git, returning True on success.
+    """Try to restore a missing ``apps/tui/`` from git, returning True on success.
 
-    On Windows an antivirus / NTFS filter driver can leave tracked ``ui-tui/``
+    On Windows an antivirus / NTFS filter driver can leave tracked ``apps/tui/``
     files deleted in the working tree after ``opencodon update`` (HEAD stays
     intact; the files just vanish — see issue #49145). Those files are tracked,
     so ``git restore`` puts them back deterministically. Best-effort: returns
     False (rather than raising) when git is unavailable, this isn't a checkout,
     or the restore leaves the directory still missing — the caller then prints
     the manual-recovery message.
+
+    The checkout root is a named candidate rather than assumed to be
+    ``tui_dir.parent``: a nested member like ``apps/tui`` has ``.git`` two
+    levels up, not one.  Same candidate order as :func:`_workspace_root`
+    (hint, then parent) and for the same reason — a blind walk upward could
+    find some unrelated repository that has never heard of this checkout.
+    ``.exists()`` rather than ``.is_dir()`` because ``.git`` is a *file* in a
+    linked worktree.
     """
     git = shutil.which("git")
-    if not git or not (tui_dir.parent / ".git").exists():
+    if not git:
+        return False
+    repo_root = next(
+        (
+            candidate
+            for candidate in (_workspace_root_hint(tui_dir), tui_dir.parent)
+            if (candidate / ".git").exists()
+        ),
+        None,
+    )
+    if repo_root is None:
         return False
     try:
         subprocess.run(
-            [git, "restore", "--", tui_dir.name],
-            cwd=str(tui_dir.parent),
+            # POSIX separators: git rejects backslash pathspecs on Windows.
+            [git, "restore", "--", tui_dir.relative_to(repo_root).as_posix()],
+            cwd=str(repo_root),
             capture_output=True,
             text=True,
             check=False,
@@ -1864,10 +1896,10 @@ def _restore_tui_workspace(tui_dir: Path) -> bool:
 
 
 def _ensure_tui_workspace(tui_dir: Path) -> None:
-    """Ensure ``ui-tui/`` exists before any npm/node subprocess uses it as cwd.
+    """Ensure ``apps/tui/`` exists before any npm/node subprocess uses it as cwd.
 
     Without this, a missing workspace falls through to ``subprocess.run(...,
-    cwd=<missing ui-tui>)``, which crashes with ``NotADirectoryError``
+    cwd=<missing apps/tui>)``, which crashes with ``NotADirectoryError``
     (``WinError 267`` on Windows) instead of a usable message (#49145). We
     first try to self-heal via ``git restore``; only if that can't recover the
     directory do we abort with concrete manual-recovery steps.
@@ -1883,9 +1915,9 @@ def _ensure_tui_workspace(tui_dir: Path) -> None:
     print(
         "Error: the TUI workspace is missing from this opencodon checkout.\n"
         f"Expected directory: {tui_dir}\n"
-        "This usually means `opencodon update` left tracked ui-tui files deleted.\n"
+        "This usually means `opencodon update` left tracked apps/tui files deleted.\n"
         "Recovery:\n"
-        "  1. From the opencodon checkout, run `git restore -- ui-tui`\n"
+        "  1. From the opencodon checkout, run `git restore -- apps/tui`\n"
         "  2. Run `npm install --silent --no-fund --no-audit --progress=false`\n"
         "  3. Retry `opencodon --tui`\n"
         "If the checkout is still inconsistent, run `opencodon update --force`.",
@@ -1931,7 +1963,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
     #
     # This must run BEFORE _ensure_tui_workspace() below. A prebuilt install
     # (Docker image, Nix build, or prior `npm run build`) ships
-    # opencodon_cli/tui_dist/entry.js but never ships ui-tui/ at all (that
+    # opencodon_cli/tui_dist/entry.js but never ships apps/tui/ at all (that
     # directory only exists in a git checkout) — so requiring the workspace
     # to exist first made every prebuilt dashboard Chat tab connection
     # hard-exit before it ever got a chance to try the bundled entry.js it
@@ -1957,7 +1989,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
     # 2. Normal flow: npm install if needed, always esbuild, then node dist/entry.js.
     #    --dev flow: npm install if needed, then tsx src/entry.tsx.
     #    Existing desktop behaviour runs npm from the workspace root.  Termux
-    #    scopes the install to ui-tui so launch does not pull desktop/web
+    #    scopes the install to apps/tui so launch does not pull desktop/web
     #    dependencies into the hot path.
     did_install = False
     termux_startup = _is_termux_startup_environment()
@@ -1975,25 +2007,28 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
         npm = _node_bin("npm")
         if not os.environ.get("OPENCODON_QUIET"):
             print("Installing TUI dependencies…")
-        npm_cwd = _workspace_root(tui_dir)
-        # --workspace ui-tui avoids resolving apps/desktop (Electron + node-pty).
-        # See #38772.
-        # When ui-tui/ has its own package-lock.json (e.g. curl install),
+        ws_root_hint = _workspace_root_hint(tui_dir)
+        npm_cwd = _workspace_root(tui_dir, root_hint=ws_root_hint)
+        # --workspace opencodon-tui avoids resolving apps/desktop (Electron +
+        # node-pty).  See #38772.  Named by package rather than path so it
+        # survives further relocation of the workspace.
+        # When apps/tui/ has its own package-lock.json (e.g. curl install),
         # _workspace_root() returns tui_dir itself.  Passing --workspace in
-        # that case fails because npm cannot find a workspace named "ui-tui"
-        # inside ui-tui/.  See #42973.
-        npm_workspace_args: tuple[str, ...] = () if npm_cwd == tui_dir else ("--workspace", "ui-tui")
+        # that case fails because npm cannot find a workspace named
+        # "opencodon-tui" inside apps/tui/.  See #42973.
+        npm_workspace_args: tuple[str, ...] = () if npm_cwd == tui_dir else ("--workspace", "opencodon-tui")
         if termux_startup:
             npm_cwd, npm_workspace_args = _termux_workspace_install_context(
                 tui_dir,
                 include_child_workspaces=True,
+                root_hint=ws_root_hint,
             )
         result = subprocess.run(
             [
                 npm,
                 "install",
                 *npm_workspace_args,
-                # --include=dev: ui-tui's build toolchain (esbuild, typescript)
+                # --include=dev: apps/tui's build toolchain (esbuild, typescript)
                 # lives in devDependencies. An inherited NODE_ENV=production
                 # (e.g. from a container shell or a parent TUI launch) or an
                 # npm `omit=dev` config would silently skip them and the TUI
@@ -2225,7 +2260,7 @@ def _launch_tui(
     accept_hooks: bool = False,
 ):
     """Replace current process with the TUI."""
-    tui_dir = PROJECT_ROOT / "ui-tui"
+    tui_dir = PROJECT_ROOT / "apps/tui"
 
     import tempfile
 
@@ -2327,7 +2362,7 @@ def _launch_tui(
     # in the user's shell would otherwise make a plain `opencodon --tui` try to
     # resume a non-existent session and leave the UI at "error: session not
     # found" with no live session.  Only forward a resume id that argparse
-    # resolved for this invocation; direct `node ui-tui/dist/entry.js` users can
+    # resolved for this invocation; direct `node apps/tui/dist/entry.js` users can
     # still set OPENCODON_TUI_RESUME themselves.
     env.pop("OPENCODON_TUI_RESUME", None)
     if resume_session_id:
@@ -5273,7 +5308,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
 
     # apps/web sits two levels below the workspace root, so the root has to be
     # named rather than discovered by walking up from web_dir.
-    ws_root_hint = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
+    ws_root_hint = _workspace_root_hint(web_dir)
     npm_cwd = _workspace_root(web_dir, root_hint=ws_root_hint)
     # Scope the install to the web workspace only so that the full workspace
     # graph (including apps/desktop with its Electron + node-pty deps) is never
@@ -6816,7 +6851,7 @@ def _atomic_replace_dir(src: str, dst: str) -> None:
     the copy fails partway (common on the Windows ZIP-update path, which only
     runs because file I/O is already flaky on that machine), the old directory
     is already gone and nothing replaced it — the install is left with a
-    deleted tree (issue #49145, where ``ui-tui/`` vanished and broke the TUI).
+    deleted tree (issue #49145, where ``apps/tui/`` vanished and broke the TUI).
 
     Instead, stage the new copy into a sibling temp dir first; only once that
     fully succeeds do we swap it in. A failure during staging raises with the
@@ -8846,7 +8881,7 @@ def _resolve_node_runtime_npm() -> str | None:
     On WSL/Linux ``shutil.which("npm")`` may resolve a Windows npm exposed
     through PATH interop. Running that Windows npm against the Linux checkout
     operates over ``\\wsl.localhost\\...`` UNC paths and fails with EISDIR /
-    symlink errors in symlink-heavy trees like ``ui-tui`` (#30271). Refuse a
+    symlink errors in symlink-heavy trees like ``apps/tui`` (#30271). Refuse a
     Windows npm on a POSIX host and re-scan PATH (skipping ``/mnt/*`` interop
     entries) for a Linux-native npm. Returns the npm path, or ``None`` when
     no suitable npm is reachable.
@@ -8891,7 +8926,7 @@ def _update_node_dependencies() -> list[str]:
     npm = _resolve_node_runtime_npm()
     if not npm:
         # If the only npm reachable inside this WSL shell is the Windows one,
-        # flag it loudly: silently skipping leaves ui-tui deps stale while the
+        # flag it loudly: silently skipping leaves apps/tui deps stale while the
         # rest of the update proceeds, and running it would corrupt the tree.
         from opencodon_constants import is_wsl
 
@@ -8904,9 +8939,9 @@ def _update_node_dependencies() -> list[str]:
             failed = ["repo root"]
             if any(
                 (PROJECT_ROOT / workspace / "package.json").exists()
-                for workspace in ("ui-tui", "web")
+                for workspace in ("apps/tui", "apps/web")
             ):
-                failed.append("ui-tui, web workspaces")
+                failed.append("apps/tui, apps/web workspaces")
             return failed
         return []
 
@@ -8963,9 +8998,10 @@ def _update_node_dependencies() -> list[str]:
             print(f"    {stderr.splitlines()[-1]}")
         return _partial_update_failure("repo root")
 
-    # Step 2: install only the workspaces update needs (ui-tui, apps/web).
+    # Step 2: install only the workspaces update needs (apps/tui, apps/web).
     # --workspace selects specific workspaces; the rest (desktop) are skipped.
-    ws_args = [*extra_args, "--workspace", "ui-tui", "--workspace", "@opencodon/web"]
+    # Named by package rather than path so they survive further relocation.
+    ws_args = [*extra_args, "--workspace", "opencodon-tui", "--workspace", "@opencodon/web"]
     ws_result = _run_npm_install_deterministic(
         npm,
         PROJECT_ROOT,
@@ -8975,14 +9011,14 @@ def _update_node_dependencies() -> list[str]:
     )
     if ws_result.returncode == 0:
         _record_npm_lockfile_hash(shared_opencodon_root)
-        print("  ✓ repo root + ui-tui, web workspaces (desktop skipped)")
+        print("  ✓ repo root + apps/tui, apps/web workspaces (desktop skipped)")
         return []
 
     print("  ⚠ npm workspace install failed")
     stderr = (ws_result.stderr or "").strip() if ws_result.stderr else ""
     if stderr:
         print(f"    {stderr.splitlines()[-1]}")
-    return _partial_update_failure("ui-tui, web workspaces")
+    return _partial_update_failure("apps/tui, apps/web workspaces")
 
 
 class _UpdateOutputStream:

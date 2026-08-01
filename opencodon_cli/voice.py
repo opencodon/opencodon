@@ -27,7 +27,7 @@ import sys
 import threading
 from typing import Any, Callable, Optional
 
-# Modifier aliases mirrored from the TUI parser (``ui-tui/src/lib/platform.ts``)
+# Modifier aliases mirrored from the TUI parser (``apps/tui/src/lib/platform.ts``)
 # ``_MOD_ALIASES`` table — the contract that removes the cross-runtime
 # mismatch Copilot flagged in round-9 on #19835.
 #
@@ -108,7 +108,7 @@ def voice_record_key_from_config(cfg: Any) -> Any:
 def normalize_voice_record_key_for_prompt_toolkit(raw: Any) -> str:
     """Coerce ``voice.record_key`` into prompt_toolkit's ``c-x`` / ``a-x`` format.
 
-    Mirrors the TUI parser contract (``ui-tui/src/lib/platform.ts``)
+    Mirrors the TUI parser contract (``apps/tui/src/lib/platform.ts``)
     so one config value binds the same shortcut in both runtimes:
 
     * non-string / empty / typo'd / bare-char / multi-modifier / reserved

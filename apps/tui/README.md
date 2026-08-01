@@ -21,8 +21,8 @@ Interpreter resolution order is: `OPENCODON_PYTHON` → `PYTHON` → `$VIRTUAL_E
 The transport is newline-delimited JSON-RPC over stdio:
 
 ```text
-ui-tui/src                  tui_gateway/
------------                 -------------
+apps/tui/src                tui_gateway/
+------------                -------------
 entry.tsx                   entry.py
   -> GatewayClient            -> request loop
   -> App                      -> server.py RPC handlers
@@ -41,10 +41,10 @@ From the repo root, the normal path is:
 opencodon --tui
 ```
 
-The CLI expects `ui-tui/dist/entry.js` to exist, or the whole source code available in which to run `npm install` and `npm run dev`.
+The CLI expects `apps/tui/dist/entry.js` to exist, or the whole source code available in which to run `npm install` and `npm run dev`.
 
 ```bash
-cd ui-tui
+cd apps/tui
 npm install
 ```
 
@@ -328,7 +328,7 @@ Current color overrides:
 ## File map
 
 ```text
-ui-tui/
+apps/tui/
   packages/opencodon-ink/   forked Ink renderer (local dep)
   src/
     entry.tsx            TTY gate + render()

@@ -10,7 +10,7 @@ Verifies that ``OpencodonCLI._handle_update_command`` correctly:
 Also verifies that ``opencodon_cli.main._launch_tui`` correctly handles exit
 code 42 (the TUI's signal to trigger an update) by calling
 ``relaunch(["update"], preserve_inherited=False)`` from the Python wrapper
-side.  The companion Vitest (``ui-tui/src/__tests__/createSlashHandler.test.ts``)
+side.  The companion Vitest (``apps/tui/src/__tests__/createSlashHandler.test.ts``)
 covers the TypeScript slash-handler that *emits* code 42; this file covers
 the Python wrapper branch that *acts on* it.
 """

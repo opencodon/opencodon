@@ -54,7 +54,7 @@ CASES = {
     "dep manifest → python": (["pyproject.toml"], _lanes(python=True, scan=True, deps=True)),
     "uv.lock → python": (["uv.lock"], _lanes(python=True)),
     "ts package → frontend": (["apps/desktop/src/app.tsx"], _lanes(frontend=True)),
-    "ui-tui → frontend": (["ui-tui/src/entry.ts"], _lanes(frontend=True)),
+    "apps/tui → frontend": (["apps/tui/src/entry.ts"], _lanes(frontend=True)),
     # Lockfile bump shifts every TS package's tree, but not the Python suite.
     "root lockfile → frontend, not python": (["package-lock.json"], _lanes(frontend=True, npm_lock=True)),
     "nested lockfile → npm_lock": (["apps/web/package-lock.json"], _lanes(frontend=True, npm_lock=True)),
@@ -86,8 +86,8 @@ CASES = {
         ["eslint.config.shared.mjs"],
         _lanes(python=True, ci_review=True),
     ),
-    "ui-tui eslint config → ci_review": (
-        ["ui-tui/eslint.config.mjs"],
+    "apps/tui eslint config → ci_review": (
+        ["apps/tui/eslint.config.mjs"],
         _lanes(frontend=True, ci_review=True),
     ),
     "web eslint config → ci_review": (

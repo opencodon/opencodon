@@ -1240,7 +1240,7 @@ def test_npm_audit_fix_hint_avoids_crashing_workspace_flag(monkeypatch, tmp_path
     (reading 'isDescendantOf')" on this tree. The safe guidance is that these
     build-tool advisories clear via the lockfile/package bump.
 
-    Regression for user reports where doctor flagged the web/ui-tui workspaces
+    Regression for user reports where doctor flagged the web/apps/tui workspaces
     and the suggested fix command errored out.
     """
     home = tmp_path / ".opencodon"
@@ -1285,9 +1285,9 @@ def test_npm_audit_fix_hint_avoids_crashing_workspace_flag(monkeypatch, tmp_path
     # The workspace vulnerability is still reported ...
     assert "web workspace" in out
     # ... but the remediation must NOT use the npm-crashing per-workspace form
-    # (`npm audit fix --workspace web` / `--workspace ui-tui`).
+    # (`npm audit fix --workspace web` / `--workspace apps/tui`).
     assert "npm audit fix --workspace web" not in out
-    assert "npm audit fix --workspace ui-tui" not in out
+    assert "npm audit fix --workspace apps/tui" not in out
     # ... and it must not point at the root-level form either: npm can crash
     # there too with `isDescendantOf` on this monorepo tree.
     assert "npm audit fix" not in out

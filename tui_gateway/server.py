@@ -2234,7 +2234,7 @@ def _set_session_cwd(session: dict, cwd: str) -> str:
 
 
 # Keep aligned with `INDICATOR_STYLES` / `DEFAULT_INDICATOR_STYLE` in
-# ``ui-tui/src/app/interfaces.ts`` — both ends validate against the
+# ``apps/tui/src/app/interfaces.ts`` — both ends validate against the
 # same shape so `config.get indicator` and the live TUI render agree.
 _INDICATOR_STYLES: tuple[str, ...] = ("ascii", "emoji", "kaomoji", "unicode")
 _INDICATOR_DEFAULT = "kaomoji"
@@ -4141,7 +4141,7 @@ def _emit_session_info_for_session(sid: str, session: dict) -> None:
 
 
 # Tool Args/Result text shipped to the TUI for the verbose trail line. The TUI
-# renders only a small persisted preview (ui-tui VERBOSE_TRAIL_MAX_CHARS), kept
+# renders only a small persisted preview (apps/tui VERBOSE_TRAIL_MAX_CHARS), kept
 # all session and expanded by default — so shipping more than that is pure pipe
 # waste AND feeds the Ink render-tree blowup that silently OOM-killed the TUI
 # parent (#34095). Cap here to match the render budget (a hair more, so the
@@ -8055,7 +8055,7 @@ def _(rid, params: dict) -> dict:
 
 
 # ── Delegation: subagent tree observability + controls ───────────────
-# Powers the TUI's /agents overlay (see ui-tui/src/components/agentsOverlay).
+# Powers the TUI's /agents overlay (see apps/tui/src/components/agentsOverlay).
 # The registry lives in tools/delegate_tool — these handlers are thin
 # translators between JSON-RPC and the Python API.
 

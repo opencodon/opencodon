@@ -15,7 +15,7 @@ ignored:
   # base official image (python, node, debian).
   - DL3008
   # Use WORKDIR to switch to a directory. The image uses `(cd apps/web && …)`
-  # / `(cd ui-tui && …)` inline subshells for one-off build steps
+  # / `(cd apps/tui && …)` inline subshells for one-off build steps
   # because they don't affect later RUN commands; promoting them to
   # full WORKDIR switches with restores would obscure intent.
   - DL3003

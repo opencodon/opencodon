@@ -110,15 +110,15 @@ WORKDIR /opt/opencodon
 # Copy only package manifests first so npm install + Playwright are cached
 # unless the lockfiles themselves change.
 #
-# ui-tui/packages/opencodon-ink/ is copied IN FULL (not just its manifests)
+# apps/tui/packages/opencodon-ink/ is copied IN FULL (not just its manifests)
 # because it is referenced as a `file:` workspace dependency from
-# ui-tui/package.json.  Copying the tree up front lets npm resolve the
+# apps/tui/package.json.  Copying the tree up front lets npm resolve the
 # workspace to real content instead of stopping at a bare package.json.
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
 COPY apps/client/package.json apps/client/
-COPY ui-tui/package.json ui-tui/
-COPY ui-tui/packages/opencodon-ink/ ui-tui/packages/opencodon-ink/
+COPY apps/tui/package.json apps/tui/
+COPY apps/tui/packages/opencodon-ink/ apps/tui/packages/opencodon-ink/
 # apps/shared/ is copied IN FULL because apps/web/package.json references it as
 # a `file:` workspace dependency (same pattern as opencodon-ink above).
 COPY apps/shared/ apps/shared/
@@ -173,13 +173,13 @@ RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra 
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't
-# invalidate the (relatively slow) web + ui-tui build layer.
+# invalidate the (relatively slow) apps/web + apps/tui build layer.
 COPY apps/web/ apps/web/
 COPY apps/client/ apps/client/
-COPY ui-tui/ ui-tui/
+COPY apps/tui/ apps/tui/
 COPY apps/shared/ apps/shared/
 RUN (cd apps/web && npm run build) && \
-    (cd ui-tui && npm run build)
+    (cd apps/tui && npm run build)
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.
@@ -265,22 +265,22 @@ COPY --chmod=0755 docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-r
 # ---------- Runtime ----------
 ENV OPENCODON_WEB_DIST=/opt/opencodon/opencodon_cli/web_dist
 # Point the TUI launcher at the prebuilt bundle baked at build time (Layer 8:
-# `ui-tui && npm run build`). This makes _make_tui_argv take the prebuilt-bundle
-# fast path (`node --expose-gc /opt/opencodon/ui-tui/dist/entry.js`) and skip the
+# `apps/tui && npm run build`). This makes _make_tui_argv take the prebuilt-bundle
+# fast path (`node --expose-gc /opt/opencodon/apps/tui/dist/entry.js`) and skip the
 # _tui_need_npm_install / runtime `npm install` branch entirely — exactly the
 # nix/packaged-release path the launcher was designed for.
 #
 # Why this is required (not just an optimization): the root package-lock.json
-# describes the WHOLE monorepo workspace set (root + web + ui-tui + apps/*),
-# but the image only installs root/web/ui-tui (apps/* — the desktop app — is
-# never `npm install`ed here). So the actualized node_modules permanently
+# describes the WHOLE monorepo workspace set (root + web + every apps/*),
+# but the image only installs root + web + apps/tui (the rest of apps/* — the
+# desktop app — is never `npm install`ed here). So the actualized node_modules permanently
 # disagrees with the canonical lock, _tui_need_npm_install() returns True on
 # every launch, and the runtime `npm install` it triggers (a) can never
 # converge against the partial monorepo and (b) races itself across concurrent
 # embedded-chat (/api/pty) connections → ENOTEMPTY → the chat tab dies with a
 # 502 / "[session ended]". Pointing at the prebuilt bundle sidesteps the whole
 # check. (A separate launcher hardening is tracked independently.)
-ENV OPENCODON_TUI_DIR=/opt/opencodon/ui-tui
+ENV OPENCODON_TUI_DIR=/opt/opencodon/apps/tui
 ENV OPENCODON_HOME=/opt/data
 ENV OPENCODON_WRITE_SAFE_ROOT=/opt/data
 ENV OPENCODON_DISABLE_LAZY_INSTALLS=1

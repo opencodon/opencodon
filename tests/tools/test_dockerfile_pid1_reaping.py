@@ -145,12 +145,12 @@ def test_dockerfile_installs_tui_dependencies(dockerfile_text):
     # resolve dependencies. The bundled ``opencodon-ink`` workspace package is
     # now COPIED into the image as a whole tree (not just its lockfile)
     # because it's referenced as a ``file:`` workspace dependency from
-    # ``ui-tui/package.json`` — copying the tree avoids npm stopping at a
+    # ``apps/tui/package.json`` — copying the tree avoids npm stopping at a
     # bare ``package.json`` shell.
     # With a single workspace root lockfile, only the root package-lock.json
     # is copied; per-workspace lockfiles no longer exist.
-    assert "ui-tui/package.json" in dockerfile_text
-    assert "ui-tui/packages/opencodon-ink/" in dockerfile_text
+    assert "apps/tui/package.json" in dockerfile_text
+    assert "apps/tui/packages/opencodon-ink/" in dockerfile_text
     assert "package-lock.json" in dockerfile_text
     assert any(
         "npm" in step and (" install" in step or " ci" in step)
@@ -174,21 +174,21 @@ def test_dockerfile_preinstalls_gateway_messaging_dependencies(dockerfile_text):
 
 def test_dockerfile_builds_tui_assets(dockerfile_text):
     assert any(
-        "ui-tui" in step and "npm" in step and "run build" in step
+        "apps/tui" in step and "npm" in step and "run build" in step
         for step in _run_steps(dockerfile_text)
     )
 
 
 def test_dockerfile_materializes_local_tui_ink_package(dockerfile_text):
     # ``opencodon-ink`` is a bundled workspace package referenced from
-    # ``ui-tui/package.json`` via ``file:`` — not pulled from the npm
+    # ``apps/tui/package.json`` via ``file:`` — not pulled from the npm
     # registry. The contract this test pins is just that the image
     # actually carries the package source so ``await import('@opencodon/ink')``
     # can resolve at runtime; the previous, much pickier assertion (manual
     # ``rm -rf`` + ``npm install --omit=dev --prefix node_modules/@opencodon/ink``)
     # baked in implementation details of an older materialisation flow that
     # was simplified once npm workspaces handled the resolution natively.
-    assert "ui-tui/packages/opencodon-ink/" in dockerfile_text, (
+    assert "apps/tui/packages/opencodon-ink/" in dockerfile_text, (
         "Dockerfile must COPY the bundled opencodon-ink workspace package "
         "so ``await import('@opencodon/ink')`` resolves at runtime."
     )

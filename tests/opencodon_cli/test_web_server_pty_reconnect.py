@@ -64,7 +64,7 @@ def test_resolve_chat_argv_sets_active_session_file_env(monkeypatch):
     monkeypatch.setattr(
         main_mod,
         "_make_tui_argv",
-        lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+        lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
     )
 
     _argv, _cwd, env = ws._resolve_chat_argv(
