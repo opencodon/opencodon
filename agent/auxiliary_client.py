@@ -104,7 +104,7 @@ OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 
 from agent.credential_pool import load_pool
 from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 from opencodon_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
@@ -140,7 +140,7 @@ def _resolve_aux_verify(base_url: Optional[str]) -> Any:
     """
     try:
         from agent.ssl_verify import resolve_httpx_verify
-        from opencodon_cli.config import (
+        from opencodon.config import (
             get_custom_provider_tls_settings,
             load_config_readonly,
         )
@@ -589,7 +589,7 @@ def _apply_user_default_headers(headers: dict | None) -> dict | None:
     when nothing is configured. No allocation when there are no overrides.
     """
     try:
-        from opencodon_cli.config import cfg_get, load_config
+        from opencodon.config import cfg_get, load_config
         _cfg = load_config()
         user_headers = cfg_get(_cfg, "model", "default_headers")
         # ``model.extra_headers`` is an accepted alias (matches the
@@ -635,7 +635,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     # Resolve config from disk if not provided.
     if or_config is None:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             or_config = load_config().get("openrouter", {})
         except Exception:
             or_config = {}
@@ -1913,7 +1913,7 @@ def _read_main_model() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, str) and model_cfg.strip():
@@ -1940,7 +1940,7 @@ def _read_main_provider() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip().lower()
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1969,7 +1969,7 @@ def _read_main_api_key() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1990,7 +1990,7 @@ def _read_main_base_url() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -2411,7 +2411,7 @@ def _try_azure_foundry(
     try:
         from opencodon_cli.runtime_provider import _resolve_azure_foundry_runtime
         from opencodon_cli.auth import AuthError
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
     except ImportError:
         return None, None
 
@@ -2530,7 +2530,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
     # see issue #52608.
     base_url = _pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL) if pool_present else _ANTHROPIC_DEFAULT_BASE_URL
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -2899,7 +2899,7 @@ def _transient_retry_count() -> int:
     Best-effort: any config-read failure falls back to the default.
     """
     try:
-        from opencodon_cli.config import cfg_get, load_config
+        from opencodon.config import cfg_get, load_config
 
         val = cfg_get(load_config(), "auxiliary", "transient_retries")
         if val is None:
@@ -3975,7 +3975,7 @@ def _try_main_fallback_chain(
     participate in the same order as the main agent.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.fallback_config import get_fallback_chain
 
         chain = get_fallback_chain(load_config())
@@ -4128,7 +4128,7 @@ def _resolve_auto(
     # with that real provider+model. Mirrors the MoA context-length resolution.
     if main_provider == "moa":
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_cli.moa_config import resolve_moa_preset
 
             _preset = resolve_moa_preset(load_config().get("moa") or {}, main_model)
@@ -5140,7 +5140,7 @@ def _main_model_supports_vision(provider: str, model: Optional[str]) -> bool:
     """
     try:
         from agent.image_routing import _lookup_supports_vision
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
     except ImportError:
         return True
     try:
@@ -5987,7 +5987,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     if not task:
         return {}
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
     except ImportError:
         return {}

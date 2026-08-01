@@ -84,7 +84,7 @@ def load_picker_context() -> ConfigContext:
     Replaces the inline 17-LOC config-slice that ``web_server.py`` and
     ``tui_gateway/server.py`` (×2 sites) used to do.
     """
-    from opencodon_cli.config import get_compatible_custom_providers, load_config
+    from opencodon.config import get_compatible_custom_providers, load_config
 
     cfg = load_config()
     model_cfg = cfg.get("model", {})
@@ -412,7 +412,7 @@ def _raw_config_has_enabled_moa_preset() -> bool:
     one enabled preset (or an older flat MoA config) in their own config.yaml.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         raw = read_raw_config()
     except Exception:
@@ -569,7 +569,7 @@ def _moa_provider_row(current_provider: str = "") -> dict | None:
     row shape stays in one place. Returns ``None`` when no MoA presets exist.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.moa_config import normalize_moa_config
 
         cfg = normalize_moa_config(load_config().get("moa") or {})

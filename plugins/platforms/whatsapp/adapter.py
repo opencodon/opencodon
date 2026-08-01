@@ -1672,7 +1672,7 @@ def interactive_setup() -> None:
     static _PLATFORMS["whatsapp"] dict. CLI helpers are lazy-imported so the
     plugin's module-load surface stays minimal.
     """
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
     from opencodon_cli.cli_output import (
         prompt,
         prompt_yes_no,

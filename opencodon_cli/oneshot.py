@@ -89,7 +89,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
     mcp_disabled: set[str] = set()
     if unresolved:
         try:
-            from opencodon_cli.config import read_raw_config
+            from opencodon.config import read_raw_config
             from opencodon_cli.tools_config import _parse_enabled_flag
 
             cfg = read_raw_config()
@@ -321,7 +321,7 @@ def _run_agent(
     run a single conversation.  Returns ``(final_response, run_result)``."""
     # Imports are local so they don't run when opencodon is invoked for
     # other commands (keeps top-level CLI startup cheap).
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.models import detect_provider_for_model
     from opencodon_cli.runtime_provider import resolve_runtime_provider
     from opencodon_cli.tools_config import _get_platform_tools

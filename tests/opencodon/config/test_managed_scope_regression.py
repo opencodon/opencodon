@@ -18,7 +18,7 @@ def opencodon_home(tmp_path, monkeypatch):
     # /etc/opencodon on the dev/CI box can't influence the test.
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(tmp_path / "no_such_managed_dir"))
     # Clear caches so each test re-reads from disk.
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     cfg._LOAD_CONFIG_CACHE.clear()
     cfg._RAW_CONFIG_CACHE.clear()
@@ -28,14 +28,14 @@ def opencodon_home(tmp_path, monkeypatch):
 
 def _write_user_config(home, body: str):
     (home / "config.yaml").write_text(textwrap.dedent(body), encoding="utf-8")
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     cfg._LOAD_CONFIG_CACHE.clear()
     cfg._RAW_CONFIG_CACHE.clear()
 
 
 def test_user_config_overrides_default(opencodon_home, monkeypatch):
-    from opencodon_cli.config import load_config, cfg_get
+    from opencodon.config import load_config, cfg_get
 
     _write_user_config(
         opencodon_home,
@@ -49,7 +49,7 @@ def test_user_config_overrides_default(opencodon_home, monkeypatch):
 
 
 def test_env_expansion_in_user_config(opencodon_home, monkeypatch):
-    from opencodon_cli.config import load_config, cfg_get
+    from opencodon.config import load_config, cfg_get
 
     monkeypatch.setenv("MY_BASE", "https://example.test")
     _write_user_config(
@@ -66,7 +66,7 @@ def test_env_expansion_in_user_config(opencodon_home, monkeypatch):
 
 def test_no_managed_dir_means_user_value_wins(opencodon_home):
     """Sanity: with the managed override pointing at an absent dir, nothing changes."""
-    from opencodon_cli.config import load_config, cfg_get
+    from opencodon.config import load_config, cfg_get
 
     _write_user_config(
         opencodon_home,

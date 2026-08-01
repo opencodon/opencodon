@@ -40,7 +40,7 @@ _OAUTH_CAPABLE_PROVIDERS = {"anthropic", "openai-codex", "xai-oauth", "qwen-oaut
 def _get_custom_provider_names() -> list:
     """Return list of (display_name, pool_key, provider_key) tuples."""
     try:
-        from opencodon_cli.config import get_compatible_custom_providers, load_config
+        from opencodon.config import get_compatible_custom_providers, load_config
 
         config = load_config()
     except Exception:
@@ -501,7 +501,7 @@ def _interactive_auth() -> None:
 
     # Show Azure Foundry Entra ID status
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         _cfg = load_config()
         _model_cfg = _cfg.get("model") if isinstance(_cfg, dict) else None
         if isinstance(_model_cfg, dict):
@@ -690,7 +690,7 @@ def _interactive_strategy() -> None:
         print("Invalid choice.")
         return
 
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     cfg = load_config()
     pool_strategies = cfg.get("credential_pool_strategies") or {}
     if not isinstance(pool_strategies, dict):

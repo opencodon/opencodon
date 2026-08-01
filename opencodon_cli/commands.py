@@ -400,7 +400,7 @@ def _resolve_config_gates() -> set[str]:
     if not gated:
         return set()
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
     except Exception:
         return set()
@@ -585,7 +585,7 @@ def _telegram_command_menu_config() -> dict[str, Any]:
     ``platforms.telegram.extra.command_menu``.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         raw_cfg = read_raw_config() or {}
     except Exception:
         raw_cfg = {}
@@ -1792,7 +1792,7 @@ class SlashCommandCompleter(Completer):
         already = set(parts[1:] if trailing_space else parts[1:-1])
 
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_cli.tools_config import (
                 CONFIGURABLE_TOOLSETS,
                 _get_platform_tools,

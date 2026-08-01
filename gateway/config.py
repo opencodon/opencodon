@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 from agent.secret_scope import current_secret_scope, get_secret as _get_secret
 from utils import is_truthy_value
 
@@ -1139,10 +1139,10 @@ def load_gateway_config() -> GatewayConfig:
 
             # Managed scope: overlay administrator-pinned values so the gateway
             # honors them too. This loader builds its own dict instead of going
-            # through opencodon_cli.config.load_config, so without this a managed
+            # through opencodon.config.load_config, so without this a managed
             # session_reset / quick_commands / stt / model would be ignored by
             # the messaging gateway. Fail-open via the shared helper.
-            from opencodon_cli import managed_scope
+            from opencodon.config import managed_scope
             yaml_cfg = managed_scope.apply_managed_overlay(yaml_cfg)
 
             # Shared nested-fallback source: settings meant to be top-level

@@ -5472,7 +5472,7 @@ def test_config_set_model_global_persists(monkeypatch):
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
     # _persist_model_switch uses targeted save_config_value writes (#48305) so it
     # preserves sibling model.* keys instead of rewriting the whole block.
-    monkeypatch.setattr("cli.save_config_value", lambda key, value: saved_values.__setitem__(key, value) or True)
+    monkeypatch.setattr("opencodon.config.save_config_value", lambda key, value: saved_values.__setitem__(key, value) or True)
 
     resp = server.handle_request(
         {
@@ -9530,7 +9530,7 @@ def test_browser_manage_status_falls_back_to_config_cdp_url(monkeypatch):
     fake_cfg = types.SimpleNamespace(
         read_raw_config=lambda: {"browser": {"cdp_url": "http://lan:9222"}}
     )
-    with patch.dict(sys.modules, {"opencodon_cli.config": fake_cfg}):
+    with patch.dict(sys.modules, {"opencodon.config": fake_cfg}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "status"}}
         )
@@ -10275,7 +10275,7 @@ def test_reload_env_rpc_calls_opencodon_cli_reload_env(monkeypatch):
         return 7
 
     fake = types.SimpleNamespace(reload_env=_fake_reload)
-    with patch.dict(sys.modules, {"opencodon_cli.config": fake}):
+    with patch.dict(sys.modules, {"opencodon.config": fake}):
         resp = server.handle_request({"id": "1", "method": "reload.env", "params": {}})
 
     assert resp["result"] == {"updated": 7}
@@ -10287,7 +10287,7 @@ def test_reload_env_rpc_surfaces_errors(monkeypatch):
         raise RuntimeError("env path locked")
 
     fake = types.SimpleNamespace(reload_env=_broken)
-    with patch.dict(sys.modules, {"opencodon_cli.config": fake}):
+    with patch.dict(sys.modules, {"opencodon.config": fake}):
         resp = server.handle_request({"id": "1", "method": "reload.env", "params": {}})
 
     assert "error" in resp
@@ -11597,10 +11597,10 @@ def test_persist_model_switch_preserves_sibling_model_keys(tmp_path, monkeypatch
         "agent:\n"
         "  system_prompt: keepme\n"
     )
-    # save_config_value() resolves the config path from cli._opencodon_home, which
-    # is captured at import time — patch it directly (set_opencodon_home_override
-    # does NOT affect this snapshot).
-    monkeypatch.setattr(cli, "_opencodon_home", tmp_path)
+    # save_config_value() (now in opencodon.config) resolves the home at call
+    # time via get_opencodon_home() — OPENCODON_HOME is the canonical override
+    # under pytest.
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
     result = types.SimpleNamespace(
         new_model="new-model", target_provider="anthropic", base_url=None
@@ -11632,7 +11632,7 @@ def test_persist_model_switch_clears_stale_base_url(tmp_path, monkeypatch):
         "  provider: custom:mylocal\n"
         "  base_url: http://localhost:1234/v1\n"
     )
-    monkeypatch.setattr(cli, "_opencodon_home", tmp_path)
+    monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
 
     # Switch to a native provider with no base_url.
     result = types.SimpleNamespace(

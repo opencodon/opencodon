@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon_cli.config import (
+from opencodon.config import (
     _env_ref_snapshot,
     _env_ref_var_name,
     _expand_env_vars,

@@ -31,7 +31,7 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 
 logger = logging.getLogger(__name__)
 

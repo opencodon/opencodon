@@ -34,7 +34,7 @@ from opencodon_cli.auth import (
     resolve_external_process_provider_credentials,
     has_usable_secret,
 )
-from opencodon_cli.config import (
+from opencodon.config import (
     get_compatible_custom_providers,
     load_config,
     normalize_extra_headers,
@@ -620,7 +620,7 @@ def _get_named_custom_provider(requested_provider: str) -> Optional[Dict[str, An
     # First check providers: dict (new-style user-defined providers)
     providers = config.get("providers")
     if isinstance(providers, dict):
-        from opencodon_cli.config import is_provider_enabled
+        from opencodon.config import is_provider_enabled
         for ep_name, entry in providers.items():
             if not isinstance(entry, dict):
                 continue
@@ -1298,7 +1298,7 @@ def _resolve_azure_foundry_runtime(
     api_key = explicit_api_key
     if not api_key:
         try:
-            from opencodon_cli.config import get_env_value
+            from opencodon.config import get_env_value
             api_key = get_env_value("AZURE_FOUNDRY_API_KEY") or ""
         except Exception:
             api_key = ""
@@ -1477,7 +1477,7 @@ def resolve_runtime_provider(
     #
     # Fail fast with a typed error so the fallback chain can advance to
     # the next provider instead of using a disabled one.
-    from opencodon_cli.config import is_provider_enabled, load_config
+    from opencodon.config import is_provider_enabled, load_config
     _full_cfg = load_config()
     _provs_cfg = _full_cfg.get("providers") if isinstance(_full_cfg, dict) else None
     if isinstance(_provs_cfg, dict):

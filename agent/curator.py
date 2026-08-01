@@ -138,7 +138,7 @@ def is_paused() -> bool:
 def _load_config() -> Dict[str, Any]:
     """Read curator.* config from ~/.opencodon/config.yaml. Tolerates missing file."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
     except Exception as e:
         logger.debug("Failed to load config for curator: %s", e)
@@ -1873,7 +1873,7 @@ def _run_llm_review(prompt: str) -> Dict[str, Any]:
     _acp_args = None
     _model_name = ""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.runtime_provider import resolve_runtime_provider
         _cfg = load_config()
         _binding = _resolve_review_runtime(_cfg)

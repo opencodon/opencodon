@@ -14,7 +14,7 @@ import tempfile
 import time
 from typing import Optional
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 
 
 CACHE_PATH = get_opencodon_home() / "sticker_cache.json"

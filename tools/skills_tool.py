@@ -78,7 +78,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Dict, Any, List, Optional, Set, Tuple
 
 from tools.registry import registry, tool_error
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 from utils import env_var_enabled
 from agent.skill_utils import (
     EXCLUDED_SKILL_DIRS as _EXCLUDED_SKILL_DIRS,
@@ -649,7 +649,7 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
     3. ``OPENCODON_SESSION_PLATFORM`` from gateway session context
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         skills_cfg = config.get("skills", {})
         resolved_platform = platform or os.getenv("OPENCODON_PLATFORM") or _get_session_platform()

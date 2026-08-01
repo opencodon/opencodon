@@ -1,7 +1,7 @@
 """Tests for ${ENV_VAR} substitution in config.yaml values."""
 
 import pytest
-from opencodon_cli.config import _expand_env_vars, load_config
+from opencodon.config import _expand_env_vars, load_config
 
 
 class TestExpandEnvVars:

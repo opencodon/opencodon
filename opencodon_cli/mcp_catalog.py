@@ -37,8 +37,8 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from opencodon_constants import get_opencodon_home, get_optional_mcps_dir
-from opencodon_cli.colors import Colors, color
-from opencodon_cli.config import (
+from opencodon.common.colors import Colors, color
+from opencodon.config import (
     load_config,
     save_config,
     get_env_value,

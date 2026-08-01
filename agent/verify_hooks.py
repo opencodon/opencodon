@@ -52,7 +52,7 @@ def coding_verify_guidance(config: Optional[dict[str, Any]] = None) -> Optional[
 def _agent_cfg(config: Optional[dict[str, Any]]) -> dict[str, Any]:
     if config is None:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             config = load_config()
         except Exception:

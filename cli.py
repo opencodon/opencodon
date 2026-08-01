@@ -139,7 +139,7 @@ def _reverse_alias_for_display(model_name: str) -> str:
     if _REVERSE_ALIAS_CACHE is None:
         rmap: dict[str, str] = {}
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             cfg = load_config() or {}
             ma = cfg.get("model_aliases")
             if isinstance(ma, dict):
@@ -561,7 +561,7 @@ def load_cli_config() -> Dict[str, Any]:
     if config_path.exists():
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                from opencodon_cli.config import _normalize_root_model_keys
+                from opencodon.config import _normalize_root_model_keys
 
                 file_config = _normalize_root_model_keys(fast_safe_load(f) or {})
             
@@ -615,18 +615,18 @@ def load_cli_config() -> Dict[str, Any]:
             logger.warning("Failed to load cli-config.yaml: %s", e)
 
     # Expand ${ENV_VAR} references in config values before bridging to env vars.
-    from opencodon_cli.config import _expand_env_vars
+    from opencodon.config import _expand_env_vars
     defaults = _expand_env_vars(defaults)
 
     # Managed scope: overlay administrator-pinned values LAST so they win over
     # the user's config here too. cli.py builds its config independently of
-    # opencodon_cli.config._load_config_impl (which has its own managed merge), so
+    # opencodon.config._load_config_impl (which has its own managed merge), so
     # without this the entire interactive CLI/TUI surface — skin, display prefs,
     # etc. read from CLI_CONFIG — would silently ignore managed scope while
     # `opencodon config`/`doctor`/guards (which use load_config) honor it. The
     # shared helper mirrors _load_config_impl (env-only expansion, root-model
     # normalization, leaf-merge) and is fail-open.
-    from opencodon_cli import managed_scope
+    from opencodon.config import managed_scope
 
     defaults = managed_scope.apply_managed_overlay(defaults)
 
@@ -797,7 +797,7 @@ except Exception:
 
 # Validate config structure early — print warnings before user hits cryptic errors
 try:
-    from opencodon_cli.config import print_config_warnings
+    from opencodon.config import print_config_warnings
     print_config_warnings()
 except Exception:
     pass
@@ -1039,7 +1039,7 @@ def _prepare_deferred_agent_startup() -> None:
         )
     try:
         from agent.shell_hooks import register_from_config
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         register_from_config(load_config(), accept_hooks=_accept_hooks)
     except Exception:
@@ -1871,7 +1871,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     """Call ``SessionDB.maybe_auto_prune_and_vacuum`` using current config.
 
     Reads the ``sessions:`` section from config.yaml via
-    :func:`opencodon_cli.config.load_config` (the authoritative loader that
+    :func:`opencodon.config.load_config` (the authoritative loader that
     deep-merges DEFAULT_CONFIG, so unmigrated configs still get default
     values). Honours ``auto_prune`` / ``retention_days`` /
     ``vacuum_after_prune`` / ``min_interval_hours``, and delegates to the
@@ -1880,7 +1880,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     if session_db is None:
         return
     try:
-        from opencodon_cli.config import load_config as _load_full_config
+        from opencodon.config import load_config as _load_full_config
         from opencodon_constants import get_opencodon_home as _get_opencodon_home
         _opencodon_home_maint = _get_opencodon_home()
 
@@ -1925,12 +1925,12 @@ def _run_checkpoint_auto_maintenance() -> None:
     """Call ``checkpoint_manager.maybe_auto_prune_checkpoints`` using current config.
 
     Reads the ``checkpoints:`` section from config.yaml via
-    :func:`opencodon_cli.config.load_config`. Honours ``auto_prune`` /
+    :func:`opencodon.config.load_config`. Honours ``auto_prune`` /
     ``retention_days`` / ``delete_orphans`` / ``min_interval_hours``.
     Never raises — maintenance must never block interactive startup.
     """
     try:
-        from opencodon_cli.config import load_config as _load_full_config
+        from opencodon.config import load_config as _load_full_config
         cfg = (_load_full_config().get("checkpoints") or {})
         if not cfg.get("auto_prune", False):
             return
@@ -3693,47 +3693,9 @@ def _parse_skills_argument(skills: str | list[str] | tuple[str, ...] | None) -> 
     return parsed
 
 
-def save_config_value(key_path: str, value: any) -> bool:
-    """
-    Save a value to the active config file at the specified key path.
-    
-    Respects the same lookup order as load_cli_config():
-    1. ~/.opencodon/config.yaml (user config - preferred, used if it exists)
-    2. ./cli-config.yaml (project config - fallback)
-    
-    Args:
-        key_path: Dot-separated path like "agent.system_prompt"
-        value: Value to save
-    
-    Returns:
-        True if successful, False otherwise
-    """
-    # Use the same precedence as load_cli_config: user config first, then project config
-    user_config_path = _opencodon_home / 'config.yaml'
-    project_config_path = Path(__file__).parent / 'cli-config.yaml'
-    config_path = user_config_path if user_config_path.exists() else project_config_path
-    
-    try:
-        # Ensure parent directory exists (for ~/.opencodon/config.yaml on first use)
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Save back atomically while preserving comments, ordering, quotes, and
-        # readable Unicode in user-edited config.yaml.
-        from utils import atomic_roundtrip_yaml_update
-        atomic_roundtrip_yaml_update(config_path, key_path, value)
-        
-        # Enforce owner-only permissions on config files (contain API keys)
-        try:
-            os.chmod(config_path, 0o600)
-        except (OSError, NotImplementedError):
-            pass
-        
-        return True
-    except Exception as e:
-        logger.error("Failed to save config: %s", e)
-        return False
-
-
+# save_config_value moved to opencodon.config (restructure Phase 2) — the
+# re-export keeps cli.save_config_value patchable and callable as before.
+from opencodon.config import save_config_value  # noqa: E402
 
 
 # ============================================================================
@@ -7917,8 +7879,8 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _clear_persisted_context_for_model_switch(self, result) -> None:
         """Drop a global context pin when its configured owner changes."""
         try:
-            from opencodon_cli.config import load_config_readonly
-            from opencodon_cli.route_identity import should_clear_context_pin
+            from opencodon.config import load_config_readonly
+            from opencodon.common.route_identity import should_clear_context_pin
 
             config = load_config_readonly()
             model_cfg = config.get("model", {}) if isinstance(config, dict) else {}
@@ -8830,7 +8792,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         elif canonical == "image":
             self._handle_image_command(cmd_original)
         elif canonical == "reload":
-            from opencodon_cli.config import reload_env
+            from opencodon.config import reload_env
             count = reload_env()
             print(f"  Reloaded .env ({count} var(s) updated)")
         elif canonical == "reload-mcp":
@@ -9204,7 +9166,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """
         try:
             from opencodon_cli.goals import GoalManager
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
         except Exception as exc:
             logging.debug("goal manager unavailable: %s", exc)
             return None
@@ -9460,7 +9422,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # prompt_toolkit's renderer.  self.console.print() with Rich markup
         # writes directly to stdout which patch_stdout's StdoutProxy mangles
         # into garbled sequences like '?[33mTool progress: NEW?[0m' (#2262).
-        from opencodon_cli.colors import Colors as _Colors
+        from opencodon.common.colors import Colors as _Colors
         labels = {
             "off": f"{_Colors.DIM}Tool progress: OFF{_Colors.RESET} — silent mode, just the final response.",
             "new": f"{_Colors.YELLOW}Tool progress: NEW{_Colors.RESET} — show each new tool (skip repeats).",
@@ -9539,7 +9501,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         ``set_current_session_key`` so the bypass takes effect on the very
         next dangerous command in this run.
         """
-        from opencodon_cli.colors import Colors as _Colors
+        from opencodon.common.colors import Colors as _Colors
         from tools.approval import (
             disable_session_yolo,
             enable_session_yolo,
@@ -9973,7 +9935,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
         self._last_config_check = now
 
-        from opencodon_cli.config import get_config_path as _get_config_path
+        from opencodon.config import get_config_path as _get_config_path
         cfg_path = _get_config_path()
         if not cfg_path.exists():
             return
@@ -10002,7 +9964,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # keys) triggers a false-positive MCP reload because the raw yaml
         # still has "${POWERMEM_API_KEY}" while the snapshot has the
         # expanded value.
-        from opencodon_cli.config import _expand_env_vars
+        from opencodon.config import _expand_env_vars
         new_mcp = _expand_env_vars(new_mcp)
         if new_mcp == self._config_mcp_servers:
             return  # mcp_servers unchanged (some other section was edited)
@@ -10665,7 +10627,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # instead of crashing on ``.get()``.
         voice_cfg: dict = {}
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             _cfg = load_config().get("voice")
             voice_cfg = _cfg if isinstance(_cfg, dict) else {}
         except Exception:
@@ -10747,7 +10709,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _voice_stt_model(self) -> Optional[str]:
         """STT model override from config, or None for the provider default."""
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             stt_config = load_config().get("stt", {})
             return stt_config.get("model") if isinstance(stt_config, dict) else None
         except Exception:
@@ -10931,7 +10893,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         restart until the captured utterance has been submitted.
         """
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             voice_cfg = load_config().get("voice") or {}
             if not (isinstance(voice_cfg, dict) and voice_cfg.get("barge_in", True)):
                 return
@@ -10986,7 +10948,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _voice_beeps_enabled(self) -> bool:
         """Return whether CLI voice mode should play record start/stop beeps."""
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             voice_cfg = load_config().get("voice", {})
             if isinstance(voice_cfg, dict):
                 return bool(voice_cfg.get("beep_enabled", True))
@@ -11030,7 +10992,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Check config for auto_tts (shape-safe — malformed ``voice:`` YAML
         # leaves ``voice_config`` as a non-dict, so guard before .get()).
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             _raw_voice = load_config().get("voice")
             voice_config = _raw_voice if isinstance(_raw_voice, dict) else {}
             if voice_config.get("auto_tts", False):
@@ -11721,7 +11683,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     build_native_content_parts,
                     decide_image_input_mode,
                 )
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
 
                 _img_mode = decide_image_input_mode(
                     (self.provider or "").strip(),
@@ -12981,7 +12943,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         get_plugin_manager()._cli_ref = self
 
         # Config file watcher — detect mcp_servers changes and auto-reload
-        from opencodon_cli.config import get_config_path as _get_config_path
+        from opencodon.config import get_config_path as _get_config_path
         _cfg_path = _get_config_path()
         self._config_mtime: float = _cfg_path.stat().st_mtime if _cfg_path.exists() else 0.0
         self._config_mcp_servers: dict = self.config.get("mcp_servers") or {}
@@ -13761,7 +13723,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # TUI/CLI split instead of a silent mismatch (round-11).
         _raw_key: object = "ctrl+b"
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_cli.voice import (
                 normalize_voice_record_key_for_prompt_toolkit,
                 voice_record_key_from_config,
@@ -15672,7 +15634,7 @@ def main(
                                 build_native_content_parts as _build_parts,  # noqa: F811
                             )
                             from agent.image_routing import decide_image_input_mode
-                            from opencodon_cli.config import load_config
+                            from opencodon.config import load_config
 
                             _img_mode = decide_image_input_mode(
                                 (cli.provider or "").strip(),

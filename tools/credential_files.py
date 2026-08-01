@@ -26,7 +26,7 @@ import posixpath
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Dict, List, Optional
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 
 try:  # pragma: no cover - exercised via the fail-closed test below
     from agent.file_safety import get_read_block_error
@@ -181,7 +181,7 @@ def _load_config_files() -> List[Dict[str, str]]:
 
     result: List[Dict[str, str]] = []
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         opencodon_home = _resolve_opencodon_home()
         cfg = read_raw_config()
         cred_files = cfg_get(cfg, "terminal", "credential_files")

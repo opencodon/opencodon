@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 def _searxng_url() -> str:
     """Return SEARXNG_URL from opencodon config-aware env, falling back to process env."""
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         val = get_env_value("SEARXNG_URL")
     except Exception:

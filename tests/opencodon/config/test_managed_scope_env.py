@@ -11,7 +11,7 @@ def env_homes(tmp_path, monkeypatch):
     managed = tmp_path / "managed"
     managed.mkdir()
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed))
-    from opencodon_cli import managed_scope
+    from opencodon.config import managed_scope
 
     managed_scope.invalidate_managed_cache()
     return home, managed

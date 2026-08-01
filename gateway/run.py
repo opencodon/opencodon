@@ -48,7 +48,7 @@ from typing import Awaitable, Callable, Dict, Optional, Any, List, Union, cast
 from agent.async_utils import consume_detached_task_result, safe_schedule_threadsafe
 from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 from agent.i18n import t
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 from opencodon_cli.fallback_config import get_fallback_chain
 
 # --- Agent cache tuning ---------------------------------------------------
@@ -1438,14 +1438,14 @@ def _bridge_max_turns_from_config(home: "Path") -> None:
         import yaml as _yaml
         with open(config_path, encoding="utf-8") as f:
             cfg = _yaml.safe_load(f) or {}
-        from opencodon_cli.config import _expand_env_vars
+        from opencodon.config import _expand_env_vars
         cfg = _expand_env_vars(cfg)
         # Managed scope: keep administrator-pinned values authoritative on every
         # turn too. This per-turn reload re-bridges config→env, so without the
         # overlay a managed agent.max_turns / timezone / redact_secrets would be
         # replaced by the user's value after the first turn. Fail-open.
         try:
-            from opencodon_cli import managed_scope
+            from opencodon.config import managed_scope
             cfg = managed_scope.apply_managed_overlay(cfg)
         except Exception:
             pass
@@ -1605,7 +1605,7 @@ if _config_path.exists():
         with open(_config_path, encoding="utf-8") as _f:
             _cfg = _yaml.safe_load(_f) or {}
         # Expand ${ENV_VAR} references before bridging to env vars.
-        from opencodon_cli.config import _expand_env_vars
+        from opencodon.config import _expand_env_vars
         _cfg = _expand_env_vars(_cfg)
         # Managed scope: overlay administrator-pinned values BEFORE bridging to
         # env vars, so a managed timezone / redact_secrets / max_turns / terminal
@@ -1614,7 +1614,7 @@ if _config_path.exists():
         # overlay every OPENCODON_*/TERMINAL_* env var below would carry the user's
         # value even when an administrator pinned it. Fail-open via the helper.
         try:
-            from opencodon_cli import managed_scope
+            from opencodon.config import managed_scope
             _cfg = managed_scope.apply_managed_overlay(_cfg)
         except Exception:
             pass
@@ -1851,14 +1851,14 @@ except Exception as _bootstrap_exc:
 
 # Validate config structure early — log warnings so gateway operators see problems
 try:
-    from opencodon_cli.config import print_config_warnings
+    from opencodon.config import print_config_warnings
     print_config_warnings()
 except Exception as _bootstrap_exc:
     print(f"  Warning: config validation failed: {_bootstrap_exc}", file=sys.stderr)
 
 # Warn if user has deprecated MESSAGING_CWD / TERMINAL_CWD in .env
 try:
-    from opencodon_cli.config import warn_deprecated_cwd_env_vars
+    from opencodon.config import warn_deprecated_cwd_env_vars
     warn_deprecated_cwd_env_vars()
 except Exception as _bootstrap_exc:
     print(f"  Warning: deprecation check failed: {_bootstrap_exc}", file=sys.stderr)
@@ -2507,7 +2507,7 @@ def _load_gateway_config() -> dict:
 
     Uses the module-level ``_opencodon_home`` (so tests that monkeypatch it
     still see their fixture) and shares the mtime-keyed raw-yaml cache
-    from ``opencodon_cli.config.read_raw_config`` when the paths match.
+    from ``opencodon.config.read_raw_config`` when the paths match.
 
     Managed scope is overlaid on the result (via the shared helper) so the
     gateway honors administrator-pinned values — neither read_raw_config nor a
@@ -2518,7 +2518,7 @@ def _load_gateway_config() -> dict:
     raw: dict = {}
     used_canonical = False
     try:
-        from opencodon_cli.config import get_config_path, read_raw_config
+        from opencodon.config import get_config_path, read_raw_config
         # Fast path: if _opencodon_home agrees with the canonical config
         # location, reuse the shared cache. Otherwise fall through to a
         # direct read (keeps test fixtures with a monkeypatched
@@ -2544,7 +2544,7 @@ def _load_gateway_config() -> dict:
     # so the overlay is required on both paths for the gateway to honor pinned
     # values. Helper is fail-open and a no-op when no managed scope exists.
     try:
-        from opencodon_cli import managed_scope
+        from opencodon.config import managed_scope
         raw = managed_scope.apply_managed_overlay(raw if isinstance(raw, dict) else {})
     except Exception:
         pass
@@ -2557,7 +2557,7 @@ def _load_gateway_config() -> dict:
     # gateway would resolve an empty model for ``model: {name: <id>}`` configs
     # while the CLI resolves it correctly. See issue #34500. Fail-open.
     try:
-        from opencodon_cli.config import _normalize_root_model_keys
+        from opencodon.config import _normalize_root_model_keys
         raw = _normalize_root_model_keys(raw)
     except Exception:
         pass
@@ -2577,7 +2577,7 @@ def _checkpoint_agent_kwargs(config: dict | None) -> dict:
     elif not isinstance(cp_cfg, dict):
         cp_cfg = {}
 
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
     defaults = DEFAULT_CONFIG["checkpoints"]
     return {
         "checkpoints_enabled": cp_cfg.get("enabled", defaults["enabled"]),
@@ -2607,7 +2607,7 @@ def _load_gateway_runtime_config() -> dict:
     cfg = _load_gateway_config()
     if not isinstance(cfg, dict) or not cfg:
         return {}
-    from opencodon_cli.config import _expand_env_vars
+    from opencodon.config import _expand_env_vars
 
     expanded = _expand_env_vars(cfg)
     return expanded if isinstance(expanded, dict) else {}
@@ -3328,7 +3328,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # so operators knowingly enable tirith or configure auxiliary.approval
         # for unattended gateways.
         try:
-            from opencodon_cli.config import load_config as _load_full_config
+            from opencodon.config import load_config as _load_full_config
             _appr_cfg = _load_full_config()
             _appr_mode = str(
                 cfg_get(_appr_cfg, "approvals", "mode", default="manual") or "manual"
@@ -3369,7 +3369,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # but never raised.
         if self._session_db is not None:
             try:
-                from opencodon_cli.config import load_config as _load_full_config
+                from opencodon.config import load_config as _load_full_config
                 _sess_cfg = (_load_full_config().get("sessions") or {})
                 if _sess_cfg.get("auto_prune", False):
                     # Construction-time, before the loop serves traffic; sync DB is fine.
@@ -3386,7 +3386,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # checkpoint repos under ~/.opencodon/checkpoints/.  Opt-in via
         # checkpoints.auto_prune, idempotent via .last_prune marker.
         try:
-            from opencodon_cli.config import load_config as _load_full_config
+            from opencodon.config import load_config as _load_full_config
             _ckpt_cfg = (_load_full_config().get("checkpoints") or {})
             if _ckpt_cfg.get("auto_prune", False):
                 from tools.checkpoint_manager import maybe_auto_prune_checkpoints
@@ -3585,7 +3585,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # Push the global voice.auto_tts default (config.yaml) onto the adapter.
         # Lazy import to avoid adding a module-level dep from gateway → opencodon_cli.
         try:
-            from opencodon_cli.config import load_config as _load_full_config
+            from opencodon.config import load_config as _load_full_config
             _full_cfg = _load_full_config()
             _auto_tts_default = bool(
                 (_full_cfg.get("voice") or {}).get("auto_tts", False)
@@ -7583,7 +7583,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # hooks_auto_accept here would just duplicate that lookup.
         # Failures are logged but must never block gateway startup.
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from agent.shell_hooks import register_from_config
             register_from_config(load_config(), accept_hooks=False)
         except Exception:
@@ -11228,7 +11228,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 moa_usage,
                 normalize_moa_config,
             )
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             moa_payload = event.get_command_args().strip()
             if not moa_payload:
@@ -11957,7 +11957,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                         if _msg_raw_ctx is not None:
                             _msg_config_ctx = int(_msg_raw_ctx)
                     try:
-                        from opencodon_cli.config import get_compatible_custom_providers
+                        from opencodon.config import get_compatible_custom_providers
 
                         _msg_custom_providers = get_compatible_custom_providers(_msg_cfg)
                     except Exception:
@@ -11989,7 +11989,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     _msg_config_ctx = None
                 if _msg_config_ctx is not None and isinstance(_msg_model_cfg, dict):
                     try:
-                        from opencodon_cli.route_identity import should_clear_context_pin
+                        from opencodon.common.route_identity import should_clear_context_pin
 
                         if should_clear_context_pin(
                             None,  # model match already checked above
@@ -12004,7 +12004,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                         _msg_config_ctx = None
                 if _msg_custom_providers and _msg_base_url:
                     try:
-                        from opencodon_cli.config import get_custom_provider_context_length
+                        from opencodon.config import get_custom_provider_context_length
 
                         _msg_custom_ctx = get_custom_provider_context_length(
                             model=_msg_model,
@@ -12527,7 +12527,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
                 if _hyg_config_context_length is not None:
                     try:
-                        from opencodon_cli.route_identity import should_clear_context_pin
+                        from opencodon.common.route_identity import should_clear_context_pin
 
                         if should_clear_context_pin(
                             _hyg_configured_model,
@@ -12547,7 +12547,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 if _hyg_config_context_length is None and _hyg_base_url:
                     try:
                         try:
-                            from opencodon_cli.config import (
+                            from opencodon.config import (
                                 get_compatible_custom_providers as _gw_gcp,
                                 get_custom_provider_context_length as _gw_gccl,
                             )
@@ -13835,7 +13835,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     configured_provider = provider
                     configured_base_url = base_url
                 try:
-                    from opencodon_cli.config import get_compatible_custom_providers
+                    from opencodon.config import get_compatible_custom_providers
                     custom_provs = get_compatible_custom_providers(data)
                 except Exception:
                     custom_provs = data.get("custom_providers")
@@ -13853,7 +13853,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if config_context_length is not None:
             try:
-                from opencodon_cli.route_identity import should_clear_context_pin
+                from opencodon.common.route_identity import should_clear_context_pin
 
                 if should_clear_context_pin(
                     configured_model,
@@ -13869,7 +13869,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if config_context_length is None and custom_provs and base_url:
             try:
-                from opencodon_cli.config import get_custom_provider_context_length
+                from opencodon.config import get_custom_provider_context_length
 
                 custom_ctx = get_custom_provider_context_length(
                     model=model,
@@ -14173,7 +14173,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         GatewayRunner.config is a GatewayConfig dataclass, not the full
         user config mapping. Top-level config blocks such as ``goals`` are
-        therefore only available through opencodon_cli.config.load_config().
+        therefore only available through opencodon.config.load_config().
         """
         try:
             goals_cfg = (
@@ -14182,7 +14182,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 else getattr(self.config, "goals", {}) or {}
             )
             if not goals_cfg:
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
 
                 goals_cfg = (load_config() or {}).get("goals") or {}
             return int(goals_cfg.get("max_turns", 20) or 20)
@@ -15730,7 +15730,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 return f"🟡 /{command} cancelled. Conversation unchanged."
             if choice == "always":
                 try:
-                    from cli import save_config_value
+                    from opencodon.config import save_config_value
                     save_config_value("approvals.destructive_slash_confirm", False)
                     logger.info(
                         "User opted out of destructive slash confirm (session=%s)",
@@ -15848,7 +15848,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         (e.g. a prior "Always Approve" click) without a gateway restart.
         """
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             cfg = load_config()
             return cfg if isinstance(cfg, dict) else {}
         except Exception:
@@ -16592,7 +16592,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         try:
             from agent.image_routing import decide_image_input_mode
             from agent.auxiliary_client import _read_main_model, _read_main_provider
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             cfg = user_config if isinstance(user_config, dict) else load_config()
             resolved_provider = (provider or "").strip()
@@ -22767,7 +22767,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
         _audit_cfg = None
         try:
-            from opencodon_cli.config import read_raw_config
+            from opencodon.config import read_raw_config
 
             _audit_cfg = read_raw_config()
         except Exception:

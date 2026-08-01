@@ -7452,7 +7452,7 @@ def interactive_setup() -> None:
     offers to set a home channel. Replaces ``opencodon_cli/setup.py::_setup_slack``.
     """
     from pathlib import Path
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
     from opencodon_cli.cli_output import (
         prompt,
         prompt_yes_no,

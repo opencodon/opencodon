@@ -13,8 +13,8 @@ Config stored in ~/.opencodon/config.yaml under:
 """
 from typing import List, Optional, Set
 
-from opencodon_cli.config import cfg_get, load_config, save_config
-from opencodon_cli.colors import Colors, color
+from opencodon.config import cfg_get, load_config, save_config
+from opencodon.common.colors import Colors, color
 from opencodon_cli.platforms import PLATFORMS as _PLATFORMS
 
 # Backward-compatible view: {key: label_string} so existing code that

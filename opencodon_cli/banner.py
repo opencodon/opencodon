@@ -262,7 +262,7 @@ def check_for_updates() -> Optional[int]:
     # `/api/opencodon/update/check` endpoint short-circuits docker the same way
     # (web_server.py); mirror that here so the banner/TUI surfaces agree.
     try:
-        from opencodon_cli.config import detect_install_method, get_project_root
+        from opencodon.config import detect_install_method, get_project_root
         if detect_install_method(get_project_root()) == "docker":
             return None
     except Exception:
@@ -593,7 +593,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         preset_name = model
         agg_label = ""
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_cli.moa_config import normalize_moa_config
 
             _moa = normalize_moa_config(load_config().get("moa") or {})
@@ -789,7 +789,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     try:
         behind = get_update_result(timeout=0.5)
         if behind is not None and behind != 0:
-            from opencodon_cli.config import get_managed_update_command, recommended_update_command
+            from opencodon.config import get_managed_update_command, recommended_update_command
             if behind > 0:
                 commits_word = "commit" if behind == 1 else "commits"
                 right_lines.append(

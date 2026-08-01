@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 
-from opencodon_cli.config import (
+from opencodon.config import (
     cfg_get,
     load_config, save_config, get_env_value, save_env_value,
 )
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 from tools.tool_backend_helpers import fal_key_is_configured
 from utils import base_url_hostname, is_truthy_value
 
@@ -1389,7 +1389,7 @@ def _run_post_setup(post_setup_key: str):
                 prompt_choice,
                 prompt as _setup_prompt,
             )
-            from opencodon_cli.config import save_env_value
+            from opencodon.config import save_env_value
         except Exception as exc:
             _print_warning(f"    Could not load setup helpers: {exc}")
             _print_info("    Run later: opencodon auth add xai-oauth   (or set XAI_API_KEY)")

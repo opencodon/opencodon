@@ -3307,7 +3307,7 @@ def _load_config() -> dict:
     prefer_legacy = os.environ.get("OPENCODON_IGNORE_USER_CONFIG") == "1"
     if not prefer_legacy:
         try:
-            from opencodon_cli.config import load_config_readonly
+            from opencodon.config import load_config_readonly
 
             full = load_config_readonly()
             cfg = full.get("delegation") or {}

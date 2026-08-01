@@ -191,7 +191,7 @@ class LSPService:
         itself returns ``is_active()`` False when LSP is disabled.
         """
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             cfg = load_config()
         except Exception as e:  # noqa: BLE001
             logger.debug("LSP config load failed: %s", e)

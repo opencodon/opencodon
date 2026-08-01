@@ -4429,7 +4429,7 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``os.environ`` (which includes ``~/.opencodon/.env`` loaded at startup).
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from utils import env_var_enabled as _env_enabled
 
         if _env_enabled("OPENCODON_SAFE_MODE"):

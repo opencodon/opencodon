@@ -1772,7 +1772,7 @@ def anthropic_prompt_cache_policy(
     # the policy from the preset's real aggregator slot instead.
     if eff_provider.strip().lower() == "moa":
         try:
-            from opencodon_cli.config import load_config as _load_moa_cfg
+            from opencodon.config import load_config as _load_moa_cfg
             from opencodon_cli.moa_config import resolve_moa_preset
             from opencodon_cli.runtime_provider import resolve_runtime_provider
 
@@ -2166,7 +2166,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
                 "base_url": effective_base,
             }
             try:
-                from opencodon_cli.config import (
+                from opencodon.config import (
                     apply_custom_provider_tls_to_client_kwargs,
                     get_compatible_custom_providers,
                     load_config_readonly,
@@ -2233,7 +2233,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
         # custom provider mid-session (closes #15779).
         _sm_custom_providers = None
         try:
-            from opencodon_cli.config import load_config, get_compatible_custom_providers
+            from opencodon.config import load_config, get_compatible_custom_providers
             _sm_cfg = load_config()
             _sm_custom_providers = get_compatible_custom_providers(_sm_cfg)
         except Exception:
@@ -2268,7 +2268,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
     # boolean False = disabled).
     try:
         from opencodon_constants import resolve_reasoning_config
-        from opencodon_cli.config import load_config as _sm_load_config
+        from opencodon.config import load_config as _sm_load_config
 
         _reasoning_cfg = _sm_load_config() or {}
         agent.reasoning_config = resolve_reasoning_config(_reasoning_cfg, agent.model)

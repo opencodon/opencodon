@@ -1,6 +1,6 @@
 import textwrap
 
-from opencodon_cli.config import load_config, save_config
+from opencodon.config import load_config, save_config
 
 
 def _write_config(tmp_path, body: str):

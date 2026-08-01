@@ -14,8 +14,8 @@ def homes(tmp_path, monkeypatch):
     (managed / "config.yaml").write_text(
         "model:\n  default: managed/model\n", encoding="utf-8"
     )
-    import opencodon_cli.config as cfg
-    from opencodon_cli import managed_scope
+    import opencodon.config as cfg
+    from opencodon.config import managed_scope
 
     cfg._LOAD_CONFIG_CACHE.clear()
     cfg._RAW_CONFIG_CACHE.clear()
@@ -24,7 +24,7 @@ def homes(tmp_path, monkeypatch):
 
 
 def test_config_show_flags_managed(homes, capsys):
-    from opencodon_cli.config import show_config
+    from opencodon.config import show_config
 
     show_config()
     out = capsys.readouterr().out.lower()
@@ -40,13 +40,13 @@ def test_config_show_no_managed_scope_silent(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(tmp_path / "nope"))
     (home / "config.yaml").write_text("model:\n  default: user/model\n", encoding="utf-8")
-    import opencodon_cli.config as cfg
-    from opencodon_cli import managed_scope
+    import opencodon.config as cfg
+    from opencodon.config import managed_scope
 
     cfg._LOAD_CONFIG_CACHE.clear()
     cfg._RAW_CONFIG_CACHE.clear()
     managed_scope.invalidate_managed_cache()
-    from opencodon_cli.config import show_config
+    from opencodon.config import show_config
 
     show_config()
     out = capsys.readouterr().out.lower()
@@ -66,7 +66,8 @@ def test_doctor_reports_managed_scope(homes, capsys):
 
 def test_doctor_silent_with_no_managed_scope(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(tmp_path / "nope"))
-    from opencodon_cli import managed_scope, doctor
+    from opencodon.config import managed_scope
+    from opencodon_cli import doctor
 
     managed_scope.invalidate_managed_cache()
     doctor.managed_scope_check()

@@ -631,7 +631,7 @@ _apply_profile_override()
 
 # Load .env from ~/.opencodon/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 from opencodon_cli.env_loader import load_opencodon_dotenv
 
 load_opencodon_dotenv(project_env=PROJECT_ROOT / ".env")
@@ -661,7 +661,7 @@ try:
         # without the overlay a managed redact_secrets toggle would be ignored.
         # Fail-open via the shared helper.
         try:
-            from opencodon_cli import managed_scope
+            from opencodon.config import managed_scope
             _early_cfg_raw = managed_scope.apply_managed_overlay(_early_cfg_raw)
         except Exception:
             pass
@@ -906,7 +906,7 @@ def _configured_model_name(cfg: Optional[dict] = None) -> str:
     if they drift, the first-run guards here disagree with the model the agent
     actually boots with.
     """
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     if cfg is None:
         cfg = load_config()
@@ -932,7 +932,7 @@ def _has_model_configured(cfg: Optional[dict] = None) -> bool:
     auto-detects the served model from local servers (vLLM, llama.cpp,
     ollama) when the configured model is empty.
     """
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     if cfg is None:
         cfg = load_config()
@@ -948,14 +948,14 @@ def _has_model_configured(cfg: Optional[dict] = None) -> bool:
 
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
-    from opencodon_cli.config import get_env_path, get_opencodon_home, load_config
+    from opencodon.config import get_env_path, get_opencodon_home, load_config
     from opencodon_cli.auth import get_auth_status
 
     # Determine whether opencodon itself has been explicitly configured (model
     # in config that isn't the hardcoded default). Used below to gate external
     # tool credentials (Claude Code, Codex CLI) that shouldn't silently skip
     # the setup wizard on a fresh install.
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     _DEFAULT_MODEL = DEFAULT_CONFIG.get("model", "")
     cfg = load_config()
@@ -2266,7 +2266,7 @@ def _launch_tui(
 
     env = os.environ.copy()
     try:
-        from opencodon_cli.config import apply_terminal_config_to_env
+        from opencodon.config import apply_terminal_config_to_env
         apply_terminal_config_to_env(env=env)
     except Exception:
         logger.debug("Failed to apply terminal config bridge for TUI launch", exc_info=True)
@@ -2458,7 +2458,7 @@ def _resolve_use_tui(args) -> bool:
     if os.environ.get("OPENCODON_TUI") == "1":
         return True
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         iface = (load_config().get("display", {}) or {}).get("interface", "cli")
         return isinstance(iface, str) and iface.strip().lower() == "tui"
@@ -2565,7 +2565,7 @@ def cmd_chat(args):
     # reads `unknown` / `ctx --` and the first turn fails with no useful error.
     # Catch it here while we still have a TTY to fix it on.
     elif not getattr(args, "model", None) and not _has_model_configured():
-        from opencodon_cli.config import get_config_path
+        from opencodon.config import get_config_path
 
         print()
         print("No model is selected -- opencodon is signed in, but nothing is set to run.")
@@ -2716,7 +2716,7 @@ def cmd_proxy(args):
 def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
     _require_tty("whatsapp")
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
     from opencodon_constants import find_node_executable, with_opencodon_node_path
 
     print()
@@ -3013,7 +3013,7 @@ def select_provider_and_model(args=None):
         AuthError,
         format_auth_error,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_compatible_custom_providers,
         load_config,
         get_env_value,
@@ -3038,7 +3038,7 @@ def select_provider_and_model(args=None):
     )
     compatible_custom_providers = get_compatible_custom_providers(config)
     def _named_custom_provider_map(cfg) -> dict[str, dict[str, str]]:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         # Build lookups of raw (un-expanded) templates keyed by a
         # stable identity. We intentionally bypass
@@ -3444,7 +3444,7 @@ def _clear_stale_openai_base_url():
     requests to the old custom endpoint instead of the newly selected
     provider.  See issue #5161.
     """
-    from opencodon_cli.config import get_env_value, save_env_value, load_config
+    from opencodon.config import get_env_value, save_env_value, load_config
 
     cfg = load_config()
     model_cfg = cfg.get("model", {})
@@ -3547,7 +3547,7 @@ def _save_aux_choice(
     other task-specific settings are preserved untouched. The main model
     config (``model.default``/``model.provider``) is never modified.
     """
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -3571,7 +3571,7 @@ def _reset_aux_to_auto() -> int:
     Includes plugin-registered tasks (via ``_all_aux_tasks``) so a plugin
     that contributed an auxiliary task gets reset alongside built-ins.
     """
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -3605,7 +3605,7 @@ def _aux_config_menu() -> None:
     Loops until the user picks "Back" so multiple tasks can be configured
     without returning to the main provider menu.
     """
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     while True:
         cfg = load_config()
@@ -3667,7 +3667,7 @@ def _aux_select_for_task(task: str) -> None:
     inside the aux picker — users set up new providers through the normal
     ``opencodon model`` flow, then route aux tasks to them here.
     """
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.model_switch import list_authenticated_providers
 
     cfg = load_config()
@@ -4019,7 +4019,7 @@ def _save_custom_provider(
     model name, context_length, and api_mode but doesn't add a duplicate entry.
     Uses *name* when provided, otherwise auto-generates from the URL.
     """
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -4078,7 +4078,7 @@ def _save_custom_provider(
 
 def _remove_custom_provider(config):
     """Let the user remove a saved custom provider from config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -4270,7 +4270,7 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
     cleared the key and is now unconfigured.
     """
     from opencodon_cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
-    from opencodon_cli.config import save_env_value
+    from opencodon.config import save_env_value
     from opencodon_cli.secret_prompt import masked_secret_prompt
 
     key_env = pconfig.api_key_env_vars[0] if pconfig.api_key_env_vars else ""
@@ -4379,7 +4379,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         read_claude_code_credentials,
         is_claude_code_token_valid,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         save_anthropic_oauth_token,
         use_anthropic_claude_code_credentials,
     )
@@ -4590,7 +4590,7 @@ def cmd_debug(args):
 
 def cmd_config(args):
     """Configuration management."""
-    from opencodon_cli.config import config_command
+    from opencodon.config import config_command
 
     config_command(args)
 
@@ -4622,7 +4622,7 @@ def cmd_import(args):
 
 
 def _print_version_info(*, check_updates: bool = True) -> None:
-    from opencodon_cli.config import detect_install_method
+    from opencodon.config import detect_install_method
     from opencodon_cli.banner import format_banner_version_label
 
     print(format_banner_version_label())
@@ -4651,7 +4651,7 @@ def _print_version_info(*, check_updates: bool = True) -> None:
     # Show update status (synchronous — acceptable since user asked for version info)
     try:
         from opencodon_cli.banner import check_for_updates
-        from opencodon_cli.config import recommended_update_command
+        from opencodon.config import recommended_update_command
 
         behind = check_for_updates()
         if behind and behind > 0:
@@ -5996,7 +5996,7 @@ def _desktop_launch_options() -> tuple[list[str], str]:
     flags: list[str] = []
     disable_gpu = "auto"
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         desktop_cfg = (load_config() or {}).get("desktop") or {}
     except Exception:
@@ -6422,7 +6422,7 @@ def _print_fts_optimize_available_notice() -> None:
     """
     mode = "advise"
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         mode = str(
             ((load_config() or {}).get("sessions") or {}).get(
@@ -9156,8 +9156,8 @@ def _install_hangup_protection(gateway_mode: bool = False):
     # tolerance.  Any failure here is non-fatal; we just skip the wrap.
     try:
         # Late-bound import so tests can monkeypatch
-        # opencodon_cli.config.get_opencodon_home to simulate setup failure.
-        from opencodon_cli.config import get_opencodon_home as _get_opencodon_home
+        # opencodon.config.get_opencodon_home to simulate setup failure.
+        from opencodon.config import get_opencodon_home as _get_opencodon_home
 
         logs_dir = _get_opencodon_home() / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
@@ -9271,14 +9271,14 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
     Installs that can't honor non-default branches (e.g. Docker) surface a
     one-line notice instead of silently dropping the flag.
     """
-    from opencodon_cli.config import detect_install_method, recommended_update_command_for_method
+    from opencodon.config import detect_install_method, recommended_update_command_for_method
     method = detect_install_method(PROJECT_ROOT)
     if method == "docker":
         # Docker can't ``git fetch`` from within the container.  Surface the
         # same long-form ``docker pull`` guidance ``opencodon update`` (apply
         # path) uses — telling the user to "reinstall via curl" or that
         # ".git is missing" would point them at the wrong remediation.
-        from opencodon_cli.config import format_docker_update_message
+        from opencodon.config import format_docker_update_message
         print(format_docker_update_message())
         sys.exit(1)
 
@@ -9392,7 +9392,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
             print("✓ Already up to date.")
         else:
             print(f"⚕ Update available (behind {compare_branch}).")
-            from opencodon_cli.config import recommended_update_command
+            from opencodon.config import recommended_update_command
 
             print(f"  Run '{recommended_update_command()}' to install.")
         return
@@ -9411,7 +9411,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
     else:
         commits_word = "commit" if behind == 1 else "commits"
         print(f"⚕ Update available: {behind} {commits_word} behind {compare_branch}.")
-        from opencodon_cli.config import recommended_update_command
+        from opencodon.config import recommended_update_command
 
         print(f"  Run '{recommended_update_command()}' to install.")
 
@@ -9531,7 +9531,7 @@ def _resolve_pre_update_backup_mode(args) -> str:
         return "full"
 
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config()
     except Exception as exc:
@@ -9622,7 +9622,7 @@ def _run_pre_update_backup(args) -> Optional[str]:
         return snapshot_id
 
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         _keep = (load_config() or {}).get("updates", {}).get("backup_keep", 5)
     except Exception:
@@ -10266,7 +10266,7 @@ def cmd_update(args):
     runs the update, then restores stdio on the way out (even on
     ``sys.exit`` or unhandled exceptions).
     """
-    from opencodon_cli.config import (
+    from opencodon.config import (
         detect_install_method,
         format_docker_update_message,
         is_managed,
@@ -10339,7 +10339,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
     discard_local_changes = False
     if _non_interactive_update:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             _update_cfg = (load_config() or {}).get("updates", {})
             if isinstance(_update_cfg, dict):
@@ -11003,7 +11003,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print()
         print("→ Checking configuration...")
 
-        from opencodon_cli.config import get_missing_env_vars, reconcile_config
+        from opencodon.config import get_missing_env_vars, reconcile_config
 
         missing_env = get_missing_env_vars(required_only=True)
 
@@ -11144,7 +11144,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         try:
             refresh_cua_driver = True
             try:
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
 
                 _update_cfg = (load_config() or {}).get("updates", {})
                 if isinstance(_update_cfg, dict):
@@ -11363,7 +11363,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 _DEFAULT_DRAIN = 60.0
             _cfg_drain = None
             try:
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
 
                 _cfg_agent = load_config().get("agent") or {}
                 _cfg_drain = _cfg_agent.get("restart_drain_timeout")
@@ -12766,7 +12766,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     secret = secrets.token_urlsafe(32)
 
     try:
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         from opencodon_cli.plugins_cmd import ensure_basic_auth_plugin_enabled_in_config
 
         cfg = load_config()
@@ -13097,7 +13097,7 @@ def cmd_dashboard(args):
     # (#63141, #54449, #61115, #65696). PTY chat spawns already bridge their
     # child env copy; this covers the in-process consumers.
     try:
-        from opencodon_cli.config import apply_terminal_config_to_env
+        from opencodon.config import apply_terminal_config_to_env
 
         apply_terminal_config_to_env()
     except Exception:
@@ -13497,7 +13497,7 @@ def _prepare_agent_startup(args) -> None:
                 exc_info=True,
             )
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from agent.shell_hooks import register_from_config
 
         register_from_config(load_config(), accept_hooks=_accept_hooks)
@@ -13645,7 +13645,7 @@ def _try_termux_fast_tui_launch() -> bool:
 def cmd_memory(args):
     sub = getattr(args, "memory_command", None)
     if sub == "off":
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         config = load_config()
         if not isinstance(config.get("memory"), dict):
@@ -15660,7 +15660,7 @@ def main():
     # the managed container.  This MUST run before parse_args() so that
     # --help, unrecognised flags, and every subcommand are forwarded
     # transparently instead of being intercepted by argparse on the host.
-    from opencodon_cli.config import get_container_exec_info
+    from opencodon.config import get_container_exec_info
 
     container_info = get_container_exec_info()
     if container_info:

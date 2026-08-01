@@ -55,7 +55,7 @@ def _vertex_config() -> dict:
     directly at the call sites below, with config.yaml as the fallback.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         section = load_config().get("vertex")
         return section if isinstance(section, dict) else {}

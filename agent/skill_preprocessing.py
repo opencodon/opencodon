@@ -25,7 +25,7 @@ _INLINE_SHELL_MAX_OUTPUT = 4000
 def load_skills_config() -> dict:
     """Load the ``skills`` section of config.yaml (best-effort)."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config() or {}
         skills_cfg = cfg.get("skills")

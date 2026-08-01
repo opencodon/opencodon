@@ -339,7 +339,7 @@ def _load_config_basic_auth_section() -> dict:
     not being a dict — every shape falls through to ``{}``.
     """
     try:
-        from opencodon_cli.config import cfg_get, load_config
+        from opencodon.config import cfg_get, load_config
 
         cfg = load_config()
     except Exception as exc:  # noqa: BLE001 — broad catch is intentional

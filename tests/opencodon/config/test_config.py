@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from opencodon_cli.config import (
+from opencodon.config import (
     DEFAULT_CONFIG,
     get_opencodon_home,
     ensure_opencodon_home,
@@ -69,7 +69,7 @@ class TestEnsureOpencodonHome:
         # Older installers seeded a comment-only scaffold that shadowed the
         # runtime default. A SOUL.md still matching that scaffold carries no
         # user persona and should be upgraded in place to DEFAULT_SOUL_MD.
-        from opencodon_cli.default_soul import DEFAULT_SOUL_MD, _LEGACY_TEMPLATE_SOULS
+        from opencodon.config.default_soul import DEFAULT_SOUL_MD, _LEGACY_TEMPLATE_SOULS
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
             soul_path = tmp_path / "SOUL.md"
@@ -80,7 +80,7 @@ class TestEnsureOpencodonHome:
     def test_preserves_legacy_template_with_user_persona(self, tmp_path):
         # If the user typed a persona alongside the scaffold, the content no
         # longer matches the known empty template — leave it untouched.
-        from opencodon_cli.default_soul import _LEGACY_TEMPLATE_SOULS
+        from opencodon.config.default_soul import _LEGACY_TEMPLATE_SOULS
 
         mixed = _LEGACY_TEMPLATE_SOULS[0] + "\nYou are a helpful pirate."
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -143,7 +143,7 @@ class TestLoadConfigParseFailure:
     def test_logs_and_warns_on_parse_failure(self, tmp_path, caplog, capsys):
         # Reset the dedup cache so this test isn't affected by other tests
         # that may have warned about a different broken config.
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -170,7 +170,7 @@ class TestLoadConfigParseFailure:
             assert str(tmp_path / "config.yaml") in captured.err
 
     def test_dedup_on_repeated_load_same_file(self, tmp_path, capsys):
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -186,7 +186,7 @@ class TestLoadConfigParseFailure:
 
     def test_rewarns_after_file_edit(self, tmp_path, capsys):
         import time
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -208,7 +208,7 @@ class TestLoadConfigParseFailure:
         Ported from google-gemini/gemini-cli#21541 (policy-file TOML recovery),
         adapted: we back up but deliberately do NOT reset config.yaml.
         """
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -230,7 +230,7 @@ class TestLoadConfigParseFailure:
     def test_backup_skips_when_same_size_bak_exists(self, tmp_path, capsys):
         """Don't churn backups: if a corrupt backup of the same size already
         exists (same corruption already preserved), skip making another."""
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -252,7 +252,7 @@ class TestLoadConfigParseFailure:
         import sys as _sys
         if _sys.platform == "win32":
             pytest.skip("symlink creation requires privileges on Windows")
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -277,7 +277,7 @@ class TestLoadConfigParseFailure:
         parses again.
         """
         import time
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -307,7 +307,7 @@ class TestLoadConfigParseFailure:
     def test_last_known_good_recovers_after_fix(self, tmp_path):
         """Fixing the YAML picks up the new content on the next load."""
         import time
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -326,7 +326,7 @@ class TestLoadConfigParseFailure:
     def test_fresh_process_still_falls_back_to_defaults(self, tmp_path):
         """With no last-known-good (fresh process for this path), a broken
         config still falls back to DEFAULT_CONFIG as before."""
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -342,7 +342,7 @@ class TestLoadConfigParseFailure:
         """Repeated loads of the same broken file serve the cached LKG and
         don't re-warn (dedup on mtime/size still applies)."""
         import time
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
@@ -379,7 +379,7 @@ class TestEmptyConfigSections:
     def test_null_override_of_non_dict_default_still_applies(self, tmp_path):
         """None only shields dict defaults — explicit null for a scalar
         key remains an override (unchanged behavior)."""
-        from opencodon_cli.config import _deep_merge
+        from opencodon.config import _deep_merge
 
         merged = _deep_merge({"scalar": 5, "section": {"a": 1}},
                              {"scalar": None, "section": None})
@@ -443,7 +443,7 @@ class TestSaveAndLoadRoundtrip:
         fail closed on an unreadable existing config.yaml — this locks in the
         whole bug class (gateway slash commands, doctor --fix, yuanbao/telegram
         auto-sethome, tui_gateway _save_cfg), not just the three named paths."""
-        from opencodon_cli.config import atomic_config_write
+        from opencodon.config import atomic_config_write
 
         config_path = tmp_path / "config.yaml"
         original = "model:\n  provider: openrouter\n"
@@ -458,7 +458,7 @@ class TestSaveAndLoadRoundtrip:
     def test_atomic_config_write_creates_new_file(self, tmp_path):
         """A genuinely absent config.yaml must still be created — the guard
         only refuses to clobber an existing-but-unreadable file."""
-        from opencodon_cli.config import atomic_config_write
+        from opencodon.config import atomic_config_write
 
         config_path = tmp_path / "config.yaml"
         assert not config_path.exists()
@@ -1082,22 +1082,22 @@ class TestOptionalEnvVarsRegistry:
 
     def test_tavily_api_key_registered(self):
         """TAVILY_API_KEY is listed in OPTIONAL_ENV_VARS."""
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         assert "TAVILY_API_KEY" in OPTIONAL_ENV_VARS
 
     def test_tavily_api_key_is_tool_category(self):
         """TAVILY_API_KEY is in the 'tool' category."""
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["TAVILY_API_KEY"]["category"] == "tool"
 
     def test_tavily_api_key_is_password(self):
         """TAVILY_API_KEY is marked as password."""
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["TAVILY_API_KEY"]["password"] is True
 
     def test_tavily_api_key_has_url(self):
         """TAVILY_API_KEY has a URL."""
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["TAVILY_API_KEY"]["url"] == "https://app.tavily.com/home"
 
 
@@ -1110,7 +1110,7 @@ class TestOptionalEnvVarsRegistry:
         via config.yaml; OPENCODON_MAX_ITERATIONS remains a read-only backward-compat
         fallback in the gateway/CLI, never a promoted write target.
         """
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         assert "OPENCODON_MAX_ITERATIONS" not in OPTIONAL_ENV_VARS
 
 
@@ -1385,7 +1385,7 @@ class TestProviderEnabledRuntimeGate:
         config_path.write_text(yaml.safe_dump(cfg))
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         # Bust the in-process config cache so the override picks up.
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._cached_config = None  # type: ignore[attr-defined]
 
         from opencodon_cli.runtime_provider import resolve_runtime_provider
@@ -1408,7 +1408,7 @@ class TestProviderEnabledRuntimeGate:
         config_path = tmp_path / "config.yaml"
         config_path.write_text(yaml.safe_dump(cfg))
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._cached_config = None  # type: ignore[attr-defined]
 
         from opencodon_cli.runtime_provider import resolve_runtime_provider
@@ -1430,7 +1430,7 @@ class TestProviderEnabledRuntimeGate:
         config_path = tmp_path / "config.yaml"
         config_path.write_text(yaml.safe_dump(cfg))
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        from opencodon_cli import config as cfg_mod
+        from opencodon import config as cfg_mod
         cfg_mod._cached_config = None  # type: ignore[attr-defined]
 
         # Don't assert success — built-in resolution needs more state.

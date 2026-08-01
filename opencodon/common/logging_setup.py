@@ -438,7 +438,7 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
     """
 
     def __init__(self, *args, **kwargs):
-        from opencodon_cli.config import is_managed
+        from opencodon.config import is_managed
         self._managed = is_managed()
         super().__init__(*args, **kwargs)
         # Snapshot the inode of the currently open stream so emit() can
@@ -773,7 +773,7 @@ def _read_logging_config():
             # Managed scope: an administrator can pin logging.* too. Overlay via
             # the shared helper (fail-open) since this reads config.yaml directly.
             try:
-                from opencodon_cli import managed_scope
+                from opencodon.config import managed_scope
                 cfg = managed_scope.apply_managed_overlay(cfg)
             except Exception:
                 pass

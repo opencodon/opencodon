@@ -39,7 +39,7 @@ from gateway.restart import (
     is_gateway_supervisor_process,
     parse_restart_drain_timeout,
 )
-from opencodon_cli.config import (
+from opencodon.config import (
     get_env_value,
     get_opencodon_home,
     is_managed,
@@ -61,7 +61,7 @@ from opencodon_cli.setup import (
     prompt_choice,
     prompt_yes_no,
 )
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 
 logger = logging.getLogger(__name__)
 
@@ -4725,7 +4725,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
         _max_starts = 5
         _win = 120.0
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             _cfg = load_config()
             _gw = _cfg.get("gateway") if isinstance(_cfg, dict) else None

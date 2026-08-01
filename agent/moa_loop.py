@@ -157,7 +157,7 @@ def _aggregator_reasoning_config(aggregator: dict[str, Any]) -> dict[str, Any] |
     if cfg is not None:
         return cfg
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_constants import resolve_reasoning_config
 
         return resolve_reasoning_config(
@@ -1013,7 +1013,7 @@ class MoAChatCompletions:
                 raise TypeError("_moa_prepared_request must be a dict")
             return self._call_prepared_aggregator(prepared_request, api_kwargs)
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.moa_config import resolve_moa_preset
 
         preset = resolve_moa_preset(load_config().get("moa") or {}, self.preset_name)

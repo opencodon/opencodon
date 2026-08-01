@@ -307,7 +307,7 @@ def ledger_enabled(config: Optional[Dict[str, Any]] = None) -> bool:
     """Read the ``gateway.delivery_ledger`` config gate (default on)."""
     try:
         if config is None:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             config = load_config()
         gw = config.get("gateway") or {}

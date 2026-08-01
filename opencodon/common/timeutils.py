@@ -52,7 +52,7 @@ def _resolve_timezone_name() -> str:
         # costs ~100ms+ and this used to run inside the FIRST system prompt
         # build, on the time-to-first-token critical path.
         try:
-            from opencodon_cli.config import read_raw_config
+            from opencodon.config import read_raw_config
             cfg = read_raw_config() or {}
         except Exception:
             import yaml
@@ -66,7 +66,7 @@ def _resolve_timezone_name() -> str:
             # Managed scope: an administrator can pin ``timezone`` too. Overlay
             # via the shared helper (fail-open) since this reads config.yaml directly.
             try:
-                from opencodon_cli import managed_scope
+                from opencodon.config import managed_scope
                 cfg = managed_scope.apply_managed_overlay(cfg)
             except Exception:
                 pass

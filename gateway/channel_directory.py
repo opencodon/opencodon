@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)

@@ -123,6 +123,28 @@ normalize_proxy_url/env_vars) in test_utils_env_proxy_json.py.
   changes yet.
 
 ### Phase 2 — Break the inversion (highest value, highest risk)
+
+**Phase 2a DONE 2026-08-01 (config layer):** `opencodon_cli/config.py`
+(8k lines) alias-moved wholesale to `opencodon/config/__init__.py`, plus its
+four leaf deps: `colors → opencodon/common/colors`, `route_identity →
+opencodon/common/route_identity`, `default_soul → opencodon/config/
+default_soul`, `managed_scope → opencodon/config/managed_scope`.
+`save_config_value` extracted from cli.py into opencodon.config (now
+call-time home resolution — profile/override-aware, no import-time
+snapshot). 166 production files flipped to canonical imports. New
+`opencodon-layer-purity` contract; grandfather lists shrunk:
+agent→opencodon_cli 90→62, tools→opencodon_cli 71→34, gateway→cli 2→0.
+Gotchas hit (recorded for later phases): `__file__`-relative repo-root
+anchors break on every move (get_project_root, node-bootstrap path —
+pinned by tests/opencodon/test_path_anchors.py); tests that stub
+`sys.modules["opencodon_cli.config"]` or patch `cli.save_config_value`
+need their targets flipped; `masked_secret_prompt` deferred to
+function level in reconcile_config.
+
+**Phase 2b remaining:** relocate the other core services living under
+`opencodon_cli` (auth, providers, models, model_normalize, timeouts,
+runtime_provider, profiles, plugins loader) and drain the remaining
+agent/tools→opencodon_cli edges; flip agent→run_agent helper imports.
 - Unify the three config loaders into `opencodon/config/`; `save_config_value`
   moves here (kills `gateway → cli.py` and `tui_gateway → cli.py` reaches).
 - Move shared display/callback abstractions out of frontends into core.

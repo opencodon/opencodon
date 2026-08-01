@@ -24,7 +24,7 @@ import argparse
 import os
 import subprocess
 
-from opencodon_cli.config import clear_model_endpoint_credentials
+from opencodon.config import clear_model_endpoint_credentials
 
 
 # AWS cross-region inference profile prefixes. Any geo-prefixed profile only
@@ -176,7 +176,7 @@ def _model_flow_openrouter(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import get_env_value
+    from opencodon.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
     # in-flow (K/R/C) instead of having to edit ~/.opencodon/.env by hand. The
@@ -216,7 +216,7 @@ def _model_flow_openrouter(config, current_model=""):
         _save_model_choice(selected)
 
         # Update config provider and deactivate any OAuth provider
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         model = cfg.get("model")
@@ -253,7 +253,7 @@ def _model_flow_moa(config, current_model=""):
     what they are selecting, then print the full preset breakdown on selection.
     """
     from opencodon_cli.auth import _save_model_choice, deactivate_provider
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     from opencodon_cli.moa_config import normalize_moa_config
 
     moa = normalize_moa_config(config.get("moa") if isinstance(config, dict) else {})
@@ -608,7 +608,7 @@ def _model_flow_custom(config):
     """
     from opencodon_cli.main import _auto_provider_name, _prompt_custom_api_mode_selection, _save_custom_provider
     from opencodon_cli.auth import _save_model_choice, deactivate_provider
-    from opencodon_cli.config import get_env_value, load_config, save_config
+    from opencodon.config import get_env_value, load_config, save_config
     from opencodon_cli.secret_prompt import masked_secret_prompt
 
     current_url = get_env_value("OPENAI_BASE_URL") or ""
@@ -858,7 +858,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     (models.dev, provider metadata, hardcoded family fallbacks).
     """
     from opencodon_cli.auth import _save_model_choice, deactivate_provider  # noqa: F401
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -1201,7 +1201,7 @@ def _model_flow_named_custom(config, provider_info):
     """
     from opencodon_cli.main import _custom_provider_api_key_config_value, _custom_provider_base_url_config_value, _save_custom_provider
     from opencodon_cli.auth import _save_model_choice, deactivate_provider
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     from opencodon_cli.models import fetch_api_models
 
     name = provider_info["name"]
@@ -1394,7 +1394,7 @@ def _model_flow_copilot(config, current_model=""):
         deactivate_provider,
         resolve_api_key_provider_credentials,
     )
-    from opencodon_cli.config import save_env_value, load_config, save_config
+    from opencodon.config import save_env_value, load_config, save_config
     from opencodon_cli.models import (
         _PROVIDER_MODELS,
         fetch_api_models,
@@ -1599,7 +1599,7 @@ def _model_flow_copilot_acp(config, current_model=""):
         fetch_github_model_catalog,
         normalize_copilot_model_id,
     )
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     del config
 
@@ -1716,7 +1716,7 @@ def _model_flow_kimi(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -1802,7 +1802,7 @@ def _model_flow_stepfun(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -1918,7 +1918,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         load_config,
         save_config,
         get_env_value,
@@ -2015,7 +2015,7 @@ def _model_flow_bedrock(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     from opencodon_cli.models import _PROVIDER_MODELS
 
     # 1. Check for AWS credentials
@@ -2222,7 +2222,7 @@ def _model_flow_vertex(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import load_config, save_config, get_env_value
+    from opencodon.config import load_config, save_config, get_env_value
     from opencodon_cli.models import _PROVIDER_MODELS
 
     # 1. Credential source detection (fast, no network / no google-auth import).
@@ -2379,7 +2379,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -2692,7 +2692,7 @@ def _model_flow_anthropic(config, current_model=""):
         _save_model_choice,
         deactivate_provider,
     )
-    from opencodon_cli.config import (
+    from opencodon.config import (
         save_env_value,
         load_config,
         save_config,

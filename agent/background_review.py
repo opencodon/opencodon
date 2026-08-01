@@ -67,7 +67,7 @@ def _resolve_review_runtime(agent: Any) -> Dict[str, Any]:
         "routed": False,
     }
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
     except Exception:
         return parent

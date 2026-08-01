@@ -14,7 +14,7 @@ from pathlib import Path
 
 from opencodon_constants import get_opencodon_home
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 
 def log_info(msg: str):
     print(f"{color('→', Colors.CYAN)} {msg}")

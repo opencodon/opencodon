@@ -203,14 +203,14 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
     to the errors=replace corruption path. Order of BOM checks matters:
     UTF-32-LE's BOM starts with UTF-16-LE's FF FE.
 
-    We delegate to ``opencodon_cli.config._sanitize_env_lines`` which
+    We delegate to ``opencodon.config._sanitize_env_lines`` which
     already knows all valid opencodon env-var names and can split
     concatenated lines correctly.
     """
     if not path.exists():
         return
     try:
-        from opencodon_cli.config import _sanitize_env_lines
+        from opencodon.config import _sanitize_env_lines
     except ImportError:
         return  # early bootstrap — config module not available yet
 
@@ -369,7 +369,7 @@ def _apply_managed_env() -> None:
     error here is swallowed so managed scope can never block startup.
     """
     try:
-        from opencodon_cli import managed_scope
+        from opencodon.config import managed_scope
 
         managed_dir = managed_scope.get_managed_dir()
     except Exception:  # noqa: BLE001 — managed scope must never block startup

@@ -207,7 +207,7 @@ def register_from_config(
 ) -> List[ShellHookSpec]:
     """Register every configured shell hook on the plugin manager.
 
-    ``cfg`` is the full parsed config dict (``opencodon_cli.config.load_config``
+    ``cfg`` is the full parsed config dict (``opencodon.config.load_config``
     output).  The ``hooks:`` key is read out of it.  Missing, empty, or
     non-dict ``hooks`` is treated as zero configured hooks.
 

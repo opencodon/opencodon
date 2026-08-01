@@ -57,7 +57,7 @@ _SIZES = {
 def _load_deepinfra_image_config() -> Dict[str, Any]:
     """Read ``image_gen.deepinfra`` from config.yaml."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None

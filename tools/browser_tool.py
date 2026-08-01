@@ -68,7 +68,7 @@ from agent.auxiliary_client import call_llm
 from agent.redact import redact_cdp_url
 from opencodon_constants import agent_browser_runnable, get_opencodon_home
 from utils import env_int, is_truthy_value
-from opencodon_cli.config import DEFAULT_CONFIG, cfg_get
+from opencodon.config import DEFAULT_CONFIG, cfg_get
 from opencodon_cli._subprocess_compat import windows_hide_flags
 
 # Browser-specific tool keys passed through to the agent-browser subprocess
@@ -273,7 +273,7 @@ def _get_command_timeout() -> int:
 
     result = DEFAULT_COMMAND_TIMEOUT
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         val = cfg_get(cfg, "browser", "command_timeout")
         if val is not None:
@@ -473,7 +473,7 @@ def _get_cdp_override() -> str:
         return _resolve_cdp_override(env_override)
 
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
@@ -499,7 +499,7 @@ def _get_dialog_policy_config() -> Tuple[str, float]:
     )
 
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -685,7 +685,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
 
     resolved: Optional[CloudBrowserProvider] = None
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         provider_key = None
@@ -859,7 +859,7 @@ def _get_browser_engine() -> str:
 
     # Config file takes priority
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         val = cfg.get("browser", {}).get("engine")
         if val and str(val).strip():
@@ -903,7 +903,7 @@ def _is_headed_mode() -> bool:
     _cached_headed_mode = False
 
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         val = cfg.get("browser", {}).get("headed")
         if val is not None:
@@ -1221,7 +1221,7 @@ def _auto_local_for_private_urls() -> bool:
 
     _auto_local_for_private_urls_resolved = True
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict) and "auto_local_for_private_urls" in browser_cfg:
@@ -1396,7 +1396,7 @@ def _allow_private_urls() -> bool:
     _allow_private_urls_resolved = True
     _cached_allow_private_urls = False  # safe default
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict):
@@ -1463,7 +1463,7 @@ DEFAULT_SESSION_INACTIVITY_TIMEOUT = int(
 def _get_session_inactivity_timeout() -> int:
     result = env_int("BROWSER_INACTIVITY_TIMEOUT", DEFAULT_SESSION_INACTIVITY_TIMEOUT)
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         cfg = read_raw_config()
         val = cfg_get(cfg, "browser", "inactivity_timeout")
         if val is not None:
@@ -3562,7 +3562,7 @@ def _allow_unsafe_browser_evaluate() -> bool:
     sensitive-primitive denylist even if ``browser.restrict_evaluate`` is set.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config()
         return is_truthy_value(cfg_get(cfg, "browser", "allow_unsafe_evaluate"), default=False)
@@ -3586,7 +3586,7 @@ def _restrict_browser_evaluate() -> bool:
     ``browser.allow_unsafe_evaluate: true`` overrides it back off.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config()
         return is_truthy_value(cfg_get(cfg, "browser", "restrict_evaluate"), default=False)
@@ -3910,7 +3910,7 @@ def _maybe_start_recording(task_id: str):
         if task_id in _recording_sessions:
             return
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         opencodon_home = get_opencodon_home()
         cfg = read_raw_config()
         record_enabled = cfg_get(cfg, "browser", "record_sessions", default=False)
@@ -4252,7 +4252,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         vision_timeout = 120.0
         vision_temperature = 0.1
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             _cfg = load_config()
             _vision_cfg = cfg_get(_cfg, "auxiliary", "vision", default={})
             _vt = _vision_cfg.get("timeout")

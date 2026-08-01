@@ -25,7 +25,7 @@ def _skins_dir() -> Path:
 
 
 def _active_skin() -> str:
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     display = (load_config() or {}).get("display") or {}
     return str(display.get("skin") or "default")
@@ -33,7 +33,7 @@ def _active_skin() -> str:
 
 def _use(name: str) -> None:
     """Activate a skin (persists display.skin via the shared config writer)."""
-    from opencodon_cli.config import config_command
+    from opencodon.config import config_command
 
     config_command(argparse.Namespace(config_command="set", key="display.skin", value=name, force=True))
 

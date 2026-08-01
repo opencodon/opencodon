@@ -10,7 +10,7 @@ import subprocess
 import shutil
 from pathlib import Path
 
-from opencodon_cli.config import get_project_root, get_opencodon_home, get_env_path
+from opencodon.config import get_project_root, get_opencodon_home, get_env_path
 from opencodon_cli.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
 from opencodon_constants import agent_browser_runnable
@@ -23,7 +23,7 @@ _DHH = display_opencodon_home()  # user-facing display path (e.g. ~/.opencodon o
 _env_path = get_env_path()
 load_opencodon_dotenv(opencodon_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 from opencodon_cli.models import _OPENCODON_USER_AGENT
 from opencodon_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
@@ -247,7 +247,7 @@ def report_deprecated_config_and_env(
 def _enabled_cli_toolsets_for_doctor() -> set[str] | None:
     """Return toolsets enabled for the CLI, or None if config resolution fails."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.tools_config import _get_platform_tools
 
         return {str(toolset) for toolset in _get_platform_tools(load_config() or {}, "cli")}
@@ -537,7 +537,7 @@ def managed_scope_check() -> None:
     foot-gun (see docs/design/managed-scope.md §7) and an operator should see it.
     """
     try:
-        from opencodon_cli import managed_scope
+        from opencodon.config import managed_scope
         managed_dir = managed_scope.get_managed_dir()
     except Exception:  # noqa: BLE001 — diagnostics must never crash
         return
@@ -650,7 +650,7 @@ def run_doctor(args):
 
     _section("MCP Server Security")
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.mcp_security import validate_mcp_server_entry
 
         servers = load_config().get("mcp_servers") or {}
@@ -799,7 +799,7 @@ def run_doctor(args):
                 _resolve_auth_provider = None
                 pass
             try:
-                from opencodon_cli.config import get_compatible_custom_providers as _compatible_custom_providers
+                from opencodon.config import get_compatible_custom_providers as _compatible_custom_providers
                 from opencodon_cli.providers import (
                     normalize_provider as _normalize_catalog_provider,
                     resolve_provider_full as _resolve_provider_full,
@@ -818,7 +818,7 @@ def run_doctor(args):
 
             user_providers = cfg.get("providers")
             if isinstance(user_providers, dict):
-                from opencodon_cli.config import is_provider_enabled
+                from opencodon.config import is_provider_enabled
                 known_providers.update(
                     str(name).strip().lower()
                     for name, prov_cfg in user_providers.items()
@@ -932,7 +932,7 @@ def run_doctor(args):
             if runtime_provider and runtime_provider not in ("auto", "custom"):
                 try:
                     if runtime_provider == "openrouter":
-                        from opencodon_cli.config import get_env_value
+                        from opencodon.config import get_env_value
 
                         configured = bool(
                             str(get_env_value("OPENROUTER_API_KEY") or "").strip()
@@ -978,7 +978,7 @@ def run_doctor(args):
                     shutil.copy2(str(example_config), str(config_path))
                     check_ok(f"Created {_DHH}/config.yaml from cli-config.yaml.example")
                 else:
-                    from opencodon_cli.config import DEFAULT_CONFIG, save_config
+                    from opencodon.config import DEFAULT_CONFIG, save_config
                     save_config(DEFAULT_CONFIG)
                     check_ok(f"Created {_DHH}/config.yaml from defaults")
                 fixed_count += 1
@@ -990,7 +990,7 @@ def run_doctor(args):
         # Repair/validate config and .env. Only under --fix: reconcile writes.
         if should_fix:
             try:
-                from opencodon_cli.config import reconcile_config
+                from opencodon.config import reconcile_config
 
                 result = reconcile_config(interactive=False, quiet=False)
                 for warning in result.get("warnings") or []:
@@ -1029,7 +1029,7 @@ def run_doctor(args):
                             model_section[k] = raw_config.pop(k)
                         else:
                             raw_config.pop(k)
-                    from opencodon_cli.config import atomic_config_write
+                    from opencodon.config import atomic_config_write
                     atomic_config_write(config_path, raw_config)
                     check_ok("Migrated stale root-level keys into model section")
                     fixed_count += 1
@@ -1050,7 +1050,7 @@ def run_doctor(args):
         # which the startup bridge may already have overridden.
         try:
             import yaml
-            from opencodon_cli.config import load_env, remove_env_value
+            from opencodon.config import load_env, remove_env_value
             with open(config_path, encoding="utf-8") as f:
                 raw_config = yaml.safe_load(f) or {}
             agent_cfg = raw_config.get("agent")
@@ -1100,7 +1100,7 @@ def run_doctor(args):
         # not auto-delete here — only tells the user the modern replacement.
         try:
             import yaml as _yaml_depr
-            from opencodon_cli.config import load_env as _load_env_depr
+            from opencodon.config import load_env as _load_env_depr
 
             with open(config_path, encoding="utf-8") as _f_depr:
                 _raw_for_depr = _yaml_depr.safe_load(_f_depr) or {}
@@ -1116,7 +1116,7 @@ def run_doctor(args):
 
         # Validate config structure (catches malformed custom_providers, etc.)
         try:
-            from opencodon_cli.config import validate_config_structure
+            from opencodon.config import validate_config_structure
             config_issues = validate_config_structure()
             if config_issues:
                 _section("Config Structure")
@@ -1135,7 +1135,7 @@ def run_doctor(args):
     if not config_path.exists():
         # No config.yaml — still surface deprecated env vars from .env.
         try:
-            from opencodon_cli.config import load_env as _load_env_depr
+            from opencodon.config import load_env as _load_env_depr
 
             try:
                 _env_for_depr = _load_env_depr()
@@ -2081,7 +2081,7 @@ def run_doctor(args):
         """
         label = "Azure Foundry (Entra ID)".ljust(28)
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             cfg = load_config()
             model_cfg = cfg.get("model") if isinstance(cfg, dict) else {}
             if not isinstance(model_cfg, dict):
@@ -2261,7 +2261,7 @@ def run_doctor(args):
     else:
         check_warn("Skills Hub directory not initialized", "(run: opencodon skills list)")
 
-    from opencodon_cli.config import get_env_value
+    from opencodon.config import get_env_value
 
     def _gh_authenticated() -> bool:
         """Check if gh CLI is authenticated via token file or device flow."""
@@ -2291,7 +2291,7 @@ def run_doctor(args):
             with open(_mem_cfg_path, encoding="utf-8") as _f:
                 _raw_cfg = _yaml.safe_load(_f) or {}
             try:
-                from opencodon_cli import managed_scope
+                from opencodon.config import managed_scope
                 _raw_cfg = managed_scope.apply_managed_overlay(_raw_cfg)
             except Exception:
                 pass

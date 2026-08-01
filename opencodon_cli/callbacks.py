@@ -10,7 +10,7 @@ import queue
 import time as _time
 
 from opencodon_cli.banner import cprint, _DIM, _RST
-from opencodon_cli.config import save_env_value_secure
+from opencodon.config import save_env_value_secure
 from opencodon_cli.secret_prompt import masked_secret_prompt
 from opencodon_constants import display_opencodon_home
 

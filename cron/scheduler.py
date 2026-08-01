@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from opencodon_constants import get_opencodon_home
 from opencodon_cli._subprocess_compat import windows_hide_flags
-from opencodon_cli.config import load_config, _expand_env_vars
+from opencodon.config import load_config, _expand_env_vars
 from opencodon_cli.fallback_config import get_fallback_chain
 from opencodon_time import now as _opencodon_now
 
@@ -2861,7 +2861,7 @@ def run_job(
                 )
         if _session_db_timeout is None:
             try:
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
                 _cfg = load_config() or {}
                 _cron_cfg = _cfg.get("cron", {}) if isinstance(_cfg, dict) else {}
                 _configured = _cron_cfg.get("session_db_timeout_seconds")
@@ -3110,7 +3110,7 @@ def run_job(
                 # builds its own dict, so overlay managed values via the shared
                 # helper (fail-open, no-op when no managed scope).
                 try:
-                    from opencodon_cli import managed_scope
+                    from opencodon.config import managed_scope
                     _cfg = managed_scope.apply_managed_overlay(_cfg)
                 except Exception:
                     pass

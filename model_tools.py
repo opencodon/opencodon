@@ -310,7 +310,7 @@ def get_tool_definitions(
     # invalidate hook on every config-writer.
     if quiet_mode:
         try:
-            from opencodon_cli.config import get_config_path
+            from opencodon.config import get_config_path
             cfg_path = get_config_path()
             cfg_stat = cfg_path.stat()
             cfg_fp = (cfg_stat.st_mtime_ns, cfg_stat.st_size)
@@ -566,7 +566,7 @@ def _resolve_active_context_length() -> int:
     back to a fixed token cutoff in that case.
     """
     try:
-        from opencodon_cli.config import load_config as _load
+        from opencodon.config import load_config as _load
         cfg = _load() or {}
         model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
         if not isinstance(model_cfg, dict):

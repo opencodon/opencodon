@@ -409,7 +409,7 @@ def _allow_lazy_installs() -> bool:
     """
     # (1) Config kill switch wins in every mode.
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
     except Exception:
         cfg = None

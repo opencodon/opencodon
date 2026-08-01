@@ -33,7 +33,7 @@ def _build_inspection_agent(platform: str) -> Any:
     platform come from the caller so the breakdown matches a real session.
     """
     from run_agent import AIAgent
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.tools_config import _get_platform_tools
 
     cfg = load_config()

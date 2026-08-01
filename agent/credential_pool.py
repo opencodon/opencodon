@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from opencodon_constants import OPENROUTER_BASE_URL
-from opencodon_cli.config import load_env
+from opencodon.config import load_env
 from agent.secret_scope import get_secret as _get_secret
 from agent.credential_persistence import (
     is_borrowed_credential_source,
@@ -53,7 +53,7 @@ def _load_config_safe() -> Optional[dict]:
     deep-copied) the full config again.
     """
     try:
-        from opencodon_cli.config import load_config_readonly
+        from opencodon.config import load_config_readonly
 
         return load_config_readonly()
     except Exception:
@@ -379,7 +379,7 @@ def _iter_custom_providers(config: Optional[dict] = None):
     if not isinstance(custom_providers, list):
         # Fall back to the v12+ providers dict via the compatibility layer
         try:
-            from opencodon_cli.config import get_compatible_custom_providers
+            from opencodon.config import get_compatible_custom_providers
 
             custom_providers = get_compatible_custom_providers(config)
         except Exception:

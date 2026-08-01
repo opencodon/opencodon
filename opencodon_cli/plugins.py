@@ -48,7 +48,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from opencodon_constants import get_opencodon_home
 from utils import env_var_enabled, fast_safe_load
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 from opencodon_cli.middleware import OBSERVER_SCHEMA_VERSION, VALID_MIDDLEWARE
 
 
@@ -207,7 +207,7 @@ def _get_disabled_plugins() -> set:
     ``plugins.enabled``.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         disabled = cfg_get(config, "plugins", "disabled", default=[])
         return set(disabled) if isinstance(disabled, list) else set()
@@ -230,7 +230,7 @@ def _get_enabled_plugins() -> Optional[set]:
     * ``set(...)`` — the concrete allow-list.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         plugins_cfg = config.get("plugins")
         if not isinstance(plugins_cfg, dict):
@@ -435,7 +435,7 @@ class PluginContext:
         if source == "bundled":
             return True
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             cfg = load_config() or {}
         except Exception:
             # If we can't load config, fail closed — better to break the

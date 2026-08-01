@@ -1,7 +1,7 @@
 """Tests for config.yaml structure validation (validate_config_structure)."""
 
 
-from opencodon_cli.config import (
+from opencodon.config import (
     DEFAULT_CONFIG,
     _EXTRA_KNOWN_ROOT_KEYS,
     _KNOWN_ROOT_KEYS,

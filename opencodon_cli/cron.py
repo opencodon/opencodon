@@ -13,7 +13,7 @@ from typing import Iterable, List, Optional
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 
 # Gateway-lifecycle command detection lives in ``cron.lifecycle_guard`` so it
 # can be shared across every job-creation path (CLI + the agent's ``cronjob``

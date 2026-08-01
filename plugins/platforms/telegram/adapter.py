@@ -3211,7 +3211,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 changed = True
 
             if changed:
-                from opencodon_cli.config import atomic_config_write
+                from opencodon.config import atomic_config_write
 
                 atomic_config_write(
                     config_path,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from opencodon_cli.config import load_config, save_config
+from opencodon.config import load_config, save_config
 from opencodon_cli.inventory import build_models_payload, load_picker_context
 from opencodon_cli.moa_config import DEFAULT_MOA_PRESET_NAME, normalize_moa_config
 

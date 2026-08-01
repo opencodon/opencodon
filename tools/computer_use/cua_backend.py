@@ -176,7 +176,7 @@ _CUA_TELEMETRY_ENV_VAR = "CUA_DRIVER_RS_TELEMETRY_ENABLED"
 def _computer_use_cfg() -> Dict[str, Any]:
     """The ``computer_use`` config block, or ``{}`` when config is unreadable."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         return (load_config() or {}).get("computer_use") or {}
     except Exception:

@@ -47,8 +47,8 @@ from agent.tool_guardrails import (
     ToolCallGuardrailController,
     ToolGuardrailDecision,
 )
-from opencodon_cli.config import cfg_get
-from opencodon_cli.route_identity import normalize_route_base_url
+from opencodon.config import cfg_get
+from opencodon.common.route_identity import normalize_route_base_url
 from opencodon_cli.timeouts import get_provider_request_timeout
 from opencodon_constants import get_opencodon_home
 from utils import base_url_host_matches, is_truthy_value
@@ -797,7 +797,7 @@ def init_agent(
     # sessions with >5-minute pauses between turns (#14971).
     agent._cache_ttl = "5m"
     try:
-        from opencodon_cli.config import load_config as _load_pc_cfg
+        from opencodon.config import load_config as _load_pc_cfg
 
         _pc_cfg = _load_pc_cfg().get("prompt_caching", {}) or {}
         _ttl = _pc_cfg.get("cache_ttl", "5m")
@@ -1071,7 +1071,7 @@ def init_agent(
         # Guardrail config — read from config.yaml at init time.
         agent._bedrock_guardrail_config = None
         try:
-            from opencodon_cli.config import load_config as _load_br_cfg
+            from opencodon.config import load_config as _load_br_cfg
             _gr = _load_br_cfg().get("bedrock", {}).get("guardrail", {})
             if _gr.get("guardrail_identifier") and _gr.get("guardrail_version"):
                 agent._bedrock_guardrail_config = {
@@ -1270,7 +1270,7 @@ def init_agent(
         agent._apply_user_default_headers()
 
         try:
-            from opencodon_cli.config import (
+            from opencodon.config import (
                 apply_custom_provider_extra_headers_to_client_kwargs,
                 apply_custom_provider_tls_to_client_kwargs,
                 get_compatible_custom_providers,
@@ -1436,7 +1436,7 @@ def init_agent(
     # reads the JSON files directly.  See run_agent._save_session_log.
     agent._session_json_enabled = False
     try:
-        from opencodon_cli.config import load_config as _load_sess_cfg
+        from opencodon.config import load_config as _load_sess_cfg
         _sess_cfg = (_load_sess_cfg().get("sessions") or {})
         agent._session_json_enabled = bool(_sess_cfg.get("write_json_snapshots", False))
     except Exception:
@@ -1504,7 +1504,7 @@ def init_agent(
     
     # Load config once for memory, skills, and compression sections
     try:
-        from opencodon_cli.config import load_config as _load_agent_config
+        from opencodon.config import load_config as _load_agent_config
         _agent_cfg = _load_agent_config()
     except Exception:
         _agent_cfg = {}
@@ -1940,7 +1940,7 @@ def init_agent(
     # a named custom provider may keep its base URL only in this list rather
     # than repeating it under ``model``.
     try:
-        from opencodon_cli.config import get_compatible_custom_providers
+        from opencodon.config import get_compatible_custom_providers
         _custom_providers = get_compatible_custom_providers(_agent_cfg)
     except Exception:
         _custom_providers = _agent_cfg.get("custom_providers")
@@ -2013,7 +2013,7 @@ def init_agent(
             _user_providers = _agent_cfg.get("providers")
             _disabled_custom_provider_ids: set[str] = set()
             if isinstance(_user_providers, dict):
-                from opencodon_cli.config import is_provider_enabled
+                from opencodon.config import is_provider_enabled
 
                 for _provider_key, _provider_entry in _user_providers.items():
                     if not isinstance(_provider_entry, dict):
@@ -2112,7 +2112,7 @@ def init_agent(
     # Check custom_providers per-model context_length
     if _config_context_length is None and _custom_providers:
         try:
-            from opencodon_cli.config import get_custom_provider_context_length
+            from opencodon.config import get_custom_provider_context_length
             _cp_ctx_resolved = get_custom_provider_context_length(
                 model=agent.model,
                 base_url=agent.base_url,
