@@ -1,13 +1,16 @@
-"""The loopback session-token header the SPA actually sends.
+"""The loopback session-token credentials the server accepts.
 
-Regression guard for a rebrand split: ``web/src/lib/api.ts`` was renamed to
-send ``X-Opencodon-Session-Token`` while ``web_server`` kept checking
+Regression guard for a rebrand split: the dashboard bundle was renamed to send
+``X-Opencodon-Session-Token`` while ``web_server`` kept checking
 ``X-Hermes-Session-Token``, so every non-public ``/api`` route 401'd for any
 bundle built after the rename — the whole loopback dashboard, not one page.
 
 The names are asserted as literals on purpose. Reading the constant from the
-module would pass whatever it happens to say; the contract is with the shipped
-bundle and with older clients, so both strings are pinned here.
+module would pass whatever it happens to say; the contract is with shipped
+bundles and with older clients, so both strings are pinned here.
+
+Today's browser UI (``apps/web``) authenticates with ``Authorization: Bearer``;
+the two header names stay supported for older bundles and the desktop app.
 """
 from __future__ import annotations
 
@@ -39,14 +42,25 @@ def client():
 
 
 class TestSessionHeaderNames:
-    def test_spa_sends_the_header_the_server_checks(self):
-        """The bundle's header name and the server's must not drift again."""
-        api_ts = Path(__file__).resolve().parents[2] / "web" / "src" / "lib" / "api.ts"
-        source = api_ts.read_text(encoding="utf-8")
-        match = re.search(r'SESSION_HEADER\s*=\s*"([^"]+)"', source)
-        assert match, "web/src/lib/api.ts no longer declares SESSION_HEADER"
-        assert match.group(1) == CURRENT_HEADER
+    def test_server_still_checks_the_current_header_name(self):
+        """The header name the server checks must not drift again."""
         assert web_server._SESSION_HEADER_NAME == CURRENT_HEADER
+
+    def test_browser_bundle_sends_a_bearer_token(self):
+        """The browser host and the server must agree on the auth scheme.
+
+        ``apps/web`` replaced the old dashboard SPA and authenticates with
+        ``Authorization: Bearer``, covered server-side by
+        ``test_bearer_still_authenticates`` below.
+        """
+        bridge = (
+            Path(__file__).resolve().parents[2]
+            / "apps" / "web" / "src" / "web-bridge.ts"
+        )
+        source = bridge.read_text(encoding="utf-8")
+        assert re.search(r"'Authorization',\s*`Bearer \$\{token\}`", source), (
+            "apps/web/src/web-bridge.ts no longer sends a Bearer token"
+        )
 
     def test_current_header_authenticates(self, client):
         resp = client.get(

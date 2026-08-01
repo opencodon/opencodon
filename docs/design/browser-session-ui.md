@@ -109,15 +109,18 @@ source differently. Two traps this arrangement sets:
 
 ## 5. Serving
 
-`opencodon_cli/web_app.py` mounts the bundle at `/app`, before the config SPA's
-catch-all. It injects the same bootstrap globals `mount_spa` does, and honours
+`opencodon_cli/web_app.py` owns both browser mounts. `mount_web_app()` puts the
+bundle at `/app` (where its built asset URLs point), and `mount_root_spa()` —
+called last, via `web_server.mount_spa()` — adds the root catch-all so `/` and
+every other non-`/api` path resolve to the same document. Both honour
 `OPENCODON_SERVE_HEADLESS` so `opencodon serve` stays API-only.
 
-The two UIs coexist: `/` is the config dashboard, `/app` is the session UI.
+There used to be a second SPA under `web/` answering `/` (the config
+dashboard). It is gone: one bundle now serves the whole browser surface.
 
 ```bash
-npm run build --workspace @opencodon/web   # → opencodon_cli/web_app_dist/
-opencodon dashboard --no-open              # → http://127.0.0.1:9119/app
+npm run build --workspace @opencodon/web   # → opencodon_cli/web_dist/
+opencodon dashboard --no-open              # → http://127.0.0.1:9119/
 ```
 
 For development, `npm run dev --workspace @opencodon/web` serves it with HMR and proxies

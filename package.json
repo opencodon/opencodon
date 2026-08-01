@@ -7,20 +7,19 @@
     "apps/*",
     "ui-tui",
     "ui-tui/packages/*",
-    "web",
     "tests-js"
   ],
   "scripts": {
     "postinstall": "echo '✅ Browser tools ready. Run: python run_agent.py --help'",
     "install:root": "npm install --workspaces=false",
-    "install:web": "npm install --workspace web",
+    "install:web": "npm install --workspace @opencodon/web",
     "install:tui": "npm install --workspace ui-tui",
     "install:desktop": "npm install --workspace apps/desktop",
     "audit:root": "npm audit --workspaces=false",
-    "audit:web": "npm audit --workspace web",
+    "audit:web": "npm audit --workspace @opencodon/web",
     "audit:tui": "npm audit --workspace ui-tui",
     "audit:fix:root": "npm audit fix --workspaces=false",
-    "audit:fix:web": "npm audit fix --workspace web",
+    "audit:fix:web": "npm audit fix --workspace @opencodon/web",
     "audit:fix:tui": "npm audit fix --workspace ui-tui",
     "check": "npm run --ws check",
     "fix": "npm run --ws fix"

@@ -11,10 +11,9 @@
 // intentionally simple — no external dependency — but good enough to make
 // `son4` rank `claude-sonnet-4` above an incidental scattered hit.
 //
-// The WebUI ships a logically identical copy of this module at
-// web/src/lib/fuzzy.ts (only prettier formatting differs); keep the two in
-// sync. The TUI copy carries the vitest suite (the web package has no test
-// runner), so changes should be validated here.
+// The Python CLI ships a faithful port of this scorer in
+// opencodon_cli/curses_ui.py; keep the two in sync. This copy carries the
+// vitest suite, so changes should be validated here.
 
 export interface FuzzyMatch {
   /** Total score; higher is better. */

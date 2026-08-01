@@ -2892,8 +2892,19 @@ class TestWebServerEndpoints:
             return original_read_text(path_self, *args, **kwargs)
 
         monkeypatch.setattr(ws, "WEB_DIST", dist)
+        monkeypatch.delenv("OPENCODON_SERVE_HEADLESS", raising=False)
         monkeypatch.setattr(Path, "read_text", tracking_read_text)
         spa_app = FastAPI()
+        # The prefix-rewriting CSS route belongs to the /app mount (that is
+        # where the bundle's asset URLs point); the root catch-all only ever
+        # falls back to index.html. Mount both, as the real server does.
+        assert ws._mount_web_app(
+            spa_app,
+            session_token=lambda: "t",
+            auth_required=lambda: False,
+            normalise_prefix=ws._normalise_prefix,
+            dist=dist,
+        )
         ws.mount_spa(spa_app)
         spa_client = TestClient(spa_app)
 
@@ -2901,7 +2912,9 @@ class TestWebServerEndpoints:
         assert index_resp.status_code == 200
         assert "cafe cafe" in index_resp.text
 
-        css_resp = spa_client.get("/assets/app.css", headers={"x-forwarded-prefix": "/opencodon"})
+        css_resp = spa_client.get(
+            "/app/assets/app.css", headers={"x-forwarded-prefix": "/opencodon"}
+        )
         assert css_resp.status_code == 200
         assert "content: 'cafe';" in css_resp.text
 
@@ -6157,7 +6170,7 @@ class TestGatewayBusyReadout:
 class TestGatewayUpdatedAtContract:
     """Contract tests for /api/status ``gateway_updated_at``.
 
-    The field is promised to consumers (web/src/lib/api.ts declares
+    The field is promised to consumers (apps/client declares
     ``string | null``) as an RFC3339 timestamp or null — NEVER a number.
     Legacy gateways wrote epoch floats into gateway_state.json and the file
     is hand-editable, so the endpoint must normalize whatever it reads.
@@ -6508,189 +6521,6 @@ class TestDiscoverUserThemes:
             reset_opencodon_home_override(token)
 
         assert [r["name"] for r in results] == ["mine"]
-
-
-class TestThemeBootstrapCSS:
-    """Tests for _render_active_theme_bootstrap_css() and its injection
-    into index.html via _serve_index() — the critical-CSS shim that kills
-    the default-teal first-paint flash for user YAML themes."""
-
-    @staticmethod
-    def _write_theme(opencodon_home, name="ocean"):
-        themes_dir = opencodon_home / "dashboard-themes"
-        themes_dir.mkdir(exist_ok=True)
-        (themes_dir / f"{name}.yaml").write_text(
-            f"name: {name}\n"
-            "label: Ocean\n"
-            "palette:\n"
-            "  background:\n"
-            "    hex: \"#0a1628\"\n"
-            "  midground:\n"
-            "    hex: \"#dbe4f0\"\n"
-            "typography:\n"
-            "  fontSans: \"Inter, sans-serif\"\n"
-            "  baseSize: \"17px\"\n",
-            encoding="utf-8",
-        )
-
-    def test_user_theme_renders_bundle_vars(self, tmp_path, monkeypatch):
-        """Active user theme → style block with ONLY variable names the
-        bundle actually consumes (layerVars/typographyVars tokens)."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        self._write_theme(tmp_path)
-        from opencodon_cli import web_server
-        monkeypatch.setattr(
-            web_server, "load_config", lambda: {"dashboard": {"theme": "ocean"}}
-        )
-        css = web_server._render_active_theme_bootstrap_css()
-        assert css.startswith('<style id="opencodon-theme-bootstrap">')
-        assert css.endswith("</style>")
-        # Real bundle tokens (web/src/themes/context.tsx + index.css).
-        assert "--background-base:#0a1628;" in css
-        assert "--midground-base:#dbe4f0;" in css
-        assert "--theme-font-sans:Inter, sans-serif;" in css
-        assert "--theme-base-size:17px;" in css
-        # Names that do NOT exist in the bundle must not be emitted.
-        for bogus in ("--color-background", "--color-midground",
-                      "--font-sans:", "--font-base-size"):
-            assert bogus not in css
-        # Canvas rule flows through the variables (never goes stale when
-        # applyTheme() rewrites them as inline styles at runtime).
-        assert "html,body{background-color:var(--background-base);" in css
-        assert "font-family:var(--theme-font-sans);" in css
-        assert "font-size:var(--theme-base-size);" in css
-        # No baked literal values in the html,body rule.
-        assert "#0a1628" not in css.split("html,body")[1]
-
-    def test_builtin_theme_renders_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        from opencodon_cli import web_server
-        for builtin in ("default", "midnight", "cyberpunk"):
-            monkeypatch.setattr(
-                web_server, "load_config",
-                lambda b=builtin: {"dashboard": {"theme": b}},
-            )
-            assert web_server._render_active_theme_bootstrap_css() == ""
-
-    def test_unknown_theme_renders_nothing(self, tmp_path, monkeypatch):
-        """Configured theme has no YAML on disk → empty string, no crash."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        from opencodon_cli import web_server
-        monkeypatch.setattr(
-            web_server, "load_config", lambda: {"dashboard": {"theme": "ghost"}}
-        )
-        assert web_server._render_active_theme_bootstrap_css() == ""
-
-    def test_non_string_theme_renders_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        from opencodon_cli import web_server
-        monkeypatch.setattr(
-            web_server, "load_config", lambda: {"dashboard": {"theme": 42}}
-        )
-        assert web_server._render_active_theme_bootstrap_css() == ""
-
-    def test_malformed_theme_yaml_no_crash(self, tmp_path, monkeypatch):
-        """A garbage YAML for the active theme name must not crash — the
-        discover helper skips it, so no style block is emitted."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        themes_dir = tmp_path / "dashboard-themes"
-        themes_dir.mkdir()
-        (themes_dir / "broken.yaml").write_text(
-            "::: not valid yaml :::\n\tindent wrong", encoding="utf-8"
-        )
-        from opencodon_cli import web_server
-        monkeypatch.setattr(
-            web_server, "load_config", lambda: {"dashboard": {"theme": "broken"}}
-        )
-        assert web_server._render_active_theme_bootstrap_css() == ""
-
-    def test_load_config_exception_no_crash(self, monkeypatch):
-        from opencodon_cli import web_server
-
-        def boom():
-            raise RuntimeError("config unreadable")
-
-        monkeypatch.setattr(web_server, "load_config", boom)
-        assert web_server._render_active_theme_bootstrap_css() == ""
-
-    def test_style_escape_defends_style_breakout(self, tmp_path, monkeypatch):
-        """`</style>` in a theme value cannot break out of the block."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        themes_dir = tmp_path / "dashboard-themes"
-        themes_dir.mkdir()
-        (themes_dir / "sneaky.yaml").write_text(
-            "name: sneaky\n"
-            "typography:\n"
-            "  fontSans: '</style><script>alert(1)</script>'\n",
-            encoding="utf-8",
-        )
-        from opencodon_cli import web_server
-        monkeypatch.setattr(
-            web_server, "load_config", lambda: {"dashboard": {"theme": "sneaky"}}
-        )
-        css = web_server._render_active_theme_bootstrap_css()
-        assert css.count("</style>") == 1  # only the legitimate closer
-        assert "<\\/style>" in css  # payload was escaped, not emitted raw
-
-    @staticmethod
-    def _mount_spa_client(tmp_path, monkeypatch):
-        from fastapi import FastAPI
-        from starlette.testclient import TestClient
-        import opencodon_cli.web_server as ws
-
-        dist = tmp_path / "web_dist"
-        (dist / "assets").mkdir(parents=True)
-        (dist / "index.html").write_text(
-            "<html><head><title>t</title></head><body>SPA</body></html>",
-            encoding="utf-8",
-        )
-        monkeypatch.setattr(ws, "WEB_DIST", dist)
-        spa_app = FastAPI()
-        ws.mount_spa(spa_app)
-        return TestClient(spa_app)
-
-    def test_serve_index_injects_bootstrap_for_user_theme(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        self._write_theme(tmp_path)
-        import opencodon_cli.web_server as ws
-        monkeypatch.setattr(
-            ws, "load_config", lambda: {"dashboard": {"theme": "ocean"}}
-        )
-        client = self._mount_spa_client(tmp_path, monkeypatch)
-        resp = client.get("/chat")
-        assert resp.status_code == 200
-        assert '<style id="opencodon-theme-bootstrap">' in resp.text
-        assert "--background-base:#0a1628;" in resp.text
-        # Injected inside <head>, before the closing tag.
-        head = resp.text.split("</head>")[0]
-        assert "opencodon-theme-bootstrap" in head
-
-    def test_serve_index_no_bootstrap_for_builtin_theme(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        import opencodon_cli.web_server as ws
-        monkeypatch.setattr(
-            ws, "load_config", lambda: {"dashboard": {"theme": "default"}}
-        )
-        client = self._mount_spa_client(tmp_path, monkeypatch)
-        resp = client.get("/chat")
-        assert resp.status_code == 200
-        assert "opencodon-theme-bootstrap" not in resp.text
-
-    def test_serve_index_survives_render_failure(self, tmp_path, monkeypatch):
-        """Even if theme rendering blows up internally, index serving
-        must not crash (the helper swallows and returns '')."""
-        monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        import opencodon_cli.web_server as ws
-
-        def boom():
-            raise RuntimeError("boom")
-
-        monkeypatch.setattr(ws, "load_config", boom)
-        client = self._mount_spa_client(tmp_path, monkeypatch)
-        resp = client.get("/chat")
-        assert resp.status_code == 200
-        assert "opencodon-theme-bootstrap" not in resp.text
-        assert "SPA" in resp.text
 
 
 class TestNormaliseThemeExtensions:
@@ -8345,7 +8175,7 @@ class TestServeIndexMissingIndex:
             resp = client.get(route)
             assert resp.status_code == 404
             assert resp.json()["error"] == (
-                "Frontend not built. Run: cd web && npm run build"
+                "Session UI not built. Run: npm run build --workspace @opencodon/web"
             )
 
     def test_index_deleted_after_mount_returns_json_404(self, tmp_path, monkeypatch):
@@ -8354,7 +8184,7 @@ class TestServeIndexMissingIndex:
         (dist / "index.html").unlink()
         resp = client.get("/chat")
         assert resp.status_code == 404
-        assert "Frontend not built" in resp.json()["error"]
+        assert "Session UI not built" in resp.json()["error"]
         # And recovers once the index reappears (e.g. a rebuild finished).
         (dist / "index.html").write_text(
             "<html><head></head><body>SPA-rebuilt</body></html>", encoding="utf-8"

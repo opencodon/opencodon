@@ -5,8 +5,8 @@ The freshness check uses a SHA-256 content hash of the web source tree
 NOT mtime comparison — so ``git pull`` / ``opencodon update`` that rewrite
 source mtimes without changing content no longer fool it.
 
-Critical invariant: the dashboard Vite build outputs to opencodon_cli/web_dist/
-(vite.config.ts: outDir: "../../opencodon_cli/web_dist"), NOT web/dist/.
+Critical invariant: the apps/web Vite build outputs to opencodon_cli/web_dist/
+(vite.config.ts: outDir: "../../opencodon_cli/web_dist"), NOT apps/web/dist/.
 The sentinel must be checked in the correct output directory or the
 freshness check is a no-op and the OOM rebuild always runs.
 """
@@ -44,7 +44,7 @@ def _touch(path: Path, offset: float = 0.0) -> None:
 
 def _make_web_dir(tmp_path: Path) -> tuple[Path, Path]:
     """Return (web_dir, dist_dir) matching real repo layout."""
-    web_dir = tmp_path / "web"
+    web_dir = tmp_path / "apps" / "web"
     web_dir.mkdir(parents=True)
     (web_dir / "package.json").touch()
     dist_dir = tmp_path / "opencodon_cli" / "web_dist"
@@ -91,6 +91,26 @@ class TestWebUIBuildNeeded:
         self._stamp_current(web_dir)
         assert _web_ui_build_needed(web_dir) is False
 
+    def test_client_source_change_forces_a_rebuild(self, tmp_path):
+        """apps/web is a thin host over apps/client — the UI lives there.
+
+        Hashing only the host would leave every real UI change looking fresh,
+        so the dashboard would keep serving a stale bundle after a pull.
+        """
+        web_dir, dist_dir = _make_web_dir(tmp_path)
+        (web_dir / "src").mkdir(parents=True, exist_ok=True)
+        (web_dir / "src" / "main.tsx").write_text("import '@opencodon/client'\n")
+        client_src = tmp_path / "apps" / "client" / "src"
+        client_src.mkdir(parents=True)
+        (client_src / "root.tsx").write_text("export const mount = 1\n")
+        (dist_dir / ".vite").mkdir(parents=True, exist_ok=True)
+        (dist_dir / ".vite" / "manifest.json").write_text("{}")
+        self._stamp_current(web_dir)
+        assert _web_ui_build_needed(web_dir) is False
+
+        (client_src / "root.tsx").write_text("export const mount = 2\n")
+        assert _web_ui_build_needed(web_dir) is True
+
     def test_falls_back_to_index_html_sentinel(self, tmp_path):
         """When the vite manifest is absent, index.html is the sentinel."""
         web_dir, dist_dir = _make_web_dir(tmp_path)
@@ -102,12 +122,12 @@ class TestWebUIBuildNeeded:
         assert _web_ui_build_needed(web_dir) is False
 
     def test_web_dist_dir_not_web_dist_subdir(self, tmp_path):
-        """Regression: sentinel must be in opencodon_cli/web_dist/, NOT web/dist/."""
+        """Regression: sentinel must be in opencodon_cli/web_dist/, NOT apps/web/dist/."""
         web_dir, _ = _make_web_dir(tmp_path)
         (web_dir / "src").mkdir(parents=True, exist_ok=True)
         (web_dir / "src" / "App.tsx").write_text("x\n")
         self._stamp_current(web_dir)
-        # A manifest in the WRONG location (web/dist/) must not count as fresh.
+        # A manifest in the WRONG location (apps/web/dist/) must not count as fresh.
         wrong = web_dir / "dist" / ".vite" / "manifest.json"
         wrong.parent.mkdir(parents=True, exist_ok=True)
         wrong.write_text("{}")
@@ -309,8 +329,9 @@ class TestBuildWebUISkipsWhenFresh:
     def test_npm_install_uses_workspace_web_scope(self, tmp_path):
         web_dir, _ = _make_web_dir(tmp_path)
         # Real workspace checkout: the single lockfile lives at the root, so
-        # _workspace_root(web_dir) resolves to the parent and --workspace web
-        # scopes the install. (Without a root lockfile, web_dir IS the root and
+        # _workspace_root(web_dir) resolves to the root and
+        # --workspace @opencodon/web scopes the install. (Without a root
+        # lockfile, web_dir IS the root and
         # --workspace would be dropped — see test below and #42973.)
         (tmp_path / "package-lock.json").write_text("{}", encoding="utf-8")
         mock_cp = __import__("subprocess").CompletedProcess([], 0, stdout="", stderr="")
@@ -322,17 +343,18 @@ class TestBuildWebUISkipsWhenFresh:
         assert result is True
         install_cmd = mock_run.call_args[0][0]
         assert "--workspace" in install_cmd
-        assert install_cmd[install_cmd.index("--workspace") + 1] == "web"
+        assert install_cmd[install_cmd.index("--workspace") + 1] == "@opencodon/web"
 
     def test_web_install_omits_workspace_when_web_has_own_lockfile(
         self, tmp_path, monkeypatch
     ):
-        """web/ with its own lockfile => _workspace_root returns web_dir, so
-        --workspace web would fail (npm can't find that workspace from inside
-        web/). The flag must be dropped and the install run plainly from web_dir.
+        """apps/web/ with its own lockfile => _workspace_root returns web_dir, so
+        --workspace @opencodon/web would fail (npm can't find that workspace from
+        inside apps/web/). The flag must be dropped and the install run plainly
+        from web_dir.
         Symmetric to the TUI fix in test_tui_npm_install.py. See #42973.
 
-        With web's own lockfile present at cwd, _run_npm_install_deterministic
+        With apps/web's own lockfile present at cwd, _run_npm_install_deterministic
         uses ``npm ci`` (not ``npm install``).
         """
         web_dir, _ = _make_web_dir(tmp_path)
@@ -397,7 +419,7 @@ class TestBuildWebUISkipsWhenFresh:
             "ci",
             "--include=dev",
             "--workspace",
-            "web",
+            "apps/web",
             "--include-workspace-root=false",
             "--silent",
         ]
@@ -420,7 +442,7 @@ class TestBuildWebUISkipsWhenFresh:
 
         assert result is True
         args, kwargs = mock_run.call_args
-        assert args[0] == ["/usr/bin/npm", "ci", "--include=dev", "--workspace", "web", "--silent"]
+        assert args[0] == ["/usr/bin/npm", "ci", "--include=dev", "--workspace", "@opencodon/web", "--silent"]
         assert kwargs["cwd"] == tmp_path
 
 

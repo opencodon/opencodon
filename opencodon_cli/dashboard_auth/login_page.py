@@ -5,11 +5,12 @@ registry; clicking a provider sends a GET to
 ``/auth/login?provider=<name>``.
 
 Visual styling mirrors the Nous Research design system (the
-``@nous-research/ui`` package the React dashboard uses): the same
+``@nous-research/ui`` package the browser UI uses): the same
 ``Collapse`` / ``Rules Compressed`` typeface, amber-on-dark colour
 tokens (``#170d02`` / ``#ffac02`` / ``#fff``), uppercase + wide-tracking
 brand chrome, and the inset-bevel button shadow. Fonts are served
-out of the SPA's ``/fonts/`` directory which the dashboard-auth gate
+out of the bundle's ``/fonts/`` directory (``apps/client/public/fonts``),
+which the dashboard-auth gate
 already allowlists pre-auth (see ``_GATE_PUBLIC_PREFIXES`` in
 ``middleware.py``), so the page renders without needing the React
 bundle loaded.
@@ -40,7 +41,7 @@ _LOGIN_HTML_TEMPLATE = """\
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — opencodon</title>
 <style>
-  /* Brand fonts shipped by @nous-research/ui — same files the SPA loads. */
+  /* Brand fonts shipped by @nous-research/ui — served from the bundle. */
   @font-face {{
     font-family: 'Collapse';
     font-style: normal;

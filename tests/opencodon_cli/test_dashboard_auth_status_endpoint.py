@@ -92,7 +92,7 @@ def test_status_preserves_existing_fields(loopback_client):
     }
     missing = expected_keys - set(body.keys())
     assert not missing, f"/api/status dropped fields: {missing}"
-    # gateway_updated_at is a typed contract (web/src/lib/api.ts declares
+    # gateway_updated_at is a typed contract (apps/client declares
     # string | null): it must never be a number, and any string must
     # round-trip through fromisoformat as a timezone-aware timestamp.
     updated_at = body["gateway_updated_at"]

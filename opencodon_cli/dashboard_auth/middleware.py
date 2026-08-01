@@ -61,7 +61,6 @@ _GATE_PUBLIC_PREFIXES: tuple[str, ...] = (
     "/favicon.ico",
     "/ds-assets/",
     "/fonts/",
-    "/fonts-terminal/",
 )
 
 
@@ -266,8 +265,8 @@ def _safe_next_target(request: Request) -> str:
     # navigates to ``login_url``. After the OAuth round trip the user
     # would land on the API URL and see raw JSON instead of the
     # dashboard. SPA routes survive (they don't start with ``/api/``);
-    # the SPA's own ``sessionStorage["opencodon.lastLocation"]`` fallback
-    # in ``web/src/lib/api.ts`` covers the deep-link case.
+    # the client's own ``sessionStorage["opencodon.lastLocation"]``
+    # fallback covers the deep-link case.
     if path == "/api" or path.startswith("/api/"):
         return ""
     # Preserve query string if present (e.g. /sessions?page=2).

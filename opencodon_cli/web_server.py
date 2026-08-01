@@ -102,7 +102,6 @@ try:
     )
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
-    from fastapi.staticfiles import StaticFiles
     from pydantic import BaseModel, SecretStr
     from starlette.concurrency import run_in_threadpool
 except ImportError:
@@ -118,7 +117,6 @@ except ImportError:
         )
         from fastapi.middleware.cors import CORSMiddleware
         from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
-        from fastapi.staticfiles import StaticFiles
         from pydantic import BaseModel, SecretStr
         from starlette.concurrency import run_in_threadpool
     except Exception:
@@ -287,7 +285,7 @@ app.include_router(_memory_oauth_router)
 # ---------------------------------------------------------------------------
 _SESSION_TOKEN = os.environ.get("OPENCODON_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
 _SESSION_HEADER_NAME = "X-Opencodon-Session-Token"
-# The rebrand renamed the SPA's header (web/src/lib/api.ts) but not this
+# The rebrand renamed the dashboard bundle's header but not this
 # constant, so every non-public /api route 401'd for any bundle built after
 # it. Both names are accepted: current bundles send the opencodon header,
 # older ones (and the desktop app until it updates) still send the hermes one.
@@ -15563,8 +15561,9 @@ async def get_models_analytics(days: int = 30, profile: Optional[str] = None):
 #
 # The endpoint spawns the same ``opencodon --tui`` binary the CLI uses, behind
 # a POSIX pseudo-terminal, and forwards bytes + resize escapes across a
-# WebSocket.  The browser renders the ANSI through xterm.js (see
-# web/src/pages/ChatPage.tsx).
+# WebSocket.  A browser client renders the ANSI through xterm.js.  (The
+# dashboard SPA that used to consume this, ``web/``, is gone; ``apps/web``
+# drives sessions over the JSON-RPC gateway instead.)
 #
 # Auth: ``?token=<session_token>`` query param (browsers can't set
 # Authorization on the WS upgrade).  Same ephemeral ``_SESSION_TOKEN`` as
@@ -17191,101 +17190,35 @@ def _normalise_prefix(raw: Optional[str]) -> str:
     return normalise_prefix(raw)
 
 
-def _render_active_theme_bootstrap_css() -> str:
-    """Critical-CSS shim for the active user theme.
-
-    Returns a ``<style>`` block with the ``:root`` CSS variables that
-    ``ThemeProvider.applyTheme()`` installs once the
-    ``/api/dashboard/themes`` round-trip completes.  The goal is to
-    eliminate the green flash where the first paint shows the bundle's
-    default opencodon Teal canvas before the SPA flips the configured user
-    theme into place.
-
-    Built-in themes return an empty string — their full definitions live
-    in ``web/src/themes/presets.ts`` and are applied by the bundle
-    before paint, so no shim is needed for them.
-    """
-    try:
-        config = load_config()
-        active = cfg_get(config, "dashboard", "theme", default="default")
-        if not active or not isinstance(active, str):
-            return ""
-        # Built-in: the bundle already owns the definition, no flash.
-        if any(b["name"] == active for b in _BUILTIN_DASHBOARD_THEMES):
-            return ""
-        for theme in _discover_user_themes():
-            if theme.get("name") != active:
-                continue
-            palette = theme.get("palette") or {}
-            bg = palette.get("background") or {}
-            mg = palette.get("midground") or {}
-            bg_hex = bg.get("hex", "#0a0a0a") if isinstance(bg, dict) else "#0a0a0a"
-            mg_hex = mg.get("hex", "#e5e5e5") if isinstance(mg, dict) else "#e5e5e5"
-            typo = theme.get("typography") or {}
-            font_sans = typo.get("fontSans") or _THEME_DEFAULT_TYPOGRAPHY["fontSans"]
-            base_size = typo.get("baseSize") or _THEME_DEFAULT_TYPOGRAPHY["baseSize"]
-            # Defensive ``</style>`` escape — current values are well-known
-            # hex/font strings, but this keeps the helper safe if it is
-            # later extended to ship user-authored CSS literals.
-            def _esc(s: str) -> str:
-                return str(s).replace("</", "<\\/")
-            # Variable names MUST match what the bundle actually consumes:
-            #   - ``--background-base`` / ``--midground-base`` come from
-            #     ``layerVars()`` in ``web/src/themes/context.tsx``.
-            #   - ``--theme-font-sans`` / ``--theme-base-size`` come from
-            #     ``typographyVars()`` there, and ``index.css`` applies them
-            #     via ``html{font-family:var(--theme-font-sans);
-            #     font-size:var(--theme-base-size)}``.
-            # The ``html,body`` canvas rule references the SAME variables
-            # instead of literal values so runtime theme switches stay
-            # live: ``applyTheme()`` writes these vars as inline styles on
-            # ``documentElement``, which outrank this stylesheet block in
-            # the cascade — the rule below re-resolves automatically and
-            # never goes stale when the user picks a different theme.
-            return (
-                '<style id="opencodon-theme-bootstrap">'
-                ":root{"
-                f"--background-base:{_esc(bg_hex)};"
-                f"--midground-base:{_esc(mg_hex)};"
-                f"--theme-font-sans:{_esc(font_sans)};"
-                f"--theme-base-size:{_esc(base_size)};"
-                "}"
-                "html,body{background-color:var(--background-base);"
-                "color:var(--midground-base);"
-                "font-family:var(--theme-font-sans);"
-                "font-size:var(--theme-base-size);}"
-                "</style>"
-            )
-        return ""
-    except Exception:
-        _log.debug("theme bootstrap render failed", exc_info=True)
-        return ""
-
-
 def mount_spa(application: FastAPI):
-    """Mount the built SPA. Falls back to index.html for client-side routing.
+    """Serve the browser session UI (``apps/web``) from the site root.
+
+    The dashboard used to have a second SPA of its own under ``web/``, mounted
+    here.  That app is gone: ``mount_web_app`` has already registered the
+    session UI bundle (and its assets) at ``/app``, and this adds the root
+    catch-all so ``/`` and every other non-``/api`` path resolve to the same
+    document.  Must be the LAST route registered — the catch-all would
+    otherwise swallow anything declared after it.
 
     The session token is injected into index.html via a ``<script>`` tag so
-    the SPA can authenticate against protected API endpoints without a
-    separate (unauthenticated) token-dispensing endpoint.
-
-    When served behind a path-prefix reverse proxy (e.g.
-    ``mission-control.tilos.com/opencodon/*`` -> local Caddy -> :9119), the
-    proxy injects ``X-Forwarded-Prefix: /opencodon`` on every request. We
-    rewrite the served ``index.html`` so absolute asset URLs (``/assets/...``)
-    and the SPA's runtime ``__OPENCODON_BASE_PATH__`` honour that prefix
-    without rebuilding the bundle.
+    the app can authenticate against protected API endpoints without a
+    separate (unauthenticated) token-dispensing endpoint.  When served behind
+    a path-prefix reverse proxy the served HTML and CSS are rewritten so
+    absolute asset URLs honour ``X-Forwarded-Prefix`` without rebuilding.
     """
     # `opencodon serve` is the headless backend: it must NEVER serve the browser
     # SPA, even if a dist is lying around from a prior `dashboard`/build. Take
     # the no-frontend path so only the JSON-RPC/WS/API surface is reachable.
+    from opencodon_cli import web_app as _web_app
+    from opencodon_cli.web_app import mount_root_spa
+
     _headless = os.environ.get("OPENCODON_SERVE_HEADLESS") == "1"
     if _headless or not WEB_DIST.exists():
         _msg = (
             "Headless backend (opencodon serve): web UI disabled — use "
             "`opencodon dashboard` for the browser UI."
             if _headless
-            else "Frontend not built. Run: cd web && npm run build"
+            else _web_app.BUILD_HINT
         )
 
         @application.get("/{full_path:path}")
@@ -17293,125 +17226,13 @@ def mount_spa(application: FastAPI):
             return JSONResponse({"error": _msg}, status_code=404)
         return
 
-    _index_path = WEB_DIST / "index.html"
-
-    def _serve_index(prefix: str = ""):
-        """Return index.html with the session token + base-path injected.
-
-        ``prefix`` is the normalised ``X-Forwarded-Prefix`` (e.g. ``/opencodon``)
-        or empty string when served at root.
-
-        When the OAuth auth gate is active (``app.state.auth_required``),
-        the legacy ``_SESSION_TOKEN`` is NOT injected — the SPA reads
-        identity from ``/api/auth/me`` over cookie auth instead.  The
-        ``__OPENCODON_AUTH_REQUIRED__`` flag lets the SPA pick the right
-        auth scheme for /api/pty and /api/ws (ticket vs token).
-        """
-        try:
-            html = _index_path.read_text(encoding="utf-8")
-        except OSError:
-            # The dist dir existed at mount time but index.html is missing or
-            # unreadable now (partial build, wiped dist, permissions). Without
-            # this guard every request raises FileNotFoundError (500). Return
-            # the same JSON 404 payload mount_spa uses for a fully-missing
-            # dist so clients get a clear, consistent signal.
-            return JSONResponse(
-                {"error": "Frontend not built. Run: cd web && npm run build"},
-                status_code=404,
-            )
-        chat_js = "true" if _DASHBOARD_EMBEDDED_CHAT_ENABLED else "false"
-        gated = bool(getattr(app.state, "auth_required", False))
-        gated_js = "true" if gated else "false"
-        if gated:
-            bootstrap_script = (
-                f"<script>"
-                f"window.__OPENCODON_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-                f'window.__OPENCODON_BASE_PATH__="{prefix}";'
-                f"window.__OPENCODON_AUTH_REQUIRED__={gated_js};"
-                f"</script>"
-            )
-        else:
-            bootstrap_script = (
-                f'<script>window.__OPENCODON_SESSION_TOKEN__="{_SESSION_TOKEN}";'
-                f"window.__OPENCODON_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-                f'window.__OPENCODON_BASE_PATH__="{prefix}";'
-                f"window.__OPENCODON_AUTH_REQUIRED__={gated_js};"
-                f"</script>"
-            )
-        if prefix:
-            # Rewrite absolute asset URLs baked into the Vite build so the
-            # browser fetches them through the same proxy prefix.
-            html = html.replace('href="/assets/', f'href="{prefix}/assets/')
-            html = html.replace('src="/assets/', f'src="{prefix}/assets/')
-            html = html.replace('href="/favicon.ico"', f'href="{prefix}/favicon.ico"')
-            html = html.replace('href="/fonts/', f'href="{prefix}/fonts/')
-            html = html.replace('href="/ds-assets/', f'href="{prefix}/ds-assets/')
-            html = html.replace('src="/ds-assets/', f'src="{prefix}/ds-assets/')
-        # Theme flash mitigation: when the active theme is a user theme
-        # (``OPENCODON_HOME/dashboard-themes/<name>.yaml``), inject a minimal
-        # critical-CSS block so the first paint uses the target palette.
-        # Without this the SPA paints the default opencodon Teal canvas, then
-        # ``ThemeProvider`` flips the CSS variables once
-        # ``/api/dashboard/themes`` resolves.  Built-in themes are already
-        # in the bundle's ``presets.ts`` so no shim is needed for them.
-        theme_bootstrap = _render_active_theme_bootstrap_css()
-        if theme_bootstrap:
-            html = html.replace("</head>", f"{theme_bootstrap}</head>", 1)
-        html = html.replace("</head>", f"{bootstrap_script}</head>", 1)
-        return HTMLResponse(
-            html,
-            headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
-        )
-
-    # When served behind a path-prefix proxy, the built CSS contains
-    # absolute ``url(/fonts/...)`` and ``url(/ds-assets/...)`` references.
-    # Browsers resolve those against the document origin, which means
-    # under ``/opencodon`` they'd hit ``mission-control.tilos.com/fonts/...``
-    # (the MC Pages app), not the opencodon backend. Intercept CSS asset
-    # requests BEFORE the StaticFiles mount and rewrite the absolute paths
-    # when a prefix is in play.
-    @application.get("/assets/{filename}.css")
-    async def serve_css(filename: str, request: Request):
-        css_path = WEB_DIST / "assets" / f"{filename}.css"
-        if not css_path.is_file() or not css_path.resolve().is_relative_to(
-            WEB_DIST.resolve()
-        ):
-            return JSONResponse({"error": "not found"}, status_code=404)
-        prefix = _normalise_prefix(request.headers.get("x-forwarded-prefix"))
-        css = css_path.read_text(encoding="utf-8")
-        if prefix:
-            for asset_dir in ("/fonts/", "/fonts-terminal/", "/ds-assets/", "/assets/"):
-                css = css.replace(f"url({asset_dir}", f"url({prefix}{asset_dir}")
-                css = css.replace(f"url(\"{asset_dir}", f"url(\"{prefix}{asset_dir}")
-                css = css.replace(f"url('{asset_dir}", f"url('{prefix}{asset_dir}")
-        return Response(content=css, media_type="text/css")
-
-    application.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
-
-    @application.get("/{full_path:path}")
-    async def serve_spa(full_path: str, request: Request):
-        prefix = _normalise_prefix(request.headers.get("x-forwarded-prefix"))
-        # An unmatched /api/* path is a missing/renamed endpoint, NOT a
-        # client-side route. Falling through to index.html here returns
-        # `<!doctype html>` with status 200, which makes JSON clients (the
-        # desktop app's fetchJson, dashboard fetch wrappers) blow up with an
-        # opaque `SyntaxError: Unexpected token '<'`. Return a real 404 JSON
-        # so the caller sees a clear "no such endpoint" instead.
-        if full_path == "api" or full_path.startswith("api/"):
-            return JSONResponse(
-                {"detail": f"No such API endpoint: /{full_path}"},
-                status_code=404,
-            )
-        file_path = WEB_DIST / full_path
-        # Prevent path traversal via url-encoded sequences (%2e%2e/)
-        if (
-            full_path
-            and file_path.resolve().is_relative_to(WEB_DIST.resolve())
-            and file_path.exists()
-            and file_path.is_file()
-        ):
-            return FileResponse(file_path)
-        return _serve_index(prefix)
+    mount_root_spa(
+        application,
+        session_token=lambda: _SESSION_TOKEN,
+        auth_required=lambda: bool(getattr(app.state, "auth_required", False)),
+        normalise_prefix=_normalise_prefix,
+        dist=WEB_DIST,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -17419,7 +17240,7 @@ def mount_spa(application: FastAPI):
 # ---------------------------------------------------------------------------
 
 # Built-in dashboard themes — label + description only.  The actual color
-# definitions live in the frontend (web/src/themes/presets.ts).
+# definitions live in the frontend bundle.
 _BUILTIN_DASHBOARD_THEMES = [
     {"name": "default",       "label": "opencodon Teal",         "description": "Classic dark teal — the canonical opencodon look"},
     {"name": "default-large", "label": "opencodon Teal (Large)", "description": "opencodon Teal with bigger fonts and roomier spacing"},
@@ -17676,7 +17497,7 @@ async def get_dashboard_themes():
     """Return available themes and the currently active one.
 
     Built-in entries ship name/label/description only (the frontend owns
-    their full definitions in `web/src/themes/presets.ts`).  User themes
+    their full definitions).  User themes
     from `~/.opencodon/dashboard-themes/*.yaml` ship with their full
     normalised definition under `definition`, so the client can apply
     them without a stub.
@@ -17717,8 +17538,8 @@ async def set_dashboard_theme(body: ThemeSetBody):
     return {"ok": True, "theme": body.name}
 
 
-# Curated font-override ids. Kept in sync with FONT_CHOICES in
-# web/src/themes/fonts.ts — the frontend owns the stacks + webfont URLs;
+# Curated font-override ids. Kept in sync with the frontend's FONT_CHOICES
+# — the frontend owns the stacks + webfont URLs;
 # the backend only needs the id allow-list so it can reject anything not
 # in the vetted catalog (the font's webfont URL is injected as a <link>,
 # so we never accept an arbitrary user-supplied id/URL here).
@@ -18463,16 +18284,17 @@ _science_api.set_reproduce_gate(
 )
 app.include_router(_science_api.router)
 
-# The browser session UI (/app) — the renderer from apps/desktop, built for the
-# browser and driving sessions over this process's own /api/ws gateway. Mounted
-# before the SPA catch-all, which would otherwise swallow /app as a client-side
-# route of the config dashboard.
+# The browser session UI (/app) — the renderer from apps/web, driving sessions
+# over this process's own /api/ws gateway. Mounted before mount_spa's root
+# catch-all, which would otherwise swallow /app. Both mounts read the same
+# WEB_DIST bundle: one build, two entry points.
 from opencodon_cli.web_app import mount_web_app as _mount_web_app  # noqa: E402
 _WEB_APP_MOUNTED = _mount_web_app(
     app,
     session_token=lambda: _SESSION_TOKEN,
     auth_required=lambda: bool(getattr(app.state, "auth_required", False)),
     normalise_prefix=_normalise_prefix,
+    dist=WEB_DIST,
 )
 
 mount_spa(app)
