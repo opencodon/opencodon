@@ -6,7 +6,7 @@ NOT mtime comparison — so ``git pull`` / ``opencodon update`` that rewrite
 source mtimes without changing content no longer fool it.
 
 Critical invariant: the apps/web Vite build outputs to opencodon_cli/web_dist/
-(vite.config.ts: outDir: "../../opencodon_cli/web_dist"), NOT apps/web/dist/.
+(vite.config.ts: outDir: ../../src/opencodon/frontends/cli/web_dist), NOT apps/web/dist/.
 The sentinel must be checked in the correct output directory or the
 freshness check is a no-op and the OOM rebuild always runs.
 """
@@ -47,7 +47,7 @@ def _make_web_dir(tmp_path: Path) -> tuple[Path, Path]:
     web_dir = tmp_path / "apps" / "web"
     web_dir.mkdir(parents=True)
     (web_dir / "package.json").touch()
-    dist_dir = tmp_path / "src" / "opencodon_cli" / "web_dist"
+    dist_dir = tmp_path / "src" / "opencodon" / "frontends" / "cli" / "web_dist"
     return web_dir, dist_dir
 
 
