@@ -139,6 +139,35 @@ jobs:
         run: |
           ruff check .
 
+  import-contracts:
+    # Architectural layering guardrail (import-linter). Contracts live in
+    # ``.importlinter``: frontends -> core/tools -> state/config -> common.
+    # Current inversions are grandfathered as per-edge ignore lists that may
+    # only shrink — the restructure plan
+    # (docs/plans/2026-08-01-repo-restructure-plan.md) drains them to zero.
+    # A NEW inversion edge fails this job.
+    name: Import contracts (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Install import-linter
+        uses: ./.github/actions/retry
+        with:
+          command: pip install import-linter==2.13
+
+      - name: lint-imports
+        # PYTHONPATH=. so the repo's root packages resolve without
+        # installing the project.
+        run: PYTHONPATH=. lint-imports
+
   windows-footguns:
     # Static guardrails on Windows-unsafe Python primitives — os.kill(pid, 0),
     # os.killpg, os.setsid, signal.SIGKILL without getattr fallback,

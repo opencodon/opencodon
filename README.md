@@ -95,7 +95,7 @@ MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 opencodon is a hard fork of [hermes-agent](https://github.com/NousResearch/hermes-agent) by Nous Research, used under the MIT License. Inherited code remains Copyright (c) 2025 Nous Research; fork changes are Copyright (c) 2026 opencodon contributors. The `hermes-*` model names in provider catalogs refer to Nous Research's LLMs, not this project.
 
-Weekly upstream triage: security and dependency-pin fixes from upstream are reviewed and cherry-picked every week (`scripts/upstream_triage.py`); features are never auto-adopted.
+opencodon evolves independently of upstream; changes are not tracked or cherry-picked.
 
 ## Contributing
 
