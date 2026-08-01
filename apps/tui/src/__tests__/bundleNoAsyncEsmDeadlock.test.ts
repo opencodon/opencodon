@@ -88,7 +88,7 @@ describe('TUI bundle (issue #31227)', () => {
   it('does not bundle the upstream ink package or ink-text-input', () => {
     // Pulling either of these in re-creates the circular async chain
     // that #31227 was about. The in-tree fork at @opencodon/ink replaces
-    // all of `ink`; nothing in ui-tui imports `TextInput` from
+    // all of `ink`; nothing in apps/tui imports `TextInput` from
     // `@opencodon/ink` so the re-export is unused dead weight.
     expect(bundleSrc.includes('node_modules/ink/build/index.js')).toBe(false)
     expect(bundleSrc.includes('node_modules/ink-text-input/build/index.js')).toBe(false)

@@ -259,8 +259,9 @@ opencodon/
 │                         #   strike-freedom-cockpit, ...
 ├── optional-skills/      # Heavier/niche skills shipped but NOT active by default
 ├── skills/               # Built-in skills bundled with the repo
-├── ui-tui/               # Ink (React) terminal UI — `opencodon --tui`
-│   └── src/              # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
+├── apps/                 # npm workspaces — client, desktop, shared, web, tui
+│   └── tui/              # Ink (React) terminal UI — `opencodon --tui`
+│       └── src/          # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
 ├── tui_gateway/          # Python JSON-RPC backend for the TUI
 ├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains integration)
 ├── cron/                 # Scheduler — jobs.py, scheduler.py
@@ -424,7 +425,7 @@ if canonical == "mycommand":
 
 ---
 
-## TUI Architecture (ui-tui + tui_gateway)
+## TUI Architecture (apps/tui + tui_gateway)
 
 The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `opencodon --tui` or `OPENCODON_TUI=1`.
 
@@ -464,7 +465,7 @@ Newline-delimited JSON-RPC over stdio. Requests from Ink, events from Python. Se
 ### Dev Commands
 
 ```bash
-cd ui-tui
+cd apps/tui
 npm install       # first time
 npm run dev       # watch mode (rebuilds opencodon-ink + tsx --watch)
 npm start         # production

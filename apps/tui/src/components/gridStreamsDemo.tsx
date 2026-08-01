@@ -131,7 +131,7 @@ const FAKE_TOOLS = [
   '┊ read_file src/app/chat.tsx',
   '┊ terminal npm run typecheck',
   '┊ search_files "GridAreas"',
-  '┊ patch ui-tui/src/lib/widgetGrid.ts',
+  '┊ patch apps/tui/src/lib/widgetGrid.ts',
   '┊ web_search yoga absolute layout',
   '┊ delegate_task refactor sparkline',
   '┊ terminal scripts/run_tests.sh',

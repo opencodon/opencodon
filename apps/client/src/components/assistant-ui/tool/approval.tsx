@@ -45,7 +45,7 @@ import type { ToolPart } from './fallback-model'
 // event payload), which is the only place that data reliably exists.
 export const APPROVAL_TOOLS = new Set(['terminal', 'execute_code'])
 
-// Canonical gateway choices (ui-tui/src/components/prompts.tsx).
+// Canonical gateway choices (apps/tui/src/components/prompts.tsx).
 type ApprovalChoice = 'once' | 'session' | 'always' | 'deny'
 
 export const PendingToolApproval: FC<{ part: ToolPart }> = ({ part }) => {

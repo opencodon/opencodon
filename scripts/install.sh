@@ -2246,9 +2246,9 @@ install_node_deps() {
     fi
 
     # Install TUI dependencies
-    if [ -f "$INSTALL_DIR/ui-tui/package.json" ]; then
+    if [ -f "$INSTALL_DIR/apps/tui/package.json" ]; then
         log_info "Installing TUI dependencies..."
-        cd "$INSTALL_DIR/ui-tui"
+        cd "$INSTALL_DIR/apps/tui"
         # Time-boxed: a stalled registry fetch would otherwise hang here (#39219).
         run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --silent || {
             log_warn "TUI npm install failed or timed out (opencodon --tui may not work)"

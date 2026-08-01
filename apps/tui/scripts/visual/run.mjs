@@ -5,7 +5,7 @@
 //   cross-env needed.
 // - Resolves electron from the install tree (the desktop workspace already
 //   ships it; a root `npm install` hoists it) instead of declaring a second
-//   copy as a ui-tui dependency. ELECTRON_BIN overrides for exotic setups.
+//   copy as a apps/tui dependency. ELECTRON_BIN overrides for exotic setups.
 import { spawnSync } from 'child_process'
 import { createRequire } from 'module'
 import { dirname, join } from 'path'
@@ -22,7 +22,7 @@ const run = (bin, args, env = {}) => {
   }
 }
 
-// 1. Render the scene sheet (tsx is a ui-tui devDependency).
+// 1. Render the scene sheet (tsx is a apps/tui devDependency).
 run(process.execPath, [require.resolve('tsx/cli'), join(here, 'render.tsx')], {
   COLORTERM: 'truecolor',
   FORCE_COLOR: '3'

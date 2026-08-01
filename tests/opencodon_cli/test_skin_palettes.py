@@ -50,7 +50,7 @@ REQUIRED_KEYS = frozenset(
 )
 
 # Foreground roles and their minimum contrast against the palette's pole.
-# Matches ui-tui/src/theme.ts STRONG/SOFT tiers.
+# Matches apps/tui/src/theme.ts STRONG/SOFT tiers.
 STRONG_FG = (
     "banner_title",
     "banner_accent",
@@ -90,7 +90,7 @@ FILLS = (
 
 STRONG_MIN = 3.9
 SOFT_MIN = 2.8
-# Assumed terminal poles, matching ui-tui/src/theme.ts referenceBackground().
+# Assumed terminal poles, matching apps/tui/src/theme.ts referenceBackground().
 DARK_POLE = "#101014"
 LIGHT_POLE = "#ffffff"
 

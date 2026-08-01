@@ -5,8 +5,7 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "ui-tui",
-    "ui-tui/packages/*",
+    "apps/tui/packages/*",
     "web",
     "tests-js"
   ],
@@ -14,14 +13,14 @@
     "postinstall": "echo '✅ Browser tools ready. Run: python run_agent.py --help'",
     "install:root": "npm install --workspaces=false",
     "install:web": "npm install --workspace web",
-    "install:tui": "npm install --workspace ui-tui",
+    "install:tui": "npm install --workspace apps/tui",
     "install:desktop": "npm install --workspace apps/desktop",
     "audit:root": "npm audit --workspaces=false",
     "audit:web": "npm audit --workspace web",
-    "audit:tui": "npm audit --workspace ui-tui",
+    "audit:tui": "npm audit --workspace apps/tui",
     "audit:fix:root": "npm audit fix --workspaces=false",
     "audit:fix:web": "npm audit fix --workspace web",
-    "audit:fix:tui": "npm audit fix --workspace ui-tui",
+    "audit:fix:tui": "npm audit fix --workspace apps/tui",
     "check": "npm run --ws check",
     "fix": "npm run --ws fix"
   },

@@ -15954,7 +15954,7 @@ def _resolve_chat_argv(
 
     Session resume is propagated via the ``OPENCODON_TUI_RESUME`` env var —
     matching what ``opencodon_cli.main._launch_tui`` does for the CLI path.
-    Appending ``--resume <id>`` to argv doesn't work because ``ui-tui`` does
+    Appending ``--resume <id>`` to argv doesn't work because ``apps/tui`` does
     not parse its argv.
 
     ``OPENCODON_TUI_GATEWAY_URL`` is injected so the PTY child can attach to
@@ -15988,7 +15988,7 @@ def _resolve_chat_argv(
     if requested and requested.lower() != "current":
         profile_dir = _resolve_profile_dir(requested)
 
-    argv, cwd = _make_tui_argv(PROJECT_ROOT / "ui-tui", tui_dev=False)
+    argv, cwd = _make_tui_argv(PROJECT_ROOT / "apps/tui", tui_dev=False)
     env = os.environ.copy()
     try:
         from opencodon_cli.config import apply_terminal_config_to_env

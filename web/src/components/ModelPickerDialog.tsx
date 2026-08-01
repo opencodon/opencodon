@@ -16,7 +16,7 @@ import { queryMatchesProviderOnly } from "@/lib/model-picker-filter";
 /**
  * Two-stage model picker modal.
  *
- * Mirrors ui-tui/src/components/modelPicker.tsx:
+ * Mirrors apps/tui/src/components/modelPicker.tsx:
  *   Stage 1: pick provider (authenticated providers only)
  *   Stage 2: pick model within that provider
  *

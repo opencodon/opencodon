@@ -7,7 +7,7 @@ Usage:
 Defaults: picks the session with the most messages, holds PageUp for 8s at
 ~30 Hz (matching xterm key-repeat), summarizes ~/.opencodon/perf.log on exit.
 
-The --tui build must exist (run `npm run build` in ui-tui first). This script
+The --tui build must exist (run `npm run build` in apps/tui first). This script
 launches `node dist/entry.js` directly with OPENCODON_TUI_RESUME set so it
 bypasses the opencodon_cli wrapper — we want repeatable timing, not the CLI's
 session-picker flow.
@@ -15,7 +15,7 @@ session-picker flow.
 Environment overrides:
   OPENCODON_PERF_LOG     (default ~/.opencodon/perf.log)
   OPENCODON_PERF_NODE    (default node from $PATH)
-  OPENCODON_TUI_DIR      (default: <repo>/ui-tui relative to this script)
+  OPENCODON_TUI_DIR      (default: <repo>/apps/tui relative to this script)
 
 Exit code is 0 if the harness ran and parsed results, 2 if the TUI crashed
 or produced no perf data (suggests OPENCODON_DEV_PERF wiring is broken).
@@ -46,7 +46,7 @@ except ImportError:
 
 DEFAULT_TUI_DIR = Path(
     os.environ.get("OPENCODON_TUI_DIR")
-    or str(Path(__file__).resolve().parent.parent / "ui-tui")
+    or str(Path(__file__).resolve().parent.parent / "apps/tui")
 )
 DEFAULT_LOG = Path(os.environ.get("OPENCODON_PERF_LOG", str(get_opencodon_home() / "perf.log")))
 DEFAULT_STATE_DB = get_opencodon_home() / "state.db"

@@ -239,10 +239,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         bundled-tui = pkgs.runCommand "opencodon-bundled-tui" { } ''
           set -e
           echo "=== Checking bundled TUI ==="
-          test -d ${opencodon}/ui-tui || (echo "FAIL: ui-tui directory missing"; exit 1)
-          echo "PASS: ui-tui directory exists"
+          test -d ${opencodon}/tui || (echo "FAIL: tui directory missing"; exit 1)
+          echo "PASS: tui directory exists"
 
-          test -f ${opencodon}/ui-tui/dist/entry.js || (echo "FAIL: compiled entry.js missing"; exit 1)
+          test -f ${opencodon}/tui/dist/entry.js || (echo "FAIL: compiled entry.js missing"; exit 1)
           echo "PASS: compiled entry.js present"
 
           # self-contained bundle; no runtime node_modules expected

@@ -11,7 +11,7 @@
 # the repo-root directory layout intact for buildNpmPackage /
 # npmConfigHook workspace resolution.
 #
-# mkNpmPassthru returns packageJsonPath (e.g. "ui-tui/package.json")
+# mkNpmPassthru returns packageJsonPath (e.g. "apps/tui/package.json")
 # instead of a per-package devShellHook.  The root devshell hook
 # (mkNpmDevShellHook) collects all package.json paths, stamps them,
 # and if any changed, runs a single `npm i --package-lock-only` from
@@ -35,7 +35,7 @@ let
 
   # Expand a workspace glob (e.g. "apps/*") into concrete member dirs
   # relative to the repo root.  Only trailing "*" globs are supported —
-  # that's all npm uses here.  Literal patterns (e.g. "ui-tui") pass
+  # that's all npm uses here.  Literal patterns (e.g. "apps/tui") pass
   # through unchanged.
   expandWorkspace =
     pattern:
@@ -61,7 +61,7 @@ let
 
   # Top-level directory of each workspace member, deduplicated.  Used to
   # exclude JS/TS workspace trees from the Python source filter.  E.g.
-  # apps/desktop + apps/shared + ui-tui + web → [ "apps" "ui-tui" "web" ].
+  # apps/desktop + apps/shared + apps/tui + web → [ "apps" "web" ].
   jsWorkspaceTopDirs = lib.unique (map (d: builtins.head (lib.splitString "/" d)) workspaceMemberDirs);
 
   # ── Source filters for reducing rebuild scope ──────────────────────
@@ -222,7 +222,7 @@ in
   # e.g. apps/desktop depends on apps/shared.
   #
   # Usage:
-  #   npm = opencodonNpmLib.mkNpmPassthru { dirs = [ "ui-tui" ]; };
+  #   npm = opencodonNpmLib.mkNpmPassthru { dirs = [ "apps/tui" ]; };
   #   npm = opencodonNpmLib.mkNpmPassthru { dirs = [ "apps/desktop" "apps/shared" ]; };
   #   pkgs.buildNpmPackage (npm // {
   #     pname = "opencodon-tui";

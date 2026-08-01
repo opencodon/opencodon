@@ -37,14 +37,14 @@ def test_dockerfile_disables_runtime_install_mutations() -> None:
 
     assert "ENV PYTHONDONTWRITEBYTECODE=1" in text
     assert "ENV OPENCODON_DISABLE_LAZY_INSTALLS=1" in text
-    assert "OPENCODON_TUI_DIR=/opt/opencodon/ui-tui" in text
+    assert "OPENCODON_TUI_DIR=/opt/opencodon/apps/tui" in text
 
 
 def test_dockerfile_does_not_chown_install_trees_to_opencodon() -> None:
     text = _dockerfile_text()
     forbidden_patterns = (
         r"chown\s+-R\s+opencodon:opencodon\s+/opt/opencodon/\.venv",
-        r"chown\s+-R\s+opencodon:opencodon\s+/opt/opencodon/ui-tui",
+        r"chown\s+-R\s+opencodon:opencodon\s+/opt/opencodon/apps/tui",
         r"chown\s+-R\s+opencodon:opencodon\s+/opt/opencodon/gateway",
         r"chown\s+-R\s+opencodon:opencodon\s+/opt/opencodon/node_modules",
     )

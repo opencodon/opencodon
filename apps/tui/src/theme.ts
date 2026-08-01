@@ -150,7 +150,7 @@ function circularDistance(a: number, b: number): number {
 }
 
 // Mirrors @opencodon/ink's colorize.ts. Keep local: app code compiles from
-// ui-tui/src, while @opencodon/ink is bundled separately from packages/.
+// apps/tui/src, while @opencodon/ink is bundled separately from packages/.
 function richEightBitColorNumber(red: number, green: number, blue: number): number {
   const [, saturation, lightness] = rgbToHsl(red, green, blue)
 

@@ -7470,7 +7470,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7489,7 +7489,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
         monkeypatch.delenv("COLORTERM", raising=False)
 
@@ -7504,7 +7504,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
         monkeypatch.setenv("COLORTERM", "24bit")
 
@@ -7522,7 +7522,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7542,7 +7542,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7569,7 +7569,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7608,7 +7608,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7640,7 +7640,7 @@ class TestPtyWebSocket:
         monkeypatch.setattr(
             main_mod,
             "_make_tui_argv",
-            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/ui-tui"),
+            lambda project_root, tui_dev=False: (["node", "dist/entry.js"], "/tmp/apps/tui"),
         )
 
         _argv, _cwd, env = self.ws_module._resolve_chat_argv()
@@ -7691,7 +7691,7 @@ class TestPtyWebSocket:
             captured["resume"] = resume
             captured["sidecar_url"] = sidecar_url
             captured["profile"] = profile
-            return (["node", "dist/entry.js"], "/tmp/ui-tui", {"NODE_ENV": "production"})
+            return (["node", "dist/entry.js"], "/tmp/apps/tui", {"NODE_ENV": "production"})
 
         async def fake_to_thread(fn, *args, **kwargs):
             captured["thread_fn"] = fn
@@ -7718,7 +7718,7 @@ class TestPtyWebSocket:
             "profile": "worker",
         }
         assert argv == ["node", "dist/entry.js"]
-        assert cwd == "/tmp/ui-tui"
+        assert cwd == "/tmp/apps/tui"
         assert env == {"NODE_ENV": "production"}
         assert captured["resume"] == "sess-42"
         assert captured["sidecar_url"] == "ws://127.0.0.1:9119/api/pub?channel=abc"

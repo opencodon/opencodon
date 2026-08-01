@@ -1819,7 +1819,7 @@ def test_launch_tui_sets_resume_env_from_resume_arg(monkeypatch, main_mod):
 
 
 def test_make_tui_argv_dev_prebuilds_opencodon_ink(monkeypatch, main_mod, tmp_path):
-    tui_dir = tmp_path / "ui-tui"
+    tui_dir = tmp_path / "apps/tui"
     tsx = tui_dir / "node_modules" / ".bin" / "tsx"
     ink_dir = tui_dir / "packages" / "opencodon-ink"
     tsx.parent.mkdir(parents=True)

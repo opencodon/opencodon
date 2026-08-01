@@ -181,7 +181,7 @@ stdenv.mkDerivation (finalAttrs: {
     ln -s ${bundledLocales} $out/share/opencodon/locales
     ln -s ${bundledOptionalMcps} $out/share/opencodon/optional-mcps
     ln -s ${opencodonWeb} $out/share/opencodon/web_dist
-    ln -s ${opencodonTui}/lib/opencodon-tui $out/ui-tui
+    ln -s ${opencodonTui}/lib/opencodon-tui $out/tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
@@ -193,7 +193,7 @@ stdenv.mkDerivation (finalAttrs: {
           --set OPENCODON_BUNDLED_LOCALES $out/share/opencodon/locales \
           --set OPENCODON_OPTIONAL_MCPS $out/share/opencodon/optional-mcps \
           --set OPENCODON_WEB_DIST $out/share/opencodon/web_dist \
-          --set OPENCODON_TUI_DIR $out/ui-tui \
+          --set OPENCODON_TUI_DIR $out/tui \
           --set OPENCODON_PYTHON ${opencodonVenv}/bin/python3 \
           --set OPENCODON_NODE ${lib.getExe nodejs}${
             # Fold the line continuation INTO the optionalString: a bare
