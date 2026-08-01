@@ -338,7 +338,7 @@ class TestUnifiedCronjobTool:
 
     @staticmethod
     def _patch_named_legit(monkeypatch):
-        import opencodon_cli.runtime_provider as rp
+        import opencodon.frontends.cli.runtime_provider as rp
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)
         monkeypatch.setattr(
             rp, "_get_named_custom_provider",
@@ -543,7 +543,7 @@ class TestResolveModelOverride:
     """
 
     def test_keeps_bare_custom_when_a_named_entry_exists(self, monkeypatch):
-        import opencodon_cli.runtime_provider as rp_mod
+        import opencodon.frontends.cli.runtime_provider as rp_mod
 
         monkeypatch.setattr(rp_mod, "has_named_custom_provider", lambda name: True)
         provider, model = _resolve_model_override(
@@ -554,7 +554,7 @@ class TestResolveModelOverride:
 
     def test_pins_main_provider_when_bare_custom_unresolvable(self, monkeypatch):
         import opencodon.config as cfg_mod
-        import opencodon_cli.runtime_provider as rp_mod
+        import opencodon.frontends.cli.runtime_provider as rp_mod
 
         monkeypatch.setattr(rp_mod, "has_named_custom_provider", lambda name: False)
         monkeypatch.setattr(
@@ -568,7 +568,7 @@ class TestResolveModelOverride:
         assert model == "gpt-5.4"
 
     def test_keeps_explicit_custom_name_unchanged(self, monkeypatch):
-        import opencodon_cli.runtime_provider as rp_mod
+        import opencodon.frontends.cli.runtime_provider as rp_mod
 
         # Even if the resolver claims no entry, the canonical "custom:<name>"
         # form is never stripped or pinned.
@@ -597,7 +597,7 @@ class TestLocalDeliveryNotice:
             "OPENCODON_SESSION_CHAT_NAME",
         ):
             monkeypatch.delenv(var, raising=False)
-        from gateway.session_context import clear_session_vars, set_session_vars
+        from opencodon.frontends.gateway.session_context import clear_session_vars, set_session_vars
 
         tokens = set_session_vars()  # reset ContextVars to empty
         yield
@@ -648,7 +648,7 @@ class TestLocalDeliveryNotice:
     def test_gateway_origin_no_notice(self, monkeypatch):
         # With a captured gateway origin, omitted deliver becomes origin and
         # resolves to that chat — nothing to warn about.
-        from gateway.session_context import set_session_vars
+        from opencodon.frontends.gateway.session_context import set_session_vars
 
         set_session_vars(platform="telegram", chat_id="999")
         created = json.loads(
@@ -669,7 +669,7 @@ class TestValidateCronBaseUrl:
 
     @staticmethod
     def _patch_named_legit(monkeypatch):
-        import opencodon_cli.runtime_provider as rp
+        import opencodon.frontends.cli.runtime_provider as rp
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)
         monkeypatch.setattr(
             rp, "_get_named_custom_provider",

@@ -54,7 +54,7 @@ class TestInterpreterShuttingDownHelper:
 
 class TestStandaloneDeliverySkipsDuringShutdown:
     def _telegram_cfg(self):
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
@@ -76,7 +76,7 @@ class TestStandaloneDeliverySkipsDuringShutdown:
             "origin": {"platform": "telegram", "chat_id": "123"},
         }
         send_mock = AsyncMock(return_value={"success": True})
-        with patch("gateway.config.load_gateway_config", return_value=self._telegram_cfg()), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=self._telegram_cfg()), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=send_mock), \
              patch("sys.is_finalizing", return_value=True):
             result = _deliver_result(job, "daily report body")
@@ -97,7 +97,7 @@ class TestStandaloneDeliverySkipsDuringShutdown:
             "origin": {"platform": "telegram", "chat_id": "123"},
         }
         send_mock = AsyncMock(return_value={"success": True})
-        with patch("gateway.config.load_gateway_config", return_value=self._telegram_cfg()), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=self._telegram_cfg()), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=send_mock), \
              patch("sys.is_finalizing", return_value=False):
             result = _deliver_result(job, "daily report body")

@@ -238,20 +238,23 @@ COMPONENT_PREFIXES = {
     # out of ``gateway/platforms/`` into bundled plugins (#41112) — they are
     # still gateway components and their logs belong in gateway.log / match
     # ``opencodon logs --component gateway``.
-    "gateway": ("gateway", "opencodon_plugins", "plugins.platforms"),
+    "gateway": ("gateway", "opencodon.frontends.gateway", "opencodon_plugins", "plugins.platforms"),
     # "opencodon.core" is the canonical home of the ex-``agent`` package
     # (restructure Phase 3a); the old prefix stays until the shims retire.
     "agent": ("agent", "opencodon.core", "run_agent", "model_tools", "batch_runner"),
     "tools": ("tools", "opencodon.tools"),
     # opencodon.config / common / plugins_runtime moved out of opencodon_cli
     # in Phase 2 — their loggers renamed with them.
-    "cli": ("opencodon_cli", "cli", "opencodon.config", "opencodon.common",
-            "opencodon.plugins_runtime"),
+    "cli": ("opencodon_cli", "cli", "opencodon.frontends.cli", "opencodon.config",
+            "opencodon.common", "opencodon.plugins_runtime"),
     "cron": ("cron", "opencodon.cron"),
     "gui": (
         "opencodon_cli.web_server",
         "opencodon_cli.pty_bridge",
+        "opencodon.frontends.cli.web_server",
+        "opencodon.frontends.cli.pty_bridge",
         "tui_gateway",
+        "opencodon.frontends.tui",
         "uvicorn",
     ),
 }

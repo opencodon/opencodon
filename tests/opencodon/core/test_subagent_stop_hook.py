@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from opencodon.tools.delegate_tool import delegate_task
-from opencodon_cli import plugins
+from opencodon.frontends.cli import plugins
 
 
 def _make_parent(depth: int = 0, session_id: str = "parent-1"):

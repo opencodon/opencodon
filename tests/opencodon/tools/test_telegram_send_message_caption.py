@@ -47,7 +47,7 @@ def _no_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
         "http_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy",
     ):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None, raising=False)
+    monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None, raising=False)
     monkeypatch.setattr(sys, "platform", "linux")
 
 

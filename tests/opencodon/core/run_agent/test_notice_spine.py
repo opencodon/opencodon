@@ -119,9 +119,9 @@ class TestAgentCbsNoticeBinding:
     """Mirror test_status_callback_emits_kind_and_text from test_tui_gateway_server.py."""
 
     def test_notice_callback_emits_notification_show(self):
-        from tui_gateway import server
+        from opencodon.frontends.tui import server
 
-        with patch("tui_gateway.server._emit") as mock_emit:
+        with patch("opencodon.frontends.tui.server._emit") as mock_emit:
             cbs = server._agent_cbs("sid123")
             notice = AgentNotice(
                 text="credits 90% used",
@@ -149,10 +149,10 @@ class TestAgentCbsNoticeBinding:
     def test_notice_callback_payload_is_full_snake_case_dict(self):
         """All six snake_case fields must be present in the payload — no extras,
         no camelCase variants."""
-        from tui_gateway import server
+        from opencodon.frontends.tui import server
 
         captured = []
-        with patch("tui_gateway.server._emit", side_effect=lambda *a: captured.append(a)):
+        with patch("opencodon.frontends.tui.server._emit", side_effect=lambda *a: captured.append(a)):
             cbs = server._agent_cbs("sid123")
             cbs["notice_callback"](
                 AgentNotice(
@@ -170,9 +170,9 @@ class TestAgentCbsNoticeBinding:
         assert set(payload.keys()) == {"text", "level", "kind", "ttl_ms", "key", "id"}
 
     def test_notice_clear_callback_emits_notification_clear(self):
-        from tui_gateway import server
+        from opencodon.frontends.tui import server
 
-        with patch("tui_gateway.server._emit") as mock_emit:
+        with patch("opencodon.frontends.tui.server._emit") as mock_emit:
             cbs = server._agent_cbs("sid123")
             cbs["notice_clear_callback"]("credits.depleted")
 
@@ -183,20 +183,20 @@ class TestAgentCbsNoticeBinding:
         )
 
     def test_notice_callback_event_type_is_notification_show(self):
-        from tui_gateway import server
+        from opencodon.frontends.tui import server
 
         captured = []
-        with patch("tui_gateway.server._emit", side_effect=lambda *a: captured.append(a)):
+        with patch("opencodon.frontends.tui.server._emit", side_effect=lambda *a: captured.append(a)):
             cbs = server._agent_cbs("sid123")
             cbs["notice_callback"](AgentNotice(text="any"))
 
         assert captured[0][0] == "notification.show"
 
     def test_notice_clear_callback_event_type_is_notification_clear(self):
-        from tui_gateway import server
+        from opencodon.frontends.tui import server
 
         captured = []
-        with patch("tui_gateway.server._emit", side_effect=lambda *a: captured.append(a)):
+        with patch("opencodon.frontends.tui.server._emit", side_effect=lambda *a: captured.append(a)):
             cbs = server._agent_cbs("sid123")
             cbs["notice_clear_callback"]("some.key")
 

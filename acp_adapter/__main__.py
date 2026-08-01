@@ -1,5 +1,11 @@
-"""Allow running the ACP adapter as ``python -m acp_adapter``."""
+"""Compat shim — real module: ``opencodon.frontends.acp.__main__`` (restructure Phase 3a).
 
-from .entry import main
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
+"""
 
-main()
+import sys
+
+import opencodon.frontends.acp.__main__ as _real
+
+sys.modules[__name__] = _real

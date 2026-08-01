@@ -595,7 +595,7 @@ def test_repair_stale_btree_index_preserves_rows(tmp_path):
 
 def test_select_cached_agent_history_prefers_longer_live_transcript():
     """Gateway guard keeps the live transcript when persisted history lags."""
-    from gateway.run import _select_cached_agent_history
+    from opencodon.frontends.gateway.run import _select_cached_agent_history
 
     persisted = [{"role": "user", "content": "only one"}]
     live = [

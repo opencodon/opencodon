@@ -283,7 +283,7 @@ def _scan_cron_skill_assembled(assembled: str) -> tuple[str, str]:
 
 
 def _origin_from_env() -> Optional[Dict[str, str]]:
-    from gateway.session_context import get_session_env
+    from opencodon.frontends.gateway.session_context import get_session_env
     origin_platform = get_session_env("OPENCODON_SESSION_PLATFORM")
     origin_chat_id = get_session_env("OPENCODON_SESSION_CHAT_ID")
     if origin_platform and origin_chat_id:
@@ -397,7 +397,7 @@ def _resolve_model_override(model_obj: Optional[Dict[str, Any]]) -> tuple:
     # silently hijacks a job that meant to use the configured custom endpoint.
     if provider_name == "custom":
         try:
-            from opencodon_cli.runtime_provider import has_named_custom_provider
+            from opencodon.frontends.cli.runtime_provider import has_named_custom_provider
             if not has_named_custom_provider("custom"):
                 provider_name = None
         except Exception:
@@ -473,12 +473,12 @@ def _validate_cron_base_url(
             "configured custom provider to use a custom endpoint."
         )
     try:
-        from opencodon_cli.runtime_provider import (
+        from opencodon.frontends.cli.runtime_provider import (
             has_named_custom_provider,
             resolve_requested_provider,
             _get_named_custom_provider,
         )
-        from opencodon_cli.auth import PROVIDER_REGISTRY
+        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
         from utils import base_url_host_matches, base_url_hostname
     except Exception:
         # Can't resolve provider metadata -> fail closed.

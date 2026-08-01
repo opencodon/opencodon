@@ -2912,7 +2912,7 @@ def delegate_task(
         # strictly better than a handle that never resolves. Mirrors the
         # pool-at-capacity inline fallback below.
         try:
-            from gateway.session_context import async_delivery_supported
+            from opencodon.frontends.gateway.session_context import async_delivery_supported
             _async_ok = async_delivery_supported()
         except Exception:
             _async_ok = True
@@ -2935,7 +2935,7 @@ def delegate_task(
         _session_key = get_current_session_key(default="")
         _origin_ui_session_id = ""
         try:
-            from gateway.session_context import get_session_env
+            from opencodon.frontends.gateway.session_context import get_session_env
 
             _source = get_session_env("OPENCODON_SESSION_SOURCE", "")
             _origin_ui_session_id = get_session_env("OPENCODON_UI_SESSION_ID", "")
@@ -3209,7 +3209,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
         # proxies — pick the right transport automatically. Without this,
         # subagents would default to chat_completions and hit 404s on endpoints
         # that only speak the Anthropic Messages protocol. Fixes #10213.
-        from opencodon_cli.runtime_provider import _detect_api_mode_for_url
+        from opencodon.frontends.cli.runtime_provider import _detect_api_mode_for_url
 
         base_lower = configured_base_url.lower()
         provider = "custom"
@@ -3254,7 +3254,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
     # Provider is configured — resolve full credentials
     try:
-        from opencodon_cli.runtime_provider import resolve_runtime_provider
+        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested=configured_provider, target_model=configured_model)
     except Exception as exc:
@@ -3316,7 +3316,7 @@ def _load_config() -> dict:
         except Exception:
             pass
     try:
-        from cli import CLI_CONFIG
+        from opencodon.frontends.cli.shell import CLI_CONFIG
 
         cfg = CLI_CONFIG.get("delegation") or {}
         return cfg if isinstance(cfg, dict) else {}

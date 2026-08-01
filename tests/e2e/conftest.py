@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from gateway.config import GatewayConfig, Platform, PlatformConfig
-from gateway.platforms.base import MessageEvent, SendResult
-from gateway.session import SessionEntry, SessionSource, build_session_key
+from opencodon.frontends.gateway.config import GatewayConfig, Platform, PlatformConfig
+from opencodon.frontends.gateway.platforms.base import MessageEvent, SendResult
+from opencodon.frontends.gateway.session import SessionEntry, SessionSource, build_session_key
 
 E2E_MESSAGE_SETTLE_DELAY = 0.3
 
@@ -169,7 +169,7 @@ def make_runner(platform: Platform, session_entry: SessionEntry = None) -> "Gate
 
     Skips __init__ to avoid filesystem/network side effects.
     """
-    from gateway.run import GatewayRunner
+    from opencodon.frontends.gateway.run import GatewayRunner
 
     if session_entry is None:
         session_entry = make_session_entry(platform)
@@ -203,7 +203,7 @@ def make_runner(platform: Platform, session_entry: SessionEntry = None) -> "Gate
     runner._restart_task_started = False
     runner._restart_detached = False
     runner._restart_via_service = False
-    from gateway.restart import DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT
+    from opencodon.frontends.gateway.restart import DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT
     runner._restart_drain_timeout = DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT
     runner._stop_task = None
     runner._busy_input_mode = "interrupt"
@@ -249,7 +249,7 @@ def make_adapter(platform: Platform, runner=None):
     config = PlatformConfig(enabled=True, token="e2e-test-token")
 
     if platform == Platform.DISCORD:
-        from gateway.platforms.helpers import ThreadParticipationTracker
+        from opencodon.frontends.gateway.platforms.helpers import ThreadParticipationTracker
         with patch.object(ThreadParticipationTracker, "_load", return_value=set()):
             adapter = DiscordAdapter(config)
         platform_key = Platform.DISCORD
@@ -410,7 +410,7 @@ def _make_discord_adapter_wired(runner=None):
         runner = make_runner(Platform.DISCORD)
 
     config = PlatformConfig(enabled=True, token="e2e-test-token")
-    from gateway.platforms.helpers import ThreadParticipationTracker
+    from opencodon.frontends.gateway.platforms.helpers import ThreadParticipationTracker
     with patch.object(ThreadParticipationTracker, "_load", return_value=set()):
         adapter = DiscordAdapter(config)
 

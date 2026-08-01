@@ -56,12 +56,12 @@ def _get_bundled_dir() -> Path:
     Checks OPENCODON_BUNDLED_SKILLS env var first (set by Nix wrapper),
     then falls back to the relative path from this source file.
     """
-    return get_bundled_skills_dir(Path(__file__).parent.parent / "skills")
+    return get_bundled_skills_dir(Path(__file__).resolve().parents[2] / "skills")
 
 
 def _get_optional_dir() -> Path:
     """Locate the official optional-skills/ directory."""
-    return get_optional_skills_dir(Path(__file__).parent.parent / "optional-skills")
+    return get_optional_skills_dir(Path(__file__).resolve().parents[2] / "optional-skills")
 
 
 def _build_external_skill_index() -> Set[str]:

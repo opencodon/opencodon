@@ -4,9 +4,9 @@ import json
 import threading
 import time
 
-from opencodon_cli import mcp_startup
-from tui_gateway import server
-from tui_gateway import ws as ws_mod
+from opencodon.frontends.cli import mcp_startup
+from opencodon.frontends.tui import server
+from opencodon.frontends.tui import ws as ws_mod
 
 
 def test_ws_startup_starts_background_mcp_discovery(monkeypatch):

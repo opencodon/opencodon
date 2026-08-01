@@ -87,7 +87,7 @@ class TestReapOrphanedBrowserSessions:
         # so it's safe on Windows — ``os.kill(pid, 0)`` is bpo-14484).
         # The identity guard (#14073) is mocked True here — its own behavior
         # is covered by TestReaperIdentityGuard below.
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("opencodon.tools.browser_tool._verify_reapable_browser_daemon", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
             _reap_orphaned_browser_sessions()
@@ -138,7 +138,7 @@ class TestReapOrphanedBrowserSessions:
         def mock_terminate(pid):
             terminate_calls.append(pid)
 
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("opencodon.tools.browser_tool._verify_reapable_browser_daemon", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
             _reap_orphaned_browser_sessions()
@@ -208,7 +208,7 @@ class TestOwnerPidCrossProcess:
             kill_calls.append(pid)
 
         # Owner alive → reaper skips without ever probing the daemon.
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
             _reap_orphaned_browser_sessions()
 
@@ -231,7 +231,7 @@ class TestOwnerPidCrossProcess:
 
         # Owner 999999999 dead, daemon 12345 alive.
         pid_alive = {999999999: False, 12345: True}
-        with patch("gateway.status._pid_exists",
+        with patch("opencodon.frontends.gateway.status._pid_exists",
                    side_effect=lambda pid: pid_alive.get(int(pid), False)), \
              patch("opencodon.tools.browser_tool._verify_reapable_browser_daemon", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
@@ -258,7 +258,7 @@ class TestOwnerPidCrossProcess:
         def mock_terminate(pid):
             kill_calls.append(pid)
 
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
             _reap_orphaned_browser_sessions()
 
@@ -287,7 +287,7 @@ class TestOwnerPidCrossProcess:
 
         # Owner 22222 reported alive (PermissionError collapses to True
         # inside _pid_exists). Daemon never probed, never terminated.
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid", side_effect=mock_terminate):
             _reap_orphaned_browser_sessions()
 
@@ -502,7 +502,7 @@ class TestReaperIdentityGuard:
         terminate_calls = []
         proc = self._FakeProc(name="sleep", cmdline=["/bin/sleep", "600"])
 
-        with patch("gateway.status._pid_exists", return_value=True), \
+        with patch("opencodon.frontends.gateway.status._pid_exists", return_value=True), \
              patch("psutil.Process", return_value=proc), \
              patch("opencodon.tools.process_registry.ProcessRegistry._terminate_host_pid",
                    side_effect=lambda pid: terminate_calls.append(pid)):

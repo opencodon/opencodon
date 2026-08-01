@@ -42,30 +42,30 @@ class TestConfigureWindowsStdio:
     def _reset_configured(self, monkeypatch):
         """Reload the module before each test so the _CONFIGURED flag resets."""
         # Remove from sys.modules so import triggers a fresh load
-        sys.modules.pop("opencodon_cli.stdio", None)
+        sys.modules.pop("opencodon.frontends.cli.stdio", None)
         # Fresh import now; tests import from opencodon_cli.stdio themselves,
         # but this guarantees the module they get is a brand-new copy.
-        import opencodon_cli.stdio as _s
+        import opencodon.frontends.cli.stdio as _s
         _s._CONFIGURED = False
         yield
-        sys.modules.pop("opencodon_cli.stdio", None)
+        sys.modules.pop("opencodon.frontends.cli.stdio", None)
 
     def test_no_op_on_posix(self):
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         assert stdio.is_windows() is False
         result = stdio.configure_windows_stdio()
         assert result is False
 
     def test_idempotent(self):
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         stdio.configure_windows_stdio()
         # Second call returns False because _CONFIGURED is set
         assert stdio.configure_windows_stdio() is False
 
     def test_windows_path_sets_env_and_reconfigures_streams(self, monkeypatch):
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
         # Pretend the user has no prior setting
@@ -104,7 +104,7 @@ class TestConfigureWindowsStdio:
 
     def test_respects_existing_editor_var(self, monkeypatch):
         """User's explicit EDITOR wins over our default."""
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
         monkeypatch.setenv("EDITOR", "code --wait")
@@ -117,7 +117,7 @@ class TestConfigureWindowsStdio:
 
     def test_respects_existing_visual_var(self, monkeypatch):
         """VISUAL takes precedence over our EDITOR default too."""
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
         monkeypatch.delenv("EDITOR", raising=False)
@@ -134,7 +134,7 @@ class TestConfigureWindowsStdio:
 
     def test_respects_existing_env_var(self, monkeypatch):
         """User's explicit PYTHONIOENCODING wins over our default."""
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
         monkeypatch.setenv("PYTHONIOENCODING", "latin-1")
@@ -146,7 +146,7 @@ class TestConfigureWindowsStdio:
 
     @pytest.mark.parametrize("optout", ["1", "true", "True", "yes"])
     def test_disable_flag_short_circuits(self, monkeypatch, optout):
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
 
         monkeypatch.setattr(stdio, "is_windows", lambda: True)
         monkeypatch.setenv("OPENCODON_DISABLE_WINDOWS_UTF8", optout)
@@ -164,7 +164,7 @@ class TestConfigureWindowsStdio:
 
     def test_reconfigure_stream_handles_missing_method(self, monkeypatch):
         """StringIO-like objects without .reconfigure() must not blow up."""
-        from opencodon_cli import stdio
+        from opencodon.frontends.cli import stdio
         import io
 
         buf = io.StringIO()
@@ -187,7 +187,7 @@ class TestTerminatePidRoutingOnWindows:
     """
 
     def test_force_uses_taskkill_on_windows(self, monkeypatch):
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         captured = {}
 
@@ -210,7 +210,7 @@ class TestTerminatePidRoutingOnWindows:
         assert "/F" in captured["args"]
 
     def test_force_taskkill_failure_raises_oserror(self, monkeypatch):
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         def fake_run(args, **kwargs):
             result = MagicMock()
@@ -231,7 +231,7 @@ class TestTerminatePidRoutingOnWindows:
         and uses ``os.kill`` directly — so platform doesn't actually matter
         for the signal choice.  Verifies the getattr fallback works.
         """
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         captured = {}
 
@@ -247,7 +247,7 @@ class TestTerminatePidRoutingOnWindows:
 
     def test_taskkill_not_found_falls_back_to_os_kill(self, monkeypatch):
         """On Windows without taskkill (WinPE, containers), fall back gracefully."""
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         captured = {}
 
@@ -294,7 +294,7 @@ class TestSigkillFallback:
         "module_path, line_pattern",
         [
             ("opencodon.tools.process_registry", 'getattr(signal, "SIGKILL", signal.SIGTERM)'),
-            ("opencodon_cli.gateway", 'getattr(signal, "SIGKILL", signal.SIGTERM)'),
+            ("opencodon.frontends.cli.gateway", 'getattr(signal, "SIGKILL", signal.SIGTERM)'),
         ],
     )
     def test_module_uses_getattr_fallback(self, module_path, line_pattern):
@@ -326,7 +326,7 @@ class TestProcessRegistryOSErrorWidening:
         """_pid_exists → False propagates as _is_host_pid_alive → False."""
         from opencodon.tools.process_registry import ProcessRegistry
 
-        monkeypatch.setattr("gateway.status._pid_exists", lambda pid: False)
+        monkeypatch.setattr("opencodon.frontends.gateway.status._pid_exists", lambda pid: False)
         assert ProcessRegistry._is_host_pid_alive(12345) is False
 
     def test_permission_error_treated_as_alive(self, monkeypatch):
@@ -342,7 +342,7 @@ class TestProcessRegistryOSErrorWidening:
         """
         from opencodon.tools.process_registry import ProcessRegistry
 
-        monkeypatch.setattr("gateway.status._pid_exists", lambda pid: True)
+        monkeypatch.setattr("opencodon.frontends.gateway.status._pid_exists", lambda pid: True)
         assert ProcessRegistry._is_host_pid_alive(12345) is True
 
     def test_zero_or_none_pid_returns_false_without_probing(self, monkeypatch):
@@ -351,7 +351,7 @@ class TestProcessRegistryOSErrorWidening:
 
         probes = []
         monkeypatch.setattr(
-            "gateway.status._pid_exists",
+            "opencodon.frontends.gateway.status._pid_exists",
             lambda pid: probes.append(pid) or True,
         )
         assert ProcessRegistry._is_host_pid_alive(None) is False
@@ -361,7 +361,7 @@ class TestProcessRegistryOSErrorWidening:
     def test_alive_pid_returns_true(self, monkeypatch):
         from opencodon.tools.process_registry import ProcessRegistry
 
-        monkeypatch.setattr("gateway.status._pid_exists", lambda pid: True)
+        monkeypatch.setattr("opencodon.frontends.gateway.status._pid_exists", lambda pid: True)
         assert ProcessRegistry._is_host_pid_alive(os.getpid()) is True
 
 
@@ -376,7 +376,7 @@ class TestPidExistsOSErrorWidening:
 
     def test_oserror_gone_pid_returns_false(self, monkeypatch):
         """Simulate Windows' OSError(WinError 87) for a gone PID via the POSIX fallback."""
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         # Force the psutil-first branch to miss so we exercise the fallback.
         monkeypatch.setitem(
@@ -393,7 +393,7 @@ class TestPidExistsOSErrorWidening:
 
     def test_permission_error_returns_true(self, monkeypatch):
         """POSIX fallback: PermissionError means alive (owned by another user)."""
-        from gateway import status
+        from opencodon.frontends.gateway import status
 
         monkeypatch.setitem(
             __import__("sys").modules, "psutil",
@@ -517,7 +517,7 @@ class TestSubprocessCompatHelpers:
     """opencodon_cli/_subprocess_compat.py POSIX + Windows behaviour."""
 
     def test_is_windows_matches_sys_platform(self):
-        from opencodon_cli import _subprocess_compat as sc
+        from opencodon.frontends.cli import _subprocess_compat as sc
         assert sc.IS_WINDOWS == (sys.platform == "win32")
 
     def test_resolve_node_command_returns_absolute_on_posix(self):
@@ -570,7 +570,7 @@ class TestSubprocessCompatHelpers:
 
     def test_windows_detach_flags_has_expected_win32_bits(self, monkeypatch):
         """Simulate Windows to verify flag bundle."""
-        from opencodon_cli import _subprocess_compat as sc
+        from opencodon.frontends.cli import _subprocess_compat as sc
         monkeypatch.setattr(sc, "IS_WINDOWS", True)
         flags = sc.windows_detach_flags()
         # CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS | CREATE_NO_WINDOW |
@@ -594,7 +594,7 @@ class TestSubprocessCompatHelpers:
         ``fix/windows-gateway-reliability`` (PR #40909) and the bit must
         stay in the default bundle going forward.
         """
-        from opencodon_cli import _subprocess_compat as sc
+        from opencodon.frontends.cli import _subprocess_compat as sc
         monkeypatch.setattr(sc, "IS_WINDOWS", True)
         assert sc.windows_detach_flags() & 0x01000000, (
             "CREATE_BREAKAWAY_FROM_JOB (0x01000000) must remain in the "
@@ -614,7 +614,7 @@ class TestSubprocessCompatHelpers:
         It must drop ONLY the breakaway bit — DETACHED_PROCESS et al.
         are still required for the child to survive the parent's exit.
         """
-        from opencodon_cli import _subprocess_compat as sc
+        from opencodon.frontends.cli import _subprocess_compat as sc
         monkeypatch.setattr(sc, "IS_WINDOWS", True)
         full = sc.windows_detach_flags()
         fallback = sc.windows_detach_flags_without_breakaway()
@@ -658,7 +658,7 @@ class TestTuiGatewayEntrySignalGuards:
         for mod in list(sys.modules):
             if mod.startswith("tui_gateway"):
                 del sys.modules[mod]
-        import tui_gateway.entry  # noqa: F401  # must not raise
+        import opencodon.frontends.tui.entry  # noqa: F401  # must not raise
 
 
 # ---------------------------------------------------------------------------
@@ -832,7 +832,7 @@ class TestGitBashPathNormalization:
 
     def test_posix_noop(self):
         """Must NOT mutate paths on Linux/macOS."""
-        from cli import _normalize_git_bash_path
+        from opencodon.frontends.cli.shell import _normalize_git_bash_path
         if sys.platform != "win32":
             assert _normalize_git_bash_path("/home/teknium/foo") == "/home/teknium/foo"
             assert _normalize_git_bash_path("/c/Users/foo") == "/c/Users/foo"
@@ -840,12 +840,12 @@ class TestGitBashPathNormalization:
             assert _normalize_git_bash_path(None) is None
 
     def test_empty_string_preserved(self):
-        from cli import _normalize_git_bash_path
+        from opencodon.frontends.cli.shell import _normalize_git_bash_path
         assert _normalize_git_bash_path("") == ""
 
     def test_windows_translation(self, monkeypatch):
         """Simulate Windows and verify /c/Users/... becomes C:\\Users\\..."""
-        import cli as cli_mod
+        from opencodon.frontends.cli import shell as cli_mod
         monkeypatch.setattr(cli_mod.sys, "platform", "win32")
         assert cli_mod._normalize_git_bash_path("/c/Users/foo") == r"C:\Users\foo"
         assert cli_mod._normalize_git_bash_path("/C/Users/foo") == r"C:\Users\foo"
@@ -897,7 +897,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
 
     def test_gateway_run_update_has_windows_branch(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "gateway" / "run.py").read_text(encoding="utf-8")
+        source = (root / "opencodon" / "frontends" / "gateway" / "run.py").read_text(encoding="utf-8")
         # Both the /restart and /update paths must have sys.platform=='win32' branches.
         assert 'if sys.platform == "win32":' in source
         # Windows branch uses windows_detach_popen_kwargs
@@ -1026,9 +1026,9 @@ class TestWindowlessGatewayRestartSpec:
     converts a console-python gateway argv into a windowless pythonw one."""
 
     def test_noop_on_non_windows(self):
-        import opencodon_cli.gateway_windows as gw
+        import opencodon.frontends.cli.gateway_windows as gw
 
-        argv = ["/path/venv/bin/python", "-m", "opencodon_cli.main", "gateway", "run"]
+        argv = ["/path/venv/bin/python", "-m", "opencodon.frontends.cli.main", "gateway", "run"]
         with mock.patch.object(gw.sys, "platform", "linux"):
             new_argv, cwd, env = gw.windowless_gateway_restart_spec(list(argv))
         assert new_argv == argv
@@ -1036,7 +1036,7 @@ class TestWindowlessGatewayRestartSpec:
         assert env == {}
 
     def test_empty_argv_is_safe(self):
-        import opencodon_cli.gateway_windows as gw
+        import opencodon.frontends.cli.gateway_windows as gw
 
         new_argv, cwd, env = gw.windowless_gateway_restart_spec([])
         assert new_argv == []
@@ -1046,7 +1046,7 @@ class TestWindowlessGatewayRestartSpec:
     def test_windows_rewrites_to_pythonw_and_preserves_tail(self):
         """On Windows the interpreter is swapped for its windowless sibling
         while every subsequent argument is preserved verbatim."""
-        import opencodon_cli.gateway_windows as gw
+        import opencodon.frontends.cli.gateway_windows as gw
 
         # Pre-import on the (Linux) host so the function's lazy
         # ``from opencodon_cli.gateway import PROJECT_ROOT`` resolves from
@@ -1055,12 +1055,12 @@ class TestWindowlessGatewayRestartSpec:
         # ``if sys.platform == "win32": import msvcrt`` branch and crash on
         # Linux CI with ModuleNotFoundError.
         import opencodon.config  # noqa: F401
-        import opencodon_cli.gateway  # noqa: F401
+        import opencodon.frontends.cli.gateway  # noqa: F401
 
         argv = [
             "C:/venv/Scripts/python.exe",
             "-m",
-            "opencodon_cli.main",
+            "opencodon.frontends.cli.main",
             "--profile",
             "work",
             "gateway",

@@ -12,7 +12,7 @@ tool's thread is safe).
 
 from typing import Callable, Optional
 
-from gateway.session_context import get_session_env
+from opencodon.frontends.gateway.session_context import get_session_env
 
 # (sid, event, payload) sink, installed by the desktop gateway.
 _emit: Optional[Callable[[str, str, dict], None]] = None

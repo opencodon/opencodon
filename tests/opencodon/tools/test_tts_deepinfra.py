@@ -16,7 +16,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolation(monkeypatch):
-    import opencodon_cli.models as _models_mod
+    import opencodon.frontends.cli.models as _models_mod
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_cache", {})
     monkeypatch.setenv("DEEPINFRA_API_KEY", "test-key")
     yield

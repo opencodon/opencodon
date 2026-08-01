@@ -76,7 +76,7 @@ def test_active_context_engine_tools_survive_explicit_platform_toolsets():
         "agent": {},
     }
 
-    from opencodon_cli.tools_config import _get_platform_tools
+    from opencodon.frontends.cli.tools_config import _get_platform_tools
 
     enabled_toolsets = _get_platform_tools(cfg, "cli", include_default_mcp_servers=False)
     assert "context_engine" in enabled_toolsets

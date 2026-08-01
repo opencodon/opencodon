@@ -758,7 +758,7 @@ def _cache_mcp_image_block(block) -> str:
         return ""
 
     try:
-        from gateway.platforms.base import cache_image_from_bytes
+        from opencodon.frontends.gateway.platforms.base import cache_image_from_bytes
 
         image_path = cache_image_from_bytes(
             raw_bytes,
@@ -847,7 +847,7 @@ def _cache_mcp_audio_block(block) -> str:
     if len(raw_bytes) > _MCP_RESOURCE_MAX_BYTES:
         return f"[MCP audio resource too large to cache: {len(raw_bytes)} bytes]"
     try:
-        from gateway.platforms.base import cache_audio_from_bytes
+        from opencodon.frontends.gateway.platforms.base import cache_audio_from_bytes
         import mimetypes
 
         ext = (
@@ -927,7 +927,7 @@ def _render_mcp_resource_block(block, server_name: str = "") -> str:
     if len(raw_bytes) > _MCP_RESOURCE_MAX_BYTES:
         return f"[MCP embedded resource too large to cache: {len(raw_bytes)} bytes, uri={uri}]"
     try:
-        from gateway.platforms.base import cache_document_from_bytes
+        from opencodon.frontends.gateway.platforms.base import cache_document_from_bytes
 
         path = cache_document_from_bytes(raw_bytes, _mcp_resource_filename(uri, mime))
     except ImportError:
@@ -2519,7 +2519,7 @@ class MCPServerTask:
             # on Linux, where setsid() children escape the parent cgroup).
             # Mark them as orphans so the next cleanup sweep can reap them.
             if new_pids:
-                from gateway.status import _pid_exists
+                from opencodon.frontends.gateway.status import _pid_exists
                 _killpg = getattr(os, "killpg", None)
                 with _lock:
                     for _pid in new_pids:
@@ -4393,7 +4393,7 @@ def _interpolate_env_vars(value):
 def _filter_suspicious_mcp_servers(servers: Dict[str, dict]) -> Dict[str, dict]:
     """Drop exfiltration-shaped MCP configs before any stdio spawn path."""
     try:
-        from opencodon_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+        from opencodon.frontends.cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
     except Exception:
         _validate_mcp_server_entry: Callable[[str, dict[str, Any]], list[str]] | None = None
 
@@ -6340,7 +6340,7 @@ def _kill_orphaned_mcp_children(
     _sigkill = getattr(_signal, "SIGKILL", _signal.SIGTERM)
     # ``os.kill(pid, 0)`` is NOT a no-op on Windows. Use the cross-platform
     # existence check before escalating to SIGKILL.
-    from gateway.status import _pid_exists
+    from opencodon.frontends.gateway.status import _pid_exists
     for pid, server_name in pids.items():
         if not _pid_exists(pid):
             continue  # Good — exited after SIGTERM

@@ -53,7 +53,7 @@ class TestSessionDbInitTimeout:
                  patch("opencodon.config.env_loader.reset_secret_source_cache"), \
                  patch("opencodon.state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                     "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",
@@ -94,7 +94,7 @@ class TestSessionDbInitTimeout:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -141,7 +141,7 @@ class TestSessionDbInitTimeout:
                  patch("opencodon.config.env_loader.reset_secret_source_cache"), \
                  patch("opencodon.state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                     "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",
@@ -196,7 +196,7 @@ class TestDispatchGuardReleasedAfterHang:
                  patch("opencodon.config.env_loader.reset_secret_source_cache"), \
                  patch("opencodon.state.SessionDB", side_effect=lambda: _hanging_session_db(never_set)), \
                  patch(
-                     "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                     "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                      return_value={
                          "api_key": "test-key",
                          "base_url": "https://example.invalid/v1",

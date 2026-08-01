@@ -355,7 +355,7 @@ class TestFormatFooter:
         config.yaml path out of the rendered footer (#35584)."""
         import os
         import tempfile
-        from gateway.platforms.base import BasePlatformAdapter
+        from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter
 
         tmp = tempfile.mkdtemp(prefix="opencodon_footer_")
         try:

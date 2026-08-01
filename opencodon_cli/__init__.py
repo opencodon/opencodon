@@ -1,94 +1,12 @@
-"""
-Opencodon CLI - Unified command-line interface for Opencodon.
+"""Compat shim package: ``opencodon_cli`` -> ``opencodon.frontends.cli`` (restructure Phase 3a).
 
-Provides subcommands for:
-- opencodon chat          - Interactive chat (same as ./opencodon)
-- opencodon gateway       - Run gateway in foreground
-- opencodon gateway start - Start gateway service
-- opencodon gateway stop  - Stop gateway service
-- opencodon setup         - Interactive setup wizard
-- opencodon status        - Show status of all components
-- opencodon cron          - Manage cron jobs
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
 
-import os
-import sys
+from opencodon.frontends.cli import *  # noqa: F401,F403
+import opencodon.frontends.cli as _real  # noqa: F401
 
-# Opencodon's own version line — independent of the upstream fork point.
-# Keep in sync with `version` in pyproject.toml.
-__version__ = "0.1.0"
-__release_date__ = "2026.7.25"
-
-
-def _ensure_utf8():
-    """Force UTF-8 stdout/stderr to prevent UnicodeEncodeError crashes.
-
-    Several environments select a legacy, non-UTF-8 encoding for the standard
-    streams:
-
-    - Windows services and terminals default to cp1252.
-    - Linux hosts with a latin-1 / C / POSIX locale (common on minimal Debian
-      installs and Raspberry Pi) select latin-1 or ASCII.
-
-    The CLI prints box-drawing characters (┌│├└─) and the ⚕ glyph in the setup
-    wizard, doctor, and status banners. Encoding those under a non-UTF-8 codec
-    raises an unhandled UnicodeEncodeError that crashes the command before it
-    can even start — e.g. `opencodon setup` on a fresh Pi.
-
-    This runs at import time so it protects every CLI subcommand, on any
-    platform. It re-wraps stdout/stderr as UTF-8 when their encoding is not
-    already UTF-8, preferring TextIOWrapper.reconfigure() so the existing
-    stream object is fixed in place (cached `sys.stdout` references keep
-    working) and falling back to reopening the file descriptor with
-    closefd=False (the CPython-recommended safe variant).
-
-    No-op when the streams are already UTF-8: a healthy UTF-8 system sees no
-    stream change and no environment mutation.
-
-    Note: this is intentionally the earliest, platform-agnostic guard.
-    opencodon_cli/stdio.py::configure_windows_stdio() runs later from the entry
-    points and layers on the Windows-only extras (console code-page flip,
-    EDITOR default, PATH augmentation); its stream reconfiguration is a
-    harmless idempotent no-op once we have already repaired the streams here.
-    """
-    repaired = False
-
-    for stream_name in ("stdout", "stderr"):
-        stream = getattr(sys, stream_name, None)
-        if stream is None:
-            continue
-        try:
-            encoding = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
-            if encoding == "utf8":
-                continue
-
-            # Preferred: reconfigure the existing TextIOWrapper in place. This
-            # preserves object identity so any code already holding a reference
-            # to the old sys.stdout benefits from the repair too.
-            reconfigure = getattr(stream, "reconfigure", None)
-            if callable(reconfigure):
-                reconfigure(encoding="utf-8", errors="replace")
-                repaired = True
-                continue
-
-            # Fallback: reopen the underlying file descriptor as UTF-8. Used
-            # for streams that don't expose reconfigure() (e.g. some wrapped
-            # or replaced streams). closefd=False keeps the original fd open.
-            new_stream = open(
-                stream.fileno(), "w", encoding="utf-8",
-                errors="replace", buffering=1, closefd=False,
-            )
-            setattr(sys, stream_name, new_stream)
-            repaired = True
-        except (AttributeError, OSError, ValueError):
-            pass
-
-    # Only nudge child processes toward UTF-8 when we actually detected a
-    # non-UTF-8 locale. On a healthy UTF-8 host children inherit UTF-8 from the
-    # locale already, so leave the environment untouched (minimal footprint).
-    if repaired:
-        os.environ.setdefault("PYTHONUTF8", "1")
-        os.environ.setdefault("PYTHONIOENCODING", "utf-8")
-
-
-_ensure_utf8()
+def __getattr__(name):
+    return getattr(_real, name)

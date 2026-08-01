@@ -112,7 +112,7 @@ def _session_is_messaging_surface() -> bool:
     non-messaging surface.
     """
     try:
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
 
         platform = (
             os.getenv("OPENCODON_PLATFORM")

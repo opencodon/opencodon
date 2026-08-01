@@ -13,7 +13,7 @@ import threading
 import time
 import types
 
-from tui_gateway import server
+from opencodon.frontends.tui import server
 
 
 def _session(agent=None, **extra):

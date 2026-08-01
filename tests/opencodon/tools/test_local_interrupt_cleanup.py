@@ -114,7 +114,7 @@ def test_kill_process_uses_windows_tree_kill(monkeypatch):
     )
 
     monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
-    monkeypatch.setattr("gateway.status.terminate_pid", fake_terminate)
+    monkeypatch.setattr("opencodon.frontends.gateway.status.terminate_pid", fake_terminate)
 
     env._kill_process(proc)
 

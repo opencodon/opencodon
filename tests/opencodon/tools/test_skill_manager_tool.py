@@ -1029,10 +1029,10 @@ class TestExternalSkillMutations:
                 mark_background_review_skill_read(tmp_path / "agent-skill" / "SKILL.md")
                 with patch(
                     "opencodon.tools.skill_usage.load_usage",
-                    return_value={"agent-skill": {"created_by": "opencodon", "core", "use_count": 5}},
+                    return_value={"agent-skill": {"created_by": "agent", "use_count": 5}},
                 ), patch(
                     "opencodon.tools.skill_usage.get_record",
-                    side_effect=lambda n: {"created_by": "opencodon", "core", "use_count": 5} if n == "agent-skill" else {},
+                    side_effect=lambda n: {"created_by": "agent", "use_count": 5} if n == "agent-skill" else {},
                 ), patch(
                     "opencodon.tools.skill_usage.is_curation_eligible", return_value=True,
                 ), patch(

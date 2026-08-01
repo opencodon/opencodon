@@ -94,7 +94,7 @@ def test_background_review_installs_thread_local_whitelist():
     whitelist is set with exactly the memory+skills tool names.
     """
     from opencodon.core import run_agent
-    from opencodon_cli import plugins as _plugins
+    from opencodon.frontends.cli import plugins as _plugins
 
     captured = {}
 
@@ -167,7 +167,7 @@ def test_background_review_excludes_memory_when_disabled():
     out of built-in memory. The whitelist must gate "memory" on the flag.
     """
     from opencodon.core import run_agent
-    from opencodon_cli import plugins as _plugins
+    from opencodon.frontends.cli import plugins as _plugins
 
     captured = {}
 
@@ -202,7 +202,7 @@ def test_background_review_excludes_memory_when_disabled():
 def test_background_review_includes_memory_when_user_profile_enabled():
     """user_profile_enabled alone (USER.md) still needs the memory tool."""
     from opencodon.core import run_agent
-    from opencodon_cli import plugins as _plugins
+    from opencodon.frontends.cli import plugins as _plugins
 
     captured = {}
 

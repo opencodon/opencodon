@@ -775,7 +775,7 @@ class TestXAIProviderOAuthPath:
         pair only to ``providers.xai-oauth`` leaves the manual row stale and
         breaks the next main-runtime load.
         """
-        from opencodon_cli.runtime_provider import resolve_runtime_provider
+        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
         from opencodon.tools.xai_http import resolve_xai_http_credentials
 
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -823,7 +823,7 @@ class TestXAIProviderOAuthPath:
             }
 
         monkeypatch.setattr(
-            "opencodon_cli.auth.refresh_xai_oauth_pure",
+            "opencodon.frontends.cli.auth.refresh_xai_oauth_pure",
             fake_refresh,
         )
 

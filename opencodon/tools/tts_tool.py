@@ -1165,7 +1165,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     if not isinstance(di_config, dict):
         di_config = {}
 
-    from opencodon_cli.models import deepinfra_base_url, deepinfra_model_ids
+    from opencodon.frontends.cli.models import deepinfra_base_url, deepinfra_model_ids
 
     model = di_config.get("model")
     if not isinstance(model, str) or not model.strip():
@@ -1849,7 +1849,7 @@ def _generate_gemini_tts(text: str, output_path: str, tts_config: Dict[str, Any]
     headers = {"Content-Type": "application/json"}
     if urlparse(base_url).hostname == "generativelanguage.googleapis.com":
         try:
-            import opencodon_cli as _opencodon_cli
+            from opencodon.frontends import cli as _opencodon_cli
 
             _opencodon_version = str(_opencodon_cli.__version__)
         except Exception:
@@ -2324,7 +2324,7 @@ def text_to_speech_tool(
     # Telegram voice bubbles require Opus (.ogg); OpenAI and ElevenLabs can
     # produce Opus natively (no ffmpeg needed).  Edge TTS always outputs MP3
     # and needs ffmpeg for conversion.
-    from gateway.session_context import get_session_env
+    from opencodon.frontends.gateway.session_context import get_session_env
     platform = get_session_env("OPENCODON_SESSION_PLATFORM", "").lower()
     want_opus = (platform == "telegram")
 

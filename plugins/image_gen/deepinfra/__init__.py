@@ -71,7 +71,7 @@ def _load_deepinfra_image_config() -> Dict[str, Any]:
 def _live_models() -> Optional[List[Dict[str, Any]]]:
     """Fetch ``image-gen``-tagged models from the DeepInfra catalog."""
     try:
-        from opencodon_cli.models import _fetch_deepinfra_models_by_tag
+        from opencodon.frontends.cli.models import _fetch_deepinfra_models_by_tag
     except Exception as exc:
         logger.debug("Cannot import _fetch_deepinfra_models_by_tag: %s", exc)
         return None
@@ -229,7 +229,7 @@ class DeepInfraImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
         size = _SIZES.get(aspect, _SIZES["square"])
-        from opencodon_cli.models import deepinfra_base_url
+        from opencodon.frontends.cli.models import deepinfra_base_url
         base_url = deepinfra_base_url(di_cfg)
 
         # DeepInfra's /images/generations is OpenAI-compatible — use the

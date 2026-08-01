@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from gateway.config import PlatformConfig
+from opencodon.frontends.gateway.config import PlatformConfig
 from plugins.platforms.discord.adapter import DiscordAdapter
 
 

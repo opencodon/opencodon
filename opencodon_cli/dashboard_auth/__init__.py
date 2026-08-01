@@ -1,48 +1,12 @@
-"""Dashboard authentication provider framework.
+"""Compat shim package: ``opencodon_cli.dashboard_auth`` -> ``opencodon.frontends.cli.dashboard_auth`` (restructure Phase 3a).
 
-The dashboard auth gate engages only when the dashboard binds to a
-non-loopback host without ``--insecure``. In that mode, every request must
-carry a verified session from one of the registered ``DashboardAuthProvider``
-plugins.
-
-Bundled providers live in ``plugins/dashboard_auth/`` and are the
-default. Third parties register their own providers via the plugin hook
-``ctx.register_dashboard_auth_provider``.
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
-from opencodon_cli.dashboard_auth.base import (
-    DashboardAuthProvider,
-    Session,
-    TokenPrincipal,
-    LoginStart,
-    InvalidCodeError,
-    InvalidCredentialsError,
-    ProviderError,
-    RefreshExpiredError,
-    assert_protocol_compliance,
-)
-from opencodon_cli.dashboard_auth.registry import (
-    register_provider,
-    get_provider,
-    list_providers,
-    list_token_providers,
-    list_session_providers,
-    clear_providers,
-)
 
-__all__ = [
-    "DashboardAuthProvider",
-    "Session",
-    "TokenPrincipal",
-    "LoginStart",
-    "InvalidCodeError",
-    "InvalidCredentialsError",
-    "ProviderError",
-    "RefreshExpiredError",
-    "assert_protocol_compliance",
-    "register_provider",
-    "get_provider",
-    "list_providers",
-    "list_token_providers",
-    "list_session_providers",
-    "clear_providers",
-]
+from opencodon.frontends.cli.dashboard_auth import *  # noqa: F401,F403
+import opencodon.frontends.cli.dashboard_auth as _real  # noqa: F401
+
+def __getattr__(name):
+    return getattr(_real, name)

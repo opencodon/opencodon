@@ -1,18 +1,11 @@
-"""``opencodon version`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.version`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.version as _real
 
-
-def build_version_parser(subparsers, *, cmd_version: Callable) -> None:
-    """Attach the ``version`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # version command
-    # =========================================================================
-    version_parser = subparsers.add_parser("version", help="Show version information")
-    version_parser.set_defaults(func=cmd_version)
+sys.modules[__name__] = _real

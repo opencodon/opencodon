@@ -7,7 +7,7 @@ message before a model switch can hit it.
 
 import pytest
 
-from gateway import code_skew
+from opencodon.frontends.gateway import code_skew
 
 
 @pytest.fixture(autouse=True)
@@ -63,13 +63,13 @@ class TestShort:
 
 class TestModelSwitchSkewGuard:
     def test_guard_returns_none_without_skew(self, monkeypatch):
-        from gateway import slash_commands
+        from opencodon.frontends.gateway import slash_commands
 
         monkeypatch.setattr(code_skew, "detect_code_skew", lambda: None)
         assert slash_commands._model_switch_skew_guard() is None
 
     def test_guard_message_names_revs_and_restart(self, monkeypatch):
-        from gateway import slash_commands
+        from opencodon.frontends.gateway import slash_commands
 
         monkeypatch.setattr(code_skew, "detect_code_skew", lambda: ("abc1234567", "def4567890"))
         msg = slash_commands._model_switch_skew_guard()

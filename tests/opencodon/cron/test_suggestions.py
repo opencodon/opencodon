@@ -178,7 +178,7 @@ class TestCommandHandler:
     def test_bare_lists_pending(self, store):
         _add(store, key="c1", title="Daily thing")
         with patch("opencodon.cron.suggestions.list_pending", store.list_pending):
-            from opencodon_cli.suggestions_cmd import handle_suggestions_command
+            from opencodon.frontends.cli.suggestions_cmd import handle_suggestions_command
             # Patch the module the handler imports.
             with patch.dict("sys.modules"):
                 out = handle_suggestions_command("")
@@ -186,7 +186,7 @@ class TestCommandHandler:
 
     def test_accept_via_handler(self, store):
         _add(store, key="ha", title="Acceptable")
-        from opencodon_cli.suggestions_cmd import handle_suggestions_command
+        from opencodon.frontends.cli.suggestions_cmd import handle_suggestions_command
 
         with patch("opencodon.cron.jobs.create_job", lambda **k: {"id": "j", "name": k.get("name"), "job_spec": k}):
             out = handle_suggestions_command("accept 1", origin={"platform": "cli", "chat_id": "1"})
@@ -195,14 +195,14 @@ class TestCommandHandler:
 
     def test_dismiss_via_handler(self, store):
         _add(store, key="hd", title="Dismissable")
-        from opencodon_cli.suggestions_cmd import handle_suggestions_command
+        from opencodon.frontends.cli.suggestions_cmd import handle_suggestions_command
 
         out = handle_suggestions_command("dismiss 1")
         assert "Dismissed" in out
         assert store.list_pending() == []
 
     def test_empty_list_message(self, store):
-        from opencodon_cli.suggestions_cmd import handle_suggestions_command
+        from opencodon.frontends.cli.suggestions_cmd import handle_suggestions_command
 
         out = handle_suggestions_command("")
         assert "No suggested automations" in out

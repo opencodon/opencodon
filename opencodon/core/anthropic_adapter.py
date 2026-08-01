@@ -1466,7 +1466,7 @@ def run_opencodon_oauth_login_pure() -> Optional[Dict[str, Any]]:
     print()
 
     try:
-        from opencodon_cli.auth import _can_open_graphical_browser as _can_open_gui
+        from opencodon.frontends.cli.auth import _can_open_graphical_browser as _can_open_gui
     except Exception:
         _can_open_gui = lambda: True  # noqa: E731 — degrade to prior behavior
 

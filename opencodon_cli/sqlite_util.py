@@ -1,31 +1,11 @@
-"""Shared SQLite primitives for the small per-profile stores.
+"""Compat shim — real module: ``opencodon.frontends.cli.sqlite_util`` (restructure Phase 3a).
 
-These stores open WAL SQLite files with the same IMMEDIATE write
-transaction. One definition here keeps them from drifting.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-import contextlib
-import sqlite3
+import opencodon.frontends.cli.sqlite_util as _real
 
-
-@contextlib.contextmanager
-def write_txn(conn: sqlite3.Connection):
-    """An IMMEDIATE write transaction: at most one concurrent writer wins.
-
-    The explicit ROLLBACK is guarded so a SQLite auto-rollback (no active
-    transaction left under EIO / lock contention / corruption) cannot shadow
-    the original exception with a spurious rollback error.
-    """
-    conn.execute("BEGIN IMMEDIATE")
-    try:
-        yield conn
-    except Exception:
-        try:
-            conn.execute("ROLLBACK")
-        except sqlite3.OperationalError:
-            pass
-        raise
-    else:
-        conn.execute("COMMIT")
+sys.modules[__name__] = _real

@@ -131,17 +131,17 @@ def _bridge_pid_is_ours(pid: int, session_path: Path, expected_start) -> bool:
     command line, which must contain ``node`` and this session's unique path.
     A recycled PID (different start time / different cmdline) is never ours.
     """
-    from gateway.status import _pid_exists
+    from opencodon.frontends.gateway.status import _pid_exists
     if not _pid_exists(pid):
         return False
     if expected_start is not None:
-        from gateway.status import get_process_start_time
+        from opencodon.frontends.gateway.status import get_process_start_time
         # A matching (pid, start time) pair uniquely identifies the process.
         return get_process_start_time(pid) == expected_start
     # Legacy pidfile (no recorded start time): fall back to a command-line
     # signature so a recycled PID is still never signalled.  If we cannot read
     # the cmdline we refuse to kill rather than risk a stranger.
-    from gateway.status import _read_process_cmdline
+    from opencodon.frontends.gateway.status import _read_process_cmdline
     cmdline = _read_process_cmdline(pid)
     if not cmdline:
         return False
@@ -184,7 +184,7 @@ def _kill_stale_bridge_by_pidfile(session_path: Path) -> None:
         except (ProcessLookupError, PermissionError, OSError):
             pass
     else:
-        from gateway.status import _pid_exists
+        from opencodon.frontends.gateway.status import _pid_exists
         if _pid_exists(pid):
             logger.warning(
                 "[whatsapp] Not killing pidfile PID %d: it is no longer the "
@@ -205,7 +205,7 @@ def _write_bridge_pidfile(session_path: Path, pid: int) -> None:
     as a "stale bridge". Older single-line files remain readable.
     """
     try:
-        from gateway.status import get_process_start_time
+        from opencodon.frontends.gateway.status import get_process_start_time
         start = get_process_start_time(pid)
         text = str(pid) if start is None else "{}\n{}".format(pid, start)
         (session_path / "bridge.pid").write_text(text)
@@ -262,10 +262,10 @@ def _terminate_bridge_process(proc, *, force: bool = False) -> None:
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from gateway.config import Platform, PlatformConfig
-from gateway.platforms.whatsapp_common import WhatsAppBehaviorMixin
-from gateway.whatsapp_identity import to_whatsapp_jid
-from gateway.platforms.base import (
+from opencodon.frontends.gateway.config import Platform, PlatformConfig
+from opencodon.frontends.gateway.platforms.whatsapp_common import WhatsAppBehaviorMixin
+from opencodon.frontends.gateway.whatsapp_identity import to_whatsapp_jid
+from opencodon.frontends.gateway.platforms.base import (
     BasePlatformAdapter,
     MessageEvent,
     MessageType,
@@ -297,7 +297,7 @@ def _is_allowed_bridge_path(url: str) -> bool:
     # constants) so this validator follows the active profile override; under a
     # profile override the inbound bridge writes media into that profile's
     # cache, which the frozen constants would not match.
-    from gateway.platforms.base import (
+    from opencodon.frontends.gateway.platforms.base import (
         get_audio_cache_dir,
         get_document_cache_dir,
         get_image_cache_dir,
@@ -393,7 +393,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         super().__init__(config, Platform.WHATSAPP)
         # Use shared helper for bridge directory resolution (handles read-only install tree)
         if WhatsAppAdapter._DEFAULT_BRIDGE_DIR is None:
-            from gateway.platforms.whatsapp_common import resolve_whatsapp_bridge_dir
+            from opencodon.frontends.gateway.platforms.whatsapp_common import resolve_whatsapp_bridge_dir
             WhatsAppAdapter._DEFAULT_BRIDGE_DIR = resolve_whatsapp_bridge_dir()
         self._bridge_process: Optional[subprocess.Popen] = None
         self._bridge_port: int = config.extra.get("bridge_port", 3000)
@@ -630,7 +630,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             # media where the Python side reads it.  Without these the bridge
             # hardcodes ~/.opencodon/{image,audio,document}_cache, which diverges
             # under OPENCODON_HOME overrides, profiles, and the new cache/ layout.
-            from gateway.platforms.base import (
+            from opencodon.frontends.gateway.platforms.base import (
                 get_audio_cache_dir as _get_audio_dir,
                 get_document_cache_dir as _get_doc_dir,
                 get_image_cache_dir as _get_img_dir,
@@ -1273,7 +1273,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
     def _text_batch_key(self, event: MessageEvent) -> str:
         """Session-scoped key for text message batching."""
-        from gateway.session import build_session_key
+        from opencodon.frontends.gateway.session import build_session_key
         return build_session_key(
             event.source,
             group_sessions_per_user=self.config.extra.get("group_sessions_per_user", True),
@@ -1673,7 +1673,7 @@ def interactive_setup() -> None:
     plugin's module-load surface stays minimal.
     """
     from opencodon.config import get_env_value, save_env_value
-    from opencodon_cli.cli_output import (
+    from opencodon.frontends.cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -1763,7 +1763,7 @@ def _is_connected(config) -> bool:
     # Read via opencodon_cli.gateway.get_env_value (not os.getenv) so setup-status
     # callers that patch get_env_value — and the gateway connected-platforms
     # check — observe the same value. Matches the discord/slack plugin pattern.
-    import opencodon_cli.gateway as gateway_mod
+    import opencodon.frontends.cli.gateway as gateway_mod
     val = (gateway_mod.get_env_value("WHATSAPP_ENABLED") or "").strip().lower()
     return val in {"true", "1", "yes"}
 

@@ -246,7 +246,7 @@ def send_message_tool(args, **kw):
 def _handle_list():
     """Return formatted list of available messaging targets."""
     try:
-        from gateway.channel_directory import format_directory_for_display
+        from opencodon.frontends.gateway.channel_directory import format_directory_for_display
         return json.dumps({"targets": format_directory_for_display()})
     except Exception as e:
         return json.dumps(_error(f"Failed to load channel directory: {e}"))
@@ -280,7 +280,7 @@ def _handle_react(args, remove=False):
         chat_id, _thread_id, _ = _parse_target_ref(platform_name, target_ref)
         if not chat_id:
             try:
-                from gateway.channel_directory import resolve_channel_name
+                from opencodon.frontends.gateway.channel_directory import resolve_channel_name
                 resolved = resolve_channel_name(platform_name, target_ref)
             except Exception:
                 resolved = None
@@ -290,7 +290,7 @@ def _handle_react(args, remove=False):
             chat_id = resolved or target_ref
 
     try:
-        from gateway.config import Platform, load_gateway_config
+        from opencodon.frontends.gateway.config import Platform, load_gateway_config
         platform = Platform(platform_name)
     except (ValueError, KeyError):
         return tool_error(f"Unknown platform: {platform_name}")
@@ -310,7 +310,7 @@ def _handle_react(args, remove=False):
 
     runner = None
     try:
-        from gateway.run import _gateway_runner_ref
+        from opencodon.frontends.gateway.run import _gateway_runner_ref
         runner = _gateway_runner_ref()
     except Exception:
         runner = None
@@ -365,7 +365,7 @@ def _handle_send(args):
     # Resolve human-friendly channel names to numeric IDs
     if target_ref and not is_explicit:
         try:
-            from gateway.channel_directory import resolve_channel_name
+            from opencodon.frontends.gateway.channel_directory import resolve_channel_name
             resolved = resolve_channel_name(platform_name, target_ref)
             if resolved:
                 chat_id, thread_id, _ = _parse_target_ref(platform_name, resolved)
@@ -385,7 +385,7 @@ def _handle_send(args):
         return tool_error("Interrupted")
 
     try:
-        from gateway.config import load_gateway_config, Platform
+        from opencodon.frontends.gateway.config import load_gateway_config, Platform
         config = load_gateway_config()
     except Exception as e:
         return json.dumps(_error(f"Failed to load gateway config: {e}"))
@@ -401,7 +401,7 @@ def _handle_send(args):
     if not pconfig or not pconfig.enabled:
         return tool_error(f"Platform '{platform_name}' is not configured. Set up credentials in ~/.opencodon/config.yaml or environment variables.")
 
-    from gateway.platforms.base import BasePlatformAdapter
+    from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter
 
     # Capture [[as_document]] directive before extract_media strips it.
     # Image-extension files in this batch will route through send_document
@@ -469,8 +469,8 @@ def _handle_send(args):
         # Mirror the sent message into the target's gateway session
         if isinstance(result, dict) and result.get("success") and mirror_text:
             try:
-                from gateway.mirror import mirror_to_session
-                from gateway.session_context import get_session_env
+                from opencodon.frontends.gateway.mirror import mirror_to_session
+                from opencodon.frontends.gateway.session_context import get_session_env
                 source_label = get_session_env("OPENCODON_SESSION_PLATFORM", "cli")
                 user_id = get_session_env("OPENCODON_SESSION_USER_ID", "") or None
                 if mirror_to_session(
@@ -560,7 +560,7 @@ def _describe_media_for_mirror(media_files):
 
 def _get_cron_auto_delivery_target():
     """Return the cron scheduler's auto-delivery target for the current run, if any."""
-    from gateway.session_context import get_session_env
+    from opencodon.frontends.gateway.session_context import get_session_env
     platform = get_session_env("OPENCODON_CRON_AUTO_DELIVER_PLATFORM", "").strip().lower()
     chat_id = get_session_env("OPENCODON_CRON_AUTO_DELIVER_CHAT_ID", "").strip()
     if not platform or not chat_id:
@@ -628,7 +628,7 @@ async def _send_via_adapter(
     platform_name = platform.value if hasattr(platform, "value") else str(platform)
     runner = None
     try:
-        from gateway.run import _gateway_runner_ref
+        from opencodon.frontends.gateway.run import _gateway_runner_ref
         runner = _gateway_runner_ref()
     except Exception:
         runner = None
@@ -656,7 +656,7 @@ async def _send_via_adapter(
 
     entry = None
     try:
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_name)
     except Exception:
         entry = None
@@ -704,11 +704,11 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     using the same smart-splitting algorithm as the gateway adapters
     (preserves code-block boundaries, adds part indicators).
     """
-    from gateway.config import Platform
+    from opencodon.frontends.gateway.config import Platform
 
     media_files = media_files or []
 
-    from gateway.platforms.base import BasePlatformAdapter, utf16_len
+    from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter, utf16_len
 
     # Telegram adapter import is optional (requires python-telegram-bot)
     try:
@@ -734,7 +734,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # Check plugin registry for max_message_length
     if platform not in _MAX_LENGTHS:
         try:
-            from gateway.platform_registry import platform_registry
+            from opencodon.frontends.gateway.platform_registry import platform_registry
             entry = platform_registry.get(platform.value)
             if entry and entry.max_message_length > 0:
                 _MAX_LENGTHS[platform] = entry.max_message_length
@@ -777,7 +777,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # historically went straight to the HTTP path; we preserve that by
     # explicitly invoking the registry hook here so behavior is unchanged.
     if platform == Platform.DISCORD:
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         entry = platform_registry.get("discord")
         if entry is None or entry.standalone_sender_fn is None:
             return {"error": "Discord plugin not registered or missing standalone_sender_fn"}
@@ -821,7 +821,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # Gateway in-channel MEDIA: delivery already worked; send_message previously
     # omitted Slack attachments and told the model media was unsupported.
     if platform == Platform.SLACK and media_files:
-        from gateway.platform_registry import platform_registry as _pr_slack
+        from opencodon.frontends.gateway.platform_registry import platform_registry as _pr_slack
         from opencodon.plugins_runtime import discover_plugins as _dp_slack
         _dp_slack()
         _slack_entry = _pr_slack.get("slack")
@@ -863,7 +863,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # The plugin uploads each file through the local Baileys bridge /send-media
     # endpoint so images/videos/audio arrive as native bubbles, not documents. #41112
     if platform == Platform.WHATSAPP and media_files:
-        from gateway.platform_registry import platform_registry as _pr_wa
+        from opencodon.frontends.gateway.platform_registry import platform_registry as _pr_wa
         from opencodon.plugins_runtime import discover_plugins as _dp_wa
         _dp_wa()
         _wa_entry = _pr_wa.get("whatsapp")
@@ -914,7 +914,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # MEDIA directives disappear while the text delivery still reported
     # success.
     if platform == Platform.SLACK:
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         entry = platform_registry.get("slack")
         if entry is None or entry.standalone_sender_fn is None:
             return {"error": "Slack plugin not registered or missing standalone_sender_fn"}
@@ -1022,7 +1022,7 @@ async def _send_telegram(token, chat_id, message, media_files=None, thread_id=No
         # where api.telegram.org is blocked. The in-gateway adapter does the
         # same thing in gateway/platforms/telegram.py.
         try:
-            from gateway.platforms.base import resolve_proxy_url
+            from opencodon.frontends.gateway.platforms.base import resolve_proxy_url
             _tg_proxy = resolve_proxy_url("TELEGRAM_PROXY", target_hosts=["api.telegram.org"])
         except Exception:
             _tg_proxy = None
@@ -1090,7 +1090,7 @@ async def _send_telegram(token, chat_id, message, media_files=None, thread_id=No
         # inflate a raw-<1024 string past it, in which case fall back to a
         # separate body message.
         _tg_caption = None
-        from gateway.platforms.base import utf16_len as _utf16_len
+        from opencodon.frontends.gateway.platforms.base import utf16_len as _utf16_len
         _cap, _ = _media_caption_split(
             message, media_files, max_caption_len=_TELEGRAM_CAPTION_LIMIT
         )
@@ -1105,7 +1105,7 @@ async def _send_telegram(token, chat_id, message, media_files=None, thread_id=No
             # Telegram limit once formatted and get rejected as "Message is too
             # long". Sizing on the formatted text in UTF-16 units guarantees
             # every chunk is deliverable. (issue #28557)
-            from gateway.platforms.base import BasePlatformAdapter, utf16_len
+            from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter, utf16_len
 
             text_chunks = BasePlatformAdapter.truncate_message(
                 formatted, 4096, len_fn=utf16_len
@@ -1317,7 +1317,7 @@ async def _registry_standalone_send(platform_name, pconfig, chat_id, message, th
     the legacy inline ``_send_<platform>`` helper now lives in the plugin as
     ``_standalone_send`` and is reached via the platform registry.
     """
-    from gateway.platform_registry import platform_registry
+    from opencodon.frontends.gateway.platform_registry import platform_registry
     from opencodon.plugins_runtime import discover_plugins
     discover_plugins()  # idempotent — ensure the entry is registered
     entry = platform_registry.get(platform_name)
@@ -1348,7 +1348,7 @@ async def _resolve_slack_user_target(token, chat_id):
     except ImportError:
         return None, {"error": "aiohttp not installed. Run: pip install aiohttp"}
     try:
-        from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+        from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
         _proxy = resolve_proxy_url()
         _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
         base_url = "https://slack.com/api"
@@ -1410,12 +1410,12 @@ async def _resolve_slack_user_target(token, chat_id):
 
 def _check_send_message():
     """Gate send_message on gateway running (always available on messaging platforms)."""
-    from gateway.session_context import get_session_env
+    from opencodon.frontends.gateway.session_context import get_session_env
     platform = get_session_env("OPENCODON_SESSION_PLATFORM", "")
     if platform and platform != "local":
         return True
     try:
-        from gateway.status import is_gateway_running
+        from opencodon.frontends.gateway.status import is_gateway_running
         return is_gateway_running()
     except Exception:
         return False

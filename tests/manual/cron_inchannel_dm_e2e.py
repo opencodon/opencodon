@@ -36,8 +36,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 os.environ["OPENCODON_HOME"] = tempfile.mkdtemp(prefix="cron_dm_e2e_")
 
 import opencodon.cron.scheduler as sched  # noqa: E402
-from gateway.config import PlatformConfig, Platform  # noqa: E402
-from gateway.session import build_session_key, SessionSource  # noqa: E402
+from opencodon.frontends.gateway.config import PlatformConfig, Platform  # noqa: E402
+from opencodon.frontends.gateway.session import build_session_key, SessionSource  # noqa: E402
 from plugins.platforms.slack.adapter import SlackAdapter  # noqa: E402
 
 DM_CHAT = "D_TESTDM"

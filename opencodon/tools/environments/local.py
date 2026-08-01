@@ -226,7 +226,7 @@ def _build_provider_env_blocklist() -> frozenset:
     blocked: set[str] = set()
 
     try:
-        from opencodon_cli.auth import PROVIDER_REGISTRY
+        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
         for pconfig in PROVIDER_REGISTRY.values():
             blocked.update(pconfig.api_key_env_vars)
             if pconfig.auth_type == "aws_sdk":
@@ -413,7 +413,7 @@ def _inject_session_context_env(env: dict) -> None:
     tests/tools/test_local_env_session_leak.py.
     """
     try:
-        from gateway.session_context import (
+        from opencodon.frontends.gateway.session_context import (
             _UNSET,
             _VAR_MAP,
             session_context_engaged,
@@ -1418,7 +1418,7 @@ class LocalEnvironment(BaseEnvironment):
         try:
             if _IS_WINDOWS:
                 try:
-                    from gateway.status import terminate_pid
+                    from opencodon.frontends.gateway.status import terminate_pid
 
                     terminate_pid(proc.pid, force=True)
                 except Exception:

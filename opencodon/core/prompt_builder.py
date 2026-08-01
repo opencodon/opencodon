@@ -1726,7 +1726,7 @@ def _load_project_context(
     every project reached through a symlink (on macOS, anything under ``/tmp``).
     """
     try:
-        from opencodon_cli import projects_db as pdb
+        from opencodon.frontends.cli import projects_db as pdb
 
         with pdb.connect_closing() as conn:
             project = pdb.get_project(conn, project_id) if project_id else None

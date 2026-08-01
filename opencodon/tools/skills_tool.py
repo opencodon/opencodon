@@ -483,7 +483,7 @@ def _capture_required_environment_variables(
 def _is_gateway_surface() -> bool:
     if env_var_enabled("OPENCODON_GATEWAY_SESSION"):
         return True
-    from gateway.session_context import get_session_env
+    from opencodon.frontends.gateway.session_context import get_session_env
     return bool(get_session_env("OPENCODON_SESSION_PLATFORM"))
 
 
@@ -523,7 +523,7 @@ def _remaining_required_environment_names(
 
 def _gateway_setup_hint() -> str:
     try:
-        from gateway.platforms.base import GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
+        from opencodon.frontends.gateway.platforms.base import GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
 
         return GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
     except Exception:
@@ -634,7 +634,7 @@ def _get_session_platform() -> str:
     ``_is_skill_disabled`` respects ``OPENCODON_SESSION_PLATFORM``.
     """
     try:
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
         return get_session_env("OPENCODON_SESSION_PLATFORM") or ""
     except Exception:
         return ""

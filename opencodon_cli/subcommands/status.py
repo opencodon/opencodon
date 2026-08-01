@@ -1,28 +1,11 @@
-"""``opencodon status`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.status`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.status as _real
 
-
-def build_status_parser(subparsers, *, cmd_status: Callable) -> None:
-    """Attach the ``status`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # status command
-    # =========================================================================
-    status_parser = subparsers.add_parser(
-        "status",
-        help="Show status of all components",
-        description="Display status of opencodon components",
-    )
-    status_parser.add_argument(
-        "--all", action="store_true", help="Show all details (redacted for sharing)"
-    )
-    status_parser.add_argument(
-        "--deep", action="store_true", help="Run deep checks (may take longer)"
-    )
-    status_parser.set_defaults(func=cmd_status)
+sys.modules[__name__] = _real

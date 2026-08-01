@@ -961,7 +961,7 @@ def test_curator_review_prompt_offers_support_file_actions():
 
 def test_cli_unpin_refuses_bundled_skill(curator_env, capsys):
     """opencodon curator unpin must refuse bundled/hub skills too (matches pin)."""
-    from opencodon_cli import curator as cli
+    from opencodon.frontends.cli import curator as cli
     skills_dir = curator_env["home"] / "skills"
     _write_skill(skills_dir, "ship-skill")
     (skills_dir / ".bundled_manifest").write_text(
@@ -978,7 +978,7 @@ def test_cli_unpin_refuses_bundled_skill(curator_env, capsys):
 
 
 def test_cli_pin_refuses_bundled_skill(curator_env, capsys):
-    from opencodon_cli import curator as cli
+    from opencodon.frontends.cli import curator as cli
     skills_dir = curator_env["home"] / "skills"
     _write_skill(skills_dir, "ship-skill")
     (skills_dir / ".bundled_manifest").write_text(
@@ -1220,8 +1220,8 @@ def test_curator_slot_is_canonical_aux_task():
     specifically so the unification doesn't silently regress.
     """
     from opencodon.config import DEFAULT_CONFIG
-    from opencodon_cli.main import _AUX_TASKS
-    from opencodon_cli.web_server import _AUX_TASK_SLOTS
+    from opencodon.frontends.cli.main import _AUX_TASKS
+    from opencodon.frontends.cli.web_server import _AUX_TASK_SLOTS
 
     # 1. DEFAULT_CONFIG.auxiliary — schema source
     assert "curator" in DEFAULT_CONFIG["auxiliary"], \
@@ -1333,7 +1333,7 @@ def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatc
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         _fake_resolve_runtime_provider,
     )
     monkeypatch.setattr("opencodon.core.run_agent.AIAgent", _StubAgent)
@@ -1356,7 +1356,7 @@ def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch)
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "model": "real-model-id",
@@ -1405,7 +1405,7 @@ def test_review_fork_merges_slot_extra_body_over_runtime(curator_env, monkeypatc
         },
     )
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "api_key": "test-key",

@@ -1,51 +1,11 @@
-"""``opencodon setup`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.setup`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.setup as _real
 
-
-def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
-    """Attach the ``setup`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # setup command
-    # =========================================================================
-    setup_parser = subparsers.add_parser(
-        "setup",
-        help="Interactive setup wizard",
-        description="Configure opencodon with an interactive wizard. "
-        "Run a specific section: opencodon setup model|tts|terminal|gateway|tools|agent",
-    )
-    setup_parser.add_argument(
-        "section",
-        nargs="?",
-        choices=["model", "tts", "terminal", "gateway", "tools", "agent"],
-        default=None,
-        help="Run a specific setup section instead of the full wizard",
-    )
-    setup_parser.add_argument(
-        "--non-interactive",
-        action="store_true",
-        help="Non-interactive mode (use defaults/env vars)",
-    )
-    setup_parser.add_argument(
-        "--reset", action="store_true", help="Reset configuration to defaults"
-    )
-    setup_parser.add_argument(
-        "--reconfigure",
-        action="store_true",
-        help="(Default on existing installs.) Re-run the full wizard, "
-        "showing current values as defaults. Kept for backwards "
-        "compatibility — a bare 'opencodon setup' now does this.",
-    )
-    setup_parser.add_argument(
-        "--quick",
-        action="store_true",
-        help="On existing installs: only prompt for items that are missing "
-        "or unset, instead of running the full reconfigure wizard.",
-    )
-    setup_parser.set_defaults(func=cmd_setup)
+sys.modules[__name__] = _real

@@ -6,7 +6,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from acp_adapter.edit_approval import (
+from opencodon.frontends.acp.edit_approval import (
     EditProposal,
     build_acp_edit_tool_call,
     clear_edit_approval_requester,

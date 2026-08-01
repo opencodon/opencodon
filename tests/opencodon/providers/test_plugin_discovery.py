@@ -122,7 +122,7 @@ def test_user_plugin_overrides_bundled(tmp_path, monkeypatch):
 def test_general_plugin_manager_skips_model_provider_kind(tmp_path, monkeypatch):
     """The general PluginManager must NOT import model-provider plugins
     (providers/__init__.py handles them). It records the manifest only."""
-    from opencodon_cli import plugins as plugin_mod
+    from opencodon.frontends.cli import plugins as plugin_mod
 
     opencodon_home = tmp_path / ".opencodon"
     opencodon_home.mkdir()

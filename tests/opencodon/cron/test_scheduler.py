@@ -69,7 +69,7 @@ class TestPerJobToolsetMcpMerge:
         # it is the path taken and its result is returned.
         job = {"enabled_toolsets": None}
         sentinel = ["web", "finnhub"]
-        with patch("opencodon_cli.tools_config._get_platform_tools",
+        with patch("opencodon.frontends.cli.tools_config._get_platform_tools",
                    return_value=set(sentinel)) as m_platform:
             result = _resolve_cron_enabled_toolsets(job, self.CFG)
         m_platform.assert_called_once()
@@ -275,7 +275,7 @@ class TestResolveDeliveryTarget:
             "deliver": "telegram:-1003724596514:17",
         }
         with patch(
-            "gateway.channel_directory.resolve_channel_name",
+            "opencodon.frontends.gateway.channel_directory.resolve_channel_name",
             return_value="-1003724596514",
         ):
             result = _resolve_delivery_target(job)
@@ -300,7 +300,7 @@ class TestResolveDeliveryTarget:
         """deliver: 'whatsapp:Alice (dm)' resolves to the real JID."""
         job = {"deliver": "whatsapp:Alice (dm)"}
         with patch(
-            "gateway.channel_directory.resolve_channel_name",
+            "opencodon.frontends.gateway.channel_directory.resolve_channel_name",
             return_value="12345678901234@lid",
         ) as resolve_mock:
             result = _resolve_delivery_target(job)
@@ -315,7 +315,7 @@ class TestResolveDeliveryTarget:
         """deliver: 'telegram:My Group' resolves without display suffix."""
         job = {"deliver": "telegram:My Group"}
         with patch(
-            "gateway.channel_directory.resolve_channel_name",
+            "opencodon.frontends.gateway.channel_directory.resolve_channel_name",
             return_value="-1009999",
         ):
             result = _resolve_delivery_target(job)
@@ -329,7 +329,7 @@ class TestResolveDeliveryTarget:
         """Resolved Telegram topic labels should split chat_id and thread_id."""
         job = {"deliver": "telegram:Coaching Chat / topic 17585 (group)"}
         with patch(
-            "gateway.channel_directory.resolve_channel_name",
+            "opencodon.frontends.gateway.channel_directory.resolve_channel_name",
             return_value="-1009999:17585",
         ):
             result = _resolve_delivery_target(job)
@@ -343,7 +343,7 @@ class TestResolveDeliveryTarget:
         """deliver: 'whatsapp:12345@lid' passes through when directory has no match."""
         job = {"deliver": "whatsapp:12345@lid"}
         with patch(
-            "gateway.channel_directory.resolve_channel_name",
+            "opencodon.frontends.gateway.channel_directory.resolve_channel_name",
             return_value=None,
         ):
             result = _resolve_delivery_target(job)
@@ -604,21 +604,21 @@ class TestDeliverResultWrapping:
         media_file.parent.mkdir(parents=True, exist_ok=True)
         media_file.write_bytes(data)
         monkeypatch.setattr(
-            "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
+            "opencodon.frontends.gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (root,),
         )
         return media_file.resolve()
 
     def test_delivery_wraps_content_with_header_and_footer(self):
         """Delivered content should include task name header and agent-invisible note."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock:
             job = {
                 "id": "test-job",
@@ -638,14 +638,14 @@ class TestDeliverResultWrapping:
 
     def test_delivery_uses_job_id_when_no_name(self):
         """When a job has no name, the wrapper should fall back to job id."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock:
             job = {
                 "id": "abc-123",
@@ -659,14 +659,14 @@ class TestDeliverResultWrapping:
 
     def test_delivery_skips_wrapping_when_config_disabled(self):
         """When cron.wrap_response is false, deliver raw content without header/footer."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}):
             job = {
@@ -685,7 +685,7 @@ class TestDeliverResultWrapping:
 
     def test_delivery_extracts_media_tags_before_send(self, tmp_path, monkeypatch):
         """Cron delivery should pass MEDIA attachments separately to the send helper."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         media_path = self._safe_media_path(tmp_path, monkeypatch, "test-voice.ogg")
 
         pconfig = MagicMock()
@@ -693,7 +693,7 @@ class TestDeliverResultWrapping:
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}):
             job = {
@@ -715,7 +715,7 @@ class TestDeliverResultWrapping:
         """When a live adapter is available, MEDIA files should be sent as native
         platform attachments (e.g., Discord voice, Telegram audio) rather than
         as literal 'MEDIA:/path' text."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
         media_path = self._safe_media_path(tmp_path, monkeypatch, "cron-voice.mp3")
 
@@ -750,7 +750,7 @@ class TestDeliverResultWrapping:
             "origin": {"platform": "discord", "chat_id": "9876"},
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -773,7 +773,7 @@ class TestDeliverResultWrapping:
 
     def test_live_adapter_routes_image_to_send_image_file(self, tmp_path, monkeypatch):
         """Image MEDIA files should be routed to send_image_file, not send_voice."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
         media_path = self._safe_media_path(tmp_path, monkeypatch, "chart.png")
 
@@ -807,7 +807,7 @@ class TestDeliverResultWrapping:
             "origin": {"platform": "discord", "chat_id": "1234"},
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -823,7 +823,7 @@ class TestDeliverResultWrapping:
 
     def test_live_adapter_media_only_no_text(self, tmp_path, monkeypatch):
         """When content is ONLY a MEDIA tag with no text, media should still be sent."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
         media_path = self._safe_media_path(tmp_path, monkeypatch, "voice.ogg")
 
@@ -856,7 +856,7 @@ class TestDeliverResultWrapping:
             "origin": {"platform": "telegram", "chat_id": "999"},
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -874,7 +874,7 @@ class TestDeliverResultWrapping:
     def test_live_adapter_sends_cleaned_text_not_raw(self):
         """The live adapter path must send cleaned text (MEDIA tags stripped),
         not the raw delivery_content with embedded MEDIA: tags."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         adapter = AsyncMock()
@@ -906,7 +906,7 @@ class TestDeliverResultWrapping:
             "origin": {"platform": "telegram", "chat_id": "555"},
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -922,16 +922,16 @@ class TestDeliverResultWrapping:
 
     def test_no_mirror_to_session_call(self):
         """Cron deliveries should NOT mirror into the gateway session."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session") as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session") as mirror_mock:
             job = {
                 "id": "test-job",
                 "deliver": "origin",
@@ -943,7 +943,7 @@ class TestDeliverResultWrapping:
 
     def test_origin_delivery_preserves_thread_id(self):
         """Origin delivery should forward thread_id to the send helper."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
@@ -961,7 +961,7 @@ class TestDeliverResultWrapping:
             },
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock:
             _deliver_result(job, "hello")
 
@@ -973,14 +973,14 @@ class TestDeliverResultErrorReturns:
     """Verify _deliver_result returns error strings on failure, None on success."""
 
     def test_returns_error_when_platform_disabled(self):
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = False
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg):
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg):
             job = {
                 "id": "disabled",
                 "deliver": "origin",
@@ -1015,7 +1015,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1064,7 +1064,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1108,7 +1108,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1150,7 +1150,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1189,7 +1189,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1368,7 +1368,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1411,7 +1411,7 @@ class TestRunJobSessionPersistence:
             patch("opencodon.config.env_loader.reset_secret_source_cache"),
             patch("opencodon.state.SessionDB", return_value=fake_db),
             patch(
-                "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                 return_value={
                     "api_key": "test-key",
                     "base_url": "https://example.invalid/v1",
@@ -1509,7 +1509,7 @@ class TestRunJobSessionPersistence:
         }
         # Even if the user has ``opencodon tools`` configured to enable web+file
         # for cron, the per-job override wins.
-        extra = [patch("opencodon_cli.tools_config._get_platform_tools", return_value={"web", "file"})]
+        extra = [patch("opencodon.frontends.cli.tools_config._get_platform_tools", return_value={"web", "file"})]
         with self._run_job_patches(tmp_path, extra=extra) as (_fake_db, mock_agent_cls):
             run_job(job)
 
@@ -1535,7 +1535,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1612,7 +1612,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1652,7 +1652,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1695,7 +1695,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1797,7 +1797,7 @@ class TestRunJobSessionPersistence:
                 pass
 
             def run_conversation(self, *args, **kwargs):
-                from gateway.session_context import get_session_env
+                from opencodon.frontends.gateway.session_context import get_session_env
                 seen["platform"] = get_session_env("OPENCODON_CRON_AUTO_DELIVER_PLATFORM") or None
                 seen["chat_id"] = get_session_env("OPENCODON_CRON_AUTO_DELIVER_CHAT_ID") or None
                 seen["thread_id"] = get_session_env("OPENCODON_CRON_AUTO_DELIVER_THREAD_ID") or None
@@ -1806,7 +1806,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1855,7 +1855,7 @@ class TestRunJobSessionPersistence:
                 pass
 
             def run_conversation(self, *args, **kwargs):
-                from gateway.session_context import get_session_env
+                from opencodon.frontends.gateway.session_context import get_session_env
 
                 seen["platform"] = get_session_env("OPENCODON_CRON_AUTO_DELIVER_PLATFORM") or None
                 seen["chat_id"] = get_session_env("OPENCODON_CRON_AUTO_DELIVER_CHAT_ID") or None
@@ -1865,7 +1865,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1925,7 +1925,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1975,7 +1975,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.load_opencodon_dotenv", _record_load), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2021,7 +2021,7 @@ class TestRunJobSessionPersistence:
                 pass
 
             def run_conversation(self, *args, **kwargs):
-                from gateway.session_context import get_session_env
+                from opencodon.frontends.gateway.session_context import get_session_env
 
                 seen.append(
                     {
@@ -2035,7 +2035,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2092,7 +2092,7 @@ class TestRunJobConfigLogging:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -2127,7 +2127,7 @@ class TestRunJobConfigLogging:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -2167,7 +2167,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2201,7 +2201,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
@@ -2232,7 +2232,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2251,7 +2251,7 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_auth_fallback_switches_provider_and_model_together(self, tmp_path):
         """Codex auth failure must produce OpenRouter+GLM, never OpenRouter+GPT."""
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         (tmp_path / "config.yaml").write_text(
             "model:\n"
@@ -2288,7 +2288,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    side_effect=resolve_runtime), \
              patch("opencodon.tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
@@ -2322,7 +2322,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2347,7 +2347,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2392,7 +2392,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2417,7 +2417,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2450,7 +2450,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2474,7 +2474,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             success, _, _, error = run_job(job)
@@ -2504,7 +2504,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2531,7 +2531,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2562,7 +2562,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2587,7 +2587,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon_cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2631,7 +2631,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2692,7 +2692,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2731,7 +2731,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2778,7 +2778,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -3108,7 +3108,7 @@ class TestRunJobWakeGate:
             "requested_provider": None,
         }
         with patch(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ):
             yield
@@ -3346,7 +3346,7 @@ class TestSendMediaViaAdapter:
         media_file.parent.mkdir(parents=True, exist_ok=True)
         media_file.write_bytes(data)
         monkeypatch.setattr(
-            "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
+            "opencodon.frontends.gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (root,),
         )
         return media_file.resolve()
@@ -3445,13 +3445,13 @@ class TestParallelTick:
 
     def test_parallel_jobs_isolated_contextvars(self):
         """Each job's ContextVars must be isolated — no cross-contamination."""
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
         seen = {}
 
         def mock_run_job(job, *, defer_agent_teardown=None):
             origin = job.get("origin", {})
             # run_job sets ContextVars — verify each job sees its own
-            from gateway.session_context import set_session_vars, clear_session_vars
+            from opencodon.frontends.gateway.session_context import set_session_vars, clear_session_vars
             tokens = set_session_vars(
                 platform=origin.get("platform", ""),
                 chat_id=str(origin.get("chat_id", "")),
@@ -3531,7 +3531,7 @@ class TestDeliverResultTimeoutCancelsFuture:
         The fix (#38922) treats the send as already-dispatched/delivered and
         does NOT run the standalone fallback — otherwise the message is sent
         twice."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         # Live adapter whose send() coroutine never resolves within the budget
@@ -3573,7 +3573,7 @@ class TestDeliverResultTimeoutCancelsFuture:
 
         standalone_send = AsyncMock(return_value={"success": True})
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=standalone_send):
@@ -3598,7 +3598,7 @@ class TestDeliverResultTimeoutCancelsFuture:
         to the standalone path rather than silently dropping the message.
         This is the inverse of the assume-delivered case and guards against the
         wedged-loop silent drop."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         adapter = AsyncMock()
@@ -3634,7 +3634,7 @@ class TestDeliverResultTimeoutCancelsFuture:
 
         standalone_send = AsyncMock(return_value={"success": True})
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=standalone_send):
@@ -3656,7 +3656,7 @@ class TestDeliverResultTimeoutCancelsFuture:
         delivered.  Guards the `except Exception: raise` branch — the bug class
         where broadening the timeout handler to swallow all exceptions would
         silently drop messages."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         adapter = AsyncMock()
@@ -3685,7 +3685,7 @@ class TestDeliverResultTimeoutCancelsFuture:
 
         standalone_send = AsyncMock(return_value={"success": True})
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=standalone_send):
@@ -3709,8 +3709,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         live adapter's ``get_chat_info``; a non-channel chat routes via
         ``message_thread_id``.
         """
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(success=True, message_id="42")
@@ -3745,7 +3745,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -3772,8 +3772,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         private-chat topic target defaults to ``message_thread_id`` — the common
         forum-topic case and pre-#22773 behaviour, never the DM-topic route.
         """
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(success=True, message_id="42")
@@ -3807,7 +3807,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -3833,8 +3833,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         ``type="dm"`` dict with an ``error`` key on failure, covered separately
         by ``..._adapter_error_dict_falls_back...`` — never ``None``. This test
         locks the non-dict defensive branch for other adapters.)"""
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(success=True, message_id="42")
@@ -3869,7 +3869,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -3893,8 +3893,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         must route via ``message_thread_id`` — only a genuine ``type="channel"``
         gets ``direct_messages_topic_id``. This locks the exact dict shape
         production emits so a forum-topic cron never mis-routes to General."""
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(success=True, message_id="42")
@@ -3930,7 +3930,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -3953,8 +3953,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         from the real runtime signal — ``get_chat_info`` reports the chat as a
         ``channel`` — not from a positive-chat-id + numeric-thread guess.
         """
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(success=True, message_id="42")
@@ -3989,7 +3989,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -4011,8 +4011,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         """#52060 (media): MEDIA attachments to a forum-style topic in a private
         chat must also route via ``thread_id`` (message_thread_id), not
         ``direct_messages_topic_id``."""
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         media_root = tmp_path / "media-cache"
@@ -4020,7 +4020,7 @@ class TestDeliverResultTimeoutCancelsFuture:
         media_file.parent.mkdir(parents=True, exist_ok=True)
         media_file.write_bytes(b"media")
         monkeypatch.setattr(
-            "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
+            "opencodon.frontends.gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (media_root,),
         )
         media_path = media_file.resolve()
@@ -4059,7 +4059,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -4080,8 +4080,8 @@ class TestDeliverResultTimeoutCancelsFuture:
     def test_live_adapter_channel_dm_topic_media_routes_via_direct_messages_topic_id(self, tmp_path, monkeypatch):
         """#22773 (media, done right): MEDIA attachments to a genuine channel DM
         topic must route via ``direct_messages_topic_id``."""
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         media_root = tmp_path / "media-cache"
@@ -4089,7 +4089,7 @@ class TestDeliverResultTimeoutCancelsFuture:
         media_file.parent.mkdir(parents=True, exist_ok=True)
         media_file.write_bytes(b"media")
         monkeypatch.setattr(
-            "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
+            "opencodon.frontends.gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (media_root,),
         )
         media_path = media_file.resolve()
@@ -4125,7 +4125,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             _deliver_result(
@@ -4148,8 +4148,8 @@ class TestDeliverResultTimeoutCancelsFuture:
         record the "delivered without thread_id" delivery error.  Regression
         coverage for the thread_fallback-recording branch (kept distinct from
         the #22773 routing fix)."""
-        from gateway.config import Platform
-        from gateway.platforms.base import SendResult
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.platforms.base import SendResult
         from concurrent.futures import Future
 
         send_result = SendResult(
@@ -4188,7 +4188,7 @@ class TestDeliverResultTimeoutCancelsFuture:
                 future.set_exception(_e)
             return future
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro):
             result = _deliver_result(
@@ -4219,7 +4219,7 @@ class TestDeliverResultLiveAdapterUnconfirmed:
     """
 
     def _run(self, send_value):
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         adapter = AsyncMock()
@@ -4248,7 +4248,7 @@ class TestDeliverResultLiveAdapterUnconfirmed:
 
         standalone_send = AsyncMock(return_value={"success": True})
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=standalone_send):
@@ -4366,7 +4366,7 @@ class TestSendMediaTimeoutCancelsFuture:
         slow.write_bytes(b"slow")
         fast.write_bytes(b"fast")
         monkeypatch.setattr(
-            "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
+            "opencodon.frontends.gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (root,),
         )
         media_files = [
@@ -4397,7 +4397,7 @@ class TestCronDeliveryTargets:
     """
 
     def _patch_connected(self, monkeypatch, names):
-        import gateway.config as gateway_config
+        import opencodon.frontends.gateway.config as gateway_config
 
         class _Platform:
             def __init__(self, value):
@@ -4449,7 +4449,7 @@ class TestCronDeliveryTargets:
         assert "matrix" not in ids
 
     def test_no_gateway_config_returns_empty(self, monkeypatch):
-        import gateway.config as gateway_config
+        import opencodon.frontends.gateway.config as gateway_config
         from opencodon.cron.scheduler import cron_delivery_targets
 
         def _boom():
@@ -4519,7 +4519,7 @@ class TestCronDeliveryMirror:
     def test_mirror_calls_mirror_to_session_when_enabled(self):
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as m:
             _maybe_mirror_cron_delivery(
                 {"id": "j1", "name": "Daily Brief"}, "telegram", "123",
                 "Daily brief Task #2", thread_id=None, enabled=True,
@@ -4538,7 +4538,7 @@ class TestCronDeliveryMirror:
         last turn and breaks strict alternation on non-Anthropic providers."""
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as m:
             _maybe_mirror_cron_delivery(
                 {"id": "j1", "name": "Morning Brief"}, "telegram", "123",
                 "Market movers today", thread_id=None, enabled=True,
@@ -4555,7 +4555,7 @@ class TestCronDeliveryMirror:
     def test_mirror_noop_when_disabled(self):
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as m:
             _maybe_mirror_cron_delivery(
                 {"id": "j1"}, "telegram", "123", "should not mirror",
                 enabled=False,
@@ -4565,7 +4565,7 @@ class TestCronDeliveryMirror:
     def test_mirror_noop_on_empty_text(self):
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as m:
             _maybe_mirror_cron_delivery({"id": "j1"}, "telegram", "123", "   ", enabled=True)
         m.assert_not_called()
 
@@ -4574,7 +4574,7 @@ class TestCronDeliveryMirror:
         already succeeded; the mirror is best-effort."""
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=False) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=False) as m:
             # Should not raise.
             _maybe_mirror_cron_delivery(
                 {"id": "j1"}, "telegram", "123", "brief", enabled=True
@@ -4584,7 +4584,7 @@ class TestCronDeliveryMirror:
     def test_mirror_swallows_exceptions(self):
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", side_effect=RuntimeError("boom")):
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", side_effect=RuntimeError("boom")):
             # Must not propagate — a delivery that succeeded is never failed by
             # a mirror error.
             _maybe_mirror_cron_delivery(
@@ -4594,16 +4594,16 @@ class TestCronDeliveryMirror:
     def test_delivery_mirrors_clean_content_not_wrapped(self):
         """When enabled, the mirror receives the CLEAN agent output, not the
         cron header/footer-wrapped delivery text."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             job = {
                 "id": "test-job",
                 "name": "daily-report",
@@ -4622,16 +4622,16 @@ class TestCronDeliveryMirror:
 
     def test_delivery_does_not_mirror_when_gate_off(self):
         """Default path: a job with no opt-in must never touch the mirror."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             job = {
                 "id": "test-job",
                 "name": "daily-report",
@@ -4677,16 +4677,16 @@ class TestCronDeliveryMirror:
         origin (explicit fan-out target) must not be mirrored — the mirror is
         scoped to the origin conversation, and the fan-out chat may have no
         session at all."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             job = {
                 "id": "test-job",
                 "name": "daily-report",
@@ -4703,16 +4703,16 @@ class TestCronDeliveryMirror:
     def test_delivery_mirrors_only_origin_target_in_fanout(self):
         """deliver to BOTH origin and another chat: only the origin target is
         mirrored."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             job = {
                 "id": "test-job",
                 "name": "daily-report",
@@ -4735,7 +4735,7 @@ class TestCronDeliveryMirror:
         parity with interactive send_message."""
         from opencodon.cron.scheduler import _maybe_mirror_cron_delivery
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as m:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as m:
             _maybe_mirror_cron_delivery(
                 {"id": "j1"}, "telegram", "123", "brief",
                 thread_id=None, user_id="U999", enabled=True,
@@ -4746,16 +4746,16 @@ class TestCronDeliveryMirror:
     def test_delivery_forwards_origin_user_id(self):
         """End-to-end: a job whose origin carries user_id mirrors with that
         user_id, so multi-participant resolution matches send_message."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.TELEGRAM: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             job = {
                 "id": "test-job",
                 "name": "daily-report",
@@ -4838,7 +4838,7 @@ class TestCronDeliveryMirror:
         adapter = MagicMock()
         adapter._session_store = store
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             _seed_cron_thread_session(
                 {"id": "j1"}, adapter, "telegram", "123", "9001",
                 "Daily brief Task #2", chat_name="Ops",
@@ -4858,7 +4858,7 @@ class TestCronDeliveryMirror:
         store = MagicMock()
         adapter = MagicMock()
         adapter._session_store = store
-        with patch("gateway.mirror.mirror_to_session") as mirror_mock:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session") as mirror_mock:
             _seed_cron_thread_session(
                 {"id": "j1"}, adapter, "telegram", "123", "9001", "   ",
             )
@@ -4883,7 +4883,7 @@ class TestCronContinuableSurfaceInChannel:
 
     def _slack_cfg(self, extra):
         """A mock GatewayConfig with a Slack pconfig carrying ``extra``."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
@@ -4896,7 +4896,7 @@ class TestCronContinuableSurfaceInChannel:
         """Drive _deliver_result down the live-adapter path for a Slack
         channel-origin job with the given ``extra`` config. Returns the
         _open_continuable_cron_thread mock and the mirror_to_session mock."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
         from concurrent.futures import Future
 
         mock_cfg = self._slack_cfg(extra)
@@ -4925,11 +4925,11 @@ class TestCronContinuableSurfaceInChannel:
             "attach_to_session": True,
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("opencodon.cron.scheduler._open_continuable_cron_thread") as open_thread_mock, \
              patch("asyncio.run_coroutine_threadsafe", side_effect=fake_run_coro), \
-             patch("gateway.mirror.mirror_to_session", return_value=mirror_ok) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=mirror_ok) as mirror_mock:
             _deliver_result(
                 job, "Here is today's brief.",
                 adapters={Platform.SLACK: adapter}, loop=loop,
@@ -5043,7 +5043,7 @@ class TestCronContinuableSurfaceInChannel:
         (which would bypass D6 and drop the brief out of any continuable lane).
         Scoping the thread_id clear to `runtime_adapter is not None` keeps the
         clear in lockstep with the seed and the D6 fail-safe."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
@@ -5051,7 +5051,7 @@ class TestCronContinuableSurfaceInChannel:
         mock_cfg = MagicMock()
         mock_cfg.platforms = {Platform.SLACK: pconfig}
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("opencodon.tools.send_message_tool._send_to_platform",
                    new=AsyncMock(return_value={"success": True})) as send_mock:
@@ -5084,7 +5084,7 @@ class TestCronContinuableSurfaceInChannel:
         it) and bypass the D6 capability check, so the standalone fallback must
         keep the origin thread. Bites an unscoped clear AND a partial fix that
         adds ``loop is not None`` but omits ``loop.is_running()``."""
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         adapter = self._slack_adapter(supports_inchannel=True)
         pconfig = MagicMock()
@@ -5100,7 +5100,7 @@ class TestCronContinuableSurfaceInChannel:
         loop = MagicMock()
         loop.is_running.return_value = False
 
-        with patch("gateway.config.load_gateway_config", return_value=mock_cfg), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=mock_cfg), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("opencodon.tools.send_message_tool._send_to_platform",
                    new=AsyncMock(return_value={"success": True})) as send_mock:
@@ -5176,14 +5176,14 @@ class TestCronContinuableSurfaceInChannel:
         identically to what a plain inbound channel reply resolves to. Assert
         the invariant directly via build_session_key, not just call args."""
         from opencodon.cron.scheduler import _seed_cron_channel_session
-        from gateway.session import build_session_key, SessionSource
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.session import build_session_key, SessionSource
+        from opencodon.frontends.gateway.config import Platform
 
         store = MagicMock()
         adapter = MagicMock()
         adapter._session_store = store
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             ok = _seed_cron_channel_session(
                 {"id": "j1", "name": "Brief"}, adapter, "slack", "C123",
                 "Daily brief", is_dm=False, user_id="U_HUMAN", chat_name="ops",
@@ -5211,14 +5211,14 @@ class TestCronContinuableSurfaceInChannel:
         The DM key ignores user_id, so a system id would also match — but
         chat_type MUST be 'dm' so the prefix aligns."""
         from opencodon.cron.scheduler import _seed_cron_channel_session
-        from gateway.session import build_session_key, SessionSource
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.session import build_session_key, SessionSource
+        from opencodon.frontends.gateway.config import Platform
 
         store = MagicMock()
         adapter = MagicMock()
         adapter._session_store = store
 
-        with patch("gateway.mirror.mirror_to_session", return_value=True):
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
             _seed_cron_channel_session(
                 {"id": "j1"}, adapter, "slack", "D999", "Daily brief",
                 is_dm=True, user_id="U_HUMAN",
@@ -5237,7 +5237,7 @@ class TestCronContinuableSurfaceInChannel:
         store = MagicMock()
         adapter = MagicMock()
         adapter._session_store = store
-        with patch("gateway.mirror.mirror_to_session") as mirror_mock:
+        with patch("opencodon.frontends.gateway.mirror.mirror_to_session") as mirror_mock:
             ok = _seed_cron_channel_session(
                 {"id": "j1"}, adapter, "slack", "C123", "   ",
                 is_dm=False, user_id="U_HUMAN",
@@ -5259,7 +5259,7 @@ class TestMultiTargetDeliveryContinuesOnFailure:
     """
 
     def _multi_target_cfg(self):
-        from gateway.config import Platform
+        from opencodon.frontends.gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
@@ -5274,7 +5274,7 @@ class TestMultiTargetDeliveryContinuesOnFailure:
             "deliver": "whatsapp:+15550001111,whatsapp:+15550002222",
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run", side_effect=RuntimeError("no running loop")), \
              patch("concurrent.futures.ThreadPoolExecutor") as mock_pool_cls:
@@ -5305,7 +5305,7 @@ class TestMultiTargetDeliveryContinuesOnFailure:
             "deliver": "whatsapp:+15550001111,whatsapp:+15550002222",
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
              patch("opencodon.cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run", side_effect=RuntimeError("no running loop")), \
              patch("concurrent.futures.ThreadPoolExecutor") as mock_pool_cls:

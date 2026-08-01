@@ -59,7 +59,7 @@ class TestFilterMCPChildren:
             101: [
                 "/usr/bin/python3",
                 "-m",
-                "tui_gateway.slash_worker",
+                "opencodon.frontends.tui.slash_worker",
                 "--session-key",
                 "abc",
             ],
@@ -1766,7 +1766,7 @@ class TestBuildSafeEnv:
     def test_secret_source_injected_vars_are_passed(self, monkeypatch):
         """Vars tagged by an external secret source (Bitwarden/1Password) are
         deliberately allowed for MCP stdio servers."""
-        from opencodon_cli import env_loader
+        from opencodon.frontends.cli import env_loader
         from opencodon.tools.mcp_tool import _build_safe_env
 
         monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "bitwarden")
@@ -1787,7 +1787,7 @@ class TestBuildSafeEnv:
 
     def test_user_env_overrides_secret_source_var(self, monkeypatch):
         """Explicit MCP server env config remains the highest-precedence source."""
-        from opencodon_cli import env_loader
+        from opencodon.frontends.cli import env_loader
         from opencodon.tools.mcp_tool import _build_safe_env
 
         monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "bitwarden")

@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from gateway.session_context import _UNSET, _VAR_MAP
+from opencodon.frontends.gateway.session_context import _UNSET, _VAR_MAP
 from opencodon.tools import tts_tool
 
 

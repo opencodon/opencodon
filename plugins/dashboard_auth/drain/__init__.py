@@ -60,7 +60,7 @@ import os
 from collections import Counter
 from typing import Optional
 
-from opencodon_cli.dashboard_auth import (
+from opencodon.frontends.cli.dashboard_auth import (
     DashboardAuthProvider,
     LoginStart,
     Session,
@@ -275,7 +275,7 @@ def register(ctx) -> None:
     # Opt the begin/cancel-drain endpoint into the generic token-auth seam so
     # the dashboard's interactive cookie gate doesn't bounce NAS's bearer call.
     try:
-        from opencodon_cli.dashboard_auth.token_auth import register_token_route
+        from opencodon.frontends.cli.dashboard_auth.token_auth import register_token_route
 
         register_token_route(DRAIN_ROUTE_PATH)
     except Exception as exc:  # noqa: BLE001 — seam import must not crash plugin load

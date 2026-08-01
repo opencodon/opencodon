@@ -35,9 +35,9 @@ from acp.schema import (
     UsageUpdate,
     UserMessageChunk,
 )
-from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID
-from acp_adapter.server import OpencodonACPAgent, OPENCODON_VERSION
-from acp_adapter.session import SessionManager
+from opencodon.frontends.acp.auth import TERMINAL_SETUP_AUTH_METHOD_ID
+from opencodon.frontends.acp.server import OpencodonACPAgent, OPENCODON_VERSION
+from opencodon.frontends.acp.session import SessionManager
 from opencodon.state import SessionDB
 
 
@@ -126,8 +126,8 @@ class TestInitialize:
 
     @pytest.mark.asyncio
     async def test_initialize_advertises_provider_and_terminal_auth_methods(self, agent, monkeypatch):
-        monkeypatch.setattr("acp_adapter.auth.detect_provider", lambda: "openrouter")
-        monkeypatch.setattr("acp_adapter.server.detect_provider", lambda: "openrouter")
+        monkeypatch.setattr("opencodon.frontends.acp.auth.detect_provider", lambda: "openrouter")
+        monkeypatch.setattr("opencodon.frontends.acp.server.detect_provider", lambda: "openrouter")
 
         resp = await agent.initialize(protocol_version=1)
         payloads = [method.model_dump(by_alias=True, exclude_none=True) for method in resp.auth_methods]
@@ -140,8 +140,8 @@ class TestInitialize:
 
     @pytest.mark.asyncio
     async def test_initialize_advertises_terminal_setup_auth_when_no_provider(self, agent, monkeypatch):
-        monkeypatch.setattr("acp_adapter.auth.detect_provider", lambda: None)
-        monkeypatch.setattr("acp_adapter.server.detect_provider", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.acp.auth.detect_provider", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.acp.server.detect_provider", lambda: None)
 
         resp = await agent.initialize(protocol_version=1)
         payloads = [method.model_dump(by_alias=True, exclude_none=True) for method in resp.auth_methods]
@@ -169,7 +169,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_with_matching_method_id(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="openrouter")
@@ -178,7 +178,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_is_case_insensitive(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="OpenRouter")
@@ -187,7 +187,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_rejects_mismatched_method_id(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id="totally-invalid-method")
@@ -196,7 +196,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_without_provider(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: None,
         )
         resp = await agent.authenticate(method_id="openrouter")
@@ -205,7 +205,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_accepts_terminal_setup_after_provider_configured(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: "openrouter",
         )
         resp = await agent.authenticate(method_id=TERMINAL_SETUP_AUTH_METHOD_ID)
@@ -214,7 +214,7 @@ class TestAuthenticate:
     @pytest.mark.asyncio
     async def test_authenticate_rejects_terminal_setup_without_provider(self, agent, monkeypatch):
         monkeypatch.setattr(
-            "acp_adapter.server.detect_provider",
+            "opencodon.frontends.acp.server.detect_provider",
             lambda: None,
         )
         resp = await agent.authenticate(method_id=TERMINAL_SETUP_AUTH_METHOD_ID)
@@ -245,7 +245,7 @@ class TestSessionOps:
         acp_agent = OpencodonACPAgent(session_manager=manager)
 
         with patch(
-            "opencodon_cli.models.curated_models_for_provider",
+            "opencodon.frontends.cli.models.curated_models_for_provider",
             return_value=[("gpt-5.4", "recommended"), ("gpt-5.4-mini", "")],
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
@@ -884,7 +884,7 @@ class TestSessionOps:
         async def boom(_state):
             raise RuntimeError("simulated replay helper crash")
 
-        with caplog.at_level("WARNING", logger="acp_adapter.server"):
+        with caplog.at_level("WARNING", logger="opencodon.frontends.acp.server"):
             with patch.object(agent, "_replay_session_history", side_effect=boom):
                 resp = await agent.load_session(cwd="/tmp", session_id=new_resp.session_id)
 
@@ -901,7 +901,7 @@ class TestSessionOps:
         async def boom(_state):
             raise RuntimeError("simulated replay helper crash")
 
-        with caplog.at_level("WARNING", logger="acp_adapter.server"):
+        with caplog.at_level("WARNING", logger="opencodon.frontends.acp.server"):
             with patch.object(agent, "_replay_session_history", side_effect=boom):
                 resp = await agent.resume_session(cwd="/tmp", session_id=new_resp.session_id)
 
@@ -956,7 +956,7 @@ class TestListAndFork:
 
     @pytest.mark.asyncio
     async def test_list_sessions_pagination_first_page(self, agent):
-        from acp_adapter import server as acp_server
+        from opencodon.frontends.acp import server as acp_server
 
         infos = [
             {"session_id": f"s{i}", "cwd": "/tmp", "title": None, "updated_at": 0.0}
@@ -1086,7 +1086,7 @@ class TestSessionConfiguration:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the parser so this test doesn't depend on live
@@ -1094,11 +1094,11 @@ class TestSessionConfiguration:
         # (sibling of the same hardening on
         # ``test_model_switch_uses_requested_provider``).
         monkeypatch.setattr(
-            "opencodon_cli.models.parse_model_input",
+            "opencodon.frontends.cli.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon_cli.models.detect_provider_for_model",
+            "opencodon.frontends.cli.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))
@@ -1693,7 +1693,7 @@ class TestSlashCommands:
 
         with (
             patch.object(agent.session_manager, "save_session") as mock_save,
-            patch("acp_adapter.server.logger") as mock_logger,
+            patch("opencodon.frontends.acp.server.logger") as mock_logger,
         ):
             result = agent._handle_slash_command("/reset", state)
 
@@ -1866,7 +1866,7 @@ class TestSlashCommands:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon_cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the model-string parser independently of the live
@@ -1876,11 +1876,11 @@ class TestSlashCommands:
         # ``anthropic``) flakes this one — observed once in CI as
         # ``'custom' == 'anthropic'``.
         monkeypatch.setattr(
-            "opencodon_cli.models.parse_model_input",
+            "opencodon.frontends.cli.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon_cli.models.detect_provider_for_model",
+            "opencodon.frontends.cli.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))

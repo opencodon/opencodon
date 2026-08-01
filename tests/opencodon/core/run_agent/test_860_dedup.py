@@ -179,15 +179,15 @@ class TestAppendToTranscriptSkipDb:
 
     def test_skip_db_prevents_sqlite_write(self, tmp_path):
         """With skip_db=True and a real DB, message does NOT appear in SQLite."""
-        from gateway.config import GatewayConfig
-        from gateway.session import SessionStore
+        from opencodon.frontends.gateway.config import GatewayConfig
+        from opencodon.frontends.gateway.session import SessionStore
         from opencodon.state import SessionDB
 
         db_path = tmp_path / "test_skip.db"
         db = SessionDB(db_path=db_path)
 
         config = GatewayConfig()
-        with patch("gateway.session.SessionStore._ensure_loaded"):
+        with patch("opencodon.frontends.gateway.session.SessionStore._ensure_loaded"):
             store = SessionStore(sessions_dir=tmp_path, config=config)
         store._db = db
         store._loaded = True
@@ -204,15 +204,15 @@ class TestAppendToTranscriptSkipDb:
 
     def test_default_writes_to_sqlite(self, tmp_path):
         """Without skip_db, message appears in SQLite."""
-        from gateway.config import GatewayConfig
-        from gateway.session import SessionStore
+        from opencodon.frontends.gateway.config import GatewayConfig
+        from opencodon.frontends.gateway.session import SessionStore
         from opencodon.state import SessionDB
 
         db_path = tmp_path / "test_both.db"
         db = SessionDB(db_path=db_path)
 
         config = GatewayConfig()
-        with patch("gateway.session.SessionStore._ensure_loaded"):
+        with patch("opencodon.frontends.gateway.session.SessionStore._ensure_loaded"):
             store = SessionStore(sessions_dir=tmp_path, config=config)
         store._db = db
         store._loaded = True

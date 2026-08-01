@@ -231,7 +231,7 @@ class _EngineCollector:
 
         # Reject conflicts with built-in commands.
         try:
-            from opencodon_cli.commands import resolve_command
+            from opencodon.frontends.cli.commands import resolve_command
             if resolve_command(clean) is not None:
                 logger.warning(
                     "Context engine '%s' tried to register command '/%s' which conflicts "

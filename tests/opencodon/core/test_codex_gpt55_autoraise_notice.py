@@ -56,7 +56,7 @@ def _config(*, show_notice: bool) -> dict:
 
 def _make_codex_agent(monkeypatch, tmp_path: Path, *, show_notice: bool):
     """Construct a real Codex gpt-5.5 agent under an isolated config."""
-    from opencodon_cli import config as config_mod
+    from opencodon.frontends.cli import config as config_mod
 
     monkeypatch.setattr(config_mod, "load_config", lambda: _config(show_notice=show_notice))
     db = SessionDB(db_path=tmp_path / "state.db")

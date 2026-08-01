@@ -132,7 +132,7 @@ def _connect() -> sqlite3.Connection:
 def _persist_dispatch(record: Dict[str, Any]) -> None:
     now = time.time()
     try:
-        from gateway.status import get_process_start_time
+        from opencodon.frontends.gateway.status import get_process_start_time
         owner_started_at = get_process_start_time(__import__("os").getpid())
     except Exception:
         owner_started_at = None
@@ -224,7 +224,7 @@ def _note_delivery_attempt(delegation_id: str) -> None:
 def recover_abandoned_delegations() -> int:
     """Classify records whose owning process disappeared as outcome unknown."""
     try:
-        from gateway.status import _pid_exists, get_process_start_time
+        from opencodon.frontends.gateway.status import _pid_exists, get_process_start_time
     except Exception:
         return 0
     now = time.time()

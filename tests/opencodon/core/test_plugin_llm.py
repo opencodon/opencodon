@@ -742,7 +742,7 @@ plugins:
             encoding="utf-8",
         )
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
-        from opencodon_cli import config as _config_mod
+        from opencodon.frontends.cli import config as _config_mod
         _config_mod._config_cache = None  # type: ignore[attr-defined]
 
         policy = _resolve_trust_policy("my-plugin")
@@ -761,7 +761,7 @@ plugins:
         opencodon_home.mkdir()
         (opencodon_home / "config.yaml").write_text("plugins: {}\n", encoding="utf-8")
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
-        from opencodon_cli import config as _config_mod
+        from opencodon.frontends.cli import config as _config_mod
         _config_mod._config_cache = None  # type: ignore[attr-defined]
 
         policy = _resolve_trust_policy("never-configured")

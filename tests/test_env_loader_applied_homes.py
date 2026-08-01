@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon_cli import env_loader
+from opencodon.frontends.cli import env_loader
 
 
 @pytest.fixture(autouse=True)

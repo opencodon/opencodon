@@ -41,7 +41,7 @@ from opencodon.core.secret_sources.command import (  # noqa: E402
     parse_secret_output,
     unquote_dotenv_value,
 )
-from opencodon_cli import env_loader  # noqa: E402
+from opencodon.frontends.cli import env_loader  # noqa: E402
 
 
 pytestmark = pytest.mark.skipif(

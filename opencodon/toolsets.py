@@ -628,7 +628,7 @@ def resolve_toolset(name: str, visited: Set[str] = None, *, include_registry: bo
         if include_registry and name.startswith("opencodon-"):
             platform_name = name[len("opencodon-"):]
             try:
-                from gateway.platform_registry import platform_registry
+                from opencodon.frontends.gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):
                     plugin_tools = set(_OPENCODON_CORE_TOOLS)
                     try:

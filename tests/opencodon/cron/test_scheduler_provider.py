@@ -42,7 +42,7 @@ def _wait_until(predicate, timeout=10.0, interval=0.005):
 def test_ticker_calls_tick_at_least_once_then_stops():
     """The gateway in-process ticker loop calls opencodon.cron.scheduler.tick repeatedly
     and exits promptly once the stop_event is set."""
-    from gateway.run import _start_cron_ticker
+    from opencodon.frontends.gateway.run import _start_cron_ticker
 
     calls = []
     stop = threading.Event()
@@ -75,7 +75,7 @@ def test_desktop_ticker_calls_tick_then_stops():
     """The desktop dashboard ticker loop calls opencodon.cron.scheduler.tick and exits
     once the stop_event is set. Desktop has no live adapters, so it ticks with
     no adapters/loop."""
-    from opencodon_cli.web_server import _start_desktop_cron_ticker
+    from opencodon.frontends.cli.web_server import _start_desktop_cron_ticker
 
     calls = []
     stop = threading.Event()
@@ -561,9 +561,9 @@ def test_cron_status_reports_alive_but_failing(tmp_path, monkeypatch, capsys):
     """cron_status warns when the ticker is alive (fresh heartbeat) but no tick
     has succeeded recently (#32612: alive-but-failing must not look healthy)."""
     import opencodon.cron.jobs as jobs
-    from opencodon_cli import cron as cron_cli
+    from opencodon.frontends.cli import cron as cron_cli
 
-    monkeypatch.setattr("opencodon_cli.gateway.find_gateway_pids", lambda: [4321])
+    monkeypatch.setattr("opencodon.frontends.cli.gateway.find_gateway_pids", lambda: [4321])
     monkeypatch.setattr(jobs, "get_ticker_heartbeat_age", lambda: 5.0)      # fresh
     monkeypatch.setattr(jobs, "get_ticker_success_age", lambda: 9_999.0)    # stale
     monkeypatch.setattr("opencodon.cron.jobs.list_jobs", lambda **k: [])
@@ -576,9 +576,9 @@ def test_cron_status_reports_alive_but_failing(tmp_path, monkeypatch, capsys):
 
 def test_cron_status_healthy_when_both_fresh(tmp_path, monkeypatch, capsys):
     import opencodon.cron.jobs as jobs
-    from opencodon_cli import cron as cron_cli
+    from opencodon.frontends.cli import cron as cron_cli
 
-    monkeypatch.setattr("opencodon_cli.gateway.find_gateway_pids", lambda: [4321])
+    monkeypatch.setattr("opencodon.frontends.cli.gateway.find_gateway_pids", lambda: [4321])
     monkeypatch.setattr(jobs, "get_ticker_heartbeat_age", lambda: 5.0)
     monkeypatch.setattr(jobs, "get_ticker_success_age", lambda: 5.0)
     monkeypatch.setattr("opencodon.cron.jobs.list_jobs", lambda **k: [])
@@ -590,9 +590,9 @@ def test_cron_status_healthy_when_both_fresh(tmp_path, monkeypatch, capsys):
 
 def test_cron_status_reports_stalled_when_no_heartbeat(tmp_path, monkeypatch, capsys):
     import opencodon.cron.jobs as jobs
-    from opencodon_cli import cron as cron_cli
+    from opencodon.frontends.cli import cron as cron_cli
 
-    monkeypatch.setattr("opencodon_cli.gateway.find_gateway_pids", lambda: [4321])
+    monkeypatch.setattr("opencodon.frontends.cli.gateway.find_gateway_pids", lambda: [4321])
     monkeypatch.setattr(jobs, "get_ticker_heartbeat_age", lambda: 9_999.0)  # dead
     monkeypatch.setattr(jobs, "get_ticker_success_age", lambda: 9_999.0)
     monkeypatch.setattr("opencodon.cron.jobs.list_jobs", lambda **k: [])
@@ -624,7 +624,7 @@ class TestGuardJobCredentialExfil:
 
     def test_named_custom_offhost_is_blocked(self, monkeypatch):
         import pytest
-        import opencodon_cli.runtime_provider as rp
+        import opencodon.frontends.cli.runtime_provider as rp
         from opencodon.cron.scheduler import _guard_job_credential_exfil
 
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)
@@ -639,7 +639,7 @@ class TestGuardJobCredentialExfil:
             _guard_job_credential_exfil(job)
 
     def test_named_custom_matching_host_is_allowed(self, monkeypatch):
-        import opencodon_cli.runtime_provider as rp
+        import opencodon.frontends.cli.runtime_provider as rp
         from opencodon.cron.scheduler import _guard_job_credential_exfil
 
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)

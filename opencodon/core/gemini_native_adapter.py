@@ -33,7 +33,7 @@ from opencodon.core.gemini_schema import sanitize_gemini_tool_parameters
 logger = logging.getLogger(__name__)
 
 try:
-    import opencodon_cli as _opencodon_cli
+    from opencodon.frontends import cli as _opencodon_cli
 
     _OPENCODON_VERSION = str(_opencodon_cli.__version__)
 except Exception:

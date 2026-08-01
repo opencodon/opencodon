@@ -9,7 +9,7 @@ import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from gateway.config import Platform
+from opencodon.frontends.gateway.config import Platform
 from opencodon.tools.send_message_tool import _parse_target_ref, send_message_tool
 
 
@@ -62,12 +62,12 @@ def test_send_message_routes_whatsapp_group_jid_without_home_fallback() -> None:
         get_home_channel=lambda _platform: SimpleNamespace(chat_id="15551234567@s.whatsapp.net"),
     )
 
-    with patch("gateway.config.load_gateway_config", return_value=config), \
+    with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
          patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
-         patch("gateway.channel_directory.resolve_channel_name", side_effect=AssertionError("raw JID should not resolve via directory")), \
+         patch("opencodon.frontends.gateway.channel_directory.resolve_channel_name", side_effect=AssertionError("raw JID should not resolve via directory")), \
          patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
          patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-         patch("gateway.mirror.mirror_to_session", return_value=True):
+         patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
         result = json.loads(
             send_message_tool(
                 {

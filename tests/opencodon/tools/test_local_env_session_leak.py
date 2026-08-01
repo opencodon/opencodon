@@ -27,8 +27,8 @@ import os
 
 import pytest
 
-import gateway.session_context as sc
-from gateway.session_context import _VAR_MAP, clear_session_vars, set_session_vars
+import opencodon.frontends.gateway.session_context as sc
+from opencodon.frontends.gateway.session_context import _VAR_MAP, clear_session_vars, set_session_vars
 from opencodon.tools.environments.local import _make_run_env, _sanitize_subprocess_env, opencodon_subprocess_env
 
 # The full set of session vars the bridge owns.

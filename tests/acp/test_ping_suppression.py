@@ -18,7 +18,7 @@ import pytest
 
 from acp.exceptions import RequestError
 
-from acp_adapter.entry import _BenignProbeMethodFilter
+from opencodon.frontends.acp.entry import _BenignProbeMethodFilter
 
 
 # -- Unit tests on the filter itself ----------------------------------------

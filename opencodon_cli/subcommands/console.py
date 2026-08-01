@@ -1,18 +1,11 @@
-"""``opencodon console`` subcommand parser."""
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.console`` (restructure Phase 3a).
 
-from __future__ import annotations
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
+"""
 
-from typing import Callable
+import sys
 
+import opencodon.frontends.cli.subcommands.console as _real
 
-def build_console_parser(subparsers, *, cmd_console: Callable) -> None:
-    """Attach the safe opencodon Console REPL subcommand."""
-    console_parser = subparsers.add_parser(
-        "console",
-        help="Open the safe opencodon command console",
-        description=(
-            "Open a curated opencodon command REPL. This is not a raw shell and "
-            "does not expose the full opencodon CLI."
-        ),
-    )
-    console_parser.set_defaults(func=cmd_console)
+sys.modules[__name__] = _real

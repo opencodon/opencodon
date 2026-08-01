@@ -16,7 +16,7 @@ import pytest
 _HAS_TELEGRAM = pytest.importorskip("telegram", reason="python-telegram-bot not installed") is not None
 
 
-from gateway.config import Platform
+from opencodon.frontends.gateway.config import Platform
 from opencodon.tools.send_message_tool import (
     _is_telegram_thread_not_found,
     _parse_target_ref,
@@ -112,7 +112,7 @@ def _discord_entry():
     """Return the live Discord PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
     from opencodon.plugins_runtime import discover_plugins
-    from gateway.platform_registry import platform_registry
+    from opencodon.frontends.gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("discord")
 
@@ -162,7 +162,7 @@ def _slack_entry():
     """Return the live Slack PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
     from opencodon.plugins_runtime import discover_plugins
-    from gateway.platform_registry import platform_registry
+    from opencodon.frontends.gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("slack")
 
@@ -280,11 +280,11 @@ class TestSendMessageTool:
             },
             clear=False,
         ), \
-             patch("gateway.config.load_gateway_config", return_value=config), \
+             patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             result = json.loads(
                 send_message_tool(
                     {
@@ -305,12 +305,12 @@ class TestSendMessageTool:
     def test_resolved_telegram_topic_name_preserves_thread_id(self):
         config, telegram_cfg = _make_config()
 
-        with patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
-             patch("gateway.channel_directory.resolve_channel_name", return_value="-1001:17585"), \
+             patch("opencodon.frontends.gateway.channel_directory.resolve_channel_name", return_value="-1001:17585"), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True):
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
             result = json.loads(
                 send_message_tool(
                     {
@@ -344,12 +344,12 @@ class TestSendMessageTool:
             },
         }))
 
-        with patch("gateway.channel_directory.DIRECTORY_PATH", cache_file), \
-             patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.channel_directory.DIRECTORY_PATH", cache_file), \
+             patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True):
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
             result = json.loads(
                 send_message_tool(
                     {
@@ -378,12 +378,12 @@ class TestSendMessageTool:
             get_home_channel=lambda _platform: None,
         )
 
-        with patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
-             patch("gateway.channel_directory.resolve_channel_name", return_value="C123ABCDEF:171.000001"), \
+             patch("opencodon.frontends.gateway.channel_directory.resolve_channel_name", return_value="C123ABCDEF:171.000001"), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True):
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
             result = json.loads(
                 send_message_tool(
                     {
@@ -408,12 +408,12 @@ class TestSendMessageTool:
     def test_mirror_receives_current_session_user_id(self):
         config, _telegram_cfg = _make_config()
 
-        with patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})), \
-             patch("gateway.session_context.get_session_env") as get_session_env_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
+             patch("opencodon.frontends.gateway.session_context.get_session_env") as get_session_env_mock, \
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             get_session_env_mock.side_effect = lambda name, default="": {
                 "OPENCODON_SESSION_PLATFORM": "telegram",
                 "OPENCODON_SESSION_USER_ID": "user-123",
@@ -450,11 +450,11 @@ class TestSendMessageTool:
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
 
-        with patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_run_async_immediately), \
              patch("opencodon.tools.send_message_tool._send_to_platform", new=AsyncMock(return_value={"success": True})) as send_mock, \
-             patch("gateway.mirror.mirror_to_session", return_value=True):
+             patch("opencodon.frontends.gateway.mirror.mirror_to_session", return_value=True):
             result = json.loads(
                 send_message_tool(
                     {
@@ -486,7 +486,7 @@ class TestSendMessageTool:
                 f"transport error: https://api.example.com/send?access_token={leaked}"
             )
 
-        with patch("gateway.config.load_gateway_config", return_value=config), \
+        with patch("opencodon.frontends.gateway.config.load_gateway_config", return_value=config), \
              patch("opencodon.tools.interrupt.is_interrupted", return_value=False), \
              patch("opencodon.tools.model_tools._run_async", side_effect=_raise_and_close):
             result = json.loads(
@@ -792,7 +792,7 @@ class TestSendToPlatformChunking:
         send path must chunk the *formatted* text so no single send exceeds
         4096 (issue #28557).
         """
-        from gateway.platforms.base import utf16_len
+        from opencodon.frontends.gateway.platforms.base import utf16_len
 
         send_lengths = []
 
@@ -865,7 +865,7 @@ class TestSendToPlatformWhatsapp:
         standalone_sender_fn (was tools.send_message_tool._send_whatsapp
         before the #41112 plugin migration)."""
         from opencodon.plugins_runtime import discover_plugins
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         discover_plugins()
         chat_id = "test-user@lid"
         async_mock = AsyncMock(return_value={"success": True, "platform": "whatsapp", "chat_id": chat_id, "message_id": "abc123"})
@@ -1807,7 +1807,7 @@ class TestSendDiscordForum:
         mock_session, _ = self._build_mock(200, response_data=thread_data)
 
         with patch("aiohttp.ClientSession", return_value=mock_session), \
-             patch("gateway.channel_directory.lookup_channel_type", return_value="forum"):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", return_value="forum"):
             result = asyncio.run(
                 _send_discord("tok", "forum_ch", "Hello forum")
             )
@@ -1826,7 +1826,7 @@ class TestSendDiscordForum:
         mock_session, _ = self._build_mock(200, response_data=thread_data)
 
         with patch("aiohttp.ClientSession", return_value=mock_session), \
-             patch("gateway.channel_directory.lookup_channel_type", return_value="forum"):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", return_value="forum"):
             asyncio.run(
                 _send_discord("tok", "forum_ch", "Hello")
             )
@@ -1839,7 +1839,7 @@ class TestSendDiscordForum:
         mock_session, _ = self._build_mock(200, response_data={"id": "msg1"})
 
         with patch("aiohttp.ClientSession", return_value=mock_session), \
-             patch("gateway.channel_directory.lookup_channel_type", return_value="channel"):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", return_value="channel"):
             result = asyncio.run(
                 _send_discord("tok", "ch1", "Hello")
             )
@@ -1878,7 +1878,7 @@ class TestSendDiscordForum:
         session_iter = iter([probe_session, thread_session])
 
         with patch("aiohttp.ClientSession", side_effect=lambda **kw: next(session_iter)), \
-             patch("gateway.channel_directory.lookup_channel_type", return_value=None):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", return_value=None):
             result = asyncio.run(
                 _send_discord("tok", "forum_ch", "Hello probe")
             )
@@ -1891,7 +1891,7 @@ class TestSendDiscordForum:
         mock_session, _ = self._build_mock(200, response_data={"id": "msg1"})
 
         with patch("aiohttp.ClientSession", return_value=mock_session), \
-             patch("gateway.channel_directory.lookup_channel_type", side_effect=Exception("io error")):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", side_effect=Exception("io error")):
             result = asyncio.run(
                 _send_discord("tok", "ch1", "Hello")
             )
@@ -1905,7 +1905,7 @@ class TestSendDiscordForum:
         mock_session, _ = self._build_mock(403, response_text="Forbidden")
 
         with patch("aiohttp.ClientSession", return_value=mock_session), \
-             patch("gateway.channel_directory.lookup_channel_type", return_value="forum"):
+             patch("opencodon.frontends.gateway.channel_directory.lookup_channel_type", return_value="forum"):
             result = asyncio.run(
                 _send_discord("tok", "forum_ch", "Hello")
             )
@@ -1984,7 +1984,7 @@ class TestSendDiscordForumMedia:
 
         monkeypatch.setattr(smt, "lookup_channel_type", lambda p, cid: "forum", raising=False)
         monkeypatch.setattr(
-            "gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
+            "opencodon.frontends.gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
         )
 
         thread_resp = self._build_thread_resp()
@@ -2020,7 +2020,7 @@ class TestSendDiscordForumMedia:
     def test_forum_without_media_still_json_only(self, tmp_path, monkeypatch):
         """Forum + no media → JSON POST (no multipart overhead)."""
         monkeypatch.setattr(
-            "gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
+            "opencodon.frontends.gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
         )
 
         thread_resp = self._build_thread_resp("t1", "m1")
@@ -2048,7 +2048,7 @@ class TestSendDiscordForumMedia:
     def test_forum_missing_media_file_collected_as_warning(self, tmp_path, monkeypatch):
         """Missing media files produce warnings but the thread is still created."""
         monkeypatch.setattr(
-            "gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
+            "opencodon.frontends.gateway.channel_directory.lookup_channel_type", lambda p, cid: "forum"
         )
 
         thread_resp = self._build_thread_resp()
@@ -2092,7 +2092,7 @@ class TestForumProbeCache:
     def test_probe_result_is_memoized(self, monkeypatch):
         """An API-probed channel type is cached so subsequent sends skip the probe."""
         monkeypatch.setattr(
-            "gateway.channel_directory.lookup_channel_type", lambda p, cid: None
+            "opencodon.frontends.gateway.channel_directory.lookup_channel_type", lambda p, cid: None
         )
 
         # First probe response: type=15 (forum)
@@ -2172,7 +2172,7 @@ class TestSendViaAdapterStandaloneFallback:
 
     @staticmethod
     def _make_entry(send_fn):
-        from gateway.platform_registry import PlatformEntry
+        from opencodon.frontends.gateway.platform_registry import PlatformEntry
 
         return PlatformEntry(
             name="fakeplatform",
@@ -2186,7 +2186,7 @@ class TestSendViaAdapterStandaloneFallback:
     async def test_standalone_sender_fn_called_when_no_adapter(self, monkeypatch):
         """Registry has hook, runner ref returns None: the hook is awaited."""
         from opencodon.tools.send_message_tool import _send_via_adapter
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
 
         recorded = {}
 
@@ -2199,7 +2199,7 @@ class TestSendViaAdapterStandaloneFallback:
 
         platform_registry.register(self._make_entry(fake_send))
         try:
-            monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+            monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
             pconfig = SimpleNamespace(extra={})
             result = await _send_via_adapter(
@@ -2220,7 +2220,7 @@ class TestSendViaAdapterStandaloneFallback:
     async def test_standalone_sender_fn_kwargs_forwarded(self, monkeypatch):
         """thread_id, media_files, and force_document all reach the hook."""
         from opencodon.tools.send_message_tool import _send_via_adapter
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
 
         recorded = {}
 
@@ -2233,7 +2233,7 @@ class TestSendViaAdapterStandaloneFallback:
 
         platform_registry.register(self._make_entry(fake_send))
         try:
-            monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+            monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
             await _send_via_adapter(
                 _FakePlatform("fakeplatform"),
@@ -2256,11 +2256,11 @@ class TestSendViaAdapterStandaloneFallback:
         """Registry entry has no hook: the fall-through error explains both
         options (gateway-running and standalone hook)."""
         from opencodon.tools.send_message_tool import _send_via_adapter
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
 
         platform_registry.register(self._make_entry(None))
         try:
-            monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+            monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
             result = await _send_via_adapter(
                 _FakePlatform("fakeplatform"),
@@ -2279,14 +2279,14 @@ class TestSendViaAdapterStandaloneFallback:
     async def test_standalone_sender_fn_raises_is_caught_and_formatted(self, monkeypatch):
         """Hook raises: error dict has 'Plugin standalone send failed: ...'"""
         from opencodon.tools.send_message_tool import _send_via_adapter
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
 
         async def boom(pconfig, chat_id, message, **kwargs):
             raise ValueError("boom!")
 
         platform_registry.register(self._make_entry(boom))
         try:
-            monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+            monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
             result = await _send_via_adapter(
                 _FakePlatform("fakeplatform"),
@@ -2303,14 +2303,14 @@ class TestSendViaAdapterStandaloneFallback:
     async def test_standalone_sender_fn_return_shape_passed_through(self, monkeypatch):
         """Hook returns success dict: passed through unchanged."""
         from opencodon.tools.send_message_tool import _send_via_adapter
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
 
         async def fake_send(pconfig, chat_id, message, **kwargs):
             return {"success": True, "message_id": "abc-123", "extra_field": "preserved"}
 
         platform_registry.register(self._make_entry(fake_send))
         try:
-            monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+            monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
             result = await _send_via_adapter(
                 _FakePlatform("fakeplatform"),
@@ -2345,8 +2345,8 @@ class TestCheckSendMessage:
         """Telegram/Discord/etc. sessions pass via the platform branch."""
         from opencodon.tools.send_message_tool import _check_send_message
 
-        with patch("gateway.session_context.get_session_env", return_value="telegram"), \
-             patch("gateway.status.is_gateway_running", return_value=False):
+        with patch("opencodon.frontends.gateway.session_context.get_session_env", return_value="telegram"), \
+             patch("opencodon.frontends.gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_local_platform_falls_through_to_gateway_check(self, monkeypatch):
@@ -2354,8 +2354,8 @@ class TestCheckSendMessage:
         is_gateway_running() rather than auto-grant."""
         from opencodon.tools.send_message_tool import _check_send_message
 
-        with patch("gateway.session_context.get_session_env", return_value="local"), \
-             patch("gateway.status.is_gateway_running", return_value=True) as gw_mock:
+        with patch("opencodon.frontends.gateway.session_context.get_session_env", return_value="local"), \
+             patch("opencodon.frontends.gateway.status.is_gateway_running", return_value=True) as gw_mock:
             assert _check_send_message() is True
             gw_mock.assert_called_once()
 
@@ -2364,16 +2364,16 @@ class TestCheckSendMessage:
         gateway: tool is callable."""
         from opencodon.tools.send_message_tool import _check_send_message
 
-        with patch("gateway.session_context.get_session_env", return_value=""), \
-             patch("gateway.status.is_gateway_running", return_value=True):
+        with patch("opencodon.frontends.gateway.session_context.get_session_env", return_value=""), \
+             patch("opencodon.frontends.gateway.status.is_gateway_running", return_value=True):
             assert _check_send_message() is True
 
     def test_no_signals_means_unavailable(self, monkeypatch):
         """No platform, no gateway: tool is hidden."""
         from opencodon.tools.send_message_tool import _check_send_message
 
-        with patch("gateway.session_context.get_session_env", return_value=""), \
-             patch("gateway.status.is_gateway_running", return_value=False):
+        with patch("opencodon.frontends.gateway.session_context.get_session_env", return_value=""), \
+             patch("opencodon.frontends.gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is False
 
     def test_gateway_status_import_error_is_swallowed(self, monkeypatch):
@@ -2381,8 +2381,8 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from opencodon.tools.send_message_tool import _check_send_message
 
-        with patch("gateway.session_context.get_session_env", return_value=""), \
-             patch("gateway.status.is_gateway_running",
+        with patch("opencodon.frontends.gateway.session_context.get_session_env", return_value=""), \
+             patch("opencodon.frontends.gateway.status.is_gateway_running",
                    side_effect=ImportError("simulated")):
             assert _check_send_message() is False
 

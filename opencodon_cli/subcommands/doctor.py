@@ -1,35 +1,11 @@
-"""``opencodon doctor`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.doctor`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.doctor as _real
 
-
-def build_doctor_parser(subparsers, *, cmd_doctor: Callable) -> None:
-    """Attach the ``doctor`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # doctor command
-    # =========================================================================
-    doctor_parser = subparsers.add_parser(
-        "doctor",
-        help="Check configuration and dependencies",
-        description="Diagnose issues with opencodon setup",
-    )
-    doctor_parser.add_argument(
-        "--fix", action="store_true", help="Attempt to fix issues automatically"
-    )
-    doctor_parser.add_argument(
-        "--ack",
-        metavar="ADVISORY_ID",
-        default=None,
-        help=(
-            "Acknowledge a security advisory by ID and exit. After ack, the "
-            "advisory will no longer trigger startup banners. Run `opencodon "
-            "doctor` first to see active advisories and their IDs."
-        ),
-    )
-    doctor_parser.set_defaults(func=cmd_doctor)
+sys.modules[__name__] = _real

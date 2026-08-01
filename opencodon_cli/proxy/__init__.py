@@ -1,20 +1,12 @@
-"""Local OpenAI-compatible proxy that forwards to OAuth-authenticated upstreams.
+"""Compat shim package: ``opencodon_cli.proxy`` -> ``opencodon.frontends.cli.proxy`` (restructure Phase 3a).
 
-Lets external apps (OpenViking, Karakeep, Open WebUI, ...) ride the user's
-already-logged-in provider subscription instead of needing a static API key
-copy-pasted into each app's config.
-
-The proxy listens on ``127.0.0.1:<port>``, accepts any bearer (the client's
-``Authorization`` header is discarded), and attaches the user's real
-upstream credential to the forwarded request. The credential is refreshed
-automatically when it approaches expiry.
-
-First-class adapter:
-  - ``xai`` — xAI Grok (OAuth)
-
-Future adapters can plug in by implementing ``UpstreamAdapter``.
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
 
-from opencodon_cli.proxy.adapters.base import UpstreamAdapter
+from opencodon.frontends.cli.proxy import *  # noqa: F401,F403
+import opencodon.frontends.cli.proxy as _real  # noqa: F401
 
-__all__ = ["UpstreamAdapter"]
+def __getattr__(name):
+    return getattr(_real, name)

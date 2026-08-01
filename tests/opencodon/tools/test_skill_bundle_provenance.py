@@ -222,7 +222,7 @@ def test_lock_file_persists_scan_provenance(tmp_path):
 
 
 def test_real_temp_repo_and_home_install_e2e(served_repo, monkeypatch, tmp_path):
-    from opencodon_cli.skills_hub import do_install
+    from opencodon.frontends.cli.skills_hub import do_install
     import opencodon.tools.skills_hub as hub
 
     _repo, url = served_repo

@@ -70,7 +70,7 @@ class TestIsValidNamespace:
 class TestPluginSkillRegistry:
     @pytest.fixture
     def pm(self, monkeypatch):
-        from opencodon_cli import plugins as plugins_mod
+        from opencodon.frontends.cli import plugins as plugins_mod
         from opencodon.plugins_runtime import PluginManager
 
         fresh = PluginManager()
@@ -119,7 +119,7 @@ class TestPluginSkillRegistry:
 class TestPluginContextRegisterSkill:
     @pytest.fixture
     def ctx(self, tmp_path, monkeypatch):
-        from opencodon_cli import plugins as plugins_mod
+        from opencodon.frontends.cli import plugins as plugins_mod
         from opencodon.plugins_runtime import PluginContext, PluginManager, PluginManifest
 
         pm = PluginManager()
@@ -164,7 +164,7 @@ class TestSkillViewQualifiedName:
     @pytest.fixture(autouse=True)
     def _isolate(self, tmp_path, monkeypatch):
         """Fresh plugin manager + empty SKILLS_DIR for each test."""
-        from opencodon_cli import plugins as plugins_mod
+        from opencodon.frontends.cli import plugins as plugins_mod
         from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()
@@ -272,7 +272,7 @@ class TestSkillViewPluginGuards:
     def _isolate(self, tmp_path, monkeypatch):
         import sys
 
-        from opencodon_cli import plugins as plugins_mod
+        from opencodon.frontends.cli import plugins as plugins_mod
         from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()
@@ -329,7 +329,7 @@ class TestSkillViewPluginGuards:
 class TestBundleContextBanner:
     @pytest.fixture(autouse=True)
     def _isolate(self, tmp_path, monkeypatch):
-        from opencodon_cli import plugins as plugins_mod
+        from opencodon.frontends.cli import plugins as plugins_mod
         from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()

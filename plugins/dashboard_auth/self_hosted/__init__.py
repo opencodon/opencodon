@@ -87,7 +87,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from opencodon_cli.dashboard_auth import (
+from opencodon.frontends.cli.dashboard_auth import (
     DashboardAuthProvider,
     InvalidCodeError,
     LoginStart,

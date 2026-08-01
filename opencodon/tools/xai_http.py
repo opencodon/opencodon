@@ -91,7 +91,7 @@ def get_env_value(name: str, default=None):
 def opencodon_xai_user_agent() -> str:
     """Return a stable opencodon-specific User-Agent for xAI HTTP calls."""
     try:
-        from opencodon_cli import __version__
+        from opencodon.frontends.cli import __version__
     except Exception:
         __version__ = "unknown"
     return f"opencodon-Agent/{__version__}"
@@ -261,7 +261,7 @@ def resolve_xai_http_credentials(
     """
     try:
         from opencodon.core.credential_pool import load_pool
-        import opencodon_cli.auth as auth_mod
+        import opencodon.frontends.cli.auth as auth_mod
 
         pool = load_pool("xai-oauth")
         entry = (

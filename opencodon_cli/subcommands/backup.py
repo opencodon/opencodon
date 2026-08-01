@@ -1,38 +1,11 @@
-"""``opencodon backup`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.backup`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.backup as _real
 
-
-def build_backup_parser(subparsers, *, cmd_backup: Callable) -> None:
-    """Attach the ``backup`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # backup command
-    # =========================================================================
-    backup_parser = subparsers.add_parser(
-        "backup",
-        help="Back up opencodon home directory to a zip file",
-        description="Create a zip archive of your entire opencodon configuration, "
-        "skills, sessions, and data (excludes the opencodon codebase). "
-        "Use --quick for a fast snapshot of just critical state files.",
-    )
-    backup_parser.add_argument(
-        "-o",
-        "--output",
-        help="Output path for the zip file (default: ~/opencodon-backup-<timestamp>.zip)",
-    )
-    backup_parser.add_argument(
-        "-q",
-        "--quick",
-        action="store_true",
-        help="Quick snapshot: only critical state files (config, state.db, .env, auth, cron)",
-    )
-    backup_parser.add_argument(
-        "-l", "--label", help="Label for the snapshot (only used with --quick)"
-    )
-    backup_parser.set_defaults(func=cmd_backup)
+sys.modules[__name__] = _real

@@ -59,3 +59,33 @@ def test_core_repo_root_anchors_resolve():
     root = get_project_root()
     assert runtime_cwd._PACKAGE_ROOT == root
     assert (root / "locales").is_dir()
+
+
+def test_frontends_do_not_pollute_sys_path_with_package_dirs():
+    # Importing frontend modules must only ever add the repo root to
+    # sys.path — a package-internal dir (e.g. opencodon/frontends) makes
+    # top-level imports resolve real packages under legacy names, silently
+    # bypassing every compat shim (bit hard on 2026-08-01).
+    import subprocess, sys as _sys
+    code = (
+        "import sys; before=list(sys.path); "
+        "import opencodon.frontends.gateway.run, opencodon.frontends.tui.server, "
+        "opencodon.frontends.cli.main; "
+        "added={p for p in sys.path if p not in before}; "
+        "import pathlib; root=str(pathlib.Path('.').resolve()); "
+        "bad=[p for p in added if p != root]; "
+        "assert not bad, f'sys.path polluted: {bad}'; print('ok')"
+    )
+    r = subprocess.run([_sys.executable, "-c", code], capture_output=True, text=True,
+                       cwd=str(Path(__file__).resolve().parents[2]), timeout=120)
+    assert r.returncode == 0, r.stderr
+
+
+def test_bundled_asset_dirs_resolve():
+    from opencodon.config import get_project_root
+    from opencodon.tools import skills_sync
+
+    root = get_project_root()
+    assert (root / "skills").is_dir()
+    assert (root / "optional-skills").is_dir()
+    assert (root / "scripts" / "whatsapp-bridge").is_dir()

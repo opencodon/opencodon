@@ -1,35 +1,12 @@
-"""
-opencodon Gateway - Multi-platform messaging integration.
+"""Compat shim package: ``gateway`` -> ``opencodon.frontends.gateway`` (restructure Phase 3a).
 
-This module provides a unified gateway for connecting the opencodon agent
-to various messaging platforms (Telegram, Discord, WhatsApp, Slack, and more) with:
-- Session management (persistent conversations with reset policies)
-- Dynamic context injection (agent knows where messages come from)
-- Delivery routing (cron job outputs to appropriate channels)
-- Platform-specific toolsets (different capabilities per platform)
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
 
-from .config import GatewayConfig, PlatformConfig, HomeChannel, load_gateway_config
-from .session import (
-    SessionContext,
-    SessionStore,
-    SessionResetPolicy,
-    build_session_context_prompt,
-)
-from .delivery import DeliveryRouter, DeliveryTarget
+from opencodon.frontends.gateway import *  # noqa: F401,F403
+import opencodon.frontends.gateway as _real  # noqa: F401
 
-__all__ = [
-    # Config
-    "GatewayConfig",
-    "PlatformConfig", 
-    "HomeChannel",
-    "load_gateway_config",
-    # Session
-    "SessionContext",
-    "SessionStore",
-    "SessionResetPolicy",
-    "build_session_context_prompt",
-    # Delivery
-    "DeliveryRouter",
-    "DeliveryTarget",
-]
+def __getattr__(name):
+    return getattr(_real, name)

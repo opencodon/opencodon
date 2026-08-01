@@ -1,8 +1,8 @@
 """Tests for acp_adapter.tools — tool kind mapping and ACP content building."""
 
 
-from acp_adapter.edit_approval import EditProposal
-from acp_adapter.tools import (
+from opencodon.frontends.acp.edit_approval import EditProposal
+from opencodon.frontends.acp.tools import (
     TOOL_KIND_MAP,
     build_tool_complete,
     build_tool_start,

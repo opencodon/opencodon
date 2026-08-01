@@ -3,7 +3,7 @@ from contextlib import nullcontext
 from opencodon.core.conversation_compression import (
     _queue_context_engine_compression_notification,
 )
-from cli import OpencodonCLI
+from opencodon.frontends.cli.shell import OpencodonCLI
 
 
 class DummyAgent:

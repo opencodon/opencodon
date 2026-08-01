@@ -123,7 +123,7 @@ def _resolve_skill_commands_platform() -> Optional[str]:
     rollouts, standalone scripts).
     """
     try:
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
 
         resolved_platform = (
             os.getenv("OPENCODON_PLATFORM")
@@ -327,7 +327,7 @@ def scan_skill_commands() -> Dict[str, Dict[str, Any]]:
     try:
         from opencodon.tools.skills_tool import SKILLS_DIR, _parse_frontmatter, skill_matches_platform, skill_matches_environment, _get_disabled_skill_names
         from opencodon.core.skill_utils import get_external_skills_dirs, iter_skill_index_files
-        from opencodon_cli.commands import resolve_command
+        from opencodon.frontends.cli.commands import resolve_command
         disabled = _get_disabled_skill_names()
         seen_names: set = set()
 

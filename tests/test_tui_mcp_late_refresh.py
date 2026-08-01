@@ -12,8 +12,8 @@ import time
 import types
 
 from opencodon.tools import model_tools
-from tui_gateway import server
-from tui_gateway import entry
+from opencodon.frontends.tui import server
+from opencodon.frontends.tui import entry
 
 
 def _make_fake_agent(initial_tools, *, user_turns=0, api_calls=0):

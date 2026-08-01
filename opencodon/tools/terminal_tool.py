@@ -201,7 +201,7 @@ def set_approval_callback(cb):
 def _get_sudo_password_cache_scope() -> str:
     """Return the cache scope for interactive sudo passwords."""
     try:
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
 
         session_key = get_session_env("OPENCODON_SESSION_KEY", "")
     except Exception:
@@ -2322,7 +2322,7 @@ def terminal_tool(
         # opencodon_cli/gateway.py and the cron-path guard in opencodon_cli/cron.py,
         # but applies unconditionally (force=True cannot help here).
         if os.environ.get("_OPENCODON_GATEWAY") == "1":
-            from opencodon_cli.cron import _contains_gateway_lifecycle_command
+            from opencodon.frontends.cli.cron import _contains_gateway_lifecycle_command
             if _contains_gateway_lifecycle_command(command):
                 return json.dumps({
                     "output": "",
@@ -2573,7 +2573,7 @@ def terminal_tool(
                 # watch-pattern and completion notifications can be
                 # routed back to the correct chat/thread.
                 if background and (notify_on_complete or watch_patterns):
-                    from gateway.session_context import (
+                    from opencodon.frontends.gateway.session_context import (
                         async_delivery_supported as _async_ok,
                         get_session_env as _gse,
                     )

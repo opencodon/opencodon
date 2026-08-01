@@ -94,7 +94,7 @@ class TestGatewayCacheDirResolution:
 
     def test_image_cache_dir_follows_override(self, two_profiles):
         prof_a, prof_b = two_profiles
-        import gateway.platforms.base as gb
+        import opencodon.frontends.gateway.platforms.base as gb
 
         a_seen = _under_override(prof_a, lambda: gb.get_image_cache_dir())
         b_seen = _under_override(prof_b, lambda: gb.get_image_cache_dir())
@@ -105,7 +105,7 @@ class TestGatewayCacheDirResolution:
 
     def test_all_cache_getters_follow_override(self, two_profiles):
         _prof_a, prof_b = two_profiles
-        import gateway.platforms.base as gb
+        import opencodon.frontends.gateway.platforms.base as gb
 
         getters = (
             gb.get_image_cache_dir,
@@ -120,10 +120,10 @@ class TestGatewayCacheDirResolution:
     def test_monkeypatched_constant_still_wins(self, two_profiles, monkeypatch, tmp_path):
         """The existing test seam (monkeypatch the module constant) is preserved."""
         _prof_a, _prof_b = two_profiles
-        import gateway.platforms.base as gb
+        import opencodon.frontends.gateway.platforms.base as gb
 
         forced = tmp_path / "forced_img"
-        monkeypatch.setattr("gateway.platforms.base.IMAGE_CACHE_DIR", forced)
+        monkeypatch.setattr("opencodon.frontends.gateway.platforms.base.IMAGE_CACHE_DIR", forced)
         # Even with an active override, an explicit monkeypatch takes precedence.
         seen = _under_override(_prof_b, lambda: gb.get_image_cache_dir())
         assert seen == forced
@@ -136,7 +136,7 @@ class TestRichSentStorePathResolution:
         prof_a, prof_b = two_profiles
         # Ensure no ambient OPENCODON_HOME env masks the test.
         monkeypatch.delenv("OPENCODON_HOME", raising=False)
-        import gateway.rich_sent_store as rss
+        import opencodon.frontends.gateway.rich_sent_store as rss
 
         b_seen = _under_override(prof_b, lambda: rss._store_path())
         assert b_seen.startswith(str(prof_b))

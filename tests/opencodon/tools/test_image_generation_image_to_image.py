@@ -259,7 +259,7 @@ class _LegacyProvider(ImageGenProvider):
 class TestPluginDispatchImageToImage:
     def test_dispatch_forwards_image_url(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
-        from opencodon_cli import plugins as plugins_module
+        from opencodon.frontends.cli import plugins as plugins_module
         from opencodon.core import image_gen_registry as reg
 
         provider = _EditCapableProvider()
@@ -281,7 +281,7 @@ class TestPluginDispatchImageToImage:
 
     def test_dispatch_text_only_when_no_image(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
-        from opencodon_cli import plugins as plugins_module
+        from opencodon.frontends.cli import plugins as plugins_module
         from opencodon.core import image_gen_registry as reg
 
         provider = _EditCapableProvider()
@@ -298,7 +298,7 @@ class TestPluginDispatchImageToImage:
 
     def test_legacy_provider_edit_request_surfaces_clear_error(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
-        from opencodon_cli import plugins as plugins_module
+        from opencodon.frontends.cli import plugins as plugins_module
         from opencodon.core import image_gen_registry as reg
 
         provider = _LegacyProvider()

@@ -93,7 +93,7 @@ def test_acp_restore_heals_alternation_for_live_replay(db):
     """acp_adapter.SessionManager._restore feeds LIVE REPLAY: the loaded history
     becomes the resumed agent's working conversation. It must be alternation-
     clean so the pre-request repair doesn't re-fire every turn."""
-    from acp_adapter.session import SessionManager
+    from opencodon.frontends.acp.session import SessionManager
 
     _seed_wedged_acp_session(db, "acp1")
 

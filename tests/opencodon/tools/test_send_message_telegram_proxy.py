@@ -78,7 +78,7 @@ class TestSendTelegramStandaloneProxy:
         monkeypatch.delenv("NO_PROXY", raising=False)
         monkeypatch.delenv("no_proxy", raising=False)
         # Ensure the test does not depend on the in-process gateway runner.
-        monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
 
         bot = _make_bot()
         bot_factory = MagicMock(return_value=bot)
@@ -132,7 +132,7 @@ class TestSendTelegramStandaloneProxy:
             "no_proxy",
         ):
             monkeypatch.delenv(var, raising=False)
-        monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
+        monkeypatch.setattr("opencodon.frontends.gateway.run._gateway_runner_ref", lambda: None)
         # Make sure macOS system-proxy auto-detection (scutil) can't kick in.
         monkeypatch.setattr(sys, "platform", "linux")
 

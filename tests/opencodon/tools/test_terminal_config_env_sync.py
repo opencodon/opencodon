@@ -72,7 +72,7 @@ def _extract_dict_keys(source: str, dict_name: str) -> set[str]:
 
 def _cli_env_map_keys() -> set[str]:
     """terminal config keys bridged by cli.load_cli_config()."""
-    import cli
+    from opencodon.frontends.cli import shell as cli
     source = inspect.getsource(cli.load_cli_config)
     return _extract_dict_keys(source, "env_mappings")
 
@@ -81,7 +81,7 @@ def _gateway_env_map_keys() -> set[str]:
     """terminal config keys bridged by gateway/run.py at module load."""
     # gateway/run.py builds the dict at module top-level (not inside a
     # function), so inspect the whole module source.
-    import gateway.run as gr
+    import opencodon.frontends.gateway.run as gr
     source = inspect.getsource(gr)
     return _extract_dict_keys(source, "_terminal_env_map")
 
@@ -96,7 +96,7 @@ def _save_config_env_sync_keys() -> set[str]:
     source of truth that the config-set path uses, rather than a string
     literal that the consolidation removed.
     """
-    from opencodon_cli import config as hc_config
+    from opencodon.frontends.cli import config as hc_config
     # set_config_value bridges every TERMINAL_CONFIG_ENV_MAP key except
     # terminal.cwd (see the ``key != "terminal.cwd"`` guard in
     # set_config_value); mirror that exclusion here.

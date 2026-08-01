@@ -117,7 +117,7 @@ class TestGenerateGeminiTts:
 
     def test_x_goog_api_client_header_is_set(self, tmp_path, monkeypatch, mock_gemini_response):
         """Gemini TTS requests should include opencodon client context."""
-        from opencodon_cli import __version__
+        from opencodon.frontends.cli import __version__
         from opencodon.tools.tts_tool import _generate_gemini_tts
 
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")

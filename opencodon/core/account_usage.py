@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, Optional
 import httpx
 
 from opencodon.core.anthropic_adapter import _is_oauth_token, resolve_anthropic_token
-from opencodon_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
-from opencodon_cli.runtime_provider import resolve_runtime_provider
+from opencodon.frontends.cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
+from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
 
 if TYPE_CHECKING:
     from typing import TypeGuard
@@ -414,7 +414,7 @@ def redeem_codex_reset_credit(
         # persisted pool cooldowns so opencodon doesn't keep the credential
         # frozen behind the now-stale ``last_error_reset_at`` (issue #43747).
         try:
-            from opencodon_cli.auth import clear_codex_pool_quota_cooldowns
+            from opencodon.frontends.cli.auth import clear_codex_pool_quota_cooldowns
 
             clear_codex_pool_quota_cooldowns()
         except Exception:

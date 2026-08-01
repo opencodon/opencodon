@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from opencodon_constants import get_opencodon_home
 from opencodon.common._subprocess_compat import windows_hide_flags
 from opencodon.config import load_config, _expand_env_vars
-from opencodon_cli.fallback_config import get_fallback_chain
+from opencodon.frontends.cli.fallback_config import get_fallback_chain
 from opencodon_time import now as _opencodon_now
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ def _merge_mcp_into_per_job_toolsets(per_job: list[str], cfg: dict) -> list[str]
     # lazy import: avoid heavy opencodon_cli import at cron module load (matches
     # _resolve_cron_enabled_toolsets' fallback) and share one MCP-membership
     # computation with the gateway/CLI platform resolver.
-    from opencodon_cli.tools_config import enabled_mcp_server_names
+    from opencodon.frontends.cli.tools_config import enabled_mcp_server_names
     enabled_mcp = enabled_mcp_server_names(cfg)
     if set(result) & enabled_mcp:
         return result
@@ -230,7 +230,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
     if per_job:
         return _merge_mcp_into_per_job_toolsets(list(per_job), cfg or {})
     try:
-        from opencodon_cli.tools_config import _get_platform_tools  # lazy: avoid heavy import at cron module load
+        from opencodon.frontends.cli.tools_config import _get_platform_tools  # lazy: avoid heavy import at cron module load
         return sorted(_get_platform_tools(cfg or {}, "cron"))
     except Exception as exc:
         logger.warning(
@@ -703,7 +703,7 @@ def _maybe_mirror_cron_delivery(
     if not text:
         return
     try:
-        from gateway.mirror import mirror_to_session
+        from opencodon.frontends.gateway.mirror import mirror_to_session
 
         # Mirror as a USER turn with a labelled prefix, NOT an assistant turn.
         # The brief is not the agent speaking; an assistant-role mirror lands as
@@ -804,8 +804,8 @@ def _seed_cron_thread_session(
     if not text:
         return
     try:
-        from gateway.config import Platform
-        from gateway.session import SessionSource
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.session import SessionSource
 
         session_store = getattr(adapter, "_session_store", None)
         if session_store is not None:
@@ -827,7 +827,7 @@ def _seed_cron_thread_session(
                 # a target and the user's later reply joins the same session.
                 session_store.get_or_create_session(dest_source)
 
-        from gateway.mirror import mirror_to_session
+        from opencodon.frontends.gateway.mirror import mirror_to_session
 
         # User-role + labelled prefix (see _maybe_mirror_cron_delivery): the
         # seeded brief must not read as an assistant turn, or the user's first
@@ -902,8 +902,8 @@ def _seed_cron_channel_session(
     if not text:
         return False
     try:
-        from gateway.config import Platform
-        from gateway.session import SessionSource
+        from opencodon.frontends.gateway.config import Platform
+        from opencodon.frontends.gateway.session import SessionSource
 
         chat_type = "dm" if is_dm else "group"
         session_store = getattr(adapter, "_session_store", None)
@@ -925,7 +925,7 @@ def _seed_cron_channel_session(
                 # user's later plain reply joins the SAME session.
                 session_store.get_or_create_session(dest_source)
 
-        from gateway.mirror import mirror_to_session
+        from opencodon.frontends.gateway.mirror import mirror_to_session
 
         ok = mirror_to_session(
             platform_name,
@@ -984,7 +984,7 @@ def _plugin_cron_env_var(platform_name: str) -> str:
     try:
         from opencodon.plugins_runtime import discover_plugins
         discover_plugins()  # idempotent
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_name.lower())
         if entry and entry.cron_deliver_env_var:
             return entry.cron_deliver_env_var
@@ -1068,7 +1068,7 @@ def _iter_home_target_platforms():
     try:
         from opencodon.plugins_runtime import discover_plugins
         discover_plugins()  # idempotent
-        from gateway.platform_registry import platform_registry
+        from opencodon.frontends.gateway.platform_registry import platform_registry
         for entry in platform_registry.plugin_entries():
             if entry.cron_deliver_env_var and entry.name not in _HOME_TARGET_ENV_VARS:
                 yield entry.name
@@ -1092,7 +1092,7 @@ def cron_delivery_targets() -> list[dict]:
     """
     targets: list[dict] = []
     try:
-        from gateway.config import load_gateway_config
+        from opencodon.frontends.gateway.config import load_gateway_config
 
         gateway_config = load_gateway_config()
         connected = {p.value for p in gateway_config.get_connected_platforms()}
@@ -1163,7 +1163,7 @@ def _resolve_single_delivery_target(job: dict, deliver_value: str) -> Optional[d
 
         # Resolve human-friendly labels like "Alice (dm)" to real IDs.
         try:
-            from gateway.channel_directory import resolve_channel_name
+            from opencodon.frontends.gateway.channel_directory import resolve_channel_name
             resolved = resolve_channel_name(platform_key, chat_id)
             if resolved:
                 parsed_chat_id, parsed_thread_id, resolved_is_explicit = _parse_target_ref(platform_key, resolved)
@@ -1327,7 +1327,7 @@ def _send_media_via_adapter(
     """
     from pathlib import Path
 
-    from gateway.platforms.base import BasePlatformAdapter, should_send_media_as_audio
+    from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter, should_send_media_as_audio
 
     media_files = BasePlatformAdapter.filter_media_delivery_paths(media_files)
 
@@ -1477,7 +1477,7 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
         return msg
 
     from opencodon.tools.send_message_tool import _send_to_platform
-    from gateway.config import load_gateway_config, Platform
+    from opencodon.frontends.gateway.config import load_gateway_config, Platform
 
     # Optionally wrap the content with a header/footer so the user knows this
     # is a cron delivery.  Wrapping is on by default; set cron.wrap_response: false
@@ -1504,7 +1504,7 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
         delivery_content = content
 
     # Extract MEDIA: tags so attachments are forwarded as files, not raw text
-    from gateway.platforms.base import BasePlatformAdapter
+    from opencodon.frontends.gateway.platforms.base import BasePlatformAdapter
     media_files, cleaned_delivery_content = BasePlatformAdapter.extract_media(delivery_content)
     media_files = BasePlatformAdapter.filter_media_delivery_paths(media_files)
 
@@ -1716,7 +1716,7 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
             # anchorless cron send bypasses the DeliveryRouter's private-chat
             # reply-anchor requirement. Compute the routed metadata ONCE so both
             # the text send (via DeliveryRouter) and the media send agree.
-            from gateway.delivery import (
+            from opencodon.frontends.gateway.delivery import (
                 DeliveryRouter,
                 DeliveryTarget,
                 _looks_like_int,
@@ -2962,7 +2962,7 @@ def run_job(
 
     # Use ContextVars for per-job session/delivery state so parallel jobs
     # don't clobber each other's targets (os.environ is process-global).
-    from gateway.session_context import set_session_vars, clear_session_vars, _VAR_MAP
+    from opencodon.frontends.gateway.session_context import set_session_vars, clear_session_vars, _VAR_MAP
 
     # Cron execution is an internal scheduler context, not a live inbound
     # gateway message. Do not seed OPENCODON_SESSION_* contextvars from the
@@ -3186,11 +3186,11 @@ def run_job(
         # Provider routing
         pr = _cfg.get("provider_routing") or {}
 
-        from opencodon_cli.runtime_provider import (
+        from opencodon.frontends.cli.runtime_provider import (
             resolve_runtime_provider,
             format_runtime_provider_error,
         )
-        from opencodon_cli.auth import AuthError
+        from opencodon.frontends.cli.auth import AuthError
 
         # F8 runtime backstop: never resolve a stored provider/base_url pair that
         # would ship a named provider's stored credential to an off-host endpoint
@@ -3251,7 +3251,7 @@ def run_job(
                 if not fb_provider or not fb_model:
                     continue
                 try:
-                    from opencodon_cli.fallback_config import resolve_entry_api_key
+                    from opencodon.frontends.cli.fallback_config import resolve_entry_api_key
 
                     fb_kwargs = {
                         "requested": fb_provider,

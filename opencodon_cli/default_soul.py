@@ -1,13 +1,11 @@
-"""Compatibility shim — the real module is ``opencodon.config.default_soul``.
+"""Compat shim — real module: ``opencodon.frontends.cli.default_soul`` (restructure Phase 3a).
 
-Restructure Phase 2 (docs/plans/2026-08-01-repo-restructure-plan.md) moved
-this module out of the CLI frontend package. The shim aliases the REAL
-module object in ``sys.modules`` so both import paths see one module.
-New code must import from ``opencodon.config.default_soul``. Deleted in Phase 5.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
 import sys
 
-import opencodon.config.default_soul as _real
+import opencodon.frontends.cli.default_soul as _real
 
 sys.modules[__name__] = _real

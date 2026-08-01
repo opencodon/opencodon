@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from opencodon.config import recommended_update_command
-from opencodon_cli.main import cmd_update
+from opencodon.frontends.cli.main import cmd_update
 from opencodon.tools.skills_hub import OptionalSkillSource
 
 

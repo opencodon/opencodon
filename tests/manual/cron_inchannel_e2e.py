@@ -46,9 +46,9 @@ HOME = _fresh_home()
 
 # Import AFTER OPENCODON_HOME is set.
 import opencodon.cron.scheduler as sched  # noqa: E402
-import gateway.mirror as mirror  # noqa: E402
-from gateway.config import GatewayConfig, Platform  # noqa: E402
-from gateway.session import SessionStore, SessionSource, build_session_key  # noqa: E402
+import opencodon.frontends.gateway.mirror as mirror  # noqa: E402
+from opencodon.frontends.gateway.config import GatewayConfig, Platform  # noqa: E402
+from opencodon.frontends.gateway.session import SessionStore, SessionSource, build_session_key  # noqa: E402
 
 # Force mirror.py's module-level index path to our temp home (it may have bound
 # a different get_opencodon_home() at import if something imported it earlier).

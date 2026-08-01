@@ -1,17 +1,12 @@
-"""
-Platform adapters for messaging integrations.
+"""Compat shim package: ``gateway.platforms`` -> ``opencodon.frontends.gateway.platforms`` (restructure Phase 3a).
 
-Each adapter handles:
-- Receiving messages from a platform
-- Sending messages/responses back
-- Platform-specific authentication
-- Message formatting and media handling
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
 
-from .base import BasePlatformAdapter, MessageEvent, SendResult
+from opencodon.frontends.gateway.platforms import *  # noqa: F401,F403
+import opencodon.frontends.gateway.platforms as _real  # noqa: F401
 
-__all__ = [
-    "BasePlatformAdapter",
-    "MessageEvent",
-    "SendResult",
-]
+def __getattr__(name):
+    return getattr(_real, name)

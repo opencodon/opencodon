@@ -24,9 +24,9 @@ from acp.schema import (
     ToolCallStart,
 )
 
-from acp_adapter.server import OpencodonACPAgent
-from acp_adapter.session import SessionManager
-from acp_adapter.tools import build_tool_start
+from opencodon.frontends.acp.server import OpencodonACPAgent
+from opencodon.frontends.acp.session import SessionManager
+from opencodon.frontends.acp.tools import build_tool_start
 
 
 # ---------------------------------------------------------------------------

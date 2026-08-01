@@ -11,7 +11,7 @@ from acp.schema import (
     RequestPermissionResponse,
 )
 
-from acp_adapter.permissions import make_approval_callback
+from opencodon.frontends.acp.permissions import make_approval_callback
 from opencodon.tools.approval import prompt_dangerous_approval
 
 

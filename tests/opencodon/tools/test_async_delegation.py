@@ -497,7 +497,7 @@ def test_delegate_task_background_uses_live_tui_agent_session_id(monkeypatch):
     import json
     from unittest.mock import MagicMock
     import opencodon.tools.delegate_tool as dt
-    from gateway.session_context import clear_session_vars, set_session_vars
+    from opencodon.frontends.gateway.session_context import clear_session_vars, set_session_vars
     from opencodon.tools.approval import reset_current_session_key, set_current_session_key
 
     parent = MagicMock()
@@ -809,7 +809,7 @@ def _make_async_evt(**over):
 
 
 def test_gateway_enriches_routing_from_session_key():
-    from gateway.run import GatewayRunner
+    from opencodon.frontends.gateway.run import GatewayRunner
 
     runner = object.__new__(GatewayRunner)
     evt = _make_async_evt()
@@ -820,7 +820,7 @@ def test_gateway_enriches_routing_from_session_key():
 
 
 def test_gateway_formatter_renders_async_block():
-    from gateway.run import _format_gateway_process_notification
+    from opencodon.frontends.gateway.run import _format_gateway_process_notification
 
     txt = _format_gateway_process_notification(_make_async_evt())
     assert txt is not None
@@ -830,7 +830,7 @@ def test_gateway_formatter_renders_async_block():
 
 
 def test_gateway_watch_drain_requeues_async_without_looping():
-    from gateway.run import _drain_gateway_watch_events
+    from opencodon.frontends.gateway.run import _drain_gateway_watch_events
 
     q = queue.Queue()
     async_evt = _make_async_evt()
@@ -852,7 +852,7 @@ def test_gateway_watch_drain_requeues_async_without_looping():
 
 
 def test_gateway_builds_routable_source_from_enriched_event():
-    from gateway.run import GatewayRunner
+    from opencodon.frontends.gateway.run import GatewayRunner
 
     runner = object.__new__(GatewayRunner)
     evt = _make_async_evt()
@@ -865,7 +865,7 @@ def test_gateway_builds_routable_source_from_enriched_event():
 
 def test_gateway_cli_origin_event_left_unrouted():
     """An empty session_key (CLI origin) is left without routing fields."""
-    from gateway.run import GatewayRunner
+    from opencodon.frontends.gateway.run import GatewayRunner
 
     runner = object.__new__(GatewayRunner)
     evt = _make_async_evt(session_key="")

@@ -356,7 +356,7 @@ class PluginContext:
         ``OPENCODON_HOME`` points somewhere unrecognized.
         """
         try:
-            from opencodon_cli.profiles import get_active_profile_name
+            from opencodon.frontends.cli.profiles import get_active_profile_name
             return get_active_profile_name()
         except Exception:
             return "default"
@@ -536,7 +536,7 @@ class PluginContext:
 
         # Reject if it conflicts with a built-in command
         try:
-            from opencodon_cli.commands import resolve_command
+            from opencodon.frontends.cli.commands import resolve_command
             if resolve_command(clean) is not None:
                 logger.warning(
                     "Plugin '%s' tried to register command '/%s' which conflicts "
@@ -660,7 +660,7 @@ class PluginContext:
         cannot crash the host. Same convention as
         ``register_image_gen_provider``.
         """
-        from opencodon_cli.dashboard_auth import (
+        from opencodon.frontends.cli.dashboard_auth import (
             DashboardAuthProvider, register_provider,
         )
 
@@ -908,7 +908,7 @@ class PluginContext:
                 setup_fn=irc_interactive_setup,
             )
         """
-        from gateway.platform_registry import platform_registry, PlatformEntry
+        from opencodon.frontends.gateway.platform_registry import platform_registry, PlatformEntry
 
         entry_kwargs.setdefault("plugin_name", self.manifest.name)
         entry = PlatformEntry(
@@ -1056,7 +1056,7 @@ class PluginContext:
             )
 
         # Lazy import to avoid circular: opencodon_cli.main imports plugins indirectly
-        from opencodon_cli.main import _AUX_TASKS as _BUILTIN_AUX_TASKS
+        from opencodon.frontends.cli.main import _AUX_TASKS as _BUILTIN_AUX_TASKS
 
         builtin_keys = {k for k, _name, _desc in _BUILTIN_AUX_TASKS}
         if key in builtin_keys:
@@ -1675,7 +1675,7 @@ class PluginManager:
             self._load_plugin(_manifest)
 
         try:
-            from gateway.platform_registry import platform_registry
+            from opencodon.frontends.gateway.platform_registry import platform_registry
 
             platform_registry.register_deferred(platform_name, _loader)
             logger.debug(

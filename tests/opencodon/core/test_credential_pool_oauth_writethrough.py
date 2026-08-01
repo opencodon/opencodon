@@ -27,7 +27,7 @@ from opencodon.core.credential_pool import (
     CredentialPool,
     PooledCredential,
 )
-from opencodon_cli import auth as A
+from opencodon.frontends.cli import auth as A
 
 
 def _write_store(path, store):

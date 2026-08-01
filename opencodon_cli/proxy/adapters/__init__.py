@@ -1,35 +1,12 @@
-"""Upstream adapter registry for the local proxy server.
+"""Compat shim package: ``opencodon_cli.proxy.adapters`` -> ``opencodon.frontends.cli.proxy.adapters`` (restructure Phase 3a).
 
-Each adapter wraps a provider's OAuth state and exposes a uniform interface
-the proxy server can use to forward requests with a freshly-minted bearer
-token. See :class:`UpstreamAdapter` for the contract.
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving import-time side effects and __init__ API,
+re-exported below). Deleted in Phase 5.
 """
 
-from typing import Dict, Type
+from opencodon.frontends.cli.proxy.adapters import *  # noqa: F401,F403
+import opencodon.frontends.cli.proxy.adapters as _real  # noqa: F401
 
-from opencodon_cli.proxy.adapters.base import UpstreamAdapter
-from opencodon_cli.proxy.adapters.xai import XAIGrokAdapter
-
-# Registry of available adapter classes keyed by provider name as used on
-# the ``opencodon proxy start --provider <name>`` CLI flag.
-ADAPTERS: Dict[str, Type[UpstreamAdapter]] = {
-    "xai": XAIGrokAdapter,
-}
-
-
-def get_adapter(name: str) -> UpstreamAdapter:
-    """Instantiate an adapter by provider name.
-
-    Raises:
-        ValueError: if ``name`` is not a registered adapter.
-    """
-    key = (name or "").strip().lower()
-    if key not in ADAPTERS:
-        available = ", ".join(sorted(ADAPTERS)) or "(none)"
-        raise ValueError(
-            f"Unknown proxy upstream provider: {name!r}. Available: {available}"
-        )
-    return ADAPTERS[key]()
-
-
-__all__ = ["UpstreamAdapter", "ADAPTERS", "get_adapter"]
+def __getattr__(name):
+    return getattr(_real, name)

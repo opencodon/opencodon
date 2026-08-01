@@ -91,7 +91,7 @@ def _launch_cwd_for_session(source: str) -> Optional[str]:
 
 def _session_source_for_agent(platform: Optional[str]) -> str:
     try:
-        from gateway.session_context import get_session_env
+        from opencodon.frontends.gateway.session_context import get_session_env
 
         source = get_session_env("OPENCODON_SESSION_SOURCE", "")
     except Exception:
@@ -285,7 +285,7 @@ _QWEN_CODE_VERSION = "0.14.1"
 
 def _routermint_headers() -> dict:
     """Return the User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from opencodon_cli import __version__ as _OPENCODON_VERSION
+    from opencodon.frontends.cli import __version__ as _OPENCODON_VERSION
 
     return {
         "User-Agent": f"OpencodonAgent/{_OPENCODON_VERSION}",
@@ -602,7 +602,7 @@ class AIAgent:
         source = _session_source_for_agent(self.platform)
         try:
             try:
-                from opencodon_cli.profiles import get_active_profile_name
+                from opencodon.frontends.cli.profiles import get_active_profile_name
                 _profile_for_session = get_active_profile_name()
                 if _profile_for_session == "default":
                     _profile_for_session = None
@@ -781,7 +781,7 @@ class AIAgent:
             return
         try:
             from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
-            from opencodon_cli.models import ensure_lmstudio_model_loaded
+            from opencodon.frontends.cli.models import ensure_lmstudio_model_loaded
             if config_context_length is None:
                 config_context_length = getattr(self, "_config_context_length", None)
             target_ctx = max(config_context_length or 0, MINIMUM_CONTEXT_LENGTH)
@@ -1439,7 +1439,7 @@ class AIAgent:
             return False
         if normalized_provider == "copilot":
             try:
-                from opencodon_cli.models import _should_use_copilot_responses_api
+                from opencodon.frontends.cli.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -4193,7 +4193,7 @@ class AIAgent:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from opencodon_cli.copilot_auth import copilot_request_headers
+        from opencodon.frontends.cli.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -4386,13 +4386,13 @@ class AIAgent:
         # MUST only fire when the agent really is on singleton tokens.
         try:
             if self.provider == "openai-codex":
-                from opencodon_cli.auth import resolve_codex_runtime_credentials
+                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
 
                 singleton_now = resolve_codex_runtime_credentials(
                     refresh_if_expiring=False,
                 )
             else:
-                from opencodon_cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
 
                 singleton_now = resolve_xai_oauth_runtime_credentials(
                     refresh_if_expiring=False,
@@ -4414,11 +4414,11 @@ class AIAgent:
 
         try:
             if self.provider == "openai-codex":
-                from opencodon_cli.auth import resolve_codex_runtime_credentials
+                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
 
                 creds = resolve_codex_runtime_credentials(force_refresh=force)
             else:
-                from opencodon_cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
 
                 creds = resolve_xai_oauth_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -4491,7 +4491,7 @@ class AIAgent:
             return False
 
         try:
-            from opencodon_cli.copilot_auth import resolve_copilot_token
+            from opencodon.frontends.cli.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -4583,7 +4583,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _routermint_headers()
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon_cli.models import copilot_default_headers
+            from opencodon.frontends.cli.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -5781,7 +5781,7 @@ class AIAgent:
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
         ):
             try:
-                from opencodon_cli.models import github_model_reasoning_efforts
+                from opencodon.frontends.cli.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -5840,7 +5840,7 @@ class AIAgent:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from opencodon_cli.models import lmstudio_model_reasoning_options
+            from opencodon.frontends.cli.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -5871,7 +5871,7 @@ class AIAgent:
             if supported is not None or (_time.monotonic() - ts) < 60:
                 return bool(supported)
         try:
-            from opencodon_cli.models import ollama_model_supports_thinking
+            from opencodon.frontends.cli.models import ollama_model_supports_thinking
             supported = ollama_model_supports_thinking(
                 self.model, self.base_url, getattr(self, "api_key", "")
             )
@@ -5896,7 +5896,7 @@ class AIAgent:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from opencodon_cli.models import github_model_reasoning_efforts
+            from opencodon.frontends.cli.models import github_model_reasoning_efforts
         except Exception:
             return None
 

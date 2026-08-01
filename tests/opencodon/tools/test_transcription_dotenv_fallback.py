@@ -75,10 +75,10 @@ class TestProviderSelectionGate:
 
         try:
             with patch(
-                "opencodon_cli.runtime_provider.resolve_runtime_provider",
+                "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
                 side_effect=RuntimeError("no oauth"),
             ), patch(
-                "opencodon_cli.auth.resolve_xai_oauth_runtime_credentials",
+                "opencodon.frontends.cli.auth.resolve_xai_oauth_runtime_credentials",
                 return_value={},
             ), patch(
                 "opencodon.config.load_env",

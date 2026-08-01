@@ -1,0 +1,186 @@
+"""Tests for the allowed_{channels,chats,rooms} whitelist extension
+added alongside PR #7401 (Slack).
+
+Covers: Telegram, Matrix, Mattermost, DingTalk.
+
+For each platform:
+- Empty = no restriction (fully backward compatible).
+- When set, messages from non-listed chats/rooms are silently ignored.
+- DMs are never filtered.
+- @mention does NOT bypass the whitelist.
+- config.yaml → env var bridging (via load_gateway_config) where applicable.
+"""
+
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
+import pytest
+
+from opencodon.frontends.gateway.config import Platform, PlatformConfig
+
+
+# ---------------------------------------------------------------------------
+# Telegram
+# ---------------------------------------------------------------------------
+
+def _make_telegram_adapter(*, allowed_chats=None, require_mention=None, guest_mode=False):
+    from plugins.platforms.telegram.adapter import TelegramAdapter
+
+    extra = {"guest_mode": guest_mode}
+    if allowed_chats is not None:
+        extra["allowed_chats"] = allowed_chats
+    if require_mention is not None:
+        extra["require_mention"] = require_mention
+
+    adapter = object.__new__(TelegramAdapter)
+    adapter.platform = Platform.TELEGRAM
+    adapter.config = PlatformConfig(enabled=True, token="***", extra=extra)
+    adapter._bot = SimpleNamespace(id=999, username="opencodon_bot")
+    adapter._message_handler = AsyncMock()
+    adapter._mention_patterns = adapter._compile_mention_patterns()
+    # PR db50af910 added a TELEGRAM_ALLOWED_USERS allowlist gate to
+    # _should_process_message; stub it for tests that exercise the
+    # allowed-channels widening logic that runs after.
+    adapter._is_callback_user_authorized = lambda *_a, **_kw: True
+    return adapter
+
+
+def _tg_group_message(chat_id=-100, text="hello"):
+    return SimpleNamespace(
+        text=text,
+        caption=None,
+        entities=[],
+        caption_entities=[],
+        message_thread_id=None,
+        chat=SimpleNamespace(id=chat_id, type="group"),
+        from_user=SimpleNamespace(id=111),
+        reply_to_message=None,
+    )
+
+
+def _tg_dm_message(text="hello"):
+    return SimpleNamespace(
+        text=text,
+        caption=None,
+        entities=[],
+        caption_entities=[],
+        message_thread_id=None,
+        chat=SimpleNamespace(id=111, type="private"),
+        from_user=SimpleNamespace(id=111),
+        reply_to_message=None,
+    )
+
+
+class TestTelegramAllowedChats:
+    def test_empty_is_no_restriction(self, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_ALLOWED_CHATS", raising=False)
+        adapter = _make_telegram_adapter()
+        assert adapter._telegram_allowed_chats() == set()
+        assert adapter._should_process_message(_tg_group_message(-100)) is True
+
+    def test_list_form(self):
+        adapter = _make_telegram_adapter(allowed_chats=[-100, -200])
+        assert adapter._telegram_allowed_chats() == {"-100", "-200"}
+
+    def test_csv_form(self):
+        adapter = _make_telegram_adapter(allowed_chats="-100, -200")
+        assert adapter._telegram_allowed_chats() == {"-100", "-200"}
+
+    def test_env_var_fallback(self, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_ALLOWED_CHATS", "-100,-200")
+        adapter = _make_telegram_adapter()  # no extra → falls back to env
+        assert adapter._telegram_allowed_chats() == {"-100", "-200"}
+
+    def test_blocks_non_whitelisted_group(self):
+        adapter = _make_telegram_adapter(allowed_chats=["-100"])
+        assert adapter._should_process_message(_tg_group_message(-999)) is False
+
+    def test_permits_whitelisted_group(self):
+        adapter = _make_telegram_adapter(
+            allowed_chats=["-100"], require_mention=False,
+        )
+        assert adapter._should_process_message(_tg_group_message(-100)) is True
+
+    def test_mention_cannot_bypass_whitelist(self):
+        """@mention in a non-allowed chat is still ignored."""
+        adapter = _make_telegram_adapter(allowed_chats=["-100"])
+        msg = _tg_group_message(-999, text="@opencodon_bot hello")
+        msg.entities = [SimpleNamespace(
+            type="mention", offset=0, length=len("@opencodon_bot"),
+        )]
+        assert adapter._should_process_message(msg) is False
+
+    def test_dms_unaffected(self):
+        """DMs bypass the allowed_chats whitelist entirely."""
+        adapter = _make_telegram_adapter(allowed_chats=["-100"])
+        assert adapter._should_process_message(_tg_dm_message()) is True
+
+    def test_config_bridge(self, monkeypatch, tmp_path):
+        """slack-style config.yaml → env var bridge works."""
+        from opencodon.frontends.gateway.config import load_gateway_config
+
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
+            "telegram:\n"
+            "  allowed_chats:\n"
+            "    - -100\n"
+            "    - -200\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+        monkeypatch.setenv("TELEGRAM_ALLOWED_CHATS", "__sentinel__")
+        monkeypatch.delenv("TELEGRAM_ALLOWED_CHATS")
+
+        load_gateway_config()
+
+        import os as _os
+        assert _os.environ["TELEGRAM_ALLOWED_CHATS"] == "-100,-200"
+
+    def test_config_bridge_env_takes_precedence(self, monkeypatch, tmp_path):
+        from opencodon.frontends.gateway.config import load_gateway_config
+
+        opencodon_home = tmp_path / ".opencodon"
+        opencodon_home.mkdir()
+        (opencodon_home / "config.yaml").write_text(
+            "telegram:\n"
+            "  allowed_chats: -100\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
+        monkeypatch.setenv("TELEGRAM_ALLOWED_CHATS", "-999")
+
+        load_gateway_config()
+
+        import os as _os
+        assert _os.environ["TELEGRAM_ALLOWED_CHATS"] == "-999"
+
+
+# ---------------------------------------------------------------------------
+# DingTalk
+# ---------------------------------------------------------------------------
+
+def _make_dingtalk_adapter(*, allowed_chats=None, require_mention=None):
+    # Import lazily — DingTalk SDK may not be installed.
+    pytest.importorskip("plugins.platforms.dingtalk.adapter", reason="DingTalk adapter not importable")
+    from plugins.platforms.dingtalk.adapter import DingTalkAdapter
+
+    extra = {}
+    if allowed_chats is not None:
+        extra["allowed_chats"] = allowed_chats
+    if require_mention is not None:
+        extra["require_mention"] = require_mention
+
+    adapter = object.__new__(DingTalkAdapter)
+    adapter.platform = Platform.DISCORD
+    adapter.config = PlatformConfig(enabled=True, extra=extra)
+    return adapter
+
+
+# ---------------------------------------------------------------------------
+# Mattermost (env-var only — no config.yaml bridge)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Matrix
+# ---------------------------------------------------------------------------

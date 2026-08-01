@@ -114,11 +114,11 @@ import sys
 from pathlib import Path as _Path
 sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
 
-from gateway.config import Platform, PlatformConfig
+from opencodon.frontends.gateway.config import Platform, PlatformConfig
 
-from gateway.platforms.helpers import MessageDeduplicator, ThreadParticipationTracker, convert_table_to_bullets
+from opencodon.frontends.gateway.platforms.helpers import MessageDeduplicator, ThreadParticipationTracker, convert_table_to_bullets
 from utils import atomic_json_write, env_float, env_int
-from gateway.platforms.base import (
+from opencodon.frontends.gateway.platforms.base import (
     BasePlatformAdapter,
     MessageEvent,
     MessageType,
@@ -1161,7 +1161,7 @@ class DiscordAdapter(BasePlatformAdapter):
             intents.voice_states = True
 
             # Resolve proxy (DISCORD_PROXY > generic env vars > macOS system proxy)
-            from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_bot
+            from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_bot
             proxy_url = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
             if proxy_url:
                 logger.info("[%s] Using proxy for Discord: %s", self.name, proxy_url)
@@ -3431,7 +3431,7 @@ class DiscordAdapter(BasePlatformAdapter):
                         # Download to BytesIO so it renders inline
                         try:
                             import aiohttp as _aiohttp
-                            from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+                            from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
                             _proxy = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
                             _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
                             if aiohttp_session is None:
@@ -4142,7 +4142,7 @@ class DiscordAdapter(BasePlatformAdapter):
         if not user_id:
             return False
         try:
-            from gateway.pairing import PairingStore
+            from opencodon.frontends.gateway.pairing import PairingStore
 
             return bool(PairingStore().is_approved("discord", user_id))
         except Exception:
@@ -4569,7 +4569,7 @@ class DiscordAdapter(BasePlatformAdapter):
 
             # Download the image and send as a Discord file attachment
             # (Discord renders attachments inline, unlike plain URLs)
-            from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+            from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
             _proxy = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
             _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
             async with aiohttp.ClientSession(**_sess_kw) as session:
@@ -4651,7 +4651,7 @@ class DiscordAdapter(BasePlatformAdapter):
 
             # Download the GIF and send as a Discord file attachment
             # (Discord renders .gif attachments as auto-playing animations inline)
-            from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+            from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
             _proxy = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
             _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
             async with aiohttp.ClientSession(**_sess_kw) as session:
@@ -5191,7 +5191,7 @@ class DiscordAdapter(BasePlatformAdapter):
         slot_cap = _DISCORD_MAX_APP_COMMANDS - 1
         dropped_over_cap = 0
         try:
-            from opencodon_cli.commands import COMMAND_REGISTRY, _is_gateway_available, _resolve_config_gates
+            from opencodon.frontends.cli.commands import COMMAND_REGISTRY, _is_gateway_available, _resolve_config_gates
 
             try:
                 already_registered = {cmd.name for cmd in tree.get_commands()}
@@ -5236,7 +5236,7 @@ class DiscordAdapter(BasePlatformAdapter):
         # autocomplete UX as for built-in commands. No per-platform plugin
         # API needed — plugin commands are platform-agnostic.
         try:
-            from opencodon_cli.commands import _iter_plugin_command_entries
+            from opencodon.frontends.cli.commands import _iter_plugin_command_entries
 
             for plugin_name, plugin_desc, plugin_args_hint in _iter_plugin_command_entries():
                 discord_name = plugin_name.lower()[:32]
@@ -5475,7 +5475,7 @@ class DiscordAdapter(BasePlatformAdapter):
         and the handler both read from these instance attributes
         directly, so an in-place mutation is sufficient.
         """
-        from opencodon_cli.commands import discord_skill_commands_by_category
+        from opencodon.frontends.cli.commands import discord_skill_commands_by_category
 
         reserved = getattr(self, "_skill_group_reserved_names", set())
         categories, uncategorized, hidden = discord_skill_commands_by_category(
@@ -5675,12 +5675,12 @@ class DiscordAdapter(BasePlatformAdapter):
                 skills: ["skill-a", "skill-b"]
         Also checks parent_id so forum threads inherit the forum's bindings.
         """
-        from gateway.platforms.base import resolve_channel_skills
+        from opencodon.frontends.gateway.platforms.base import resolve_channel_skills
         return resolve_channel_skills(self.config.extra, channel_id, parent_id)
 
     def _resolve_channel_prompt(self, channel_id: str, parent_id: str | None = None) -> str | None:
         """Resolve a Discord per-channel prompt, preferring the exact channel over its parent."""
-        from gateway.platforms.base import resolve_channel_prompt
+        from opencodon.frontends.gateway.platforms.base import resolve_channel_prompt
         return resolve_channel_prompt(self.config.extra, channel_id, parent_id)
 
     def _discord_require_mention(self) -> bool:
@@ -6348,7 +6348,7 @@ class DiscordAdapter(BasePlatformAdapter):
             return False
         # Discord thread names are budgeted in UTF-16 code units (emoji count
         # double) — truncate with the UTF-16 helpers, not code-point slices.
-        from gateway.platforms.base import utf16_len, _prefix_within_utf16_limit
+        from opencodon.frontends.gateway.platforms.base import utf16_len, _prefix_within_utf16_limit
         if utf16_len(cleaned) > 80:
             cleaned = _prefix_within_utf16_limit(cleaned, 77).rstrip() + "..."
 
@@ -6843,7 +6843,7 @@ class DiscordAdapter(BasePlatformAdapter):
                 channel = await self._client.fetch_channel(int(target_id))
 
             try:
-                from opencodon_cli.providers import get_label
+                from opencodon.frontends.cli.providers import get_label
                 provider_label = get_label(current_provider)
             except Exception:
                 provider_label = current_provider
@@ -7093,7 +7093,7 @@ class DiscordAdapter(BasePlatformAdapter):
                 f"Blocked unsafe attachment URL (SSRF protection): {att.url}"
             )
         import aiohttp
-        from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+        from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
         _proxy = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
         _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
         async with aiohttp.ClientSession(**_sess_kw) as session:
@@ -7614,7 +7614,7 @@ class DiscordAdapter(BasePlatformAdapter):
         the batch key would always land in ``agent:main`` even when the
         routed profile differs.
         """
-        from gateway.session import build_session_key
+        from opencodon.frontends.gateway.session import build_session_key
         return build_session_key(
             event.source,
             group_sessions_per_user=self.config.extra.get("group_sessions_per_user", True),
@@ -7769,7 +7769,7 @@ def _component_check_auth(
     # component buttons even without DISCORD_ALLOWED_USERS set.
     if uid:
         try:
-            from gateway.pairing import PairingStore
+            from opencodon.frontends.gateway.pairing import PairingStore
             store = PairingStore()
             if store.is_approved("discord", uid):
                 return True
@@ -7808,7 +7808,7 @@ def _resolve_exec_approval_admin_gate(
     if not require_admin:
         return (False, set())
     try:
-        from gateway.slash_access import _coerce_id_list
+        from opencodon.frontends.gateway.slash_access import _coerce_id_list
         admin_ids = set(_coerce_id_list(extra.get("allow_admin_from")))
     except Exception:
         admin_ids = set()
@@ -8344,7 +8344,7 @@ def _define_discord_view_classes() -> None:
 
         async def _expensive_warning_for(self, model_id: str):
             try:
-                from opencodon_cli.model_cost_guard import expensive_model_warning
+                from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -8484,7 +8484,7 @@ def _define_discord_view_classes() -> None:
             self._build_provider_select()
 
             try:
-                from opencodon_cli.providers import get_label
+                from opencodon.frontends.cli.providers import get_label
                 provider_label = get_label(self.current_provider)
             except Exception:
                 provider_label = self.current_provider
@@ -9025,7 +9025,7 @@ async def _standalone_send(
         return {"error": "Discord standalone send: DISCORD_BOT_TOKEN is not set"}
 
     try:
-        from gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
+        from opencodon.frontends.gateway.platforms.base import resolve_proxy_url, proxy_kwargs_for_aiohttp
         _proxy = resolve_proxy_url(platform_env_var="DISCORD_PROXY")
         _sess_kw, _req_kw = proxy_kwargs_for_aiohttp(_proxy)
         auth_headers = {"Authorization": f"Bot {token}"}
@@ -9044,7 +9044,7 @@ async def _standalone_send(
             # cache → GET /channels/{id} probe (with result memoized).
             _channel_type = None
             try:
-                from gateway.channel_directory import lookup_channel_type
+                from opencodon.frontends.gateway.channel_directory import lookup_channel_type
                 _channel_type = lookup_channel_type("discord", chat_id)
             except Exception:
                 pass
@@ -9273,7 +9273,7 @@ def interactive_setup() -> None:
     captures an allowlist, and offers to set a home channel.
     """
     from opencodon.config import get_env_value, save_env_value
-    from opencodon_cli.cli_output import (
+    from opencodon.frontends.cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -9504,7 +9504,7 @@ def _is_connected(config) -> bool:
     ``DISCORD_BOT_TOKEN`` env vars. Matches what the legacy
     ``_PLATFORMS["discord"]`` dispatch did before this migration.
     """
-    import opencodon_cli.gateway as gateway_mod
+    import opencodon.frontends.cli.gateway as gateway_mod
     return bool((gateway_mod.get_env_value("DISCORD_BOT_TOKEN") or "").strip())
 
 

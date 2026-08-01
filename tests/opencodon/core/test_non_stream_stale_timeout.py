@@ -183,7 +183,7 @@ providers:
     monkeypatch.delenv("OPENCODON_API_CALL_STALE_TIMEOUT", raising=False)
 
     import importlib
-    from opencodon_cli import timeouts as to_mod
+    from opencodon.frontends.cli import timeouts as to_mod
     importlib.reload(to_mod)
 
     agent = _make_agent(tmp_path)

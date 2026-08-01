@@ -1,25 +1,11 @@
-"""``opencodon insights`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.insights`` (restructure Phase 3a).
 
-Extracted from ``opencodon_cli/main.py:main()`` (god-file Phase 2 follow-up).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.insights as _real
 
-
-def build_insights_parser(subparsers, *, cmd_insights: Callable) -> None:
-    """Attach the ``insights`` subcommand to ``subparsers``."""
-    insights_parser = subparsers.add_parser(
-        "insights",
-        help="Show usage insights and analytics",
-        description="Analyze session history to show token usage, costs, tool patterns, and activity trends",
-    )
-    insights_parser.add_argument(
-        "--days", type=int, default=30, help="Number of days to analyze (default: 30)"
-    )
-    insights_parser.add_argument(
-        "--source", help="Filter by platform (cli, telegram, discord, etc.)"
-    )
-    insights_parser.set_defaults(func=cmd_insights)
+sys.modules[__name__] = _real

@@ -1,28 +1,11 @@
-"""``opencodon dump`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.dump`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.dump as _real
 
-
-def build_dump_parser(subparsers, *, cmd_dump: Callable) -> None:
-    """Attach the ``dump`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # dump command
-    # =========================================================================
-    dump_parser = subparsers.add_parser(
-        "dump",
-        help="Dump setup summary for support/debugging",
-        description="Output a compact, plain-text summary of your opencodon setup "
-        "that can be copy-pasted into Discord/GitHub for support context",
-    )
-    dump_parser.add_argument(
-        "--show-keys",
-        action="store_true",
-        help="Show redacted API key prefixes (first/last 4 chars) instead of just set/not set",
-    )
-    dump_parser.set_defaults(func=cmd_dump)
+sys.modules[__name__] = _real

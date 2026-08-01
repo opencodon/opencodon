@@ -1,29 +1,11 @@
-"""Shared parser helpers used across multiple CLI subcommand builders.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands._shared`` (restructure Phase 3a).
 
-These were module-level helpers in ``opencodon_cli/main.py``. They are pulled
-into a neutral module so both ``main.py`` and every
-``opencodon_cli/subcommands/<group>.py`` builder can import them without an
-import cycle. ``main.py`` re-exports them for backwards compatibility, so
-existing references keep working.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-import argparse
+import opencodon.frontends.cli.subcommands._shared as _real
 
-
-def add_accept_hooks_flag(parser: argparse.ArgumentParser) -> None:
-    """Attach the ``--accept-hooks`` flag.
-
-    Shared across every agent subparser so the flag works regardless of CLI
-    position.
-    """
-    parser.add_argument(
-        "--accept-hooks",
-        action="store_true",
-        default=argparse.SUPPRESS,
-        help=(
-            "Auto-approve unseen shell hooks without a TTY prompt "
-            "(equivalent to OPENCODON_ACCEPT_HOOKS=1 / hooks_auto_accept: true)."
-        ),
-    )
+sys.modules[__name__] = _real

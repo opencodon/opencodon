@@ -593,7 +593,7 @@ def _resolve_active_context_length() -> int:
         api_key = ""
         if provider:
             try:
-                from opencodon_cli.runtime_provider import resolve_runtime_provider
+                from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
                 rt = resolve_runtime_provider(
                     requested=provider, target_model=model_id
                 ) or {}
@@ -1239,7 +1239,7 @@ def handle_function_call(
         # is bound via ContextVar only for ACP sessions, so CLI/gateway paths
         # are unaffected when it is unset.
         try:
-            from acp_adapter.edit_approval import maybe_require_edit_approval
+            from opencodon.frontends.acp.edit_approval import maybe_require_edit_approval
 
             edit_block_message = maybe_require_edit_approval(function_name, function_args)
             if edit_block_message is not None:

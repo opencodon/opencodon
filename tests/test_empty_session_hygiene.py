@@ -109,7 +109,7 @@ class TestCLIDiscardSessionIfEmpty:
     """Wiring tests for OpencodonCLI._discard_session_if_empty."""
 
     def _make_cli(self, db):
-        from cli import OpencodonCLI
+        from opencodon.frontends.cli.shell import OpencodonCLI
 
         cli = OpencodonCLI.__new__(OpencodonCLI)
         cli._session_db = db

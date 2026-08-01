@@ -17,7 +17,7 @@ def _make_voice_cli(**overrides):
     needed.  Only the voice state attributes (from __init__ lines 3749-3758)
     are populated.
     """
-    from cli import OpencodonCLI
+    from opencodon.frontends.cli.shell import OpencodonCLI
 
     cli = OpencodonCLI.__new__(OpencodonCLI)
     cli._voice_lock = threading.Lock()
@@ -522,7 +522,7 @@ class TestDisableVoiceModeStopsTTS:
     def test_disable_voice_mode_calls_stop_playback(self):
         """Source check: _disable_voice_mode must call stop_playback()."""
         import inspect
-        from cli import OpencodonCLI
+        from opencodon.frontends.cli.shell import OpencodonCLI
 
         source = inspect.getsource(OpencodonCLI._disable_voice_mode)
         assert "stop_playback" in source, (

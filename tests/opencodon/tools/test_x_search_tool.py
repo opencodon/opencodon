@@ -38,7 +38,7 @@ class _FakeResponse:
 
 def test_x_search_posts_responses_request(monkeypatch):
     from opencodon.tools.x_search_tool import x_search_tool
-    from opencodon_cli import __version__
+    from opencodon.frontends.cli import __version__
 
     captured = {}
 

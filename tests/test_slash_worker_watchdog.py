@@ -1,6 +1,6 @@
 import inspect
 
-from tui_gateway import slash_worker
+from opencodon.frontends.tui import slash_worker
 
 
 def test_is_orphaned_true_when_ppid_changes():

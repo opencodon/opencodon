@@ -115,7 +115,7 @@ def test_cli_memory_approve_without_live_agent_uses_fresh_store(opencodon_home, 
     import json
     from opencodon.tools.memory_tool import memory_tool, MemoryStore
     from opencodon.tools import write_approval as wa
-    from opencodon_cli.cli_commands_mixin import CLICommandsMixin
+    from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
     _set_approval("memory", True)
     staging = MemoryStore(); staging.load_from_disk()
@@ -242,14 +242,14 @@ def test_pending_store_roundtrip(opencodon_home):
 # ---------------------------------------------------------------------------
 
 def test_handle_pending_list_empty(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     out = handle_pending_subcommand(wa.MEMORY, ["pending"])
     assert "No pending memory" in out
 
 
 def test_handle_approve_all(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools.memory_tool import MemoryStore
     from opencodon.tools import write_approval as wa
     store = MemoryStore(); store.load_from_disk()
@@ -264,7 +264,7 @@ def test_handle_approve_all(opencodon_home):
 
 
 def test_handle_reject(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     rec = wa.stage_write("skills", {"action": "create", "name": "s"},
                          summary="create s", origin="background_review")
@@ -274,7 +274,7 @@ def test_handle_reject(opencodon_home):
 
 
 def test_handle_approval_on(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     captured = {}
     out = handle_pending_subcommand(
@@ -286,7 +286,7 @@ def test_handle_approval_on(opencodon_home):
 
 
 def test_handle_approval_off(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     captured = {}
     out = handle_pending_subcommand(
@@ -299,7 +299,7 @@ def test_handle_approval_off(opencodon_home):
 
 def test_handle_mode_alias_still_works(opencodon_home):
     # 'mode' is kept as a back-compat alias for 'approval'.
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     captured = {}
     out = handle_pending_subcommand(
@@ -311,7 +311,7 @@ def test_handle_mode_alias_still_works(opencodon_home):
 
 
 def test_handle_approval_invalid(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     out = handle_pending_subcommand(wa.MEMORY, ["approval", "bogus"],
                                     set_mode_fn=lambda enabled: None)
@@ -319,7 +319,7 @@ def test_handle_approval_invalid(opencodon_home):
 
 
 def test_handle_unknown_subcommand_returns_none(opencodon_home):
-    from opencodon_cli.write_approval_commands import handle_pending_subcommand
+    from opencodon.frontends.cli.write_approval_commands import handle_pending_subcommand
     from opencodon.tools import write_approval as wa
     # An unrecognized /skills subcommand (e.g. 'search') must return None so
     # the CLI falls through to the skills hub.

@@ -1,36 +1,11 @@
-"""``opencodon prompt-size`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.prompt_size`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.prompt_size as _real
 
-
-def build_prompt_size_parser(subparsers, *, cmd_prompt_size: Callable) -> None:
-    """Attach the ``prompt-size`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # prompt-size command
-    # =========================================================================
-    prompt_size_parser = subparsers.add_parser(
-        "prompt-size",
-        help="Show a byte breakdown of the system prompt + tool schemas",
-        description=(
-            "Report the fixed prompt budget for a fresh session: system "
-            "prompt total, skills index, memory, user profile, and tool-schema "
-            "JSON. Runs offline (no API call)."
-        ),
-    )
-    prompt_size_parser.add_argument(
-        "--platform",
-        default="cli",
-        help="Platform to simulate (cli, telegram, discord, ...). Default: cli",
-    )
-    prompt_size_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Emit the breakdown as JSON",
-    )
-    prompt_size_parser.set_defaults(func=cmd_prompt_size)
+sys.modules[__name__] = _real

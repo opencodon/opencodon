@@ -244,7 +244,7 @@ class TestGatewayCleanupWiring:
         import threading
         from unittest.mock import MagicMock, patch
 
-        from gateway.run import GatewayRunner
+        from opencodon.frontends.gateway.run import GatewayRunner
 
         runner = object.__new__(GatewayRunner)
         runner._running = True
@@ -282,8 +282,8 @@ class TestGatewayCleanupWiring:
 
         loop = asyncio.new_event_loop()
         try:
-            with patch("gateway.status.remove_pid_file"), \
-                 patch("gateway.status.write_runtime_status"), \
+            with patch("opencodon.frontends.gateway.status.remove_pid_file"), \
+                 patch("opencodon.frontends.gateway.status.write_runtime_status"), \
                  patch("opencodon.tools.terminal_tool.cleanup_all_environments"), \
                  patch("opencodon.tools.browser_tool.cleanup_all_browsers"):
                 loop.run_until_complete(GatewayRunner.stop(runner))
@@ -299,7 +299,7 @@ class TestGatewayCleanupWiring:
         import threading
         from unittest.mock import MagicMock
 
-        from gateway.run import GatewayRunner
+        from opencodon.frontends.gateway.run import GatewayRunner
 
         runner = object.__new__(GatewayRunner)
         runner._agent_cache_lock = threading.Lock()

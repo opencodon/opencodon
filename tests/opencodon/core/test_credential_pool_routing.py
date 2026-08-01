@@ -36,7 +36,7 @@ class TestCliTurnRoutePool:
             service_tier=None,
         )
 
-        from cli import OpencodonCLI
+        from opencodon.frontends.cli.shell import OpencodonCLI
         bound = OpencodonCLI._resolve_turn_agent_config.__get__(shell)
         route = bound("test message")
 
@@ -50,7 +50,7 @@ class TestCliTurnRoutePool:
 class TestGatewayTurnRoutePool:
     def test_resolve_turn_includes_pool(self):
         """Gateway's _resolve_turn_agent_config must pass credential_pool."""
-        from gateway.run import GatewayRunner
+        from opencodon.frontends.gateway.run import GatewayRunner
 
         fake_pool = MagicMock(name="FakePool")
         runner = SimpleNamespace(_service_tier=None)

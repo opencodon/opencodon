@@ -454,7 +454,7 @@ class ProcessRegistry:
             return False
         # ``os.kill(pid, 0)`` is NOT a no-op on Windows (bpo-14484) — use
         # the cross-platform existence check.
-        from gateway.status import _pid_exists
+        from opencodon.frontends.gateway.status import _pid_exists
         return _pid_exists(pid)
 
     @staticmethod
@@ -463,7 +463,7 @@ class ProcessRegistry:
         if not pid:
             return None
         try:
-            from gateway.status import get_process_start_time
+            from opencodon.frontends.gateway.status import get_process_start_time
             return get_process_start_time(pid)
         except Exception:
             return None

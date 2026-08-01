@@ -9,10 +9,10 @@ sys.modules.setdefault("firecrawl", types.SimpleNamespace(Firecrawl=object))
 sys.modules.setdefault("fal_client", types.SimpleNamespace())
 
 import opencodon.cron.scheduler as cron_scheduler
-import gateway.run as gateway_run
+import opencodon.frontends.gateway.run as gateway_run
 from opencodon.core import run_agent
-from gateway.config import Platform
-from gateway.session import SessionSource
+from opencodon.frontends.gateway.config import Platform
+from opencodon.frontends.gateway.session import SessionSource
 
 
 def _patch_agent_bootstrap(monkeypatch):
@@ -97,7 +97,7 @@ def test_cron_run_job_codex_path_handles_internal_401_refresh(monkeypatch):
     monkeypatch.setattr(run_agent, "OpenAI", _FakeOpenAI)
     monkeypatch.setattr(run_agent, "AIAgent", _Codex401ThenSuccessAgent)
     monkeypatch.setattr(
-        "opencodon_cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **kwargs: {
             "provider": "openai-codex",
             "api_mode": "codex_responses",
@@ -105,7 +105,7 @@ def test_cron_run_job_codex_path_handles_internal_401_refresh(monkeypatch):
             "api_key": "codex-token",
         },
     )
-    monkeypatch.setattr("opencodon_cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     _Codex401ThenSuccessAgent.refresh_attempts = 0
     _Codex401ThenSuccessAgent.last_init = {}

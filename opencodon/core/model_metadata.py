@@ -2125,7 +2125,7 @@ def get_model_context_length(
         try:
             from opencodon.config import load_config
             from opencodon.config.moa_config import resolve_moa_preset
-            from opencodon_cli.runtime_provider import resolve_runtime_provider
+            from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
 
             preset = resolve_moa_preset(load_config().get("moa") or {}, model)
             agg = preset.get("aggregator") or {}
@@ -2399,7 +2399,7 @@ def get_model_context_length(
     # returns the provider-enforced limit which is what users can actually use.
     if effective_provider in {"copilot", "copilot-acp", "github-copilot"}:
         try:
-            from opencodon_cli.models import get_copilot_model_context
+            from opencodon.frontends.cli.models import get_copilot_model_context
             ctx = get_copilot_model_context(model, api_key=api_key)
             if ctx:
                 return ctx

@@ -1,46 +1,11 @@
-"""``opencodon uninstall`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.uninstall`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.uninstall as _real
 
-
-def build_uninstall_parser(subparsers, *, cmd_uninstall: Callable) -> None:
-    """Attach the ``uninstall`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # uninstall command
-    # =========================================================================
-    uninstall_parser = subparsers.add_parser(
-        "uninstall",
-        help="Uninstall opencodon",
-        description="Remove opencodon from your system. Can keep configs/data for reinstall.",
-    )
-    uninstall_parser.add_argument(
-        "--full",
-        action="store_true",
-        help="Full uninstall - remove everything including configs and data",
-    )
-    uninstall_parser.add_argument(
-        "--gui",
-        action="store_true",
-        help="Uninstall only the desktop Chat GUI, leaving the agent intact",
-    )
-    uninstall_parser.add_argument(
-        "--gui-summary",
-        action="store_true",
-        help="Print a JSON summary of installed GUI/agent artifacts and exit "
-        "(used by the desktop app to gate uninstall options)",
-    )
-    uninstall_parser.add_argument(
-        "--yes", "-y", action="store_true", help="Skip confirmation prompts"
-    )
-    uninstall_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print what uninstall would remove without changing anything",
-    )
-    uninstall_parser.set_defaults(func=cmd_uninstall)
+sys.modules[__name__] = _real

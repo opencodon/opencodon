@@ -238,7 +238,7 @@ def test_update_from_response_forwards_canonical_cache_buckets():
 
 def test_discover_context_engines_includes_plugin_registered_engines(monkeypatch):
     """Plugin-registered context engines appear in the ``opencodon plugins`` picker."""
-    from opencodon_cli import plugins_cmd
+    from opencodon.frontends.cli import plugins_cmd
 
     fake_repo = lambda: [("compressor", "built-in", True)]
 
@@ -266,7 +266,7 @@ def test_discover_context_engines_includes_plugin_registered_engines(monkeypatch
 
 def test_discover_context_engines_dedupes_by_name(monkeypatch):
     """Repo-shipped engine wins when name collides with a plugin-registered one."""
-    from opencodon_cli import plugins_cmd
+    from opencodon.frontends.cli import plugins_cmd
 
     class FakePluginEngine:
         name = "compressor"  # same name as repo-shipped

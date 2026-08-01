@@ -5264,7 +5264,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
     raw_mcp_servers = config.get("mcp_servers")
     if isinstance(raw_mcp_servers, dict):
         try:
-            from opencodon_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+            from opencodon.frontends.cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
         except Exception:
             _validate_mcp_server_entry = None
         if _validate_mcp_server_entry:
@@ -5294,7 +5294,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
     # unknown name, so the agent quietly loses tools with no error. See #38798.
     try:
         from opencodon.toolsets import validate_toolset
-        from opencodon_cli.toolset_validation import validate_platform_toolsets
+        from opencodon.frontends.cli.toolset_validation import validate_platform_toolsets
 
         ts_warnings = validate_platform_toolsets(
             read_raw_config().get("platform_toolsets"), validate_toolset
@@ -5318,7 +5318,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
     if interactive and missing_env:
         # Interactive-only frontend dependency — deferred so the config core
         # stays importable without the CLI frontend.
-        from opencodon_cli.secret_prompt import masked_secret_prompt
+        from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
         print("\nLet's configure them now:\n")
         for var in missing_env:
@@ -6998,7 +6998,7 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
     # Route through the unified credential lifecycle so a rotation via the
     # secret-capture path also refreshes any config.yaml mirror of the old
     # value and lifts a prior env-source suppression (#62269 fix family).
-    from opencodon_cli.credential_lifecycle import save_provider_env_credential
+    from opencodon.frontends.cli.credential_lifecycle import save_provider_env_credential
 
     save_provider_env_credential(key, value)
     return {
@@ -7205,7 +7205,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from opencodon_cli.auth import get_anthropic_key
+    from opencodon.frontends.cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -7618,7 +7618,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     if _is_env_config_key(key):
         # Unified lifecycle: also rotates any config.yaml mirror of the old
         # value so a stale higher-precedence copy can't win (#62269).
-        from opencodon_cli.credential_lifecycle import save_provider_env_credential
+        from opencodon.frontends.cli.credential_lifecycle import save_provider_env_credential
 
         save_provider_env_credential(key.upper(), value)
         print(f"✓ Set {key} in {get_env_path()}")
@@ -7768,7 +7768,7 @@ def unset_config_value(key: str):
         # Unified lifecycle: prune env-seeded credential_pool entries and
         # model-cache rows too, so `opencodon config unset <KEY>` fully removes
         # the provider instead of leaving it resurrectable (#51071 family).
-        from opencodon_cli.credential_lifecycle import remove_provider_env_credential
+        from opencodon.frontends.cli.credential_lifecycle import remove_provider_env_credential
 
         if not remove_provider_env_credential(key.upper()).get("found"):
             print(f"Config key not set: {key}", file=sys.stderr)

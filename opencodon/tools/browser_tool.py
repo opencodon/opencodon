@@ -1729,7 +1729,7 @@ def _reap_orphaned_browser_sessions():
                 owner_pid = int(Path(owner_pid_file).read_text(encoding="utf-8").strip())
                 # ``os.kill(pid, 0)`` is NOT a no-op on Windows (bpo-14484).
                 # Use the cross-platform existence check.
-                from gateway.status import _pid_exists
+                from opencodon.frontends.gateway.status import _pid_exists
                 owner_alive = _pid_exists(owner_pid)
             except (ValueError, OSError):
                 owner_alive = None  # corrupt file — fall through
@@ -1759,7 +1759,7 @@ def _reap_orphaned_browser_sessions():
 
         # Check if the daemon is still alive. ``os.kill(pid, 0)`` on Windows
         # is NOT a no-op — use the handle-based existence check.
-        from gateway.status import _pid_exists
+        from opencodon.frontends.gateway.status import _pid_exists
         if not _pid_exists(daemon_pid):
             shutil.rmtree(socket_dir, ignore_errors=True)
             continue
@@ -2221,7 +2221,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     # WinError 193 "%1 is not a valid Win32 application". We must resolve to the
     # `.cmd` shim instead. `shutil.which` consults PATHEXT, so we delegate to it
     # with an explicit path so POSIX hosts still pick the extensionless shim.
-    repo_root = Path(__file__).parent.parent
+    repo_root = Path(__file__).resolve().parents[2]
     local_bin_dir = repo_root / "node_modules" / ".bin"
     if local_bin_dir.is_dir():
         local_which = shutil.which("agent-browser", path=str(local_bin_dir))
@@ -2250,7 +2250,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
 
     # Nothing found — try lazy installation before giving up.
     try:
-        from opencodon_cli.dep_ensure import ensure_dependency
+        from opencodon.frontends.cli.dep_ensure import ensure_dependency
         if ensure_dependency("browser"):
             candidates = [
                 shutil.which("agent-browser"),

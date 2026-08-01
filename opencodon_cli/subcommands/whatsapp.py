@@ -1,22 +1,11 @@
-"""``opencodon whatsapp`` subcommand parser.
+"""Compat shim — real module: ``opencodon.frontends.cli.subcommands.whatsapp`` (restructure Phase 3a).
 
-Extracted verbatim from ``opencodon_cli/main.py:main()`` (god-file Phase 2).
-Handler injected to avoid importing ``main``.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-from __future__ import annotations
+import sys
 
-from typing import Callable
+import opencodon.frontends.cli.subcommands.whatsapp as _real
 
-
-def build_whatsapp_parser(subparsers, *, cmd_whatsapp: Callable) -> None:
-    """Attach the ``whatsapp`` subcommand to ``subparsers``."""
-    # =========================================================================
-    # whatsapp command
-    # =========================================================================
-    whatsapp_parser = subparsers.add_parser(
-        "whatsapp",
-        help="Set up WhatsApp integration",
-        description="Configure WhatsApp and pair via QR code",
-    )
-    whatsapp_parser.set_defaults(func=cmd_whatsapp)
+sys.modules[__name__] = _real

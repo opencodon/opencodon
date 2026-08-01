@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from opencodon_cli import env_loader  # noqa: E402
+from opencodon.frontends.cli import env_loader  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
