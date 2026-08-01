@@ -54,9 +54,7 @@ def _make_adapter(**overrides):
     # Cloud-API-specific attributes
     adapter._phone_number_id = overrides.pop("phone_number_id", "1234567890")
     adapter._access_token = overrides.pop("access_token", "test-token")
-    adapter._app_id = overrides.pop("app_id", "")
     adapter._app_secret = overrides.pop("app_secret", "")
-    adapter._waba_id = overrides.pop("waba_id", "")
     adapter._verify_token = overrides.pop("verify_token", "")
     adapter._webhook_host = "127.0.0.1"
     adapter._webhook_port = 8090

@@ -254,16 +254,6 @@ def _getenv_str(name: str, default: str = "") -> str:
     return val if val is not None else default
 
 
-def _getenv_int(name: str, default: int) -> int:
-    raw = _getenv(name, None)
-    if raw is None:
-        return default
-    try:
-        return int(str(raw).strip(), 10)
-    except (TypeError, ValueError):
-        return default
-
-
 # Module-level cache for bundled platform plugin names (lives outside the
 # enum so it doesn't become an accidental enum member).
 _Platform__bundled_plugin_names: Optional[set] = None
@@ -1605,7 +1595,6 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
 def _apply_env_overrides(config: GatewayConfig) -> None:
     """Apply environment variable overrides to config."""
     getenv = _getenv_str
-    getenv_int = _getenv_int
 
     def _enable_from_env(platform: Platform) -> PlatformConfig:
         if platform not in config.platforms:

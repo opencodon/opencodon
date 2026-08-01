@@ -33,7 +33,7 @@ from gateway.whatsapp_identity import (
     expand_whatsapp_aliases,
     normalize_whatsapp_identifier,
 )
-from opencodon_constants import get_opencodon_dir, get_opencodon_home
+from opencodon_constants import get_opencodon_dir
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)

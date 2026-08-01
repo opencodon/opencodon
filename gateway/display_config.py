@@ -156,9 +156,6 @@ _PLATFORM_DEFAULTS: dict[str, dict[str, Any]] = {
     "api_server":      {**_TIER_HIGH, "tool_preview_length": 0},
 }
 
-# Canonical set of per-platform overrideable keys (for validation).
-OVERRIDEABLE_KEYS = frozenset(_GLOBAL_DEFAULTS.keys())
-
 
 def resolve_display_setting(
     user_config: dict,
