@@ -1,4 +1,4 @@
-"""Tests for the top-level `./opencodon` launcher script."""
+"""Tests for the `bin/opencodon` launcher script."""
 
 import runpy
 import sys
@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
-    """`./opencodon` should use `opencodon_cli.main`, not the legacy Fire wrapper."""
-    launcher_path = Path(__file__).resolve().parents[2] / "opencodon"
+    """`bin/opencodon` should use `opencodon_cli.main`, not the legacy Fire wrapper."""
+    launcher_path = Path(__file__).resolve().parents[2] / "bin" / "opencodon"
     called = []
 
     fake_main_module = types.ModuleType("opencodon_cli.main")

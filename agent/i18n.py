@@ -159,7 +159,7 @@ def _config_language_cached() -> str | None:
     (e.g. after the setup wizard).
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         lang = (cfg.get("display") or {}).get("language")
         if lang:
@@ -172,7 +172,7 @@ def _config_language_cached() -> str | None:
 def reset_language_cache() -> None:
     """Invalidate cached language resolution and catalogs.
 
-    Call after :func:`opencodon_cli.config.save_config` if a running process
+    Call after :func:`opencodon.config.save_config` if a running process
     needs to pick up a changed ``display.language`` without restart.
     """
     _config_language_cached.cache_clear()

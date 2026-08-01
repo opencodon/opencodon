@@ -242,7 +242,7 @@ def test_resolve_discovery_timeout_explicit_wins(monkeypatch):
 
 def test_resolve_discovery_timeout_reads_config(monkeypatch):
     from opencodon_cli import mcp_startup
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     monkeypatch.setattr(cfg, "load_config", lambda: {"mcp_discovery_timeout": 8.0})
 
@@ -251,7 +251,7 @@ def test_resolve_discovery_timeout_reads_config(monkeypatch):
 
 def test_resolve_discovery_timeout_falls_back_on_bad_value(monkeypatch):
     from opencodon_cli import mcp_startup
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     # Non-positive / unparsable → DEFAULT_CONFIG value, never hang.
     default = float(cfg.DEFAULT_CONFIG.get("mcp_discovery_timeout", 1.5))
@@ -290,7 +290,7 @@ def test_wait_returns_instantly_when_no_discovery_thread(monkeypatch):
     from opencodon_cli import mcp_startup
 
     monkeypatch.setattr(mcp_startup, "_mcp_discovery_thread", None)
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
     monkeypatch.setattr(cfg, "load_config", lambda: {"mcp_discovery_timeout": 999.0})
 
     t0 = time.time()

@@ -28,7 +28,7 @@ def _enable_traces(tmp_path, monkeypatch):
     opencodon_home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-    # save_moa_turn reads config via opencodon_cli.config.load_config; stub it to
+    # save_moa_turn reads config via opencodon.config.load_config; stub it to
     # return traces-on so the test doesn't depend on a real config file.
     import agent.moa_trace as moa_trace
 
@@ -40,7 +40,7 @@ def _enable_traces(tmp_path, monkeypatch):
     )
     # load_config is imported lazily inside _traces_enabled_and_dir; patch the
     # source module attribute it imports from as well.
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     monkeypatch.setattr(
         cfg, "load_config", lambda: {"moa": {"save_traces": True}}, raising=False

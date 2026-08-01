@@ -40,7 +40,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
 
-from opencodon_cli.config import (
+from opencodon.config import (
     get_opencodon_home,
     get_config_path,
     read_raw_config,
@@ -466,7 +466,7 @@ def get_anthropic_key() -> str:
 
         ANTHROPIC_API_KEY -> ANTHROPIC_TOKEN -> CLAUDE_CODE_OAUTH_TOKEN
     """
-    from opencodon_cli.config import get_env_value_prefer_dotenv
+    from opencodon.config import get_env_value_prefer_dotenv
 
     for var in PROVIDER_REGISTRY["anthropic"].api_key_env_vars:
         value = get_env_value_prefer_dotenv(var) or ""
@@ -555,7 +555,7 @@ def _resolve_api_key_provider_secret(
             pass
         return "", ""
 
-    from opencodon_cli.config import get_env_value_prefer_dotenv
+    from opencodon.config import get_env_value_prefer_dotenv
     for env_var in pconfig.api_key_env_vars:
         # Prefer ~/.opencodon/.env over os.environ so a deliberate key rotation
         # in the user's .env file isn't shadowed by a stale shell export
@@ -1648,7 +1648,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
 
     # 2. Check config.yaml model.provider
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -1770,7 +1770,7 @@ def _get_config_hint_for_unknown_provider(provider_name: str) -> str:
     and returns a human-readable diagnostic, or empty string if nothing found.
     """
     try:
-        from opencodon_cli.config import validate_config_structure
+        from opencodon.config import validate_config_structure
         issues = validate_config_structure()
         if not issues:
             return ""
@@ -1889,7 +1889,7 @@ def resolve_provider(
     # ("auto")) and any future bypass of that stage.
     _model_cfg: Any = None
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         _model_cfg = (load_config() or {}).get("model")
         if isinstance(_model_cfg, dict):
@@ -4340,7 +4340,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
     """
     info: Dict[str, Any] = {"provider": "azure-foundry"}
     try:
-        from opencodon_cli.config import load_config, get_env_value_prefer_dotenv
+        from opencodon.config import load_config, get_env_value_prefer_dotenv
         cfg = load_config()
     except Exception:
         cfg = {}
@@ -4563,7 +4563,7 @@ def _update_config_for_provider(
     # Clear stale endpoint credentials left over from a previous custom provider.
     # Built-in providers resolve credentials from env/auth state, not inline
     # model.api_key.
-    from opencodon_cli.config import clear_model_endpoint_credentials
+    from opencodon.config import clear_model_endpoint_credentials
 
     clear_model_endpoint_credentials(model_cfg)
 
@@ -4855,7 +4855,7 @@ def _prompt_model_selection(
 
     # Fallback: numbered list
     from opencodon_cli.curses_ui import format_radio_item_ansi
-    from opencodon_cli.colors import Colors, color
+    from opencodon.common.colors import Colors, color
 
     for line in menu_title.splitlines():
         if "★" in line:
@@ -4905,7 +4905,7 @@ def _save_model_choice(model_id: str) -> None:
     The model is stored in config.yaml only — NOT in .env.  This avoids
     conflicts in multi-agent setups where env vars would stomp each other.
     """
-    from opencodon_cli.config import save_config, load_config
+    from opencodon.config import save_config, load_config
 
     config = load_config()
     # Always use dict format so provider/base_url can be stored alongside

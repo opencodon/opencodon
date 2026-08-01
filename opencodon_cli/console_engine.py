@@ -1252,14 +1252,14 @@ def _sessions_stats(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
 
 def _config_show(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config show")
-    from opencodon_cli.config import show_config
+    from opencodon.config import show_config
 
     return _capture_output(show_config)
 
 
 def _config_path(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config path")
-    from opencodon_cli.config import get_config_path
+    from opencodon.config import get_config_path
 
     return str(get_config_path())
 
@@ -1269,7 +1269,7 @@ def _config_set(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
         raise ConsoleCommandError("Usage: config set <key> <value>")
     key = args[0]
     value = " ".join(args[1:])
-    from opencodon_cli.config import set_config_value
+    from opencodon.config import set_config_value
 
     return _capture_output(lambda: set_config_value(key, value))
 
@@ -1278,7 +1278,7 @@ def _config_reconcile(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config reconcile")
 
     def _run() -> None:
-        from opencodon_cli.config import reconcile_config
+        from opencodon.config import reconcile_config
 
         results = reconcile_config(interactive=False, quiet=False)
         if results.get("env_added") or results.get("config_added"):

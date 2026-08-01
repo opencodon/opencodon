@@ -11,7 +11,7 @@ run silently.
 from __future__ import annotations
 
 
-from opencodon_cli.config import DEFAULT_CONFIG
+from opencodon.config import DEFAULT_CONFIG
 
 
 class TestMcpReloadConfirmDefault:
@@ -54,7 +54,7 @@ class TestUserConfigMerge:
         monkeypatch.setenv("OPENCODON_HOME", str(home))
         # Force a fresh reimport of config.py so the OPENCODON_HOME is honored.
         import importlib
-        import opencodon_cli.config as cfg_mod
+        import opencodon.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()
@@ -83,7 +83,7 @@ class TestUserConfigMerge:
 
         monkeypatch.setenv("OPENCODON_HOME", str(home))
         import importlib
-        import opencodon_cli.config as cfg_mod
+        import opencodon.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()

@@ -15,7 +15,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from opencodon_cli.config import (
+from opencodon.config import (
     cfg_get,
     load_config,
     save_config,
@@ -23,7 +23,7 @@ from opencodon_cli.config import (
     save_env_value,
     get_opencodon_home,  # noqa: F401 — used by test mocks
 )
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 from opencodon_constants import display_opencodon_home
 from opencodon_cli.mcp_security import validate_mcp_server_entry
 from tools.mcp_tool import _ENV_VAR_PATTERN, _env_ref_name
@@ -268,7 +268,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
 
     if current_secret_scope() is None:
         try:
-            from opencodon_cli.env_loader import load_opencodon_dotenv
+            from opencodon.config.env_loader import load_opencodon_dotenv
             load_opencodon_dotenv()
         except Exception:  # pragma: no cover — defensive
             pass

@@ -67,7 +67,7 @@ def _resolve_review_runtime(agent: Any) -> Dict[str, Any]:
         "routed": False,
     }
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
     except Exception:
         return parent
@@ -803,7 +803,7 @@ def _run_review_in_thread(
             review_agent.compression_enabled = False
 
             from model_tools import get_tool_definitions
-            from opencodon_cli.plugins import (
+            from opencodon.plugins_runtime import (
                 set_thread_tool_whitelist,
                 clear_thread_tool_whitelist,
             )

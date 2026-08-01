@@ -85,7 +85,7 @@ def test_console_ws_runs_read_only_command(console_client):
 
 
 def test_console_ws_confirmed_command_executes_after_confirmation(console_client):
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     with console_client.websocket_connect(_url()) as conn:
         assert conn.receive_json()["type"] == "ready"

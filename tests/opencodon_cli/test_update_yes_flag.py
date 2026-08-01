@@ -50,8 +50,8 @@ def _make_run_side_effect(
 class TestUpdateYesConfigReconcile:
     """--yes auto-answers the config prompt and skips API-key prompts."""
 
-    @patch("opencodon_cli.config.reconcile_config")
-    @patch("opencodon_cli.config.get_missing_env_vars", return_value=["NEW_KEY"])
+    @patch("opencodon.config.reconcile_config")
+    @patch("opencodon.config.get_missing_env_vars", return_value=["NEW_KEY"])
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
     def test_yes_auto_migrates_without_input(
@@ -85,8 +85,8 @@ class TestUpdateYesConfigReconcile:
         # The "Would you like to configure them now?" prompt text never appears.
         assert "Would you like to configure them now?" not in out
 
-    @patch("opencodon_cli.config.reconcile_config")
-    @patch("opencodon_cli.config.get_missing_env_vars", return_value=["NEW_KEY"])
+    @patch("opencodon.config.reconcile_config")
+    @patch("opencodon.config.get_missing_env_vars", return_value=["NEW_KEY"])
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
     def test_no_yes_flag_still_prompts_in_tty(

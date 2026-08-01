@@ -23,7 +23,7 @@ These tests pin that precedence at every layer that makes the decision:
     ``cmd_chat`` and the Termux fast-TUI path.
   * ``_wants_tui_early(argv)``  — the dependency-free early resolver used by
     mouse-residue suppression and the Termux fast paths, before argparse and
-    ``opencodon_cli.config`` are importable.
+    ``opencodon.config`` are importable.
   * the argument parser   — both ``--cli`` and ``--tui`` parse at the top
     level and under the ``chat`` subcommand and are relaunch-inherited.
 """
@@ -63,7 +63,7 @@ def _fake_tty(monkeypatch, interactive: bool):
 
 
 def _patch_config(monkeypatch, interface):
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
 
     monkeypatch.setattr(
         cfg, "load_config", lambda: {"display": {"interface": interface}}
@@ -109,7 +109,7 @@ class TestResolveUseTui:
         assert m._resolve_use_tui(_args()) is True
 
     def test_load_config_failure_falls_back_to_cli(self, monkeypatch):
-        import opencodon_cli.config as cfg
+        import opencodon.config as cfg
 
         def boom():
             raise RuntimeError("config unreadable")
@@ -240,6 +240,6 @@ class TestParserFlags:
 # config default — shipped default preserves classic behavior
 # ---------------------------------------------------------------------------
 def test_default_config_interface_is_cli():
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG["display"]["interface"] == "cli"

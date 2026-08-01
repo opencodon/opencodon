@@ -2087,9 +2087,9 @@ class TestRunPreUpdateBackup:
         monkeypatch.setenv("OPENCODON_HOME", str(root))
         # Make Path.home() point at tmp_path for anything that uses it
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        # Bust caches for opencodon_cli.config + opencodon_constants so they pick up OPENCODON_HOME
+        # Bust caches for opencodon.config + opencodon_constants so they pick up OPENCODON_HOME
         for mod in list(__import__("sys").modules.keys()):
-            if mod.startswith("opencodon_cli.config") or mod == "opencodon_constants":
+            if mod.startswith("opencodon.config") or mod == "opencodon_constants":
                 del __import__("sys").modules[mod]
         return root
 
@@ -2101,7 +2101,7 @@ class TestRunPreUpdateBackup:
         }))
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("opencodon_cli.config"):
+            if mod.startswith("opencodon.config"):
                 del _sys.modules[mod]
 
     @staticmethod

@@ -106,7 +106,7 @@ def _restore_auth_active_provider(value: Any) -> None:
 
 def cmd_fallback_list(args) -> None:  # noqa: ARG001
     """Print the current fallback chain."""
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     config = load_config()
     chain = _read_chain(config)
@@ -147,7 +147,7 @@ def _describe_primary(config: Dict[str, Any]) -> Optional[str]:
 def cmd_fallback_add(args) -> None:
     """Launch the same picker as `opencodon model`, then append the selection to the chain."""
     from opencodon_cli.main import _require_tty, select_provider_and_model
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     _require_tty("fallback add")
 
@@ -226,7 +226,7 @@ def cmd_fallback_add(args) -> None:
 
 def _restore_model_cfg(model_before: Any) -> None:
     """Restore ``config["model"]`` to a previously-captured snapshot."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     if model_before is None:
@@ -238,7 +238,7 @@ def _restore_model_cfg(model_before: Any) -> None:
 
 def cmd_fallback_remove(args) -> None:  # noqa: ARG001
     """Pick an entry from the chain and remove it."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     config = load_config()
     chain = _read_chain(config)
@@ -278,7 +278,7 @@ def cmd_fallback_remove(args) -> None:  # noqa: ARG001
 
 def cmd_fallback_clear(args) -> None:  # noqa: ARG001
     """Remove all fallback entries (with confirmation)."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     config = load_config()
     chain = _read_chain(config)

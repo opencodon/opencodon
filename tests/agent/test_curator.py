@@ -1219,7 +1219,7 @@ def test_curator_slot_is_canonical_aux_task():
     (test_aux_config.py) for the main tasks — this test pins `curator`
     specifically so the unification doesn't silently regress.
     """
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
     from opencodon_cli.main import _AUX_TASKS
     from opencodon_cli.web_server import _AUX_TASK_SLOTS
 
@@ -1329,7 +1329,7 @@ def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatc
             pass
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
@@ -1352,7 +1352,7 @@ def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch)
     captured = {}
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
@@ -1393,7 +1393,7 @@ def test_review_fork_merges_slot_extra_body_over_runtime(curator_env, monkeypatc
     captured = {}
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {
             "auxiliary": {
                 "curator": {

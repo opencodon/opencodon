@@ -13,7 +13,7 @@ import pytest
 import yaml
 
 from opencodon_cli.dashboard_auth import clear_providers, list_providers
-from opencodon_cli.plugins import PluginManager, discover_plugins
+from opencodon.plugins_runtime import PluginManager, discover_plugins
 from opencodon_cli.plugins_cmd import ensure_basic_auth_plugin_enabled_in_config
 import plugins.dashboard_auth.basic as basic_plugin
 
@@ -70,7 +70,7 @@ class TestBasicProviderLoadsAfterUnblock:
             },
         )
 
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             discover_plugins(force=True)
@@ -96,7 +96,7 @@ class TestBasicProviderLoadsAfterUnblock:
         assert ensure_basic_auth_plugin_enabled_in_config(cfg) is True
         _write_config(opencodon_home, cfg)
 
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             discover_plugins(force=True)

@@ -639,7 +639,7 @@ class TestPromptPluginEnvVars:
         from unittest.mock import MagicMock, patch
 
         console = MagicMock()
-        with patch("opencodon_cli.config.get_env_value", return_value="already-set"):
+        with patch("opencodon.config.get_env_value", return_value="already-set"):
             _prompt_plugin_env_vars({"requires_env": ["MY_KEY"]}, console)
         # No prompt should appear — all vars are set
         console.print.assert_not_called()
@@ -654,9 +654,9 @@ class TestPromptPluginEnvVars:
             "requires_env": ["MY_API_KEY"],
         }
 
-        with patch("opencodon_cli.config.get_env_value", return_value=None), \
+        with patch("opencodon.config.get_env_value", return_value=None), \
              patch("builtins.input", return_value="sk-test-123"), \
-             patch("opencodon_cli.config.save_env_value") as mock_save:
+             patch("opencodon.config.save_env_value") as mock_save:
             _prompt_plugin_env_vars(manifest, console)
 
         mock_save.assert_called_once_with("MY_API_KEY", "sk-test-123")
@@ -678,9 +678,9 @@ class TestPromptPluginEnvVars:
             ],
         }
 
-        with patch("opencodon_cli.config.get_env_value", return_value=None), \
+        with patch("opencodon.config.get_env_value", return_value=None), \
              patch("builtins.input", return_value="pk-lf-123"), \
-             patch("opencodon_cli.config.save_env_value") as mock_save:
+             patch("opencodon.config.save_env_value") as mock_save:
             _prompt_plugin_env_vars(manifest, console)
 
         mock_save.assert_called_once_with("LANGFUSE_PUBLIC_KEY", "pk-lf-123")
@@ -698,9 +698,9 @@ class TestPromptPluginEnvVars:
             "requires_env": [{"name": "SECRET_KEY", "secret": True}],
         }
 
-        with patch("opencodon_cli.config.get_env_value", return_value=None), \
+        with patch("opencodon.config.get_env_value", return_value=None), \
              patch("opencodon_cli.plugins_cmd.masked_secret_prompt", return_value="s3cret") as mock_prompt, \
-             patch("opencodon_cli.config.save_env_value"):
+             patch("opencodon.config.save_env_value"):
             _prompt_plugin_env_vars(manifest, console)
 
         mock_prompt.assert_called_once()
@@ -712,9 +712,9 @@ class TestPromptPluginEnvVars:
         console = MagicMock()
         manifest = {"name": "test", "requires_env": ["OPTIONAL_VAR"]}
 
-        with patch("opencodon_cli.config.get_env_value", return_value=None), \
+        with patch("opencodon.config.get_env_value", return_value=None), \
              patch("builtins.input", return_value=""), \
-             patch("opencodon_cli.config.save_env_value") as mock_save:
+             patch("opencodon.config.save_env_value") as mock_save:
             _prompt_plugin_env_vars(manifest, console)
 
         mock_save.assert_not_called()
@@ -726,9 +726,9 @@ class TestPromptPluginEnvVars:
         console = MagicMock()
         manifest = {"name": "test", "requires_env": ["KEY1", "KEY2"]}
 
-        with patch("opencodon_cli.config.get_env_value", return_value=None), \
+        with patch("opencodon.config.get_env_value", return_value=None), \
              patch("builtins.input", side_effect=KeyboardInterrupt), \
-             patch("opencodon_cli.config.save_env_value") as mock_save:
+             patch("opencodon.config.save_env_value") as mock_save:
             _prompt_plugin_env_vars(manifest, console)
 
         # Should not crash, and not save anything

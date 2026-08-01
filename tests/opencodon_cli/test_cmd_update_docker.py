@@ -27,8 +27,8 @@ from opencodon_cli.main import _cmd_update_check, cmd_update
 # ---------- cmd_update (apply path) ----------
 
 
-@patch("opencodon_cli.config.is_managed", return_value=False)
-@patch("opencodon_cli.config.detect_install_method", return_value="docker")
+@patch("opencodon.config.is_managed", return_value=False)
+@patch("opencodon.config.detect_install_method", return_value="docker")
 @patch("subprocess.run")
 def test_cmd_update_in_docker_prints_guidance_and_exits(
     mock_run, _mock_method, _mock_managed, capsys
@@ -49,8 +49,8 @@ def test_cmd_update_in_docker_prints_guidance_and_exits(
     assert git_calls == [], f"expected no git calls, got: {git_calls}"
 
 
-@patch("opencodon_cli.config.is_managed", return_value=False)
-@patch("opencodon_cli.config.detect_install_method", return_value="docker")
+@patch("opencodon.config.is_managed", return_value=False)
+@patch("opencodon.config.detect_install_method", return_value="docker")
 @patch("subprocess.run")
 def test_cmd_update_check_in_docker_prints_guidance_and_exits(
     mock_run, _mock_method, _mock_managed, capsys
@@ -68,8 +68,8 @@ def test_cmd_update_check_in_docker_prints_guidance_and_exits(
     assert git_calls == [], f"expected no git calls, got: {git_calls}"
 
 
-@patch("opencodon_cli.config.is_managed", return_value=False)
-@patch("opencodon_cli.config.detect_install_method", return_value="docker")
+@patch("opencodon.config.is_managed", return_value=False)
+@patch("opencodon.config.detect_install_method", return_value="docker")
 @patch("subprocess.run")
 def test_cmd_update_in_docker_ignores_yes_and_force(
     mock_run, _mock_method, _mock_managed, capsys
@@ -88,8 +88,8 @@ def test_cmd_update_in_docker_ignores_yes_and_force(
     assert git_calls == []
 
 
-@patch("opencodon_cli.config.is_managed", return_value=False)
-@patch("opencodon_cli.config.detect_install_method", return_value="nix")
+@patch("opencodon.config.is_managed", return_value=False)
+@patch("opencodon.config.detect_install_method", return_value="nix")
 @patch("opencodon_cli.main._cmd_update_impl")
 def test_cmd_update_on_nix_install_prints_guidance_without_running_local_updater(
     mock_update_impl, _mock_method, _mock_managed, capsys
@@ -106,7 +106,7 @@ def test_cmd_update_on_nix_install_prints_guidance_without_running_local_updater
 # ---------- _cmd_update_check (check path, direct entry) ----------
 
 
-@patch("opencodon_cli.config.detect_install_method", return_value="docker")
+@patch("opencodon.config.detect_install_method", return_value="docker")
 @patch("subprocess.run")
 def test_cmd_update_check_direct_in_docker(mock_run, _mock_method, capsys):
     """Calling ``_cmd_update_check`` directly (no apply path) also bails."""
@@ -119,7 +119,7 @@ def test_cmd_update_check_direct_in_docker(mock_run, _mock_method, capsys):
     assert git_calls == []
 
 
-@patch("opencodon_cli.config.detect_install_method", return_value="nix")
+@patch("opencodon.config.detect_install_method", return_value="nix")
 @patch("subprocess.run")
 def test_cmd_update_check_direct_on_nix_install_prints_guidance_and_exits(
     mock_run, _mock_method, capsys
@@ -136,8 +136,8 @@ def test_cmd_update_check_direct_on_nix_install_prints_guidance_and_exits(
 # ---------- Non-Docker installs unaffected ----------
 
 
-@patch("opencodon_cli.config.is_managed", return_value=False)
-@patch("opencodon_cli.config.detect_install_method", return_value="git")
+@patch("opencodon.config.is_managed", return_value=False)
+@patch("opencodon.config.detect_install_method", return_value="git")
 @patch(
     "subprocess.run",
     return_value=SimpleNamespace(returncode=0, stdout="0\n", stderr=""),
@@ -182,7 +182,7 @@ def test_format_docker_update_message_contents():
     disappear in a copy edit, the message has lost its value.  Specific
     wording around them is free to evolve (we don't assert full text).
     """
-    from opencodon_cli.config import format_docker_update_message
+    from opencodon.config import format_docker_update_message
 
     msg = format_docker_update_message()
 

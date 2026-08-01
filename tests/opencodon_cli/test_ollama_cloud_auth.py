@@ -88,7 +88,7 @@ class TestDirectAliases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -226,7 +226,7 @@ class TestLoadDirectAliasesEdgeCases:
         """Empty model_aliases dict returns only builtins (if any)."""
         mock_config = {"model_aliases": {}}
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -238,7 +238,7 @@ class TestLoadDirectAliasesEdgeCases:
         """Non-dict model_aliases value is gracefully ignored."""
         mock_config = {"model_aliases": "bad-string-value"}
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -250,7 +250,7 @@ class TestLoadDirectAliasesEdgeCases:
         """model_aliases: null in config is handled gracefully."""
         mock_config = {"model_aliases": None}
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -273,7 +273,7 @@ class TestLoadDirectAliasesEdgeCases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -293,7 +293,7 @@ class TestLoadDirectAliasesEdgeCases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -307,7 +307,7 @@ class TestLoadDirectAliasesEdgeCases:
     def test_load_config_exception_returns_builtins(self, monkeypatch):
         """If load_config raises, _load_direct_aliases returns builtins only."""
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: (_ for _ in ()).throw(RuntimeError("config broken")),
         )
 
@@ -326,7 +326,7 @@ class TestLoadDirectAliasesEdgeCases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -344,7 +344,7 @@ class TestLoadDirectAliasesEdgeCases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
 
@@ -371,7 +371,7 @@ class TestEnsureDirectAliases:
             }
         }
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: mock_config,
         )
         monkeypatch.setattr(ms, "DIRECT_ALIASES", {})

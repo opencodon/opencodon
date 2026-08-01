@@ -281,7 +281,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
         }))
 
         # Re-import with the new OPENCODON_HOME so config cache is fresh.
-        import opencodon_cli.config as _cfg_mod
+        import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
         import opencodon_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
@@ -317,7 +317,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
             "model": {"provider": "opencode-go", "default": "minimax-m2.7"},
         }))
 
-        import opencodon_cli.config as _cfg_mod
+        import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
         import opencodon_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
@@ -353,7 +353,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
             "model": {"provider": "opencode-zen", "default": "kimi-k2.6"},
         }))
 
-        import opencodon_cli.config as _cfg_mod
+        import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
         import opencodon_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)

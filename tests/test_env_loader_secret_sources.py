@@ -1,4 +1,4 @@
-"""Tests for the secret-source tracking in ``opencodon_cli.env_loader``.
+"""Tests for the secret-source tracking in ``opencodon.config.env_loader``.
 
 These cover the small public surface that lets `opencodon model` / `opencodon setup`
 label detected credentials with their origin ("from Bitwarden") so users

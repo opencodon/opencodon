@@ -464,7 +464,7 @@ class CLICommandsMixin:
 
         # Reset session so the new tool config is picked up from a clean state
         from opencodon_cli.tools_config import _get_platform_tools
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         self.enabled_toolsets = _get_platform_tools(load_config(), "cli")
         self.new_session()
         _cprint(f"{_DIM}Session reset. New tool configuration is active.{_RST}")
@@ -2235,8 +2235,8 @@ class CLICommandsMixin:
             /footer status    → show current state
         """
         from cli import _cprint, save_config_value
-        from opencodon_cli.config import load_config
-        from opencodon_cli.colors import Colors as _Colors
+        from opencodon.config import load_config
+        from opencodon.common.colors import Colors as _Colors
 
         # Parse arg
         arg = ""
@@ -2292,7 +2292,7 @@ class CLICommandsMixin:
             /timestamps status    → show current state
         """
         from cli import _cprint, save_config_value
-        from opencodon_cli.colors import Colors as _Colors
+        from opencodon.common.colors import Colors as _Colors
 
         arg = ""
         try:
@@ -2562,7 +2562,7 @@ class CLICommandsMixin:
         prompt_toolkit cleans up terminal modes).  Returns ``False`` / falsy
         when cancelled.
         """
-        from opencodon_cli.config import is_managed, format_managed_message
+        from opencodon.config import is_managed, format_managed_message
 
         if is_managed():
             print(f"  ✗ {format_managed_message('update opencodon')}")

@@ -96,7 +96,7 @@ def _normalize_env_dict(env: dict | None) -> dict[str, str]:
 def _load_opencodon_env_vars() -> dict[str, str]:
     """Load ~/.opencodon/.env values without failing Docker command execution."""
     try:
-        from opencodon_cli.config import load_env
+        from opencodon.config import load_env
 
         return load_env() or {}
     except Exception:

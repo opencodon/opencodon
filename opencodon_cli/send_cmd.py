@@ -234,7 +234,7 @@ def _load_opencodon_env() -> None:
         load_dotenv = None  # type: ignore[assignment]
 
     try:
-        from opencodon_cli.config import get_opencodon_home
+        from opencodon.config import get_opencodon_home
         home = get_opencodon_home()
     except Exception:
         return
@@ -271,7 +271,7 @@ def _load_opencodon_env() -> None:
         return
 
     try:
-        from opencodon_cli.config import _expand_env_vars
+        from opencodon.config import _expand_env_vars
         raw = _expand_env_vars(raw)
     except Exception:
         pass
@@ -279,7 +279,7 @@ def _load_opencodon_env() -> None:
     # Managed scope: overlay administrator-pinned values before bridging to env,
     # so a managed top-level scalar wins here too. Fail-open via the helper.
     try:
-        from opencodon_cli import managed_scope
+        from opencodon.config import managed_scope
         raw = managed_scope.apply_managed_overlay(raw if isinstance(raw, dict) else {})
     except Exception:
         pass

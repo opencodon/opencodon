@@ -738,7 +738,7 @@ def _run_bws_list(
 
 
 # ---------------------------------------------------------------------------
-# Public entry point — called from opencodon_cli.env_loader
+# Public entry point — called from opencodon.config.env_loader
 # ---------------------------------------------------------------------------
 
 

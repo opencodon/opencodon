@@ -117,7 +117,7 @@ def test_provisions_on_nas_host_that_is_NOT_is_managed(monkeypatch):
     the old is_managed() gate silently no-oped exactly this case in staging.
     """
     # Force is_managed() False to model a real hosted agent; it must be irrelevant.
-    monkeypatch.setattr("opencodon_cli.config.is_managed", lambda: False)
+    monkeypatch.setattr("opencodon.config.is_managed", lambda: False)
     _arm(monkeypatch)
     captured: dict = {}
     monkeypatch.setattr(relay, "_post_provision", _stub_post(captured))

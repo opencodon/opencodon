@@ -23,7 +23,7 @@ Two bugs this exercises:
 
 from unittest.mock import patch
 
-from opencodon_cli.model_normalize import normalize_model_for_provider
+from opencodon.common.model_normalize import normalize_model_for_provider
 from opencodon_cli.model_switch import switch_model
 
 

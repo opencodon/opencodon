@@ -99,7 +99,21 @@ Tests lead the changes; they are the steering mechanism, not the afterthought.
   `scripts/install_triage_schedule.sh`, `.fork/` (keep FORK-PLAN.md as a
   historical record). Requires user's machine for launchd unload.
 
-### Phase 1 — Skeleton + leaves
+### Phase 1 — Skeleton + leaves — DONE 2026-08-01
+
+Executed with one deviation: the package lands at repo-root `opencodon/`
+(not `src/opencodon/`) until Phase 3 — a mixed src+flat setuptools layout
+can't express two package roots cleanly, so the `src/` flip happens in
+Phase 3's single packaging change when every package moves. The root
+`opencodon` launcher script moved to `bin/opencodon` to free the name
+(nix/devShell.nix updated). Module renames: `opencodon_constants →
+opencodon/common/constants.py`, `opencodon_logging → logging_setup.py`,
+`opencodon_time → timeutils.py`, `utils → utils.py`, `toolsets →
+opencodon/toolsets.py`. Old paths are sys.modules-aliasing shims (single
+module object — monkeypatching stays coherent). Tests moved to
+`tests/opencodon/` with canonical imports; new characterization tests for
+previously-untested utils helpers (safe_json_loads, env_bool,
+normalize_proxy_url/env_vars) in test_utils_env_proxy_json.py.
 - Create `src/opencodon/`; fix packaging (drop the `py-modules` hack in
   pyproject.toml `[tool.setuptools]`; editable install).
 - `git mv` the dependency-free root modules into `common/`:
@@ -109,6 +123,39 @@ Tests lead the changes; they are the steering mechanism, not the afterthought.
   changes yet.
 
 ### Phase 2 — Break the inversion (highest value, highest risk)
+
+**Phase 2a DONE 2026-08-01 (config layer):** `opencodon_cli/config.py`
+(8k lines) alias-moved wholesale to `opencodon/config/__init__.py`, plus its
+four leaf deps: `colors → opencodon/common/colors`, `route_identity →
+opencodon/common/route_identity`, `default_soul → opencodon/config/
+default_soul`, `managed_scope → opencodon/config/managed_scope`.
+`save_config_value` extracted from cli.py into opencodon.config (now
+call-time home resolution — profile/override-aware, no import-time
+snapshot). 166 production files flipped to canonical imports. New
+`opencodon-layer-purity` contract; grandfather lists shrunk:
+agent→opencodon_cli 90→62, tools→opencodon_cli 71→34, gateway→cli 2→0.
+Gotchas hit (recorded for later phases): `__file__`-relative repo-root
+anchors break on every move (get_project_root, node-bootstrap path —
+pinned by tests/opencodon/test_path_anchors.py); tests that stub
+`sys.modules["opencodon_cli.config"]` or patch `cli.save_config_value`
+need their targets flipped; `masked_secret_prompt` deferred to
+function level in reconcile_config.
+
+**Phase 2b partial DONE 2026-08-01 (leaf batch):** alias-moved
+`plugins.py → opencodon/plugins_runtime/` (+ `middleware.py` beside it),
+`_subprocess_compat`/`model_normalize → opencodon/common/`,
+`timeouts`/`env_loader`/`moa_config → opencodon/config/`. 76 more files
+flipped. Scoreboard: agent→opencodon_cli 62→32, tools→opencodon_cli
+34→15. Same gotchas recurred and were fixed: `__file__` repo-root anchor
+in get_bundled_plugins_dir (now pinned in test_path_anchors), and
+`sys.modules["opencodon_cli.plugins"]` stub keys in tests.
+
+**Phase 2 remaining:** auth (5.9k), runtime_provider, models, profiles,
+copilot_auth, providers-catalog helpers are core modules misfiled in
+opencodon_cli but tangled with `agent.*` — they relocate in Phase 3 when
+agent/ becomes opencodon/core/ (moving them into `opencodon` now would
+invert config-layer purity). agent→run_agent helper flips also fold into
+Phase 3/4.
 - Unify the three config loaders into `opencodon/config/`; `save_config_value`
   moves here (kills `gateway → cli.py` and `tui_gateway → cli.py` reaches).
 - Move shared display/callback abstractions out of frontends into core.

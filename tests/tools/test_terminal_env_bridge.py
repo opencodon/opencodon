@@ -88,7 +88,7 @@ def test_bridge_failure_falls_back_to_local(monkeypatch):
     def _boom(*_a, **_k):
         raise RuntimeError("config exploded")
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(config_mod, "apply_terminal_config_to_env", _boom)
 
@@ -102,7 +102,7 @@ def test_bridge_only_attempted_once(monkeypatch):
     unset (e.g. empty config) — later calls skip the bridge entirely."""
     calls = []
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     real = config_mod.apply_terminal_config_to_env
 

@@ -1823,7 +1823,7 @@ class SlackAdapter(BasePlatformAdapter):
             # down the gateway: any exception inside the plugin handler is
             # caught and logged, and slack_bolt still sees a clean ack.
             try:
-                from opencodon_cli.plugins import get_plugin_manager
+                from opencodon.plugins_runtime import get_plugin_manager
                 _plugin_handlers = get_plugin_manager().get_slack_action_handlers()
             except Exception as e:  # pragma: no cover - defensive
                 logger.warning(
@@ -7452,7 +7452,7 @@ def interactive_setup() -> None:
     offers to set a home channel. Replaces ``opencodon_cli/setup.py::_setup_slack``.
     """
     from pathlib import Path
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
     from opencodon_cli.cli_output import (
         prompt,
         prompt_yes_no,

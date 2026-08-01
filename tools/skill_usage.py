@@ -249,7 +249,7 @@ def _prune_builtins_enabled() -> bool:
     flag — built-ins only archive after a fresh inactivity window.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config()
         cur = cfg.get("curator") if isinstance(cfg, dict) else None

@@ -210,7 +210,7 @@ class TestHandleVoiceCommand:
 
         fake_cfg = {"voice": {"auto_tts": True}}
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: fake_cfg,
         )
         adapter = SimpleNamespace(

@@ -601,7 +601,7 @@ class SessionManager:
             return self._agent_factory()
 
         from run_agent import AIAgent
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.runtime_provider import resolve_runtime_provider
 
         config = load_config()

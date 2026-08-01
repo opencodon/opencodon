@@ -263,7 +263,7 @@ class TestCredentialPoolEndpoints:
         """
         from agent.credential_pool import load_pool
         from opencodon_cli.auth import is_source_suppressed
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
 
         fake_key = "sk-or-" + "x" * 20  # constructed, never a real key shape
         save_env_value("OPENROUTER_API_KEY", fake_key)
@@ -292,7 +292,7 @@ class TestCredentialPoolEndpoints:
         """
         from agent.credential_pool import load_pool
         from opencodon_cli.auth import is_source_suppressed
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
 
         fake_key = "sk-or-" + "y" * 20
         save_env_value("OPENROUTER_API_KEY", fake_key)
@@ -336,7 +336,7 @@ class TestCredentialPoolEndpoints:
         """Deleting one provider's env entry leaves other providers' rows alone."""
         from agent.credential_pool import load_pool
         from opencodon_cli.auth import _load_auth_store, read_credential_pool
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
 
         self.client.post(
             "/api/credentials/pool",
@@ -414,7 +414,7 @@ class TestWebhookEndpoints:
         assert r.status_code == 400
 
     def test_create_webhook_persists_script(self):
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("platforms", {})["webhook"] = {
@@ -439,7 +439,7 @@ class TestWebhookEndpoints:
 
     def test_enable_platform_starts_gateway_restart(self, monkeypatch):
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         ws._ACTION_PROCS.pop("gateway-restart", None)
         restart_calls = []
@@ -471,7 +471,7 @@ class TestWebhookEndpoints:
 
     def test_enable_platform_reports_restart_failure_after_save(self, monkeypatch):
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         ws._ACTION_PROCS.pop("gateway-restart", None)
 
@@ -496,7 +496,7 @@ class TestWebhookEndpoints:
 
     def test_enable_platform_reuses_inflight_gateway_restart(self, monkeypatch):
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         ws._ACTION_PROCS.pop("gateway-restart", None)
 
@@ -558,7 +558,7 @@ class TestOpsEndpoints:
         from pathlib import Path
 
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import get_opencodon_home
+        from opencodon.config import get_opencodon_home
 
         captured = {}
 
@@ -583,7 +583,7 @@ class TestOpsEndpoints:
         assert archive.parent == get_opencodon_home() / "backups"
 
     def test_hooks_list_reads_config(self):
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["hooks"] = {
@@ -961,7 +961,7 @@ class TestWebhookToggleEndpoint:
     def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
         # Enable the webhook platform so a subscription can be created.
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("platforms", {})["webhook"] = {
@@ -1273,7 +1273,7 @@ class TestToolsConfigEndpoints:
         assert r.status_code == 400
 
     def test_save_env_writes_key_and_validates_allowlist(self):
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         cfg = self.client.get("/api/tools/toolsets/web/config").json()
         # Find a real env-var key from the visible provider matrix.

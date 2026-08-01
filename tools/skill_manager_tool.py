@@ -44,7 +44,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from opencodon_constants import get_opencodon_home, display_opencodon_home
 from utils import atomic_replace, is_truthy_value
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ def _guard_agent_created_enabled() -> bool:
     on via `opencodon config set skills.guard_agent_created true`.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         return is_truthy_value(
             cfg_get(cfg, "skills", "guard_agent_created"),

@@ -378,7 +378,7 @@ class TestRoutingDecisionWiring:
                    return_value="openrouter"), \
              patch("agent.auxiliary_client._read_main_model",
                    return_value="tencent/hy3-preview"), \
-             patch("opencodon_cli.config.load_config", return_value=cfg):
+             patch("opencodon.config.load_config", return_value=cfg):
             assert cu_tool._should_route_through_aux_vision() is True
 
     def test_no_explicit_aux_and_vision_capable_main_keeps_multimodal(self):
@@ -391,7 +391,7 @@ class TestRoutingDecisionWiring:
                    return_value="anthropic"), \
              patch("agent.auxiliary_client._read_main_model",
                    return_value="claude-opus-4-5"), \
-             patch("opencodon_cli.config.load_config", return_value=cfg), \
+             patch("opencodon.config.load_config", return_value=cfg), \
              patch("tools.computer_use.vision_routing._lookup_supports_vision",
                    return_value=True), \
              patch("tools.computer_use.vision_routing."
@@ -402,7 +402,7 @@ class TestRoutingDecisionWiring:
     def test_config_load_failure_disables_routing_safely(self):
         from tools.computer_use import tool as cu_tool
 
-        with patch("opencodon_cli.config.load_config",
+        with patch("opencodon.config.load_config",
                    side_effect=RuntimeError("config.yaml unreadable")):
             # No exception should bubble up — fail open by returning False
             # so the legacy multimodal envelope continues to work.
@@ -416,7 +416,7 @@ class TestRoutingDecisionWiring:
                    return_value="openrouter"), \
              patch("agent.auxiliary_client._read_main_model",
                    return_value="x"), \
-             patch("opencodon_cli.config.load_config", return_value={}), \
+             patch("opencodon.config.load_config", return_value={}), \
              patch.object(vr_mod, "should_route_capture_to_aux_vision",
                           side_effect=ValueError("policy bug")):
             assert cu_tool._should_route_through_aux_vision() is False

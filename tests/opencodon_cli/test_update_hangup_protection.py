@@ -185,7 +185,7 @@ class TestInstallHangupProtection:
         """SIGHUP should be set to SIG_IGN so SSH disconnect doesn't kill the update."""
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         # Clear cached get_opencodon_home if present
-        import opencodon_cli.config as _cfg
+        import opencodon.config as _cfg
         if hasattr(_cfg, "_OPENCODON_HOME_CACHE"):
             _cfg._OPENCODON_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -202,7 +202,7 @@ class TestInstallHangupProtection:
     def test_wraps_stdout_and_stderr_with_mirror(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         # Nuke any cached home path
-        import opencodon_cli.config as _cfg
+        import opencodon.config as _cfg
         if hasattr(_cfg, "_OPENCODON_HOME_CACHE"):
             _cfg._OPENCODON_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -232,7 +232,7 @@ class TestInstallHangupProtection:
 
     def test_logs_dir_created_if_missing(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        import opencodon_cli.config as _cfg
+        import opencodon.config as _cfg
         if hasattr(_cfg, "_OPENCODON_HOME_CACHE"):
             _cfg._OPENCODON_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -255,7 +255,7 @@ class TestInstallHangupProtection:
 
         # Patch the import inside _install_hangup_protection.
         monkeypatch.setattr(
-            "opencodon_cli.config.get_opencodon_home", _boom, raising=True
+            "opencodon.config.get_opencodon_home", _boom, raising=True
         )
 
         original_handler = (
@@ -288,7 +288,7 @@ class TestFinalizeUpdateOutput:
 
     def test_restores_streams_and_closes_log(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-        import opencodon_cli.config as _cfg
+        import opencodon.config as _cfg
         if hasattr(_cfg, "_OPENCODON_HOME_CACHE"):
             _cfg._OPENCODON_HOME_CACHE = None  # type: ignore[attr-defined]
 

@@ -88,7 +88,7 @@ def test_check_website_access_supports_wildcard_subdomains_only(tmp_path):
 
 
 def test_default_config_exposes_website_blocklist_shape():
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     website_blocklist = DEFAULT_CONFIG["security"]["website_blocklist"]
     assert website_blocklist["enabled"] is False

@@ -1,4 +1,4 @@
-"""Tests for the opencodon plugin system (opencodon_cli.plugins)."""
+"""Tests for the opencodon plugin system (opencodon.plugins_runtime)."""
 
 import logging
 import sys
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from opencodon_cli.plugins import (
+from opencodon.plugins_runtime import (
     ENTRY_POINTS_GROUP,
     VALID_HOOKS,
     PluginContext,
@@ -22,7 +22,7 @@ from opencodon_cli.plugins import (
     has_middleware,
     resolve_plugin_command_result,
 )
-from opencodon_cli.middleware import (
+from opencodon.plugins_runtime.middleware import (
     VALID_MIDDLEWARE,
     apply_llm_request_middleware,
     apply_tool_request_middleware,
@@ -139,7 +139,7 @@ class TestPluginDiscovery:
             return kwargs["next_call"](kwargs["args"])
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -152,7 +152,7 @@ class TestPluginDiscovery:
 
     def test_middleware_helpers_skip_no_listener_work(self, monkeypatch):
         manager = types.SimpleNamespace(_middleware={})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         request = {"messages": []}
         args = {"path": "README.md"}
@@ -179,7 +179,7 @@ class TestPluginDiscovery:
             _middleware={"tool_request": [same_payload_middleware]},
             invoke_middleware=lambda kind, **kwargs: [same_payload_middleware(**kwargs)],
         )
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         args = {"path": "README.md"}
         result = apply_tool_request_middleware("read_file", args)
@@ -197,7 +197,7 @@ class TestPluginDiscovery:
             raise RuntimeError(f"post-processing failed after {result}")
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -220,7 +220,7 @@ class TestPluginDiscovery:
             return kwargs["next_call"]({**kwargs["args"], "rewritten": True})
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [failing_middleware, downstream_middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(("terminal", args))
@@ -241,7 +241,7 @@ class TestPluginDiscovery:
                 raise RuntimeError(f"translated downstream failure: {exc}") from exc
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -262,7 +262,7 @@ class TestPluginDiscovery:
                 raise RuntimeError(f"middleware should not catch base exception: {exc}") from exc
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -285,7 +285,7 @@ class TestPluginDiscovery:
             return first
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -309,7 +309,7 @@ class TestPluginDiscovery:
             _middleware={"tool_request": [middleware]},
             invoke_middleware=lambda kind, **kwargs: [middleware(**kwargs)],
         )
-        monkeypatch.setattr("opencodon_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("opencodon.plugins_runtime.get_plugin_manager", lambda: manager)
 
         # threading.Lock is not deepcopyable; a hard deepcopy would raise.
         args = {"command": "noop", "lock": threading.Lock()}
@@ -809,7 +809,7 @@ class TestPluginHooks:
         )
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
-        with caplog.at_level(logging.WARNING, logger="opencodon_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="opencodon.plugins_runtime"):
             mgr = PluginManager()
             mgr.discover_and_load()
 
@@ -820,7 +820,7 @@ class TestPreToolCallBlocking:
 
     def test_block_message_returned_for_valid_directive(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "block", "message": "blocked by plugin"}],
         )
         assert get_pre_tool_call_block_message("todo", {}, task_id="t1") == "blocked by plugin"
@@ -828,7 +828,7 @@ class TestPreToolCallBlocking:
     def test_invalid_returns_are_ignored(self, monkeypatch):
         """Various malformed hook returns should not trigger a block."""
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 "block",                                 # not a dict
                 123,                                     # not a dict
@@ -842,14 +842,14 @@ class TestPreToolCallBlocking:
 
     def test_none_when_no_hooks(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         assert get_pre_tool_call_block_message("web_search", {"q": "test"}) is None
 
     def test_first_valid_block_wins(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "allow"},
                 {"action": "block", "message": "first blocker"},
@@ -863,9 +863,9 @@ class TestPreToolCallDirective:
     """Tests for the extended (block | approve) directive helper."""
 
     def test_approve_directive_returned(self, monkeypatch):
-        from opencodon_cli.plugins import get_pre_tool_call_directive
+        from opencodon.plugins_runtime import get_pre_tool_call_directive
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "approve", "message": "needs human ok"}
             ],
@@ -875,25 +875,25 @@ class TestPreToolCallDirective:
 
     def test_approve_without_message_is_valid(self, monkeypatch):
         """approve may omit a message (block may not)."""
-        from opencodon_cli.plugins import get_pre_tool_call_directive
+        from opencodon.plugins_runtime import get_pre_tool_call_directive
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "approve"}],
         )
         assert get_pre_tool_call_directive("write_file", {}) == ("approve", None)
 
     def test_block_still_requires_message(self, monkeypatch):
-        from opencodon_cli.plugins import get_pre_tool_call_directive
+        from opencodon.plugins_runtime import get_pre_tool_call_directive
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "block"}],
         )
         assert get_pre_tool_call_directive("terminal", {}) == (None, None)
 
     def test_first_directive_wins_across_actions(self, monkeypatch):
-        from opencodon_cli.plugins import get_pre_tool_call_directive
+        from opencodon.plugins_runtime import get_pre_tool_call_directive
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "approve", "message": "gate first"},
                 {"action": "block", "message": "block second"},
@@ -905,7 +905,7 @@ class TestPreToolCallDirective:
     def test_shim_ignores_approve(self, monkeypatch):
         """Back-compat shim only reports block, never approve."""
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "approve", "message": "gate"}
             ],
@@ -918,23 +918,23 @@ class TestResolvePreToolBlock:
     directive (incl. the approve→gate escalation) to a block message."""
 
     def test_block_returns_message(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "block", "message": "no"}],
         )
         assert resolve_pre_tool_block("terminal", {}) == "no"
 
     def test_no_directive_returns_none(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook", lambda hook_name, **kwargs: [])
+            "opencodon.plugins_runtime.invoke_hook", lambda hook_name, **kwargs: [])
         assert resolve_pre_tool_block("terminal", {}) is None
 
     def test_approve_denied_blocks(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "approve", "message": "why"}],
         )
         monkeypatch.setattr(
@@ -944,9 +944,9 @@ class TestResolvePreToolBlock:
         assert resolve_pre_tool_block("write_file", {}) == "user denied it"
 
     def test_approve_granted_allows(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "approve", "message": "why"}],
         )
         monkeypatch.setattr(
@@ -956,12 +956,12 @@ class TestResolvePreToolBlock:
         assert resolve_pre_tool_block("write_file", {}) is None
 
     def test_approve_passes_plugin_rule_key_to_gate(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
 
         seen = {}
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {
                     "action": "approve",
@@ -990,7 +990,7 @@ class TestResolvePreToolBlock:
     def test_approve_falls_back_to_tool_name_without_valid_rule_key(
         self, monkeypatch, rule_key
     ):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
 
         seen = {}
         directive = {"action": "approve", "message": "why"}
@@ -998,7 +998,7 @@ class TestResolvePreToolBlock:
             directive["rule_key"] = rule_key
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [directive],
         )
 
@@ -1012,9 +1012,9 @@ class TestResolvePreToolBlock:
         assert seen["rule_key"] == "write_file"
 
     def test_approve_gate_exception_fails_closed(self, monkeypatch):
-        from opencodon_cli.plugins import resolve_pre_tool_block
+        from opencodon.plugins_runtime import resolve_pre_tool_block
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "approve", "message": "why"}],
         )
         def _boom(*a, **k):
@@ -1029,7 +1029,7 @@ class TestGetPreVerifyContinueMessage:
 
     def test_continue_canonical(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "continue", "message": "run checks"}],
         )
         assert get_pre_verify_continue_message(session_id="s") == "run checks"
@@ -1037,14 +1037,14 @@ class TestGetPreVerifyContinueMessage:
     def test_claude_block_means_continue(self, monkeypatch):
         # Claude-Code Stop: "block" the stop == keep going; reason → message.
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"decision": "block", "reason": "run the formatter"}],
         )
         assert get_pre_verify_continue_message() == "run the formatter"
 
     def test_first_actionable_directive_wins(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 "noise",                                   # not a dict
                 {"action": "continue"},                     # no message → skipped
@@ -1056,14 +1056,14 @@ class TestGetPreVerifyContinueMessage:
 
     def test_message_is_trimmed(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "continue", "message": "  tidy up  "}],
         )
         assert get_pre_verify_continue_message() == "tidy up"
 
     def test_invalid_returns_ignored(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "allow"},                        # wrong action
                 {"context": "noise"},                       # not a directive
@@ -1074,7 +1074,7 @@ class TestGetPreVerifyContinueMessage:
         assert get_pre_verify_continue_message() is None
 
     def test_none_when_no_hooks(self, monkeypatch):
-        monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda hook_name, **kwargs: [])
+        monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda hook_name, **kwargs: [])
         assert get_pre_verify_continue_message() is None
 
     def test_forwards_scope_signals_to_hooks(self, monkeypatch):
@@ -1084,7 +1084,7 @@ class TestGetPreVerifyContinueMessage:
             seen.update(kwargs)
             return []
 
-        monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", capture)
+        monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", capture)
         get_pre_verify_continue_message(coding=True, attempt=2, changed_paths=["a.py"])
         assert seen["coding"] is True
         assert seen["attempt"] == 2
@@ -1095,13 +1095,13 @@ class TestThreadToolWhitelist:
     """Tests for the thread-local tool whitelist used by background review forks."""
 
     def test_allowed_tool_passes_through_to_hooks(self, monkeypatch):
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory", "skill_manage"})
@@ -1111,13 +1111,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_disallowed_tool_blocked_with_message(self, monkeypatch):
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist(
@@ -1130,13 +1130,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_clear_restores_unrestricted_behavior(self, monkeypatch):
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory"})
@@ -1149,13 +1149,13 @@ class TestThreadToolWhitelist:
         """Setting a whitelist in one thread must NOT leak into another."""
         import threading
 
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "opencodon_cli.plugins.invoke_hook",
+            "opencodon.plugins_runtime.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
 
@@ -1360,7 +1360,7 @@ class TestPluginContext:
         ``shell_exec``, ``write_file``) without the operator's knowledge.
         """
         from tools.registry import registry
-        from opencodon_cli.plugins import PluginToolOverrideError
+        from opencodon.plugins_runtime import PluginToolOverrideError
 
         registry.register(
             name="gated_override_target",
@@ -1404,7 +1404,7 @@ class TestPluginContext:
 
             # And the raise path itself works for callers that invoke
             # register_tool directly without going through PluginManager.
-            from opencodon_cli.plugins import PluginContext, PluginManifest
+            from opencodon.plugins_runtime import PluginContext, PluginManifest
             manifest = PluginManifest(name="evil_override_plugin", source="user")
             ctx = PluginContext(manager=mgr, manifest=manifest)
             with pytest.raises(PluginToolOverrideError) as excinfo:
@@ -1545,7 +1545,7 @@ class TestPluginToolVisibility:
 
     def test_plugin_tools_in_definitions(self, tmp_path, monkeypatch):
         """Plugin tools are included when their toolset is in enabled_toolsets."""
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "vis_plugin"
@@ -1855,7 +1855,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="opencodon_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="opencodon.plugins_runtime"):
             ctx.register_command("", lambda a: a)
         assert len(mgr._plugin_commands) == 0
         assert "empty name" in caplog.text
@@ -1866,7 +1866,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="opencodon_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="opencodon.plugins_runtime"):
             ctx.register_command("help", lambda a: a)
         assert "help" not in mgr._plugin_commands
         assert "conflicts" in caplog.text.lower()
@@ -1889,14 +1889,14 @@ class TestPluginCommands:
         handler = lambda args: f"result: {args}"
         ctx.register_command("mycmd", handler, description="test")
 
-        with patch("opencodon_cli.plugins._plugin_manager", mgr):
+        with patch("opencodon.plugins_runtime._plugin_manager", mgr):
             result = get_plugin_command_handler("mycmd")
             assert result is handler
 
     def test_get_plugin_command_handler_not_found(self):
         """get_plugin_command_handler() returns None for unregistered commands."""
         mgr = PluginManager()
-        with patch("opencodon_cli.plugins._plugin_manager", mgr):
+        with patch("opencodon.plugins_runtime._plugin_manager", mgr):
             assert get_plugin_command_handler("nonexistent") is None
 
     def test_get_plugin_commands_returns_dict(self):
@@ -1907,7 +1907,7 @@ class TestPluginCommands:
         ctx.register_command("cmd-a", lambda a: a, description="A")
         ctx.register_command("cmd-b", lambda a: a, description="B")
 
-        with patch("opencodon_cli.plugins._plugin_manager", mgr):
+        with patch("opencodon.plugins_runtime._plugin_manager", mgr):
             cmds = get_plugin_commands()
             assert "cmd-a" in cmds
             assert "cmd-b" in cmds
@@ -1923,7 +1923,7 @@ class TestPluginCommands:
         )
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             handler = get_plugin_command_handler("lazycmd")
@@ -1940,7 +1940,7 @@ class TestPluginCommands:
         )
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon_test"))
 
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             cmds = get_plugin_commands()
@@ -1981,7 +1981,7 @@ class TestPluginCommands:
         )
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             engine = plugins_mod.get_plugin_context_engine()
@@ -2073,7 +2073,7 @@ class TestPluginCommandResultResolution:
         async def _handler():
             return "threaded-ok"
 
-        monkeypatch.setattr("opencodon_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("opencodon.plugins_runtime.asyncio.get_running_loop", lambda: _Loop())
         assert resolve_plugin_command_result(_handler()) == "threaded-ok"
 
     def test_running_loop_timeout_does_not_hang_forever(self, monkeypatch):
@@ -2087,8 +2087,8 @@ class TestPluginCommandResultResolution:
             await _asyncio.sleep(10)
             return "should-not-reach"
 
-        monkeypatch.setattr("opencodon_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
-        monkeypatch.setattr("opencodon_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
+        monkeypatch.setattr("opencodon.plugins_runtime.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("opencodon.plugins_runtime._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
 
         with pytest.raises(TimeoutError):
             resolve_plugin_command_result(_slow_handler())
@@ -2109,7 +2109,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"result": "ok"}'
 
-        with patch("opencodon_cli.plugins.PluginContext.dispatch_tool.__module__", "opencodon_cli.plugins"):
+        with patch("opencodon.plugins_runtime.PluginContext.dispatch_tool.__module__", "opencodon.plugins_runtime"):
             with patch.dict("sys.modules", {}):
                 with patch("tools.registry.registry", mock_registry):
                     result = ctx.dispatch_tool("web_search", {"query": "test"})

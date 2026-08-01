@@ -52,7 +52,7 @@ def test_env_survives_when_config_omits_search_knobs(tmp_path, monkeypatch):
 def test_search_knobs_have_documented_defaults():
     """The advertised config surface must exist in DEFAULT_CONFIG (no
     user-facing env switch): cjk index default ON, slow-search log at 1s."""
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG["sessions"]["cjk_fts"] is True
     assert DEFAULT_CONFIG["sessions"]["search_slow_ms"] == 1000

@@ -980,7 +980,7 @@ def _resolve_default_model_snapshot() -> Optional[str]:
     """
     try:
         import yaml
-        from opencodon_cli.config import _expand_env_vars
+        from opencodon.config import _expand_env_vars
 
         cfg_path = get_opencodon_home() / "config.yaml"
         if not cfg_path.exists():
@@ -988,7 +988,7 @@ def _resolve_default_model_snapshot() -> Optional[str]:
         with cfg_path.open(encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
         try:
-            from opencodon_cli import managed_scope
+            from opencodon.config import managed_scope
             cfg = managed_scope.apply_managed_overlay(cfg)
         except Exception:
             pass
@@ -2168,7 +2168,7 @@ _CRON_OUTPUT_DEFAULT_KEEP = 50
 def _cron_output_keep() -> int:
     """Resolve the per-job output-file retention cap from config (``cron.output_retention``)."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config() or {}
         cron_cfg = cfg.get("cron", {}) if isinstance(cfg, dict) else {}
         return int(cron_cfg.get("output_retention", _CRON_OUTPUT_DEFAULT_KEEP))

@@ -208,7 +208,7 @@ class TestCommandHandler:
         assert "No suggested automations" in out
 
     def test_aux_monitor_config_default(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
 
         assert "monitor" in DEFAULT_CONFIG["auxiliary"]
         assert DEFAULT_CONFIG["auxiliary"]["monitor"]["provider"] == "auto"

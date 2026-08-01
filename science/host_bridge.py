@@ -52,7 +52,7 @@ _MAX_CONCURRENCY = 16
 def _config_host_tools() -> List[str]:
     """The user's kernel-reachable tool allowlist (config: science.host_tools)."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config() or {}
         tools = ((cfg.get("science") or {}).get("host_tools")) or []

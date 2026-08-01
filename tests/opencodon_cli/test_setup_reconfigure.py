@@ -57,7 +57,7 @@ def _enter_existing_install_patches(stack, **extra):
     for target, kwargs in [
         ("opencodon_cli.setup.ensure_opencodon_home", {}),
         ("opencodon_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("opencodon_cli.config.is_managed", {"return_value": False}),
+        ("opencodon.config.is_managed", {"return_value": False}),
         ("opencodon_cli.setup.load_config", {"return_value": {}}),
         ("opencodon_cli.setup.save_config", {}),
         ("opencodon_cli.setup.get_env_value", {"return_value": None}),
@@ -77,7 +77,7 @@ def _enter_fresh_install_patches(stack, **extra):
     for target, kwargs in [
         ("opencodon_cli.setup.ensure_opencodon_home", {}),
         ("opencodon_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("opencodon_cli.config.is_managed", {"return_value": False}),
+        ("opencodon.config.is_managed", {"return_value": False}),
         ("opencodon_cli.setup.load_config", {"return_value": {}}),
         ("opencodon_cli.setup.save_config", {}),
         ("opencodon_cli.auth.get_active_provider", {"return_value": None}),

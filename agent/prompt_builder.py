@@ -988,7 +988,7 @@ def build_environment_hints() -> str:
     extra = (os.getenv("OPENCODON_ENVIRONMENT_HINT") or "").strip()
     if not extra:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             extra = str(
                 (load_config().get("agent", {}) or {}).get("environment_hint", "")
@@ -1042,7 +1042,7 @@ def _get_context_file_max_chars(context_length: Optional[int] = None) -> int:
       3. ``CONTEXT_FILE_MAX_CHARS`` (20K) as the upstream-compatible fallback.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         val = load_config().get("context_file_max_chars")
         if isinstance(val, (int, float)) and val > 0:
@@ -1587,7 +1587,7 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
     ``skip_soul=True`` so SOUL.md isn't injected twice.
     """
     try:
-        from opencodon_cli.config import ensure_opencodon_home
+        from opencodon.config import ensure_opencodon_home
         ensure_opencodon_home()
     except Exception as e:
         logger.debug("Could not ensure OPENCODON_HOME before loading SOUL.md: %s", e)

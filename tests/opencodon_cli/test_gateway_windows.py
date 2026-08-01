@@ -101,7 +101,7 @@ def test_build_gateway_argv_uses_base_pythonw_for_uv_venv_launcher(monkeypatch, 
     monkeypatch.setattr(gateway, "PROJECT_ROOT", project)
     monkeypatch.setattr(gateway, "get_python_path", lambda: str(venv_python))
     monkeypatch.setattr(gateway, "_profile_arg", lambda opencodon_home: "")
-    monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: str(opencodon_home))
+    monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: str(opencodon_home))
 
     argv, cwd, env_overlay = gateway_windows._build_gateway_argv()
 
@@ -116,13 +116,13 @@ class TestStableWindowsGatewayWorkingDir:
     def test_stable_gateway_working_dir_uses_opencodon_home(self, tmp_path, monkeypatch):
         home = tmp_path / ".opencodon"
         home.mkdir()
-        monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: home)
+        monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: home)
         assert gateway_windows._stable_gateway_working_dir(tmp_path / "checkout") == str(home.resolve())
 
     def test_stable_gateway_working_dir_falls_back_to_project_root(self, tmp_path, monkeypatch):
         missing = tmp_path / "missing" / ".opencodon"
         project = tmp_path / "checkout"
-        monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: missing)
+        monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: missing)
         assert gateway_windows._stable_gateway_working_dir(project) == str(project)
 
 
@@ -139,7 +139,7 @@ def test_write_task_script_anchors_cmd_cd_at_opencodon_home(monkeypatch, tmp_pat
     monkeypatch.setattr(gateway, "PROJECT_ROOT", project)
     monkeypatch.setattr(gateway, "get_python_path", lambda: str(python_exe))
     monkeypatch.setattr(gateway, "_profile_arg", lambda opencodon_home: "")
-    monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: str(opencodon_home))
+    monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: str(opencodon_home))
     monkeypatch.setattr(gateway_windows, "get_task_script_path", lambda: script_path)
 
     written = gateway_windows._write_task_script()

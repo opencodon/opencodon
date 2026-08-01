@@ -65,7 +65,7 @@ def _fresh_modules():
     for mod in list(sys.modules.keys()):
         if mod.startswith(("agent.auxiliary_client", "agent.image_routing",
                            "tools.vision_tools", "tools.browser_tool",
-                           "opencodon_cli.config")):
+                           "opencodon.config")):
             del sys.modules[mod]
 
 

@@ -123,7 +123,7 @@ def _scrub_config_yaml_mirrors(old_value: str, new_value: str | None) -> List[st
         return []
     from utils import atomic_yaml_write, fast_safe_load
 
-    from opencodon_cli.config import (
+    from opencodon.config import (
         get_config_path,
         require_readable_config_before_write,
     )
@@ -219,7 +219,7 @@ def save_provider_env_credential(env_var: str, value: str) -> Dict[str, Any]:
     Suppressed ``env:<VAR>`` pool sources are re-enabled so a deliberate
     re-add through the UI behaves like ``opencodon auth add``.
     """
-    from opencodon_cli.config import load_env, save_env_value
+    from opencodon.config import load_env, save_env_value
 
     old_value = load_env().get(env_var)
     save_env_value(env_var, value)
@@ -254,7 +254,7 @@ def remove_provider_env_credential(env_var: str) -> Dict[str, Any]:
     previously 404'd on ".env miss" should key off this instead so a stale
     pool-only entry can still be cleaned up through the same button.
     """
-    from opencodon_cli.config import load_env, remove_env_value
+    from opencodon.config import load_env, remove_env_value
 
     old_value = load_env().get(env_var)
     removed_from_env = remove_env_value(env_var)

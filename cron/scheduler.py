@@ -40,8 +40,8 @@ from typing import Any, List, Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from opencodon_constants import get_opencodon_home
-from opencodon_cli._subprocess_compat import windows_hide_flags
-from opencodon_cli.config import load_config, _expand_env_vars
+from opencodon.common._subprocess_compat import windows_hide_flags
+from opencodon.config import load_config, _expand_env_vars
 from opencodon_cli.fallback_config import get_fallback_chain
 from opencodon_time import now as _opencodon_now
 
@@ -982,7 +982,7 @@ def _plugin_cron_env_var(platform_name: str) -> str:
     support without editing this module.
     """
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_name.lower())
@@ -1066,7 +1066,7 @@ def _iter_home_target_platforms():
     for name in _HOME_TARGET_ENV_VARS:
         yield name
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         for entry in platform_registry.plugin_entries():
@@ -2861,7 +2861,7 @@ def run_job(
                 )
         if _session_db_timeout is None:
             try:
-                from opencodon_cli.config import load_config
+                from opencodon.config import load_config
                 _cfg = load_config() or {}
                 _cron_cfg = _cfg.get("cron", {}) if isinstance(_cfg, dict) else {}
                 _configured = _cron_cfg.get("session_db_timeout_seconds")
@@ -3072,7 +3072,7 @@ def run_job(
         # is set (mirrors startup), and the Bitwarden value-cache keeps the
         # forced re-pull off the network. load_opencodon_dotenv also handles the
         # utf-8/latin-1 encoding fallback internally.
-        from opencodon_cli.env_loader import (
+        from opencodon.config.env_loader import (
             load_opencodon_dotenv,
             reset_secret_source_cache,
         )
@@ -3110,7 +3110,7 @@ def run_job(
                 # builds its own dict, so overlay managed values via the shared
                 # helper (fail-open, no-op when no managed scope).
                 try:
-                    from opencodon_cli import managed_scope
+                    from opencodon.config import managed_scope
                     _cfg = managed_scope.apply_managed_overlay(_cfg)
                 except Exception:
                     pass

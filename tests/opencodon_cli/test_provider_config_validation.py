@@ -8,7 +8,7 @@ import logging
 
 import pytest
 
-from opencodon_cli.config import (
+from opencodon.config import (
     _PROVIDER_NORMALIZE_WARNED,
     _normalize_custom_provider_entry,
 )

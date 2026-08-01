@@ -230,12 +230,12 @@ def test_cmd_chat_tui_forwards_chat_flags(monkeypatch, main_mod):
 def test_main_top_level_tui_accepts_toolsets(monkeypatch, main_mod):
     captured = {}
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(sys, "argv", ["opencodon", "--tui", "--toolsets", "web,terminal"])
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
@@ -600,7 +600,7 @@ def test_read_git_revision_fingerprint_unresolved_ref_is_stable(tmp_path, main_m
 def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     captured = {}
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         sys,
@@ -617,7 +617,7 @@ def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     )
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
@@ -1197,7 +1197,7 @@ def test_oneshot_run_agent_closes_agent_after_chat(monkeypatch):
         sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
@@ -1247,7 +1247,7 @@ def test_oneshot_run_agent_closes_agent_when_chat_raises(monkeypatch):
         sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
@@ -1302,7 +1302,7 @@ def test_oneshot_run_agent_closes_session_db(monkeypatch):
         sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
@@ -1349,7 +1349,7 @@ def test_oneshot_run_agent_closes_session_db_when_agent_init_raises(monkeypatch)
         sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
@@ -1377,7 +1377,7 @@ def test_oneshot_run_agent_closes_session_db_when_agent_init_raises(monkeypatch)
 def _stub_plugin_discovery(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
@@ -1515,7 +1515,7 @@ def test_oneshot_accepts_plugin_toolset_after_discovery(monkeypatch):
     monkeypatch.setattr(toolsets, "validate_toolset", fake_validate)
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(
             discover_plugins=lambda: discovered.update({"ready": True})
         ),
@@ -1529,7 +1529,7 @@ def test_oneshot_accepts_plugin_toolset_after_discovery(monkeypatch):
 
 def test_oneshot_rejects_disabled_mcp_toolset(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     from opencodon_cli.oneshot import _validate_explicit_toolsets
 
@@ -1550,7 +1550,7 @@ def test_oneshot_rejects_disabled_mcp_toolset(monkeypatch, capsys):
 
 def test_oneshot_distinguishes_disabled_mcp_from_unknown(monkeypatch, capsys):
     _stub_plugin_discovery(monkeypatch)
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     from opencodon_cli.oneshot import _validate_explicit_toolsets
 
@@ -1602,8 +1602,8 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
     monkeypatch.setitem(sys.modules, "opencodon_state", mod("opencodon_state", SessionDB=FakeSessionDB))
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.config",
-        mod("opencodon_cli.config", load_config=lambda: {"model": {"default": "m"}}),
+        "opencodon.config",
+        mod("opencodon.config", load_config=lambda: {"model": {"default": "m"}}),
     )
     monkeypatch.setitem(
         sys.modules,

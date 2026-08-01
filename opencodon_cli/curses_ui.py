@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Sequence, Set, Tuple, Union
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 
 # Rich radiolist rows: (text, style). style is None | "yellow" | "dim".
 # Plain ``str`` items remain fully supported.

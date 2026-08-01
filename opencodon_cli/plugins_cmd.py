@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from opencodon_constants import get_opencodon_home
-from opencodon_cli.config import cfg_get
+from opencodon.config import cfg_get
 from opencodon_cli.secret_prompt import masked_secret_prompt
 
 logger = logging.getLogger(__name__)
@@ -302,7 +302,7 @@ def _missing_requires_env_names(manifest: dict) -> list[str]:
     if not requires_env:
         return []
 
-    from opencodon_cli.config import get_env_value
+    from opencodon.config import get_env_value
 
     env_specs: list[dict] = []
     for entry in requires_env:
@@ -338,7 +338,7 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
     if not requires_env:
         return
 
-    from opencodon_cli.config import get_env_value, save_env_value  # noqa: F811
+    from opencodon.config import get_env_value, save_env_value  # noqa: F811
     from opencodon_constants import display_opencodon_home
 
     # Normalise to list-of-dicts
@@ -514,7 +514,7 @@ def _install_plugin_core(identifier: str, *, force: bool) -> tuple[Path, dict, s
                     f"'{mv}' (expected an integer).",
                 ) from None
             if mv_int > _SUPPORTED_MANIFEST_VERSION:
-                from opencodon_cli.config import recommended_update_command
+                from opencodon.config import recommended_update_command
 
                 raise PluginOperationError(
                     f"Plugin '{plugin_name}' requires manifest_version {mv}, "
@@ -697,7 +697,7 @@ def _get_disabled_set() -> set:
     listed in ``plugins.enabled``.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         disabled = cfg_get(config, "plugins", "disabled", default=[])
         return set(disabled) if isinstance(disabled, list) else set()
@@ -707,7 +707,7 @@ def _get_disabled_set() -> set:
 
 def _save_disabled_set(disabled: set) -> None:
     """Write the disabled plugins list to config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     config = load_config()
     if "plugins" not in config:
         config["plugins"] = {}
@@ -749,7 +749,7 @@ def _get_enabled_set() -> set:
     the key is missing (same behaviour as "nothing enabled yet").
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         plugins_cfg = config.get("plugins", {})
         if not isinstance(plugins_cfg, dict):
@@ -762,7 +762,7 @@ def _get_enabled_set() -> set:
 
 def _save_enabled_set(enabled: set) -> None:
     """Write the enabled plugins list to config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     config = load_config()
     if "plugins" not in config:
         config["plugins"] = {}
@@ -820,7 +820,7 @@ def _resolve_plugin_key_and_source(name: str) -> Optional[tuple]:
 
 def _set_plugin_entry_flag(plugin_id: str, key: str, value: bool) -> None:
     """Write ``plugins.entries.<plugin_id>.<key> = value`` into config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     config = load_config()
     plugins_cfg = config.setdefault("plugins", {})
     if not isinstance(plugins_cfg, dict):
@@ -1052,7 +1052,7 @@ def _discover_all_plugins() -> list:
     seen: dict = {}  # key -> (name, version, description, source, path, key)
 
     # Bundled (<repo>/plugins/<name>/), excluding memory/ and context_engine/
-    from opencodon_cli.plugins import get_bundled_plugins_dir
+    from opencodon.plugins_runtime import get_bundled_plugins_dir
     repo_plugins = get_bundled_plugins_dir()
     for base, source, skip in (
         (repo_plugins, "bundled", {"memory", "context_engine"}),
@@ -1073,7 +1073,7 @@ def _discover_entrypoint_plugins() -> list[tuple[str, str, str, str]]:
     plugin directory under ``~/.opencodon/plugins``. Include package metadata here
     so ``opencodon plugins list`` can show and enable them.
     """
-    from opencodon_cli.plugins import ENTRY_POINTS_GROUP
+    from opencodon.plugins_runtime import ENTRY_POINTS_GROUP
 
     try:
         eps = importlib.metadata.entry_points()
@@ -1223,7 +1223,7 @@ def _discover_context_engines() -> list[tuple[str, str]]:
         pass
 
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_context_engine
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_context_engine
         discover_plugins()
         plugin_engine = get_plugin_context_engine()
         if plugin_engine and getattr(plugin_engine, "name", None) and plugin_engine.name not in seen:
@@ -1237,7 +1237,7 @@ def _discover_context_engines() -> list[tuple[str, str]]:
 def _get_current_memory_provider() -> str:
     """Return the current memory.provider from config (empty = built-in)."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         return cfg_get(config, "memory", "provider", default="") or ""
     except Exception:
@@ -1247,7 +1247,7 @@ def _get_current_memory_provider() -> str:
 def _get_current_context_engine() -> str:
     """Return the current context.engine from config."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         return cfg_get(config, "context", "engine", default="compressor") or "compressor"
     except Exception:
@@ -1256,7 +1256,7 @@ def _get_current_context_engine() -> str:
 
 def _save_memory_provider(name: str) -> None:
     """Persist memory.provider to config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     config = load_config()
     if "memory" not in config:
         config["memory"] = {}
@@ -1266,7 +1266,7 @@ def _save_memory_provider(name: str) -> None:
 
 def _save_context_engine(name: str) -> None:
     """Persist context.engine to config.yaml."""
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     config = load_config()
     if "context" not in config:
         config["context"] = {}
@@ -1696,7 +1696,7 @@ def _run_composite_ui(curses, plugin_keys, plugin_labels, plugin_selected,
 def _run_composite_fallback(plugin_keys, plugin_labels, plugin_selected,
                             disabled, categories, console):
     """Text-based fallback for the composite plugins UI."""
-    from opencodon_cli.colors import Colors, color
+    from opencodon.common.colors import Colors, color
 
     print(color("\n  Plugins", Colors.YELLOW))
 
@@ -1822,7 +1822,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Check the plugin manager for tools this plugin registered
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_manager
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_manager
         discover_plugins()  # idempotent — ensures plugins are loaded
         manager = get_plugin_manager()
         for _key, loaded in manager._plugins.items():
@@ -1837,7 +1837,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Fallback: read provides_tools from manifest on disk and query registry
     try:
-        from opencodon_cli.plugins import get_bundled_plugins_dir
+        from opencodon.plugins_runtime import get_bundled_plugins_dir
         for base in (get_bundled_plugins_dir(), _plugins_dir()):
             if not base.is_dir():
                 continue
@@ -1863,7 +1863,7 @@ def _toggle_plugin_toolset(name: str, *, enable: bool) -> None:
     if not toolset_key:
         return
 
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     config = load_config()
     platform_toolsets = config.get("platform_toolsets")

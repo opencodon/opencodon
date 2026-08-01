@@ -135,15 +135,15 @@ class TestArceeModelCatalog:
 
 class TestArceeNormalization:
     def test_in_matching_prefix_strip_set(self):
-        from opencodon_cli.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
+        from opencodon.common.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
         assert "arcee" in _MATCHING_PREFIX_STRIP_PROVIDERS
 
     def test_strips_prefix(self):
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         assert normalize_model_for_provider("arcee/trinity-mini", "arcee") == "trinity-mini"
 
     def test_bare_name_unchanged(self):
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         assert normalize_model_for_provider("trinity-mini", "arcee") == "trinity-mini"
 
 

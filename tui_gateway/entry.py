@@ -362,7 +362,7 @@ def main():
     # thread when there's actually MCP work to do, so the import cost stays
     # off the path entirely for the common case.
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         _mcp_servers = (read_raw_config() or {}).get("mcp_servers")
         _has_mcp_servers = isinstance(_mcp_servers, dict) and len(_mcp_servers) > 0
     except Exception:

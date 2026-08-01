@@ -6,7 +6,7 @@ PR #3526 salvage — user-configurable extra HTTP headers on LLM API calls
 
 import json
 
-from opencodon_cli.config import (
+from opencodon.config import (
     _normalize_custom_provider_entry,
     apply_custom_provider_extra_headers_to_client_kwargs,
     get_custom_provider_extra_headers,

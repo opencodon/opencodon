@@ -218,14 +218,14 @@ class TestTencentTokenhubNormalization:
 
     def test_bare_name_passthrough(self):
         """hy3-preview should remain unchanged when targeting tencent-tokenhub."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider("hy3-preview", "tencent-tokenhub")
         assert result == "hy3-preview"
 
     def test_vendor_prefixed_passthrough(self):
         """tencent/hy3-preview is not stripped since tencent-tokenhub is not in
         _MATCHING_PREFIX_STRIP_PROVIDERS — the slash survives."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider("tencent/hy3-preview", "tencent-tokenhub")
         # Direct providers not in any special set → passthrough
         assert result == "tencent/hy3-preview"
@@ -233,18 +233,18 @@ class TestTencentTokenhubNormalization:
     def test_not_in_matching_prefix_strip_set(self):
         """tencent-tokenhub does NOT need prefix stripping — it only has
         one model (hy3-preview) and users won't copy vendor/ form."""
-        from opencodon_cli.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
+        from opencodon.common.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
         assert "tencent-tokenhub" not in _MATCHING_PREFIX_STRIP_PROVIDERS
 
     def test_not_in_lowercase_providers(self):
         """tencent-tokenhub does not require lowercase normalization."""
-        from opencodon_cli.model_normalize import _LOWERCASE_MODEL_PROVIDERS
+        from opencodon.common.model_normalize import _LOWERCASE_MODEL_PROVIDERS
         assert "tencent-tokenhub" not in _LOWERCASE_MODEL_PROVIDERS
 
     @pytest.mark.parametrize("empty_input", ["", None, "   "])
     def test_normalize_empty_and_none(self, empty_input):
         """None, empty, and whitespace-only inputs return empty string."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider(empty_input, "tencent-tokenhub")
         assert result == "" or result.strip() == ""
 

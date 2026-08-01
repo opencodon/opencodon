@@ -67,7 +67,7 @@ class TestToolsSlashDisableWithReset:
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
              patch("opencodon_cli.tools_config.save_config"), \
              patch("opencodon_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("opencodon_cli.config.load_config", return_value={}), \
+             patch("opencodon.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools disable web")
         mock_reset.assert_called_once()
@@ -80,7 +80,7 @@ class TestToolsSlashDisableWithReset:
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
              patch("opencodon_cli.tools_config.save_config"), \
              patch("opencodon_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("opencodon_cli.config.load_config", return_value={}), \
+             patch("opencodon.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session"), \
              patch("builtins.input") as mock_input:
             cli_obj._handle_tools_command("/tools disable web")
@@ -93,7 +93,7 @@ class TestToolsSlashDisableWithReset:
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
              patch("opencodon_cli.tools_config.save_config"), \
              patch("opencodon_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("opencodon_cli.config.load_config", return_value={}), \
+             patch("opencodon.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools disable web")
         mock_reset.assert_called_once()
@@ -117,7 +117,7 @@ class TestToolsSlashEnableWithReset:
                    return_value={"platform_toolsets": {"cli": ["memory"]}}), \
              patch("opencodon_cli.tools_config.save_config"), \
              patch("opencodon_cli.tools_config._get_platform_tools", return_value={"memory", "web"}), \
-             patch("opencodon_cli.config.load_config", return_value={}), \
+             patch("opencodon.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools enable web")
         mock_reset.assert_called_once()

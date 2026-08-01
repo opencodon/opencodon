@@ -70,7 +70,7 @@ def patch_load_config(monkeypatch):
     """Helper to set model_cfg seen by _try_azure_foundry."""
     def _apply(model_cfg):
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {"model": model_cfg},
         )
     return _apply

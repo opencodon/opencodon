@@ -341,7 +341,7 @@ class _PluginBothProvider(ImageGenProvider):
 
 class TestDynamicSchema:
     def _no_discovery(self, monkeypatch):
-        import opencodon_cli.plugins as plugins_module
+        import opencodon.plugins_runtime as plugins_module
         monkeypatch.setattr(plugins_module, "_ensure_plugins_discovered", lambda *a, **k: None)
 
     def test_fal_edit_model_advertises_both(self, cfg_home, monkeypatch):

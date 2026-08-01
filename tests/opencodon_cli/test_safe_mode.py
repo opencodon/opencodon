@@ -57,7 +57,7 @@ def test_prepare_agent_startup_applies_safe_mode_before_plugin_discovery(monkeyp
     import opencodon_cli.main as main_mod
 
     args = types.SimpleNamespace(command="chat", safe_mode=True, tui=False)
-    plugins = types.ModuleType("opencodon_cli.plugins")
+    plugins = types.ModuleType("opencodon.plugins_runtime")
 
     def discover_plugins() -> None:
         assert os.environ["OPENCODON_SAFE_MODE"] == "1"
@@ -65,7 +65,7 @@ def test_prepare_agent_startup_applies_safe_mode_before_plugin_discovery(monkeyp
         assert os.environ["OPENCODON_IGNORE_RULES"] == "1"
 
     setattr(plugins, "discover_plugins", discover_plugins)
-    monkeypatch.setitem(sys.modules, "opencodon_cli.plugins", plugins)
+    monkeypatch.setitem(sys.modules, "opencodon.plugins_runtime", plugins)
     monkeypatch.setattr(main_mod, "_should_background_mcp_startup", lambda _args: False)
     monkeypatch.setattr(main_mod, "_command_has_dedicated_mcp_startup", lambda _args: True)
 
@@ -74,7 +74,7 @@ def test_prepare_agent_startup_applies_safe_mode_before_plugin_discovery(monkeyp
 
 def test_plugin_discovery_skipped(monkeypatch):
     monkeypatch.setenv("OPENCODON_SAFE_MODE", "1")
-    from opencodon_cli.plugins import PluginManager
+    from opencodon.plugins_runtime import PluginManager
 
     mgr = PluginManager()
     called = []
@@ -88,7 +88,7 @@ def test_plugin_discovery_skipped(monkeypatch):
 
 
 def test_plugin_discovery_runs_without_safe_mode(monkeypatch):
-    from opencodon_cli.plugins import PluginManager
+    from opencodon.plugins_runtime import PluginManager
 
     mgr = PluginManager()
     called = []
@@ -104,7 +104,7 @@ def test_mcp_servers_empty(monkeypatch):
     from tools.mcp_tool import _load_mcp_config
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"mcp_servers": {"github": {"url": "https://example.com/mcp"}}},
     )
 
@@ -115,7 +115,7 @@ def test_mcp_servers_load_without_safe_mode(monkeypatch):
     from tools.mcp_tool import _load_mcp_config
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"mcp_servers": {"github": {"url": "https://example.com/mcp"}}},
     )
 
@@ -157,10 +157,10 @@ def test_shell_hooks_register_without_safe_mode(monkeypatch):
     }
 
     manager = types.SimpleNamespace(_hooks={})
-    plugins = types.ModuleType("opencodon_cli.plugins")
+    plugins = types.ModuleType("opencodon.plugins_runtime")
     setattr(plugins, "get_plugin_manager", lambda: manager)
     setattr(plugins, "VALID_HOOKS", {"pre_tool_call"})
-    monkeypatch.setitem(sys.modules, "opencodon_cli.plugins", plugins)
+    monkeypatch.setitem(sys.modules, "opencodon.plugins_runtime", plugins)
     monkeypatch.setattr(sh, "_registered", set())
 
     registered = sh.register_from_config(cfg, accept_hooks=True)

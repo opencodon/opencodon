@@ -451,7 +451,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     in every MCP server's ``env:`` block.
     """
     try:
-        from opencodon_cli.env_loader import get_secret_source
+        from opencodon.config.env_loader import get_secret_source
     except Exception:  # pragma: no cover — early bootstrap/import fallback
         get_secret_source = None
     env = {}
@@ -4429,7 +4429,7 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``os.environ`` (which includes ``~/.opencodon/.env`` loaded at startup).
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from utils import env_var_enabled as _env_enabled
 
         if _env_enabled("OPENCODON_SAFE_MODE"):
@@ -4440,7 +4440,7 @@ def _load_mcp_config() -> Dict[str, dict]:
             return {}
         # Ensure .env vars are available for interpolation
         try:
-            from opencodon_cli.env_loader import load_opencodon_dotenv
+            from opencodon.config.env_loader import load_opencodon_dotenv
             load_opencodon_dotenv()
         except Exception:
             pass

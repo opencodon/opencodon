@@ -1683,7 +1683,7 @@ def _load_config() -> dict:
     key cleanly falls back to DEFAULT_EXECUTION_MODE.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config().get("code_execution", {})
         return cfg if isinstance(cfg, dict) else {}

@@ -44,7 +44,7 @@ import urllib.error
 import urllib.parse
 import zipfile
 
-from opencodon_cli._subprocess_compat import windows_detach_flags, windows_hide_flags
+from opencodon.common._subprocess_compat import windows_detach_flags, windows_hide_flags
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -56,7 +56,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from opencodon_cli import __version__, __release_date__
-from opencodon_cli.config import (
+from opencodon.config import (
     cfg_get,
     DEFAULT_CONFIG,
     OPTIONAL_ENV_VARS,
@@ -1411,9 +1411,9 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
        ``normalize_model_for_provider`` (e.g. ``anthropic/claude-opus-4.6``
        on native anthropic → ``claude-opus-4-6``).
     """
-    from opencodon_cli.config import get_compatible_custom_providers
+    from opencodon.config import get_compatible_custom_providers
     from opencodon_cli.models import _KNOWN_PROVIDER_NAMES, normalize_provider
-    from opencodon_cli.model_normalize import normalize_model_for_provider
+    from opencodon.common.model_normalize import normalize_model_for_provider
     from opencodon_cli.providers import resolve_custom_provider, resolve_user_provider
 
     prov_in = (provider or "").strip()
@@ -6518,7 +6518,7 @@ def get_auxiliary_models(profile: Optional[str] = None):
 def get_moa_models(profile: Optional[str] = None):
     """Return the configured Mixture-of-Agents provider/model slots."""
     try:
-        from opencodon_cli.moa_config import normalize_moa_config
+        from opencodon.config.moa_config import normalize_moa_config
 
         with _profile_scope(profile):
             cfg = load_config()
@@ -6534,7 +6534,7 @@ def get_moa_models(profile: Optional[str] = None):
 def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
     """Persist the Mixture-of-Agents provider/model slots."""
     try:
-        from opencodon_cli.moa_config import normalize_moa_config, validate_moa_payload
+        from opencodon.config.moa_config import normalize_moa_config, validate_moa_payload
 
         def _slot_dict(slot: MoaModelSlot) -> dict:
             # Drop unset optionals so saved slots stay minimal ({provider, model}).
@@ -6982,7 +6982,7 @@ def _catalog_provider_env_metadata() -> dict:
     # promoted into a provider card. Copilot lists GITHUB_TOKEN among its auth
     # aliases, but its provider card uses the provider-owned COPILOT_GITHUB_TOKEN.
     try:
-        from opencodon_cli.config import OPTIONAL_ENV_VARS as _OPT
+        from opencodon.config import OPTIONAL_ENV_VARS as _OPT
     except Exception:
         _OPT = {}
     _non_provider_keys = {
@@ -8779,11 +8779,11 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     except (ImportError, KeyError):
         pass
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
     except ImportError:
         get_env_value = None  # type: ignore
     try:
-        from opencodon_cli.env_loader import format_secret_source_suffix
+        from opencodon.config.env_loader import format_secret_source_suffix
     except ImportError:
         format_secret_source_suffix = None  # type: ignore
 
@@ -12773,11 +12773,11 @@ async def list_hooks():
     currently executable, plus the set of valid hook events so the create
     form can offer them.
     """
-    from opencodon_cli.config import load_config as _load_config
+    from opencodon.config import load_config as _load_config
     from agent import shell_hooks
 
     try:
-        from opencodon_cli.plugins import VALID_HOOKS
+        from opencodon.plugins_runtime import VALID_HOOKS
         valid_events = sorted(VALID_HOOKS)
     except Exception:
         valid_events = []
@@ -12841,7 +12841,7 @@ async def create_hook(body: HookCreate):
         raise HTTPException(status_code=400, detail="event and command are required")
 
     try:
-        from opencodon_cli.plugins import VALID_HOOKS
+        from opencodon.plugins_runtime import VALID_HOOKS
         if event not in VALID_HOOKS:
             raise HTTPException(
                 status_code=400,
@@ -14388,7 +14388,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
         provider_readiness_status,
         web_provider_capabilities,
     )
-    from opencodon_cli.config import get_env_value
+    from opencodon.config import get_env_value
 
     valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
     if name not in valid:
@@ -14753,7 +14753,7 @@ async def save_toolset_env(name: str, body: ToolsetEnvUpdate, profile: Optional[
         _get_effective_configurable_toolsets,
         _visible_providers,
     )
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
 
     valid_ts = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
     if name not in valid_ts:
@@ -14900,7 +14900,7 @@ def _terminal_cfg_value(terminal_cfg: dict, key: str, env_var: str) -> str:
     if value is not None and str(value).strip():
         return str(value).strip()
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         return (get_env_value(env_var) or "").strip()
     except Exception:
@@ -14966,7 +14966,7 @@ def _probe_modal_backend() -> tuple:
     except Exception:
         pass
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         if get_env_value("MODAL_TOKEN_ID") and get_env_value("MODAL_TOKEN_SECRET"):
             return ("ready", "")
@@ -14980,7 +14980,7 @@ def _probe_modal_backend() -> tuple:
 
 def _probe_daytona_backend() -> tuple:
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         if get_env_value("DAYTONA_API_KEY"):
             return ("ready", "")
@@ -15988,7 +15988,7 @@ def _resolve_chat_argv(
     argv, cwd = _make_tui_argv(PROJECT_ROOT / "apps/tui", tui_dev=False)
     env = os.environ.copy()
     try:
-        from opencodon_cli.config import apply_terminal_config_to_env
+        from opencodon.config import apply_terminal_config_to_env
         apply_terminal_config_to_env(env=env)
     except Exception:
         _log.debug("Failed to apply terminal config bridge for dashboard chat", exc_info=True)
@@ -17636,7 +17636,7 @@ def _discover_dashboard_plugins() -> list:
     plugins = []
     seen_names: set = set()
 
-    from opencodon_cli.plugins import get_bundled_plugins_dir
+    from opencodon.plugins_runtime import get_bundled_plugins_dir
     bundled_root = get_bundled_plugins_dir()
     # User dashboard plugins are a dashboard-owned asset (same category as
     # theme YAML): resolve them from the process launch home so they don't
@@ -18471,7 +18471,7 @@ def start_server(
             # Hint when credentials exist but the bundled provider is blocked
             # (#54489).
             try:
-                from opencodon_cli.config import load_config as _load_cfg
+                from opencodon.config import load_config as _load_cfg
                 from opencodon_cli.plugins_cmd import _BASIC_AUTH_PLUGIN_KEYS
 
                 _cfg = _load_cfg()

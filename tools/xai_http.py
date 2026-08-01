@@ -73,12 +73,12 @@ def has_xai_credentials() -> bool:
 def get_env_value(name: str, default=None):
     """Read ``name`` from ``~/.opencodon/.env`` first, then ``os.environ``.
 
-    Wraps :func:`opencodon_cli.config.get_env_value` so tests can patch
+    Wraps :func:`opencodon.config.get_env_value` so tests can patch
     ``tools.xai_http.get_env_value`` to inject dotenv-only secrets into the
     xAI credential resolver.
     """
     try:
-        from opencodon_cli.config import get_env_value as _opencodon_get_env_value
+        from opencodon.config import get_env_value as _opencodon_get_env_value
 
         value = _opencodon_get_env_value(name)
         if value is not None:
@@ -100,7 +100,7 @@ def opencodon_xai_user_agent() -> str:
 def _load_config_section(section_name: str) -> Dict[str, Any]:
     """Return a top-level opencodon config section as a dict, or empty."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config()
         section = cfg.get(section_name) if isinstance(cfg, dict) else None
@@ -248,7 +248,7 @@ def resolve_xai_http_credentials(
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
     Prefers opencodon-managed xAI OAuth credentials when available, then falls back
-    to ``XAI_API_KEY`` resolved via ``opencodon_cli.config.get_env_value`` so keys
+    to ``XAI_API_KEY`` resolved via ``opencodon.config.get_env_value`` so keys
     stored in ``~/.opencodon/.env`` (the standard opencodon location) are honored —
     not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model

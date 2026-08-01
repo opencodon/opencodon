@@ -102,7 +102,7 @@ def _setup_isolated_home(tmp_path, monkeypatch, model_yaml_value, *, base_url=""
         lambda *a, **k: 8192,
     )
     monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
-    monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: opencodon_home)
+    monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: opencodon_home)
     return cfg_path
 
 

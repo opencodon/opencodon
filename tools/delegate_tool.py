@@ -1451,7 +1451,7 @@ def _build_child_agent(
             logger.debug("spawn_requested relay failed: %s", exc)
 
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
         _invoke_hook(
             "subagent_start",
             parent_session_id=getattr(parent_agent, "session_id", None),
@@ -2801,7 +2801,7 @@ def delegate_task(
         # child was closed.
         _parent_session_id = getattr(parent_agent, "session_id", None)
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
         except Exception:
             _invoke_hook = None
         # Aggregate child spend here so the parent's footer/UI reflect the true
@@ -3307,7 +3307,7 @@ def _load_config() -> dict:
     prefer_legacy = os.environ.get("OPENCODON_IGNORE_USER_CONFIG") == "1"
     if not prefer_legacy:
         try:
-            from opencodon_cli.config import load_config_readonly
+            from opencodon.config import load_config_readonly
 
             full = load_config_readonly()
             cfg = full.get("delegation") or {}

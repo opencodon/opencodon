@@ -11,7 +11,7 @@ This module ties together the foundation layers:
 
 - ``agent.models_dev``            -- models.dev catalog, ModelInfo, ProviderInfo
 - ``opencodon_cli.providers``        -- canonical provider identity + overlays
-- ``opencodon_cli.model_normalize``  -- per-provider name formatting
+- ``opencodon.common.model_normalize``  -- per-provider name formatting
 
 Provider switching uses the ``--provider`` flag exclusively.
 No colon-based ``provider:model`` syntax — colons are reserved for
@@ -34,7 +34,7 @@ from opencodon_cli.providers import (
     is_aggregator,
     resolve_provider_full,
 )
-from opencodon_cli.model_normalize import (
+from opencodon.common.model_normalize import (
     normalize_model_for_provider,
 )
 from agent.models_dev import (
@@ -117,7 +117,7 @@ def _save_discovered_models_to_config(
     if not api_url or not model_ids:
         return
     try:
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         providers = cfg.get("custom_providers") or []
@@ -326,7 +326,7 @@ def _load_direct_aliases() -> dict[str, DirectAlias]:
     """
     merged = dict(_BUILTIN_DIRECT_ALIASES)
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
 
         # --- model_aliases (dict-based format) ---
@@ -543,7 +543,7 @@ def resolve_persist_behavior(
     if explicit_provider:
         return False
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         model_cfg = load_config().get("model")
         if isinstance(model_cfg, dict):
@@ -818,7 +818,7 @@ def resolve_display_context_length(
         configured_model or configured_provider or configured_base_url
     ):
         try:
-            from opencodon_cli.route_identity import should_clear_context_pin
+            from opencodon.common.route_identity import should_clear_context_pin
 
             if should_clear_context_pin(
                 configured_model,
@@ -1005,7 +1005,7 @@ def switch_model(
             )
             # Check for common config issues that cause provider resolution failures
             try:
-                from opencodon_cli.config import validate_config_structure
+                from opencodon.config import validate_config_structure
                 _cfg_issues = validate_config_structure()
                 if _cfg_issues:
                     _switch_err += "\n\nRun 'opencodon doctor' — config issues detected:"
@@ -1022,8 +1022,8 @@ def switch_model(
         target_provider = pdef.id
         if target_provider == "moa" and not new_model:
             try:
-                from opencodon_cli.config import load_config
-                from opencodon_cli.moa_config import normalize_moa_config
+                from opencodon.config import load_config
+                from opencodon.config.moa_config import normalize_moa_config
 
                 new_model = normalize_moa_config(load_config().get("moa") or {})["default_preset"]
             except Exception:
@@ -1111,8 +1111,8 @@ def switch_model(
     # =================================================================
     else:
         try:
-            from opencodon_cli.config import load_config
-            from opencodon_cli.moa_config import exact_moa_preset_name, normalize_moa_config
+            from opencodon.config import load_config
+            from opencodon.config.moa_config import exact_moa_preset_name, normalize_moa_config
 
             _moa_cfg = normalize_moa_config(load_config().get("moa") or {})
             _moa_match = exact_moa_preset_name(_moa_cfg, raw_input)
@@ -1426,7 +1426,7 @@ def switch_model(
     if not validation.get("accepted"):
         override = False
         if user_providers:
-            from opencodon_cli.config import is_provider_enabled
+            from opencodon.config import is_provider_enabled
             # user_providers is a dict: {provider_slug: config_dict}
             for slug, cfg in user_providers.items():
                 if not is_provider_enabled(cfg):
@@ -1562,7 +1562,7 @@ def _credential_pool_is_usable(provider: str, *, raw_pool_present: bool = False)
 def _extra_headers_from_config(entry: Any) -> dict[str, str]:
     if not isinstance(entry, dict):
         return {}
-    from opencodon_cli.config import normalize_extra_headers
+    from opencodon.config import normalize_extra_headers
 
     return normalize_extra_headers(entry.get("extra_headers"))
 
@@ -2188,7 +2188,7 @@ def list_authenticated_providers(
         # the wire protocol differs.
         from collections import OrderedDict as _OD3
 
-        from opencodon_cli.config import is_provider_enabled
+        from opencodon.config import is_provider_enabled
 
         ep_groups: "_OD3[tuple, dict]" = _OD3()
         for ep_name, ep_cfg in user_providers.items():
@@ -2664,7 +2664,7 @@ def list_authenticated_providers(
     # ``provider_id`` so PROVIDER_REGISTRY entries that match user-config
     # blocks are filtered consistently.
     try:
-        from opencodon_cli.config import is_provider_enabled
+        from opencodon.config import is_provider_enabled
         if isinstance(user_providers, dict):
             _disabled_slugs = {
                 str(name).strip().lower()

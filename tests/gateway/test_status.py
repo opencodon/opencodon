@@ -735,7 +735,7 @@ class TestTerminatePid:
         # pythonw.exe backend doesn't flash a conhost window on force-kill.
         # windows_hide_flags() is 0 on the POSIX test host (a valid no-op
         # creationflags value); on real Windows it is CREATE_NO_WINDOW.
-        from opencodon_cli._subprocess_compat import windows_hide_flags
+        from opencodon.common._subprocess_compat import windows_hide_flags
 
         assert calls == [
             (["taskkill", "/PID", "123", "/T", "/F"], True, True, 10, windows_hide_flags())

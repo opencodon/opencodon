@@ -187,7 +187,7 @@ def _load_dashboard_section() -> dict:
     ``.get(...)`` access.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
     except Exception:
         return {}
     try:

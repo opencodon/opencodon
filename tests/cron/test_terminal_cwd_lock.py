@@ -164,8 +164,8 @@ def test_run_job_releases_cwd_lock_when_body_raises(tmp_path):
 
     with patch("cron.scheduler._opencodon_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
-         patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
+         patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
+         patch("opencodon.config.env_loader.reset_secret_source_cache"), \
          patch.object(sched.logger, "info", side_effect=_raise_on_workdir_log), \
          patch("opencodon_state.SessionDB", return_value=MagicMock()):
         # run_job catches its own body exceptions and returns (False, ...);

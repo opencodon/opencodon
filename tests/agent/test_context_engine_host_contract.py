@@ -250,11 +250,11 @@ def test_discover_context_engines_includes_plugin_registered_engines(monkeypatch
         fake_repo,
     )
     monkeypatch.setattr(
-        "opencodon_cli.plugins.discover_plugins",
+        "opencodon.plugins_runtime.discover_plugins",
         lambda *_a, **_kw: None,
     )
     monkeypatch.setattr(
-        "opencodon_cli.plugins.get_plugin_context_engine",
+        "opencodon.plugins_runtime.get_plugin_context_engine",
         lambda: FakePluginEngine(),
     )
 
@@ -276,11 +276,11 @@ def test_discover_context_engines_dedupes_by_name(monkeypatch):
         lambda: [("compressor", "built-in compressor", True)],
     )
     monkeypatch.setattr(
-        "opencodon_cli.plugins.discover_plugins",
+        "opencodon.plugins_runtime.discover_plugins",
         lambda *_a, **_kw: None,
     )
     monkeypatch.setattr(
-        "opencodon_cli.plugins.get_plugin_context_engine",
+        "opencodon.plugins_runtime.get_plugin_context_engine",
         lambda: FakePluginEngine(),
     )
 
@@ -292,7 +292,7 @@ def test_discover_context_engines_dedupes_by_name(monkeypatch):
 def test_engine_collector_forwards_register_command_to_plugin_manager():
     """A plugin context engine can register a slash command via ``ctx.register_command``."""
     from plugins.context_engine import _EngineCollector
-    from opencodon_cli.plugins import get_plugin_manager
+    from opencodon.plugins_runtime import get_plugin_manager
 
     handler = lambda raw_args: f"echo: {raw_args}"
 
@@ -319,7 +319,7 @@ def test_engine_collector_forwards_register_command_to_plugin_manager():
 def test_engine_collector_rejects_builtin_command_conflicts():
     """Context engine cannot shadow built-in slash commands like /help."""
     from plugins.context_engine import _EngineCollector
-    from opencodon_cli.plugins import get_plugin_manager
+    from opencodon.plugins_runtime import get_plugin_manager
 
     collector = _EngineCollector(engine_name="my-lcm")
     collector.register_command("help", lambda *_: "shadow")

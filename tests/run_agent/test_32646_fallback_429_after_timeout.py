@@ -147,7 +147,7 @@ class TestFallbackChainResetOnTransportRecovery:
                 return_value=(mock_fb_client, "glm-4.7"),
             ),
             patch(
-                "opencodon_cli.model_normalize.normalize_model_for_provider",
+                "opencodon.common.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
         ):
@@ -271,7 +271,7 @@ class TestFallbackChainResetOnTransportRecovery:
                 return_value=(mock_fb_client, "glm-4.7"),
             ) as mock_resolve,
             patch(
-                "opencodon_cli.model_normalize.normalize_model_for_provider",
+                "opencodon.common.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch("agent.model_metadata.get_model_context_length", return_value=200000),

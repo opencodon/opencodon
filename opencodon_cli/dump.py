@@ -13,8 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from opencodon_cli.config import get_opencodon_home, get_env_path, get_project_root, load_config
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config import get_opencodon_home, get_env_path, get_project_root, load_config
+from opencodon.config.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
 from agent.skill_utils import is_excluded_skill_path
 
@@ -216,7 +216,7 @@ def _config_overrides(config: dict) -> dict[str, str]:
     
     Returns a flat dict of dotpath -> value for interesting overrides.
     """
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     overrides = {}
 

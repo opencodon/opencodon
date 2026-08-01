@@ -35,7 +35,7 @@ class TestGeminiSetupFreeTierBlock:
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-free-tier-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         # Mock the probe to claim this is a free-tier key
         with patch(
@@ -69,7 +69,7 @@ class TestGeminiSetupFreeTierBlock:
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-paid-tier-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
@@ -98,7 +98,7 @@ class TestGeminiSetupFreeTierBlock:
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
@@ -126,7 +126,7 @@ class TestGeminiSetupFreeTierBlock:
         monkeypatch.setenv("DEEPSEEK_API_KEY", "fake-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",

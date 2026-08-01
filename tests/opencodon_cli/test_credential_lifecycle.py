@@ -32,7 +32,7 @@ def opencodon_home(monkeypatch, tmp_path):
     home = tmp_path / "cred_home"
     home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))
-    from opencodon_cli.config import invalidate_env_cache
+    from opencodon.config import invalidate_env_cache
 
     invalidate_env_cache()
     return home
@@ -42,7 +42,7 @@ def _write_env(home, **pairs):
     home.joinpath(".env").write_text(
         "".join(f"{k}={v}\n" for k, v in pairs.items()), encoding="utf-8"
     )
-    from opencodon_cli.config import invalidate_env_cache
+    from opencodon.config import invalidate_env_cache
 
     invalidate_env_cache()
 
@@ -100,7 +100,7 @@ def test_delete_env_key_prunes_env_seeded_pool_entry(opencodon_home):
     assert "zai" in body["pool_pruned"]
 
     # .env cleared
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert "ZAI_API_KEY" not in load_env()
 
@@ -244,7 +244,7 @@ def test_update_rotates_config_yaml_model_mirror(opencodon_home):
     assert old not in cfg_text, "stale old key left in config.yaml (#62269)"
     assert new in cfg_text, "config.yaml mirror not rotated to the new key"
 
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert load_env()["OPENAI_API_KEY"] == new
 
@@ -330,6 +330,6 @@ def test_delete_then_resave_round_trip(opencodon_home):
         "an explicit re-save must lift the suppression (like `opencodon auth add`)"
     )
 
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert load_env()["ZAI_API_KEY"] == NEW_KEY

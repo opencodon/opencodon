@@ -684,7 +684,7 @@ def _goal_judge_max_tokens() -> int:
     back to the default rather than crashing the goal loop.
     """
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cfg = load_config()
         value = (

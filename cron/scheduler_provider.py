@@ -133,7 +133,7 @@ def resolve_cron_scheduler() -> "CronScheduler":
 
     name = ""
     try:
-        from opencodon_cli.config import cfg_get, load_config
+        from opencodon.config import cfg_get, load_config
         name = (cfg_get(load_config(), "cron", "provider", default="") or "").strip()
     except Exception:
         pass

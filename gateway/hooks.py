@@ -43,7 +43,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 
 
 HOOKS_DIR = get_opencodon_home() / "hooks"

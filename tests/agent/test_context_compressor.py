@@ -3323,7 +3323,7 @@ class TestThresholdTokensCap:
     def test_default_config_disabled_and_no_behavior_change(self):
         """DEFAULT_CONFIG ships threshold_tokens=None (disabled) and both
         None and 0 leave the ratio-based trigger byte-identical."""
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
         assert DEFAULT_CONFIG["compression"]["threshold_tokens"] is None
 
         with patch("agent.context_compressor.get_model_context_length", return_value=1_000_000):

@@ -78,7 +78,7 @@ def fal_key_is_configured() -> bool:
     """Return True when FAL_KEY is set to a non-whitespace value.
 
     Consults both ``os.environ`` and ``~/.opencodon/.env`` (via
-    ``opencodon_cli.config.get_env_value`` when available) so tool-side
+    ``opencodon.config.get_env_value`` when available) so tool-side
     checks and CLI setup-time checks agree.  A whitespace-only value
     is treated as unset everywhere.
     """
@@ -87,7 +87,7 @@ def fal_key_is_configured() -> bool:
         # Fall back to the .env file for CLI paths that may run before
         # dotenv is loaded into os.environ.
         try:
-            from opencodon_cli.config import get_env_value
+            from opencodon.config import get_env_value
 
             value = get_env_value("FAL_KEY")
         except Exception:

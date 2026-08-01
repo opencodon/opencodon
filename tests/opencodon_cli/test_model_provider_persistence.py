@@ -109,7 +109,7 @@ class TestProviderPersistsAfterModelSave:
         monkeypatch.setenv("KIMI_API_KEY", "sk-kimi-test-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         # Mock the model selection prompt to return "kimi-k2.5"
         # Also mock input() for the base URL prompt and builtins.input
@@ -130,7 +130,7 @@ class TestProviderPersistsAfterModelSave:
     def test_copilot_provider_saved_when_selected(self, config_home):
         """_model_flow_copilot should persist provider/base_url/model together."""
         from opencodon_cli.main import _model_flow_copilot
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch(
             "opencodon_cli.auth.resolve_api_key_provider_credentials",
@@ -255,7 +255,7 @@ class TestProviderPersistsAfterModelSave:
     def test_copilot_acp_provider_saved_when_selected(self, config_home):
         """_model_flow_copilot_acp should persist provider/base_url/model together."""
         from opencodon_cli.main import _model_flow_copilot_acp
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch(
             "opencodon_cli.auth.get_external_process_provider_status",
@@ -316,7 +316,7 @@ class TestProviderPersistsAfterModelSave:
 
     def test_opencode_go_models_are_selectable_and_persist_normalized(self, config_home, monkeypatch):
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         monkeypatch.setenv("OPENCODE_GO_API_KEY", "test-key")
 
@@ -336,7 +336,7 @@ class TestProviderPersistsAfterModelSave:
 
     def test_opencode_go_same_provider_switch_recomputes_api_mode(self, config_home, monkeypatch):
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         monkeypatch.setenv("OPENCODE_GO_API_KEY", "test-key")
         (config_home / "config.yaml").write_text(
@@ -383,7 +383,7 @@ class TestBaseUrlValidation:
         monkeypatch.setenv("MINIMAX_API_KEY", "test-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config, get_env_value
+        from opencodon.config import load_config, get_env_value
 
         # User types a shell command instead of a URL at the base URL prompt
         with patch("opencodon_cli.auth._prompt_model_selection", return_value="MiniMax-M2"), \
@@ -409,7 +409,7 @@ class TestBaseUrlValidation:
         monkeypatch.setenv("MINIMAX_API_KEY", "test-key")
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config, get_env_value
+        from opencodon.config import load_config, get_env_value
 
         with patch("opencodon_cli.auth._prompt_model_selection", return_value="MiniMax-M2"), \
              patch("opencodon_cli.auth.deactivate_provider"), \
@@ -431,7 +431,7 @@ class TestBaseUrlValidation:
         monkeypatch.delenv("MINIMAX_BASE_URL", raising=False)
 
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config, get_env_value
+        from opencodon.config import load_config, get_env_value
 
         with patch("opencodon_cli.auth._prompt_model_selection", return_value="MiniMax-M2"), \
              patch("opencodon_cli.auth.deactivate_provider"), \
@@ -449,7 +449,7 @@ class TestZaiEndpointPicker:
         """Selecting Global should save the direct API base URL."""
         from opencodon_cli.auth import ZAI_ENDPOINTS
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         global_url = ZAI_ENDPOINTS[0][1]  # "https://api.z.ai/api/paas/v4"
         monkeypatch.setenv("GLM_API_KEY", "test-key")
@@ -467,7 +467,7 @@ class TestZaiEndpointPicker:
         """Selecting Coding Plan Global should save the coding base URL."""
         from opencodon_cli.auth import ZAI_ENDPOINTS
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         coding_url = ZAI_ENDPOINTS[2][1]  # coding-global
         monkeypatch.setenv("GLM_API_KEY", "test-key")
@@ -486,7 +486,7 @@ class TestZaiEndpointPicker:
         """Selecting China should save the bigmodel.cn base URL."""
         from opencodon_cli.auth import ZAI_ENDPOINTS
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         cn_url = ZAI_ENDPOINTS[1][1]  # "https://open.bigmodel.cn/api/paas/v4"
         monkeypatch.setenv("GLM_API_KEY", "test-key")
@@ -503,7 +503,7 @@ class TestZaiEndpointPicker:
     def test_select_custom_proxy_url(self, config_home, monkeypatch):
         """Selecting Custom proxy should prompt for a URL and save it."""
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config, get_env_value
+        from opencodon.config import load_config, get_env_value
 
         monkeypatch.setenv("GLM_API_KEY", "test-key")
 
@@ -521,7 +521,7 @@ class TestZaiEndpointPicker:
     def test_custom_proxy_rejects_invalid_url(self, config_home, monkeypatch, capsys):
         """Custom proxy must start with http:// or https://."""
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         monkeypatch.setenv("GLM_API_KEY", "test-key")
         monkeypatch.delenv("GLM_BASE_URL", raising=False)
@@ -543,7 +543,7 @@ class TestZaiEndpointPicker:
     def test_cancel_keeps_existing_base_url(self, config_home, monkeypatch):
         """Cancelling the picker should not change the base URL."""
         from opencodon_cli.main import _model_flow_api_key_provider
-        from opencodon_cli.config import load_config, get_env_value
+        from opencodon.config import load_config, get_env_value
 
         monkeypatch.setenv("GLM_API_KEY", "test-key")
         monkeypatch.setenv("GLM_BASE_URL", "https://existing.example/v4")

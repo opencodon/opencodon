@@ -3,7 +3,7 @@ import sys
 import types
 
 
-from opencodon_cli.config import load_config, save_config
+from opencodon.config import load_config, save_config
 from opencodon_cli import setup as setup_mod
 from opencodon_cli.setup import setup_model_provider
 

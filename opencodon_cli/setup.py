@@ -133,7 +133,7 @@ def _set_reasoning_effort(config: Dict[str, Any], effort: str) -> None:
 
 
 # Import config helpers
-from opencodon_cli.config import (
+from opencodon.config import (
     cfg_get,
     DEFAULT_CONFIG,
     get_opencodon_home,
@@ -148,7 +148,7 @@ from opencodon_cli.config import (
 )
 # display_opencodon_home imported lazily at call sites (stale-module safety during opencodon update)
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 
 
 def print_header(title: str):
@@ -490,7 +490,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         _img_backend = None
         try:
             from agent.image_gen_registry import list_providers
-            from opencodon_cli.plugins import _ensure_plugins_discovered
+            from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for _p in list_providers():
@@ -718,7 +718,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
     """
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     print_header("Inference Provider")
     print_info("Choose how to connect to your main chat model.")
@@ -2138,7 +2138,7 @@ def run_setup_wizard(args):
       opencodon setup tools     — just tool configuration
       opencodon setup agent     — just agent settings
     """
-    from opencodon_cli.config import is_managed, managed_error
+    from opencodon.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")
         return
@@ -2483,7 +2483,7 @@ def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
 
     Either way nothing is enabled that the user did not explicitly choose.
     """
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     print()
     print_header("Blank Slate Setup")
@@ -2553,7 +2553,7 @@ def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
 
 def _blank_slate_walkthrough(config: dict, opencodon_home):
     """Opt-in walkthrough for Blank Slate: skills, tools, plugins, MCP, gateway."""
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     # ── Bundled skills — default to NONE, offer to seed all ──
     print()
@@ -2636,7 +2636,7 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
 
 def _run_quick_setup(config: dict, opencodon_home):
     """Quick setup — only configure items that are missing."""
-    from opencodon_cli.config import get_missing_env_vars
+    from opencodon.config import get_missing_env_vars
 
     print()
     print_header("Quick Setup — Missing Items Only")

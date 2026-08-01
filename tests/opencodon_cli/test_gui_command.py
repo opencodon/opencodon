@@ -1058,7 +1058,7 @@ def test_force_adhoc_signing_respects_explicit_caller_flag(monkeypatch):
 
 
 def test_desktop_launch_options_defaults_when_no_config():
-    with patch("opencodon_cli.config.load_config", return_value={}):
+    with patch("opencodon.config.load_config", return_value={}):
         flags, gpu = cli_main._desktop_launch_options()
     assert flags == []
     assert gpu == "auto"
@@ -1066,7 +1066,7 @@ def test_desktop_launch_options_defaults_when_no_config():
 
 def test_desktop_launch_options_reads_flags_list():
     cfg = {"desktop": {"electron_flags": ["--ozone-platform=x11", "--disable-gpu"]}}
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         flags, gpu = cli_main._desktop_launch_options()
     assert flags == ["--ozone-platform=x11", "--disable-gpu"]
     assert gpu == "auto"
@@ -1074,7 +1074,7 @@ def test_desktop_launch_options_reads_flags_list():
 
 def test_desktop_launch_options_splits_flag_string():
     cfg = {"desktop": {"electron_flags": "--ozone-platform=x11 --disable-gpu"}}
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         flags, _ = cli_main._desktop_launch_options()
     assert flags == ["--ozone-platform=x11", "--disable-gpu"]
 
@@ -1092,13 +1092,13 @@ def test_desktop_launch_options_splits_flag_string():
 )
 def test_desktop_launch_options_normalizes_disable_gpu(raw, expected):
     cfg = {"desktop": {"disable_gpu": raw}}
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         _, gpu = cli_main._desktop_launch_options()
     assert gpu == expected
 
 
 def test_desktop_launch_options_survives_config_error():
-    with patch("opencodon_cli.config.load_config", side_effect=RuntimeError("boom")):
+    with patch("opencodon.config.load_config", side_effect=RuntimeError("boom")):
         flags, gpu = cli_main._desktop_launch_options()
     assert flags == []
     assert gpu == "auto"

@@ -114,7 +114,7 @@ def _env_value(name: str) -> str:
     auto-detect cascade and ``check_web_api_key()`` blind to it. See #34290.
     """
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         val = get_env_value(name)
     except Exception:
@@ -130,7 +130,7 @@ def _has_env(name: str) -> bool:
 def _load_web_config() -> dict:
     """Load the ``web:`` section from ~/.opencodon/config.yaml."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         # ``or {}``: a present-but-null ``web:`` section (YAML ``web:`` with no
         # body) makes ``.get("web", {})`` return None, which would break every
         # caller that does ``_load_web_config().get(...)``. Honor the ``-> dict``
@@ -582,7 +582,7 @@ def _ensure_web_plugins_loaded() -> None:
     invocations.
     """
     try:
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:  # noqa: BLE001
@@ -1071,7 +1071,7 @@ if __name__ == "__main__":
 
     # Check if API keys are available
     web_available = check_web_api_key()
-    from opencodon_cli.config import get_env_value as _gev
+    from opencodon.config import get_env_value as _gev
     firecrawl_key_available = bool((_gev("FIRECRAWL_API_KEY") or "").strip())
     firecrawl_url_available = bool((_gev("FIRECRAWL_API_URL") or "").strip())
 

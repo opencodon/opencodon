@@ -60,7 +60,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-from opencodon_cli._subprocess_compat import bounded_git_probe
+from opencodon.common._subprocess_compat import bounded_git_probe
 
 logger = logging.getLogger("opencodon.coding_context")
 
@@ -336,7 +336,7 @@ def _coding_mode(config: Optional[dict[str, Any]]) -> str:
     """Return the normalized ``agent.coding_context`` mode (auto/focus/on/off)."""
     if config is None:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             config = load_config()
         except Exception:
@@ -364,7 +364,7 @@ def _coding_instructions(config: Optional[dict[str, Any]]) -> str:
     """
     if config is None:
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             config = load_config()
         except Exception:
@@ -669,7 +669,7 @@ def _enabled_mcp_servers(config: Optional[dict[str, Any]]) -> list[str]:
     of the coding workflow, not noise to strip.
     """
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
         from opencodon_cli.tools_config import _parse_enabled_flag
 
         servers = read_raw_config().get("mcp_servers") or {}

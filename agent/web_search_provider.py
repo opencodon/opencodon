@@ -59,7 +59,7 @@ from typing import Any, Dict, List, Optional
 def get_provider_env(name: str) -> str:
     """Config-aware env lookup for web providers.
 
-    Resolves *name* via :func:`opencodon_cli.config.get_env_value` (checks
+    Resolves *name* via :func:`opencodon.config.get_env_value` (checks
     ``os.environ`` first, then ``~/.opencodon/.env``) so credentials set
     through opencodon' config layer are visible even when they were never
     exported into the process environment — gateway sessions, delegate
@@ -71,7 +71,7 @@ def get_provider_env(name: str) -> str:
     """
     val: Optional[str] = None
     try:
-        from opencodon_cli.config import get_env_value
+        from opencodon.config import get_env_value
 
         val = get_env_value(name)
     except Exception:  # noqa: BLE001 — config layer optional here

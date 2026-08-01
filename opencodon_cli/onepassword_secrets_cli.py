@@ -27,7 +27,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from agent.secret_sources import onepassword as op_src
-from opencodon_cli.config import (
+from opencodon.config import (
     get_env_path,
     load_config,
     save_config,

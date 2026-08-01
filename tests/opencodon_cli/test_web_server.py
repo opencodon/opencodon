@@ -13,7 +13,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import yaml
 
-from opencodon_cli.config import (
+from opencodon.config import (
     reload_env,
     redact_key,
     OPTIONAL_ENV_VARS,
@@ -74,7 +74,7 @@ def _install_example_plugin(_isolate_opencodon_home):
     # fixtures exist to exercise the *serving* paths, so opt the example
     # plugin in exactly as a real operator would with `opencodon plugins
     # enable example`.
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     _cfg = load_config()
     _plugins_cfg = _cfg.setdefault("plugins", {})
     _enabled = _plugins_cfg.get("enabled")
@@ -547,7 +547,7 @@ class TestWebServerEndpoints:
         assert resp.json()["fields"] == []
 
     def test_get_memory_status_reports_missing_provider(self):
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         config = load_config()
         config.setdefault("memory", {})["provider"] = "not-installed"
@@ -569,7 +569,7 @@ class TestWebServerEndpoints:
         assert "builtin" not in {row["name"] for row in resp.json()["providers"]}
 
     def test_set_memory_provider_rejects_unready_and_clears_builtin(self):
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.put("/api/memory/provider", json={"provider": "not-installed"})
         assert resp.status_code == 400
@@ -588,7 +588,7 @@ class TestWebServerEndpoints:
         assert resp.status_code == 400
 
     def test_dashboard_plugin_providers_accepts_builtin_alias(self):
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.put(
             "/api/dashboard/plugin-providers",
@@ -607,7 +607,7 @@ class TestWebServerEndpoints:
         assert set(data["aggregator"]) == {"provider", "model"}
 
     def test_put_moa_models_persists_provider_model_slots(self):
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         payload = {
             "reference_models": [
@@ -632,7 +632,7 @@ class TestWebServerEndpoints:
         """#64156: a mid-edit autosave (provider picked, model empty) used to be
         silently normalized into the hardcoded default preset — the user's
         config was replaced without any error. The write path must reject it."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         original = load_config().get("moa")
 
@@ -669,7 +669,7 @@ class TestWebServerEndpoints:
         """GET → PUT round-trip must not erase newer per-preset knobs. The old
         Pydantic payload didn't declare fanout / reference_max_tokens, so any
         client save silently wiped hand-set values back to defaults."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         payload = {
             "presets": {
@@ -855,7 +855,7 @@ class TestWebServerEndpoints:
 
     def test_set_dashboard_font_persists_valid_choice(self):
         """A valid catalog id is accepted, persisted, and read back."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.put("/api/dashboard/font", json={"font": "inter"})
         assert resp.status_code == 200
@@ -887,7 +887,7 @@ class TestWebServerEndpoints:
 
     def test_get_dashboard_font_coerces_stale_persisted_value(self):
         """A config value no longer in the catalog reads back as 'theme'."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         config = load_config()
         config.setdefault("dashboard", {})["font"] = "retired-font-id"
@@ -898,7 +898,7 @@ class TestWebServerEndpoints:
     def test_dashboard_font_override_independent_of_theme(self):
         """The font override and the theme are stored separately — setting
         one must not disturb the other."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         self.client.put("/api/dashboard/theme", json={"name": "ember"})
         self.client.put("/api/dashboard/font", json={"font": "jetbrains-mono"})
@@ -2061,7 +2061,7 @@ class TestWebServerEndpoints:
     def test_config_schema_merges_custom_command_tts_provider(self):
         """A tts.providers.<name> command block appears in tts.provider options,
         appended AFTER the built-ins (original order preserved, no re-sort)."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         from opencodon_cli.web_server import CONFIG_SCHEMA
 
         builtins = list(CONFIG_SCHEMA["tts.provider"]["options"])
@@ -2081,7 +2081,7 @@ class TestWebServerEndpoints:
         assert "mycustomtts" not in CONFIG_SCHEMA["tts.provider"]["options"]
 
     def test_config_schema_merges_custom_command_stt_provider(self):
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("stt", {}).setdefault("providers", {})["mywhisper"] = {
@@ -2095,7 +2095,7 @@ class TestWebServerEndpoints:
     def test_config_schema_excludes_builtin_name_collisions(self):
         """A providers.EDGE command block must NOT be offered — the runtime
         rejects built-in names as command providers (case-insensitively)."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("tts", {}).setdefault("providers", {})["EDGE"] = {
@@ -2111,7 +2111,7 @@ class TestWebServerEndpoints:
     def test_config_schema_excludes_non_command_blocks(self):
         """Built-in-shaped blocks (voice/model, no command) and non-dicts are
         not offered as providers."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         tts = cfg.setdefault("tts", {})
@@ -2126,7 +2126,7 @@ class TestWebServerEndpoints:
     def test_config_schema_preserves_current_custom_provider_value(self):
         """A custom active tts.provider without a providers.<name> block stays
         selectable (current-value preservation, matching desktop behavior)."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("tts", {})["provider"] = "orphancustom"
@@ -2138,7 +2138,7 @@ class TestWebServerEndpoints:
     def test_config_schema_reflects_config_changes_without_restart(self):
         """Options are computed per-request — adding a provider after the
         first schema fetch shows up on the next fetch."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         before = self._schema_provider_options("tts.provider")
         assert "latecomer" not in before
@@ -2156,7 +2156,7 @@ class TestWebServerEndpoints:
     def test_config_schema_legacy_toplevel_command_provider(self):
         """The legacy top-level ``tts.<name>`` command block (runtime
         back-compat fallback) is also offered."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg.setdefault("tts", {})["legacytts"] = {
@@ -2318,7 +2318,7 @@ class TestWebServerEndpoints:
         # Vendor prefix stripped + dots→hyphens for the native Anthropic API.
         assert data["model"] == "claude-opus-4-6"
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         assert cfg["model"]["provider"] == "anthropic"
         assert cfg["model"]["default"] == "claude-opus-4-6"
@@ -2331,7 +2331,7 @@ class TestWebServerEndpoints:
             "opencodon_cli.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         cfg = load_config()
         cfg["model"] = {"provider": "openrouter", "default": "openai/gpt-5.5"}
         save_config(cfg)
@@ -2406,7 +2406,7 @@ class TestWebServerEndpoints:
         from pathlib import Path
 
         import opencodon_cli.web_server as ws
-        from opencodon_cli.config import get_opencodon_home
+        from opencodon.config import get_opencodon_home
 
         captured = {}
 
@@ -2544,7 +2544,7 @@ class TestWebServerEndpoints:
 
     def test_reveal_env_var(self, tmp_path):
         """POST /api/env/reveal should return the real unredacted value."""
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
         from opencodon_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN
         save_env_value("TEST_REVEAL_KEY", "super-secret-value-12345")
         resp = self.client.post(
@@ -2571,7 +2571,7 @@ class TestWebServerEndpoints:
         """POST /api/env/reveal without token should return 401."""
         from starlette.testclient import TestClient
         from opencodon_cli.web_server import app
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
         save_env_value("TEST_REVEAL_NOAUTH", "secret-value")
         # Use a fresh client WITHOUT the dashboard session header
         unauth_client = TestClient(app)
@@ -2583,7 +2583,7 @@ class TestWebServerEndpoints:
 
     def test_reveal_env_var_bad_token(self, tmp_path):
         """POST /api/env/reveal with wrong token should return 401."""
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
         from opencodon_cli.web_server import _SESSION_HEADER_NAME
         save_env_value("TEST_REVEAL_BADAUTH", "secret-value")
         resp = self.client.post(
@@ -2595,7 +2595,7 @@ class TestWebServerEndpoints:
 
     def test_reveal_env_var_custom_session_header_ignores_proxy_authorization(self, tmp_path):
         """A valid dashboard session header should coexist with proxy auth."""
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
         from opencodon_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         save_env_value("TEST_REVEAL_PROXY_AUTH", "secret-value")
@@ -2613,7 +2613,7 @@ class TestWebServerEndpoints:
 
     def test_reveal_env_var_legacy_authorization_header_still_works(self, tmp_path):
         """Keep old dashboard bundles working while the new header rolls out."""
-        from opencodon_cli.config import save_env_value
+        from opencodon.config import save_env_value
         from opencodon_cli.web_server import _SESSION_TOKEN
 
         save_env_value("TEST_REVEAL_LEGACY_AUTH", "secret-value")
@@ -2698,7 +2698,7 @@ class TestWebServerEndpoints:
             platform_registry.unregister("ircfake")
 
     def test_update_messaging_platform_saves_env_and_enablement(self):
-        from opencodon_cli.config import load_config, load_env
+        from opencodon.config import load_config, load_env
 
         resp = self.client.put(
             "/api/messaging/platforms/telegram",
@@ -2735,7 +2735,7 @@ class TestWebServerEndpoints:
         assert "numeric user IDs" in resp.json()["detail"]
 
     def test_update_messaging_platform_saves_slack_allowed_users(self):
-        from opencodon_cli.config import load_env
+        from opencodon.config import load_env
 
         resp = self.client.put(
             "/api/messaging/platforms/slack",
@@ -2775,7 +2775,7 @@ class TestWebServerEndpoints:
     def test_update_messaging_platform_accepts_slack_allowed_users_wildcard(self):
         # "*" is the gateway's allow-all wildcard (gateway/platforms/slack.py),
         # so the dashboard must accept it rather than rejecting it as malformed.
-        from opencodon_cli.config import load_env
+        from opencodon.config import load_env
 
         resp = self.client.put(
             "/api/messaging/platforms/slack",
@@ -2788,7 +2788,7 @@ class TestWebServerEndpoints:
     def test_update_messaging_platform_accepts_slack_allowed_users_trailing_comma(self):
         # The gateway drops empty entries (gateway/platforms/slack.py), so a
         # trailing/interior comma must not be rejected by the dashboard.
-        from opencodon_cli.config import load_env
+        from opencodon.config import load_env
 
         resp = self.client.put(
             "/api/messaging/platforms/slack",
@@ -3071,7 +3071,7 @@ class TestWebServerEndpoints:
         resolver (which ignores OPENAI_BASE_URL) can route to a self-hosted
         endpoint without an API key. Regression for the desktop onboarding bug
         where 'Local / custom endpoint' could never be configured."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.post(
             "/api/model/set",
@@ -3100,7 +3100,7 @@ class TestWebServerEndpoints:
         endpoint reappears as a ready row in the picker — matching the
         ``opencodon model`` custom flow. Regression for the desktop loop where a
         keyed custom endpoint could never be configured from the GUI."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.post(
             "/api/model/set",
@@ -3136,7 +3136,7 @@ class TestWebServerEndpoints:
     def test_set_model_main_non_custom_clears_stale_base_url(self):
         """Switching to a hosted provider must clear a stale base_url so the
         resolver picks that provider's own default endpoint."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["model"] = {
@@ -3158,7 +3158,7 @@ class TestWebServerEndpoints:
         base_url. Regression for the desktop bug where selecting a Xiaomi MiMo
         model reset a Token Plan endpoint back to the registry default, breaking
         Token Plan keys (https://token-plan-*.xiaomimimo.com/v1)."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["model"] = {
@@ -3185,7 +3185,7 @@ class TestWebServerEndpoints:
         """Switching the main provider must report auxiliary slots still pinned
         to a *different* provider so the UI can warn the user their helper tasks
         aren't following the switch (the silent credit-burn path)."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["model"] = {"provider": "nous", "default": "hermes-4"}
@@ -3216,7 +3216,7 @@ class TestWebServerEndpoints:
 
     def test_set_model_main_no_stale_when_aux_matches_new_provider(self):
         """Aux slots pinned to the SAME provider as the new main are not stale."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["model"] = {"provider": "nous", "default": "hermes-4"}
@@ -3241,7 +3241,7 @@ class TestWebServerEndpoints:
         """A bare model.provider=custom config should show up in Desktop even
         before the user has materialized it under providers.
         """
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {
@@ -3270,7 +3270,7 @@ class TestWebServerEndpoints:
         """Desktop can persist an OpenAI-compatible proxy in providers and make
         it the default for new chats.
         """
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         resp = self.client.post(
             "/api/providers/custom-endpoints",
@@ -3302,7 +3302,7 @@ class TestWebServerEndpoints:
         assert cfg["model"]["base_url"] == "http://127.0.0.1:8081/v1"
 
     def _seed_custom_provider_with_key(self):
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["providers"] = {
@@ -3325,7 +3325,7 @@ class TestWebServerEndpoints:
         at client construction (#62269), so the stale key keeps authenticating
         while the UI reports the change saved.
         """
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         self._seed_custom_provider_with_key()
 
@@ -3343,7 +3343,7 @@ class TestWebServerEndpoints:
 
     def test_set_model_main_falls_back_to_the_provider_entry_key(self):
         """With no key in the request the stored one is still adopted."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         self._seed_custom_provider_with_key()
 
@@ -3366,7 +3366,7 @@ class TestWebServerEndpoints:
         on an unrelated edit silently dropped all of them, leaving a provider
         that no longer authenticates or speaks the right protocol.
         """
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["providers"] = {
@@ -3408,7 +3408,7 @@ class TestWebServerEndpoints:
 
     def test_custom_endpoint_edit_keeps_the_other_models(self):
         """The panel names one default model; it doesn't enumerate the catalogue."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         cfg = load_config()
         cfg["providers"] = {
@@ -3447,7 +3447,7 @@ class TestWebServerEndpoints:
         to the deleted host with the deleted key, and the key the operator
         just removed through the dashboard stays in config.yaml.
         """
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         self.client.post(
             "/api/providers/custom-endpoints",
@@ -3479,7 +3479,7 @@ class TestWebServerEndpoints:
 
     def test_deleting_an_inactive_custom_endpoint_leaves_the_active_one_alone(self):
         """Only the mirror of the DELETED provider is scrubbed."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         for name, key in (("acme", "sk-acme"), ("other", "sk-other")):
             self.client.post(
@@ -3505,7 +3505,7 @@ class TestWebServerEndpoints:
         """Selecting a named custom endpoint from the Desktop model picker
         should keep its endpoint URL attached to model config.
         """
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         save_config({
             "model": {"provider": "nous", "default": "hermes-4"},
@@ -3733,7 +3733,7 @@ class TestConfigRoundTrip:
 
     def test_round_trip_preserves_model_subkeys(self):
         """Save and reload should not lose model.provider, model.base_url, etc."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         # Set up a config with model as a dict (the common user config form)
         save_config({
@@ -3762,7 +3762,7 @@ class TestConfigRoundTrip:
 
     def test_edit_model_name_preserved(self):
         """Changing the model string should update model.default on disk."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         web_config = self.client.get("/api/config").json()
         original_model = web_config["model"]
@@ -3783,7 +3783,7 @@ class TestConfigRoundTrip:
 
     def test_edit_nested_value(self):
         """Editing a nested config value should persist correctly."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         web_config = self.client.get("/api/config").json()
         original_turns = web_config.get("agent", {}).get("max_turns")
@@ -3807,7 +3807,7 @@ class TestConfigRoundTrip:
         frontend never sends it in PUT bodies. Saving must still preserve
         it on disk — otherwise every dashboard click that saves silently
         wipes the user's custom endpoints."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         save_config({
             "model": {"default": "test/model", "provider": "custom:myprov"},
@@ -3841,7 +3841,7 @@ class TestConfigRoundTrip:
         round-trip. Deep-merge is required — a shallow merge would drop
         ``agent.<custom_key>`` when the frontend sends a partial ``agent``
         dict containing only schema-known sub-fields."""
-        from opencodon_cli.config import load_config, read_raw_config, save_config
+        from opencodon.config import load_config, read_raw_config, save_config
 
         # Seed config with a key under `agent` that isn't in the schema.
         # Use a sentinel name to avoid colliding with future schema fields.
@@ -4197,7 +4197,7 @@ class TestNewEndpoints:
             set_opencodon_home_override,
             reset_opencodon_home_override,
         )
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.skills_config import get_disabled_skills
         import opencodon_cli.profiles as profiles_mod
         import opencodon_cli.web_server as web_server
@@ -4702,7 +4702,7 @@ class TestNewEndpoints:
 
     def test_discord_toolsets_read_and_write_discord_platform(self):
         """Platform-restricted toolsets must not be saved as successful CLI no-ops."""
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         listing = {t["name"]: t for t in self.client.get("/api/tools/toolsets").json()}
         assert listing["discord"]["platform"] == "discord"
@@ -4882,7 +4882,7 @@ class TestNewEndpoints:
         assert body["name"] == "web"
         assert body["provider"] == "Firecrawl Self-Hosted"
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         assert cfg["web"]["backend"] == "firecrawl"
 
@@ -4969,7 +4969,7 @@ class TestNewEndpoints:
         assert body["ok"] is True
         assert body["capability"] == "search"
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         assert cfg["web"]["search_backend"] == "searxng"
         # The shared backend selected first must be preserved for extract.
@@ -4993,7 +4993,7 @@ class TestNewEndpoints:
         )
         assert resp.status_code == 200
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         assert cfg["web"]["extract_backend"] == "firecrawl"
         # Whole-provider/search keys untouched by a capability-scoped write
@@ -5141,7 +5141,7 @@ class TestNewEndpoints:
     def test_terminal_ssh_probe_ready_when_configured(self, monkeypatch):
         """SSH host + user in config.yaml -> ready."""
         import opencodon_cli.web_server as web_server
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         monkeypatch.setattr(web_server.shutil, "which", lambda name: None)
         config = load_config()
@@ -5167,7 +5167,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         assert resp.json() == {"ok": True, "backend": "docker"}
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         assert load_config()["terminal"]["backend"] == "docker"
 
         body = self.client.get("/api/tools/terminal/backends").json()
@@ -5229,7 +5229,7 @@ class TestNewEndpoints:
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         cfg = load_config()
         assert cfg["image_gen"]["model"] == model_id
 
@@ -5462,7 +5462,7 @@ class TestModelContextLength:
     def test_denormalize_writes_context_length_into_model_dict(self):
         """denormalize should write model_context_length back into model dict."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         # Set up disk config with model as a dict
         save_config({
@@ -5480,7 +5480,7 @@ class TestModelContextLength:
     def test_denormalize_zero_removes_context_length(self):
         """denormalize with model_context_length=0 should remove context_length key."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {
@@ -5500,7 +5500,7 @@ class TestModelContextLength:
     def test_denormalize_upgrades_bare_string_to_dict(self):
         """denormalize should upgrade bare string model to dict when context_length set."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         # Disk has model as bare string
         save_config({"model": "anthropic/claude-sonnet-4"})
@@ -5516,7 +5516,7 @@ class TestModelContextLength:
     def test_denormalize_bare_string_stays_string_when_zero(self):
         """denormalize should keep bare string model as string when context_length=0."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({"model": "anthropic/claude-sonnet-4"})
 
@@ -5529,7 +5529,7 @@ class TestModelContextLength:
     def test_denormalize_coerces_string_context_length(self):
         """denormalize should handle string model_context_length from frontend."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {"default": "test/model", "provider": "openrouter"}
@@ -5552,7 +5552,7 @@ class TestDenormalizeProviderSwitch:
         """ollama-local + a vendor/model slug → switch to openrouter and drop
         the stale local base_url (the issue's exact repro)."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {
@@ -5574,7 +5574,7 @@ class TestDenormalizeProviderSwitch:
         """Saving with the model unchanged must never re-detect/overwrite the
         provider — protects unrelated config saves and custom endpoints."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {
@@ -5593,7 +5593,7 @@ class TestDenormalizeProviderSwitch:
         """A bare (non-slug) model name gives no provider signal — leave the
         existing provider alone rather than guessing."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {
@@ -5611,7 +5611,7 @@ class TestDenormalizeProviderSwitch:
     def test_same_aggregator_model_swap_keeps_provider(self):
         """Swapping models within an aggregator must not change the provider."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"}
@@ -5626,7 +5626,7 @@ class TestDenormalizeProviderSwitch:
         """An explicit context-length override must persist alongside a
         provider switch."""
         from opencodon_cli.web_server import _denormalize_config_from_web
-        from opencodon_cli.config import save_config
+        from opencodon.config import save_config
 
         save_config({"model": {"default": "llama3.2", "provider": "ollama-local"}})
 

@@ -37,7 +37,7 @@ def server(opencodon_home):
     with patch.dict(
         "sys.modules",
         {
-            "opencodon_cli.env_loader": MagicMock(),
+            "opencodon.config.env_loader": MagicMock(),
             "opencodon_cli.banner": MagicMock(),
         },
     ):

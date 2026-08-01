@@ -26,7 +26,7 @@ import uuid
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
-from opencodon_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
+from opencodon.config.timeouts import get_provider_request_timeout, get_provider_stale_timeout
 from opencodon_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.error_classifier import FailoverReason
 from agent.errors import EmptyStreamError
@@ -1622,7 +1622,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
             unavailable.add(fb_key)
             return agent._try_activate_fallback(reason)  # try next in chain
         try:
-            from opencodon_cli.model_normalize import normalize_model_for_provider
+            from opencodon.common.model_normalize import normalize_model_for_provider
 
             fb_model = normalize_model_for_provider(fb_model, fb_provider)
         except Exception as _norm_err:
@@ -1813,7 +1813,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
         # (YAML boolean False = disabled). Wrapped in try/except because a
         # config load failure must not kill the swap.
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_constants import resolve_reasoning_config
 
             agent.reasoning_config = resolve_reasoning_config(
@@ -3530,7 +3530,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
         # env var ``OPENCODON_LOCAL_STREAM_STALE_TIMEOUT`` overrides for escape-hatch.
         _local_default = 900.0
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
 
             _cfg = load_config()
             _agent_cfg = _cfg.get("agent") if isinstance(_cfg, dict) else None

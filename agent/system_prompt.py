@@ -423,7 +423,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # 10.1 guidance (tables, task lists, math, collapsible details, etc.).
     if platform_key == "telegram" and _default_hint:
         try:
-            from opencodon_cli.config import load_config_readonly
+            from opencodon.config import load_config_readonly
             _cfg = load_config_readonly()
             _tg_extra = ((_cfg.get("platforms") or {}).get("telegram") or {}).get("extra") or {}
             if _tg_extra.get("rich_messages"):

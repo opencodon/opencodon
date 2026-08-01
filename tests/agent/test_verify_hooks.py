@@ -1,6 +1,6 @@
 """Unit tests for the verification-loop policy (agent/verify_hooks.py).
 
-The `pre_verify` user-hook aggregation lives in `opencodon_cli.plugins`
+The `pre_verify` user-hook aggregation lives in `opencodon.plugins_runtime`
 (`get_pre_verify_continue_message`) and is tested in
 `tests/opencodon_cli/test_plugins.py`, alongside `get_pre_tool_call_block_message`.
 """

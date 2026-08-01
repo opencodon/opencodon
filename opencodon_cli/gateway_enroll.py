@@ -160,7 +160,7 @@ def _post_enroll(
 def cmd_gateway_enroll(args) -> None:
     """Enroll this gateway with a relay connector; persist the auth creds to .env."""
     from opencodon_cli.auth import AuthError, resolve_nous_access_token
-    from opencodon_cli.config import is_managed, save_env_value
+    from opencodon.config import is_managed, save_env_value
 
     # Managed installs get GATEWAY_RELAY_* stamped in by the orchestrator (NAS
     # mints the secret directly per the design's managed shape). Self-enrolling
@@ -251,7 +251,7 @@ def cmd_gateway_enroll(args) -> None:
             print(f"✗ Failed to write {key} to .env: {exc}")
             sys.exit(1)
 
-    from opencodon_cli.config import get_env_path
+    from opencodon.config import get_env_path
 
     print(f'✓ Enrolled gateway "{resolved_gateway_id}"' + (f" for tenant {tenant}" if tenant else ""))
     print()

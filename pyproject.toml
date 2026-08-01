@@ -289,7 +289,7 @@ opencodon-acp = "acp_adapter.entry:main"
 py-modules = ["run_agent", "model_tools", "toolsets", "cli", "opencodon_bootstrap", "opencodon_constants", "opencodon_state", "opencodon_time", "opencodon_logging", "utils", "mcp_serve"]
 
 [tool.setuptools.packages.find]
-include = ["agent", "agent.*", "tools", "tools.*", "opencodon_cli", "opencodon_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "science", "science.*"]
+include = ["opencodon", "opencodon.*", "agent", "agent.*", "tools", "tools.*", "opencodon_cli", "opencodon_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "science", "science.*"]
 
 [tool.setuptools.package-data]
 # gateway/assets/ ships status_phrases.yaml and the Telegram BotFather

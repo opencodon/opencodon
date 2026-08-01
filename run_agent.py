@@ -116,8 +116,8 @@ from agent.process_bootstrap import (
 from agent.iteration_budget import IterationBudget
 
 
-from opencodon_cli.env_loader import load_opencodon_dotenv
-from opencodon_cli.timeouts import (
+from opencodon.config.env_loader import load_opencodon_dotenv
+from opencodon.config.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
@@ -2595,11 +2595,11 @@ class AIAgent:
         reason: Optional[str] = None,
     ) -> None:
         # Lazy module import (not from-import) so tests that
-        # ``monkeypatch.setattr("opencodon_cli.plugins.has_hook", ...)`` still
+        # ``monkeypatch.setattr("opencodon.plugins_runtime.has_hook", ...)`` still
         # take effect on this call site. After first call the import is a
         # ``sys.modules`` dict lookup, so retries don't repay any real cost.
         try:
-            from opencodon_cli import plugins as _plugins
+            from opencodon import plugins_runtime as _plugins
 
             if not _plugins.has_hook("api_request_error"):
                 return
@@ -3122,7 +3122,7 @@ class AIAgent:
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from opencodon_cli.config import load_config as _load_config
+                from opencodon.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -3219,7 +3219,7 @@ class AIAgent:
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from opencodon_cli.config import load_config as _load_config
+                from opencodon.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -4621,7 +4621,7 @@ class AIAgent:
         # SECURITY: values may carry credentials — never log them.
         if self.api_mode not in ("anthropic_messages", "bedrock_converse"):
             try:
-                from opencodon_cli.config import (
+                from opencodon.config import (
                     apply_custom_provider_extra_headers_to_client_kwargs,
                 )
 
@@ -4664,7 +4664,7 @@ class AIAgent:
     def _swap_credential(self, entry) -> None:
         runtime_key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
         runtime_base = getattr(entry, "runtime_base_url", None) or getattr(entry, "base_url", None) or self.base_url
-        from opencodon_cli.route_identity import normalize_route_base_url
+        from opencodon.common.route_identity import normalize_route_base_url
 
         route_changed = normalize_route_base_url(self.base_url) != normalize_route_base_url(
             runtime_base
@@ -4696,7 +4696,7 @@ class AIAgent:
         self._client_kwargs.pop("ssl_verify", None)
         self._client_kwargs.pop("ssl_ca_cert", None)
         try:
-            from opencodon_cli.config import (
+            from opencodon.config import (
                 apply_custom_provider_tls_to_client_kwargs,
                 get_compatible_custom_providers,
                 load_config_readonly,
@@ -5353,7 +5353,7 @@ class AIAgent:
         misclassified as non-vision and have their images stripped.
         """
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from agent.image_routing import _lookup_supports_vision
             cfg = load_config()
             provider = (getattr(self, "provider", "") or "").strip()

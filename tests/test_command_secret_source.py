@@ -3,7 +3,7 @@
 These exercise the REAL resolution path: real helper shell scripts written
 to a temp dir (chmod +x), real ``/bin/sh -c`` subprocesses, and a real temp
 OPENCODON_HOME with a config.yaml routing ``secrets.provider: command`` through
-``opencodon_cli.env_loader._apply_external_secret_sources``.
+``opencodon.config.env_loader._apply_external_secret_sources``.
 
 Security invariants under test (ported from the desktop TS provider):
 

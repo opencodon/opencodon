@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from opencodon_constants import get_opencodon_home
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from agent.skill_utils import is_excluded_skill_path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunparse

@@ -1099,7 +1099,7 @@ def create_profile(
     soul_path = profile_dir / "SOUL.md"
     if not soul_path.exists():
         try:
-            from opencodon_cli.default_soul import DEFAULT_SOUL_MD
+            from opencodon.config.default_soul import DEFAULT_SOUL_MD
             soul_path.write_text(DEFAULT_SOUL_MD, encoding="utf-8")
         except Exception:
             pass  # best-effort — don't fail profile creation over this

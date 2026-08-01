@@ -1403,7 +1403,7 @@ def test_vision_picker_writes_provider_and_model(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     import opencodon_cli.tools_config as tc
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     fake_providers = [
         {"slug": "anthropic", "name": "Anthropic", "total_models": 2,
@@ -1431,7 +1431,7 @@ def test_vision_picker_auto_clears_override(tmp_path, monkeypatch):
     """Choosing Auto clears any pinned provider/model so resolution auto-detects."""
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     import opencodon_cli.tools_config as tc
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
 
     cfg = load_config()
     cfg.setdefault("auxiliary", {})["vision"] = {
@@ -1454,7 +1454,7 @@ def test_vision_picker_custom_endpoint(tmp_path, monkeypatch):
     """Custom endpoint writes base_url+model to config and the key to env."""
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     import opencodon_cli.tools_config as tc
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
 
     seq = iter([2])  # Custom OpenAI-compatible endpoint
     prompts = iter(["https://my.endpoint/v1", "sk-secret", "my-vision-model"])

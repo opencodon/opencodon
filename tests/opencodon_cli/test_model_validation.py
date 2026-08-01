@@ -223,7 +223,7 @@ class TestProviderModelIds:
                 return b'{"data": [{"id": "enterprise-claude"}]}'
 
         with patch(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             return_value={
                 "model": {
                     "provider": "anthropic",
@@ -243,7 +243,7 @@ class TestProviderModelIds:
 
     def test_custom_provider_passes_anthropic_mode_for_versioned_proxy_catalog(self):
         with patch(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             return_value={
                 "model": {
                     "provider": "custom",

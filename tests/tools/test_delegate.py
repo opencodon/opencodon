@@ -2573,7 +2573,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
 
         with patch.dict("sys.modules", {"cli": stale_cli}):
             with patch(
-                "opencodon_cli.config.load_config_readonly", return_value=active_config
+                "opencodon.config.load_config_readonly", return_value=active_config
             ):
                 self.assertEqual(_load_config()["max_concurrent_children"], 50)
                 self.assertEqual(_get_max_concurrent_children(), 50)
@@ -2589,7 +2589,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
 
         with patch.dict("sys.modules", {"cli": fallback_cli}):
             with patch(
-                "opencodon_cli.config.load_config_readonly",
+                "opencodon.config.load_config_readonly",
                 side_effect=RuntimeError("boom"),
             ):
                 self.assertEqual(_load_config()["max_concurrent_children"], 8)
@@ -2611,7 +2611,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
         with patch.dict("sys.modules", {"cli": ignoring_cli}):
             with patch.dict(os.environ, {"OPENCODON_IGNORE_USER_CONFIG": "1"}):
                 with patch(
-                    "opencodon_cli.config.load_config_readonly",
+                    "opencodon.config.load_config_readonly",
                     return_value=user_config,
                 ) as mock_loader:
                     self.assertEqual(_load_config()["max_concurrent_children"], 4)

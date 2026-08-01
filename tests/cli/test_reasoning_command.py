@@ -669,7 +669,7 @@ class TestConfigDefault(unittest.TestCase):
     """Verify config default for show_reasoning."""
 
     def test_default_config_has_show_reasoning(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
         display = DEFAULT_CONFIG.get("display", {})
         self.assertIn("show_reasoning", display)
         # Default ON (July 2026 TTFT-perception change): thinking models

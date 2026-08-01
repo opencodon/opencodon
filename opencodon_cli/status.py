@@ -12,8 +12,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 from opencodon_cli.auth import AuthError, resolve_provider
-from opencodon_cli.colors import Colors, color
-from opencodon_cli.config import get_env_path, get_env_value, get_opencodon_home, load_config
+from opencodon.common.colors import Colors, color
+from opencodon.config import get_env_path, get_env_value, get_opencodon_home, load_config
 from opencodon_cli.models import provider_label
 from opencodon_cli.runtime_provider import resolve_requested_provider
 from opencodon_constants import OPENROUTER_MODELS_URL

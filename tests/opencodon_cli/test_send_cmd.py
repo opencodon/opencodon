@@ -358,7 +358,7 @@ def test_load_opencodon_env_bridges_config_yaml_scalars(tmp_path, monkeypatch):
     # Force get_opencodon_home() to re-resolve under the patched env.
     from importlib import reload
 
-    import opencodon_cli.config as _hc_config
+    import opencodon.config as _hc_config
     reload(_hc_config)
 
     send_cmd._load_opencodon_env()
@@ -379,7 +379,7 @@ def test_load_opencodon_env_does_not_override_existing(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "env_value")
 
     from importlib import reload
-    import opencodon_cli.config as _hc_config
+    import opencodon.config as _hc_config
     reload(_hc_config)
 
     send_cmd._load_opencodon_env()
@@ -394,7 +394,7 @@ def test_load_opencodon_env_handles_missing_files(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     from importlib import reload
-    import opencodon_cli.config as _hc_config
+    import opencodon.config as _hc_config
     reload(_hc_config)
 
     # Should not raise.

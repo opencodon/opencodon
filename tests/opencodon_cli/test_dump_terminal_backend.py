@@ -26,7 +26,7 @@ def _seed(home: Path, *, config_yaml: str, env_text: str) -> None:
 
 def test_dump_surfaces_terminal_env_override(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_opencodon_home
+    from opencodon.config import get_opencodon_home
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     # Keep run_dump's project-.env fallback from touching the real repo.
@@ -47,7 +47,7 @@ def test_dump_surfaces_terminal_env_override(monkeypatch, capsys, tmp_path):
 
 def test_dump_reports_config_backend_when_no_override(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_opencodon_home
+    from opencodon.config import get_opencodon_home
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
@@ -64,7 +64,7 @@ def test_dump_reports_config_backend_when_no_override(monkeypatch, capsys, tmp_p
 
 def test_dump_no_override_when_env_matches_config(monkeypatch, capsys, tmp_path):
     from opencodon_cli import dump
-    from opencodon_cli.config import get_opencodon_home
+    from opencodon.config import get_opencodon_home
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")

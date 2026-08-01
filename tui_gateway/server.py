@@ -24,7 +24,7 @@ from opencodon_constants import (
     reset_opencodon_home_override,
     set_opencodon_home_override,
 )
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
 from tools.environments.local import opencodon_subprocess_env
 from agent.replay_cleanup import sanitize_replay_history
@@ -313,7 +313,7 @@ class _SlashWorker:
             argv += ["--model", model]
 
         self._closed = False
-        from opencodon_cli._subprocess_compat import windows_hide_flags
+        from opencodon.common._subprocess_compat import windows_hide_flags
 
         # slash_worker runs the opencodon agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
@@ -444,7 +444,7 @@ def _notify_session_boundary(
 ) -> None:
     """Fire session lifecycle hooks with CLI parity."""
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
 
         _invoke_hook(
             event_type,
@@ -629,7 +629,7 @@ def _finalize_session(session: dict | None, end_reason: str = "tui_close") -> No
     # the user Ctrl‑C's mid‑turn.
     if agent is not None:
         try:
-            from opencodon_cli.plugins import invoke_hook
+            from opencodon.plugins_runtime import invoke_hook
 
             invoke_hook(
                 "on_session_end",
@@ -2256,7 +2256,7 @@ def _load_dashboard_process_isolation_config(cfg: dict | None = None) -> dict[st
     """Return dashboard process-isolation config with read-site defaults.
 
     ``_load_cfg()`` intentionally returns raw ``config.yaml`` plus the managed
-    overlay; it does not deep-merge ``opencodon_cli.config.DEFAULT_CONFIG``. Keep
+    overlay; it does not deep-merge ``opencodon.config.DEFAULT_CONFIG``. Keep
     the Phase-0 defaults here so dashboard runtime and the REST editor's
     DEFAULT_CONFIG-backed schema cannot drift.
     """
@@ -2321,12 +2321,12 @@ def _apply_managed(cfg: dict) -> dict:
     """Overlay administrator-pinned managed-scope values on a config dict.
 
     The TUI/desktop backend builds config independently of
-    opencodon_cli.config.load_config, so without this a managed skin / reasoning_effort
+    opencodon.config.load_config, so without this a managed skin / reasoning_effort
     / service_tier / provider_routing would be silently ignored here. Read-side
     only — the raw user config is what gets cached and saved. Fail-open.
     """
     try:
-        from opencodon_cli import managed_scope
+        from opencodon.config import managed_scope
 
         return managed_scope.apply_managed_overlay(cfg if isinstance(cfg, dict) else {})
     except Exception:
@@ -2336,7 +2336,7 @@ def _apply_managed(cfg: dict) -> dict:
 def _save_cfg(cfg: dict):
     global _cfg_cache, _cfg_mtime, _cfg_path
 
-    from opencodon_cli.config import atomic_config_write
+    from opencodon.config import atomic_config_write
 
     path = _opencodon_home / "config.yaml"
     atomic_config_write(path, cfg)
@@ -2999,7 +2999,7 @@ _APPROVAL_MODES = frozenset({"manual", "smart", "off"})
 
 
 def _load_approval_mode() -> str:
-    from opencodon_cli.config import DEFAULT_CONFIG, _deep_merge
+    from opencodon.config import DEFAULT_CONFIG, _deep_merge
     from tools.approval import _normalize_approval_mode
 
     raw_cfg = _load_cfg()
@@ -3179,7 +3179,7 @@ def _load_enabled_toolsets() -> list[str] | None:
 
         if unresolved:
             try:
-                from opencodon_cli.plugins import discover_plugins
+                from opencodon.plugins_runtime import discover_plugins
 
                 discover_plugins()
                 plugin_valid = [name for name in unresolved if validate_toolset(name)]
@@ -3207,7 +3207,7 @@ def _load_enabled_toolsets() -> list[str] | None:
         mcp_names: set[str] = set()
         mcp_disabled: set[str] = set()
         try:
-            from opencodon_cli.config import read_raw_config
+            from opencodon.config import read_raw_config
             from opencodon_cli.tools_config import _parse_enabled_flag
 
             raw_cfg = read_raw_config()
@@ -3259,7 +3259,7 @@ def _load_enabled_toolsets() -> list[str] | None:
         )
 
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.tools_config import _get_platform_tools
 
         cfg = cfg if cfg is not None else load_config()
@@ -3340,7 +3340,7 @@ def _persist_model_switch(result) -> None:
     # rewriting the whole `model:` block. A full-block rewrite via save_config()
     # destroys sibling keys the user set under `model:` — `model_slots`,
     # `model_fallback`, etc. — when switching models from the TUI (#48305).
-    from cli import save_config_value
+    from opencodon.config import save_config_value
 
     save_config_value("model.default", result.new_model)
     save_config_value("model.provider", result.target_provider)
@@ -3468,7 +3468,7 @@ def _apply_model_switch(
     custom_provs = None
     cfg = None
     try:
-        from opencodon_cli.config import get_compatible_custom_providers, load_config
+        from opencodon.config import get_compatible_custom_providers, load_config
 
         cfg = load_config()
         user_provs = cfg.get("providers")
@@ -4108,7 +4108,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         pass
     try:
         from opencodon_cli.banner import get_update_result
-        from opencodon_cli.config import recommended_update_command
+        from opencodon.config import recommended_update_command
 
         info["update_behind"] = get_update_result(timeout=0.5)
         info["update_command"] = recommended_update_command()
@@ -4698,7 +4698,7 @@ def _wire_callbacks(sid: str):
                 "skipped": True,
                 "message": "skipped",
             }
-        from opencodon_cli.config import save_env_value_secure
+        from opencodon.config import save_env_value_secure
 
         return {
             **save_env_value_secure(env_var, val),
@@ -4727,7 +4727,7 @@ def _available_personalities(cfg: dict | None = None) -> dict:
         return (load_cli_config().get("agent") or {}).get("personalities", {}) or {}
     except Exception:
         try:
-            from opencodon_cli.config import load_config as _load_full_cfg
+            from opencodon.config import load_config as _load_full_cfg
 
             return (_load_full_cfg().get("agent") or {}).get("personalities", {}) or {}
         except Exception:
@@ -9010,7 +9010,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                         decide_image_input_mode,
                         build_native_content_parts,
                     )
-                    from opencodon_cli.config import load_config as _tui_load_config
+                    from opencodon.config import load_config as _tui_load_config
 
                     _cfg = _tui_load_config()
                     _provider, _model = _active_image_routing_identity(agent)
@@ -9825,7 +9825,7 @@ def _(rid, params: dict) -> dict:
             "-f", str(first_page), "-l", str(last_page),
             str(pdf_path), str(out_prefix),
         ]
-        from opencodon_cli._subprocess_compat import windows_hide_flags
+        from opencodon.common._subprocess_compat import windows_hide_flags
 
         try:
             res = subprocess.run(
@@ -11149,7 +11149,7 @@ def _is_session_cwd_junk(cwd: str) -> bool:
 
 def _repo_discovery_policy(raw: dict | None = None) -> dict:
     """Return the effective, profile-local Desktop repository scan policy."""
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     defaults = DEFAULT_CONFIG["desktop"]
     source = raw if isinstance(raw, dict) else (_load_cfg().get("desktop") or {})
@@ -11198,7 +11198,7 @@ def _repo_discovery_policy_key(policy: dict) -> str:
 
 
 def _repo_discovery_policy_is_default(policy: dict) -> bool:
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     return _repo_discovery_policy_key(policy) == _repo_discovery_policy_key(
         _repo_discovery_policy(DEFAULT_CONFIG["desktop"])
@@ -11984,7 +11984,7 @@ def _finish_reload(rid, params: dict, *, coalesced: bool) -> dict:
     confirm opt-out) and return the ok payload."""
     if bool(params.get("always", False)):
         try:
-            from cli import save_config_value as _save_cfg
+            from opencodon.config import save_config_value as _save_cfg
 
             _save_cfg("approvals.mcp_reload_confirm", False)
         except Exception as _exc:
@@ -12011,7 +12011,7 @@ def _(rid, params: dict) -> dict:
         user_confirm = bool(params.get("confirm", False))
         if not user_confirm:
             try:
-                from opencodon_cli.config import load_config as _load_config
+                from opencodon.config import load_config as _load_config
 
                 _cfg = _load_config()
                 _approvals = _cfg.get("approvals") if isinstance(_cfg, dict) else None
@@ -12150,7 +12150,7 @@ def _(rid, params: dict) -> dict:
 @method("reload.env")
 def _(rid, params: dict) -> dict:
     """Re-read ``~/.opencodon/.env`` into the gateway process via
-    ``opencodon_cli.config.reload_env``, matching classic CLI's ``/reload``
+    ``opencodon.config.reload_env``, matching classic CLI's ``/reload``
     handler.  Newly added API keys take effect on the next agent call
     without restarting the TUI.
 
@@ -12160,7 +12160,7 @@ def _(rid, params: dict) -> dict:
     should follow with ``/new``.
     """
     try:
-        from opencodon_cli.config import reload_env
+        from opencodon.config import reload_env
 
         count = reload_env()
         return _ok(rid, {"updated": int(count)})
@@ -12442,7 +12442,7 @@ def _(rid, params: dict) -> dict:
             return _ok(rid, {"type": "alias", "target": qc.get("target", "")})
 
     try:
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             get_plugin_command_handler,
             resolve_plugin_command_result,
         )
@@ -12547,7 +12547,7 @@ def _(rid, params: dict) -> dict:
         # for the rest of the session, pick it from the model picker (MoA
         # presets surface as a virtual "Mixture of Agents" provider).
         try:
-            from opencodon_cli.moa_config import moa_usage, normalize_moa_config
+            from opencodon.config.moa_config import moa_usage, normalize_moa_config
 
             if not arg:
                 return _err(rid, 4004, moa_usage())
@@ -13034,7 +13034,7 @@ def _list_repo_files(root: str) -> list[str]:
             return cached[1]
 
     files: list[str] = []
-    from opencodon_cli._subprocess_compat import windows_hide_flags
+    from opencodon.common._subprocess_compat import windows_hide_flags
 
     _creationflags = windows_hide_flags()
     try:
@@ -13549,7 +13549,7 @@ def _(rid, params: dict) -> dict:
     """
     try:
         from opencodon_cli.auth import PROVIDER_REGISTRY
-        from opencodon_cli.config import is_managed
+        from opencodon.config import is_managed
         from opencodon_cli.inventory import build_models_payload
 
         slug = (params.get("slug") or "").strip()
@@ -14141,7 +14141,7 @@ def _(rid, params: dict) -> dict:
     resolve_plugin_command_result = None
     if _cmd_base:
         try:
-            from opencodon_cli.plugins import (
+            from opencodon.plugins_runtime import (
                 get_plugin_command_handler,
                 resolve_plugin_command_result,
             )
@@ -14707,7 +14707,7 @@ def _resolve_browser_cdp_url() -> str:
     if env_url:
         return env_url
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -14964,7 +14964,7 @@ def _browser_disconnect(rid) -> dict:
 @method("plugins.list")
 def _(rid, params: dict) -> dict:
     try:
-        from opencodon_cli.plugins import get_plugin_manager
+        from opencodon.plugins_runtime import get_plugin_manager
 
         return _ok(
             rid,
@@ -15105,7 +15105,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4018, "names required")
 
     try:
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         from opencodon_cli.tools_config import (
             CONFIGURABLE_TOOLSETS,
             _apply_mcp_change,

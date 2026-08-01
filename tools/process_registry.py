@@ -42,11 +42,11 @@ import uuid
 
 _IS_WINDOWS = platform.system() == "Windows"
 from tools.environments.local import _find_shell, _resolve_safe_cwd, _sanitize_subprocess_env
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 
 logger = logging.getLogger(__name__)
 
@@ -534,7 +534,7 @@ class ProcessRegistry:
         config is unreadable, so callers always get a sane number.
         """
         try:
-            from opencodon_cli.config import read_raw_config, cfg_get, DEFAULT_CONFIG
+            from opencodon.config import read_raw_config, cfg_get, DEFAULT_CONFIG
             cfg = read_raw_config()
             val = cfg_get(cfg, "terminal", "daemon_term_grace_seconds")
             if val is None:

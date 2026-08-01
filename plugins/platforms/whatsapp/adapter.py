@@ -27,7 +27,7 @@ _IS_WINDOWS = platform.system() == "Windows"
 from pathlib import Path
 from typing import Dict, Optional, Any
 
-from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
 from opencodon_constants import (
     find_node_executable,
     get_opencodon_dir,
@@ -83,7 +83,7 @@ def _kill_port_process(port: int) -> None:
     """Kill any process *listening* on the given TCP port (a stale bridge)."""
     try:
         if _IS_WINDOWS:
-            from opencodon_cli._subprocess_compat import windows_hide_flags
+            from opencodon.common._subprocess_compat import windows_hide_flags
 
             # Use netstat to find the PID bound to this port, then taskkill
             result = subprocess.run(
@@ -1672,7 +1672,7 @@ def interactive_setup() -> None:
     static _PLATFORMS["whatsapp"] dict. CLI helpers are lazy-imported so the
     plugin's module-load surface stays minimal.
     """
-    from opencodon_cli.config import get_env_value, save_env_value
+    from opencodon.config import get_env_value, save_env_value
     from opencodon_cli.cli_output import (
         prompt,
         prompt_yes_no,

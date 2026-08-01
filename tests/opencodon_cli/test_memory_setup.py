@@ -67,8 +67,8 @@ def test_cmd_setup_top_level_cancel_writes_nothing(monkeypatch):
 
     monkeypatch.setattr(memory_setup, "_get_available_providers", lambda: [("fake", "local", object())])
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: kwargs["cancel_returns"])
-    monkeypatch.setattr("opencodon_cli.config.load_config", load_config)
-    monkeypatch.setattr("opencodon_cli.config.save_config", save_config)
+    monkeypatch.setattr("opencodon.config.load_config", load_config)
+    monkeypatch.setattr("opencodon.config.save_config", save_config)
 
     memory_setup.cmd_setup(SimpleNamespace())
 
@@ -83,8 +83,8 @@ def test_cmd_setup_builtin_selection_still_saves_builtin(monkeypatch):
 
     monkeypatch.setattr(memory_setup, "_get_available_providers", lambda: providers)
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: len(providers))
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: config)
-    monkeypatch.setattr("opencodon_cli.config.save_config", save_config)
+    monkeypatch.setattr("opencodon.config.load_config", lambda: config)
+    monkeypatch.setattr("opencodon.config.save_config", save_config)
 
     memory_setup.cmd_setup(SimpleNamespace())
 
@@ -104,7 +104,7 @@ def test_cmd_setup_clears_interactive_picker_before_provider_post_setup(monkeypa
     monkeypatch.setattr(memory_setup, "_clear_interactive_transition", lambda: events.append("clear"), raising=False)
     monkeypatch.setattr(memory_setup, "_install_dependencies", lambda name: events.append("install"))
     monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/opencodon-test")
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"memory": {}})
+    monkeypatch.setattr("opencodon.config.load_config", lambda: {"memory": {}})
 
     memory_setup.cmd_setup(SimpleNamespace())
 
@@ -122,7 +122,7 @@ def test_cmd_setup_provider_clears_before_provider_post_setup(monkeypatch):
     monkeypatch.setattr(memory_setup, "_clear_interactive_transition", lambda: events.append("clear"), raising=False)
     monkeypatch.setattr(memory_setup, "_install_dependencies", lambda name: events.append("install"))
     monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: "/tmp/opencodon-test")
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"memory": {}})
+    monkeypatch.setattr("opencodon.config.load_config", lambda: {"memory": {}})
 
     memory_setup.cmd_setup_provider("openviking")
 
@@ -155,7 +155,7 @@ def test_cmd_status_prefers_provider_status_config(monkeypatch, capsys):
             },
         }
     }
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: config)
+    monkeypatch.setattr("opencodon.config.load_config", lambda: config)
     monkeypatch.setattr(memory_setup, "_get_available_providers", lambda: [("openviking", "API key / local", StatusProvider())])
 
     memory_setup.cmd_status(SimpleNamespace())
@@ -187,8 +187,8 @@ def test_cmd_setup_generic_choice_cancel_writes_nothing(tmp_path, monkeypatch):
     monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(selections))
     monkeypatch.setattr(memory_setup, "_install_dependencies", install_dependencies)
     monkeypatch.setattr(memory_setup, "get_opencodon_home", lambda: tmp_path)
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"memory": {}})
-    monkeypatch.setattr("opencodon_cli.config.save_config", save_config)
+    monkeypatch.setattr("opencodon.config.load_config", lambda: {"memory": {}})
+    monkeypatch.setattr("opencodon.config.save_config", save_config)
 
     memory_setup.cmd_setup(SimpleNamespace())
 

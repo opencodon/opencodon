@@ -189,8 +189,8 @@ class TestProviderModelIdsPreferred:
         with (
             patch("opencodon_cli.main._prompt_api_key", return_value=("sk-kimi-test", False)),
             patch("opencodon_cli.auth._prompt_model_selection", side_effect=fake_select),
-            patch("opencodon_cli.config.get_env_value", return_value=""),
-            patch("opencodon_cli.config.save_env_value"),
+            patch("opencodon.config.get_env_value", return_value=""),
+            patch("opencodon.config.save_env_value"),
         ):
             _model_flow_kimi({}, current_model="")
 

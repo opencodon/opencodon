@@ -39,7 +39,7 @@ from gateway.session import (
     build_session_key,
     is_shared_multi_user_session,
 )
-from opencodon_cli.config import atomic_config_write, cfg_get, clear_model_endpoint_credentials
+from opencodon.config import atomic_config_write, cfg_get, clear_model_endpoint_credentials
 from utils import (
     atomic_json_write,
     base_url_host_matches,
@@ -209,7 +209,7 @@ class GatewaySlashCommandsMixin:
 
         # Fire plugin on_session_finalize hook (session boundary)
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
             _invoke_hook(
                 "on_session_finalize",
                 session_id=_old_sid,
@@ -288,7 +288,7 @@ class GatewaySlashCommandsMixin:
 
         # Fire plugin on_session_reset hook (new session guaranteed to exist)
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
             _new_sid = new_entry.session_id if new_entry else None
             _invoke_hook(
                 "on_session_reset",
@@ -1351,7 +1351,7 @@ class GatewaySlashCommandsMixin:
                     current_base_url = model_cfg.get("base_url", "")
                 user_provs = cfg.get("providers")
                 try:
-                    from opencodon_cli.config import get_compatible_custom_providers
+                    from opencodon.config import get_compatible_custom_providers
                     custom_provs = get_compatible_custom_providers(cfg)
                 except Exception:
                     custom_provs = cfg.get("custom_providers")
@@ -1573,7 +1573,7 @@ class GatewaySlashCommandsMixin:
                                     _persist_model_cfg = {}
                                     _persist_cfg["model"] = _persist_model_cfg
                                 try:
-                                    from opencodon_cli.route_identity import should_clear_context_pin
+                                    from opencodon.common.route_identity import should_clear_context_pin
 
                                     if should_clear_context_pin(
                                         _persist_model_cfg.get("default")
@@ -1608,7 +1608,7 @@ class GatewaySlashCommandsMixin:
                                         _persist_model_cfg.pop("api_mode", None)
                                 else:
                                     clear_model_endpoint_credentials(_persist_model_cfg, clear_base_url=True)
-                                from opencodon_cli.config import save_config
+                                from opencodon.config import save_config
                                 save_config(_persist_cfg)
                             except Exception as e:
                                 logger.warning("Failed to persist model switch: %s", e)
@@ -1901,7 +1901,7 @@ class GatewaySlashCommandsMixin:
                         model_cfg = {}
                         cfg["model"] = model_cfg
                     try:
-                        from opencodon_cli.route_identity import should_clear_context_pin
+                        from opencodon.common.route_identity import should_clear_context_pin
 
                         if should_clear_context_pin(
                             model_cfg.get("default") or model_cfg.get("model"),
@@ -1930,7 +1930,7 @@ class GatewaySlashCommandsMixin:
                             model_cfg.pop("api_mode", None)
                     else:
                         clear_model_endpoint_credentials(model_cfg, clear_base_url=True)
-                    from opencodon_cli.config import save_config
+                    from opencodon.config import save_config
                     save_config(cfg)
                 except Exception as e:
                     logger.warning("Failed to persist model switch: %s", e)
@@ -2406,7 +2406,7 @@ class GatewaySlashCommandsMixin:
 
         # Save to .env so it persists across restarts
         try:
-            from opencodon_cli.config import save_env_value
+            from opencodon.config import save_env_value
             save_env_value(env_key, str(chat_id))
             # Keep thread/topic routing explicit and clear stale values when
             # /sethome is run from the parent chat instead of a thread.
@@ -4239,7 +4239,7 @@ class GatewaySlashCommandsMixin:
             if choice == "always":
                 # Persist the opt-out and run the reload.
                 try:
-                    from cli import save_config_value
+                    from opencodon.config import save_config_value
                     save_config_value("approvals.mcp_reload_confirm", False)
                     logger.info(
                         "User opted out of /reload-mcp confirmation (session=%s)",
@@ -4574,7 +4574,7 @@ class GatewaySlashCommandsMixin:
         import shutil
         import subprocess
         from datetime import datetime
-        from opencodon_cli.config import is_managed, format_managed_message
+        from opencodon.config import is_managed, format_managed_message
 
         # Block non-messaging platforms (API server, webhooks, ACP)
         platform = event.source.platform
@@ -4650,7 +4650,7 @@ class GatewaySlashCommandsMixin:
         try:
             if sys.platform == "win32":
                 import textwrap
-                from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+                from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
 
                 # opencodon_cmd is a list of argv parts we can pass directly
                 # (no shell-quoting needed).

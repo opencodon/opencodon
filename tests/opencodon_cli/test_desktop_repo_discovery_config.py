@@ -1,4 +1,4 @@
-from opencodon_cli.config import DEFAULT_CONFIG
+from opencodon.config import DEFAULT_CONFIG
 from opencodon_cli.web_server import CONFIG_SCHEMA
 
 

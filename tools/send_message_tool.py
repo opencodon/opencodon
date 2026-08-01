@@ -822,7 +822,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # omitted Slack attachments and told the model media was unsupported.
     if platform == Platform.SLACK and media_files:
         from gateway.platform_registry import platform_registry as _pr_slack
-        from opencodon_cli.plugins import discover_plugins as _dp_slack
+        from opencodon.plugins_runtime import discover_plugins as _dp_slack
         _dp_slack()
         _slack_entry = _pr_slack.get("slack")
         if _slack_entry is None or _slack_entry.standalone_sender_fn is None:
@@ -864,7 +864,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     # endpoint so images/videos/audio arrive as native bubbles, not documents. #41112
     if platform == Platform.WHATSAPP and media_files:
         from gateway.platform_registry import platform_registry as _pr_wa
-        from opencodon_cli.plugins import discover_plugins as _dp_wa
+        from opencodon.plugins_runtime import discover_plugins as _dp_wa
         _dp_wa()
         _wa_entry = _pr_wa.get("whatsapp")
         if _wa_entry is None or _wa_entry.standalone_sender_fn is None:
@@ -1318,7 +1318,7 @@ async def _registry_standalone_send(platform_name, pconfig, chat_id, message, th
     ``_standalone_send`` and is reached via the platform registry.
     """
     from gateway.platform_registry import platform_registry
-    from opencodon_cli.plugins import discover_plugins
+    from opencodon.plugins_runtime import discover_plugins
     discover_plugins()  # idempotent — ensure the entry is registered
     entry = platform_registry.get(platform_name)
     if entry is None or entry.standalone_sender_fn is None:

@@ -22,7 +22,7 @@ import sys
 from dataclasses import dataclass
 from typing import List, Optional
 
-from opencodon_cli.colors import Colors, color
+from opencodon.common.colors import Colors, color
 from opencodon_cli.cli_output import prompt_yes_no
 from opencodon_cli.curses_ui import curses_single_select
 from opencodon_cli.mcp_catalog import (
@@ -36,7 +36,7 @@ from opencodon_cli.mcp_catalog import (
     installed_servers,
     uninstall_entry,
 )
-from opencodon_cli.config import load_config, save_config
+from opencodon.config import load_config, save_config
 
 
 # ─── Status badges ────────────────────────────────────────────────────────────

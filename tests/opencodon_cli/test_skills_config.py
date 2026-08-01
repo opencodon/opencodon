@@ -120,19 +120,19 @@ class TestSaveDisabledSkills:
 # ---------------------------------------------------------------------------
 
 class TestIsSkillDisabled:
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_globally_disabled(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["bad-skill"]}}
         from tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("bad-skill") is True
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_globally_enabled(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["other"]}}
         from tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("good-skill") is False
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_platform_disabled(self, mock_load):
         mock_load.return_value = {"skills": {
             "disabled": [],
@@ -141,7 +141,7 @@ class TestIsSkillDisabled:
         from tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("tg-skill", platform="telegram") is True
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_globally_disabled_stays_disabled_on_platform(self, mock_load):
         mock_load.return_value = {"skills": {
             "disabled": ["skill-a"],
@@ -153,7 +153,7 @@ class TestIsSkillDisabled:
         assert _is_skill_disabled("skill-a", platform="telegram") is True
         assert _is_skill_disabled("tg-skill", platform="telegram") is True
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_empty_platform_list_keeps_global_disabled(self, mock_load):
         mock_load.return_value = {"skills": {
             "disabled": ["skill-a"],
@@ -164,26 +164,26 @@ class TestIsSkillDisabled:
         # skill — global disables hold on every platform.
         assert _is_skill_disabled("skill-a", platform="telegram") is True
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_platform_falls_back_to_global(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["skill-a"]}}
         from tools.skills_tool import _is_skill_disabled
         # no platform_disabled for cli -> global
         assert _is_skill_disabled("skill-a", platform="cli") is True
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_empty_config(self, mock_load):
         mock_load.return_value = {}
         from tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("any-skill") is False
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     def test_exception_returns_false(self, mock_load):
         mock_load.side_effect = Exception("config error")
         from tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("any-skill") is False
 
-    @patch("opencodon_cli.config.load_config")
+    @patch("opencodon.config.load_config")
     @patch.dict("os.environ", {"OPENCODON_PLATFORM": "discord"})
     def test_env_var_platform(self, mock_load):
         mock_load.return_value = {"skills": {

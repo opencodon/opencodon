@@ -2123,8 +2123,8 @@ def get_model_context_length(
     # acting context, so they're ignored here.
     if (provider or "").strip().lower() == "moa":
         try:
-            from opencodon_cli.config import load_config
-            from opencodon_cli.moa_config import resolve_moa_preset
+            from opencodon.config import load_config
+            from opencodon.config.moa_config import resolve_moa_preset
             from opencodon_cli.runtime_provider import resolve_runtime_provider
 
             preset = resolve_moa_preset(load_config().get("moa") or {}, model)
@@ -2149,7 +2149,7 @@ def get_model_context_length(
     # See #15779.
     if custom_providers and base_url and model:
         try:
-            from opencodon_cli.config import get_custom_provider_context_length
+            from opencodon.config import get_custom_provider_context_length
             cp_ctx = get_custom_provider_context_length(
                 model=model,
                 base_url=base_url,

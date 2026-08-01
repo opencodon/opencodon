@@ -53,7 +53,7 @@ class TestCamofoxIdentity:
 
 class TestCamofoxConfigDefaults:
     def test_default_config_includes_camofox_controls(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
 
         browser_cfg = DEFAULT_CONFIG["browser"]
         assert browser_cfg["camofox"]["managed_persistence"] is False

@@ -69,7 +69,7 @@ MAX_HANDLES = 10
 
 def _load_x_search_config() -> Dict[str, Any]:
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         return load_config().get("x_search", {}) or {}
     except Exception:

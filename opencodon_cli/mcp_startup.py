@@ -14,7 +14,7 @@ _mcp_discovery_thread: Optional[threading.Thread] = None
 def _has_configured_mcp_servers() -> bool:
     """Cheap config probe so non-MCP users avoid importing the MCP stack."""
     try:
-        from opencodon_cli.config import read_raw_config
+        from opencodon.config import read_raw_config
 
         mcp_servers = (read_raw_config() or {}).get("mcp_servers")
         return isinstance(mcp_servers, dict) and len(mcp_servers) > 0
@@ -97,7 +97,7 @@ def _resolve_discovery_timeout(explicit: "float | None") -> float:
     if explicit is not None:
         return explicit
     try:
-        from opencodon_cli.config import load_config, DEFAULT_CONFIG
+        from opencodon.config import load_config, DEFAULT_CONFIG
 
         default = float(DEFAULT_CONFIG.get("mcp_discovery_timeout", 1.5))
         raw = (load_config() or {}).get("mcp_discovery_timeout", default)

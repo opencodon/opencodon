@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon_cli.config import (
+from opencodon.config import (
     get_container_exec_info,
 )
 

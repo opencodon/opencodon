@@ -10,7 +10,7 @@ class TestGatewayPerModelReasoningConfig:
 
     def test_per_model_override_takes_precedence(self, monkeypatch):
         """Per-model override wins over global reasoning_effort."""
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
 
         fake_cfg = {
             "model": {"default": "anthropic/claude-opus-4.5"},

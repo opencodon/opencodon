@@ -1320,7 +1320,7 @@ def _get_custom_base_url() -> str:
 def _get_model_config_dict() -> dict[str, Any]:
     """Return the main model config mapping, or an empty dict."""
     try:
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         config = load_config()
         model_cfg = config.get("model", {})
         if isinstance(model_cfg, dict):
@@ -3194,7 +3194,7 @@ def probe_api_models(
     if isinstance(request_headers, dict):
         # Per-provider custom headers can contain auth/proxy secrets. Merge
         # last so endpoint-specific config wins, and never log the values.
-        from opencodon_cli.config import normalize_extra_headers
+        from opencodon.config import normalize_extra_headers
 
         headers.update(normalize_extra_headers(request_headers))
 
@@ -3640,8 +3640,8 @@ def validate_requested_model(
 
     if normalized == "moa":
         try:
-            from opencodon_cli.config import load_config
-            from opencodon_cli.moa_config import normalize_moa_config
+            from opencodon.config import load_config
+            from opencodon.config.moa_config import normalize_moa_config
 
             cfg = normalize_moa_config(load_config().get("moa") or {})
             if requested in cfg["presets"]:

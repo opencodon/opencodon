@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from opencodon_cli.config import get_opencodon_home
+from opencodon.config import get_opencodon_home
 
 logger = logging.getLogger(__name__)
 

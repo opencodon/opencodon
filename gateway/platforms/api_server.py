@@ -483,7 +483,7 @@ class ResponseStore:
         self._max_size = max_size
         if db_path is None:
             try:
-                from opencodon_cli.config import get_opencodon_home
+                from opencodon.config import get_opencodon_home
                 db_path = str(get_opencodon_home() / "response_store.db")
             except Exception:
                 db_path = ":memory:"
@@ -1161,7 +1161,7 @@ class APIServerAdapter(BasePlatformAdapter):
         """
         default = 10
         try:
-            from opencodon_cli.config import cfg_get, load_config
+            from opencodon.config import cfg_get, load_config
 
             raw = cfg_get(
                 load_config(),
@@ -2165,7 +2165,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return auth_err
 
         try:
-            from opencodon_cli.config import load_config
+            from opencodon.config import load_config
             from opencodon_cli.tools_config import (
                 _get_effective_configurable_toolsets,
                 _get_platform_tools,
@@ -5462,7 +5462,7 @@ class APIServerAdapter(BasePlatformAdapter):
             # the operator may have an external firewall / strong key.
             if is_network_accessible(self._host):
                 try:
-                    from opencodon_cli.config import load_config as _load_cfg
+                    from opencodon.config import load_config as _load_cfg
                     _backend = (
                         ((_load_cfg() or {}).get("terminal") or {}).get(
                             "backend", "local"

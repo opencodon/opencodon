@@ -21,7 +21,7 @@ def _write_env(path: Path, contents: str) -> None:
 
 def test_load_env_caches_on_repeat_calls():
     """Repeated load_env() calls on the same file return the cached dict."""
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     invalidate_env_cache()
 
@@ -32,7 +32,7 @@ def test_load_env_caches_on_repeat_calls():
         env_path = Path(f.name)
 
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=env_path):
+        with patch("opencodon.config.get_env_path", return_value=env_path):
             first = load_env()
             # Even if a writer outside our cache mutates the file, an
             # mtime/size match means the cache still wins. We simulate that
@@ -49,7 +49,7 @@ def test_load_env_caches_on_repeat_calls():
 
 def test_load_env_invalidates_on_mtime_bump():
     """Editing the file (mtime changes) invalidates the cache."""
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     invalidate_env_cache()
 
@@ -60,7 +60,7 @@ def test_load_env_invalidates_on_mtime_bump():
         env_path = Path(f.name)
 
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=env_path):
+        with patch("opencodon.config.get_env_path", return_value=env_path):
             first = load_env()
             assert first.get("OPENAI_API_KEY") == "sk-old"
 
@@ -85,7 +85,7 @@ def test_invalidate_env_cache_forces_reread():
     This is the belt-and-braces knob for writers (save_env_value, etc.)
     on filesystems where mtime resolution might miss a same-second write.
     """
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     invalidate_env_cache()
 
@@ -96,7 +96,7 @@ def test_invalidate_env_cache_forces_reread():
         env_path = Path(f.name)
 
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=env_path):
+        with patch("opencodon.config.get_env_path", return_value=env_path):
             assert load_env().get("OPENAI_API_KEY") == "sk-old"
 
             # Rewrite WITHOUT bumping mtime — simulates same-second write.
@@ -116,7 +116,7 @@ def test_invalidate_env_cache_forces_reread():
 def test_save_env_value_invalidates_cache(tmp_path, monkeypatch):
     """save_env_value() invalidates the cache so subsequent reads see the update."""
     from opencodon_cli import config as config_mod
-    from opencodon_cli.config import invalidate_env_cache, load_env, save_env_value
+    from opencodon.config import invalidate_env_cache, load_env, save_env_value
 
     invalidate_env_cache()
 
@@ -149,7 +149,7 @@ def test_save_env_value_invalidates_cache(tmp_path, monkeypatch):
 def test_remove_env_value_invalidates_cache(tmp_path, monkeypatch):
     """remove_env_value() invalidates the cache so the removed key disappears."""
     from opencodon_cli import config as config_mod
-    from opencodon_cli.config import (
+    from opencodon.config import (
         invalidate_env_cache,
         load_env,
         remove_env_value,
@@ -178,7 +178,7 @@ def test_remove_env_value_invalidates_cache(tmp_path, monkeypatch):
 
 def test_load_env_handles_missing_file():
     """A nonexistent .env returns {} and caches the empty result."""
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     invalidate_env_cache()
 
@@ -186,7 +186,7 @@ def test_load_env_handles_missing_file():
     nonexistent.unlink(missing_ok=True)
 
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=nonexistent):
+        with patch("opencodon.config.get_env_path", return_value=nonexistent):
             assert load_env() == {}
             assert load_env() == {}  # cached
     finally:

@@ -1331,7 +1331,7 @@ def _ensure_terminal_env_bridged() -> None:
         return
     _terminal_config_bridge_attempted = True
     try:
-        from opencodon_cli.config import apply_terminal_config_to_env
+        from opencodon.config import apply_terminal_config_to_env
 
         # env=None targets os.environ inside the helper; override=False keeps
         # any already-set TERMINAL_* values (e.g. from .env) authoritative.
@@ -2765,7 +2765,7 @@ def terminal_tool(
             # still subject to the final output limit below.
             # The hook is fail-open, and the first valid string return wins.
             try:
-                from opencodon_cli.plugins import invoke_hook
+                from opencodon.plugins_runtime import invoke_hook
                 hook_results = invoke_hook(
                     "transform_terminal_output",
                     command=command,

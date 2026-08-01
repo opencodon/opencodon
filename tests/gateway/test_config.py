@@ -1547,7 +1547,7 @@ class TestLoadGatewayConfig:
 
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         config = load_config()
 

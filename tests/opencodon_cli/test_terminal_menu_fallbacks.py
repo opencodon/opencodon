@@ -4,7 +4,7 @@ cannot initialize (e.g. non-TTY, curses unavailable, terminal error)."""
 import subprocess
 from types import SimpleNamespace
 
-from opencodon_cli.config import load_config, save_config
+from opencodon.config import load_config, save_config
 
 
 def _raise_menu(*args, **kwargs):
