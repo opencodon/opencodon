@@ -200,7 +200,8 @@ def normalize_updated_at(value: Any) -> Optional[str]:
     epoch floats), hand edits, or partial corruption. Every read/emit surface
     (``/api/status``'s ``gateway_updated_at``, the gateway's
     ``/health/detailed`` ``updated_at``) promises consumers ``string | null``
-    (see ``web/src/lib/api.ts``), so this funnel enforces that contract:
+    (see ``apps/client/src/types/opencodon.ts``), so this funnel enforces
+    that contract:
 
     - ``str``: accepted iff :meth:`datetime.fromisoformat` parses it (a
       trailing ``Z`` is tolerated). Naive timestamps are coerced to UTC.

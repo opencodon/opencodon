@@ -174,7 +174,7 @@ def test_skip_build_missing_dist_attempts_one_recovery_build(
     main_mod.cmd_dashboard(_args(skip_build=True))
 
     assert len(builds) == 1  # exactly ONE recovery build
-    assert builds[0][0] == project_root / "web"
+    assert builds[0][0] == project_root / "apps" / "web"
     assert len(started) == 1
     out = capsys.readouterr().out
     assert "recovery build" in out.lower()

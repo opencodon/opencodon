@@ -1239,7 +1239,7 @@ def test_curator_slot_is_canonical_aux_task():
     assert "curator" in _AUX_TASK_SLOTS, \
         "curator missing from _AUX_TASK_SLOTS (dashboard REST API)"
 
-    # 4. web/src/pages/ModelsPage.tsx is checked at build time; the tsx
+    # 4. The browser bundle's models page is checked at build time; the tsx
     #    array and this tuple share a ``Must match _AUX_TASK_SLOTS`` comment.
 
 

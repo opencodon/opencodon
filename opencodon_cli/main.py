@@ -1558,16 +1558,25 @@ to avoid false-positive reinstalls on every launch.
 """
 
 
+#: How far above a workspace member ``_workspace_root`` will look for the
+#: root lockfile.  Two covers every member in this repo (``apps/web`` is the
+#: deepest); more would risk adopting a stray lockfile outside the checkout.
+_WORKSPACE_ROOT_MAX_DEPTH = 2
+
+
 def _workspace_root(dir: Path) -> Path:
     """Return the npm workspace root for *dir*.
 
     In a workspace checkout the single ``package-lock.json`` and hoisted
-    ``node_modules/`` live at the workspace root (the parent of the
-    sub-package directory).  Heuristic: if *dir* has a ``package.json``
-    but **no** ``package-lock.json``, and its **parent** has a
-    ``package-lock.json``, the parent is the workspace root.
-    Otherwise *dir* itself is the root (standalone project or
-    prebuilt-bundle layout).
+    ``node_modules/`` live at the workspace root, some way above the
+    sub-package directory.  Heuristic: if *dir* has a ``package.json`` but
+    **no** ``package-lock.json``, walk up to the nearest ancestor that has
+    one, and treat that as the root.  Otherwise *dir* itself is the root
+    (standalone project or prebuilt-bundle layout).
+
+    The walk is bounded: members sit one level down (``ui-tui/``) or two
+    (``apps/web/``), and an unbounded climb would happily adopt an unrelated
+    lockfile from a parent directory outside the checkout.
 
     Used by ``_tui_need_npm_install``, ``_make_tui_argv``, and
     ``_build_web_ui`` so that lockfile/node_modules resolution and
@@ -1576,12 +1585,11 @@ def _workspace_root(dir: Path) -> Path:
     sub-package lockfile (e.g. running ``npm install`` in the wrong
     directory).
     """
-    if (
-        (dir / "package.json").is_file()
-        and not (dir / "package-lock.json").is_file()
-        and (dir.parent / "package-lock.json").is_file()
-    ):
-        return dir.parent
+    if not (dir / "package.json").is_file() or (dir / "package-lock.json").is_file():
+        return dir
+    for ancestor in list(dir.parents)[:_WORKSPACE_ROOT_MAX_DEPTH]:
+        if (ancestor / "package-lock.json").is_file():
+            return ancestor
     return dir
 
 
@@ -4852,9 +4860,10 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
     source had genuinely changed (serving a stale dashboard) and force a
     rebuild when nothing had. A content hash is stable across mtime churn.
 
-    The dashboard source lives under ``web/`` but Vite outputs to
-    ``opencodon_cli/web_dist/`` (per vite.config.ts outDir), NOT ``web/dist/``,
-    so the dist directory is never part of the hashed source tree.
+    The source lives under ``apps/web/`` but Vite outputs to
+    ``opencodon_cli/web_dist/`` (per its vite.config.ts outDir), NOT
+    ``apps/web/dist/``, so the dist directory is never part of the hashed
+    source tree.
     """
     project_root = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
     dist_dir = project_root / "opencodon_cli" / "web_dist"
@@ -4881,12 +4890,17 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
 def _compute_web_ui_content_hash(project_root: Path, web_dir: Path) -> str:
     """Return a SHA-256 hex digest of the web UI source tree.
 
-    Covers ``web_dir`` (the dashboard frontend source) plus the root
-    ``package.json`` / ``package-lock.json`` (workspace config that
-    determines dependency resolution). Mirrors
-    ``_compute_desktop_content_hash()``: ignored paths (``node_modules/``,
-    ``dist/``, ``*.pyc``, ...) are skipped via the repo-root ``.gitignore``
-    so build output never feeds back into its own staleness check.
+    Covers ``web_dir`` (the browser host), the workspaces it builds from
+    (``apps/client`` — where essentially all of the UI lives — and
+    ``apps/shared``), plus the root ``package.json`` / ``package-lock.json``
+    (workspace config that determines dependency resolution). Hashing the
+    host alone would miss every real UI change, since ``apps/web`` is a
+    ~10-line entry point over ``@opencodon/client``.
+
+    Mirrors ``_compute_desktop_content_hash()``: ignored paths
+    (``node_modules/``, ``dist/``, ``*.pyc``, ...) are skipped via the
+    repo-root ``.gitignore`` so build output never feeds back into its own
+    staleness check.
     """
     h = hashlib.sha256()
 
@@ -4918,19 +4932,27 @@ def _compute_web_ui_content_hash(project_root: Path, web_dir: Path) -> str:
             if not spec.match_file(rel):
                 _hash_file(p)
 
-    # Walk the web source tree, pruning ignored directories in-place so we
-    # never descend into node_modules/ or a stray dist/. Sort filenames for
-    # a deterministic, order-independent digest.
-    for dirpath, dirnames, filenames in os.walk(web_dir, topdown=True):
-        dirnames[:] = [
-            d for d in dirnames
-            if not spec.match_file(str((Path(dirpath) / d).relative_to(project_root)))
-        ]
-        for fn in sorted(filenames):
-            fp = Path(dirpath) / fn
-            rel = str(fp.relative_to(project_root))
-            if not spec.match_file(rel):
-                _hash_file(fp)
+    # Walk the source trees the bundle is built from, pruning ignored
+    # directories in-place so we never descend into node_modules/ or a stray
+    # dist/. Sort filenames (and the roots) for a deterministic,
+    # order-independent digest.
+    roots = [web_dir]
+    if web_dir.parent.name == "apps":
+        # `file:` workspace deps of apps/web — the UI itself lives here.
+        roots += [web_dir.parent / "client", web_dir.parent / "shared"]
+    for root in sorted(set(roots)):
+        if not root.is_dir():
+            continue
+        for dirpath, dirnames, filenames in os.walk(root, topdown=True):
+            dirnames[:] = [
+                d for d in dirnames
+                if not spec.match_file(str((Path(dirpath) / d).relative_to(project_root)))
+            ]
+            for fn in sorted(filenames):
+                fp = Path(dirpath) / fn
+                rel = str(fp.relative_to(project_root))
+                if not spec.match_file(rel):
+                    _hash_file(fp)
 
     return h.hexdigest()
 
@@ -5228,7 +5250,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     """Build the web UI frontend if npm is available.
 
     Args:
-        web_dir: Path to the dashboard frontend source directory.
+        web_dir: Path to the browser frontend source directory.
         fatal: If True, print error guidance and return False on failure
                instead of a soft warning (used by ``opencodon web``).
 
@@ -5258,7 +5280,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if not npm:
         if fatal:
             _say("Web UI frontend not built and npm is not available.")
-            _say("Install Node.js, then run:  cd web && npm install && npm run build")
+            _say("Install Node.js, then run:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return not fatal
     build_env = with_opencodon_node_path()
     _say("→ Building web UI...")
@@ -5283,9 +5305,9 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     # graph (including apps/desktop with its Electron + node-pty deps) is never
     # resolved here.  Without --workspace the root package.json's apps/* glob
     # would pull in desktop on every web build. See #38772.
-    # When web/ has its own package-lock.json, _workspace_root() returns
+    # When apps/web/ has its own package-lock.json, _workspace_root() returns
     # web_dir itself and --workspace would fail.  See #42973.
-    npm_workspace_args: tuple[str, ...] = () if npm_cwd == web_dir else ("--workspace", "web")
+    npm_workspace_args: tuple[str, ...] = () if npm_cwd == web_dir else ("--workspace", "@opencodon/web")
     if _is_termux_startup_environment():
         npm_cwd, npm_workspace_args = _termux_workspace_install_context(web_dir)
     r1 = _run_npm_install_deterministic(
@@ -5301,7 +5323,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
         )
         _relay(r1)
         if fatal:
-            _say("  Run manually:  npm install --workspace web && npm run build -w web")
+            _say("  Run manually:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return False
     # First attempt — stream output via idle-timeout helper (issue #33788).
     # capture_output=True on a long Vite build looks identical to a hang;
@@ -5343,7 +5365,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
         )
         _relay(r2)
         if fatal:
-            _say("  Run manually:  npm install --workspace web && npm run build -w web")
+            _say("  Run manually:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return False
     _say("  ✓ Web UI built")
     project_root = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
@@ -6997,7 +7019,7 @@ def _update_via_zip(args):
         _install_python_dependencies_with_optional_fallback(pip_cmd)
 
     node_failures = _update_node_dependencies()
-    _build_web_ui(PROJECT_ROOT / "web")
+    _build_web_ui(PROJECT_ROOT / "apps" / "web")
 
     # Sync skills
     try:
@@ -8965,9 +8987,9 @@ def _update_node_dependencies() -> list[str]:
             print(f"    {stderr.splitlines()[-1]}")
         return _partial_update_failure("repo root")
 
-    # Step 2: install only the workspaces update needs (ui-tui, web).
+    # Step 2: install only the workspaces update needs (ui-tui, apps/web).
     # --workspace selects specific workspaces; the rest (desktop) are skipped.
-    ws_args = [*extra_args, "--workspace", "ui-tui", "--workspace", "web"]
+    ws_args = [*extra_args, "--workspace", "ui-tui", "--workspace", "@opencodon/web"]
     ws_result = _run_npm_install_deterministic(
         npm,
         PROJECT_ROOT,
@@ -10800,7 +10822,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         _refresh_active_lazy_features()
 
         node_failures = _update_node_dependencies()
-        _build_web_ui(PROJECT_ROOT / "web")
+        _build_web_ui(PROJECT_ROOT / "apps" / "web")
 
         # Rebuild the desktop app if the source tree changed since the last
         # build.  ``opencodon desktop --build-only`` uses the content-hash stamp
@@ -13068,7 +13090,7 @@ def cmd_dashboard(args):
         # below) to disable it even if a stray dist exists. Set it first.
         os.environ["OPENCODON_SERVE_HEADLESS"] = "1"
     elif "OPENCODON_WEB_DIST" not in os.environ and not getattr(args, "skip_build", False):
-        if not _build_web_ui(PROJECT_ROOT / "web", fatal=True):
+        if not _build_web_ui(PROJECT_ROOT / "apps" / "web", fatal=True):
             sys.exit(1)
     elif getattr(args, "skip_build", False):
         # --build-mode skip trusts the caller to have pre-built the web UI.
@@ -13090,12 +13112,12 @@ def cmd_dashboard(args):
             if _recoverable:
                 print(f"⚠ --skip-build was passed but no web dist found at: {_dist_root}")
                 print("  Attempting one recovery build of the web UI...")
-                _build_web_ui(PROJECT_ROOT / "web", fatal=True)
+                _build_web_ui(PROJECT_ROOT / "apps" / "web", fatal=True)
             if not (_dist_root / "index.html").exists():
                 print(f"✗ --skip-build was passed but no web dist found at: {_dist_root}")
                 if _recoverable:
                     print("  The recovery build did not produce a usable dist.")
-                print("  Pre-build first:  npm install --workspace web && npm run build -w web")
+                print("  Pre-build first:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
                 print("  Or drop --skip-build to build automatically.")
                 sys.exit(1)
             print("  ✓ Recovery build produced a web dist")
@@ -13109,7 +13131,7 @@ def cmd_dashboard(args):
         _dist_root = Path(os.environ["OPENCODON_WEB_DIST"]).expanduser()
         if not (_dist_root / "index.html").exists():
             print(f"✗ OPENCODON_WEB_DIST is set but no web dist found at: {_dist_root}")
-            print("  Pre-build first:  npm install --workspace web && npm run build -w web")
+            print("  Pre-build first:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
             print("  Or unset OPENCODON_WEB_DIST to build and use the default web UI dist.")
             sys.exit(1)
         # Write the expanded path back: web_server reads OPENCODON_WEB_DIST raw

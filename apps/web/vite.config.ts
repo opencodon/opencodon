@@ -6,14 +6,17 @@ import { clientBase, fsAllow, publicDir } from '../client/vite.base'
 /**
  * Browser host for the session UI.
  *
- * Builds the same `@opencodon/client` source the Electron shell does, into a
- * bundle the dashboard's FastAPI process serves at `/app`.
+ * Builds the same `@opencodon/client` source the Electron shell does, into the
+ * bundle the FastAPI process serves for the whole browser surface — both `/app`
+ * and the site root, which used to be a second SPA under `web/`.
  *
- *   npm run build --workspace @opencodon/web   →   opencodon_cli/web_app_dist/
+ *   npm run build --workspace @opencodon/web   →   opencodon_cli/web_dist/
  *
  * `base` is absolute (not the desktop build's './') because the app is served
  * from a path prefix while its own routes live on the hash — relative asset
- * URLs would resolve against whatever route the user reloaded on.
+ * URLs would resolve against whatever route the user reloaded on. It stays
+ * `/app/` even for the root mount: one set of asset URLs works from either
+ * entry point, two would not.
  */
 
 /** Dashboard to develop against. */
@@ -48,7 +51,7 @@ export default defineConfig({
   plugins: [...(clientBase.plugins ?? []), injectBootstrap()],
   build: {
     ...clientBase.build,
-    outDir: path.resolve(__dirname, '../../opencodon_cli/web_app_dist'),
+    outDir: path.resolve(__dirname, '../../opencodon_cli/web_dist'),
     emptyOutDir: true,
     // The shared base disables code splitting because electron-builder can OOM
     // scanning thousands of files when packaging the desktop app. Nothing

@@ -612,7 +612,7 @@ def test_end_to_end_with_real_context_no_credentials_leak(monkeypatch):
 
 
 def test_payload_shape_compatible_with_modelpickerdialog_frontend():
-    """Frontend (web/src/components/ModelPickerDialog.tsx) reads:
+    """The frontend model picker reads:
     name, slug, models, total_models, is_current, warning, authenticated.
     Verify every authenticated/skeleton row exposes those keys.
     """

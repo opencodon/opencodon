@@ -427,14 +427,15 @@ class TestCmdUpdateBranchFallback:
 
         # cmd_update runs npm commands in these locations:
         #   1. repo root  — root-only install (--workspaces=false)
-        #   2. repo root  — workspace install (--workspace ui-tui --workspace web)
-        #   3. web/       — npm ci --silent (if lockfile not at root)
+        #   2. repo root  — workspace install
+        #                  (--workspace ui-tui --workspace @opencodon/web)
+        #   3. apps/web/  — npm ci --silent (if lockfile not at root)
         #                  via _build_web_ui (subprocess.run)
-        #   4. web/       — npm run build (_run_with_idle_timeout)
+        #   4. apps/web/  — npm run build (_run_with_idle_timeout)
         #
         # With a single workspace lockfile at the repo root, the root
-        # install covers all workspaces.  The web/ ci call runs from the
-        # workspace root too (parent of web_dir) when the root lockfile
+        # install covers all workspaces.  The apps/web ci call runs from the
+        # workspace root too (an ancestor of web_dir) when the root lockfile
         # exists.
         #
         # The root install omits `--silent` and runs without
@@ -460,24 +461,27 @@ class TestCmdUpdateBranchFallback:
             "--workspace",
             "ui-tui",
             "--workspace",
-            "web",
+            "@opencodon/web",
         ]
         assert npm_calls[:2] == [
             (root_flags, PROJECT_ROOT),
             (ws_flags, PROJECT_ROOT),
         ]
         if len(npm_calls) > 2:
-            # The web/ install runs from the workspace root when the root
+            # The apps/web install runs from the workspace root when the root
             # lockfile exists (npm workspaces hoist node_modules upward).
             assert npm_calls[2:] == [
-                (["/usr/bin/npm", "ci", "--include=dev", "--workspace", "web", "--silent"], PROJECT_ROOT),
+                (
+                    ["/usr/bin/npm", "ci", "--include=dev", "--workspace", "@opencodon/web", "--silent"],
+                    PROJECT_ROOT,
+                ),
             ]
 
         # The web UI build itself went through the streaming helper.
         mock_idle.assert_called_once()
         idle_args, idle_kwargs = mock_idle.call_args
         assert idle_args[0] == ["/usr/bin/npm", "run", "build"]
-        assert idle_kwargs["cwd"] == PROJECT_ROOT / "web"
+        assert idle_kwargs["cwd"] == PROJECT_ROOT / "apps" / "web"
 
         # Regression for #18840: root npm installs must stream output
         # (capture_output=False) so postinstall progress is visible

@@ -3729,8 +3729,8 @@ This compaction should PRIORITISE preserving all information related to the focu
         last assistant reply. The summariser then rolls that reply up
         into the single ``[CONTEXT COMPACTION — REFERENCE ONLY]`` block
         persisted as ``role="user"`` or ``role="assistant"``. From the
-        operator's perspective the WebUI session viewer
-        (``web/src/pages/SessionsPage.tsx``) and the TUI chat panel
+        operator's perspective the browser session viewer and the TUI chat
+        panel
         both suddenly show the opaque "Context compaction" block in the
         slot where they were just reading the assistant's actual reply:
 
