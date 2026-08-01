@@ -49,7 +49,7 @@ from agent.tool_guardrails import (
 )
 from opencodon.config import cfg_get
 from opencodon.common.route_identity import normalize_route_base_url
-from opencodon_cli.timeouts import get_provider_request_timeout
+from opencodon.config.timeouts import get_provider_request_timeout
 from opencodon_constants import get_opencodon_home
 from utils import base_url_host_matches, is_truthy_value
 
@@ -636,7 +636,7 @@ def init_agent(
         pass  # Non-fatal — transport may not exist for all modes yet
 
     try:
-        from opencodon_cli.model_normalize import (
+        from opencodon.common.model_normalize import (
             _AGGREGATOR_PROVIDERS,
             normalize_model_for_provider,
         )
@@ -1960,7 +1960,7 @@ def init_agent(
         _active_runtime_model = agent.model
         if _configured_default_model:
             try:
-                from opencodon_cli.model_normalize import normalize_model_for_provider
+                from opencodon.common.model_normalize import normalize_model_for_provider
 
                 _configured_default_runtime_model = normalize_model_for_provider(
                     _configured_default_model, agent.provider
@@ -2192,7 +2192,7 @@ def init_agent(
         if _selected_engine is None:
             _candidate = None
             try:
-                from opencodon_cli.plugins import get_plugin_context_engine
+                from opencodon.plugins_runtime import get_plugin_context_engine
                 _candidate = get_plugin_context_engine()
             except Exception:
                 _candidate = None

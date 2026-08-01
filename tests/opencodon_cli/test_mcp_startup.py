@@ -55,7 +55,7 @@ def test_prepare_agent_startup_backgrounds_blocking_mcp_for_chat(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
@@ -151,7 +151,7 @@ def test_prepare_agent_startup_skips_mcp_bootstrap_for_tui_chat(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(

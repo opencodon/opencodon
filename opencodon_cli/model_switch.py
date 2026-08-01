@@ -11,7 +11,7 @@ This module ties together the foundation layers:
 
 - ``agent.models_dev``            -- models.dev catalog, ModelInfo, ProviderInfo
 - ``opencodon_cli.providers``        -- canonical provider identity + overlays
-- ``opencodon_cli.model_normalize``  -- per-provider name formatting
+- ``opencodon.common.model_normalize``  -- per-provider name formatting
 
 Provider switching uses the ``--provider`` flag exclusively.
 No colon-based ``provider:model`` syntax — colons are reserved for
@@ -34,7 +34,7 @@ from opencodon_cli.providers import (
     is_aggregator,
     resolve_provider_full,
 )
-from opencodon_cli.model_normalize import (
+from opencodon.common.model_normalize import (
     normalize_model_for_provider,
 )
 from agent.models_dev import (
@@ -1023,7 +1023,7 @@ def switch_model(
         if target_provider == "moa" and not new_model:
             try:
                 from opencodon.config import load_config
-                from opencodon_cli.moa_config import normalize_moa_config
+                from opencodon.config.moa_config import normalize_moa_config
 
                 new_model = normalize_moa_config(load_config().get("moa") or {})["default_preset"]
             except Exception:
@@ -1112,7 +1112,7 @@ def switch_model(
     else:
         try:
             from opencodon.config import load_config
-            from opencodon_cli.moa_config import exact_moa_preset_name, normalize_moa_config
+            from opencodon.config.moa_config import exact_moa_preset_name, normalize_moa_config
 
             _moa_cfg = normalize_moa_config(load_config().get("moa") or {})
             _moa_match = exact_moa_preset_name(_moa_cfg, raw_input)

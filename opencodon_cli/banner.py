@@ -594,7 +594,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         agg_label = ""
         try:
             from opencodon.config import load_config
-            from opencodon_cli.moa_config import normalize_moa_config
+            from opencodon.config.moa_config import normalize_moa_config
 
             _moa = normalize_moa_config(load_config().get("moa") or {})
             _preset = _moa.get("presets", {}).get(preset_name)

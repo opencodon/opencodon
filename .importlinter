@@ -33,65 +33,35 @@ ignore_imports =
     agent.account_usage -> opencodon_cli.auth
     agent.account_usage -> opencodon_cli.runtime_provider
     agent.agent_init -> opencodon_cli.auth
-    agent.agent_init -> opencodon_cli.model_normalize
     agent.agent_init -> opencodon_cli.models
-    agent.agent_init -> opencodon_cli.plugins
     agent.agent_init -> opencodon_cli.profiles
     agent.agent_init -> opencodon_cli.providers
-    agent.agent_init -> opencodon_cli.timeouts
     agent.agent_runtime_helpers -> opencodon_cli.auth
-    agent.agent_runtime_helpers -> opencodon_cli.middleware
-    agent.agent_runtime_helpers -> opencodon_cli.moa_config
-    agent.agent_runtime_helpers -> opencodon_cli.plugins
     agent.agent_runtime_helpers -> opencodon_cli.providers
     agent.agent_runtime_helpers -> opencodon_cli.runtime_provider
-    agent.agent_runtime_helpers -> opencodon_cli.timeouts
     agent.anthropic_adapter -> opencodon_cli.auth
     agent.auxiliary_client -> opencodon_cli.auth
     agent.auxiliary_client -> opencodon_cli.copilot_auth
     agent.auxiliary_client -> opencodon_cli.fallback_config
-    agent.auxiliary_client -> opencodon_cli.moa_config
-    agent.auxiliary_client -> opencodon_cli.model_normalize
     agent.auxiliary_client -> opencodon_cli.models
-    agent.auxiliary_client -> opencodon_cli.plugins
     agent.auxiliary_client -> opencodon_cli.providers
     agent.auxiliary_client -> opencodon_cli.runtime_provider
-    agent.background_review -> opencodon_cli.plugins
     agent.background_review -> opencodon_cli.runtime_provider
-    agent.chat_completion_helpers -> opencodon_cli.model_normalize
-    agent.chat_completion_helpers -> opencodon_cli.timeouts
-    agent.coding_context -> opencodon_cli._subprocess_compat
     agent.coding_context -> opencodon_cli.tools_config
-    agent.context_references -> opencodon_cli._subprocess_compat
     agent.conversation_compression -> opencodon_cli.goals
-    agent.conversation_loop -> opencodon_cli.middleware
-    agent.conversation_loop -> opencodon_cli.moa_config
-    agent.conversation_loop -> opencodon_cli.plugins
     agent.credential_pool -> opencodon_cli.auth
     agent.credential_pool -> opencodon_cli.copilot_auth
-    agent.credential_pool -> opencodon_cli.env_loader
     agent.credential_sources -> opencodon_cli.auth
     agent.curator -> opencodon_cli.runtime_provider
     agent.display -> opencodon_cli.skin_engine
     agent.gemini_native_adapter -> opencodon_cli
     agent.lsp.install -> opencodon_cli.tools_config
-    agent.moa_loop -> opencodon_cli.moa_config
     agent.moa_loop -> opencodon_cli.runtime_provider
-    agent.model_metadata -> opencodon_cli.moa_config
     agent.model_metadata -> opencodon_cli.models
     agent.model_metadata -> opencodon_cli.runtime_provider
     agent.models_dev -> opencodon_cli.models
     agent.prompt_builder -> opencodon_cli.projects_db
-    agent.secret_scope -> opencodon_cli.env_loader
-    agent.shell_hooks -> opencodon_cli._subprocess_compat
-    agent.shell_hooks -> opencodon_cli.plugins
     agent.skill_commands -> opencodon_cli.commands
-    agent.skill_preprocessing -> opencodon_cli._subprocess_compat
-    agent.tool_executor -> opencodon_cli.middleware
-    agent.tool_executor -> opencodon_cli.plugins
-    agent.turn_context -> opencodon_cli.plugins
-    agent.turn_finalizer -> opencodon_cli.plugins
-    agent.web_search_registry -> opencodon_cli.plugins
 
 [importlinter:contract:tools-not-cli-pkg]
 name = tools must not import the CLI frontend (opencodon_cli)
@@ -100,38 +70,19 @@ source_modules = tools
 forbidden_modules = opencodon_cli
 allow_indirect_imports = True
 ignore_imports =
-    tools.approval -> opencodon_cli.plugins
-    tools.browser_tool -> opencodon_cli._subprocess_compat
     tools.browser_tool -> opencodon_cli.dep_ensure
-    tools.browser_tool -> opencodon_cli.plugins
-    tools.checkpoint_manager -> opencodon_cli._subprocess_compat
     tools.cronjob_tools -> opencodon_cli.auth
     tools.cronjob_tools -> opencodon_cli.runtime_provider
-    tools.delegate_tool -> opencodon_cli.plugins
     tools.delegate_tool -> opencodon_cli.runtime_provider
-    tools.environments.base -> opencodon_cli._subprocess_compat
     tools.environments.docker -> opencodon_cli.profiles
-    tools.environments.local -> opencodon_cli._subprocess_compat
     tools.environments.local -> opencodon_cli.auth
-    tools.image_generation_tool -> opencodon_cli.plugins
-    tools.mcp_tool -> opencodon_cli.env_loader
     tools.mcp_tool -> opencodon_cli.mcp_security
-    tools.process_registry -> opencodon_cli._subprocess_compat
     tools.project_tools -> opencodon_cli.projects_db
-    tools.send_message_tool -> opencodon_cli.plugins
     tools.session_search_tool -> opencodon_cli.profiles
-    tools.skills_hub -> opencodon_cli._subprocess_compat
-    tools.skills_tool -> opencodon_cli.plugins
     tools.terminal_tool -> opencodon_cli.cron
-    tools.terminal_tool -> opencodon_cli.plugins
-    tools.transcription_tools -> opencodon_cli._subprocess_compat
     tools.transcription_tools -> opencodon_cli.models
-    tools.transcription_tools -> opencodon_cli.plugins
     tools.tts_tool -> opencodon_cli
-    tools.tts_tool -> opencodon_cli._subprocess_compat
     tools.tts_tool -> opencodon_cli.models
-    tools.tts_tool -> opencodon_cli.plugins
-    tools.web_tools -> opencodon_cli.plugins
     tools.xai_http -> opencodon_cli
     tools.xai_http -> opencodon_cli.auth
 
@@ -197,8 +148,8 @@ forbidden_modules =
     model_tools
 allow_indirect_imports = True
 ignore_imports =
-    opencodon.common.constants -> opencodon_cli._subprocess_compat
     opencodon.common.logging_setup -> agent.redact
+    opencodon.common.model_normalize -> opencodon_cli.models
     opencodon.common.route_identity -> agent.agent_init
     opencodon.config -> agent.redact
     opencodon.config -> agent.secret_scope
@@ -208,4 +159,27 @@ ignore_imports =
     opencodon.config -> opencodon_cli.mcp_security
     opencodon.config -> opencodon_cli.secret_prompt
     opencodon.config -> opencodon_cli.toolset_validation
+    opencodon.config.env_loader -> agent.secret_sources.registry
+    opencodon.config.moa_config -> agent.errors
+    opencodon.plugins_runtime -> agent.browser_provider
+    opencodon.plugins_runtime -> agent.browser_registry
+    opencodon.plugins_runtime -> agent.context_engine
+    opencodon.plugins_runtime -> agent.image_gen_provider
+    opencodon.plugins_runtime -> agent.image_gen_registry
+    opencodon.plugins_runtime -> agent.plugin_llm
+    opencodon.plugins_runtime -> agent.secret_sources.base
+    opencodon.plugins_runtime -> agent.secret_sources.registry
+    opencodon.plugins_runtime -> agent.skill_utils
+    opencodon.plugins_runtime -> agent.transcription_provider
+    opencodon.plugins_runtime -> agent.transcription_registry
+    opencodon.plugins_runtime -> agent.tts_provider
+    opencodon.plugins_runtime -> agent.tts_registry
+    opencodon.plugins_runtime -> agent.web_search_provider
+    opencodon.plugins_runtime -> agent.web_search_registry
+    opencodon.plugins_runtime -> opencodon_cli.commands
+    opencodon.plugins_runtime -> opencodon_cli.dashboard_auth
+    opencodon.plugins_runtime -> opencodon_cli.main
+    opencodon.plugins_runtime -> opencodon_cli.profiles
+    opencodon.plugins_runtime -> tools.approval
+    opencodon.plugins_runtime -> tools.registry
     opencodon.toolsets -> tools.registry

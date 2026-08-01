@@ -10,7 +10,7 @@ zero changes to call sites.
 Design notes
 ------------
 * Python plugins and shell hooks compose naturally: both flow through
-  :func:`opencodon_cli.plugins.invoke_hook` and its aggregators.  Python
+  :func:`opencodon.plugins_runtime.invoke_hook` and its aggregators.  Python
   plugins are registered first (via ``discover_and_load()``) so their
   block decisions win ties over shell-hook blocks.
 * Subprocess execution uses ``shlex.split(os.path.expanduser(command))``
@@ -122,7 +122,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple
 
-from opencodon_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
+from opencodon.common._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 try:
     import fcntl  # POSIX only; Windows falls back to best-effort without flock.
@@ -242,7 +242,7 @@ def register_from_config(
     registered: List[ShellHookSpec] = []
 
     # Import lazily — avoids circular imports at module-load time.
-    from opencodon_cli.plugins import get_plugin_manager
+    from opencodon.plugins_runtime import get_plugin_manager
 
     manager = get_plugin_manager()
 
@@ -308,7 +308,7 @@ def _parse_hooks_block(hooks_cfg: Any) -> List[ShellHookSpec]:
     Malformed entries warn-and-skip — we never raise from config parsing
     because a broken hook must not crash the agent.
     """
-    from opencodon_cli.plugins import VALID_HOOKS
+    from opencodon.plugins_runtime import VALID_HOOKS
 
     if not isinstance(hooks_cfg, dict):
         return []
@@ -569,7 +569,7 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
     "reason": "..."}`` payload is translated into the canonical opencodon
     ``{"action": "block", "message": "..."}`` shape expected by
-    :func:`opencodon_cli.plugins.get_pre_tool_call_block_message`.  This is
+    :func:`opencodon.plugins_runtime.get_pre_tool_call_block_message`.  This is
     the single most important correctness invariant in this module —
     skipping the translation silently breaks every ``pre_tool_call``
     block directive.
@@ -914,7 +914,7 @@ def run_once(
     """Fire a single shell-hook invocation with a synthetic payload.
     Used by ``opencodon hooks test`` and ``opencodon hooks doctor``.
 
-    ``kwargs`` is the same dict that :func:`opencodon_cli.plugins.invoke_hook`
+    ``kwargs`` is the same dict that :func:`opencodon.plugins_runtime.invoke_hook`
     would pass at runtime.  It is routed through :func:`_serialize_payload`
     so the synthetic stdin exactly matches what a real hook firing would
     produce — otherwise scripts tested via ``opencodon hooks test`` could

@@ -873,7 +873,7 @@ class GatewayConfig:
         try:
             from gateway.platform_registry import platform_registry
             try:
-                from opencodon_cli.plugins import discover_plugins
+                from opencodon.plugins_runtime import discover_plugins
                 discover_plugins()
             except Exception:
                 pass
@@ -1309,7 +1309,7 @@ def load_gateway_config() -> GatewayConfig:
             # Iterate built-in platforms plus any registered plugin platforms
             # so plugin authors get the same shared-key bridging (#24836).
             try:
-                from opencodon_cli.plugins import discover_plugins
+                from opencodon.plugins_runtime import discover_plugins
                 discover_plugins()  # idempotent
                 from gateway.platform_registry import platform_registry as _pr
             except Exception as e:
@@ -1852,7 +1852,7 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
     # for the same bug class in commit 7849a3d73; this is the runtime
     # counterpart.
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         for entry in platform_registry.plugin_entries():

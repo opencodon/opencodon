@@ -412,7 +412,7 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
     # session is created (not on continuation).  Plugins can use this
     # to initialise session-scoped state (e.g. warm a memory cache).
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_start",
             session_id=agent.session_id,
@@ -632,7 +632,7 @@ def run_conversation(
     """
     if moa_config is None:
         try:
-            from opencodon_cli.moa_config import decode_moa_turn
+            from opencodon.config.moa_config import decode_moa_turn
 
             _decoded_message, _decoded_moa_config = decode_moa_turn(user_message)
             if _decoded_moa_config is not None:
@@ -1334,7 +1334,7 @@ def run_conversation(
                     api_kwargs["extra_headers"] = _xh
                     agent._is_user_initiated_turn = False
                 try:
-                    from opencodon_cli.middleware import apply_llm_request_middleware
+                    from opencodon.plugins_runtime.middleware import apply_llm_request_middleware
 
                     _llm_request_mw = apply_llm_request_middleware(
                         api_kwargs,
@@ -1357,7 +1357,7 @@ def run_conversation(
                     _llm_middleware_trace = []
 
                 try:
-                    from opencodon_cli.plugins import (
+                    from opencodon.plugins_runtime import (
                         has_hook,
                         invoke_hook as _invoke_hook,
                     )
@@ -1489,7 +1489,7 @@ def run_conversation(
                         )
                     return agent._interruptible_api_call(next_api_kwargs)
 
-                from opencodon_cli.middleware import run_llm_execution_middleware
+                from opencodon.plugins_runtime.middleware import run_llm_execution_middleware
 
                 _model_request_active = getattr(agent, "_model_request_active", None)
                 _redirect_lock = getattr(agent, "_pending_redirect_lock", None)
@@ -4454,7 +4454,7 @@ def run_conversation(
                     assistant_message.content = str(raw)
 
             try:
-                from opencodon_cli.plugins import (
+                from opencodon.plugins_runtime import (
                     has_hook,
                     invoke_hook as _invoke_hook,
                 )
@@ -5561,7 +5561,7 @@ def run_conversation(
                 _attempt = getattr(agent, "_pre_verify_nudges", 0)
                 try:
                     from agent.verify_hooks import max_verify_nudges
-                    from opencodon_cli.plugins import get_pre_verify_continue_message, has_hook
+                    from opencodon.plugins_runtime import get_pre_verify_continue_message, has_hook
 
                     if _edited and has_hook("pre_verify") and _attempt < max_verify_nudges():
                         # Posture is fixed for the session — resolve once + cache.

@@ -209,7 +209,7 @@ class GatewaySlashCommandsMixin:
 
         # Fire plugin on_session_finalize hook (session boundary)
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
             _invoke_hook(
                 "on_session_finalize",
                 session_id=_old_sid,
@@ -288,7 +288,7 @@ class GatewaySlashCommandsMixin:
 
         # Fire plugin on_session_reset hook (new session guaranteed to exist)
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
             _new_sid = new_entry.session_id if new_entry else None
             _invoke_hook(
                 "on_session_reset",
@@ -4650,7 +4650,7 @@ class GatewaySlashCommandsMixin:
         try:
             if sys.platform == "win32":
                 import textwrap
-                from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+                from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
 
                 # opencodon_cmd is a list of argv parts we can pass directly
                 # (no shell-quoting needed).

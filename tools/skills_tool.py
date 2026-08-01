@@ -863,7 +863,7 @@ def _serve_plugin_skill(
     session_id: str | None = None,
 ) -> str:
     """Read a plugin-provided skill, apply guards, return JSON."""
-    from opencodon_cli.plugins import _get_disabled_plugins, get_plugin_manager
+    from opencodon.plugins_runtime import _get_disabled_plugins, get_plugin_manager
 
     if namespace in _get_disabled_plugins():
         return json.dumps(
@@ -1001,7 +1001,7 @@ def skill_view(
         # Bare names fall through to the existing flat-tree scan below.
         if ":" in name:
             from agent.skill_utils import is_valid_namespace, parse_qualified_name
-            from opencodon_cli.plugins import discover_plugins, get_plugin_manager
+            from opencodon.plugins_runtime import discover_plugins, get_plugin_manager
 
             namespace, bare = parse_qualified_name(name)
             if not is_valid_namespace(namespace):

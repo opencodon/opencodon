@@ -4129,7 +4129,7 @@ def _resolve_auto(
     if main_provider == "moa":
         try:
             from opencodon.config import load_config
-            from opencodon_cli.moa_config import resolve_moa_preset
+            from opencodon.config.moa_config import resolve_moa_preset
 
             _preset = resolve_moa_preset(load_config().get("moa") or {}, main_model)
             _agg = _preset.get("aggregator") or {}
@@ -4342,7 +4342,7 @@ def _normalize_resolved_model(model_name: Optional[str], provider: str) -> Optio
     if not model_name:
         return model_name
     try:
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
 
         return normalize_model_for_provider(model_name, provider)
     except Exception:
@@ -5976,7 +5976,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     """Return the config dict for auxiliary.<task>, or {} when unavailable.
 
     For plugin-registered auxiliary tasks (see
-    :meth:`opencodon_cli.plugins.PluginContext.register_auxiliary_task`) the
+    :meth:`opencodon.plugins_runtime.PluginContext.register_auxiliary_task`) the
     plugin's declared *defaults* are layered underneath the user's config
     so an unconfigured plugin task still works:
 
@@ -6000,7 +6000,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     # ctx.register_auxiliary_task(defaults={...}) takes effect without
     # forcing the user to write config.yaml entries.
     try:
-        from opencodon_cli.plugins import get_plugin_auxiliary_tasks
+        from opencodon.plugins_runtime import get_plugin_auxiliary_tasks
         for _entry in get_plugin_auxiliary_tasks():
             if _entry.get("key") == task:
                 _defaults = _entry.get("defaults") or {}

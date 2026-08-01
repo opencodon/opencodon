@@ -65,7 +65,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
 
     if unresolved:
         try:
-            from opencodon_cli.plugins import discover_plugins
+            from opencodon.plugins_runtime import discover_plugins
 
             discover_plugins()
             plugin_valid = [name for name in unresolved if validate_toolset(name)]

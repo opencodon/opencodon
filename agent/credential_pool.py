@@ -2157,7 +2157,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
 
     def _secret_source_for_env(env_var: str) -> Optional[str]:
         try:
-            from opencodon_cli.env_loader import get_secret_source
+            from opencodon.config.env_loader import get_secret_source
             source_label = get_secret_source(env_var)
         except Exception:
             source_label = None

@@ -34,6 +34,14 @@ def test_node_bootstrap_script_path_resolves_to_real_file():
     )
 
 
+def test_bundled_plugins_dir_resolves_to_real_directory():
+    from opencodon.plugins_runtime import get_bundled_plugins_dir
+
+    d = get_bundled_plugins_dir()
+    assert d.is_dir(), f"bundled plugins dir missing at {d}"
+    assert (d / "model-providers").is_dir()
+
+
 def test_platform_plugin_env_var_injection_sees_real_plugins_dir():
     # The injector walks <repo>/plugins/platforms/*/plugin.yaml; a wrong root
     # makes it a silent no-op. Assert the path it derives actually exists.

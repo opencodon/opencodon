@@ -52,7 +52,7 @@ from pathlib import Path
 from typing import Callable, Dict, Any, Optional
 from urllib.parse import urljoin, urlparse
 
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from opencodon_constants import display_opencodon_home
 
 logger = logging.getLogger(__name__)
@@ -516,7 +516,7 @@ def _dispatch_to_plugin_provider(
         return None
     try:
         from agent.tts_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)
@@ -2666,7 +2666,7 @@ def check_tts_requirements() -> bool:
 
     try:
         from agent.tts_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin = get_provider(provider)

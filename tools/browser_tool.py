@@ -69,7 +69,7 @@ from agent.redact import redact_cdp_url
 from opencodon_constants import agent_browser_runnable, get_opencodon_home
 from utils import env_int, is_truthy_value
 from opencodon.config import DEFAULT_CONFIG, cfg_get
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 
 # Browser-specific tool keys passed through to the agent-browser subprocess
 # AFTER credential stripping.  agent-browser is a Node process loading npm
@@ -655,7 +655,7 @@ def _ensure_browser_plugins_loaded() -> None:
     calls early-return inside `_ensure_plugins_discovered`.
     """
     try:
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:

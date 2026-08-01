@@ -26,7 +26,7 @@ import uuid
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
-from opencodon_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
+from opencodon.config.timeouts import get_provider_request_timeout, get_provider_stale_timeout
 from opencodon_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.error_classifier import FailoverReason
 from agent.errors import EmptyStreamError
@@ -1622,7 +1622,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
             unavailable.add(fb_key)
             return agent._try_activate_fallback(reason)  # try next in chain
         try:
-            from opencodon_cli.model_normalize import normalize_model_for_provider
+            from opencodon.common.model_normalize import normalize_model_for_provider
 
             fb_model = normalize_model_for_provider(fb_model, fb_provider)
         except Exception as _norm_err:

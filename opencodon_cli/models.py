@@ -3641,7 +3641,7 @@ def validate_requested_model(
     if normalized == "moa":
         try:
             from opencodon.config import load_config
-            from opencodon_cli.moa_config import normalize_moa_config
+            from opencodon.config.moa_config import normalize_moa_config
 
             cfg = normalize_moa_config(load_config().get("moa") or {})
             if requested in cfg["presets"]:

@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from urllib.parse import urljoin
 
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from utils import is_truthy_value
 from tools.tool_backend_helpers import (
     resolve_openai_audio_api_key,
@@ -945,7 +945,7 @@ def _dispatch_to_plugin_provider(
         return None
     try:
         from agent.transcription_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)

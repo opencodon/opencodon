@@ -24,7 +24,7 @@ from opencodon_constants import (
     reset_opencodon_home_override,
     set_opencodon_home_override,
 )
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
 from tools.environments.local import opencodon_subprocess_env
 from agent.replay_cleanup import sanitize_replay_history
@@ -313,7 +313,7 @@ class _SlashWorker:
             argv += ["--model", model]
 
         self._closed = False
-        from opencodon_cli._subprocess_compat import windows_hide_flags
+        from opencodon.common._subprocess_compat import windows_hide_flags
 
         # slash_worker runs the opencodon agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
@@ -444,7 +444,7 @@ def _notify_session_boundary(
 ) -> None:
     """Fire session lifecycle hooks with CLI parity."""
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
 
         _invoke_hook(
             event_type,
@@ -629,7 +629,7 @@ def _finalize_session(session: dict | None, end_reason: str = "tui_close") -> No
     # the user Ctrl‑C's mid‑turn.
     if agent is not None:
         try:
-            from opencodon_cli.plugins import invoke_hook
+            from opencodon.plugins_runtime import invoke_hook
 
             invoke_hook(
                 "on_session_end",
@@ -3179,7 +3179,7 @@ def _load_enabled_toolsets() -> list[str] | None:
 
         if unresolved:
             try:
-                from opencodon_cli.plugins import discover_plugins
+                from opencodon.plugins_runtime import discover_plugins
 
                 discover_plugins()
                 plugin_valid = [name for name in unresolved if validate_toolset(name)]
@@ -9825,7 +9825,7 @@ def _(rid, params: dict) -> dict:
             "-f", str(first_page), "-l", str(last_page),
             str(pdf_path), str(out_prefix),
         ]
-        from opencodon_cli._subprocess_compat import windows_hide_flags
+        from opencodon.common._subprocess_compat import windows_hide_flags
 
         try:
             res = subprocess.run(
@@ -12442,7 +12442,7 @@ def _(rid, params: dict) -> dict:
             return _ok(rid, {"type": "alias", "target": qc.get("target", "")})
 
     try:
-        from opencodon_cli.plugins import (
+        from opencodon.plugins_runtime import (
             get_plugin_command_handler,
             resolve_plugin_command_result,
         )
@@ -12547,7 +12547,7 @@ def _(rid, params: dict) -> dict:
         # for the rest of the session, pick it from the model picker (MoA
         # presets surface as a virtual "Mixture of Agents" provider).
         try:
-            from opencodon_cli.moa_config import moa_usage, normalize_moa_config
+            from opencodon.config.moa_config import moa_usage, normalize_moa_config
 
             if not arg:
                 return _err(rid, 4004, moa_usage())
@@ -13034,7 +13034,7 @@ def _list_repo_files(root: str) -> list[str]:
             return cached[1]
 
     files: list[str] = []
-    from opencodon_cli._subprocess_compat import windows_hide_flags
+    from opencodon.common._subprocess_compat import windows_hide_flags
 
     _creationflags = windows_hide_flags()
     try:
@@ -14141,7 +14141,7 @@ def _(rid, params: dict) -> dict:
     resolve_plugin_command_result = None
     if _cmd_base:
         try:
-            from opencodon_cli.plugins import (
+            from opencodon.plugins_runtime import (
                 get_plugin_command_handler,
                 resolve_plugin_command_result,
             )
@@ -14964,7 +14964,7 @@ def _browser_disconnect(rid) -> dict:
 @method("plugins.list")
 def _(rid, params: dict) -> dict:
     try:
-        from opencodon_cli.plugins import get_plugin_manager
+        from opencodon.plugins_runtime import get_plugin_manager
 
         return _ok(
             rid,

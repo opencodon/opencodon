@@ -57,7 +57,7 @@ import subprocess
 import time
 from pathlib import Path
 from opencodon_constants import get_opencodon_home
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from typing import Dict, List, Optional, Set, Tuple
 
 from utils import env_int

@@ -221,7 +221,7 @@ from opencodon_cli.browser_connect import (
     manual_chrome_debug_command,
     try_launch_chrome_debug,
 )
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 from utils import base_url_host_matches, fast_safe_load
 
 _opencodon_home = get_opencodon_home()
@@ -1017,7 +1017,7 @@ def _prepare_deferred_agent_startup() -> None:
         "on",
     }
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
 
         discover_plugins()
     except Exception:
@@ -1265,7 +1265,7 @@ def _notify_session_finalize(
     reason: str = "shutdown",
 ) -> None:
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_finalize",
             session_id=session_id,
@@ -1295,7 +1295,7 @@ def _emit_interrupted_session_end(cli, *, reason: str = "keyboard_interrupt") ->
             pass
 
     try:
-        from opencodon_cli.plugins import invoke_hook as _invoke_hook
+        from opencodon.plugins_runtime import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_end",
             session_id=session_id,
@@ -3663,7 +3663,7 @@ def build_bundle_invocation_message(*args, **kwargs):
 def _get_plugin_cmd_handler_names() -> set:
     """Return plugin command names (without slash prefix) for dispatch matching."""
     try:
-        from opencodon_cli.plugins import get_plugin_commands
+        from opencodon.plugins_runtime import get_plugin_commands
         return set(get_plugin_commands().keys())
     except Exception:
         return set()
@@ -5166,7 +5166,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         changed = False
 
         try:
-            from opencodon_cli.model_normalize import (
+            from opencodon.common.model_normalize import (
                 _AGGREGATOR_PROVIDERS,
                 normalize_model_for_provider,
             )
@@ -6845,7 +6845,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         lifecycle point (shutdown, /new, /reset).
         """
         try:
-            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
             _invoke_hook(
                 event_type,
                 session_id=self.agent.session_id if self.agent else None,
@@ -8843,7 +8843,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     # keyed by name, when available.
                     loaded: dict = {}
                     try:
-                        from opencodon_cli.plugins import get_plugin_manager
+                        from opencodon.plugins_runtime import get_plugin_manager
                         for p in get_plugin_manager().list_plugins():
                             loaded[p["name"]] = p
                     except Exception:
@@ -8924,7 +8924,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # default MoA preset, then restore the prior model. To *switch* to a
             # MoA preset for the session, pick it from the model picker (MoA
             # presets surface as a virtual "Mixture of Agents" provider).
-            from opencodon_cli.moa_config import (
+            from opencodon.config.moa_config import (
                 moa_usage,
                 normalize_moa_config,
             )
@@ -9013,7 +9013,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     self._console_print(f"[bold red]Quick command '{base_cmd}' has unsupported type (supported: 'exec', 'alias')[/]")
             # Check for plugin-registered slash commands
             elif base_cmd.lstrip("/") in _get_plugin_cmd_handler_names():
-                from opencodon_cli.plugins import (
+                from opencodon.plugins_runtime import (
                     get_plugin_command_handler,
                     resolve_plugin_command_result,
                 )
@@ -12939,7 +12939,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._last_ctrl_c_time = 0  # Track double Ctrl+C for force exit
 
         # Give plugin manager a CLI reference so plugins can inject messages
-        from opencodon_cli.plugins import get_plugin_manager
+        from opencodon.plugins_runtime import get_plugin_manager
         get_plugin_manager()._cli_ref = self
 
         # Config file watcher — detect mcp_servers changes and auto-reload
@@ -15322,7 +15322,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # the exit occurred, meaning run_conversation's hook didn't fire.
             if self.agent and getattr(self, '_agent_running', False):
                 try:
-                    from opencodon_cli.plugins import invoke_hook as _invoke_hook
+                    from opencodon.plugins_runtime import invoke_hook as _invoke_hook
                     _invoke_hook(
                         "on_session_end",
                         session_id=self.agent.session_id,

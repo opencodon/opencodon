@@ -5,7 +5,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from opencodon_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
+from opencodon.common._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 

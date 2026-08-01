@@ -32,7 +32,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from opencodon_cli.timeouts import get_provider_request_timeout
+from opencodon.config.timeouts import get_provider_request_timeout
 from agent.prompt_builder import format_steer_marker
 from agent.tool_dispatch_helpers import _trajectory_normalize_msg, make_tool_result_message
 from agent.trajectory import convert_scratchpad_to_think
@@ -1773,7 +1773,7 @@ def anthropic_prompt_cache_policy(
     if eff_provider.strip().lower() == "moa":
         try:
             from opencodon.config import load_config as _load_moa_cfg
-            from opencodon_cli.moa_config import resolve_moa_preset
+            from opencodon.config.moa_config import resolve_moa_preset
             from opencodon_cli.runtime_provider import resolve_runtime_provider
 
             _preset = resolve_moa_preset(
@@ -2383,7 +2383,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
 
     _tool_middleware_trace = list(tool_request_middleware_trace or [])
     try:
-        from opencodon_cli.middleware import apply_tool_request_middleware
+        from opencodon.plugins_runtime.middleware import apply_tool_request_middleware
 
         if not skip_tool_request_middleware:
             _tool_request_mw = apply_tool_request_middleware(
@@ -2404,7 +2404,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
     block_message: Optional[str] = None
     if not pre_tool_block_checked:
         try:
-            from opencodon_cli.plugins import resolve_pre_tool_block
+            from opencodon.plugins_runtime import resolve_pre_tool_block
             block_message = resolve_pre_tool_block(
                 function_name,
                 function_args,
@@ -2563,7 +2563,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
                 tool_request_middleware_trace=list(_tool_middleware_trace),
             )
 
-    from opencodon_cli.middleware import run_tool_execution_middleware
+    from opencodon.plugins_runtime.middleware import run_tool_execution_middleware
 
     return run_tool_execution_middleware(
         function_name,

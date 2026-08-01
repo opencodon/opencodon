@@ -632,7 +632,7 @@ _apply_profile_override()
 # Load .env from ~/.opencodon/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
 from opencodon.config import get_opencodon_home
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 
 load_opencodon_dotenv(project_env=PROJECT_ROOT / ".env")
 
@@ -3501,12 +3501,12 @@ def _all_aux_tasks() -> list[tuple[str, str, str]]:
     Built-in tasks come first (preserving order), followed by plugin tasks
     sorted by key. Used by ``_aux_config_menu``, ``_reset_aux_to_auto``, and
     display-name lookups so plugin-registered tasks (registered via
-    :meth:`opencodon_cli.plugins.PluginContext.register_auxiliary_task`) appear
+    :meth:`opencodon.plugins_runtime.PluginContext.register_auxiliary_task`) appear
     in the same surfaces as built-in ones without core knowing about them.
     """
     tasks = list(_AUX_TASKS)
     try:
-        from opencodon_cli.plugins import get_plugin_auxiliary_tasks
+        from opencodon.plugins_runtime import get_plugin_auxiliary_tasks
         for entry in get_plugin_auxiliary_tasks():
             tasks.append((entry["key"], entry["display_name"], entry["description"]))
     except Exception:
@@ -4304,7 +4304,7 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
         return new_key, False
 
     # Already configured — offer K / R / C ────────────────────────────────
-    from opencodon_cli.env_loader import format_secret_source_suffix
+    from opencodon.config.env_loader import format_secret_source_suffix
 
     source_suffix = format_secret_source_suffix(key_env) if key_env else ""
     print(f"  {pconfig.name} API key: {existing_key[:8]}... ✓{source_suffix}")
@@ -6305,7 +6305,7 @@ def _find_stale_dashboard_pids(
             # CREATE_NO_WINDOW hides the conhost flash: this scan can run from
             # the windowless pythonw.exe desktop/gateway backend during an
             # update, where a bare wmic spawn would pop a console window.
-            from opencodon_cli._subprocess_compat import windows_hide_flags
+            from opencodon.common._subprocess_compat import windows_hide_flags
 
             result = subprocess.run(
                 ["wmic", "process", "get", "ProcessId,CommandLine", "/FORMAT:LIST"],
@@ -12796,7 +12796,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     # Re-run plugin discovery so the basic provider registers from the
     # just-written config before start_server's gate check runs.
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
 
         discover_plugins(force=True)
     except Exception as exc:
@@ -13167,7 +13167,7 @@ def cmd_dashboard(args):
     # the dashboard's server-side runtime depends on plugin-registered
     # providers (image_gen, web, dashboard_auth, …).
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
         discover_plugins()
     except Exception as exc:
         # Discovery failures must not block dashboard startup outright —
@@ -13452,7 +13452,7 @@ def _prepare_agent_startup(args) -> None:
 
     _accept_hooks = bool(getattr(args, "accept_hooks", False))
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
 
         discover_plugins()
     except Exception:
@@ -14146,7 +14146,7 @@ def main():
     if _plugin_cli_discovery_needed():
         try:
             from plugins.memory import discover_plugin_cli_commands
-            from opencodon_cli.plugins import discover_plugins, get_plugin_manager
+            from opencodon.plugins_runtime import discover_plugins, get_plugin_manager
 
             seen_plugin_commands = set()
             for cmd_info in discover_plugin_cli_commands():

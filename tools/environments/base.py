@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import IO, Callable, Protocol
 
 from opencodon_constants import get_opencodon_home
-from opencodon_cli._subprocess_compat import windows_hide_flags
+from opencodon.common._subprocess_compat import windows_hide_flags
 from tools.interrupt import is_interrupted
 
 logger = logging.getLogger(__name__)

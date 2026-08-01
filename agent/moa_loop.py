@@ -1014,7 +1014,7 @@ class MoAChatCompletions:
             return self._call_prepared_aggregator(prepared_request, api_kwargs)
 
         from opencodon.config import load_config
-        from opencodon_cli.moa_config import resolve_moa_preset
+        from opencodon.config.moa_config import resolve_moa_preset
 
         preset = resolve_moa_preset(load_config().get("moa") or {}, self.preset_name)
         messages = list(api_kwargs.get("messages") or [])

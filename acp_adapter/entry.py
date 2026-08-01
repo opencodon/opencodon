@@ -100,7 +100,7 @@ def _setup_logging() -> None:
 
 def _load_env() -> None:
     """Load .env from OPENCODON_HOME (default ``~/.opencodon``)."""
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     opencodon_home = get_opencodon_home()
     loaded = load_opencodon_dotenv(opencodon_home=opencodon_home)

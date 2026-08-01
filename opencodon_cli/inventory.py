@@ -570,7 +570,7 @@ def _moa_provider_row(current_provider: str = "") -> dict | None:
     """
     try:
         from opencodon.config import load_config
-        from opencodon_cli.moa_config import normalize_moa_config
+        from opencodon.config.moa_config import normalize_moa_config
 
         cfg = normalize_moa_config(load_config().get("moa") or {})
         models = list(cfg.get("presets", {}).keys())

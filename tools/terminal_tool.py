@@ -2765,7 +2765,7 @@ def terminal_tool(
             # still subject to the final output limit below.
             # The hook is fail-open, and the first valid string return wins.
             try:
-                from opencodon_cli.plugins import invoke_hook
+                from opencodon.plugins_runtime import invoke_hook
                 hook_results = invoke_hook(
                     "transform_terminal_output",
                     command=command,

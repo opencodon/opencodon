@@ -2,7 +2,7 @@
 
 When the agent has edited code and is about to verify/finish, the loop fires the
 ``pre_verify`` hook (user directives resolved by
-:func:`opencodon_cli.plugins.get_pre_verify_continue_message`). A directive keeps
+:func:`opencodon.plugins_runtime.get_pre_verify_continue_message`). A directive keeps
 the agent going one more turn — run a check, defer it, tidy the diff — instead of
 stopping immediately.
 

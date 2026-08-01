@@ -11,7 +11,7 @@ import shutil
 from pathlib import Path
 
 from opencodon.config import get_project_root, get_opencodon_home, get_env_path
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
 from opencodon_constants import agent_browser_runnable
 

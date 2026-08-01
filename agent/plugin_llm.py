@@ -15,7 +15,7 @@ plugin's job is to make its own model call. This module is the
 supported lane for that case.
 
 The plugin gets ``ctx.llm`` exposed on its
-:class:`~opencodon_cli.plugins.PluginContext`:
+:class:`~opencodon.plugins_runtime.PluginContext`:
 
 * ``complete(messages, ...)`` — chat completion against the user's
   active model + auth.
@@ -598,7 +598,7 @@ def _resolve_attribution(
 class PluginLlm:
     """Host-owned LLM access for one trusted plugin.
 
-    Instances are constructed by :class:`opencodon_cli.plugins.PluginContext`
+    Instances are constructed by :class:`opencodon.plugins_runtime.PluginContext`
     and exposed as ``ctx.llm``. Plugins should not instantiate this
     directly — the constructor binds plugin identity for trust-gate
     enforcement.

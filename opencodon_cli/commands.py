@@ -462,7 +462,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     """Yield (name, description, args_hint) tuples for all plugin slash commands.
 
     Plugin commands are registered via
-    :func:`opencodon_cli.plugins.PluginContext.register_command`. They behave
+    :func:`opencodon.plugins_runtime.PluginContext.register_command`. They behave
     like ``CommandDef`` entries for gateway surfacing: they appear in the
     Telegram command menu, in Slack's ``/opencodon`` subcommand mapping, and
     (via :func:`plugins.platforms.discord.adapter._register_slash_commands`) in
@@ -473,7 +473,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     behavior).
     """
     try:
-        from opencodon_cli.plugins import get_plugin_commands
+        from opencodon.plugins_runtime import get_plugin_commands
     except Exception:
         return []
     try:
@@ -787,7 +787,7 @@ def _collect_gateway_skill_entries(
     # --- Tier 1: Plugin slash commands (never trimmed) ---------------------
     plugin_pairs: list[tuple[str, str]] = []
     try:
-        from opencodon_cli.plugins import get_plugin_commands
+        from opencodon.plugins_runtime import get_plugin_commands
         plugin_cmds = get_plugin_commands()
         for cmd_name in sorted(plugin_cmds):
             name = sanitize_name(cmd_name) if sanitize_name else cmd_name
@@ -2020,7 +2020,7 @@ class SlashCommandCompleter(Completer):
 
         # Plugin-registered slash commands
         try:
-            from opencodon_cli.plugins import get_plugin_commands
+            from opencodon.plugins_runtime import get_plugin_commands
             for cmd_name, cmd_info in get_plugin_commands().items():
                 if cmd_name.startswith(word):
                     desc = str(cmd_info.get("description", "Plugin command"))

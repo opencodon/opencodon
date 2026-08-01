@@ -756,7 +756,7 @@ class VoiceReceiver:
             f.write(pcm_data)
             pcm_path = f.name
         try:
-            from opencodon_cli._subprocess_compat import windows_hide_flags
+            from opencodon.common._subprocess_compat import windows_hide_flags
 
             subprocess.run(
                 [

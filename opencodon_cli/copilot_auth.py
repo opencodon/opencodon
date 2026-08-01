@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from opencodon_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
+from opencodon.common._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 

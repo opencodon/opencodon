@@ -490,7 +490,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         _img_backend = None
         try:
             from agent.image_gen_registry import list_providers
-            from opencodon_cli.plugins import _ensure_plugins_discovered
+            from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for _p in list_providers():

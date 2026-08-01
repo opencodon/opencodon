@@ -268,7 +268,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
 
     if current_secret_scope() is None:
         try:
-            from opencodon_cli.env_loader import load_opencodon_dotenv
+            from opencodon.config.env_loader import load_opencodon_dotenv
             load_opencodon_dotenv()
         except Exception:  # pragma: no cover — defensive
             pass

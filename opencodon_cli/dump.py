@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from opencodon.config import get_opencodon_home, get_env_path, get_project_root, load_config
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
 from agent.skill_utils import is_excluded_skill_path
 

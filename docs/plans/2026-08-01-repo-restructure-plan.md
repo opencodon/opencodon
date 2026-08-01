@@ -141,10 +141,21 @@ pinned by tests/opencodon/test_path_anchors.py); tests that stub
 need their targets flipped; `masked_secret_prompt` deferred to
 function level in reconcile_config.
 
-**Phase 2b remaining:** relocate the other core services living under
-`opencodon_cli` (auth, providers, models, model_normalize, timeouts,
-runtime_provider, profiles, plugins loader) and drain the remaining
-agent/tools→opencodon_cli edges; flip agent→run_agent helper imports.
+**Phase 2b partial DONE 2026-08-01 (leaf batch):** alias-moved
+`plugins.py → opencodon/plugins_runtime/` (+ `middleware.py` beside it),
+`_subprocess_compat`/`model_normalize → opencodon/common/`,
+`timeouts`/`env_loader`/`moa_config → opencodon/config/`. 76 more files
+flipped. Scoreboard: agent→opencodon_cli 62→32, tools→opencodon_cli
+34→15. Same gotchas recurred and were fixed: `__file__` repo-root anchor
+in get_bundled_plugins_dir (now pinned in test_path_anchors), and
+`sys.modules["opencodon_cli.plugins"]` stub keys in tests.
+
+**Phase 2 remaining:** auth (5.9k), runtime_provider, models, profiles,
+copilot_auth, providers-catalog helpers are core modules misfiled in
+opencodon_cli but tangled with `agent.*` — they relocate in Phase 3 when
+agent/ becomes opencodon/core/ (moving them into `opencodon` now would
+invert config-layer purity). agent→run_agent helper flips also fold into
+Phase 3/4.
 - Unify the three config loaders into `opencodon/config/`; `save_config_value`
   moves here (kills `gateway → cli.py` and `tui_gateway → cli.py` reaches).
 - Move shared display/callback abstractions out of frontends into core.

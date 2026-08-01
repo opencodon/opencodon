@@ -60,7 +60,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-from opencodon_cli._subprocess_compat import bounded_git_probe
+from opencodon.common._subprocess_compat import bounded_git_probe
 
 logger = logging.getLogger("opencodon.coding_context")
 

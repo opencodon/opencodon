@@ -39,7 +39,7 @@ import time
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from opencodon_cli._subprocess_compat import (
+from opencodon.common._subprocess_compat import (
     windows_detach_flags,
     windows_detach_flags_without_breakaway,
     windows_hide_flags,

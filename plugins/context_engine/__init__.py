@@ -243,7 +243,7 @@ class _EngineCollector:
             pass
 
         try:
-            from opencodon_cli.plugins import get_plugin_manager
+            from opencodon.plugins_runtime import get_plugin_manager
             manager = get_plugin_manager()
             if clean in manager._plugin_commands:
                 # Don't clobber a regular plugin's command — same conflict

@@ -254,7 +254,7 @@ def _model_flow_moa(config, current_model=""):
     """
     from opencodon_cli.auth import _save_model_choice, deactivate_provider
     from opencodon.config import load_config, save_config
-    from opencodon_cli.moa_config import normalize_moa_config
+    from opencodon.config.moa_config import normalize_moa_config
 
     moa = normalize_moa_config(config.get("moa") if isinstance(config, dict) else {})
     presets = moa.get("presets") or {}
@@ -1481,7 +1481,7 @@ def _model_flow_copilot(config, current_model=""):
         source = creds.get("source", "")
     else:
         if source in {"GITHUB_TOKEN", "GH_TOKEN"}:
-            from opencodon_cli.env_loader import format_secret_source_suffix
+            from opencodon.config.env_loader import format_secret_source_suffix
             bw_suffix = format_secret_source_suffix(source)
             print(f"  GitHub token: {api_key[:8]}... ✓ ({source}{bw_suffix})")
         elif source == "gh auth token":
@@ -1931,7 +1931,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     # Prompt for API key
     existing_key = get_env_value("AWS_BEARER_TOKEN_BEDROCK") or ""
     if existing_key:
-        from opencodon_cli.env_loader import format_secret_source_suffix
+        from opencodon.config.env_loader import format_secret_source_suffix
         source_suffix = format_secret_source_suffix("AWS_BEARER_TOKEN_BEDROCK")
         print(f"  Bedrock API Key: {existing_key[:12]}... ✓{source_suffix}")
     else:
@@ -2731,7 +2731,7 @@ def _model_flow_anthropic(config, current_model=""):
     if has_creds:
         # Show what we found
         if existing_key:
-            from opencodon_cli.env_loader import format_secret_source_suffix
+            from opencodon.config.env_loader import format_secret_source_suffix
             from opencodon_cli.auth import PROVIDER_REGISTRY
 
             # Surface which env var supplied the key so users with

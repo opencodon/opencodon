@@ -1052,7 +1052,7 @@ def _discover_all_plugins() -> list:
     seen: dict = {}  # key -> (name, version, description, source, path, key)
 
     # Bundled (<repo>/plugins/<name>/), excluding memory/ and context_engine/
-    from opencodon_cli.plugins import get_bundled_plugins_dir
+    from opencodon.plugins_runtime import get_bundled_plugins_dir
     repo_plugins = get_bundled_plugins_dir()
     for base, source, skip in (
         (repo_plugins, "bundled", {"memory", "context_engine"}),
@@ -1073,7 +1073,7 @@ def _discover_entrypoint_plugins() -> list[tuple[str, str, str, str]]:
     plugin directory under ``~/.opencodon/plugins``. Include package metadata here
     so ``opencodon plugins list`` can show and enable them.
     """
-    from opencodon_cli.plugins import ENTRY_POINTS_GROUP
+    from opencodon.plugins_runtime import ENTRY_POINTS_GROUP
 
     try:
         eps = importlib.metadata.entry_points()
@@ -1223,7 +1223,7 @@ def _discover_context_engines() -> list[tuple[str, str]]:
         pass
 
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_context_engine
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_context_engine
         discover_plugins()
         plugin_engine = get_plugin_context_engine()
         if plugin_engine and getattr(plugin_engine, "name", None) and plugin_engine.name not in seen:
@@ -1822,7 +1822,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Check the plugin manager for tools this plugin registered
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_manager
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_manager
         discover_plugins()  # idempotent — ensures plugins are loaded
         manager = get_plugin_manager()
         for _key, loaded in manager._plugins.items():
@@ -1837,7 +1837,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Fallback: read provides_tools from manifest on disk and query registry
     try:
-        from opencodon_cli.plugins import get_bundled_plugins_dir
+        from opencodon.plugins_runtime import get_bundled_plugins_dir
         for base in (get_bundled_plugins_dir(), _plugins_dir()):
             if not base.is_dir():
                 continue

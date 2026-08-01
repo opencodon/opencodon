@@ -116,8 +116,8 @@ from agent.process_bootstrap import (
 from agent.iteration_budget import IterationBudget
 
 
-from opencodon_cli.env_loader import load_opencodon_dotenv
-from opencodon_cli.timeouts import (
+from opencodon.config.env_loader import load_opencodon_dotenv
+from opencodon.config.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
@@ -2595,11 +2595,11 @@ class AIAgent:
         reason: Optional[str] = None,
     ) -> None:
         # Lazy module import (not from-import) so tests that
-        # ``monkeypatch.setattr("opencodon_cli.plugins.has_hook", ...)`` still
+        # ``monkeypatch.setattr("opencodon.plugins_runtime.has_hook", ...)`` still
         # take effect on this call site. After first call the import is a
         # ``sys.modules`` dict lookup, so retries don't repay any real cost.
         try:
-            from opencodon_cli import plugins as _plugins
+            from opencodon import plugins_runtime as _plugins
 
             if not _plugins.has_hook("api_request_error"):
                 return

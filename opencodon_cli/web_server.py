@@ -44,7 +44,7 @@ import urllib.error
 import urllib.parse
 import zipfile
 
-from opencodon_cli._subprocess_compat import windows_detach_flags, windows_hide_flags
+from opencodon.common._subprocess_compat import windows_detach_flags, windows_hide_flags
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -1413,7 +1413,7 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
     """
     from opencodon.config import get_compatible_custom_providers
     from opencodon_cli.models import _KNOWN_PROVIDER_NAMES, normalize_provider
-    from opencodon_cli.model_normalize import normalize_model_for_provider
+    from opencodon.common.model_normalize import normalize_model_for_provider
     from opencodon_cli.providers import resolve_custom_provider, resolve_user_provider
 
     prov_in = (provider or "").strip()
@@ -6518,7 +6518,7 @@ def get_auxiliary_models(profile: Optional[str] = None):
 def get_moa_models(profile: Optional[str] = None):
     """Return the configured Mixture-of-Agents provider/model slots."""
     try:
-        from opencodon_cli.moa_config import normalize_moa_config
+        from opencodon.config.moa_config import normalize_moa_config
 
         with _profile_scope(profile):
             cfg = load_config()
@@ -6534,7 +6534,7 @@ def get_moa_models(profile: Optional[str] = None):
 def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
     """Persist the Mixture-of-Agents provider/model slots."""
     try:
-        from opencodon_cli.moa_config import normalize_moa_config, validate_moa_payload
+        from opencodon.config.moa_config import normalize_moa_config, validate_moa_payload
 
         def _slot_dict(slot: MoaModelSlot) -> dict:
             # Drop unset optionals so saved slots stay minimal ({provider, model}).
@@ -8783,7 +8783,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     except ImportError:
         get_env_value = None  # type: ignore
     try:
-        from opencodon_cli.env_loader import format_secret_source_suffix
+        from opencodon.config.env_loader import format_secret_source_suffix
     except ImportError:
         format_secret_source_suffix = None  # type: ignore
 
@@ -12777,7 +12777,7 @@ async def list_hooks():
     from agent import shell_hooks
 
     try:
-        from opencodon_cli.plugins import VALID_HOOKS
+        from opencodon.plugins_runtime import VALID_HOOKS
         valid_events = sorted(VALID_HOOKS)
     except Exception:
         valid_events = []
@@ -12841,7 +12841,7 @@ async def create_hook(body: HookCreate):
         raise HTTPException(status_code=400, detail="event and command are required")
 
     try:
-        from opencodon_cli.plugins import VALID_HOOKS
+        from opencodon.plugins_runtime import VALID_HOOKS
         if event not in VALID_HOOKS:
             raise HTTPException(
                 status_code=400,
@@ -17636,7 +17636,7 @@ def _discover_dashboard_plugins() -> list:
     plugins = []
     seen_names: set = set()
 
-    from opencodon_cli.plugins import get_bundled_plugins_dir
+    from opencodon.plugins_runtime import get_bundled_plugins_dir
     bundled_root = get_bundled_plugins_dir()
     # User dashboard plugins are a dashboard-owned asset (same category as
     # theme YAML): resolve them from the process launch home so they don't

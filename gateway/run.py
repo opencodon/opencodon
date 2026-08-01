@@ -1395,7 +1395,7 @@ _opencodon_home = get_opencodon_home()
 # Load environment variables from ~/.opencodon/.env first.
 # User-managed env files should override stale shell exports on restart.
 from dotenv import load_dotenv  # noqa: F401  # backward-compat for tests that monkeypatch this symbol
-from opencodon_cli.env_loader import load_opencodon_dotenv
+from opencodon.config.env_loader import load_opencodon_dotenv
 _env_path = _opencodon_home / '.env'
 load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=Path(__file__).resolve().parents[1] / '.env')
 
@@ -1698,7 +1698,7 @@ if _config_path.exists():
             # below via the plugin auxiliary registry.
             _aux_bridged_keys = {"vision", "web_extract", "approval"}
             try:
-                from opencodon_cli.plugins import get_plugin_auxiliary_tasks
+                from opencodon.plugins_runtime import get_plugin_auxiliary_tasks
                 for _entry in get_plugin_auxiliary_tasks():
                     _aux_bridged_keys.add(_entry["key"])
             except Exception:
@@ -6480,7 +6480,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             except Exception as _e:
                 logger.debug("Shutdown transcript flush failed: %s", _e)
             try:
-                from opencodon_cli.plugins import invoke_hook as _invoke_hook
+                from opencodon.plugins_runtime import invoke_hook as _invoke_hook
                 _invoke_hook(
                     "on_session_finalize",
                     session_id=getattr(agent, "session_id", None),
@@ -6730,13 +6730,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # that triggered the /restart command closing its console.
         if sys.platform == "win32":
             import textwrap
-            from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+            from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
 
             cmd_argv = [*opencodon_cmd, "gateway", "restart"]
             watcher = textwrap.dedent(
                 """
                 import os, subprocess, sys, time
-                from opencodon_cli._subprocess_compat import windows_detach_flags_without_breakaway
+                from opencodon.common._subprocess_compat import windows_detach_flags_without_breakaway
                 pid = int(sys.argv[1])
                 restart_after_s = float(sys.argv[2])
                 cmd = sys.argv[3:]
@@ -7534,7 +7534,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # so the discover_plugins() side-effect in model_tools.py is NOT
         # guaranteed to have run by the time we reach this point.
         try:
-            from opencodon_cli.plugins import discover_plugins
+            from opencodon.plugins_runtime import discover_plugins
             discover_plugins()
         except Exception:
             logger.warning(
@@ -8447,7 +8447,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 for key, entry in _expired_entries:
                     try:
                         try:
-                            from opencodon_cli.plugins import invoke_hook as _invoke_hook
+                            from opencodon.plugins_runtime import invoke_hook as _invoke_hook
                             _parts = key.split(":")
                             _platform = _parts[2] if len(_parts) > 2 else ""
                             _invoke_hook(
@@ -10139,7 +10139,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # (e.g. customer handover ingest) without triggering the pairing flow.
         if not is_internal:
             try:
-                from opencodon_cli.plugins import invoke_hook as _invoke_hook
+                from opencodon.plugins_runtime import invoke_hook as _invoke_hook
                 _hook_results = _invoke_hook(
                     "pre_gateway_dispatch",
                     event=event,
@@ -11224,7 +11224,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # default MoA preset, then restore the prior model. To *switch* to a
             # MoA preset for the session, pick it from the model picker (MoA
             # presets surface as a virtual "Mixture of Agents" provider).
-            from opencodon_cli.moa_config import (
+            from opencodon.config.moa_config import (
                 moa_usage,
                 normalize_moa_config,
             )
@@ -11328,7 +11328,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # Plugin-registered slash commands
         if command:
             try:
-                from opencodon_cli.plugins import get_plugin_command_handler
+                from opencodon.plugins_runtime import get_plugin_command_handler
                 # Normalize underscores to hyphens so Telegram's underscored
                 # autocomplete form matches plugin commands registered with
                 # hyphens. See opencodon_cli/commands.py:_build_telegram_menu.
@@ -21845,7 +21845,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # Aggregators (openrouter, etc.) keep the vendor/model slug, so
                 # they're left untouched.
                 try:
-                    from opencodon_cli.model_normalize import (
+                    from opencodon.common.model_normalize import (
                         _AGGREGATOR_PROVIDERS,
                         normalize_model_for_provider,
                     )

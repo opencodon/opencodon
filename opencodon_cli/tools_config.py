@@ -38,7 +38,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
     (npm.cmd, npx, pip, powershell, curl) spawned from that console-less
     parent materializes a brand-new console window — the "terminal flash"
     users see when clicking "Run setup". ``CREATE_NO_WINDOW`` (via
-    :func:`opencodon_cli._subprocess_compat.windows_hide_flags`) suppresses it
+    :func:`opencodon.common._subprocess_compat.windows_hide_flags`) suppresses it
     without breaking ``capture_output`` — unlike ``DETACHED_PROCESS``, stdio
     handles stay inheritable. Returns 0 on POSIX, so passing the result
     unconditionally is safe.
@@ -50,7 +50,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
     the current process has no usable console of its own (stdout is a
     pipe/log file — exactly the GUI-spawn case that flashes).
     """
-    from opencodon_cli._subprocess_compat import windows_hide_flags
+    from opencodon.common._subprocess_compat import windows_hide_flags
 
     flags = windows_hide_flags()
     if not flags:
@@ -215,7 +215,7 @@ def _get_effective_configurable_toolsets():
     result = list(CONFIGURABLE_TOOLSETS)
     seen = {ts_key for ts_key, _, _ in result}
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_toolsets
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         for entry in get_plugin_toolsets():
             if entry[0] in seen:
@@ -230,7 +230,7 @@ def _get_effective_configurable_toolsets():
 def _get_plugin_toolset_keys() -> set:
     """Return the set of toolset keys provided by plugins."""
     try:
-        from opencodon_cli.plugins import discover_plugins, get_plugin_toolsets
+        from opencodon.plugins_runtime import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         return {ts_key for ts_key, _, _ in get_plugin_toolsets()}
     except Exception:
@@ -2131,7 +2131,7 @@ def _plugin_image_gen_providers() -> list[dict]:
     """
     try:
         from agent.image_gen_registry import list_providers
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = list_providers()
@@ -2184,7 +2184,7 @@ def _plugin_web_search_providers() -> list[dict]:
     """
     try:
         from agent.web_search_registry import list_providers as _list_web_providers
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = _list_web_providers()
@@ -2266,7 +2266,7 @@ def _plugin_browser_providers() -> list[dict]:
     """
     try:
         from agent.browser_registry import list_providers as _list_browser_providers
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = _list_browser_providers()
@@ -2317,7 +2317,7 @@ def _plugin_tts_providers() -> list[dict]:
     """
     try:
         from agent.tts_registry import _BUILTIN_NAMES, list_providers
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = list_providers()
@@ -2605,7 +2605,7 @@ def _toolset_needs_configuration_prompt(
             return False
         try:
             from agent.image_gen_registry import list_providers
-            from opencodon_cli.plugins import _ensure_plugins_discovered
+            from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for provider in list_providers():
@@ -2858,7 +2858,7 @@ def _plugin_image_gen_catalog(plugin_name: str):
     """
     try:
         from agent.image_gen_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(plugin_name)

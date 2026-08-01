@@ -2124,7 +2124,7 @@ def get_model_context_length(
     if (provider or "").strip().lower() == "moa":
         try:
             from opencodon.config import load_config
-            from opencodon_cli.moa_config import resolve_moa_preset
+            from opencodon.config.moa_config import resolve_moa_preset
             from opencodon_cli.runtime_provider import resolve_runtime_provider
 
             preset = resolve_moa_preset(load_config().get("moa") or {}, model)

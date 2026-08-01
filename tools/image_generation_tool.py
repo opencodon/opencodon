@@ -1004,7 +1004,7 @@ def check_image_generation_requirements() -> bool:
     # provider key must not opt a user into a paid image-generation backend.
     try:
         from agent.image_gen_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(configured)
@@ -1191,7 +1191,7 @@ def _dispatch_to_plugin_provider(
         # Import locally so plugin discovery isn't triggered just by
         # importing this module (tests rely on that).
         from agent.image_gen_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(configured)
@@ -1354,7 +1354,7 @@ def _maybe_route_managed_krea(
 
     try:
         from agent.image_gen_registry import get_provider
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider("krea")
@@ -1471,7 +1471,7 @@ def _active_image_capabilities() -> Dict[str, Any]:
     if configured_provider and configured_provider != "fal":
         try:
             from agent.image_gen_registry import get_provider
-            from opencodon_cli.plugins import _ensure_plugins_discovered
+            from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             provider = get_provider(configured_provider)

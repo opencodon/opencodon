@@ -404,7 +404,7 @@ def _scan_gateway_pids(
             # Hide the console window: this scan runs inside the windowless
             # pythonw.exe gateway/desktop backend, so a bare wmic/powershell
             # spawn would flash a conhost window on every watchdog probe.
-            from opencodon_cli._subprocess_compat import windows_hide_flags
+            from opencodon.common._subprocess_compat import windows_hide_flags
 
             _no_window = {"creationflags": windows_hide_flags()}
             wmic_path = shutil.which("wmic")
@@ -760,7 +760,7 @@ def _spawn_gateway_restart_watcher(old_pid: int, run_argv: list[str]) -> bool:
     #
     # ``windows_detach_popen_kwargs()`` returns the right kwargs for the
     # host platform and is a no-op on POSIX (just ``start_new_session=True``).
-    from opencodon_cli._subprocess_compat import (
+    from opencodon.common._subprocess_compat import (
         windows_detach_flags_without_breakaway,
         windows_detach_popen_kwargs,
     )
@@ -803,7 +803,7 @@ def _spawn_gateway_restart_watcher(old_pid: int, run_argv: list[str]) -> bool:
         import subprocess
         import sys
         import time
-        from opencodon_cli._subprocess_compat import (
+        from opencodon.common._subprocess_compat import (
             windows_detach_flags,
             windows_detach_flags_without_breakaway,
         )
@@ -3680,7 +3680,7 @@ def _spawn_detached_gateway() -> bool:
     gateway logs and the PID is tracked via the gateway.pid file that
     `run_gateway` writes, so stop/status/restart keep working.
     """
-    from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+    from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
 
     log_dir = get_opencodon_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -4857,7 +4857,7 @@ def _all_platforms() -> list[dict]:
     # User-installed platform plugins under ~/.opencodon/plugins/ still require
     # opt-in via ``plugins.enabled`` (untrusted code).
     try:
-        from opencodon_cli.plugins import discover_plugins
+        from opencodon.plugins_runtime import discover_plugins
 
         discover_plugins()
     except Exception as e:

@@ -196,7 +196,7 @@ _DEFAULT_PAYLOADS = {
 
 def _cmd_test(args) -> None:
     from opencodon.config import load_config
-    from opencodon_cli.plugins import VALID_HOOKS
+    from opencodon.plugins_runtime import VALID_HOOKS
     from agent import shell_hooks
 
     event = args.event
