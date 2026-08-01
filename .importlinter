@@ -144,6 +144,23 @@ forbidden_modules =
     opencodon.frontends
 allow_indirect_imports = True
 ignore_imports =
+    opencodon.state -> opencodon.core.memory_manager
+    opencodon.state -> opencodon.core.message_sanitization
+    opencodon.state._compression_state -> opencodon.core.memory_manager
+    opencodon.state._compression_state -> opencodon.core.message_sanitization
+    opencodon.state._fts -> opencodon.core.memory_manager
+    opencodon.state._fts -> opencodon.core.message_sanitization
+    opencodon.state._gateway_meta -> opencodon.core.memory_manager
+    opencodon.state._gateway_meta -> opencodon.core.message_sanitization
+    opencodon.state._handoff -> opencodon.core.memory_manager
+    opencodon.state._handoff -> opencodon.core.message_sanitization
+    opencodon.state._porting -> opencodon.core.memory_manager
+    opencodon.state._porting -> opencodon.core.message_sanitization
+    opencodon.state._schema -> opencodon.core.memory_manager
+    opencodon.state._schema -> opencodon.core.message_sanitization
+    opencodon.state._transcripts -> opencodon.core.agent_runtime_helpers
+    opencodon.state._transcripts -> opencodon.core.memory_manager
+    opencodon.state._transcripts -> opencodon.core.message_sanitization
     opencodon.common.logging_setup -> opencodon.core.redact
     opencodon.common.model_normalize -> opencodon.frontends.cli.models
     opencodon.common.route_identity -> opencodon.core.agent_init
@@ -181,8 +198,5 @@ ignore_imports =
     opencodon.plugins_runtime -> opencodon.tools.registry
     opencodon.providers.base -> opencodon.frontends.cli
     opencodon.providers.base -> opencodon.frontends.cli.urllib_security
-    opencodon.state -> opencodon.core.agent_runtime_helpers
-    opencodon.state -> opencodon.core.memory_manager
-    opencodon.state -> opencodon.core.message_sanitization
     opencodon.toolsets -> opencodon.frontends.gateway.platform_registry
     opencodon.toolsets -> opencodon.tools.registry
