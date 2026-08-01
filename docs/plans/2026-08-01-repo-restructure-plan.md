@@ -165,6 +165,28 @@ Phase 3/4.
   loaders' consumers exercised (CLI, `opencodon tools`, gateway).
 
 ### Phase 3 — Move the packages
+
+Refinement (2026-08-01, before execution): split into two steps so each is
+mechanical and separately verifiable.
+
+- **3a — wholesale moves, no regrouping.** `git mv` each package under
+  `src/opencodon/` preserving its internal layout: `agent/ →
+  src/opencodon/core/`, `tools/ → src/opencodon/tools/`, `gateway/ →
+  src/opencodon/frontends/gateway/`, `tui_gateway/ → frontends/tui/`,
+  `acp_adapter/ → frontends/acp/`, `mcp_serve.py → frontends/mcp.py`,
+  `cron/ → src/opencodon/cron/`, `opencodon_cli/ → frontends/cli/` (the
+  server split can wait for 3b), and the existing root `opencodon/` tree
+  into `src/opencodon/`. One packaging change (src layout, drop shims from
+  py-modules as they thin out). Alias shims at every old top-level name.
+  Sweep checklist from Phase 2 gotchas: __file__ repo-root anchors
+  (parents[N] arithmetic changes AGAIN — test_path_anchors must pass),
+  sys.modules stub keys, source-scan string assertions, dist/data paths
+  (gateway/assets package-data, web_dist, Dockerfile/nix COPY paths).
+- **3b — regroup within the new tree.** `core/` internal split
+  (providers/context/memory/media/credentials/skills/prompt), the
+  auth/models/runtime_provider/profiles relocation out of frontends/cli
+  into core, and the frontends/server split out of frontends/cli.
+  Incremental, one cluster per commit, tests move alongside.
 - `git mv` `agent/ → src/opencodon/core/` with the subpackage regrouping.
 - `gateway/`, `tui_gateway/ → frontends/tui/`, `acp_adapter/ → frontends/acp/`,
   `mcp_serve.py → frontends/mcp/`.
