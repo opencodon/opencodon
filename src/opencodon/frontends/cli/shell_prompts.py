@@ -383,7 +383,7 @@ class ShellPromptsMixin:
 
         img_dir = get_opencodon_home() / "images"
         self._image_counter += 1
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ts = _shell.datetime.now().strftime("%Y%m%d_%H%M%S")
         img_path = img_dir / f"clip_{ts}_{self._image_counter}.png"
 
         if save_clipboard_image(img_path):
@@ -436,7 +436,7 @@ class ShellPromptsMixin:
         # run_in_terminal requires an asyncio event loop — only exists in the
         # main prompt_toolkit thread.  If we're in a background thread (e.g.
         # process_loop), fall back to direct curses call.
-        in_main_thread = threading.current_thread() is threading.main_thread()
+        in_main_thread = _shell.threading.current_thread() is _shell.threading.main_thread()
 
         if self._app and in_main_thread:
             from prompt_toolkit.application import run_in_terminal
@@ -473,7 +473,7 @@ class ShellPromptsMixin:
             except (KeyboardInterrupt, EOFError):
                 pass
 
-        in_main_thread = threading.current_thread() is threading.main_thread()
+        in_main_thread = _shell.threading.current_thread() is _shell.threading.main_thread()
 
         # Slash-worker guard (#23185 / billing auto-reload hang): when a
         # prompt_toolkit app is running but we're on a non-main thread (the
@@ -556,7 +556,7 @@ class ShellPromptsMixin:
         except Exception:
             app_loop = None
 
-        in_main_thread = threading.current_thread() is threading.main_thread()
+        in_main_thread = _shell.threading.current_thread() is _shell.threading.main_thread()
 
         def _stdin_fallback() -> str | None:
             # On native Windows a raw input() from a non-main thread deadlocks
@@ -595,7 +595,7 @@ class ShellPromptsMixin:
             if in_main_thread or app_loop is None:
                 fn()
                 return True
-            ready = threading.Event()
+            ready = _shell.threading.Event()
 
             def _wrapped() -> None:
                 try:
@@ -687,7 +687,7 @@ class ShellPromptsMixin:
         selected = state.get("selected", 0)
 
         def _panel_box_width(title_text: str, content_lines: list[str], min_width: int = 56, max_width: int = 86) -> int:
-            term_cols = shutil.get_terminal_size((100, 20)).columns
+            term_cols = _shell.shutil.get_terminal_size((100, 20)).columns
             longest = max([len(title_text)] + [len(line) for line in content_lines] + [min_width - 4])
             inner = min(max(longest + 4, min_width - 2), max_width - 2, max(24, term_cols - 6))
             return inner + 2
@@ -730,7 +730,7 @@ class ShellPromptsMixin:
             for wrapped in _wrap_panel_text(f"{marker} [{idx + 1}] {label} — {desc}", inner_text_width, subsequent_indent="    "):
                 choice_wrapped.append((idx, wrapped))
 
-        term_rows = shutil.get_terminal_size((100, 24)).lines
+        term_rows = _shell.shutil.get_terminal_size((100, 24)).lines
         reserved_below = 6
         chrome_full = 6
         available = max(0, term_rows - reserved_below)
@@ -1137,7 +1137,7 @@ class ShellPromptsMixin:
             return []
 
         def _panel_box_width(title_text: str, content_lines: list[str], min_width: int = 46, max_width: int = 76) -> int:
-            term_cols = shutil.get_terminal_size((100, 20)).columns
+            term_cols = _shell.shutil.get_terminal_size((100, 20)).columns
             longest = max([len(title_text)] + [len(line) for line in content_lines] + [min_width - 4])
             inner = min(max(longest + 4, min_width - 2), max_width - 2, max(24, term_cols - 6))
             return inner + 2
@@ -1227,7 +1227,7 @@ class ShellPromptsMixin:
         # spinner/tool-progress line, status bar, input area, separators, and
         # prompt symbol. Measured at ~6 rows during live PTY approval prompts;
         # budget 6 so we don't overestimate the panel's room.
-        term_rows = shutil.get_terminal_size((100, 24)).lines
+        term_rows = _shell.shutil.get_terminal_size((100, 24)).lines
         chrome_full = 5
         chrome_tight = 3
         reserved_below = 6

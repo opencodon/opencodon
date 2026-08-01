@@ -303,7 +303,7 @@ class TestInlinedDisplayMasks:
         ``len(callable)``."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "src" / "opencodon" / "core" / "run_agent.py").read_text()
+               / "src" / "opencodon" / "core" / "agent_errors.py").read_text()
         # The function now starts with a callable check.
         assert (
             "if callable(key) and not isinstance(key, str):" in src

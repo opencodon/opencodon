@@ -374,7 +374,7 @@ class ShellVoiceMixin:
                 if hasattr(self, '_app') and self._app:
                     self._app.invalidate()
                 time.sleep(0.15)
-        threading.Thread(target=_refresh_level, daemon=True).start()
+        _shell.threading.Thread(target=_refresh_level, daemon=True).start()
 
     def _voice_stt_model(self) -> Optional[str]:
         """STT model override from config, or None for the provider default."""
@@ -394,7 +394,7 @@ class ShellVoiceMixin:
                     self._app.invalidate()
             except Exception as e:
                 _shell._cprint(f"{_shell._DIM}Voice auto-restart failed: {e}{_shell._RST}")
-        threading.Thread(target=_restart_recording, daemon=True).start()
+        _shell.threading.Thread(target=_restart_recording, daemon=True).start()
 
     def _voice_stop_and_transcribe(self):
         """Stop recording, transcribe via STT, and queue the transcript as input."""
@@ -461,11 +461,11 @@ class ShellVoiceMixin:
             # Clean up temp file unless transcription failed. On failure, keep
             # the source recording so long dictation is not lost.
             try:
-                if wav_path and os.path.isfile(wav_path):
+                if wav_path and _shell.os.path.isfile(wav_path):
                     if transcription_failed:
                         _shell._cprint(f"{_shell._DIM}Recording preserved at: {wav_path}{_shell._RST}")
                     else:
-                        os.unlink(wav_path)
+                        _shell.os.unlink(wav_path)
             except Exception:
                 pass
 
@@ -492,7 +492,7 @@ class ShellVoiceMixin:
         if not self._voice_tts or not text:
             return
         self._voice_tts_done.clear()
-        threading.Thread(
+        _shell.threading.Thread(
             target=self._voice_speak_response,
             args=(text,),
             daemon=True,
@@ -525,8 +525,8 @@ class ShellVoiceMixin:
 
             # Use MP3 output for CLI playback (afplay doesn't handle OGG well).
             # The TTS tool may auto-convert MP3->OGG, but the original MP3 remains.
-            os.makedirs(os.path.join(tempfile.gettempdir(), "opencodon_voice"), exist_ok=True)
-            mp3_path = os.path.join(
+            _shell.os.makedirs(_shell.os.path.join(tempfile.gettempdir(), "opencodon_voice"), exist_ok=True)
+            mp3_path = _shell.os.path.join(
                 tempfile.gettempdir(), "opencodon_voice",
                 f"tts_{time.strftime('%Y%m%d_%H%M%S')}.mp3",
             )
@@ -534,14 +534,14 @@ class ShellVoiceMixin:
             text_to_speech_tool(text=tts_text, output_path=mp3_path)
 
             # Play the MP3 directly (the TTS tool returns OGG path but MP3 still exists)
-            if os.path.isfile(mp3_path) and os.path.getsize(mp3_path) > 0:
+            if _shell.os.path.isfile(mp3_path) and _shell.os.path.getsize(mp3_path) > 0:
                 play_audio_file(mp3_path)
                 # Clean up
                 try:
-                    os.unlink(mp3_path)
+                    _shell.os.unlink(mp3_path)
                     ogg_path = mp3_path.rsplit(".", 1)[0] + ".ogg"
-                    if os.path.isfile(ogg_path):
-                        os.unlink(ogg_path)
+                    if _shell.os.path.isfile(ogg_path):
+                        _shell.os.unlink(ogg_path)
                 except OSError:
                     pass
         except Exception as e:
@@ -550,7 +550,7 @@ class ShellVoiceMixin:
         finally:
             self._voice_tts_done.set()
 
-    def _voice_barge_in_monitor(self, stop_event: threading.Event) -> None:
+    def _voice_barge_in_monitor(self, stop_event: _shell.threading.Event) -> None:
         """VAD barge-in: cut streaming TTS the moment the user starts talking.
 
         Runs for one turn alongside the streaming pipeline (continuous voice
@@ -605,8 +605,8 @@ class ShellVoiceMixin:
             _shell._cprint(f"\n{_shell._DIM}Voice processing error: {e}{_shell._RST}")
         finally:
             try:
-                if os.path.isfile(wav_path):
-                    os.unlink(wav_path)
+                if _shell.os.path.isfile(wav_path):
+                    _shell.os.unlink(wav_path)
             except OSError:
                 pass
             self._voice_barge_capture.clear()
@@ -704,7 +704,7 @@ class ShellVoiceMixin:
                     rec.shutdown()
                 except Exception:
                     pass
-            threading.Thread(target=_bg_shutdown, daemon=True).start()
+            _shell.threading.Thread(target=_bg_shutdown, daemon=True).start()
             self._voice_recorder = None
 
         # Stop any active TTS playback (file player + streaming pipeline)

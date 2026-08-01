@@ -318,7 +318,7 @@ class ShellStreamingMixin:
             return
 
         try:
-            term_width = shutil.get_terminal_size().columns
+            term_width = _shell.shutil.get_terminal_size().columns
         except Exception:
             term_width = 80
         prefix = "  [thinking] "
@@ -358,7 +358,7 @@ class ShellStreamingMixin:
             return
 
         try:
-            term_width = shutil.get_terminal_size().columns
+            term_width = _shell.shutil.get_terminal_size().columns
         except Exception:
             term_width = 80
         target_width = max(40, term_width - len("  [thinking] ") - 4)
@@ -398,7 +398,7 @@ class ShellStreamingMixin:
     def _format_submitted_user_message_preview(self, user_input: str) -> str:
         """Format the submitted user-message scrollback preview."""
         ts_suffix = (
-            f" [dim]{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}[/]"
+            f" [dim]{_shell.datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}[/]"
             if getattr(self, "show_timestamps", False) else ""
         )
         lines = user_input.split("\n")

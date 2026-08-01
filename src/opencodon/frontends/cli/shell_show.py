@@ -284,7 +284,7 @@ class ShellShowMixin:
         
         # Auto-compact for narrow terminals — the full banner with the
         # wordmark + tool list needs ~80 columns to render without wrapping.
-        term_width = shutil.get_terminal_size().columns
+        term_width = _shell.shutil.get_terminal_size().columns
         use_compact = self.compact or term_width < 80
         
         if use_compact:
@@ -295,7 +295,7 @@ class ShellShowMixin:
             tools = _shell.get_tool_definitions(enabled_toolsets=self.enabled_toolsets, quiet_mode=True)
             
             # Get terminal working directory (where commands will execute)
-            cwd = os.getenv("TERMINAL_CWD", os.getcwd())
+            cwd = _shell.os.getenv("TERMINAL_CWD", _shell.os.getcwd())
             
             # Build and display the banner
             _shell.build_welcome_banner(
@@ -311,7 +311,7 @@ class ShellShowMixin:
         
         # Tool discovery is intentionally deferred on the Termux bare prompt
         # path; availability warnings are shown once tools are initialized.
-        if os.environ.get("OPENCODON_DEFER_AGENT_STARTUP") != "1":
+        if _shell.os.environ.get("OPENCODON_DEFER_AGENT_STARTUP") != "1":
             self._show_tool_availability_warnings()
 
         # Warn about low context lengths (common with local servers). Keep
@@ -367,7 +367,7 @@ class ShellShowMixin:
     def _show_status(self):
         """Show compact startup status line."""
         # Avoid pulling the full tool registry into the bare Termux prompt path.
-        if os.environ.get("OPENCODON_DEFER_AGENT_STARTUP") == "1":
+        if _shell.os.environ.get("OPENCODON_DEFER_AGENT_STARTUP") == "1":
             tool_status = "tools deferred"
         else:
             tools = _shell.get_tool_definitions(enabled_toolsets=self.enabled_toolsets, quiet_mode=True)
@@ -423,7 +423,7 @@ class ShellShowMixin:
         started_at = session_meta.get("started_at")
         if started_at:
             try:
-                created_at = datetime.fromtimestamp(float(started_at))
+                created_at = _shell.datetime.fromtimestamp(float(started_at))
             except Exception:
                 created_at = self.session_start
 
@@ -433,7 +433,7 @@ class ShellShowMixin:
             if not value:
                 continue
             try:
-                updated_at = datetime.fromtimestamp(float(value))
+                updated_at = _shell.datetime.fromtimestamp(float(value))
                 break
             except Exception:
                 pass
@@ -611,9 +611,9 @@ class ShellShowMixin:
     def show_config(self):
         """Display current configuration with kawaii ASCII art."""
         # Get terminal config from environment (which was set from cli-config.yaml)
-        terminal_env = os.getenv("TERMINAL_ENV", "local")
-        terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
-        terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
+        terminal_env = _shell.os.getenv("TERMINAL_ENV", "local")
+        terminal_cwd = _shell.os.getenv("TERMINAL_CWD", _shell.os.getcwd())
+        terminal_timeout = _shell.os.getenv("TERMINAL_TIMEOUT", "60")
         
         user_config_path = _shell._opencodon_home / 'config.yaml'
         project_config_path = Path(__file__).parent / 'cli-config.yaml'
@@ -649,9 +649,9 @@ class ShellShowMixin:
         print("  -- Terminal --")
         print(f"  Environment:  {terminal_env}")
         if terminal_env == "ssh":
-            ssh_host = os.getenv("TERMINAL_SSH_HOST", "not set")
-            ssh_user = os.getenv("TERMINAL_SSH_USER", "not set")
-            ssh_port = os.getenv("TERMINAL_SSH_PORT", "22")
+            ssh_host = _shell.os.getenv("TERMINAL_SSH_HOST", "not set")
+            ssh_user = _shell.os.getenv("TERMINAL_SSH_USER", "not set")
+            ssh_port = _shell.os.getenv("TERMINAL_SSH_PORT", "22")
             print(f"  SSH Target:   {ssh_user}@{ssh_host}:{ssh_port}")
         print(f"  Working Dir:  {terminal_cwd}")
         print(f"  Timeout:      {terminal_timeout}s")
@@ -738,7 +738,7 @@ class ShellShowMixin:
                 return ""
             try:
                 from datetime import datetime
-                return f"  [{datetime.fromtimestamp(float(ts)).strftime(getattr(self, 'timestamp_format', '%H:%M'))}]"
+                return f"  [{_shell.datetime.fromtimestamp(float(ts)).strftime(getattr(self, 'timestamp_format', '%H:%M'))}]"
             except (ValueError, OSError, TypeError):
                 return ""
 
@@ -891,7 +891,7 @@ class ShellShowMixin:
         compressions = compressor.compression_count
 
         msg_count = len(self.conversation_history)
-        elapsed = _shell.format_duration_compact((datetime.now() - self.session_start).total_seconds())
+        elapsed = _shell.format_duration_compact((_shell.datetime.now() - self.session_start).total_seconds())
 
         print("  📊 Session Token Usage")
         print(f"  {'─' * 40}")
@@ -1021,7 +1021,7 @@ class ShellShowMixin:
         if msg_count > 0:
             user_msgs = len([m for m in self.conversation_history if m.get("role") == "user"])
             tool_calls = len([m for m in self.conversation_history if m.get("role") == "tool" or m.get("tool_calls")])
-            elapsed = datetime.now() - self.session_start
+            elapsed = _shell.datetime.now() - self.session_start
             hours, remainder = divmod(int(elapsed.total_seconds()), 3600)
             minutes, seconds = divmod(remainder, 60)
             if hours > 0:

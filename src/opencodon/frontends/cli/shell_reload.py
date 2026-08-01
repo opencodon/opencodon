@@ -382,7 +382,7 @@ class ShellReloadMixin:
         # indefinitely (which would freeze the entire TUI).
         print()
         print("🔄 MCP server config changed — reloading connections...")
-        _reload_thread = threading.Thread(
+        _reload_thread = _shell.threading.Thread(
             target=self._reload_mcp, daemon=True
         )
         _reload_thread.start()

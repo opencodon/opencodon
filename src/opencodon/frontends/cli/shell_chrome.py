@@ -481,7 +481,7 @@ class ShellChromeMixin:
                         pass
                 _clear()
 
-            timer = threading.Timer(delay, _fire)
+            timer = _shell.threading.Timer(delay, _fire)
             timer.daemon = True
             self._status_bar_unsuppress_timer = timer
             timer.start()
@@ -495,7 +495,7 @@ class ShellChromeMixin:
             old_timer = getattr(self, "_resize_recovery_timer", None)
             lock = getattr(self, "_resize_recovery_lock", None)
             if lock is None:
-                lock = threading.Lock()
+                lock = _shell.threading.Lock()
                 self._resize_recovery_lock = lock
 
             def _timer_fired(timer_ref):
@@ -526,7 +526,7 @@ class ShellChromeMixin:
                     except Exception:
                         pass
                 self._resize_recovery_pending = True
-                timer = threading.Timer(delay, lambda: _timer_fired(timer))
+                timer = _shell.threading.Timer(delay, lambda: _timer_fired(timer))
                 timer.daemon = True
                 self._resize_recovery_timer = timer
                 timer.start()
@@ -700,7 +700,7 @@ class ShellChromeMixin:
         if len(model_short) > 26:
             model_short = f"{model_short[:23]}..."
 
-        elapsed_seconds = max(0.0, (datetime.now() - self.session_start).total_seconds())
+        elapsed_seconds = max(0.0, (_shell.datetime.now() - self.session_start).total_seconds())
         snapshot = {
             "model_name": model_name,
             "model_short": model_short,
@@ -857,9 +857,9 @@ class ShellChromeMixin:
 
     @staticmethod
     def _get_tui_terminal_width(default: tuple[int, int] = (80, 24)) -> int:
-        """Return the live prompt_toolkit width, falling back to ``shutil``.
+        """Return the live prompt_toolkit width, falling back to ``_shell.shutil``.
 
-        The TUI layout can be narrower than ``shutil.get_terminal_size()`` reports,
+        The TUI layout can be narrower than ``_shell.shutil.get_terminal_size()`` reports,
         especially on Termux/mobile shells, so prefer prompt_toolkit's width whenever
         an app is active.
         """
@@ -867,7 +867,7 @@ class ShellChromeMixin:
             from prompt_toolkit.application import get_app
             return get_app().output.get_size().columns
         except Exception:
-            return shutil.get_terminal_size(default).columns
+            return _shell.shutil.get_terminal_size(default).columns
 
     def _use_minimal_tui_chrome(self, width: Optional[int] = None) -> bool:
         """Hide low-value chrome on narrow/mobile terminals to preserve rows."""
@@ -894,7 +894,7 @@ class ShellChromeMixin:
         """
         if width is None:
             try:
-                width = shutil.get_terminal_size((80, 24)).columns
+                width = _shell.shutil.get_terminal_size((80, 24)).columns
             except Exception:
                 width = 80
         return max(32, int(width or 80))
@@ -1082,7 +1082,7 @@ class ShellChromeMixin:
         try:
             snapshot = self._get_status_bar_snapshot()
             # Use prompt_toolkit's own terminal width when running inside the
-            # TUI — shutil.get_terminal_size() can return stale or fallback
+            # TUI — _shell.shutil.get_terminal_size() can return stale or fallback
             # values (especially on SSH) that differ from what prompt_toolkit
             # actually renders, causing the fragments to overflow to a second
             # line and produce duplicated status bar rows over long sessions.

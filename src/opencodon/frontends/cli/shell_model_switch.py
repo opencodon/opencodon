@@ -591,7 +591,7 @@ class ShellModelSwitchMixin:
                 _picker_custom_provs = state.get("custom_provs")
                 self._close_model_picker()
                 if getattr(self, "_app", None):
-                    threading.Thread(
+                    _shell.threading.Thread(
                         target=self._confirm_and_apply_model_switch_result,
                         args=(result, persist_global, _picker_custom_provs),
                         daemon=True,

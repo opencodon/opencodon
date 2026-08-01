@@ -255,7 +255,7 @@ class ShellSessionUXMixin:
 
         Idempotent and safe to call from every resume path. When the stored
         ``cwd`` differs from the current process directory, we both
-        ``os.chdir()`` (so the process and any ``os.getcwd()`` fallback agree)
+        ``_shell.os.chdir()`` (so the process and any ``_shell.os.getcwd()`` fallback agree)
         and retarget ``TERMINAL_CWD`` (so the terminal tool, code-exec tool,
         and relative-path resolution all land in the same place — the local
         terminal backend snapshots cwd on first use, which happens after this).
@@ -268,15 +268,15 @@ class ShellSessionUXMixin:
         recorded = (session_meta or {}).get("cwd")
         if not recorded:
             return
-        recorded = os.path.expanduser(str(recorded))
+        recorded = _shell.os.path.expanduser(str(recorded))
         try:
-            current = os.getcwd()
+            current = _shell.os.getcwd()
         except OSError:
             current = None
-        if current and os.path.realpath(recorded) == os.path.realpath(current):
+        if current and _shell.os.path.realpath(recorded) == _shell.os.path.realpath(current):
             return  # Already where the session lived — nothing to announce.
 
-        if not os.path.isdir(recorded):
+        if not _shell.os.path.isdir(recorded):
             msg = f"⚠ Session's working directory is gone: {recorded} — staying in {current or '.'}"
             if quiet:
                 print(msg, file=sys.stderr)
@@ -285,7 +285,7 @@ class ShellSessionUXMixin:
             return
 
         try:
-            os.chdir(recorded)
+            _shell.os.chdir(recorded)
         except OSError as e:
             msg = f"⚠ Could not enter session's working directory {recorded}: {e}"
             if quiet:
@@ -295,7 +295,7 @@ class ShellSessionUXMixin:
             return
 
         # Retarget the terminal/code-exec tools to match the process cwd.
-        os.environ["TERMINAL_CWD"] = recorded
+        _shell.os.environ["TERMINAL_CWD"] = recorded
 
         msg = f"↻ Working directory: {recorded}"
         if quiet:
@@ -308,7 +308,7 @@ class ShellSessionUXMixin:
         from io import StringIO
 
         buf = StringIO()
-        width = shutil.get_terminal_size((80, 24)).columns
+        width = _shell.shutil.get_terminal_size((80, 24)).columns
         console = _shell.Console(
             file=buf,
             force_terminal=True,
@@ -464,7 +464,7 @@ class ShellSessionUXMixin:
             # /resume and `opencodon sessions list` (gemini-cli#27770 port).
             self._discard_session_if_empty(old_session_id)
 
-        self.session_start = datetime.now()
+        self.session_start = _shell.datetime.now()
         timestamp_str = self.session_start.strftime("%Y%m%d_%H%M%S")
         short_uuid = uuid.uuid4().hex[:6]
         self.session_id = f"{timestamp_str}_{short_uuid}"
@@ -559,7 +559,7 @@ class ShellSessionUXMixin:
                     self.agent._session_db_created = False
                     self._session_db.create_session(
                         session_id=self.session_id,
-                        source=os.environ.get("OPENCODON_SESSION_SOURCE", "cli"),
+                        source=_shell.os.environ.get("OPENCODON_SESSION_SOURCE", "cli"),
                         model=self.model,
                         model_config={
                             "max_iterations": self.max_turns,
@@ -679,7 +679,7 @@ class ShellSessionUXMixin:
             print("(;_;) No conversation to save.")
             return
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = _shell.datetime.now().strftime("%Y%m%d_%H%M%S")
         saved_dir = get_opencodon_home() / "sessions" / "saved"
         try:
             saved_dir.mkdir(parents=True, exist_ok=True)
@@ -1113,7 +1113,7 @@ class ShellSessionUXMixin:
         # Fallback: shell clear command (rarely needed — escapes work on every
         # VT-capable terminal, but this covers exotic stdout wrappers).
         try:
-            os.system("cls" if os.name == "nt" else "clear")
+            _shell.os.system("cls" if _shell.os.name == "nt" else "clear")
         except Exception:
             pass
 
