@@ -62,7 +62,7 @@ def build_config_parser(subparsers, *, cmd_config: Callable) -> None:
     # config check
     config_subparsers.add_parser("check", help="Check for missing/outdated config")
 
-    # config migrate
-    config_subparsers.add_parser("migrate", help="Update config with new options")
+    # config reconcile
+    config_subparsers.add_parser("reconcile", help="Repair config/.env and prompt for missing keys")
 
     config_parser.set_defaults(func=cmd_config)

@@ -163,11 +163,11 @@ class SessionSource:
     user_name: Optional[str] = None
     thread_id: Optional[str] = None  # For forum topics, Discord threads, etc.
     chat_topic: Optional[str] = None  # Channel topic/description (Discord, Slack)
-    user_id_alt: Optional[str] = None  # Platform-specific stable alt ID (Signal UUID, Feishu union_id)
+    user_id_alt: Optional[str] = None  # Platform-specific stable alternate user ID
     chat_id_alt: Optional[str] = None  # Signal group internal ID
     is_bot: bool = False  # True when the message author is a bot/webhook (Discord)
     # Platform-neutral SCOPE discriminator (Discord guild / Slack workspace /
-    # Matrix server). Drives server/workspace isolation + the relay δ/ε/ζ gate.
+    # workspace/server id). Drives workspace isolation + the relay δ/ε/ζ gate.
     # Wire migration (D-Q2.5): `scope_id` is the canonical name; `guild_id` is a
     # deprecated legacy alias kept during the cross-repo dual-read/dual-write
     # overlap. Both are written by to_dict and read by from_dict (scope_id wins);

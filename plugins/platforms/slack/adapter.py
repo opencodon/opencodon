@@ -593,7 +593,6 @@ def _slack_dedup_ttl_seconds() -> float:
 # backend (OpenAI Whisper / gpt-4o-transcribe) will accept for that container.
 # OpenAI sniffs the container from the FILENAME extension, so a wrong extension
 # (e.g. caching MP4 bytes as ``.ogg``) makes transcription fail outright.
-# Mirrors the proven map in gateway/platforms/bluebubbles.py.
 _SLACK_AUDIO_MIME_TO_EXT = {
     "audio/ogg": ".ogg",
     "audio/opus": ".ogg",
@@ -639,7 +638,7 @@ _SLACK_EXT_TO_AUDIO_MIME = {
 def _resolve_slack_audio_ext(file_obj: Dict[str, Any], mimetype: str) -> str:
     """Pick the cache extension that matches an inbound Slack audio file's bytes.
 
-    Resolution order (mirrors the video branch + bluebubbles.py):
+    Resolution order (mirrors the video branch):
 
     1. The real extension from the uploaded filename, when it's a format a
        Whisper-family STT backend accepts (so ``audio_message.mp4`` →
@@ -7056,8 +7055,8 @@ class SlackAdapter(BasePlatformAdapter):
     def _slack_mention_patterns(self) -> List["re.Pattern"]:
         """Compile optional regex wake-word patterns for channel triggers.
 
-        Parity with the other adapters (Telegram, DingTalk, Mattermost,
-        WhatsApp, BlueBubbles, Photon): when ``require_mention`` is on, a
+        Parity with the other adapters (Telegram, WhatsApp): when
+        ``require_mention`` is on, a
         channel message matching one of these patterns triggers the bot even
         without a literal ``<@BOTUID>`` mention. Reads ``slack.mention_patterns``
         (a list or single string) or ``SLACK_MENTION_PATTERNS`` (a JSON list, or

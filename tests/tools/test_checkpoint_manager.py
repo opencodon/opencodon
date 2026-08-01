@@ -27,7 +27,6 @@ from tools.checkpoint_manager import (
     maybe_auto_prune_checkpoints,
     store_status,
     clear_all,
-    clear_legacy,
 )
 
 
@@ -103,7 +102,7 @@ class TestStorePath:
 
 
 # =========================================================================
-# Store init + legacy migration
+# Store init
 # =========================================================================
 
 class TestStoreInit:
@@ -137,30 +136,6 @@ class TestStoreInit:
         assert err is None
         assert (store / "HEAD").exists()
         assert (store / "OPENCODON_WORKDIR").exists()
-
-    def test_legacy_migration_archives_prev2_repos(
-        self, checkpoint_base, work_dir,
-    ):
-        """Pre-v2 per-project shadow repos get moved into legacy-<ts>/."""
-        base = checkpoint_base
-        base.mkdir(parents=True)
-        # Simulate a pre-v2 repo directly under base
-        fake_repo = base / "deadbeefcafebabe"
-        fake_repo.mkdir()
-        (fake_repo / "HEAD").write_text("ref: refs/heads/main\n")
-        (fake_repo / "OPENCODON_WORKDIR").write_text(str(work_dir) + "\n")
-        (fake_repo / "objects").mkdir()
-
-        # Init store — should migrate the fake pre-v2 repo
-        store = _store_path(base)
-        err = _init_store(store, str(work_dir))
-        assert err is None
-
-        assert not fake_repo.exists()
-        legacies = [p for p in base.iterdir() if p.name.startswith("legacy-")]
-        assert len(legacies) == 1
-        assert (legacies[0] / fake_repo.name).exists()
-        assert (legacies[0] / fake_repo.name / "HEAD").exists()
 
 
 # =========================================================================
@@ -758,98 +733,6 @@ class TestGpgAndGlobalConfigIsolation:
 # prune_checkpoints + maybe_auto_prune_checkpoints
 # =========================================================================
 
-def _seed_legacy_repo(base: Path, name: str, workdir: Path, mtime: float = None) -> Path:
-    """Create a minimal pre-v2 shadow repo directly under base."""
-    shadow = base / name
-    shadow.mkdir(parents=True)
-    (shadow / "HEAD").write_text("ref: refs/heads/main\n")
-    (shadow / "OPENCODON_WORKDIR").write_text(str(workdir) + "\n")
-    (shadow / "info").mkdir()
-    (shadow / "info" / "exclude").write_text("node_modules/\n")
-    if mtime is not None:
-        for p in shadow.rglob("*"):
-            os.utime(p, (mtime, mtime))
-        os.utime(shadow, (mtime, mtime))
-    return shadow
-
-
-def _seed_v2_project(base: Path, workdir: Path, last_touch: float = None) -> str:
-    """Register a v2 project in the shared store (no commits, just metadata)."""
-    store = _store_path(base)
-    _init_store(store, str(workdir if workdir.exists() else base))
-    dir_hash = _project_hash(str(workdir))
-    meta = {
-        "workdir": str(workdir.resolve()) if workdir.exists() else str(workdir),
-        "created_at": (last_touch or time.time()),
-        "last_touch": (last_touch or time.time()),
-    }
-    mp = _project_meta_path(store, dir_hash)
-    mp.parent.mkdir(parents=True, exist_ok=True)
-    mp.write_text(json.dumps(meta))
-    return dir_hash
-
-
-class TestPruneCheckpointsLegacy:
-    """Backwards-compat: prune still handles pre-v2 per-project shadow repos."""
-
-    def test_deletes_orphan_when_workdir_missing(self, tmp_path):
-        base = tmp_path / "checkpoints"
-        alive_work = tmp_path / "alive"
-        alive_work.mkdir()
-        alive_repo = _seed_legacy_repo(base, "aaaa" * 4, alive_work)
-        orphan_repo = _seed_legacy_repo(base, "bbbb" * 4, tmp_path / "was-deleted")
-
-        result = prune_checkpoints(retention_days=0, checkpoint_base=base)
-
-        assert result["scanned"] == 2
-        assert result["deleted_orphan"] == 1
-        assert result["deleted_stale"] == 0
-        assert alive_repo.exists()
-        assert not orphan_repo.exists()
-
-    def test_deletes_stale_by_mtime(self, tmp_path):
-        base = tmp_path / "checkpoints"
-        work = tmp_path / "work"
-        work.mkdir()
-        fresh_repo = _seed_legacy_repo(base, "cccc" * 4, work)
-        stale_work = tmp_path / "stale_work"
-        stale_work.mkdir()
-        old = time.time() - 60 * 86400
-        stale_repo = _seed_legacy_repo(base, "dddd" * 4, stale_work, mtime=old)
-
-        result = prune_checkpoints(
-            retention_days=30, delete_orphans=False, checkpoint_base=base,
-        )
-        assert result["deleted_stale"] == 1
-        assert fresh_repo.exists()
-        assert not stale_repo.exists()
-
-    def test_delete_orphans_disabled_keeps_orphans(self, tmp_path):
-        base = tmp_path / "checkpoints"
-        orphan = _seed_legacy_repo(base, "ffff" * 4, tmp_path / "gone")
-
-        result = prune_checkpoints(
-            retention_days=0, delete_orphans=False, checkpoint_base=base,
-        )
-        assert result["deleted_orphan"] == 0
-        assert orphan.exists()
-
-    def test_skips_non_shadow_dirs(self, tmp_path):
-        base = tmp_path / "checkpoints"
-        base.mkdir()
-        (base / "garbage-dir").mkdir()
-        (base / "garbage-dir" / "random.txt").write_text("hi")
-
-        result = prune_checkpoints(retention_days=0, checkpoint_base=base)
-        assert result["scanned"] == 0
-        assert (base / "garbage-dir").exists()
-
-    def test_base_missing_returns_empty_counts(self, tmp_path):
-        result = prune_checkpoints(checkpoint_base=tmp_path / "does-not-exist")
-        assert result["scanned"] == 0
-        assert result["deleted_orphan"] == 0
-
-
 class TestPruneCheckpointsV2:
     """v2 pruning walks the shared store's projects/ metadata."""
 
@@ -915,56 +798,52 @@ class TestPruneCheckpointsV2:
         assert (base / "store" / "projects" / f"{fresh_hash}.json").exists()
         assert not meta_path.exists()
 
-    def test_legacy_archive_dirs_also_pruned(self, tmp_path, monkeypatch):
-        """legacy-<ts>/ dirs older than retention_days get wiped."""
-        base = tmp_path / "checkpoints"
-        base.mkdir()
-        monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
 
-        old_legacy = base / "legacy-20200101-000000"
-        old_legacy.mkdir()
-        (old_legacy / "junk").write_bytes(b"x" * 1000)
-        old = time.time() - 60 * 86400
-        for p in old_legacy.rglob("*"):
-            os.utime(p, (old, old))
-        os.utime(old_legacy, (old, old))
-
-        result = prune_checkpoints(retention_days=7, checkpoint_base=base)
-        assert result["deleted_stale"] >= 1
-        assert not old_legacy.exists()
+def _seed_orphan_project(base: Path, tmp_path: Path, name: str) -> None:
+    """Commit a project into the v2 store, then delete its workdir."""
+    import shutil as _shutil
+    work = tmp_path / name
+    work.mkdir()
+    (work / "f.py").write_text(name)
+    m = CheckpointManager(enabled=True)
+    m.ensure_checkpoint(str(work), name)
+    _shutil.rmtree(work)
 
 
 class TestMaybeAutoPruneCheckpoints:
-    def test_first_call_prunes_and_writes_marker(self, tmp_path):
+    def test_first_call_prunes_and_writes_marker(self, tmp_path, monkeypatch):
         base = tmp_path / "checkpoints"
-        _seed_legacy_repo(base, "0000" * 4, tmp_path / "gone")
+        monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
+        _seed_orphan_project(base, tmp_path, "gone")
 
         out = maybe_auto_prune_checkpoints(checkpoint_base=base)
         assert out["skipped"] is False
         assert out["result"]["deleted_orphan"] == 1
         assert (base / ".last_prune").exists()
 
-    def test_second_call_within_interval_skips(self, tmp_path):
+    def test_second_call_within_interval_skips(self, tmp_path, monkeypatch):
         base = tmp_path / "checkpoints"
-        _seed_legacy_repo(base, "1111" * 4, tmp_path / "gone")
+        monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
+        _seed_orphan_project(base, tmp_path, "gone")
 
         first = maybe_auto_prune_checkpoints(
             checkpoint_base=base, min_interval_hours=24,
         )
         assert first["skipped"] is False
 
-        _seed_legacy_repo(base, "2222" * 4, tmp_path / "also-gone")
+        _seed_orphan_project(base, tmp_path, "also-gone")
         second = maybe_auto_prune_checkpoints(
             checkpoint_base=base, min_interval_hours=24,
         )
         assert second["skipped"] is True
-        assert (base / ("2222" * 4)).exists()
+        gone_hash = _project_hash(str(tmp_path / "also-gone"))
+        assert (base / "store" / "projects" / f"{gone_hash}.json").exists()
 
-    def test_corrupt_marker_treated_as_no_prior_run(self, tmp_path):
+    def test_corrupt_marker_treated_as_no_prior_run(self, tmp_path, monkeypatch):
         base = tmp_path / "checkpoints"
-        base.mkdir()
+        monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
+        _seed_orphan_project(base, tmp_path, "gone")
         (base / ".last_prune").write_text("not-a-timestamp")
-        _seed_legacy_repo(base, "3333" * 4, tmp_path / "gone")
 
         out = maybe_auto_prune_checkpoints(checkpoint_base=base)
         assert out["skipped"] is False
@@ -979,7 +858,7 @@ class TestMaybeAutoPruneCheckpoints:
 
 
 # =========================================================================
-# store_status / clear_all / clear_legacy
+# store_status / clear_all
 # =========================================================================
 
 class TestStoreStatus:
@@ -990,25 +869,18 @@ class TestStoreStatus:
         assert info["project_count"] == 0
         assert info["total_size_bytes"] == 0
 
-    def test_reports_projects_and_legacy(self, tmp_path, monkeypatch, work_dir):
+    def test_reports_projects(self, tmp_path, monkeypatch, work_dir):
         base = tmp_path / "checkpoints"
         monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
 
         m = CheckpointManager(enabled=True)
         m.ensure_checkpoint(str(work_dir), "initial")
 
-        # Add a legacy archive dir manually
-        legacy = base / "legacy-20200101-000000"
-        legacy.mkdir()
-        (legacy / "junk").write_bytes(b"x" * 100)
-
         info = store_status()
         assert info["project_count"] == 1
         assert info["projects"][0]["workdir"] == str(work_dir.resolve())
         assert info["projects"][0]["commits"] >= 1
         assert info["projects"][0]["exists"] is True
-        assert len(info["legacy_archives"]) == 1
-        assert info["legacy_archives"][0]["size_bytes"] >= 100
 
 
 class TestClearFunctions:
@@ -1023,25 +895,6 @@ class TestClearFunctions:
         assert result["deleted"] is True
         assert result["bytes_freed"] > 0
         assert not base.exists()
-
-    def test_clear_legacy_only_removes_legacy_dirs(
-        self, tmp_path, monkeypatch, work_dir,
-    ):
-        base = tmp_path / "checkpoints"
-        monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
-        m = CheckpointManager(enabled=True)
-        m.ensure_checkpoint(str(work_dir), "initial")
-
-        legacy = base / "legacy-20200101-000000"
-        legacy.mkdir()
-        (legacy / "junk").write_bytes(b"x" * 1000)
-
-        result = clear_legacy()
-        assert result["deleted"] == 1
-        assert result["bytes_freed"] >= 1000
-        assert not legacy.exists()
-        # Store preserved
-        assert (base / "store" / "HEAD").exists()
 
     def test_clear_all_on_missing_base_is_noop(self, tmp_path, monkeypatch):
         base = tmp_path / "does-not-exist"

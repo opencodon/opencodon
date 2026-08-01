@@ -4837,9 +4837,6 @@ _PLATFORMS = [
     # Slack moved to plugins/platforms/slack/ for the same reason — its setup
     # metadata is discovered dynamically via the platform registry entry
     # registered by plugins/platforms/slack/adapter.py::register(). #41112.
-    # Matrix moved to plugins/platforms/matrix/ — setup metadata discovered
-    # dynamically via the platform registry entry registered by
-    # plugins/platforms/matrix/adapter.py::register(). #41112.
 ]
 
 
@@ -5111,12 +5108,8 @@ def _setup_standard_platform(platform: dict):
     print_success(f"{emoji} {label} configured!")
 
 
-# _setup_whatsapp and _setup_dingtalk moved into their plugins:
-# plugins/platforms/{whatsapp,dingtalk}/adapter.py::interactive_setup
-# (registered via setup_fn, dispatched through the plugin path). #41112.
-
-
-# _setup_wecom moved to plugins/platforms/wecom/adapter.py::interactive_setup
+# _setup_whatsapp moved into its plugin:
+# plugins/platforms/whatsapp/adapter.py::interactive_setup
 # (registered via setup_fn, dispatched through the plugin path). #41112.
 
 

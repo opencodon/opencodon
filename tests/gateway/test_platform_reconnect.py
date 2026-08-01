@@ -83,7 +83,7 @@ class TestStartupPlatformIsolation:
         runner.config = GatewayConfig(
             platforms={
                 Platform.TELEGRAM: PlatformConfig(enabled=True, token="test"),
-                Platform.FEISHU: PlatformConfig(enabled=True, token="test"),
+                Platform.SLACK: PlatformConfig(enabled=True, token="test"),
             },
             sessions_dir=tmp_path,
         )
@@ -99,7 +99,7 @@ class TestStartupPlatformIsolation:
 
         adapters = {
             Platform.TELEGRAM: StubAdapter(platform=Platform.TELEGRAM),
-            Platform.FEISHU: StubAdapter(platform=Platform.FEISHU),
+            Platform.SLACK: StubAdapter(platform=Platform.SLACK),
         }
         runner._create_adapter = MagicMock(
             side_effect=lambda platform, _config: adapters[platform]
@@ -131,7 +131,7 @@ class TestStartupPlatformIsolation:
                                     assert await runner.start() is True
 
         assert Platform.TELEGRAM in runner._failed_platforms
-        assert Platform.FEISHU in runner.adapters
+        assert Platform.SLACK in runner.adapters
         assert Platform.TELEGRAM not in runner.adapters
         assert runner._create_adapter.call_count == 2
 
@@ -1008,7 +1008,7 @@ class TestFatalHandoffCancellationProof:
         runner.adapters[Platform.TELEGRAM] = adapter
         # A healthy peer keeps self.adapters non-empty, so the existing
         # "no platforms remain" shutdown branches do not fire.
-        runner.adapters[Platform.FEISHU] = StubAdapter(platform=Platform.FEISHU)
+        runner.adapters[Platform.SLACK] = StubAdapter(platform=Platform.SLACK)
 
         await runner._handle_adapter_fatal_error(adapter)
 

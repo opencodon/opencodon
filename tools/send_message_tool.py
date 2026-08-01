@@ -717,9 +717,6 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     except ImportError:
         _telegram_available = False
 
-    # Feishu adapter migrated to a plugin (#41112); its max_message_length
-    # (8000) now flows through the registry fallback below.
-
     media_files = media_files or []
 
     # Slack mrkdwn formatting is applied inside the slack plugin's
@@ -728,8 +725,8 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
 
     # Platform message length limits (from adapter class attributes for
     # built-in platforms; from PlatformEntry.max_message_length for plugins,
-    # resolved via the registry fallback below — covers Slack and Feishu, both
-    # migrated to plugins in #41112).
+    # resolved via the registry fallback below — covers Slack, migrated to a
+    # plugin in #41112).
     _MAX_LENGTHS = {
         Platform.TELEGRAM: TelegramAdapter.MAX_MESSAGE_LENGTH if _telegram_available else 4096,
     }

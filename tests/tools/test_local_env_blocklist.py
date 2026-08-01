@@ -126,7 +126,7 @@ class TestProviderEnvBlocklist:
         blocklist sources. GOOGLE_APPLICATION_CREDENTIALS (the ADC fallback
         the adapter also reads) had the same gap. A leaked path discloses
         the on-disk location of a GCP service-account key to every spawned
-        subprocess (terminal, codex/copilot app-server, browser workers).
+        subprocess (terminal, copilot app-server, browser workers).
         """
         result_env = _run_with_env(extra_os_env={
             "VERTEX_CREDENTIALS_PATH": "/home/user/.config/gcloud/sa-key.json",
@@ -196,9 +196,6 @@ class TestProviderEnvBlocklist:
             "DISCORD_HOME_CHANNEL": "67890",
             "SLACK_APP_TOKEN": "xapp-secret",
             "WHATSAPP_ALLOWED_USERS": "+15555550123",
-            "SIGNAL_ACCOUNT": "+15555550124",
-            "HASS_TOKEN": "ha-secret",
-            "EMAIL_PASSWORD": "email-secret",
             "FIRECRAWL_API_KEY": "fc-secret",
             "OPENCODON_DASHBOARD_SESSION_TOKEN": "dashboard-session-secret",
             "BROWSERBASE_PROJECT_ID": "bb-project",
@@ -435,21 +432,6 @@ class TestBlocklistCoverage:
             "WHATSAPP_ENABLED",
             "WHATSAPP_MODE",
             "WHATSAPP_ALLOWED_USERS",
-            "SIGNAL_HTTP_URL",
-            "SIGNAL_ACCOUNT",
-            "SIGNAL_ALLOWED_USERS",
-            "SIGNAL_GROUP_ALLOWED_USERS",
-            "SIGNAL_HOME_CHANNEL",
-            "SIGNAL_HOME_CHANNEL_NAME",
-            "SIGNAL_IGNORE_STORIES",
-            "HASS_TOKEN",
-            "HASS_URL",
-            "EMAIL_ADDRESS",
-            "EMAIL_PASSWORD",
-            "EMAIL_IMAP_HOST",
-            "EMAIL_SMTP_HOST",
-            "EMAIL_HOME_ADDRESS",
-            "EMAIL_HOME_ADDRESS_NAME",
             "OPENCODON_DASHBOARD_SESSION_TOKEN",
             "GATEWAY_ALLOWED_USERS",
             "GH_TOKEN",

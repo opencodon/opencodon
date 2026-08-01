@@ -929,7 +929,6 @@ export interface PlatformStatus {
 export interface StatusResponse {
   active_sessions: number
   config_path: string
-  config_version: number
   env_path: string
   gateway_exit_reason: string | null
   gateway_health_url: string | null
@@ -939,7 +938,6 @@ export interface StatusResponse {
   gateway_state: string | null
   gateway_updated_at: string | null
   opencodon_home: string
-  latest_config_version: number
   release_date: string
   version: string
 }

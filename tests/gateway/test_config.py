@@ -209,21 +209,21 @@ class TestGetConnectedPlatforms:
         monkeypatch.delenv("DINGTALK_CLIENT_SECRET", raising=False)
         config = GatewayConfig(
             platforms={
-                Platform.DINGTALK: PlatformConfig(enabled=True, extra={}),
+                Platform.WHATSAPP_CLOUD: PlatformConfig(enabled=True, extra={}),
             },
         )
-        assert Platform.DINGTALK not in config.get_connected_platforms()
+        assert Platform.WHATSAPP_CLOUD not in config.get_connected_platforms()
 
     def test_dingtalk_disabled_not_connected(self):
         config = GatewayConfig(
             platforms={
-                Platform.DINGTALK: PlatformConfig(
+                Platform.WHATSAPP_CLOUD: PlatformConfig(
                     enabled=False,
                     extra={"client_id": "cid", "client_secret": "sec"},
                 ),
             },
         )
-        assert Platform.DINGTALK not in config.get_connected_platforms()
+        assert Platform.WHATSAPP_CLOUD not in config.get_connected_platforms()
 
 
 class TestSessionResetPolicy:
@@ -404,14 +404,14 @@ class TestGatewayConfigRoundtrip:
     def test_email_can_opt_into_pairing_for_unauthorized_dm_behavior(self):
         config = GatewayConfig(
             platforms={
-                Platform.EMAIL: PlatformConfig(
+                Platform.WEBHOOK: PlatformConfig(
                     enabled=True,
                     extra={"unauthorized_dm_behavior": "pair"},
                 ),
             },
         )
 
-        assert config.get_unauthorized_dm_behavior(Platform.EMAIL) == "pair"
+        assert config.get_unauthorized_dm_behavior(Platform.WEBHOOK) == "pair"
 
     def test_from_dict_coerces_quoted_false_always_log_local(self):
         restored = GatewayConfig.from_dict({"always_log_local": "false"})
@@ -1887,31 +1887,16 @@ class TestMultiplexProfilesConfig:
         )
 
 
-class TestRetiredPlatforms:
-    """``RETIRED_PLATFORM_VALUES`` is the machine-readable form of the
-    "retired platform (fork cut)" comments on the Platform enum. Surfaces that
-    ENUMERATE platforms read it to avoid advertising a connection no adapter
-    can make, so drift between the set and the enum is a real bug: a typo here
-    silently re-lists a dead platform in the dashboard."""
+class TestPlatformEnum:
+    """Every built-in Platform member must have an adapter behind it: the
+    dashboard enumerates the enum to build its channel catalog, so an unwired
+    member offers the user a connection the gateway would refuse to make."""
 
-    def test_every_retired_value_is_a_real_enum_member(self):
-        from gateway.config import RETIRED_PLATFORM_VALUES, Platform
+    def test_enum_is_exactly_the_wired_platforms(self):
+        from gateway.config import Platform
 
-        values = {m.value for m in Platform.__members__.values()}
-        unknown = RETIRED_PLATFORM_VALUES - values
-
-        assert not unknown, f"retired values with no matching Platform member (typo?): {sorted(unknown)}"
-
-    def test_wired_platforms_are_not_marked_retired(self):
-        """The platforms with adapters must never be in the retired set —
-        listing one there would hide a working integration from the UI."""
-        from gateway.config import RETIRED_PLATFORM_VALUES
-
-        wired = {"telegram", "discord", "slack", "whatsapp", "whatsapp_cloud", "api_server", "webhook", "relay"}
-        assert not (wired & RETIRED_PLATFORM_VALUES)
-
-    def test_local_is_not_retired(self):
-        """LOCAL is excluded from catalogs by its own rule, not this one."""
-        from gateway.config import RETIRED_PLATFORM_VALUES
-
-        assert "local" not in RETIRED_PLATFORM_VALUES
+        wired = {
+            "local", "telegram", "discord", "slack", "whatsapp",
+            "whatsapp_cloud", "api_server", "webhook", "relay",
+        }
+        assert {m.value for m in Platform.__members__.values()} == wired

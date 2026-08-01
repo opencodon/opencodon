@@ -714,20 +714,6 @@ def build_turn_context(
             lambda _tokens: False,
         )
         _preflight_deferred = _defer_preflight(_preflight_tokens)
-        # Codex app-server threads are compacted by the codex agent itself;
-        # opencodon only initiates compaction in "opencodon" mode (#36801).
-        _codex_native_auto = (
-            getattr(agent, "api_mode", None) == "codex_app_server"
-            and str(
-                getattr(
-                    agent,
-                    "codex_app_server_auto_compaction",
-                    "native",
-                )
-                or "native"
-            ).lower()
-            in {"native", "off"}
-        )
 
         if not _preflight_deferred:
             _last = _compressor.last_prompt_tokens
@@ -755,12 +741,6 @@ def build_turn_context(
                 "(~%s seconds remaining, session %s)",
                 int(_compression_cooldown.get("remaining_seconds", 0.0)),
                 agent.session_id or "none",
-            )
-        elif _codex_native_auto:
-            logger.info(
-                "Skipping opencodon preflight compression for codex app-server "
-                "(mode=%s); opencodon will not start thread compaction here.",
-                getattr(agent, "codex_app_server_auto_compaction", "native"),
             )
         elif _compressor.should_compress(_preflight_tokens):
             _preflight_compressed = True
@@ -963,16 +943,13 @@ def build_turn_context(
     # content, so the crash persist below writes both in the same row and
     # replay can reproduce the sent prefix byte-for-byte. Guarded by the
     # same predicate the api_messages build uses, so the stamped bytes are
-    # exactly the bytes the loop sends. codex_app_server turns bypass the
-    # api_messages build entirely (the codex thread gets the plain user
-    # message), so stamping there would persist bytes that were never sent.
+    # exactly the bytes the loop sends.
     # MoA turns append per-call aggregated reference context to the same API
     # copy AFTER this composition, so the stamped bytes would never match the
     # wire either — skip the stamp rather than persist provably wrong "exact
     # sent bytes" (MoA keeps its pre-sidecar cache behavior).
     if (
         not moa_active
-        and getattr(agent, "api_mode", None) != "codex_app_server"
         and 0 <= current_turn_user_idx < len(messages)
         and messages[current_turn_user_idx].get("role") == "user"
     ):

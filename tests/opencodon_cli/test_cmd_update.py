@@ -499,19 +499,17 @@ class TestCmdUpdateBranchFallback:
                 "(no capture_output) so postinstall progress is visible"
             )
 
-    def test_update_non_interactive_runs_safe_config_migrations(self, mock_args, capsys):
-        """Dashboard/web updates apply non-interactive migrations before restart."""
+    def test_update_non_interactive_runs_config_reconcile(self, mock_args, capsys):
+        """Dashboard/web updates reconcile config non-interactively before restart."""
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input") as mock_input, patch(
-            "opencodon_cli.config.get_missing_env_vars", return_value=["MISSING_KEY"]
+            "opencodon_cli.config.get_missing_env_vars",
+            return_value=[{"name": "MISSING_KEY", "description": "A key"}],
         ), patch(
-            "opencodon_cli.config.get_missing_config_fields",
-            return_value=[{"key": "new.option", "default": True}],
-        ), patch("opencodon_cli.config.check_config_version", return_value=(1, 2)), patch(
-            "opencodon_cli.config.migrate_config",
-            return_value={"env_added": [], "config_added": ["new.option"]},
-        ), patch("opencodon_cli.main.sys") as mock_sys:
+            "opencodon_cli.config.reconcile_config",
+            return_value={"env_added": [], "config_added": [], "warnings": []},
+        ) as mock_reconcile, patch("opencodon_cli.main.sys") as mock_sys:
             mock_sys.stdin.isatty.return_value = False
             mock_sys.stdout.isatty.return_value = False
             mock_run.side_effect = _make_run_side_effect(
@@ -521,40 +519,26 @@ class TestCmdUpdateBranchFallback:
             cmd_update(mock_args)
 
             mock_input.assert_not_called()
-            from opencodon_cli.config import migrate_config
-
-            migrate_config.assert_called_once_with(interactive=False, quiet=False)
+            mock_reconcile.assert_called_once_with(interactive=False, quiet=False)
             captured = capsys.readouterr()
-            assert "applying safe config migrations" in captured.out
+            assert "running the non-prompting passes" in captured.out
             assert "API keys require manual entry" in captured.out
 
 
-class TestCmdUpdateMigrationPrompt:
-    """The config-migration prompt names what changed and skips the prompt
-    entirely when only the config format version moved.
+class TestCmdUpdateConfigPrompt:
+    """The config prompt names what needs configuring, and never fires when
+    nothing is missing."""
 
-    Regression guard for the contentless-prompt report (ScottFive / Tt2021):
-    previously the prompt printed only counts ("1 new config option") and
-    asked "configure them now?" even for pure version bumps, where saying
-    yes looked like a no-op.
-    """
-
-    def test_version_bump_only_applies_silently_without_prompt(
-        self, mock_args, capsys
-    ):
-        """Only the version moved → apply non-interactively, never prompt."""
+    def test_no_missing_keys_never_prompts(self, mock_args, capsys):
+        """Nothing to configure → run the non-prompting passes, never prompt."""
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input") as mock_input, patch(
             "opencodon_cli.config.get_missing_env_vars", return_value=[]
         ), patch(
-            "opencodon_cli.config.get_missing_config_fields", return_value=[]
-        ), patch(
-            "opencodon_cli.config.check_config_version", return_value=(5, 24)
-        ), patch(
-            "opencodon_cli.config.migrate_config",
+            "opencodon_cli.config.reconcile_config",
             return_value={"env_added": [], "config_added": [], "warnings": []},
-        ) as mock_migrate:
+        ) as mock_reconcile:
             mock_run.side_effect = _make_run_side_effect(
                 branch="main", verify_ok=True, commit_count="1"
             )
@@ -562,33 +546,23 @@ class TestCmdUpdateMigrationPrompt:
             cmd_update(mock_args)
 
             mock_input.assert_not_called()
-            mock_migrate.assert_called_once_with(interactive=False, quiet=True)
+            mock_reconcile.assert_called_once_with(interactive=False, quiet=False)
             out = capsys.readouterr().out
-            assert "Updating config format (v5 → v24)" in out
-            assert "no new settings to configure" in out
-            # The misleading question must NOT appear for a pure version bump.
             assert "configure them now" not in out.lower()
 
-    def test_new_options_are_listed_by_name_before_prompt(
+    def test_missing_keys_are_listed_by_name_before_prompt(
         self, mock_args, capsys
     ):
-        """New env/config keys are printed by name so the user can decide."""
+        """Missing required env keys are printed by name so the user can decide."""
         env_items = [
             {"name": "FOO_API_KEY", "description": "Foo service API key"},
-        ]
-        cfg_items = [
-            {"key": "display.new_widget", "description": "New config option: display.new_widget"},
         ]
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input", return_value="n"), patch(
             "opencodon_cli.config.get_missing_env_vars", return_value=env_items
         ), patch(
-            "opencodon_cli.config.get_missing_config_fields", return_value=cfg_items
-        ), patch(
-            "opencodon_cli.config.check_config_version", return_value=(1, 24)
-        ), patch(
-            "opencodon_cli.config.migrate_config",
+            "opencodon_cli.config.reconcile_config",
             return_value={"env_added": [], "config_added": [], "warnings": []},
         ), patch("opencodon_cli.main.sys") as mock_sys:
             mock_sys.stdin.isatty.return_value = True
@@ -603,7 +577,6 @@ class TestCmdUpdateMigrationPrompt:
             # Names, not just counts.
             assert "FOO_API_KEY" in out
             assert "Foo service API key" in out
-            assert "display.new_widget" in out
 
 
 class TestCmdUpdateProfileSkillSync:

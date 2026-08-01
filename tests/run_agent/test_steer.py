@@ -184,33 +184,7 @@ class TestActiveTurnRedirect:
         assert agent._interrupt_message == "stop requested"
         assert agent._pending_redirect is None
 
-    def test_codex_app_server_hard_stop_reaches_native_session(self):
-        agent = _bare_agent()
-        calls = []
-        agent.api_mode = "codex_app_server"
-        agent._codex_session = type(
-            "_CodexSession",
-            (),
-            {"request_interrupt": lambda self: calls.append("interrupt")},
-        )()
 
-        agent.interrupt()
-
-        assert calls == ["interrupt"]
-
-    def test_codex_app_server_redirect_rejects_after_hard_stop(self):
-        agent = _bare_agent()
-        calls = []
-        agent.api_mode = "codex_app_server"
-        agent._interrupt_requested = True
-        agent._codex_session = type(
-            "_CodexSession",
-            (),
-            {"request_steer": lambda self, text: calls.append(text) or True},
-        )()
-
-        assert agent.redirect("too late") is False
-        assert calls == []
 
     def test_redirect_during_tool_execution_uses_safe_steer_boundary(self):
         agent = _bare_agent()

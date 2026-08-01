@@ -253,15 +253,15 @@ def test_explicit_registration_skips_dangerous_entry_before_connect(monkeypatch)
 def test_migration_disables_existing_dangerous_entry(tmp_path):
     import yaml
 
-    from opencodon_cli.config import load_config, migrate_config
+    from opencodon_cli.config import load_config, reconcile_config
 
     config_path = Path(tmp_path) / "config.yaml"
     config_path.write_text(
-        yaml.safe_dump({"_config_version": 29, "mcp_servers": {"evil": _dangerous_entry()}}),
+        yaml.safe_dump({"mcp_servers": {"evil": _dangerous_entry()}}),
         encoding="utf-8",
     )
 
-    result = migrate_config(interactive=False, quiet=True)
+    result = reconcile_config(interactive=False, quiet=True)
     config = load_config()
 
     assert "Disabled suspicious MCP server 'evil'" in result["warnings"]

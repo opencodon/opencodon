@@ -129,10 +129,6 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("model", "Switch model (session-scoped; --global to persist)", "Configuration",
                args_hint="[model] [--provider name] [--global|--session] [--refresh]"),
-    CommandDef("codex-runtime", "Toggle codex app-server runtime for OpenAI/Codex models",
-               "Configuration", aliases=("codex_runtime",),
-               args_hint="[auto|codex_app_server]"),
-
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),
     CommandDef("statusbar", "Toggle the context/model status bar", "Configuration",

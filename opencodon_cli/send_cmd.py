@@ -1,5 +1,5 @@
 """CLI subcommand: ``opencodon send`` — pipe text from shell scripts to any
-configured messaging platform (Telegram, Discord, Slack, Signal, SMS, etc.).
+configured messaging platform (Telegram, Discord, Slack, etc.).
 
 This is a thin wrapper around ``tools.send_message_tool.send_message_tool``
 that exposes its functionality as a standalone CLI entry point so ops
@@ -13,7 +13,7 @@ Design notes:
   message body, calls the shared tool function, and prints/returns the
   result. It is intentionally fast, cheap, and side-effect-only.
 * For platforms that send via bot token (Telegram, Discord, Slack, Signal,
-  SMS, WhatsApp-CloudAPI, …) no running gateway is required. The tool
+  WhatsApp-CloudAPI, …) no running gateway is required. The tool
   talks directly to each platform's REST endpoint. For platforms that rely
   on a persistent adapter connection (plugin platforms, Matrix in some
   modes, …) a live gateway is needed; the underlying tool surfaces that
@@ -347,7 +347,7 @@ def cmd_send(args: argparse.Namespace) -> None:
 
     # send_message_tool auto-loads gateway config + env and routes to the
     # appropriate platform adapter (bot-token path for Telegram/Discord/Slack/
-    # Signal/SMS/WhatsApp; live-adapter path for plugin platforms).
+    # WhatsApp; live-adapter path for plugin platforms).
     #
     # It expects the standard tool-call dict and returns a JSON string.
     tool_args = {

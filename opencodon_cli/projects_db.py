@@ -16,9 +16,6 @@ Scope: **per-profile**, stored at ``$OPENCODON_HOME/projects.db`` (resolved via
 differs from kanban, whose board DB is root-anchored and shared across
 profiles. A Project may *bind* a kanban board (``board_slug``) so the two
 systems agree on the repo + branch convention without merging their stores.
-
-The schema is intentionally small and additive: column additions go through
-:func:`_add_column_if_missing` so opening an old DB is always safe.
 """
 
 from __future__ import annotations
@@ -33,7 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from opencodon_cli.sqlite_util import add_column_if_missing as _add_column_if_missing, write_txn
+from opencodon_cli.sqlite_util import write_txn
 from opencodon_constants import get_opencodon_home
 
 # ---------------------------------------------------------------------------
@@ -176,7 +173,6 @@ def connect(db_path: Optional[Path] = None) -> sqlite3.Connection:
         conn.execute("PRAGMA foreign_keys=ON")
         if resolved not in _INITIALIZED_PATHS:
             conn.executescript(SCHEMA_SQL)
-            _migrate_add_optional_columns(conn)
             _INITIALIZED_PATHS.add(resolved)
     except Exception:
         conn.close()
@@ -201,19 +197,6 @@ def connect_closing(db_path: Optional[Path] = None):
             conn.close()
         except Exception:
             pass
-
-
-# TEXT columns added to `projects` after v1; re-applied idempotently on every
-# open so a legacy DB upgrades in place.
-_OPTIONAL_PROJECT_COLUMNS = ("board_slug", "primary_path", "icon", "color", "context")
-
-
-def _migrate_add_optional_columns(conn: sqlite3.Connection) -> None:
-    """Add columns introduced after v1 to legacy DBs (safe on every open)."""
-    cols = {row["name"] for row in conn.execute("PRAGMA table_info(projects)")}
-    for col in _OPTIONAL_PROJECT_COLUMNS:
-        if col not in cols:
-            _add_column_if_missing(conn, "projects", col, f"{col} TEXT")
 
 
 # ---------------------------------------------------------------------------

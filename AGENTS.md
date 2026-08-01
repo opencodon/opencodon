@@ -582,11 +582,12 @@ Reference: #2810 (bounds pass), #9801 (SHA pinning + audit CI).
 
 ### config.yaml options:
 1. Add to `DEFAULT_CONFIG` in `opencodon_cli/config.py`
-2. Bump `_config_version` (check the current value at the top of `DEFAULT_CONFIG`)
-   ONLY if you need to actively migrate/transform existing user config
-   (renaming keys, changing structure). Adding a new key to an existing
-   section is handled automatically by the deep-merge and does NOT require
-   a version bump.
+
+That is the whole procedure. There is no config schema version and no
+migration pipeline: `load_config()` deep-merges `DEFAULT_CONFIG` at read
+time, so a key absent from the user's file already takes effect with its
+default. Renaming or restructuring a key is a breaking change — change the
+default and the readers together.
 
 ### Top-level `config.yaml` sections (non-exhaustive):
 
@@ -1343,9 +1344,6 @@ CI and cost engineering time to "fix."
 assert "gemini-2.5-pro" in _PROVIDER_MODELS["gemini"]
 assert "MiniMax-M2.7" in models
 
-# config version literal — breaks every schema bump
-assert DEFAULT_CONFIG["_config_version"] == 21
-
 # enumeration count — breaks every time a skill/provider is added
 assert len(_PROVIDER_MODELS["huggingface"]) == 8
 ```
@@ -1356,9 +1354,6 @@ assert len(_PROVIDER_MODELS["huggingface"]) == 8
 # behavior: does the catalog plumbing work at all?
 assert "gemini" in _PROVIDER_MODELS
 assert len(_PROVIDER_MODELS["gemini"]) >= 1
-
-# behavior: does migration bump the user's version to current latest?
-assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
 
 # invariant: no plan-only model leaks into the legacy list
 assert not (set(moonshot_models) & coding_plan_only_models)

@@ -248,7 +248,7 @@ def _get_enabled_plugins() -> Optional[set]:
 
     * ``None`` — the key is missing or malformed. Callers should treat
       this as "nothing enabled yet" (the opt-in default); the first
-      ``migrate_config`` run populates the key with a grandfathered set
+      the plugin bootstrap populates the key with a grandfathered set
       of currently-installed user plugins so existing setups don't
       break on upgrade.
     * ``set()`` — an empty list was explicitly set; nothing loads.
@@ -1406,7 +1406,7 @@ class PluginManager:
                 continue
 
             # Bundled platform plugins (gateway adapters: telegram, discord,
-            # feishu, teams, ...) are registered LAZILY. Their modules import
+            # teams, irc, ...) are registered LAZILY. Their modules import
             # heavy, platform-specific SDKs at module level (lark_oapi,
             # microsoft_teams, discord.py, slack_bolt, ...), so eagerly loading
             # all ~20 of them added several seconds to every `opencodon`
@@ -1659,7 +1659,7 @@ class PluginManager:
     # -----------------------------------------------------------------------
 
     def _platform_name_from_manifest(self, manifest: PluginManifest) -> str:
-        """Derive the gateway platform name (e.g. ``feishu``) for a platform plugin.
+        """Derive the gateway platform name (e.g. ``irc``) for a platform plugin.
 
         The platform name registered via ``register_platform(name=...)`` lives
         inside the adapter module (which we are explicitly trying NOT to import

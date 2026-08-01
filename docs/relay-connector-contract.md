@@ -173,7 +173,7 @@ present (may be `null`); the rest are included only when set.
 | `user_name` | string\|null | yes | Author display name. |
 | `thread_id` | string\|null | yes | Thread/forum-topic id when in a thread. Session-key discriminator. |
 | `chat_topic` | string\|null | yes | Channel topic/description (Discord, Slack). |
-| `user_id_alt` | string | no | Platform-specific stable alt id (Signal UUID, Feishu union_id). |
+| `user_id_alt` | string | no | Platform-specific stable alternate user id. |
 | `chat_id_alt` | string | no | Alternate chat id (e.g. Signal group internal id). |
 | `scope_id` | string | no | Platform-neutral **scope** discriminator: Discord guild / Slack workspace / Matrix server. **REQUIRED for Discord/Slack scope isolation.** Session-key discriminator. (Canonical name as of the D-Q2.5 wire migration.) |
 | `guild_id` | string | no | **Legacy alias, no longer read by the connector.** As of D-Q2.5c the connector reads and writes only `scope_id`; the gateway's agent-wide `SessionSource.to_dict()` still emits `guild_id` (mirrored to `scope_id`) for non-relay session persistence, so it may still appear on the wire but the connector ignores it. Do not depend on it. |
@@ -446,7 +446,7 @@ back-channel as a normalized event.
 **The connector is the sole crypto/identity boundary. The gateway re-validates
 nothing.**
 
-Webhook signatures (Discord ed25519, Twilio HMAC, WeCom BizMsgCrypt) are
+Webhook signatures (Discord ed25519) are
 computed over exact raw bytes, and some payloads are *encrypted* with a shared
 secret. The connector fronts a **shared** bot for many tenants and holds every
 tenant's platform secrets, so it:
@@ -465,12 +465,9 @@ package imports/calls no platform-crypto).
 **Why not "forward the signed body byte-for-byte so the gateway re-validates"?**
 That earlier model is incoherent under an untrusted, disposable tenant gateway:
 
-- Re-validating Twilio HMAC / WeCom crypto would require handing the gateway the
-  **shared signing secret** — which is itself the leak, and on a shared bot it's
-  a *cross-tenant* leak.
-- WeCom payloads are encrypted with the shared secret; the connector must decrypt
-  at the edge just to route, so forwarding ciphertext would again require giving
-  the gateway the secret.
+- Re-validating a platform HMAC would require handing the gateway the **shared
+  signing secret** — which is itself the leak, and on a shared bot it's a
+  *cross-tenant* leak.
 - A Discord interaction token lives **inside** the signed JSON body — you cannot
   both preserve the bytes and strip the credential; they are the same bytes.
 

@@ -4213,7 +4213,7 @@ class DiscordAdapter(BasePlatformAdapter):
             return False
         # Check user ID allowlist (works for both DMs and guild messages).
         # ``"*"`` is honored as an open-mode wildcard, mirroring
-        # ``SIGNAL_ALLOWED_USERS`` and the existing ``DISCORD_ALLOWED_CHANNELS`` /
+        # the existing ``DISCORD_ALLOWED_CHANNELS`` /
         # ``DISCORD_IGNORED_CHANNELS`` / ``DISCORD_FREE_RESPONSE_CHANNELS``
         # semantics. This is the convention ``claw migrate`` emits ("*").
         if has_users and ("*" in allowed_users or user_id in allowed_users):

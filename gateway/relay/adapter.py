@@ -357,7 +357,7 @@ class RelayAdapter(BasePlatformAdapter):
         normalized ``MessageEvent`` so it flows through the SAME agent path as a
         chat message (``handle_message``); the agent's reply egresses over the
         normal outbound/follow_up path. Non-JSON or non-interaction forwards are
-        logged and dropped for now (Twilio/SMS over the relay is a later unit).
+        logged and dropped for now (media over the relay is a later unit).
 
         NEVER raises: a malformed forward must not kill the read loop.
 

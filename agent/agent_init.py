@@ -577,7 +577,7 @@ def init_agent(
     agent._credential_pool = credential_pool
     agent.acp_command = acp_command or command
     agent.acp_args = list(acp_args or args or [])
-    if api_mode in {"chat_completions", "codex_responses", "anthropic_messages", "bedrock_converse", "codex_app_server"}:
+    if api_mode in {"chat_completions", "codex_responses", "anthropic_messages", "bedrock_converse"}:
         agent.api_mode = api_mode
     elif agent.provider == "openai-codex":
         agent.api_mode = "codex_responses"
@@ -1871,16 +1871,6 @@ def init_agent(
     compression_in_place = is_truthy_value(
         _compression_cfg.get("in_place"), default=False
     )
-    codex_app_server_auto_compaction = str(
-        _compression_cfg.get("codex_app_server_auto", "native") or "native"
-    ).lower()
-    if codex_app_server_auto_compaction not in {"native", "opencodon", "off"}:
-        _ra().logger.warning(
-            "Invalid compression.codex_app_server_auto=%r; using 'native'. "
-            "Valid values are: native, opencodon, off.",
-            codex_app_server_auto_compaction,
-        )
-        codex_app_server_auto_compaction = "native"
     # Opt-in idle compaction: compact a session up front when it resumes after
     # this many seconds of inactivity (0 = disabled). Time-based, so it
     # complements the size-based threshold above. Consumed by build_turn_context().
@@ -2311,7 +2301,6 @@ def init_agent(
             pass
     agent.compression_enabled = compression_enabled
     agent.compression_in_place = compression_in_place
-    agent.codex_app_server_auto_compaction = codex_app_server_auto_compaction
     agent.max_compression_attempts = compression_max_attempts
     agent.compression_idle_compact_after_seconds = (
         compression_idle_compact_after_seconds

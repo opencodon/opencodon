@@ -9,7 +9,6 @@ import yaml
 
 from opencodon_cli.config import (
     DEFAULT_CONFIG,
-    check_config_version,
     get_opencodon_home,
     ensure_opencodon_home,
     get_compatible_custom_providers,
@@ -18,7 +17,6 @@ from opencodon_cli.config import (
     is_provider_enabled,
     load_config,
     load_env,
-    migrate_config,
     read_raw_config,
     remove_env_value,
     save_config,
@@ -1102,13 +1100,6 @@ class TestOptionalEnvVarsRegistry:
         from opencodon_cli.config import OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["TAVILY_API_KEY"]["url"] == "https://app.tavily.com/home"
 
-    def test_tavily_in_env_vars_by_version(self):
-        """TAVILY_API_KEY is listed in ENV_VARS_BY_VERSION."""
-        from opencodon_cli.config import ENV_VARS_BY_VERSION
-        all_vars = []
-        for vars_list in ENV_VARS_BY_VERSION.values():
-            all_vars.extend(vars_list)
-        assert "TAVILY_API_KEY" in all_vars
 
     def test_max_iterations_not_offered_as_env_var(self):
         """OPENCODON_MAX_ITERATIONS must NOT be in OPTIONAL_ENV_VARS (issue #17534).
@@ -1123,243 +1114,17 @@ class TestOptionalEnvVarsRegistry:
         assert "OPENCODON_MAX_ITERATIONS" not in OPTIONAL_ENV_VARS
 
 
-class TestConfigMigrationSecretPrompts:
-    def test_required_secret_env_prompt_uses_masked_prompt(self, tmp_path, monkeypatch):
-        from opencodon_cli import config as cfg_mod
-
-        saved = {}
-
-        monkeypatch.setattr(cfg_mod, "sanitize_env_file", lambda: 0)
-        monkeypatch.setattr(cfg_mod, "check_config_version", lambda: (999, 999))
-        monkeypatch.setattr(cfg_mod, "get_missing_config_fields", lambda: [])
-        monkeypatch.setattr(cfg_mod, "get_missing_skill_config_vars", lambda: [])
-        monkeypatch.setattr(
-            cfg_mod,
-            "get_missing_env_vars",
-            lambda required_only=True: [
-                {
-                    "name": "TEST_API_KEY",
-                    "description": "Test key",
-                    "prompt": "Test API key",
-                    "password": True,
-                }
-            ]
-            if required_only
-            else [],
-        )
-        def fake_masked_secret_prompt(prompt):
-            saved["prompt"] = prompt
-            return "secret"
-
-        monkeypatch.setattr(cfg_mod, "masked_secret_prompt", fake_masked_secret_prompt)
-        monkeypatch.setattr(
-            cfg_mod,
-            "save_env_value",
-            lambda name, value: saved.update({name: value}),
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            results = cfg_mod.migrate_config(interactive=True, quiet=True)
-
-        assert saved["prompt"] == "  Test API key: "
-        assert saved["TEST_API_KEY"] == "secret"
-        assert results["env_added"] == ["TEST_API_KEY"]
 
 
-class TestConfigVersionDetection:
-    def test_check_config_version_uses_raw_on_disk_version(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text("model: {}\n", encoding="utf-8")
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            assert load_config()["_config_version"] == DEFAULT_CONFIG["_config_version"]
-            assert check_config_version() == (0, DEFAULT_CONFIG["_config_version"])
-
-    def test_check_config_version_treats_missing_file_as_current(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            latest = DEFAULT_CONFIG["_config_version"]
-            assert check_config_version() == (latest, latest)
-
-    def test_check_config_version_does_not_migrate_invalid_yaml(self, tmp_path):
-        (tmp_path / "config.yaml").write_text("model: [unterminated\n", encoding="utf-8")
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            latest = DEFAULT_CONFIG["_config_version"]
-            assert check_config_version() == (latest, latest)
 
 
-class TestAnthropicTokenMigration:
-    """Test that config version 8→9 clears ANTHROPIC_TOKEN."""
-
-    def _write_config_version(self, tmp_path, version):
-        config_path = tmp_path / "config.yaml"
-        import yaml
-        config_path.write_text(yaml.safe_dump({"_config_version": version}))
-
-    def test_clears_token_on_upgrade_to_v9(self, tmp_path):
-        """ANTHROPIC_TOKEN is cleared unconditionally when upgrading to v9."""
-        self._write_config_version(tmp_path, 8)
-        (tmp_path / ".env").write_text("ANTHROPIC_TOKEN=old-token\n")
-        with patch.dict(os.environ, {
-            "OPENCODON_HOME": str(tmp_path),
-            "ANTHROPIC_TOKEN": "old-token",
-        }):
-            migrate_config(interactive=False, quiet=True)
-            assert load_env().get("ANTHROPIC_TOKEN") == ""
-
-    def test_skips_on_version_9_or_later(self, tmp_path):
-        """Already at v9 — ANTHROPIC_TOKEN is not touched."""
-        self._write_config_version(tmp_path, 9)
-        (tmp_path / ".env").write_text("ANTHROPIC_TOKEN=current-token\n")
-        with patch.dict(os.environ, {
-            "OPENCODON_HOME": str(tmp_path),
-            "ANTHROPIC_TOKEN": "current-token",
-        }):
-            migrate_config(interactive=False, quiet=True)
-            assert load_env().get("ANTHROPIC_TOKEN") == "current-token"
 
 
 class TestCustomProviderCompatibility:
     """Custom provider compatibility across legacy and v12+ config schemas."""
 
-    def test_v11_upgrade_moves_custom_providers_into_providers(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 11,
-                    "model": {
-                        "default": "openai/gpt-5.4",
-                        "provider": "openrouter",
-                    },
-                    "custom_providers": [
-                        {
-                            "name": "OpenAI Direct",
-                            "base_url": "https://api.openai.com/v1",
-                            "api_key": "test-key",
-                            "api_mode": "codex_responses",
-                            "model": "gpt-5-mini",
-                        }
-                    ],
-                    "fallback_providers": [
-                        {"provider": "openai-direct", "model": "gpt-5-mini"}
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
 
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
-        from opencodon_cli.config import DEFAULT_CONFIG
-        assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
-        assert raw["providers"]["openai-direct"] == {
-            "api": "https://api.openai.com/v1",
-            "api_key": "test-key",
-            "default_model": "gpt-5-mini",
-            "name": "OpenAI Direct",
-            "transport": "codex_responses",
-        }
-        # custom_providers removed by migration — runtime reads via compat layer
-        assert "custom_providers" not in raw
-
-    def test_v11_upgrade_preserves_custom_provider_model_metadata(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        model_map = {
-            "kimi-k2.6": {"context_length": 262144},
-            "moonshotai/Kimi-K2.6-ACED": {"context_length": 131072},
-        }
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 11,
-                    "custom_providers": [
-                        {
-                            "name": "Kimi Coding Plan",
-                            "base_url": "https://api.kimi.example.com/coding",
-                            "api_key_env": "KIMI_CODING_API_KEY",
-                            "api_mode": "anthropic_messages",
-                            "model": "kimi-k2.6",
-                            "models": model_map,
-                            "context_length": 262144,
-                            "rate_limit_delay": 0.25,
-                            "discover_models": False,
-                            "extra_body": {
-                                "chat_template_kwargs": {"enable_thinking": False}
-                            },
-                        },
-                        {
-                            "name": "List Models",
-                            "base_url": "https://list.example.com/v1",
-                            "models": ["alpha", "beta"],
-                        },
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            compatible = get_compatible_custom_providers(raw)
-
-        assert "custom_providers" not in raw
-        provider = raw["providers"]["kimi-coding-plan"]
-        assert provider["api"] == "https://api.kimi.example.com/coding"
-        assert provider["key_env"] == "KIMI_CODING_API_KEY"
-        assert provider["transport"] == "anthropic_messages"
-        assert provider["default_model"] == "kimi-k2.6"
-        assert provider["models"] == model_map
-        assert provider["context_length"] == 262144
-        assert provider["rate_limit_delay"] == 0.25
-        assert provider["discover_models"] is False
-        assert provider["extra_body"] == {
-            "chat_template_kwargs": {"enable_thinking": False}
-        }
-        assert raw["providers"]["list-models"]["models"] == {
-            "alpha": {},
-            "beta": {},
-        }
-
-        compatible_provider = next(
-            entry for entry in compatible if entry["provider_key"] == "kimi-coding-plan"
-        )
-        assert compatible_provider["models"] == model_map
-        assert compatible_provider["key_env"] == "KIMI_CODING_API_KEY"
-
-    def test_providers_dict_resolves_at_runtime(self, tmp_path):
-        """After migration deleted custom_providers, get_compatible_custom_providers
-        still finds entries from the providers dict."""
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 17,
-                    "providers": {
-                        "openai-direct": {
-                            "api": "https://api.openai.com/v1",
-                            "api_key": "test-key",
-                            "default_model": "gpt-5-mini",
-                            "name": "OpenAI Direct",
-                            "transport": "codex_responses",
-                        }
-                    },
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            compatible = get_compatible_custom_providers()
-
-        assert len(compatible) == 1
-        assert compatible[0]["name"] == "OpenAI Direct"
-        assert compatible[0]["base_url"] == "https://api.openai.com/v1"
-        assert compatible[0]["provider_key"] == "openai-direct"
-        assert compatible[0]["api_mode"] == "codex_responses"
 
     def test_disabled_provider_is_excluded_from_compatibility_projection(self):
         """Compatibility fallback must not resurrect a disabled modern entry."""
@@ -1377,93 +1142,8 @@ class TestCustomProviderCompatibility:
 
         assert compatible == []
 
-    def test_compatible_custom_providers_prefers_base_url_then_url_then_api(self, tmp_path):
-        """URL field precedence is base_url > url > api (PR #9332)."""
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 17,
-                    "providers": {
-                        "my-provider": {
-                            "name": "My Provider",
-                            "api": "https://api.example.com/v1",
-                            "url": "https://url.example.com/v1",
-                            "base_url": "https://base.example.com/v1",
-                        }
-                    },
-                }
-            ),
-            encoding="utf-8",
-        )
 
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            compatible = get_compatible_custom_providers()
 
-        assert compatible == [
-            {
-                "name": "My Provider",
-                "base_url": "https://base.example.com/v1",
-                "provider_key": "my-provider",
-            }
-        ]
-
-    def test_dedup_across_legacy_and_providers(self, tmp_path):
-        """Same name+url in both schemas should not produce duplicates."""
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 17,
-                    "custom_providers": [
-                        {
-                            "name": "OpenAI Direct",
-                            "base_url": "https://api.openai.com/v1",
-                            "api_key": "legacy-key",
-                        }
-                    ],
-                    "providers": {
-                        "openai-direct": {
-                            "api": "https://api.openai.com/v1",
-                            "api_key": "new-key",
-                            "name": "OpenAI Direct",
-                        }
-                    },
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            compatible = get_compatible_custom_providers()
-
-        assert len(compatible) == 1
-        # Legacy entry wins (read first)
-        assert compatible[0]["api_key"] == "legacy-key"
-
-    def test_dedup_preserves_entries_with_different_models(self, tmp_path):
-        """Entries with same name+URL but different models must not be collapsed."""
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": 17,
-                    "custom_providers": [
-                        {"name": "Ollama Cloud", "base_url": "https://ollama.com/v1", "model": "qwen3-coder"},
-                        {"name": "Ollama Cloud", "base_url": "https://ollama.com/v1", "model": "glm-5.1"},
-                        {"name": "Ollama Cloud", "base_url": "https://ollama.com/v1", "model": "kimi-k2.5"},
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            compatible = get_compatible_custom_providers()
-
-        assert len(compatible) == 3
-        models = [e.get("model") for e in compatible]
-        assert models == ["qwen3-coder", "glm-5.1", "kimi-k2.5"]
 
 
 class TestInterimAssistantMessageConfig:
@@ -1472,27 +1152,6 @@ class TestInterimAssistantMessageConfig:
     def test_default_config_enables_interim_assistant_messages(self):
         assert DEFAULT_CONFIG["display"]["interim_assistant_messages"] is True
 
-    def test_migrate_to_v15_adds_interim_assistant_message_gate(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({"_config_version": 14, "display": {"tool_progress": "off"}}),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            loaded = load_config()
-
-        from opencodon_cli.config import DEFAULT_CONFIG
-        assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
-        # The user's explicit non-default value is preserved on disk.
-        assert raw["display"]["tool_progress"] == "off"
-        # interim_assistant_messages defaults to True and merges in transparently
-        # at read time, so the migration must NOT materialise it to disk (that
-        # was the config-bloat bug). It is still effective via load_config().
-        assert "interim_assistant_messages" not in raw.get("display", {})
-        assert loaded["display"]["interim_assistant_messages"] is True
 
 
 class TestCliRefreshIntervalConfig:
@@ -1510,64 +1169,7 @@ class TestDiscordChannelPromptsConfig:
     def test_default_config_includes_discord_channel_prompts(self):
         assert DEFAULT_CONFIG["discord"]["channel_prompts"] == {}
 
-    def test_migrate_does_not_expand_discord_channel_prompts_default(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({"_config_version": 17, "discord": {"auto_thread": True}}),
-            encoding="utf-8",
-        )
 
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-
-        from opencodon_cli.config import DEFAULT_CONFIG
-        assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
-        assert raw["discord"]["auto_thread"] is True
-        # channel_prompts is a DEFAULT_CONFIG value that should NOT be expanded
-        # into the user's file — read_raw_config() preserves only what the user
-        # explicitly wrote (fixes #40821: config migration expanding defaults).
-        assert "channel_prompts" not in raw.get("discord", {})
-
-    def test_migrate_preserves_custom_providers_and_no_defaults_dump(self, tmp_path):
-        """Migration must not expand config.yaml to a defaults dump (#40821).
-
-        Before the fix, migrations used load_config() which deep-merges
-        DEFAULT_CONFIG, then save_config() wrote the full ~13KB expanded
-        result — destroying comments and structure. Using read_raw_config()
-        keeps the file small and preserves only the user's actual config.
-        """
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({
-                "_config_version": 3,
-                "model": {"default": "test-model", "provider": "openrouter"},
-                "custom_providers": [
-                    {"name": "local-llm", "base_url": "http://localhost:8080/v1",
-                     "models": {"test": {}}}
-                ],
-            }),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-
-        # custom_providers migrated to providers dict (by design, v11->v12)
-        assert "custom_providers" not in raw
-        assert "providers" in raw
-        assert "local-llm" in raw["providers"]
-        assert raw["providers"]["local-llm"]["api"] == "http://localhost:8080/v1"
-
-        # File must NOT be a defaults dump — assert specific DEFAULT_CONFIG
-        # top-level keys are absent (they should only appear via load_config's
-        # deep-merge, not be written to the user's file by migration).
-        for default_key in ("tts", "compression", "security", "whatsapp", "bedrock"):
-            assert default_key not in raw, (
-                f"{default_key} should not be in migrated config file — "
-                f"migration should use read_raw_config() to avoid defaults dump"
-            )
 
 
 class TestUserMessagePreviewConfig:
@@ -1691,526 +1293,39 @@ class TestEnvWriteDenylist:
             save_env_value("LD_PRELOAD", "/tmp/evil.so")
 
 
-class TestWriteApprovalMigration:
-    """Version 28→29 renames memory/skills write_mode → write_approval (bool).
-
-    Only an explicit ``approve`` carried gating intent and maps to ``True``;
-    ``on``/``off``/unset map to ``False`` (gate off). The old ``write_mode`` key
-    is removed. Only a persisted key is rewritten — never invented.
-    """
-
-    def _write(self, tmp_path, body: str):
-        (tmp_path / "config.yaml").write_text(body)
-
-    def test_approve_maps_to_true(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path,
-                        "_config_version: 28\nmemory:\n  write_mode: approve\n"
-                        "skills:\n  write_mode: approve\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["memory"]["write_approval"] is True
-            assert raw["skills"]["write_approval"] is True
-            assert "write_mode" not in raw["memory"]
-            assert "write_mode" not in raw["skills"]
-
-    def test_on_and_off_map_to_false(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            # YAML 1.1 parses bare on/off as bools — write_mode could be either
-            # the string or the bool; both legacy "not gating" values → False.
-            self._write(tmp_path,
-                        "_config_version: 28\nmemory:\n  write_mode: 'on'\n"
-                        "skills:\n  write_mode: 'off'\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            loaded = load_config()
-            # write_approval=False equals the schema default, so it is NOT
-            # materialised to disk (lean-config invariant) — the legacy
-            # write_mode key is gone and the effective value resolves to False
-            # via load_config()'s deep-merge.
-            assert "write_mode" not in raw.get("memory", {})
-            assert "write_mode" not in raw.get("skills", {})
-            assert loaded["memory"]["write_approval"] is False
-            assert loaded["skills"]["write_approval"] is False
-
-    def test_unset_key_defaults_to_false(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 28\nmemory:\n  memory_enabled: true\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            loaded = load_config()
-            # No write_mode was persisted, so the rename is a no-op; the gate
-            # ends up off (default) via deep-merge and there's no leftover
-            # write_mode key on disk.
-            assert loaded["memory"]["write_approval"] is False
-            assert "write_mode" not in raw.get("memory", {})
 
 
-class TestMigrationWriteInvariant:
-    """Architectural guard: every migration write routes through the single
-    _persist_migration() chokepoint, which strips schema defaults so a lean
-    config is never bloated into a DEFAULT_CONFIG dump on a version bump.
-
-    These lock the centralised invariant so a future migration that calls
-    save_config(...) directly (re-introducing the config-bloat bug class) is
-    caught immediately.
-    """
-
-    def test_migrate_config_never_calls_save_config_directly(self):
-        """No `save_config(` call may live inside migrate_config()'s body — all
-        writes must go through _persist_migration()."""
-        import ast
-        import inspect
-        from opencodon_cli import config as cfg_mod
-
-        src = inspect.getsource(cfg_mod.migrate_config)
-        tree = ast.parse(src.lstrip())
-        direct = [
-            node for node in ast.walk(tree)
-            if isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id == "save_config"
-        ]
-        assert not direct, (
-            "migrate_config must route every write through _persist_migration(); "
-            f"found {len(direct)} direct save_config() call(s) — these re-introduce "
-            "the config-bloat regression (lean config → DEFAULT_CONFIG dump)."
-        )
-
-    @pytest.mark.parametrize("start_version", [1, "latest_minus_one"])
-    def test_version_bump_keeps_config_lean(self, tmp_path, start_version):
-        """A lean config migrated to the latest version must never be rewritten
-        into a defaults dump — neither across the whole range (start=1, where
-        per-version seeds also fire) nor on a bare one-version bump (where only
-        the catch-all finalizer runs). In both cases no default-only top-level
-        section the user never wrote may land on disk, the merged view still
-        exposes every default, and the user's explicit non-default value
-        survives.
-        """
-        latest = DEFAULT_CONFIG["_config_version"]
-        start = latest - 1 if start_version == "latest_minus_one" else start_version
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({
-                "_config_version": start,
-                "model": {"default": "test-model", "provider": "openrouter"},
-                "matrix": {"require_mention": False},
-            }, sort_keys=False),
-            encoding="utf-8",
-        )
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-            loaded = load_config()
-
-        assert raw["_config_version"] == latest
-        # User's explicit non-default value preserved (not reset to True default).
-        assert raw["matrix"]["require_mention"] is False
-        assert loaded["matrix"]["require_mention"] is False
-        # No default-only top-level section the user never wrote lands on disk —
-        # neither from per-version seeds nor the catch-all finalizer.
-        for default_key in (
-            "timezone", "curator", "auxiliary", "tts", "compression",
-            "whatsapp", "bedrock",
-        ):
-            assert default_key not in raw, (
-                f"{default_key} was materialised into a lean config by the "
-                f"version bump — the default-dump regression returned"
-            )
-        # Defaults still take effect transparently via the read-time merge.
-        assert loaded["curator"]["enabled"] == DEFAULT_CONFIG["curator"]["enabled"]
-        assert loaded["display"]["compact"] == DEFAULT_CONFIG["display"]["compact"]
 
 
 class TestSaveConfigPartialWritePreservation:
     """Regression for #62723: partial migration writes must not drop unrelated sections."""
 
-    def test_merge_existing_preserves_platforms_on_partial_write(self, tmp_path):
-        body = """_config_version: 30
-model:
-  default: deepseek-v4-pro
-  provider: deepseek
-agent:
-  max_turns: 60
-platforms:
-  feishu:
-    enabled: true
-    extra:
-      app_id: cli_xxx
-      app_secret: xxx
-feishu:
-  require_mention: true
-"""
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config(
-                {
-                    "_config_version": 30,
-                    "model": {"default": "deepseek-v4-pro", "provider": "deepseek"},
-                    "agent": {"max_turns": 60, "verify_on_stop": False},
-                },
-                merge_existing=True,
-            )
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
-
-        assert raw["platforms"]["feishu"]["extra"]["app_id"] == "cli_xxx"
-        assert raw["feishu"]["require_mention"] is True
-        assert raw["agent"]["verify_on_stop"] is False
-
-    def test_partial_write_without_merge_drops_omitted_sections(self, tmp_path):
-        """Full-replacement callers (raw YAML editor) rely on merge_existing=False."""
-        body = """_config_version: 30
-model:
-  default: deepseek-v4-pro
-  provider: deepseek
-platforms:
-  feishu:
-    enabled: true
-"""
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config({"model": {"default": "other-model", "provider": "openrouter"}})
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
-
-        assert raw["model"]["default"] == "other-model"
-        assert "platforms" not in raw
-
-    def test_persist_migration_writes_full_read_raw_config(self, tmp_path):
-        from opencodon_cli.config import _persist_migration, read_raw_config
-
-        body = """_config_version: 30
-model:
-  default: deepseek-v4-pro
-  provider: deepseek
-agent:
-  max_turns: 60
-platforms:
-  feishu:
-    enabled: true
-    extra:
-      app_id: cli_xxx
-      app_secret: xxx
-"""
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            config = read_raw_config()
-            config.setdefault("agent", {})["verify_on_stop"] = False
-            config["_config_version"] = 32
-            _persist_migration(config)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
-
-        assert raw["platforms"]["feishu"]["extra"]["app_id"] == "cli_xxx"
-        assert raw["agent"]["verify_on_stop"] is False
-        assert raw["agent"]["max_turns"] == 60
-        assert raw["_config_version"] == 32
-
-    def test_v30_to_latest_migration_keeps_platforms(self, tmp_path):
-        """End-to-end: reporter's v30 feishu profile survives version bump."""
-        body = """_config_version: 30
-model:
-  default: deepseek-v4-pro
-  provider: deepseek
-agent:
-  max_turns: 60
-platforms:
-  feishu:
-    enabled: true
-    extra:
-      app_id: cli_xxx
-      app_secret: xxx
-feishu:
-  require_mention: true
-"""
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
-
-        assert raw["platforms"]["feishu"]["extra"]["app_id"] == "cli_xxx"
-        assert raw["feishu"]["require_mention"] is True
 
 
-class TestVerifyOnStopMigration:
-    """v30 → v31: switch verify_on_stop OFF once, preserving explicit choices."""
 
-    def _write(self, tmp_path, body):
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
 
-    def test_auto_sentinel_flipped_to_false(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 30\nagent:\n  verify_on_stop: auto\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
 
-    def test_missing_key_seeded_false(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 30\nagent:\n  max_turns: 5\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
-            assert raw["agent"]["max_turns"] == 5
 
-    def test_no_agent_section_seeded_false(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 30\nmodel:\n  provider: openrouter\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
-
-    def test_pre_v32_literal_true_flipped_to_false(self, tmp_path):
-        # The first ship of verify-on-stop baked a literal `true` into configs
-        # as the silent default (config v30). It was never a user choice, so the
-        # v31→v32 migration flips it off. v31's block preserved it (the bug this
-        # fixes); v32 catches the whole stranded population.
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 30\nagent:\n  verify_on_stop: true\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
-
-    def test_v31_literal_true_flipped_to_false(self, tmp_path):
-        # Teknium's case: a v30 install that already ran the v31 migration kept
-        # its baked-in literal `true` (v31 preserved explicit bools). v32 flips
-        # it off.
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 31\nagent:\n  verify_on_stop: true\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
-
-    def test_post_v32_explicit_true_preserved(self, tmp_path):
-        # A `true` the user sets AFTER v32 (config already at current version) is
-        # a deliberate opt-in and must never be flipped.
-        from opencodon_cli.config import DEFAULT_CONFIG
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                f"_config_version: {DEFAULT_CONFIG['_config_version']}\n"
-                "agent:\n  verify_on_stop: true\n",
-            )
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is True
-
-    def test_explicit_false_preserved(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 30\nagent:\n  verify_on_stop: false\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is False
-
-    def test_already_current_version_is_noop(self, tmp_path):
-        from opencodon_cli.config import DEFAULT_CONFIG
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                f"_config_version: {DEFAULT_CONFIG['_config_version']}\n"
-                "agent:\n  verify_on_stop: true\n",
-            )
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["agent"]["verify_on_stop"] is True
-
-class TestDelegationCapUnificationMigration:
-    """v32 → v33: fold deprecated max_async_children into max_concurrent_children."""
-
-    def _write(self, tmp_path, body):
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-
-    def test_stale_default_key_removed(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                "_config_version: 32\ndelegation:\n  max_async_children: 3\n"
-                "  max_concurrent_children: 15\n",
-            )
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-        assert "max_async_children" not in raw["delegation"]
-        # Default-valued (3) async cap must not shrink a raised children cap.
-        assert raw["delegation"]["max_concurrent_children"] == 15
-
-    def test_raised_async_cap_folded_into_children_cap(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                "_config_version: 32\ndelegation:\n  max_async_children: 20\n"
-                "  max_concurrent_children: 5\n",
-            )
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-        assert "max_async_children" not in raw["delegation"]
-        assert raw["delegation"]["max_concurrent_children"] == 20
-
-    def test_higher_children_cap_wins(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                "_config_version: 32\ndelegation:\n  max_async_children: 8\n"
-                "  max_concurrent_children: 15\n",
-            )
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-        assert "max_async_children" not in raw["delegation"]
-        assert raw["delegation"]["max_concurrent_children"] == 15
-
-    def test_no_delegation_section_is_noop(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(tmp_path, "_config_version: 32\nmodel:\n  provider: openrouter\n")
-            migrate_config(interactive=False, quiet=True)
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-        # Migration must not materialize a delegation section it never had.
-        assert "delegation" not in raw
-
-    def test_default_config_has_no_max_async_children(self):
-        assert "max_async_children" not in DEFAULT_CONFIG["delegation"]
 
 
 class TestConfigNormalizationDoesNotOverwriteUserValues:
     """Regression tests for #27354."""
 
-    def test_save_config_does_not_inject_max_turns_when_unset(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": DEFAULT_CONFIG["_config_version"],
-                    "memory": {"user_char_limit": 2200},
-                }
-            ),
-            encoding="utf-8",
-        )
 
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config(load_config())
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
-        assert "max_turns" not in raw.get("agent", {})
-        assert raw["memory"]["user_char_limit"] == 2200
 
-    def test_save_config_preserves_explicit_default_values(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": DEFAULT_CONFIG["_config_version"],
-                    "approvals": {"mode": "manual"},
-                    "memory": {"user_char_limit": 2200},
-                }
-            ),
-            encoding="utf-8",
-        )
 
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config(load_config())
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
-        assert raw["approvals"]["mode"] == "manual"
-        assert raw["memory"]["user_char_limit"] == 2200
 
-    def test_save_config_preserves_config_version_when_raw_version_missing(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({"memory": {"user_char_limit": 2200}}),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config(load_config())
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-
-        assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
-        assert raw["memory"]["user_char_limit"] == 2200
-
-    def test_save_config_does_not_materialize_defaults_for_empty_sections(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": DEFAULT_CONFIG["_config_version"],
-                    "memory": {},
-                    "display": {},
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            save_config(load_config())
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-
-        assert raw == {"_config_version": DEFAULT_CONFIG["_config_version"]}
-
-    def test_save_config_honors_caller_preserve_keys(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump({"_config_version": DEFAULT_CONFIG["_config_version"]}),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            config = load_config()
-            config.setdefault("agent", {})["max_turns"] = DEFAULT_CONFIG["agent"]["max_turns"]
-            save_config(config, preserve_keys={("agent", "max_turns")})
-            raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-
-        assert raw["_config_version"] == DEFAULT_CONFIG["_config_version"]
-        assert raw["agent"]["max_turns"] == DEFAULT_CONFIG["agent"]["max_turns"]
-
-    def test_normalize_max_turns_does_not_inject_default(self):
-        result = _normalize_max_turns_config(
-            {"_config_version": DEFAULT_CONFIG["_config_version"]}
-        )
-        assert "max_turns" not in result.get("agent", {})
-
-    def test_explicit_config_paths_from_raw_before_normalization(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            yaml.safe_dump(
-                {
-                    "_config_version": DEFAULT_CONFIG["_config_version"],
-                    "memory": {"user_char_limit": 2200},
-                },
-            ),
-            encoding="utf-8",
-        )
-
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            raw_paths = _explicit_config_paths(read_raw_config())
-
-        assert ("memory", "user_char_limit") in raw_paths
-        assert ("agent", "max_turns") not in raw_paths
 
     def test_explicit_config_paths_ignore_empty_sections(self):
         assert _explicit_config_paths({"memory": {}, "display": {}}) == set()
 
 
-class TestCodexAppServerAutoConfig:
-    """codex_app_server_auto ships a default and survives migration untouched."""
-
-    def _write(self, tmp_path, body):
-        (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
-
-    def test_default_config_has_native_mode(self):
-        assert DEFAULT_CONFIG["compression"]["codex_app_server_auto"] == "native"
+class TestCodexCompressionConfig:
+    def test_default_config_has_gpt55_autoraise(self):
         assert DEFAULT_CONFIG["compression"]["codex_gpt55_autoraise"] is True
 
-    def test_preserves_existing_codex_app_server_auto_value(self, tmp_path):
-        with patch.dict(os.environ, {"OPENCODON_HOME": str(tmp_path)}):
-            self._write(
-                tmp_path,
-                "_config_version: 31\n"
-                "compression:\n"
-                "  codex_app_server_auto: opencodon\n",
-            )
-
-            migrate_config(interactive=False, quiet=True)
-
-            raw = yaml.safe_load((tmp_path / "config.yaml").read_text())
-            assert raw["compression"]["codex_app_server_auto"] == "opencodon"
 
 
 class TestIsProviderEnabled:

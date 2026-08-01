@@ -93,7 +93,6 @@ def _termux_browser_setup_steps(node_installed: bool) -> list[str]:
 def _termux_install_all_fallback_notes() -> list[str]:
     return [
         "Termux install profile: use .[termux-all] for broad compatibility (installer default on Termux).",
-        "Matrix E2EE extra is excluded on Termux (python-olm currently fails to build).",
         "Local faster-whisper extra is excluded on Termux (ctranslate2/av build path unavailable).",
         "STT fallback: use Groq Whisper (set GROQ_API_KEY) or OpenAI Whisper (set VOICE_TOOLS_OPENAI_KEY).",
     ]
@@ -1018,31 +1017,20 @@ def run_doctor(args):
             else:
                 check_warn("config.yaml not found", "(using defaults)")
 
-    # Check config version and stale keys
     config_path = OPENCODON_HOME / 'config.yaml'
     if config_path.exists():
-        try:
-            from opencodon_cli.config import check_config_version, migrate_config
-            current_ver, latest_ver = check_config_version()
-            if current_ver < latest_ver:
-                check_warn(
-                    f"Config version outdated (v{current_ver} → v{latest_ver})",
-                    "(new settings available)"
-                )
-                if should_fix:
-                    try:
-                        migrate_config(interactive=False, quiet=False)
-                        check_ok("Config migrated to latest version")
-                        fixed_count += 1
-                    except Exception as mig_err:
-                        check_warn(f"Auto-migration failed: {mig_err}")
-                        issues.append("Run 'opencodon setup' to migrate config")
-                else:
-                    issues.append("Run 'opencodon doctor --fix' or 'opencodon setup' to migrate config")
-            else:
-                check_ok(f"Config version up to date (v{current_ver})")
-        except Exception:
-            pass
+        # Repair/validate config and .env. Only under --fix: reconcile writes.
+        if should_fix:
+            try:
+                from opencodon_cli.config import reconcile_config
+
+                result = reconcile_config(interactive=False, quiet=False)
+                for warning in result.get("warnings") or []:
+                    check_warn(warning)
+                check_ok("Config reconciled")
+                fixed_count += 1
+            except Exception as rec_err:
+                check_warn(f"Config reconcile failed: {rec_err}")
 
         # Detect stale root-level model keys (known bug source — PR #4329)
         try:
@@ -1188,31 +1176,6 @@ def run_doctor(args):
             report_deprecated_config_and_env({}, _env_for_depr)
         except Exception:
             pass
-
-    _section("xAI Model Retirement (May 15, 2026)")
-
-    try:
-        from opencodon_cli.config import load_config
-        from opencodon_cli.xai_retirement import (
-            MIGRATION_GUIDE_URL,
-            find_retired_xai_refs,
-            format_issue,
-        )
-
-        _xai_cfg = load_config()
-        retired_refs = find_retired_xai_refs(_xai_cfg)
-        if not retired_refs:
-            check_ok("No retired xAI models in config")
-        else:
-            for ref in retired_refs:
-                check_warn(format_issue(ref))
-            check_info(f"Migration guide: {MIGRATION_GUIDE_URL}")
-            manual_issues.append(
-                f"Update {len(retired_refs)} retired xAI model reference(s) "
-                f"in config.yaml — see {MIGRATION_GUIDE_URL}"
-            )
-    except Exception as _xai_check_err:
-        check_warn("xAI retirement check skipped", f"({_xai_check_err})")
 
     _section("Auth Providers")
 

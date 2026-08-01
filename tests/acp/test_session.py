@@ -77,7 +77,7 @@ class TestCreateSession:
     def test_get_nonexistent_session_returns_none(self, manager):
         assert manager.get_session("does-not-exist") is None
 
-    def test_make_agent_stamps_session_cwd_for_codex_runtime(self, monkeypatch):
+    def test_make_agent_stamps_session_cwd(self, monkeypatch):
         class FakeAgent:
             model = "fake-model"
 
@@ -110,7 +110,7 @@ class TestCreateSession:
             "opencodon_cli.runtime_provider.resolve_runtime_provider",
             lambda requested=None: {
                 "provider": requested,
-                "api_mode": "codex_app_server",
+                "api_mode": "codex_responses",
                 "base_url": "https://example.invalid",
                 "api_key": "test-key",
             },

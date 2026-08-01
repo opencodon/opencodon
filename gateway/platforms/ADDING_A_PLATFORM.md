@@ -120,7 +120,7 @@ If your platform supports interactive button/menu messages, implement these for 
 | `send_exec_approval(chat_id, command, session_key, description, ...)` | Render dangerous-command approval as Approve/Deny buttons. Inbound dispatch routes to `tools.approval.resolve_gateway_approval`. |
 | `send_slash_confirm(chat_id, title, message, session_key, confirm_id, ...)` | Render slash-command confirmations (e.g. `/reload-mcp`) as Once/Always/Cancel buttons. Inbound dispatch routes to `tools.slash_confirm.resolve`. |
 | `send_model_picker(...)` | Interactive `/model` picker. Used by Telegram and Discord. |
-| `send_choice_picker(...)` | Flat single-level picker for finite-choice commands (`/reasoning`, `/fast`). Implemented by Telegram (inline keyboard), Discord (select menu), and Matrix (reactions). Platforms without it fall back to the text status card automatically. |
+| `send_choice_picker(...)` | Flat single-level picker for finite-choice commands (`/reasoning`, `/fast`). Implemented by Telegram (inline keyboard) and Discord (select menu). Platforms without it fall back to the text status card automatically. |
 
 See `gateway/platforms/telegram.py`, `discord.py`, and `whatsapp_cloud.py` for reference implementations. The button-callback id convention (`cl:<id>:<idx>`, `appr:<id>:<choice>`, `sc:<choice>:<id>`) is shared across adapters — match it so the gateway-side resolvers work without modification.
 
@@ -307,7 +307,7 @@ If your platform can't enumerate chats (most can't), add it to the
 session-based discovery list:
 
 ```python
-for plat_name in ("telegram", "whatsapp", "signal", "your_platform"):
+for plat_name in ("telegram", "whatsapp", "your_platform"):
 ```
 
 ---

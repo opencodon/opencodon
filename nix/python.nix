@@ -40,27 +40,6 @@ let
       };
     };
 
-  # Legacy alibabacloud packages ship only sdists with setup.py/setup.cfg
-  # and no pyproject.toml, so setuptools isn't declared as a build dep.
-  buildSystemOverrides =
-    final: prev:
-    builtins.mapAttrs
-      (
-        name: _:
-        prev.${name}.overrideAttrs (old: {
-          nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.setuptools ];
-        })
-      )
-      (
-        lib.genAttrs [
-          "alibabacloud-credentials-api"
-          "alibabacloud-endpoint-util"
-          "alibabacloud-gateway-dingtalk"
-          "alibabacloud-gateway-spi"
-          "alibabacloud-tea"
-        ] (_: null)
-      );
-
   pythonPackageOverrides =
     final: _prev:
     if isAarch64Darwin then
@@ -108,7 +87,6 @@ let
         lib.composeManyExtensions [
           pyproject-build-systems.overlays.default
           overlay
-          buildSystemOverrides
           pythonPackageOverrides
           # ``setup.py`` permits wheel/sdist creation only from the sealed
           # opencodon derivation. This is deliberately a derivation environment

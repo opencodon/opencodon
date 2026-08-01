@@ -777,7 +777,6 @@ class TestToolsConfigIncludeMode:
         on-disk shapes depending on which UI the user used last."""
         # Build a minimal mcp_servers config + mock probe + checklist
         cfg = {
-            "_config_version": 23,
             "mcp_servers": {
                 "demo": {
                     "command": "npx",

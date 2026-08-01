@@ -15,7 +15,7 @@ This is the inbound counterpart to multiplexing: instead of running N gateways, 
 gateway and route per-community / per-channel / per-thread to a dedicated profile. Each
 profile keeps fully isolated state (`MEMORY.md`, `USER.md`, `SOUL.md`, sessions, tools).
 
-Routing is **platform-generic**: it works for Discord, Telegram, Feishu, Slack, and every
+Routing is **platform-generic**: it works for Discord, Telegram, Slack, and every
 adapter — not just Discord.
 
 ## Configuring routes
@@ -59,7 +59,7 @@ profile_routes:
 | Field | Required | Description |
 |---|---|---|
 | `name` | yes | Human-readable route identifier (used in logs). |
-| `platform` | yes | Adapter platform: `discord`, `telegram`, `feishu`, `slack`, … |
+| `platform` | yes | Adapter platform: `discord`, `telegram`, `slack`, … |
 | `profile` | yes | Target profile name (must exist under `~/.opencodon/profiles/<name>`). |
 | `guild_id` | no | Server/guild (Discord). |
 | `chat_id` | no | Channel/group/DM id. |

@@ -24,7 +24,6 @@
           "azure-identity"
           "bedrock"
           "daytona"
-          "dingtalk"
           "edge-tts"
           "exa"
           "fal"
@@ -34,9 +33,7 @@
           "parallel-web"
           "tts-premium"
           "voice"
-        ]
-        # matrix is Linux-only (oqs/liboqs lacks aarch64-darwin wheels).
-        ++ lib.optionals pkgs.stdenv.isLinux [ "matrix" ];
+        ];
       };
     in
     {
