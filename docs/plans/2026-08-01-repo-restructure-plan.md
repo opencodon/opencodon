@@ -182,6 +182,17 @@ mechanical and separately verifiable.
   (parents[N] arithmetic changes AGAIN — test_path_anchors must pass),
   sys.modules stub keys, source-scan string assertions, dist/data paths
   (gateway/assets package-data, web_dist, Dockerfile/nix COPY paths).
+**3a progress (2026-08-01):** cluster 1 (agent→opencodon/core) and
+cluster 2 (tools+model_tools→opencodon/tools, cron, providers,
+run_agent→core, opencodon_state→opencodon/state) are committed. Fallout
+classes catalogued for cluster 3: __file__/dirname/os.path.join anchors
+(code AND test side), quoted patch/stub/sys.modules strings (use
+known-module whitelists; watch filename-vs-module and config-dotpath
+collisions), caplog logger names, COMPONENT_PREFIXES log routing,
+cross-test-package imports, entry-point invariants (opencodon_bootstrap
+first import), packages whose __init__ carries API need whole-package
+alias shims (providers).
+
 - **3b — regroup within the new tree.** `core/` internal split
   (providers/context/memory/media/credentials/skills/prompt), the
   auth/models/runtime_provider/profiles relocation out of frontends/cli

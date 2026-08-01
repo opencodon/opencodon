@@ -55,12 +55,12 @@ def test_cron_storage_anchors_at_profile_home(tmp_path, monkeypatch):
         assert jobs.OPENCODON_DIR.resolve() == profile_home.resolve()
         assert (
             jobs.JOBS_FILE.resolve()
-            == (profile_home / "opencodon" / "cron" / "jobs.json").resolve()
+            == (profile_home / "cron" / "jobs.json").resolve()
         )
         # The shared-root path must NOT be the store — that would re-break
         # per-profile isolation (#4707).
         assert (
-            jobs.JOBS_FILE.resolve() != (root / "opencodon" / "cron" / "jobs.json").resolve()
+            jobs.JOBS_FILE.resolve() != (root / "cron" / "jobs.json").resolve()
         )
     finally:
         monkeypatch.undo()
@@ -79,9 +79,9 @@ def test_cron_lock_path_anchors_at_profile_home(tmp_path, monkeypatch):
     import opencodon.cron.scheduler as scheduler
 
     lock_dir, lock_file = scheduler._get_lock_paths()
-    assert lock_dir.resolve() == (profile_home / "opencodon" / "cron").resolve()
-    assert lock_file.resolve() == (profile_home / "opencodon" / "cron" / ".tick.lock").resolve()
-    assert lock_dir.resolve() != (root / "opencodon" / "cron").resolve()
+    assert lock_dir.resolve() == (profile_home / "cron").resolve()
+    assert lock_file.resolve() == (profile_home / "cron" / ".tick.lock").resolve()
+    assert lock_dir.resolve() != (root / "cron").resolve()
 
 
 def test_cron_execution_home_follows_active_profile(tmp_path, monkeypatch):
@@ -120,7 +120,7 @@ def test_cron_storage_unaffected_when_no_profile(tmp_path, monkeypatch):
     importlib.reload(jobs)
     try:
         assert jobs.OPENCODON_DIR.resolve() == root.resolve()
-        assert jobs.JOBS_FILE.resolve() == (root / "opencodon" / "cron" / "jobs.json").resolve()
+        assert jobs.JOBS_FILE.resolve() == (root / "cron" / "jobs.json").resolve()
     finally:
         monkeypatch.undo()
         importlib.reload(jobs)

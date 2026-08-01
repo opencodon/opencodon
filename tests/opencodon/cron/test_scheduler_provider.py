@@ -250,7 +250,9 @@ def test_cron_provider_package_does_not_shadow_core_cron_package(monkeypatch):
 
     cron_spec = PathFinder.find_spec("cron")
     assert cron_spec is not None
-    assert Path(cron_spec.origin).resolve() == repo_root / "opencodon" / "cron" / "__init__.py"
+    # The importable top-level "cron" is now the Phase 3a shim tree; the
+    # invariant is unchanged: the repo package wins over plugins/cron_providers.
+    assert Path(cron_spec.origin).resolve() == repo_root / "cron" / "__init__.py"
 
     jobs_spec = PathFinder.find_spec("opencodon.cron.jobs", [str(repo_root / "opencodon" / "cron")])
     assert jobs_spec is not None
@@ -492,7 +494,7 @@ def test_heartbeat_roundtrip_and_age(tmp_path, monkeypatch):
     getters read them back as small positive ages."""
     import opencodon.cron.jobs as jobs
 
-    cron_dir = tmp_path / "opencodon" / "cron"
+    cron_dir = tmp_path / "cron"
     monkeypatch.setattr(jobs, "CRON_DIR", cron_dir)
     monkeypatch.setattr(jobs, "OUTPUT_DIR", cron_dir / "output")
     monkeypatch.setattr(jobs, "TICKER_HEARTBEAT_FILE", cron_dir / "ticker_heartbeat")
@@ -518,7 +520,7 @@ def test_heartbeat_age_detects_staleness(tmp_path, monkeypatch):
     """A heartbeat written far in the past reads back as a large age."""
     import opencodon.cron.jobs as jobs
 
-    cron_dir = tmp_path / "opencodon" / "cron"
+    cron_dir = tmp_path / "cron"
     cron_dir.mkdir(parents=True)
     hb = cron_dir / "ticker_heartbeat"
     monkeypatch.setattr(jobs, "CRON_DIR", cron_dir)
@@ -541,7 +543,7 @@ def test_heartbeat_write_failure_is_silent(tmp_path, monkeypatch):
 
     blocker = tmp_path / "not_a_dir"
     blocker.write_text("i am a file, not a directory")
-    bad_cron_dir = blocker / "opencodon" / "cron"  # parent is a file -> mkdir/mkstemp fail
+    bad_cron_dir = blocker / "cron"  # parent is a file -> mkdir/mkstemp fail
     monkeypatch.setattr(jobs, "CRON_DIR", bad_cron_dir)
     monkeypatch.setattr(jobs, "OUTPUT_DIR", bad_cron_dir / "output")
     monkeypatch.setattr(jobs, "TICKER_HEARTBEAT_FILE", bad_cron_dir / "ticker_heartbeat")

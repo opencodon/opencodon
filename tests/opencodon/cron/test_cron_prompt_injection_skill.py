@@ -38,8 +38,8 @@ def cron_env(tmp_path, monkeypatch):
     opencodon_home.mkdir()
     skills_dir = opencodon_home / "skills"
     skills_dir.mkdir()
-    (opencodon_home / "opencodon" / "cron").mkdir()
-    (opencodon_home / "opencodon" / "cron" / "output").mkdir()
+    (opencodon_home / "cron").mkdir()
+    (opencodon_home / "cron" / "output").mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
     monkeypatch.setenv("OPENCODON_BUNDLES_DIR", str(opencodon_home / "skill-bundles"))
 
@@ -420,7 +420,7 @@ class TestScriptOutputNotStrictScanned:
         """context_from injects a prior job's output — also runtime data."""
         opencodon_home, scheduler = cron_env
         import opencodon.cron.jobs as cron_jobs
-        output_root = opencodon_home / "opencodon" / "cron" / "output"
+        output_root = opencodon_home / "cron" / "output"
         monkeypatch.setattr(cron_jobs, "OUTPUT_DIR", output_root)
         upstream_dir = output_root / "abcdef123456"
         upstream_dir.mkdir(parents=True)

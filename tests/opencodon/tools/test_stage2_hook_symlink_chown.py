@@ -81,7 +81,7 @@ def test_chown_helper_refuses_target_under_symlinked_home(
     tmp_path: Path,
 ) -> None:
     real_home = tmp_path / "real-home"
-    (real_home / "opencodon" / "cron").mkdir(parents=True)
+    (real_home / "cron").mkdir(parents=True)
     linked_home = tmp_path / "linked-home"
     try:
         linked_home.symlink_to(real_home, target_is_directory=True)
@@ -91,7 +91,7 @@ def test_chown_helper_refuses_target_under_symlinked_home(
 
     proc = _run_helper(
         stage2_text,
-        linked_home / "opencodon" / "cron",
+        linked_home / "cron",
         log_path,
         opencodon_home=linked_home,
     )

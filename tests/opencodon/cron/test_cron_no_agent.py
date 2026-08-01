@@ -23,7 +23,7 @@ def opencodon_env(tmp_path, monkeypatch):
     home = tmp_path / ".opencodon"
     home.mkdir()
     (home / "scripts").mkdir()
-    (home / "opencodon" / "cron").mkdir()
+    (home / "cron").mkdir()
 
     monkeypatch.setenv("OPENCODON_HOME", str(home))
 

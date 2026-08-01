@@ -26,17 +26,17 @@ def cron_env(tmp_path, monkeypatch):
     """Isolated cron environment with temp OPENCODON_HOME."""
     opencodon_home = tmp_path / ".opencodon"
     opencodon_home.mkdir()
-    (opencodon_home / "opencodon" / "cron").mkdir()
-    (opencodon_home / "opencodon" / "cron" / "output").mkdir()
+    (opencodon_home / "cron").mkdir()
+    (opencodon_home / "cron" / "output").mkdir()
     (opencodon_home / "scripts").mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
     # Clear cached module-level paths
     import opencodon.cron.jobs as jobs_mod
     monkeypatch.setattr(jobs_mod, "OPENCODON_DIR", opencodon_home)
-    monkeypatch.setattr(jobs_mod, "CRON_DIR", opencodon_home / "opencodon" / "cron")
-    monkeypatch.setattr(jobs_mod, "JOBS_FILE", opencodon_home / "opencodon" / "cron" / "jobs.json")
-    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", opencodon_home / "opencodon" / "cron" / "output")
+    monkeypatch.setattr(jobs_mod, "CRON_DIR", opencodon_home / "cron")
+    monkeypatch.setattr(jobs_mod, "JOBS_FILE", opencodon_home / "cron" / "jobs.json")
+    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", opencodon_home / "cron" / "output")
 
     return opencodon_home
 

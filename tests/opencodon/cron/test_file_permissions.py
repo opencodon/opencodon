@@ -13,7 +13,7 @@ class TestCronFilePermissions(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.cron_dir = Path(self.tmpdir) / "opencodon" / "cron"
+        self.cron_dir = Path(self.tmpdir) / "cron"
         self.output_dir = self.cron_dir / "output"
 
     def tearDown(self):
@@ -26,7 +26,7 @@ class TestCronFilePermissions(unittest.TestCase):
     def test_ensure_dirs_sets_0700(self, mock_jobs_file, mock_output, mock_cron):
         mock_cron.__class__ = Path
         # Use real paths
-        cron_dir = Path(self.tmpdir) / "opencodon" / "cron"
+        cron_dir = Path(self.tmpdir) / "cron"
         output_dir = cron_dir / "output"
 
         with patch("opencodon.cron.jobs.CRON_DIR", cron_dir), \
@@ -43,7 +43,7 @@ class TestCronFilePermissions(unittest.TestCase):
     @patch("opencodon.cron.jobs.OUTPUT_DIR")
     @patch("opencodon.cron.jobs.JOBS_FILE")
     def test_save_jobs_sets_0600(self, mock_jobs_file, mock_output, mock_cron):
-        cron_dir = Path(self.tmpdir) / "opencodon" / "cron"
+        cron_dir = Path(self.tmpdir) / "cron"
         output_dir = cron_dir / "output"
         jobs_file = cron_dir / "jobs.json"
 

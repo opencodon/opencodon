@@ -3401,7 +3401,7 @@ class TestParallelTick:
     @pytest.fixture(autouse=True)
     def _isolate_tick_lock(self, tmp_path):
         """Point the tick file lock at a per-test temp dir to avoid xdist contention."""
-        lock_dir = tmp_path / "opencodon" / "cron"
+        lock_dir = tmp_path / "cron"
         lock_dir.mkdir()
         lock_file = lock_dir / ".tick.lock"
         with patch("opencodon.cron.scheduler._get_lock_paths", return_value=(lock_dir, lock_file)):

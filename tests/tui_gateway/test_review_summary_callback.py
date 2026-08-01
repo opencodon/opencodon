@@ -27,6 +27,7 @@ def server():
             "opencodon.config.env_loader": MagicMock(),
             "opencodon_cli.banner": MagicMock(),
             "opencodon_state": MagicMock(),
+            "opencodon.state": MagicMock(),
         },
     ):
         import importlib

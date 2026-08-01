@@ -13,7 +13,7 @@ from pathlib import Path
 def _point_ledger(monkeypatch, tmp_path):
     import opencodon.cron.executions as executions
 
-    monkeypatch.setattr(executions, "EXECUTIONS_FILE", tmp_path / "opencodon" / "cron" / "executions.db")
+    monkeypatch.setattr(executions, "EXECUTIONS_FILE", tmp_path / "cron" / "executions.db")
     return executions
 
 
@@ -108,7 +108,7 @@ def test_cron_runs_cli_prints_execution_history(monkeypatch, tmp_path, capsys):
 def test_quick_backup_includes_execution_ledger():
     from opencodon_cli.backup import _QUICK_STATE_FILES
 
-    assert "opencodon/cron/executions.db" in _QUICK_STATE_FILES
+    assert "cron/executions.db" in _QUICK_STATE_FILES
 
 
 def test_failed_execution_keeps_error(monkeypatch, tmp_path):
@@ -292,9 +292,9 @@ def test_provider_start_recovers_interrupted_records_before_tick(monkeypatch):
 def test_job_listing_exposes_latest_execution(monkeypatch, tmp_path):
     import opencodon.cron.jobs as jobs
 
-    monkeypatch.setattr(jobs, "CRON_DIR", tmp_path / "opencodon" / "cron")
-    monkeypatch.setattr(jobs, "JOBS_FILE", tmp_path / "opencodon" / "cron" / "jobs.json")
-    monkeypatch.setattr(jobs, "OUTPUT_DIR", tmp_path / "opencodon" / "cron" / "output")
+    monkeypatch.setattr(jobs, "CRON_DIR", tmp_path / "cron")
+    monkeypatch.setattr(jobs, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
+    monkeypatch.setattr(jobs, "OUTPUT_DIR", tmp_path / "cron" / "output")
     executions = _point_ledger(monkeypatch, tmp_path)
 
     job = jobs.create_job(prompt="audit me", schedule="every 1h", name="audit")

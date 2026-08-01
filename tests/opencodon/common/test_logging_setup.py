@@ -599,7 +599,9 @@ class TestComponentPrefixes:
         assert "model_tools" in prefixes
 
     def test_tools_prefix(self):
-        assert ("tools",) == opencodon_logging.COMPONENT_PREFIXES["tools"]
+        prefixes = opencodon_logging.COMPONENT_PREFIXES["tools"]
+        assert "tools" in prefixes
+        assert "opencodon.tools" in prefixes
 
     def test_cli_prefix(self):
         prefixes = opencodon_logging.COMPONENT_PREFIXES["cli"]
@@ -607,7 +609,9 @@ class TestComponentPrefixes:
         assert "cli" in prefixes
 
     def test_cron_prefix(self):
-        assert ("cron",) == opencodon_logging.COMPONENT_PREFIXES["cron"]
+        prefixes = opencodon_logging.COMPONENT_PREFIXES["cron"]
+        assert "cron" in prefixes
+        assert "opencodon.cron" in prefixes
 
     def test_gui_prefix(self):
         prefixes = opencodon_logging.COMPONENT_PREFIXES["gui"]

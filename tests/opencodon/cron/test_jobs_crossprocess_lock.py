@@ -30,7 +30,7 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(jobs.__file__)))
 
 @pytest.mark.skipif(jobs.fcntl is None, reason="POSIX fcntl/flock required")
 def test_jobs_lock_excludes_another_process(tmp_path, monkeypatch):
-    cron_dir = tmp_path / "opencodon" / "cron"
+    cron_dir = tmp_path / "cron"
     output_dir = cron_dir / "output"
     monkeypatch.setattr(jobs, "CRON_DIR", cron_dir)
     monkeypatch.setattr(jobs, "JOBS_FILE", cron_dir / "jobs.json")

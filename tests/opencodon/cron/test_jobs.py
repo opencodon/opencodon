@@ -233,9 +233,9 @@ class TestComputeNextRun:
 @pytest.fixture()
 def tmp_cron_dir(tmp_path, monkeypatch):
     """Redirect cron storage to a temp directory."""
-    monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "opencodon" / "cron")
-    monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "opencodon" / "cron" / "jobs.json")
-    monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "opencodon" / "cron" / "output")
+    monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+    monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+    monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
     return tmp_path
 
 
@@ -1957,7 +1957,7 @@ class TestLateEnvRepointScopesStore:
 
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         store = jobs._current_cron_store()
-        expected = tmp_path.resolve() / "opencodon" / "cron"
+        expected = tmp_path.resolve() / "cron"
         assert store.cron_dir == expected
         assert store.jobs_file == expected / "jobs.json"
         assert store.output_dir == expected / "output"
@@ -1977,7 +1977,7 @@ class TestLateEnvRepointScopesStore:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "env-home"))
         with jobs.use_cron_store(tmp_path / "override-home"):
             store = jobs._current_cron_store()
-            assert store.jobs_file == (tmp_path / "override-home").resolve() / "opencodon" / "cron" / "jobs.json"
+            assert store.jobs_file == (tmp_path / "override-home").resolve() / "cron" / "jobs.json"
 
     def test_patched_compatibility_constants_beat_env(self, tmp_path, monkeypatch):
         """Deliberately re-pointed module constants are the documented
@@ -2009,7 +2009,7 @@ class TestLateEnvRepointScopesStore:
         import opencodon.cron.jobs as jobs
 
         sim_old_home = tmp_path / "import-time-home"
-        sim_cron = sim_old_home / "opencodon" / "cron"
+        sim_cron = sim_old_home / "cron"
         monkeypatch.setattr(jobs, "OPENCODON_DIR", sim_old_home)
         monkeypatch.setattr(jobs, "CRON_DIR", sim_cron)
         monkeypatch.setattr(jobs, "JOBS_FILE", sim_cron / "jobs.json")
@@ -2042,7 +2042,7 @@ class TestLateEnvRepointScopesStore:
         # public read round-trips from the NEW home...
         loaded = load_jobs()
         assert [j["id"] for j in loaded] == ["lateenvjob01"]
-        new_file = new_home.resolve() / "opencodon" / "cron" / "jobs.json"
+        new_file = new_home.resolve() / "cron" / "jobs.json"
         assert new_file.is_file()
         # ...and the import-time file is byte-identical to the sentinel.
         assert old_file.read_text(encoding="utf-8") == sentinel

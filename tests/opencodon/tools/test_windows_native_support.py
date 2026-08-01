@@ -676,7 +676,7 @@ class TestCodeExecutionTransportTcpFallback:
 
     def test_generated_client_handles_tcp_endpoint(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
+        source = (root / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
         # _UDS_TRANSPORT_HEADER body must parse both transports.
         assert 'endpoint.startswith("tcp://")' in source, (
             "generated sandbox client must accept tcp:// endpoints for Windows"
@@ -687,7 +687,7 @@ class TestCodeExecutionTransportTcpFallback:
 
     def test_server_side_branches_on_use_tcp_rpc(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
+        source = (root / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
         assert "_use_tcp_rpc = _IS_WINDOWS" in source
         assert 'rpc_endpoint = f"tcp://{_host}:{_port}"' in source
 
@@ -703,7 +703,7 @@ class TestCronSchedulerBashResolution:
 
     def test_source_uses_shutil_which_for_bash(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
+        source = (root / "cron" / "scheduler.py").read_text(encoding="utf-8")
         # The old hardcoded path should be gone as the sole bash source.
         # It may still appear as a POSIX fallback after shutil.which(), so
         # we check for the shutil.which call near the .sh/.bash branch.
@@ -713,7 +713,7 @@ class TestCronSchedulerBashResolution:
 
     def test_error_message_when_bash_missing(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
+        source = (root / "cron" / "scheduler.py").read_text(encoding="utf-8")
         # The graceful-failure message must mention "bash not found" so
         # Windows users without Git Bash see an actionable error instead
         # of a WinError 2 traceback.
@@ -803,7 +803,7 @@ class TestLocalEnvironmentWindowsTempDir:
 
     def test_source_has_windows_branch_using_opencodon_home(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
+        source = (root / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
         assert "if _IS_WINDOWS:" in source
         assert "get_opencodon_home" in source
         assert 'cache_dir = get_opencodon_home() / "cache" / "terminal"' in source

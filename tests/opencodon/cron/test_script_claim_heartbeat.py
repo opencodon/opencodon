@@ -28,7 +28,7 @@ def test_long_running_script_refreshes_owned_claim_in_profile_store(
     import opencodon.cron.scheduler as scheduler
 
     profile_home = tmp_path / "profile"
-    default_cron = tmp_path / "default" / "opencodon" / "cron"
+    default_cron = tmp_path / "default" / "cron"
     default_cron.mkdir(parents=True)
     profile_home.mkdir()
 

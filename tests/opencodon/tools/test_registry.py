@@ -368,7 +368,7 @@ class TestBuiltinDiscovery:
         assert imported == expected
 
     def test_imports_only_self_registering_modules(self, tmp_path):
-        tools_dir = tmp_path / "opencodon" / "tools"
+        tools_dir = tmp_path / "tools"
         tools_dir.mkdir()
         (tools_dir / "__init__.py").write_text("", encoding="utf-8")
         (tools_dir / "registry.py").write_text("", encoding="utf-8")
@@ -385,7 +385,7 @@ class TestBuiltinDiscovery:
         mock_import.assert_called_once_with("tools.alpha")
 
     def test_skips_mcp_tool_even_if_it_registers(self, tmp_path):
-        tools_dir = tmp_path / "opencodon" / "tools"
+        tools_dir = tmp_path / "tools"
         tools_dir.mkdir()
         (tools_dir / "__init__.py").write_text("", encoding="utf-8")
         (tools_dir / "mcp_tool.py").write_text(

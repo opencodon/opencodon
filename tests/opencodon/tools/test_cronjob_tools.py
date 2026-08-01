@@ -243,9 +243,9 @@ class TestCronjobRequirements:
 class TestUnifiedCronjobTool:
     @pytest.fixture(autouse=True)
     def _setup_cron_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "opencodon" / "cron")
-        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "opencodon" / "cron" / "jobs.json")
-        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "opencodon" / "cron" / "output")
+        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
 
     def test_create_and_list(self):
         created = json.loads(
@@ -586,9 +586,9 @@ class TestLocalDeliveryNotice:
 
     @pytest.fixture(autouse=True)
     def _setup_cron_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "opencodon" / "cron")
-        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "opencodon" / "cron" / "jobs.json")
-        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "opencodon" / "cron" / "output")
+        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
         # Default: no session origin (the TUI/CLI condition).
         for var in (
             "OPENCODON_SESSION_PLATFORM",
