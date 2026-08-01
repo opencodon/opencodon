@@ -73,7 +73,7 @@ def _event(text):
 
 
 def _clear_clarify_state():
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     with cm._lock:
         cm._entries.clear()
@@ -98,7 +98,7 @@ async def _dispatch(runner, event):
     """Run _handle_message with a tripwire installed AFTER the clarify
     intercept (the slash-confirm pending lookup is the next statement), so a
     raised ``_FellThroughIntercept`` proves the message was NOT swallowed."""
-    import tools.slash_confirm as slash_confirm_mod
+    import opencodon.tools.slash_confirm as slash_confirm_mod
 
     def _tripwire(_key):
         raise _FellThroughIntercept()
@@ -112,7 +112,7 @@ async def _dispatch(runner, event):
 async def test_thread_prose_not_swallowed_by_native_multi_choice_clarify():
     """Arbitrary prose during a pending button-clarify continues as a normal turn."""
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _StubAdapter()
     runner = _make_runner(adapter)
@@ -135,7 +135,7 @@ async def test_thread_prose_not_swallowed_by_native_multi_choice_clarify():
 async def test_numeric_reply_still_resolves_native_multi_choice_clarify():
     """Typed "2" keeps resolving the button prompt through the same intercept."""
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _StubAdapter()
     runner = _make_runner(adapter)
@@ -155,7 +155,7 @@ async def test_numeric_reply_still_resolves_native_multi_choice_clarify():
 @pytest.mark.asyncio
 async def test_exact_label_reply_still_resolves_native_multi_choice_clarify():
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _StubAdapter()
     runner = _make_runner(adapter)
@@ -176,7 +176,7 @@ async def test_exact_label_reply_still_resolves_native_multi_choice_clarify():
 async def test_prose_still_accepted_after_other_flips_text_capture():
     """After the user taps 'Other', free text IS the answer — must resolve."""
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _StubAdapter()
     runner = _make_runner(adapter)
@@ -197,7 +197,7 @@ async def test_prose_still_accepted_after_other_flips_text_capture():
 @pytest.mark.asyncio
 async def test_prose_still_accepted_for_open_ended_clarify():
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _StubAdapter()
     runner = _make_runner(adapter)

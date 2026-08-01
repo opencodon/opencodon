@@ -64,7 +64,7 @@ async def test_voice_message_still_transcribed():
     event = _voice_event("/tmp/voice.ogg")
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         return_value={"success": True, "transcript": "hello world", "provider": "whisper"},
     ) as mock_transcribe:
         result = await runner._prepare_inbound_message_text(
@@ -91,11 +91,11 @@ async def test_audio_attachment_skips_stt():
     event = _audio_event("/tmp/song.mp3")
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         side_effect=AssertionError("transcribe_audio must NOT be called for audio file attachments"),
     ):
         with patch(
-            "tools.credential_files.to_agent_visible_cache_path",
+            "opencodon.tools.credential_files.to_agent_visible_cache_path",
             side_effect=lambda p: p,
         ):
             result = await runner._prepare_inbound_message_text(
@@ -116,7 +116,7 @@ async def test_pending_audio_attachment_is_not_selected_for_stt():
     event = _audio_event("/tmp/pending-song.mp3")
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         side_effect=AssertionError("pending audio attachments must not enter STT"),
     ):
         result, transcripts = await runner._transcribe_pending_audio_event_once(
@@ -137,11 +137,11 @@ async def test_audio_attachment_context_note_format():
     event = _audio_event("/tmp/cache_12345_my_song.mp3")
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         side_effect=AssertionError("must not be called"),
     ):
         with patch(
-            "tools.credential_files.to_agent_visible_cache_path",
+            "opencodon.tools.credential_files.to_agent_visible_cache_path",
             side_effect=lambda p: p,
         ):
             result = await runner._prepare_inbound_message_text(
@@ -172,11 +172,11 @@ async def test_audio_attachment_skips_stt_when_stt_disabled():
     event = _audio_event("/tmp/podcast.m4a")
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         side_effect=AssertionError("must not be called"),
     ):
         with patch(
-            "tools.credential_files.to_agent_visible_cache_path",
+            "opencodon.tools.credential_files.to_agent_visible_cache_path",
             side_effect=lambda p: p,
         ):
             result = await runner._prepare_inbound_message_text(

@@ -94,9 +94,9 @@ class TestCronCreateLifecycleBlock:
 
     @pytest.fixture(autouse=True)
     def _setup_cron_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("cron.jobs.CRON_DIR", tmp_path / "cron")
-        monkeypatch.setattr("cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
-        monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
+        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
 
     def test_block_opencodon_gateway_restart(self, capsys):
         args = Namespace(
@@ -299,7 +299,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         return {"env_type": "local", "cwd": "/tmp", "timeout": 60, "lifetime_seconds": 3600}
 
     def _patch_env(self, monkeypatch, fake_env, *, inside_gateway: bool):
-        import tools.terminal_tool as tt
+        import opencodon.tools.terminal_tool as tt
         eid = "default"
         monkeypatch.setattr(tt, "_active_environments", {eid: fake_env})
         monkeypatch.setattr(tt, "_last_activity", {eid: 0.0})
@@ -319,7 +319,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         "pkill -f opencodon.*gateway",
     ])
     def test_blocks_lifecycle_commands_inside_gateway(self, monkeypatch, cmd):
-        import tools.terminal_tool as tt
+        import opencodon.tools.terminal_tool as tt
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
         result = json.loads(tt.terminal_tool(command=cmd))
@@ -328,7 +328,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         assert "Blocked" in result["error"]
 
     def test_force_true_cannot_bypass_block(self, monkeypatch):
-        import tools.terminal_tool as tt
+        import opencodon.tools.terminal_tool as tt
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
         result = json.loads(tt.terminal_tool(
@@ -340,7 +340,7 @@ class TestTerminalToolGatewayLifecycleGuard:
 
     def test_safe_systemctl_commands_pass_through(self, monkeypatch):
         """Non-opencodon systemctl commands must not be blocked by this guard."""
-        import tools.terminal_tool as tt
+        import opencodon.tools.terminal_tool as tt
 
         calls = []
 
@@ -360,7 +360,7 @@ class TestTerminalToolGatewayLifecycleGuard:
 
     def test_guard_inactive_outside_gateway(self, monkeypatch):
         """Without _OPENCODON_GATEWAY=1 the lifecycle guard must not fire."""
-        import tools.terminal_tool as tt
+        import opencodon.tools.terminal_tool as tt
 
         calls = []
 
@@ -389,18 +389,18 @@ class TestLifecycleGuardModule:
     """Direct tests for cron.lifecycle_guard.check_gateway_lifecycle."""
 
     def test_prompt_with_command_raises(self):
-        from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         with pytest.raises(GatewayLifecycleBlocked) as exc:
             check_gateway_lifecycle("please run opencodon gateway restart", None)
         assert "#30719" in str(exc.value)
 
     def test_clean_prompt_does_not_raise(self):
-        from cron.lifecycle_guard import check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import check_gateway_lifecycle
         check_gateway_lifecycle("research the gateway architecture", None)
         check_gateway_lifecycle("check server health and restart watchers", None)
 
     def test_script_with_command_raises(self, tmp_path, monkeypatch):
-        from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "restart.sh"
         script.write_text("#!/bin/bash\nopencodon gateway restart\n")
         with pytest.raises(GatewayLifecycleBlocked):
@@ -409,7 +409,7 @@ class TestLifecycleGuardModule:
     def test_split_across_prompt_and_script_still_blocks(self, tmp_path):
         """Concatenated scan prevents splitting the command between prompt and
         script to slip through."""
-        from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "ops.sh"
         script.write_text("opencodon gateway stop\n")
         with pytest.raises(GatewayLifecycleBlocked):
@@ -418,21 +418,21 @@ class TestLifecycleGuardModule:
     def test_binary_script_does_not_silently_bypass(self, tmp_path):
         """Non-UTF-8 bytes used to be swallowed by UnicodeDecodeError; now we
         decode with errors='replace' so the scan always sees the command."""
-        from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "weird.bin"
         script.write_bytes(b"\xfeopencodon gateway restart\xff")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("", str(script))
 
     def test_missing_script_does_not_raise(self, tmp_path):
-        from cron.lifecycle_guard import check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import check_gateway_lifecycle
         check_gateway_lifecycle("clean prompt", str(tmp_path / "nonexistent.sh"))
 
     def test_relative_script_resolved_under_scripts_dir(self, tmp_path, monkeypatch):
         """A bare/relative script name resolves under OPENCODON_HOME/scripts (the
         same place the scheduler runs it from) — otherwise the guard would read
         a nonexistent relative path and scan prompt-only content."""
-        from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
         scripts_dir = tmp_path / ".opencodon" / "scripts"
         scripts_dir.mkdir(parents=True)
@@ -454,18 +454,18 @@ class TestCreateJobBlocksLifecycleCommands:
 
     @pytest.fixture(autouse=True)
     def _setup_cron_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("cron.jobs.CRON_DIR", tmp_path / "cron")
-        monkeypatch.setattr("cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
-        monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
+        monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+        monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+        monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
 
     def test_create_job_blocks_prompt_command(self):
-        from cron.jobs import create_job
-        from cron.lifecycle_guard import GatewayLifecycleBlocked
+        from opencodon.cron.jobs import create_job
+        from opencodon.cron.lifecycle_guard import GatewayLifecycleBlocked
         with pytest.raises(GatewayLifecycleBlocked):
             create_job(prompt="then run opencodon gateway restart", schedule="30m")
 
     def test_create_job_allows_benign_prompt(self):
-        from cron.jobs import create_job
+        from opencodon.cron.jobs import create_job
         job = create_job(prompt="summarize the API gateway logs and note restart events",
                          schedule="30m")
         assert job["id"]
@@ -475,7 +475,7 @@ class TestCreateJobBlocksLifecycleCommands:
         result['error'] with the #30719 hint, not an unhandled exception."""
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
         (tmp_path / ".opencodon").mkdir(parents=True)
-        from tools.cronjob_tools import cronjob
+        from opencodon.tools.cronjob_tools import cronjob
         result = json.loads(cronjob(
             action="create", schedule="0 9 * * *",
             prompt="please run opencodon gateway restart nightly",

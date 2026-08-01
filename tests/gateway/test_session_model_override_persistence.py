@@ -53,7 +53,7 @@ def store_factory(tmp_path, monkeypatch):
     def _raise():
         raise RuntimeError("SQLite disabled in test")
 
-    import opencodon_state
+    from opencodon import state as opencodon_state
 
     monkeypatch.setattr(opencodon_state, "SessionDB", _raise)
 

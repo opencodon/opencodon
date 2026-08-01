@@ -437,7 +437,7 @@ class ComputeHost:
         try:
             if profile_home:
                 from opencodon_constants import set_opencodon_home_override
-                from opencodon_state import SessionDB
+                from opencodon.state import SessionDB
 
                 home_token = set_opencodon_home_override(profile_home)
                 session_db = SessionDB(db_path=Path(profile_home) / "state.db")

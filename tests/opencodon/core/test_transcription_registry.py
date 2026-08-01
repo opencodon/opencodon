@@ -239,11 +239,11 @@ class TestBuiltinSync:
     """
 
     def test_registry_builtins_match_dispatcher_builtins(self):
-        from tools.transcription_tools import BUILTIN_STT_PROVIDERS
+        from opencodon.tools.transcription_tools import BUILTIN_STT_PROVIDERS
 
         assert transcription_registry._BUILTIN_NAMES == BUILTIN_STT_PROVIDERS, (
             "opencodon.core.transcription_registry._BUILTIN_NAMES and "
-            "tools.transcription_tools.BUILTIN_STT_PROVIDERS have drifted!\n"
+            "opencodon.tools.transcription_tools.BUILTIN_STT_PROVIDERS have drifted!\n"
             f"  Registry only: {sorted(transcription_registry._BUILTIN_NAMES - BUILTIN_STT_PROVIDERS)}\n"
             f"  Dispatcher only: {sorted(BUILTIN_STT_PROVIDERS - transcription_registry._BUILTIN_NAMES)}\n"
             "Add the missing names to whichever list is incomplete. "

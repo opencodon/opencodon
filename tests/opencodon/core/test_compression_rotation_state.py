@@ -25,12 +25,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from opencodon.core.context_compressor import ContextCompressor
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 def _build_agent_with_db(db: SessionDB, session_id: str, platform: str = "telegram"):
     with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",

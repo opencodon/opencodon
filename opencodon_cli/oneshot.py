@@ -302,7 +302,7 @@ def _create_session_db_for_oneshot():
     advertised but every call returns "Session database not available.".
     """
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         return SessionDB()
     except Exception as exc:
@@ -325,7 +325,7 @@ def _run_agent(
     from opencodon_cli.models import detect_provider_for_model
     from opencodon_cli.runtime_provider import resolve_runtime_provider
     from opencodon_cli.tools_config import _get_platform_tools
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     cfg = load_config()
 

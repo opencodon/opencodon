@@ -24,7 +24,7 @@ def _fresh_run_agent(opencodon_home):
         if mod == "run_agent" or mod.startswith(("agent.", "opencodon.")) or mod.startswith("tools.") or mod.startswith("opencodon_"):
             del sys.modules[mod]
     import run_agent  # noqa: F401
-    return sys.modules["run_agent"]
+    return sys.modules["opencodon.core.run_agent"]
 
 
 def test_verification_flags_registered_as_ephemeral(tmp_path, monkeypatch):

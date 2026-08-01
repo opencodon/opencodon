@@ -60,7 +60,7 @@ def bundles_env(tmp_path, monkeypatch):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     monkeypatch.setenv("OPENCODON_BUNDLES_DIR", str(bundles_dir))
-    import tools.skills_tool as skills_tool_module
+    import opencodon.tools.skills_tool as skills_tool_module
     monkeypatch.setattr(skills_tool_module, "SKILLS_DIR", skills_dir)
     import opencodon.core.skill_bundles as mod
     mod._bundles_cache = {}

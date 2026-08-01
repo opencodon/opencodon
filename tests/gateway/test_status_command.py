@@ -1,4 +1,4 @@
-from opencodon_state import AsyncSessionDB
+from opencodon.state import AsyncSessionDB
 """Tests for gateway /status behavior and token persistence."""
 
 from datetime import datetime
@@ -309,7 +309,7 @@ async def test_agents_command_reports_active_agents_and_processes(monkeypatch):
                 }
             ]
 
-    monkeypatch.setattr("tools.process_registry.process_registry", _FakeRegistry())
+    monkeypatch.setattr("opencodon.tools.process_registry.process_registry", _FakeRegistry())
 
     result = await runner._handle_message(_make_event("/agents"))
 
@@ -337,7 +337,7 @@ async def test_tasks_alias_routes_to_agents_command(monkeypatch):
         def list_sessions(self):
             return []
 
-    monkeypatch.setattr("tools.process_registry.process_registry", _FakeRegistry())
+    monkeypatch.setattr("opencodon.tools.process_registry.process_registry", _FakeRegistry())
 
     result = await runner._handle_message(_make_event("/tasks"))
 

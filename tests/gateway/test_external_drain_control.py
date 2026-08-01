@@ -245,7 +245,7 @@ class TestDrainStateMachine:
             Platform.API_SERVER: MagicMock(active_agent_work_count=MagicMock(return_value=2))
         }
         runner._running_agents = {"session": MagicMock()}
-        monkeypatch.setattr("cron.scheduler.get_running_job_ids", lambda: {"job-1"})
+        monkeypatch.setattr("opencodon.cron.scheduler.get_running_job_ids", lambda: {"job-1"})
 
         assert runner._active_work_count() == 4
 

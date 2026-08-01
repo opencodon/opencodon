@@ -10,8 +10,8 @@ This module covers the chat_completions path (/v1 endpoint).
 from typing import Any
 from urllib.parse import urlparse
 
-from providers import register_provider
-from providers.base import OMIT_TEMPERATURE, ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import OMIT_TEMPERATURE, ProviderProfile
 
 
 def _is_confirmed_kimi_coding_url(base_url: str) -> bool:

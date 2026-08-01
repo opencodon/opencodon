@@ -515,7 +515,7 @@ class ChatCompletionsTransport(ProviderTransport):
         This method replaces the entire flag-based kwargs assembly when a
         provider_profile is passed. Every quirk comes from the profile object.
         """
-        from providers.base import OMIT_TEMPERATURE
+        from opencodon.providers.base import OMIT_TEMPERATURE
 
         # Message preprocessing
         sanitized = profile.prepare_messages(sanitized)

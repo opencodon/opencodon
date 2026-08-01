@@ -283,7 +283,7 @@ class HostBridge:
                 f"tool {name!r} is not in the science.host_tools allowlist "
                 f"(config.yaml); allowed: {sorted(allowed) or 'none'}"
             )
-        from model_tools import handle_function_call
+        from opencodon.tools.model_tools import handle_function_call
 
         raw = handle_function_call(name, dict(args), task_id=None)
         try:

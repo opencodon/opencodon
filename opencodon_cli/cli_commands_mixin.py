@@ -57,7 +57,7 @@ class CLICommandsMixin:
             /rollback diff <N>        — preview changes since checkpoint N
             /rollback <N> <file>      — restore a single file from checkpoint N
         """
-        from tools.checkpoint_manager import format_checkpoint_list
+        from opencodon.tools.checkpoint_manager import format_checkpoint_list
 
         if not hasattr(self, 'agent') or not self.agent:
             print("  No active agent session.")
@@ -236,7 +236,7 @@ class CLICommandsMixin:
         Inspired by OpenAI Codex's separation of interrupt (stop current turn)
         from /stop (clean up background processes). See openai/codex#14602.
         """
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         processes = process_registry.list_sessions()
         running = [p for p in processes if p.get("status") == "running"]
@@ -244,7 +244,7 @@ class CLICommandsMixin:
         # Background subagents dispatched via delegate_task(background=true)
         # live in their own registry, not the process registry.
         try:
-            from tools.async_delegation import active_count, interrupt_all
+            from opencodon.tools.async_delegation import active_count, interrupt_all
             n_async = active_count()
         except Exception:
             n_async = 0
@@ -265,7 +265,7 @@ class CLICommandsMixin:
     def _handle_agents_command(self):
         """Handle /agents — show background processes and agent status."""
         from cli import _cprint
-        from tools.process_registry import format_uptime_short, process_registry
+        from opencodon.tools.process_registry import format_uptime_short, process_registry
 
         processes = process_registry.list_sessions()
         running = [p for p in processes if p.get("status") == "running"]
@@ -282,7 +282,7 @@ class CLICommandsMixin:
 
         # Background (async) delegations — delegate_task(background=true)
         try:
-            from tools.async_delegation import list_async_delegations
+            from opencodon.tools.async_delegation import list_async_delegations
             delegations = list_async_delegations()
         except Exception:
             delegations = []
@@ -500,7 +500,7 @@ class CLICommandsMixin:
             False to signal CLI exit, True to keep going.
         """
         from cli import _cprint
-        from opencodon_state import format_session_db_unavailable
+        from opencodon.state import format_session_db_unavailable
 
         parts = cmd_original.split(maxsplit=1)
         if len(parts) < 2 or not parts[1].strip():
@@ -550,7 +550,7 @@ class CLICommandsMixin:
         # Make sure we have a SessionDB handle.
         if not self._session_db:
             try:
-                from opencodon_state import SessionDB
+                from opencodon.state import SessionDB
                 self._session_db = SessionDB()
             except Exception:
                 pass
@@ -671,7 +671,7 @@ class CLICommandsMixin:
         self._pending_resume_sessions = None
 
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             _cprint(f"  {format_session_db_unavailable()}")
             return
 
@@ -763,7 +763,7 @@ class CLICommandsMixin:
                 self.agent._last_flushed_db_idx = len(self.conversation_history)
             if hasattr(self.agent, "_todo_store"):
                 try:
-                    from tools.todo_tool import TodoStore
+                    from opencodon.tools.todo_tool import TodoStore
                     self.agent._todo_store = TodoStore()
                 except Exception:
                     pass
@@ -829,7 +829,7 @@ class CLICommandsMixin:
         # Bare /sessions or /sessions list — show recent sessions inline.
         if not arg or sub in {"list", "ls", "browse"}:
             if not self._session_db:
-                from opencodon_state import format_session_db_unavailable
+                from opencodon.state import format_session_db_unavailable
                 _cprint(f"  {format_session_db_unavailable()}")
                 return
             if not self._show_recent_sessions(reason="sessions"):
@@ -852,7 +852,7 @@ class CLICommandsMixin:
             return
 
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             _cprint(f"  {format_session_db_unavailable()}")
             return
 
@@ -959,7 +959,7 @@ class CLICommandsMixin:
                 self.agent._last_flushed_db_idx = len(self.conversation_history)
             if hasattr(self.agent, "_todo_store"):
                 try:
-                    from tools.todo_tool import TodoStore
+                    from opencodon.tools.todo_tool import TodoStore
                     self.agent._todo_store = TodoStore()
                 except Exception:
                     pass
@@ -1040,7 +1040,7 @@ class CLICommandsMixin:
         """Handle the /cron command to manage scheduled tasks."""
         from cli import get_job
         import shlex
-        from tools.cronjob_tools import cronjob as cronjob_tool
+        from opencodon.tools.cronjob_tools import cronjob as cronjob_tool
 
         def _cron_api(**kwargs):
             return json.loads(cronjob_tool(**kwargs))
@@ -1365,7 +1365,7 @@ class CLICommandsMixin:
         if args and args[0].lower() in {"pending", "approve", "apply", "reject",
                                         "deny", "drop", "diff", "approval", "mode"}:
             from opencodon_cli.write_approval_commands import handle_pending_subcommand
-            from tools import write_approval as wa
+            from opencodon.tools import write_approval as wa
             out = handle_pending_subcommand(
                 wa.SKILLS, args,
                 set_mode_fn=lambda enabled: self._save_write_approval("skills", enabled),
@@ -1405,7 +1405,7 @@ class CLICommandsMixin:
     def _handle_memory_command(self, cmd: str):
         """Handle /memory slash command — pending review + approval-gate toggle."""
         from opencodon_cli.write_approval_commands import handle_pending_subcommand
-        from tools import write_approval as wa
+        from opencodon.tools import write_approval as wa
         parts = cmd.strip().split()
         args = parts[1:] if len(parts) > 1 else []
         store = getattr(self.agent, "_memory_store", None) if getattr(self, "agent", None) else None
@@ -1418,7 +1418,7 @@ class CLICommandsMixin:
             # shared handler returns "memory store unavailable". See #46783.
             # load_on_disk_store() honors the user's configured char limits, so
             # an approval here enforces the same caps as the live agent would.
-            from tools.memory_tool import load_on_disk_store
+            from opencodon.tools.memory_tool import load_on_disk_store
             store = load_on_disk_store()
         out = handle_pending_subcommand(
             wa.MEMORY, args,
@@ -1677,7 +1677,7 @@ class CLICommandsMixin:
 
             # Clear any existing browser sessions so the next tool call uses the new backend
             try:
-                from tools.browser_tool import cleanup_all_browsers
+                from opencodon.tools.browser_tool import cleanup_all_browsers
                 cleanup_all_browsers()
             except Exception:
                 pass
@@ -1752,7 +1752,7 @@ class CLICommandsMixin:
             # Eagerly start the CDP supervisor so pending_dialogs + frame_tree
             # show up in the next browser_snapshot.  No-op if already started.
             try:
-                from tools.browser_tool import _ensure_cdp_supervisor  # type: ignore[import-not-found]
+                from opencodon.tools.browser_tool import _ensure_cdp_supervisor  # type: ignore[import-not-found]
                 _ensure_cdp_supervisor("default")
             except Exception:
                 pass
@@ -1780,7 +1780,7 @@ class CLICommandsMixin:
             if current:
                 os.environ.pop("BROWSER_CDP_URL", None)
                 try:
-                    from tools.browser_tool import cleanup_all_browsers, _stop_cdp_supervisor
+                    from opencodon.tools.browser_tool import cleanup_all_browsers, _stop_cdp_supervisor
                     _stop_cdp_supervisor("default")
                     cleanup_all_browsers()
                 except Exception:
@@ -1822,7 +1822,7 @@ class CLICommandsMixin:
                     print("   Status: ⚠ not reachable (browser may not be running)")
             else:
                 try:
-                    from tools.browser_tool import _get_cloud_provider
+                    from opencodon.tools.browser_tool import _get_cloud_provider
                     provider = _get_cloud_provider()
                 except Exception:
                     provider = None
@@ -1832,7 +1832,7 @@ class CLICommandsMixin:
                 else:
                     # Show engine info for local mode
                     try:
-                        from tools.browser_tool import _get_browser_engine
+                        from opencodon.tools.browser_tool import _get_browser_engine
                         engine = _get_browser_engine()
                     except Exception:
                         engine = "auto"

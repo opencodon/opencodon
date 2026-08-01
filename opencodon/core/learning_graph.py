@@ -83,7 +83,7 @@ def _iter_skill_files(roots: list[tuple[str, Path]]):
 
 def _load_usage() -> dict[str, dict[str, Any]]:
     try:
-        from tools.skill_usage import load_usage
+        from opencodon.tools.skill_usage import load_usage
 
         return load_usage()
     except Exception:

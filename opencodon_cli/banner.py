@@ -85,7 +85,7 @@ def get_available_skills() -> Dict[str, List[str]]:
     user's ``skills.disabled`` config list.
     """
     try:
-        from tools.skills_tool import _find_all_skills
+        from opencodon.tools.skills_tool import _find_all_skills
         all_skills = _find_all_skills()  # already filtered
     except Exception:
         return {}
@@ -531,11 +531,11 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             preset name and the banner renders the aggregator instead of a
             bare model slug.
     """
-    from model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
+    from opencodon.tools.model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
     from rich.panel import Panel
     from rich.table import Table
     if get_toolset_for_tool is None:
-        from model_tools import get_toolset_for_tool
+        from opencodon.tools.model_tools import get_toolset_for_tool
 
     tools = tools or []
     enabled_toolsets = enabled_toolsets or []
@@ -686,7 +686,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
 
     # MCP Servers section (only if configured)
     try:
-        from tools.mcp_tool import get_mcp_status
+        from opencodon.tools.mcp_tool import get_mcp_status
         mcp_status = get_mcp_status()
     except Exception:
         mcp_status = []

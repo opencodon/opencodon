@@ -1347,7 +1347,7 @@ def _home_target_env_var(platform_name: str) -> str:
     registry via ``cron.scheduler._resolve_home_env_var``, then falls back
     to ``<PLATFORM>_HOME_CHANNEL`` for unknown names.
     """
-    from cron.scheduler import _resolve_home_env_var
+    from opencodon.cron.scheduler import _resolve_home_env_var
 
     resolved = _resolve_home_env_var(platform_name)
     if resolved:
@@ -1675,7 +1675,7 @@ if _config_path.exists():
                     # to the opencodon host/container HOME (often /opt/data). Shared
                     # predicate with terminal_tool so the two sites can't drift.
                     if _cfg_key == "cwd" and isinstance(_val, str):
-                        from tools.terminal_tool import _is_ssh_remote_tilde_cwd
+                        from opencodon.tools.terminal_tool import _is_ssh_remote_tilde_cwd
                         if not _is_ssh_remote_tilde_cwd(_terminal_backend, _val.strip()):
                             _val = os.path.expanduser(_val)
                     if isinstance(_val, (list, dict)):
@@ -2442,7 +2442,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
     # Normalize: command uses hyphens, skill names may use hyphens or underscores
     normalized = command_name.lower().replace("_", "-")
     try:
-        from tools.skills_tool import _get_disabled_skill_names
+        from opencodon.tools.skills_tool import _get_disabled_skill_names
         from opencodon.core.skill_utils import get_all_skills_dirs, is_excluded_skill_path
         disabled = _get_disabled_skill_names()
 
@@ -2761,7 +2761,7 @@ def _format_gateway_process_notification(evt: dict) -> "str | None":
 
     if evt_type == "async_delegation":
         # Reuse the shared rich formatter (self-contained task-source block).
-        from tools.process_registry import format_process_notification
+        from opencodon.tools.process_registry import format_process_notification
         return format_process_notification(evt)
 
     return None
@@ -3114,7 +3114,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # session_reset.bg_process_max_age_hours) is treated as stale and no
         # longer blocks session idle / daily reset — see #29177. The process is
         # NOT killed, only ignored by the reset guard.
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
         _bg_max_age_hours = getattr(
             self.config.default_reset_policy, "bg_process_max_age_hours", 24
         )
@@ -3315,7 +3315,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         # Ensure tirith security scanner is available (downloads if needed)
         try:
-            from tools.tirith_security import ensure_installed
+            from opencodon.tools.tirith_security import ensure_installed
             ensure_installed(log_failures=False)
         except Exception:
             pass  # Non-fatal — fail-open at scan time if unavailable
@@ -3350,7 +3350,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # Initialize session database for session_search tool support
         self._session_db = None
         try:
-            from opencodon_state import AsyncSessionDB, SessionDB
+            from opencodon.state import AsyncSessionDB, SessionDB
             self._session_db = AsyncSessionDB(SessionDB())
         except Exception as e:
             # WARNING (not DEBUG) so the failure appears in errors.log — matches
@@ -3389,7 +3389,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             from opencodon.config import load_config as _load_full_config
             _ckpt_cfg = (_load_full_config().get("checkpoints") or {})
             if _ckpt_cfg.get("auto_prune", False):
-                from tools.checkpoint_manager import maybe_auto_prune_checkpoints
+                from opencodon.tools.checkpoint_manager import maybe_auto_prune_checkpoints
                 maybe_auto_prune_checkpoints(
                     retention_days=int(_ckpt_cfg.get("retention_days", 7)),
                     min_interval_hours=int(_ckpt_cfg.get("min_interval_hours", 24)),
@@ -4487,7 +4487,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         can't be imported (e.g. a minimal test double for this class).
         """
         try:
-            from cron.scheduler import get_running_job_ids
+            from opencodon.cron.scheduler import get_running_job_ids
             return len(get_running_job_ids())
         except Exception:
             return 0
@@ -4523,14 +4523,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         if any(not t.done() for t in self._background_tasks):
             return True
         try:
-            from tools.async_delegation import active_count
+            from opencodon.tools.async_delegation import active_count
 
             if active_count() > 0:
                 return True
         except Exception:  # noqa: BLE001 - never let the idle check raise
             logger.debug("scale-to-zero async-delegation check failed", exc_info=True)
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
 
             if process_registry.has_any_active():
                 return True
@@ -5814,7 +5814,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # string.  The busy-handler path does not auto-send that return, so
         # we deliver it ourselves (mirroring the draining-case send above).
         try:
-            from tools.approval import has_blocking_approval
+            from opencodon.tools.approval import has_blocking_approval
             if has_blocking_approval(session_key):
                 _raw_text = (event.text or "").strip().lower()
                 _approve_words = {"approve", "yes", "ok", "okay", "confirm", "y", "👍"}
@@ -7598,7 +7598,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         
         # Recover background processes from checkpoint (crash recovery)
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
             recovered = process_registry.recover_from_checkpoint()
             if recovered:
                 logger.info("Recovered %s background process(es) from previous run", recovered)
@@ -8009,7 +8009,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         # Drain any recovered process watchers (from crash recovery checkpoint)
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
             # Detach the current batch atomically: reassigning to a fresh list
             # takes ownership of exactly the watchers present now, so any watcher
             # appended concurrently during the yield below isn't silently dropped
@@ -8876,7 +8876,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 one subsystem's failure doesn't block the rest.
                 """
                 try:
-                    from tools.process_registry import process_registry
+                    from opencodon.tools.process_registry import process_registry
                     _killed = process_registry.kill_all()
                     if _killed:
                         logger.info(
@@ -8894,7 +8894,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     # now-truncated tool output; mark the run interrupted so
                     # the scheduler can never report that as success (#60432).
                     # No-op when no cron job is in flight.
-                    from cron.scheduler import mark_running_jobs_interrupted
+                    from opencodon.cron.scheduler import mark_running_jobs_interrupted
                     _interrupted = mark_running_jobs_interrupted(
                         f"Gateway shutdown ({phase}) killed the job's tool "
                         "subprocess before the run finished."
@@ -8907,7 +8907,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 except Exception as _e:
                     logger.debug("mark_running_jobs_interrupted (%s) error: %s", phase, _e)
                 try:
-                    from tools.async_delegation import interrupt_all as _interrupt_async
+                    from opencodon.tools.async_delegation import interrupt_all as _interrupt_async
                     _async_n = _interrupt_async(reason=f"gateway shutdown ({phase})")
                     if _async_n:
                         logger.info(
@@ -8917,12 +8917,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 except Exception as _e:
                     logger.debug("async interrupt_all (%s) error: %s", phase, _e)
                 try:
-                    from tools.terminal_tool import cleanup_all_environments
+                    from opencodon.tools.terminal_tool import cleanup_all_environments
                     cleanup_all_environments()
                 except Exception as _e:
                     logger.debug("cleanup_all_environments (%s) error: %s", phase, _e)
                 try:
-                    from tools.browser_tool import cleanup_all_browsers
+                    from opencodon.tools.browser_tool import cleanup_all_browsers
                     cleanup_all_browsers()
                 except Exception as _e:
                     logger.debug("cleanup_all_browsers (%s) error: %s", phase, _e)
@@ -10308,7 +10308,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # commands still bypass this path so /stop and friends keep working.
         _clarify_mod = None
         try:
-            from tools import clarify_gateway as _clarify_mod
+            from opencodon.tools import clarify_gateway as _clarify_mod
             _pending_clarify = _clarify_mod.get_pending_for_session(
                 _quick_key, include_choice_prompts=True,
             )
@@ -10359,11 +10359,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # blocked inside tools/approval.py), the tool approval takes
         # precedence — /approve there unblocks the waiting tool thread.
         # Slash-confirm only catches /approve when no tool approval is live.
-        from tools import slash_confirm as _slash_confirm_mod
+        from opencodon.tools import slash_confirm as _slash_confirm_mod
         _pending_confirm = _slash_confirm_mod.get_pending(_quick_key)
         _tool_approval_live = False
         try:
-            from tools.approval import has_blocking_approval
+            from opencodon.tools.approval import has_blocking_approval
             _tool_approval_live = has_blocking_approval(_quick_key)
         except Exception:
             _tool_approval_live = False
@@ -11290,7 +11290,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                             # Sanitize env to prevent credential leakage —
                             # quick commands run in the gateway process which
                             # has all API keys in os.environ.
-                            from tools.environments.local import _sanitize_subprocess_env
+                            from opencodon.tools.environments.local import _sanitize_subprocess_env
                             sanitized_env = _sanitize_subprocess_env(os.environ.copy())
                             proc = await asyncio.create_subprocess_shell(
                                 exec_cmd,
@@ -11820,7 +11820,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # language. The hardcoded send has therefore been removed.
 
         if audio_file_paths:
-            from tools.credential_files import to_agent_visible_cache_path as _to_agent_path
+            from opencodon.tools.credential_files import to_agent_visible_cache_path as _to_agent_path
             for _apath in audio_file_paths:
                 _basename = os.path.basename(_apath)
                 _parts = _basename.split("_", 2)
@@ -11839,7 +11839,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 message_text = f"{_note}\n\n{message_text}"
 
         if video_paths:
-            from tools.credential_files import to_agent_visible_cache_path as _to_agent_path
+            from opencodon.tools.credential_files import to_agent_visible_cache_path as _to_agent_path
             for _vpath in video_paths:
                 _basename = os.path.basename(_vpath)
                 _parts = _basename.split("_", 2)
@@ -11859,7 +11859,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if event.media_urls:
             import mimetypes as _mimetypes
-            from tools.credential_files import to_agent_visible_cache_path
+            from opencodon.tools.credential_files import to_agent_visible_cache_path
 
             _TEXT_EXTENSIONS = {".txt", ".md", ".csv", ".log", ".json", ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg"}
             for i, path in enumerate(event.media_urls):
@@ -12631,7 +12631,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     _hyg_meta = self._thread_metadata_for_source(source, self._reply_anchor_for_event(event))
 
                     try:
-                        from run_agent import AIAgent
+                        from opencodon.core.run_agent import AIAgent
 
                         _hyg_model, _hyg_runtime = self._resolve_session_agent_runtime(
                             source=source,
@@ -13303,7 +13303,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             
             # Check for pending process watchers (check_interval on background processes)
             try:
-                from tools.process_registry import process_registry
+                from opencodon.tools.process_registry import process_registry
                 # Detach the current batch atomically (see crash-recovery drain
                 # above): reassign to a fresh list so a watcher appended by a
                 # concurrent session during the yield isn't dropped by clear().
@@ -13326,7 +13326,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # boot), which covers both the idle and post-turn cases with a
             # single consumer — so we leave them on the queue here.
             try:
-                from tools.process_registry import process_registry as _pr
+                from opencodon.tools.process_registry import process_registry as _pr
                 _watch_events = _drain_gateway_watch_events(_pr.completion_queue)
                 for evt in _watch_events:
                     synth_text = _format_gateway_process_notification(evt)
@@ -14634,7 +14634,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         audio_path = None
         actual_path = None
         try:
-            from tools.tts_tool import text_to_speech_tool, _strip_markdown_for_tts
+            from opencodon.tools.tts_tool import text_to_speech_tool, _strip_markdown_for_tts
 
             tts_text = _strip_markdown_for_tts(text[:4000])
             if not tts_text:
@@ -14844,7 +14844,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         media_types: Optional[List[str]] = None,
     ) -> None:
         """Execute a background agent task and deliver the result to the chat."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         media_urls = media_urls or []
         media_types = media_types or []
@@ -15420,7 +15420,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
     async def _disable_telegram_topic_mode_for_chat(self, source: SessionSource) -> str:
         """Cleanly disable topic mode for a chat via /topic off."""
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
         chat_id = str(source.chat_id or "")
         if not chat_id:
@@ -15569,7 +15569,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         """
         loop = asyncio.get_running_loop()
         try:
-            from tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools, _servers, _lock
+            from opencodon.tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools, _servers, _lock
 
             # Capture old server names before shutdown
             with _lock:
@@ -15609,7 +15609,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # consented to the prompt-cache invalidation via the slash-confirm
             # gate in _handle_reload_mcp_command before we reach this point.
             try:
-                from tools.mcp_tool import refresh_agent_mcp_tools
+                from opencodon.tools.mcp_tool import refresh_agent_mcp_tools
                 _cache = getattr(self, "_agent_cache", None)
                 _cache_lock = getattr(self, "_agent_cache_lock", None)
                 if _cache_lock is not None and _cache:
@@ -15794,7 +15794,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         is ``None`` (buttons are self-explanatory); if we fell back to
         text the message itself IS the ack.
         """
-        from tools import slash_confirm as _slash_confirm_mod
+        from opencodon.tools import slash_confirm as _slash_confirm_mod
 
         source = event.source
         session_key = self._session_key_for_source(source)
@@ -16649,7 +16649,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         Returns:
             The enriched message string with vision descriptions prepended.
         """
-        from tools.vision_tools import vision_analyze_tool
+        from opencodon.tools.vision_tools import vision_analyze_tool
         from opencodon.core.memory_manager import sanitize_context
 
         analysis_prompt = (
@@ -16740,7 +16740,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 return f"{prefix}\n\n{user_text}", []
             return prefix, []
 
-        from tools.transcription_tools import transcribe_audio
+        from opencodon.tools.transcription_tools import transcribe_audio
 
         enriched_parts = []
         successful_transcripts: List[str] = []
@@ -17121,7 +17121,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             durable_delegation_id = str(evt.get("delegation_id") or "")
             if durable_delegation_id:
                 try:
-                    from tools.async_delegation import claim_completion_delivery
+                    from opencodon.tools.async_delegation import claim_completion_delivery
 
                     durable_claim_id = f"gateway:{id(self)}:{__import__('uuid').uuid4().hex}"
                     if not claim_completion_delivery(
@@ -17152,7 +17152,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     )
                     if durable_claim_id:
                         try:
-                            from tools.async_delegation import drop_completion_delivery
+                            from opencodon.tools.async_delegation import drop_completion_delivery
 
                             drop_completion_delivery(
                                 durable_delegation_id, durable_claim_id,
@@ -17166,7 +17166,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 if verdict == "retry":
                     if durable_claim_id:
                         try:
-                            from tools.async_delegation import release_completion_delivery
+                            from opencodon.tools.async_delegation import release_completion_delivery
 
                             release_completion_delivery(
                                 durable_delegation_id, durable_claim_id,
@@ -17208,7 +17208,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # after adapter acceptance; this gateway keeps no parallel ledger.
             if durable_claim_id:
                 try:
-                    from tools.async_delegation import complete_completion_delivery
+                    from opencodon.tools.async_delegation import complete_completion_delivery
 
                     complete_completion_delivery(
                         durable_delegation_id, durable_claim_id,
@@ -17225,7 +17225,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     self._completion_deliveries_inflight.discard(identity)
             if durable_claim_id and not accepted:
                 try:
-                    from tools.async_delegation import release_completion_delivery
+                    from opencodon.tools.async_delegation import release_completion_delivery
 
                     release_completion_delivery(
                         durable_delegation_id, durable_claim_id,
@@ -17269,7 +17269,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         handled by ``_run_process_watcher`` / the post-turn drain).
         """
         await asyncio.sleep(3)  # let platforms finish connecting
-        from tools.process_registry import process_registry as _pr
+        from opencodon.tools.process_registry import process_registry as _pr
         while self._running:
             try:
                 # Peek the queue for async-delegation events. We must NOT
@@ -17317,7 +17317,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
           - ``error``  — final message only when exit code != 0
           - ``off``    — no messages at all
         """
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         session_id = watcher["session_id"]
         interval = watcher["check_interval"]
@@ -17362,10 +17362,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # Skip if the agent already consumed the result via wait/log.
                 # poll() is read-only and intentionally does NOT mark consumed
                 # (#10156) — a status check must not suppress this delivery turn.
-                from tools.process_registry import format_process_notification, process_registry as _pr_check
+                from opencodon.tools.process_registry import format_process_notification, process_registry as _pr_check
                 if agent_notify and not _pr_check.is_completion_consumed(session_id):
                     from opencodon.core.redact import redact_terminal_output
-                    from tools.ansi_strip import strip_ansi
+                    from opencodon.tools.ansi_strip import strip_ansi
                     _command = getattr(session, "command", "") or ""
                     _raw = strip_ansi(session.output_buffer) if session.output_buffer else ""
                     _raw = redact_terminal_output(_raw, _command)
@@ -17532,7 +17532,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             else:
                 out[f"{section}.{key}"] = None
         try:
-            from tools.registry import registry
+            from opencodon.tools.registry import registry
 
             out["tools.registry_generation"] = getattr(registry, "_generation", None)
         except Exception:
@@ -17888,7 +17888,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             update_prompt_pending.pop(session_key, None)
 
         try:
-            from tools import slash_confirm as _slash_confirm_mod
+            from opencodon.tools import slash_confirm as _slash_confirm_mod
         except Exception:
             _slash_confirm_mod = None
         if _slash_confirm_mod is not None:
@@ -17902,7 +17902,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 )
 
         try:
-            from tools.approval import clear_session as _clear_approval_session
+            from opencodon.tools.approval import clear_session as _clear_approval_session
         except Exception:
             return
 
@@ -19099,7 +19099,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 event_message_id=event_message_id,
             )
 
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         import queue
 
         def _run_still_current() -> bool:
@@ -20648,7 +20648,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # rather than hang forever).
             # ------------------------------------------------------------------
             def _clarify_callback_sync(question: str, choices) -> str:
-                from tools import clarify_gateway as _clarify_mod
+                from opencodon.tools import clarify_gateway as _clarify_mod
                 import uuid as _uuid
 
                 if not _status_adapter:
@@ -20792,7 +20792,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # command approval blocks the agent thread (mirrors CLI input()).
             # The callback bridges sync→async to send the approval request
             # to the user immediately.
-            from tools.approval import (
+            from opencodon.tools.approval import (
                 register_gateway_notify,
                 reset_current_session_key,
                 set_current_session_key,
@@ -21091,7 +21091,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 # threads don't hang past the end of the run (interrupt,
                 # completion, gateway shutdown).  Idempotent.
                 try:
-                    from tools.clarify_gateway import clear_session as _clear_clarify_session
+                    from opencodon.tools.clarify_gateway import clear_session as _clear_clarify_session
                     _clear_clarify_session(_approval_session_key)
                 except Exception:
                     pass
@@ -22516,7 +22516,7 @@ def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, in
     longer runs gateway housekeeping — that moved to
     ``_start_gateway_housekeeping``.
     """
-    from cron.scheduler_provider import InProcessCronScheduler
+    from opencodon.cron.scheduler_provider import InProcessCronScheduler
     InProcessCronScheduler().start(stop_event, adapters=adapters, loop=loop, interval=interval)
 
 
@@ -22747,7 +22747,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
     # Sync bundled skills on gateway start (fast -- skips unchanged)
     try:
-        from tools.skills_sync import sync_skills
+        from opencodon.tools.skills_sync import sync_skills
         sync_skills(quiet=True)
     except Exception:
         pass
@@ -22995,7 +22995,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # heartbeats (Discord shard, Telegram polling) until it returned.
     # See #16856.
     try:
-        from tools.mcp_tool import discover_mcp_tools
+        from opencodon.tools.mcp_tool import discover_mcp_tools
         _loop = asyncio.get_running_loop()
         await _loop.run_in_executor(None, discover_mcp_tools)
     except Exception as e:
@@ -23027,7 +23027,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
                 logger.error("Gateway exiting with failure: %s", runner.exit_reason)
             return False
         try:
-            from tools.mcp_tool import shutdown_mcp_servers
+            from opencodon.tools.mcp_tool import shutdown_mcp_servers
             shutdown_mcp_servers()
         except Exception:
             pass
@@ -23040,7 +23040,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # historical in-process 60s ticker; an external provider (e.g. chronos)
     # may arm a schedule and return. Pass the event loop so cron delivery can
     # use live adapters (E2EE support).
-    from cron.scheduler_provider import InProcessCronScheduler, resolve_cron_scheduler
+    from opencodon.cron.scheduler_provider import InProcessCronScheduler, resolve_cron_scheduler
     cron_stop = threading.Event()
     cron_provider = resolve_cron_scheduler()
     cron_start_kwargs = {"adapters": runner.adapters, "loop": asyncio.get_running_loop()}
@@ -23116,7 +23116,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
     # Close MCP server connections
     try:
-        from tools.mcp_tool import shutdown_mcp_servers
+        from opencodon.tools.mcp_tool import shutdown_mcp_servers
         shutdown_mcp_servers()
     except Exception:
         pass

@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-import opencodon_state
-from opencodon_state import (
+from opencodon import state as opencodon_state
+from opencodon.state import (
     SessionDB,
     is_malformed_db_error,
     repair_state_db_schema,
@@ -287,7 +287,7 @@ def test_fts_read_corruption_detected_by_read_probe(tmp_path):
     with ``database disk image is malformed`` — the exact silent-fail
     behavior reported in #66724.
     """
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)
@@ -313,7 +313,7 @@ def test_fts_read_corruption_detected_by_read_probe(tmp_path):
 
 def test_fts_read_corruption_repaired_in_place(tmp_path):
     """``repair_state_db_schema`` rebuilds the FTS index so reads resume."""
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)
@@ -385,7 +385,7 @@ def test_fts_read_probe_returns_none_when_fts5_module_missing(tmp_path, monkeypa
     repair would be triggered and its final fallback would delete the
     messages_fts% schema, breaking the search feature entirely.
     """
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)
@@ -396,7 +396,7 @@ def test_fts_read_probe_returns_none_when_fts5_module_missing(tmp_path, monkeypa
         kwargs["factory"] = _NoFts5RuntimeConnection
         return real_connect(*args, **kwargs)
 
-    monkeypatch.setattr("opencodon_state.sqlite3.connect", connect_no_fts5)
+    monkeypatch.setattr("opencodon.state.sqlite3.connect", connect_no_fts5)
 
     # Healthy degraded DB → probe returns None. Repair path must NOT fire.
     assert _db_opens_cleanly(db_path) is None
@@ -404,7 +404,7 @@ def test_fts_read_probe_returns_none_when_fts5_module_missing(tmp_path, monkeypa
 
 def test_fts_read_probe_returns_none_when_trigram_missing(tmp_path, monkeypatch):
     """Capability error on trigram MATCH must not surface as corruption."""
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)
@@ -415,7 +415,7 @@ def test_fts_read_probe_returns_none_when_trigram_missing(tmp_path, monkeypatch)
         kwargs["factory"] = _NoTrigramRuntimeConnection
         return real_connect(*args, **kwargs)
 
-    monkeypatch.setattr("opencodon_state.sqlite3.connect", connect_no_trigram)
+    monkeypatch.setattr("opencodon.state.sqlite3.connect", connect_no_trigram)
 
     assert _db_opens_cleanly(db_path) is None
 
@@ -441,7 +441,7 @@ def _corrupt_fts_index_data(db_path: Path) -> None:
 
 def test_fts_write_corruption_detected_by_write_probe(tmp_path):
     """_db_opens_cleanly's rolled-back write probe flags FTS write corruption."""
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)
@@ -462,7 +462,7 @@ def test_fts_write_corruption_detected_by_write_probe(tmp_path):
 
 def test_fts_write_corruption_repaired_in_place(tmp_path):
     """repair_state_db_schema rebuilds the FTS index; reads + writes resume."""
-    from opencodon_state import _db_opens_cleanly
+    from opencodon.state import _db_opens_cleanly
 
     db_path = tmp_path / "state.db"
     _build_healthy_db(db_path)

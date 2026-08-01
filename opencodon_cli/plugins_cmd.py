@@ -1816,7 +1816,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
     up the toolset from the registry for the first tool name found.
     """
     try:
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
     except Exception:
         return None
 

@@ -78,7 +78,7 @@ from opencodon.core.context_compressor import (
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
-from tools.approval import (
+from opencodon.tools.approval import (
     reset_opencodon_interactive_context,
     set_opencodon_interactive_context,
 )
@@ -803,7 +803,7 @@ class OpencodonACPAgent(acp.Agent):
             return
 
         try:
-            from tools.mcp_tool import register_mcp_servers
+            from opencodon.tools.mcp_tool import register_mcp_servers
 
             config_map: dict[str, dict] = {}
             for server in mcp_servers:
@@ -831,7 +831,7 @@ class OpencodonACPAgent(acp.Agent):
             return
 
         try:
-            from model_tools import get_tool_definitions
+            from opencodon.tools.model_tools import get_tool_definitions
             from opencodon.core.memory_manager import inject_memory_provider_tools
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
@@ -1595,7 +1595,7 @@ class OpencodonACPAgent(acp.Agent):
                 logger.debug("Could not set ACP session context", exc_info=True)
             if approval_cb:
                 try:
-                    from tools import terminal_tool as _terminal_tool
+                    from opencodon.tools import terminal_tool as _terminal_tool
                     previous_approval_cb = _terminal_tool._get_approval_callback()
                     _terminal_tool.set_approval_callback(approval_cb)
                 except Exception:
@@ -1641,7 +1641,7 @@ class OpencodonACPAgent(acp.Agent):
                     os.environ["OPENCODON_SESSION_ID"] = previous_session_id
                 if approval_cb:
                     try:
-                        from tools import terminal_tool as _terminal_tool
+                        from opencodon.tools import terminal_tool as _terminal_tool
                         _terminal_tool.set_approval_callback(previous_approval_cb)
                     except Exception:
                         logger.debug("Could not restore approval callback", exc_info=True)
@@ -1912,7 +1912,7 @@ class OpencodonACPAgent(acp.Agent):
 
     def _cmd_tools(self, args: str, state: SessionState) -> str:
         try:
-            from model_tools import get_tool_definitions
+            from opencodon.tools.model_tools import get_tool_definitions
             from types import SimpleNamespace
             from opencodon.core.memory_manager import inject_memory_provider_tools
 

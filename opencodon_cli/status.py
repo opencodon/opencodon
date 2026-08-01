@@ -437,7 +437,7 @@ def show_status(args):
     # fall back to sessions.json for pre-migration installs.
     _session_count = None
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         _db = SessionDB()
         try:
             _lister = getattr(_db, "list_gateway_sessions", None)

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from opencodon_constants import get_opencodon_home
-from tools.environments.local import opencodon_subprocess_env
+from opencodon.tools.environments.local import opencodon_subprocess_env
 
 logger = logging.getLogger(__name__)
 _Thread = threading.Thread

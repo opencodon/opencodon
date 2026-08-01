@@ -97,7 +97,7 @@ class ScienceRuntime:
         manager: SessionKernelManager = None,
     ):
         if db is None and store is None:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
 
             db = SessionDB()
         self._db = db if db is not None else store._db

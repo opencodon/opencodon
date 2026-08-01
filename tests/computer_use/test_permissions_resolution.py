@@ -11,7 +11,7 @@ import pytest
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX user-local path regression")
 def test_status_finds_user_local_driver_when_path_omits_it(tmp_path, monkeypatch):
     """Desktop status must agree with the runtime resolver, not bare PATH."""
-    from tools.computer_use import permissions
+    from opencodon.tools.computer_use import permissions
 
     driver = tmp_path / ".local" / "bin" / "cua-driver"
     driver.parent.mkdir(parents=True)
@@ -22,8 +22,8 @@ def test_status_finds_user_local_driver_when_path_omits_it(tmp_path, monkeypatch
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 
-    with patch("tools.computer_use.permissions.sys.platform", "darwin"), \
-         patch("tools.computer_use.cua_backend.sys.platform", "darwin"), \
+    with patch("opencodon.tools.computer_use.permissions.sys.platform", "darwin"), \
+         patch("opencodon.tools.computer_use.cua_backend.sys.platform", "darwin"), \
          patch.object(permissions, "_run", return_value=MagicMock(stdout="0.0.0")), \
          patch.object(permissions, "_doctor", return_value={"ok": True, "checks": []}), \
          patch.object(permissions, "_mac_permissions"):

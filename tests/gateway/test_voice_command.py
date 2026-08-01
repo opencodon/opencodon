@@ -425,8 +425,8 @@ class TestSendVoiceReply:
 
         tts_result = json.dumps({"success": True, "file_path": "/tmp/test.ogg"})
 
-        with patch("tools.tts_tool.text_to_speech_tool", return_value=tts_result) as mock_tts, \
-             patch("tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", return_value=tts_result) as mock_tts, \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
              patch("os.path.isfile", return_value=True), \
              patch("os.unlink"), \
              patch("os.makedirs"):
@@ -449,8 +449,8 @@ class TestSendVoiceReply:
 
         tts_result = json.dumps({"success": True, "file_path": "/tmp/test.mp3"})
 
-        with patch("tools.tts_tool.text_to_speech_tool", return_value=tts_result) as mock_tts, \
-             patch("tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", return_value=tts_result) as mock_tts, \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
              patch("os.path.isfile", return_value=True), \
              patch("os.unlink"), \
              patch("os.makedirs"):
@@ -474,8 +474,8 @@ class TestSendVoiceReply:
 
         tts_result = json.dumps({"success": True, "file_path": "/tmp/test.ogg"})
 
-        with patch("tools.tts_tool.text_to_speech_tool", return_value=tts_result), \
-             patch("tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", return_value=tts_result), \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
              patch("os.path.isfile", return_value=True), \
              patch("os.unlink"), \
              patch("os.makedirs"):
@@ -498,8 +498,8 @@ class TestSendVoiceReply:
     async def test_empty_text_after_strip_skips(self, runner):
         event = _make_event()
 
-        with patch("tools.tts_tool.text_to_speech_tool") as mock_tts, \
-             patch("tools.tts_tool._strip_markdown_for_tts", return_value=""):
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool") as mock_tts, \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", return_value=""):
             await runner._send_voice_reply(event, "```code only```")
 
         mock_tts.assert_not_called()
@@ -511,8 +511,8 @@ class TestSendVoiceReply:
         runner.adapters[event.source.platform] = mock_adapter
         tts_result = json.dumps({"success": False, "error": "API error"})
 
-        with patch("tools.tts_tool.text_to_speech_tool", return_value=tts_result), \
-             patch("tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", return_value=tts_result), \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
              patch("os.path.isfile", return_value=False), \
              patch("os.makedirs"):
             await runner._send_voice_reply(event, "Hello")
@@ -522,8 +522,8 @@ class TestSendVoiceReply:
     @pytest.mark.asyncio
     async def test_exception_caught(self, runner):
         event = _make_event()
-        with patch("tools.tts_tool.text_to_speech_tool", side_effect=RuntimeError("boom")), \
-             patch("tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", side_effect=RuntimeError("boom")), \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", side_effect=lambda t: t), \
              patch("os.makedirs"):
             # Should not raise
             await runner._send_voice_reply(event, "Hello")
@@ -1260,9 +1260,9 @@ class TestDiscordVoiceChannelMethods:
         pcm_data = b"\x00" * 96000
 
         with patch("plugins.platforms.discord.adapter.VoiceReceiver.pcm_to_wav"), \
-             patch("tools.transcription_tools.transcribe_audio",
+             patch("opencodon.tools.transcription_tools.transcribe_audio",
                    return_value={"success": True, "transcript": "Hello"}), \
-             patch("tools.voice_mode.is_whisper_hallucination", return_value=False):
+             patch("opencodon.tools.voice_mode.is_whisper_hallucination", return_value=False):
             await adapter._process_voice_input(111, 42, pcm_data)
 
         callback.assert_called_once_with(guild_id=111, user_id=42, transcript="Hello")
@@ -1275,9 +1275,9 @@ class TestDiscordVoiceChannelMethods:
         adapter._voice_input_callback = callback
 
         with patch("plugins.platforms.discord.adapter.VoiceReceiver.pcm_to_wav"), \
-             patch("tools.transcription_tools.transcribe_audio",
+             patch("opencodon.tools.transcription_tools.transcribe_audio",
                    return_value={"success": True, "transcript": "Thank you."}), \
-             patch("tools.voice_mode.is_whisper_hallucination", return_value=True):
+             patch("opencodon.tools.voice_mode.is_whisper_hallucination", return_value=True):
             await adapter._process_voice_input(111, 42, b"\x00" * 96000)
 
         callback.assert_not_called()
@@ -1290,7 +1290,7 @@ class TestDiscordVoiceChannelMethods:
         adapter._voice_input_callback = callback
 
         with patch("plugins.platforms.discord.adapter.VoiceReceiver.pcm_to_wav"), \
-             patch("tools.transcription_tools.transcribe_audio",
+             patch("opencodon.tools.transcription_tools.transcribe_audio",
                    return_value={"success": False, "error": "API error"}):
             await adapter._process_voice_input(111, 42, b"\x00" * 96000)
 
@@ -1554,7 +1554,7 @@ class TestStreamTtsToSpeaker:
 
     def test_none_sentinel_flushes_buffer(self):
         """None sentinel causes remaining buffer to be spoken."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1572,7 +1572,7 @@ class TestStreamTtsToSpeaker:
 
     def test_stop_event_aborts_early(self):
         """Setting stop_event causes early exit."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1588,7 +1588,7 @@ class TestStreamTtsToSpeaker:
 
     def test_done_event_set_on_exception(self):
         """tts_done_event is set even when an exception occurs."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1602,7 +1602,7 @@ class TestStreamTtsToSpeaker:
 
     def test_think_blocks_stripped(self):
         """<think>...</think> content is not spoken."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1620,7 +1620,7 @@ class TestStreamTtsToSpeaker:
 
     def test_sentence_splitting(self):
         """Sentences are split at boundaries and spoken individually."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1637,7 +1637,7 @@ class TestStreamTtsToSpeaker:
 
     def test_markdown_stripped_in_speech(self):
         """Markdown formatting is removed before display/speech."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1653,7 +1653,7 @@ class TestStreamTtsToSpeaker:
 
     def test_duplicate_sentences_deduped(self):
         """Repeated sentences are spoken only once."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1671,7 +1671,7 @@ class TestStreamTtsToSpeaker:
 
     def test_no_api_key_display_only(self):
         """Without ELEVENLABS_API_KEY, display callback still works."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -1688,7 +1688,7 @@ class TestStreamTtsToSpeaker:
 
     def test_long_buffer_flushed_on_timeout(self):
         """Buffer longer than long_flush_len is flushed on queue timeout."""
-        from tools.tts_tool import stream_tts_to_speaker
+        from opencodon.tools.tts_tool import stream_tts_to_speaker
         text_q = queue.Queue()
         stop_evt = threading.Event()
         done_evt = threading.Event()
@@ -2176,7 +2176,7 @@ class TestSendVoiceReplyCleanup:
         })
 
         with patch("gateway.run.asyncio.to_thread", new_callable=AsyncMock, return_value=tts_result), \
-             patch("tools.tts_tool._strip_markdown_for_tts", return_value="hello"), \
+             patch("opencodon.tools.tts_tool._strip_markdown_for_tts", return_value="hello"), \
              patch("os.path.isfile", return_value=True), \
              patch("os.makedirs"):
             await runner._send_voice_reply(event, "Hello world")

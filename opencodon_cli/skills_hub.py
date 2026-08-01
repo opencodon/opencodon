@@ -53,7 +53,7 @@ def _resolve_short_name(name: str, sources, console: Console) -> str:
     matches exist, shows them and asks the user to use the full identifier.
     Returns empty string if nothing found or ambiguous.
     """
-    from tools.skills_hub import unified_search
+    from opencodon.tools.skills_hub import unified_search
 
     c = console or _console
     c.print(f"[dim]Resolving '{name}'...[/]")
@@ -184,7 +184,7 @@ def _existing_categories() -> List[str]:
     Used to suggest reusable categories when interactively installing from a
     URL. Hidden dirs (``.hub``, ``.trash``) are skipped.
     """
-    from tools.skills_hub import SKILLS_DIR
+    from opencodon.tools.skills_hub import SKILLS_DIR
     out: List[str] = []
     try:
         for entry in SKILLS_DIR.iterdir():
@@ -269,7 +269,7 @@ def do_search(query: str, source: str = "all", limit: int = 10,
     the scripting / copy-paste handle: the full identifier is always
     intact, even for browse-sh slugs that the table would otherwise wrap.
     """
-    from tools.skills_hub import GitHubAuth, create_source_router, unified_search
+    from opencodon.tools.skills_hub import GitHubAuth, create_source_router, unified_search
 
     c = console or _console
 
@@ -334,7 +334,7 @@ def do_browse(page: int = 1, page_size: int = 20, source: str = "all",
 
     Official skills are always shown first, regardless of source filter.
     """
-    from tools.skills_hub import (
+    from opencodon.tools.skills_hub import (
         GitHubAuth, create_source_router, parallel_search_sources,
     )
 
@@ -397,7 +397,7 @@ def do_browse(page: int = 1, page_size: int = 20, source: str = "all",
     # Provider filter (nvidia/openai/...) narrows GitHub-tap skills by their
     # per-tap ``extra.provider`` label (the runtime index stores them all under
     # source="github"). Real source ids were already filtered upstream.
-    from tools.skills_hub import _PROVIDER_FILTER_VALUES, _filter_results_by_provider
+    from opencodon.tools.skills_hub import _PROVIDER_FILTER_VALUES, _filter_results_by_provider
     if source.strip().lower() in _PROVIDER_FILTER_VALUES:
         all_results = _filter_results_by_provider(all_results, source)
         if not all_results:
@@ -512,11 +512,11 @@ def do_install(identifier: str, category: str = "", force: bool = False,
     (so pair it with ``name_override`` when installing from a URL that has
     no frontmatter).
     """
-    from tools.skills_hub import (
+    from opencodon.tools.skills_hub import (
         GitHubAuth, create_source_router, ensure_hub_dirs,
         quarantine_bundle, install_from_quarantine, HubLockFile,
     )
-    from tools.skills_guard import scan_skill_cached, should_allow_install, format_scan_report
+    from opencodon.tools.skills_guard import scan_skill_cached, should_allow_install, format_scan_report
 
     c = console or _console
     ensure_hub_dirs()
@@ -632,7 +632,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
         q_path = quarantine_bundle(bundle)
     except ValueError as exc:
         c.print(f"[bold red]Installation blocked:[/] {exc}\n")
-        from tools.skills_hub import append_audit_log
+        from opencodon.tools.skills_hub import append_audit_log
         append_audit_log("BLOCKED", bundle.name, bundle.source,
                          bundle.trust_level, "invalid_path", str(exc))
         return
@@ -648,7 +648,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
             or getattr(meta, "identifier", "")
             or identifier
         )
-    from tools.skills_hub import HUB_DIR, source_url_for_bundle
+    from opencodon.tools.skills_hub import HUB_DIR, source_url_for_bundle
     result, scan_provenance = scan_skill_cached(
         q_path,
         source=scan_source,
@@ -673,7 +673,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
         c.print(f"\n[bold red]Installation blocked:[/] {reason}")
         # Clean up quarantine
         shutil.rmtree(q_path, ignore_errors=True)
-        from tools.skills_hub import append_audit_log
+        from opencodon.tools.skills_hub import append_audit_log
         append_audit_log("BLOCKED", bundle.name, bundle.source,
                          bundle.trust_level, result.verdict,
                          f"{len(result.findings)}_findings")
@@ -723,11 +723,11 @@ def do_install(identifier: str, category: str = "", force: bool = False,
     except ValueError as exc:
         c.print(f"[bold red]Installation blocked:[/] {exc}\n")
         shutil.rmtree(q_path, ignore_errors=True)
-        from tools.skills_hub import append_audit_log
+        from opencodon.tools.skills_hub import append_audit_log
         append_audit_log("BLOCKED", bundle.name, bundle.source,
                          bundle.trust_level, "invalid_path", str(exc))
         return
-    from tools.skills_hub import SKILLS_DIR
+    from opencodon.tools.skills_hub import SKILLS_DIR
     c.print(f"[bold green]Installed:[/] {install_dir.relative_to(SKILLS_DIR)}")
     c.print(f"[dim]Files: {', '.join(bundle.files.keys())}[/]\n")
 
@@ -737,7 +737,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
     # silently creates a recurring job; the user accepts it via /suggestions.
     # This is the single surface every automation proposal flows through.
     try:
-        from tools.blueprints import BlueprintError, blueprint_spec_for_installed, register_blueprint_suggestion
+        from opencodon.tools.blueprints import BlueprintError, blueprint_spec_for_installed, register_blueprint_suggestion
 
         try:
             spec = blueprint_spec_for_installed(bundle.name)
@@ -786,7 +786,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
 
 def do_inspect(identifier: str, console: Optional[Console] = None) -> None:
     """Preview a skill's SKILL.md content without installing."""
-    from tools.skills_hub import GitHubAuth, create_source_router
+    from opencodon.tools.skills_hub import GitHubAuth, create_source_router
 
     c = console or _console
     auth = GitHubAuth()
@@ -839,7 +839,7 @@ def browse_skills(page: int = 1, page_size: int = 20, source: str = "all") -> di
 
     Returns ``{"items": [...], "page": int, "total_pages": int, "total": int}``.
     """
-    from tools.skills_hub import (
+    from opencodon.tools.skills_hub import (
         GitHubAuth, create_source_router, parallel_search_sources,
     )
 
@@ -885,7 +885,7 @@ def browse_skills(page: int = 1, page_size: int = 20, source: str = "all") -> di
 
 def inspect_skill(identifier: str) -> Optional[dict]:
     """Skill metadata (+ SKILL.md preview) for programmatic callers."""
-    from tools.skills_hub import GitHubAuth, create_source_router
+    from opencodon.tools.skills_hub import GitHubAuth, create_source_router
 
     class _Q:
         def print(self, *a, **k):
@@ -935,9 +935,9 @@ def do_list(source_filter: str = "all",
     ``skills.disabled`` list because ``-p`` swaps ``OPENCODON_HOME`` at process
     start.  No explicit profile flag needed here.
     """
-    from tools.skills_hub import HubLockFile, ensure_hub_dirs
-    from tools.skills_sync import _read_manifest
-    from tools.skills_tool import _find_all_skills
+    from opencodon.tools.skills_hub import HubLockFile, ensure_hub_dirs
+    from opencodon.tools.skills_sync import _read_manifest
+    from opencodon.tools.skills_tool import _find_all_skills
     from opencodon.core.skill_utils import get_disabled_skill_names
 
     c = console or _console
@@ -1022,7 +1022,7 @@ def do_list(source_filter: str = "all",
 
 def do_check(name: Optional[str] = None, console: Optional[Console] = None) -> None:
     """Check hub-installed skills for upstream updates."""
-    from tools.skills_hub import check_for_skill_updates
+    from opencodon.tools.skills_hub import check_for_skill_updates
 
     c = console or _console
     results = check_for_skill_updates(name=name)
@@ -1045,7 +1045,7 @@ def do_check(name: Optional[str] = None, console: Optional[Console] = None) -> N
 
 def do_update(name: Optional[str] = None, console: Optional[Console] = None) -> None:
     """Update hub-installed skills with upstream changes."""
-    from tools.skills_hub import HubLockFile, check_for_skill_updates
+    from opencodon.tools.skills_hub import HubLockFile, check_for_skill_updates
 
     c = console or _console
     lock = HubLockFile()
@@ -1071,8 +1071,8 @@ def do_audit(name: Optional[str] = None, console: Optional[Console] = None,
     files (review aid only — not a security gate; skills_guard.py verdicts
     are unchanged).
     """
-    from tools.skills_hub import HubLockFile, SKILLS_DIR
-    from tools.skills_guard import scan_skill, format_scan_report
+    from opencodon.tools.skills_hub import HubLockFile, SKILLS_DIR
+    from opencodon.tools.skills_guard import scan_skill, format_scan_report
 
     c = console or _console
     lock = HubLockFile()
@@ -1092,7 +1092,7 @@ def do_audit(name: Optional[str] = None, console: Optional[Console] = None,
     c.print(f"\n[bold]Auditing {len(targets)} skill(s)...[/]\n")
 
     if deep:
-        from tools.skills_ast_audit import ast_scan_path, format_ast_report
+        from opencodon.tools.skills_ast_audit import ast_scan_path, format_ast_report
 
     for entry in targets:
         skill_path = SKILLS_DIR / entry["install_path"]
@@ -1113,7 +1113,7 @@ def do_uninstall(name: str, console: Optional[Console] = None,
                  skip_confirm: bool = False,
                  invalidate_cache: bool = True) -> None:
     """Remove a hub-installed skill with confirmation."""
-    from tools.skills_hub import uninstall_skill
+    from opencodon.tools.skills_hub import uninstall_skill
 
     c = console or _console
 
@@ -1149,7 +1149,7 @@ def do_reset(name: str, restore: bool = False,
              skip_confirm: bool = False,
              invalidate_cache: bool = True) -> None:
     """Reset a bundled skill's manifest tracking (+ optionally restore from bundled)."""
-    from tools.skills_sync import reset_bundled_skill
+    from opencodon.tools.skills_sync import reset_bundled_skill
 
     c = console or _console
 
@@ -1192,7 +1192,7 @@ def do_reset(name: str, restore: bool = False,
 def do_list_modified(console: Optional[Console] = None,
                      as_json: bool = False) -> None:
     """List bundled skills the user has edited (which `opencodon update` keeps)."""
-    from tools.skills_sync import list_user_modified_bundled_skills
+    from opencodon.tools.skills_sync import list_user_modified_bundled_skills
 
     c = console or _console
     modified = list_user_modified_bundled_skills()
@@ -1219,7 +1219,7 @@ def do_list_modified(console: Optional[Console] = None,
 
 def do_diff(name: str, console: Optional[Console] = None) -> None:
     """Show how the user's copy of a bundled skill differs from the stock version."""
-    from tools.skills_sync import diff_bundled_skill
+    from opencodon.tools.skills_sync import diff_bundled_skill
 
     c = console or _console
     result = diff_bundled_skill(name)
@@ -1267,7 +1267,7 @@ def do_opt_out(remove: bool = False,
     (manifest-tracked AND unmodified); user-edited and non-bundled skills are
     never touched.
     """
-    from tools.skills_sync import (
+    from opencodon.tools.skills_sync import (
         set_bundled_skills_opt_out,
         remove_pristine_bundled_skills,
     )
@@ -1334,7 +1334,7 @@ def do_opt_in(sync: bool = False,
     With ``sync``, immediately re-seed bundled skills instead of waiting for
     the next ``opencodon update``.
     """
-    from tools.skills_sync import set_bundled_skills_opt_out, sync_skills
+    from opencodon.tools.skills_sync import set_bundled_skills_opt_out, sync_skills
 
     c = console or _console
 
@@ -1362,7 +1362,7 @@ def do_repair_official(name: str, restore: bool = False,
                        skip_confirm: bool = False,
                        invalidate_cache: bool = True) -> None:
     """Backfill or restore official optional skills from repo source."""
-    from tools.skills_sync import restore_official_optional_skill
+    from opencodon.tools.skills_sync import restore_official_optional_skill
 
     c = console or _console
     if restore and not skip_confirm:
@@ -1401,7 +1401,7 @@ def do_repair_official(name: str, restore: bool = False,
 
 def do_tap(action: str, repo: str = "", console: Optional[Console] = None) -> None:
     """Manage taps (custom GitHub repo sources)."""
-    from tools.skills_hub import TapsManager
+    from opencodon.tools.skills_hub import TapsManager
 
     c = console or _console
     mgr = TapsManager()
@@ -1445,8 +1445,8 @@ def do_tap(action: str, repo: str = "", console: Optional[Console] = None) -> No
 def do_publish(skill_path: str, target: str = "github", repo: str = "",
                console: Optional[Console] = None) -> None:
     """Publish a local skill to a registry (GitHub PR or ClawHub submission)."""
-    from tools.skills_hub import GitHubAuth, SKILLS_DIR
-    from tools.skills_guard import scan_skill, format_scan_report
+    from opencodon.tools.skills_hub import GitHubAuth, SKILLS_DIR
+    from opencodon.tools.skills_guard import scan_skill, format_scan_report
 
     c = console or _console
     path = Path(skill_path)
@@ -1611,7 +1611,7 @@ def _github_publish(skill_path: Path, skill_name: str, target_repo: str,
 
 def do_snapshot_export(output_path: str, console: Optional[Console] = None) -> None:
     """Export current hub skill configuration to a portable JSON file."""
-    from tools.skills_hub import HubLockFile, TapsManager
+    from opencodon.tools.skills_hub import HubLockFile, TapsManager
 
     c = console or _console
     lock = HubLockFile()
@@ -1652,7 +1652,7 @@ def do_snapshot_export(output_path: str, console: Optional[Console] = None) -> N
 def do_snapshot_import(input_path: str, force: bool = False,
                        console: Optional[Console] = None) -> None:
     """Re-install skills from a snapshot file."""
-    from tools.skills_hub import TapsManager
+    from opencodon.tools.skills_hub import TapsManager
 
     c = console or _console
     inp = Path(input_path)

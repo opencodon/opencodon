@@ -59,7 +59,7 @@ def client(monkeypatch, isolated_profiles):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import opencodon_state
+    from opencodon import state as opencodon_state
     from opencodon_constants import get_opencodon_home
     from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 

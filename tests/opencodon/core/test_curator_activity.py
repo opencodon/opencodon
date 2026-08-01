@@ -23,7 +23,7 @@ def curator_modules(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
     import opencodon.core.curator as curator
 
     importlib.reload(skill_usage)

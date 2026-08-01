@@ -250,7 +250,7 @@ class TestWebServerEndpoints:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -270,7 +270,7 @@ class TestWebServerEndpoints:
 
     def test_status_active_session_count_uses_read_only_db(self, monkeypatch, tmp_path):
         import opencodon_cli.web_server as web_server
-        import opencodon_state
+        from opencodon import state as opencodon_state
 
         # Satisfy the fresh-install guard: read_only opens require the DB
         # file to already exist.
@@ -296,7 +296,7 @@ class TestWebServerEndpoints:
             def close(self):
                 captured["closed"] = True
 
-        monkeypatch.setattr("opencodon_state.SessionDB", _FakeDB)
+        monkeypatch.setattr("opencodon.state.SessionDB", _FakeDB)
         monkeypatch.setattr(web_server.time, "time", lambda: 100)
 
         assert web_server._count_status_active_sessions() == 1
@@ -308,14 +308,14 @@ class TestWebServerEndpoints:
         """No state.db yet (fresh install): return 0 without attempting a
         read-only open, which would raise OperationalError on every poll."""
         import opencodon_cli.web_server as web_server
-        import opencodon_state
+        from opencodon import state as opencodon_state
 
         monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", tmp_path / "absent.db")
 
         def _boom(*a, **k):
             raise AssertionError("SessionDB must not be constructed when db file is absent")
 
-        monkeypatch.setattr("opencodon_state.SessionDB", _boom)
+        monkeypatch.setattr("opencodon.state.SessionDB", _boom)
         assert web_server._count_status_active_sessions() == 0
 
     def test_get_status_degrades_when_active_session_count_fails(self, monkeypatch):
@@ -913,7 +913,7 @@ class TestWebServerEndpoints:
         /api/sessions should reflect per-session DB state, not process/global
         cwd settings, so workspace grouping stays stable and deterministic.
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         monkeypatch.setenv("TERMINAL_CWD", "/tmp/global-default")
 
@@ -954,7 +954,7 @@ class TestWebServerEndpoints:
             def close(self):
                 pass
 
-        monkeypatch.setattr("opencodon_state.SessionDB", _FakeDB)
+        monkeypatch.setattr("opencodon.state.SessionDB", _FakeDB)
 
         resp = self.client.get("/api/sessions?limit=5&offset=0&min_messages=3")
         assert resp.status_code == 200
@@ -962,7 +962,7 @@ class TestWebServerEndpoints:
         assert captured["count"] == 3
 
     def _create_session_with_heavy_fields(self, session_id: str) -> None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1028,7 +1028,7 @@ class TestWebServerEndpoints:
     def test_rename_session_updates_title(self):
         """PATCH /api/sessions/{id} renames a session (regression: the route
         was missing entirely, so the desktop rename dialog got a 405)."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1047,7 +1047,7 @@ class TestWebServerEndpoints:
             db.close()
 
     def test_rename_session_clears_title_when_empty(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1071,7 +1071,7 @@ class TestWebServerEndpoints:
         assert resp.status_code == 404
 
     def test_import_sessions_endpoint_imports_exported_json(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         payload = {
             "id": "imported-web-session",
@@ -1178,7 +1178,7 @@ class TestWebServerEndpoints:
 
     def test_archive_session_via_patch(self):
         """PATCH archived=true soft-hides a session; archived=false restores it."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1204,7 +1204,7 @@ class TestWebServerEndpoints:
 
     def test_patch_session_without_fields_is_400(self):
         """An existing session + empty body is a bad request, not a 404."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1218,7 +1218,7 @@ class TestWebServerEndpoints:
     def test_profiles_sessions_tags_default_profile(self):
         """The cross-profile aggregator returns the default profile's rows
         tagged profile="default" (single-profile parity with /api/sessions)."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1243,7 +1243,7 @@ class TestWebServerEndpoints:
         """The batched sidebar endpoint returns recents/cron/messaging in one
         pass, each source-scoped by the caller-supplied excludes, so the desktop
         stops reopening every profile DB three times per refresh."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1288,7 +1288,7 @@ class TestWebServerEndpoints:
     def test_sessions_endpoint_reads_requested_profile(self):
         """The machine dashboard's global profile switcher must retarget
         the Sessions page, not just config/skills/model pages."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         from opencodon_cli import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
@@ -1327,7 +1327,7 @@ class TestWebServerEndpoints:
 
     def test_latest_descendant_reads_requested_profile(self):
         """Chat resume must resolve compression tips in the chat profile DB."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         from opencodon_cli import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
@@ -1364,7 +1364,7 @@ class TestWebServerEndpoints:
         """Regression for the #39140 CTE salvage: a corrupted parent chain
         that loops (a -> b -> a) must terminate (UNION dedup) instead of
         recursing forever like UNION ALL would."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1384,7 +1384,7 @@ class TestWebServerEndpoints:
         assert resp.json()["session_id"] == "cyc-b"
 
     def test_analytics_endpoints_read_requested_profile(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         from opencodon_cli import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
@@ -1437,7 +1437,7 @@ class TestWebServerEndpoints:
         first page by recency, listed under its live continuation id."""
         import time as _time
 
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1478,7 +1478,7 @@ class TestWebServerEndpoints:
         so the sidebar stops showing the same chat several times."""
         import time as _time
 
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1515,7 +1515,7 @@ class TestWebServerEndpoints:
         branch instead of being collapsed back to the parent/root."""
         import time as _time
 
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1548,7 +1548,7 @@ class TestWebServerEndpoints:
         live continuation, matching /resume behavior."""
         import time as _time
 
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1575,7 +1575,7 @@ class TestWebServerEndpoints:
         assert [m["content"] for m in payload["messages"]] == ["after compression"]
 
     def test_get_sessions_archived_is_boolean(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1589,7 +1589,7 @@ class TestWebServerEndpoints:
 
     def test_rename_response_omits_archived_when_not_set(self):
         """Title-only PATCH keeps its legacy {ok, title} response shape."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1602,7 +1602,7 @@ class TestWebServerEndpoints:
         assert "archived" not in resp.json()
 
     def test_audio_transcription_endpoint(self, monkeypatch):
-        import tools.transcription_tools as transcription_tools
+        import opencodon.tools.transcription_tools as transcription_tools
 
         captured = {}
 
@@ -1638,7 +1638,7 @@ class TestWebServerEndpoints:
         the live voice loop treats it as a quiet turn and re-listens, instead
         of surfacing a 400 toast on every pause (the ElevenLabs empty-
         transcript spam)."""
-        import tools.transcription_tools as transcription_tools
+        import opencodon.tools.transcription_tools as transcription_tools
 
         monkeypatch.setattr(
             transcription_tools,
@@ -1701,7 +1701,7 @@ class TestWebServerEndpoints:
         assert resp.json() == {"available": False, "voices": []}
 
     def test_speak_text_returns_base64_data_url(self, monkeypatch, tmp_path):
-        import tools.tts_tool as tts_tool
+        import opencodon.tools.tts_tool as tts_tool
 
         audio_file = tmp_path / "speech.mp3"
         audio_file.write_bytes(b"ID3fake-audio-bytes")
@@ -3917,7 +3917,7 @@ class TestNewEndpoints:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -4555,7 +4555,7 @@ class TestNewEndpoints:
             assert "enabled" in skills[0]
 
     def test_skills_list_includes_disabled_skills(self, monkeypatch):
-        import tools.skills_tool as skills_tool
+        import opencodon.tools.skills_tool as skills_tool
         import opencodon_cli.skills_config as skills_config
         import opencodon_cli.web_server as web_server
 
@@ -4976,7 +4976,7 @@ class TestNewEndpoints:
         assert cfg["web"]["backend"] == "firecrawl"
 
         # The REAL runtime resolution — not a parallel reimplementation.
-        from tools.web_tools import _get_extract_backend, _get_search_backend
+        from opencodon.tools.web_tools import _get_extract_backend, _get_search_backend
         assert _get_search_backend() == "searxng"
         assert _get_extract_backend() == "firecrawl"
 
@@ -5000,7 +5000,7 @@ class TestNewEndpoints:
         # (the default config seeds them as empty strings).
         assert not cfg["web"].get("search_backend")
 
-        from tools.web_tools import _get_extract_backend
+        from opencodon.tools.web_tools import _get_extract_backend
         assert _get_extract_backend() == "firecrawl"
 
     def test_select_web_capability_rejects_unsupported_capability(self):
@@ -5302,7 +5302,7 @@ class TestNewEndpoints:
         ``billing_provider``. The Models dashboard should show one provider
         card, not a real card plus a misleading duplicate empty card.
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -5345,7 +5345,7 @@ class TestNewEndpoints:
         assert row["avg_tokens_per_session"] == 13_550
 
     def test_analytics_usage_includes_skill_breakdown(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -6671,7 +6671,7 @@ class TestDeleteSessionEndpoint:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -6683,7 +6683,7 @@ class TestDeleteSessionEndpoint:
         self.auth_client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def _seed(self, ids):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -6693,7 +6693,7 @@ class TestDeleteSessionEndpoint:
             db.close()
 
     def _exists(self, sid) -> bool:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -6748,7 +6748,7 @@ class TestBulkDeleteSessionsEndpoint:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -6761,7 +6761,7 @@ class TestBulkDeleteSessionsEndpoint:
         self.auth_client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def _seed(self, ids):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -6775,7 +6775,7 @@ class TestBulkDeleteSessionsEndpoint:
         assert resp.status_code == 401
 
     def test_deletes_listed_sessions_only(self):
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         self._seed(["a", "b", "c"])
         resp = self.auth_client.post(
@@ -6872,7 +6872,7 @@ class TestDeleteEmptySessionsEndpoint:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -6894,7 +6894,7 @@ class TestDeleteEmptySessionsEndpoint:
         * ``live``    — un-ended, empty → must survive (active)
         * ``archived``— ended, empty, archived → must survive
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -6942,7 +6942,7 @@ class TestDeleteEmptySessionsEndpoint:
         """DELETE returns the deleted count and removes only the
         empty-ended-unarchived rows — same shape contract as the
         DB-level method's unit tests."""
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         self._seed()
         resp = self.auth_client.delete("/api/sessions/empty")
@@ -7008,7 +7008,7 @@ class TestPluginAPIAuth:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -8120,7 +8120,7 @@ class TestDesktopCronTicker:
 
     def test_ticker_runs_when_desktop(self, monkeypatch, _isolate_opencodon_home):
         import threading
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         called = threading.Event()
         monkeypatch.setattr(sched, "tick", lambda *a, **k: called.set())
@@ -8131,7 +8131,7 @@ class TestDesktopCronTicker:
 
     def test_ticker_skipped_without_desktop(self, monkeypatch, _isolate_opencodon_home):
         import threading
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         called = threading.Event()
         monkeypatch.setattr(sched, "tick", lambda *a, **k: called.set())
@@ -8204,7 +8204,7 @@ class TestDashboardComponentHealth:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import opencodon_state
+        from opencodon import state as opencodon_state
         from opencodon_constants import get_opencodon_home
         import opencodon_cli.web_server as ws
 

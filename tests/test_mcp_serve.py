@@ -799,7 +799,7 @@ class TestE2EMessagesSend:
     def test_send_delegates_to_tool(self, mcp_server_e2e, _event_loop, monkeypatch):
         server, _ = mcp_server_e2e
         mock = MagicMock(return_value=json.dumps({"success": True, "platform": "telegram"}))
-        monkeypatch.setattr("tools.send_message_tool.send_message_tool", mock)
+        monkeypatch.setattr("opencodon.tools.send_message_tool.send_message_tool", mock)
 
         result = _run_tool(server, "messages_send",
                           {"target": "telegram:123456", "message": "Hello!"})

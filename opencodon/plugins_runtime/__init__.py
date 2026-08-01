@@ -400,7 +400,7 @@ class PluginContext:
                 f"in config.yaml to allow this plugin to replace built-in tools."
             )
 
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         registry.register(
             name=name,
@@ -573,7 +573,7 @@ class PluginContext:
         Returns:
             JSON string from the tool handler (same format as model tool calls).
         """
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         # Wire up parent agent context when available (CLI mode).
         # In gateway mode _cli_ref is None — tools degrade gracefully
@@ -1701,7 +1701,7 @@ class PluginManager:
             manifest.key or manifest.name, manifest.source, manifest.kind, manifest.path,
         )
 
-        from tools.registry import registry as _registry
+        from opencodon.tools.registry import registry as _registry
         _plugin_id = manifest.key or manifest.name
         _slug = _plugin_id.replace("/", "__").replace("-", "_")
         _registry.register_plugin_override_policy(
@@ -2206,7 +2206,7 @@ def resolve_pre_tool_block(
         return details.message
     if details.action == "approve":
         try:
-            from tools.approval import request_tool_approval
+            from opencodon.tools.approval import request_tool_approval
             result = request_tool_approval(
                 tool_name,
                 details.message or "",
@@ -2380,7 +2380,7 @@ def get_plugin_toolsets() -> List[tuple]:
         return []
 
     try:
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
     except Exception:
         return []
 

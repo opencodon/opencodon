@@ -1193,7 +1193,7 @@ class TestDiscordSkillCmdKeyDispatch:
         }
 
         with patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds), \
-             patch("tools.skills_tool.SKILLS_DIR", fake_skills_dir), \
+             patch("opencodon.tools.skills_tool.SKILLS_DIR", fake_skills_dir), \
              patch("opencodon.core.skill_utils.get_external_skills_dirs", return_value=[]):
             entries, hidden = discord_skill_commands(
                 max_slots=100, reserved_names=set(),
@@ -1442,7 +1442,7 @@ class TestTelegramMenuCommands:
         }
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             (tmp_path / "skills").mkdir(exist_ok=True)
             menu, hidden = telegram_menu_commands(max_commands=100)
@@ -1501,7 +1501,7 @@ class TestTelegramMenuCommands:
 
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", local_dir),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", local_dir),
             patch(
                 "opencodon.core.skill_utils.get_external_skills_dirs",
                 return_value=[external_dir],
@@ -1542,7 +1542,7 @@ class TestTelegramMenuCommands:
         }
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             (tmp_path / "skills").mkdir(exist_ok=True)
             menu, _ = telegram_menu_commands(max_commands=100)
@@ -1575,7 +1575,7 @@ class TestTelegramMenuCommands:
         }
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             (tmp_path / "skills").mkdir(exist_ok=True)
             menu, _ = telegram_menu_commands(max_commands=100)
@@ -1631,7 +1631,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, hidden = discord_skill_commands(
                 max_slots=50, reserved_names=set(),
@@ -1663,7 +1663,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, _ = discord_skill_commands(
                 max_slots=50, reserved_names=set(),
@@ -1689,7 +1689,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, hidden = discord_skill_commands(
                 max_slots=5, reserved_names=set(),
@@ -1729,7 +1729,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, _ = discord_skill_commands(
                 max_slots=50, reserved_names=set(),
@@ -1756,7 +1756,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, _ = discord_skill_commands(
                 max_slots=50, reserved_names={"status"},
@@ -1783,7 +1783,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, _ = discord_skill_commands(
                 max_slots=50, reserved_names=set(),
@@ -1810,7 +1810,7 @@ class TestDiscordSkillCommands:
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             entries, _ = discord_skill_commands(
                 max_slots=50, reserved_names=set(),
@@ -1866,7 +1866,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             categories, uncategorized, hidden = discord_skill_commands_by_category(
                 reserved_names=set(),
@@ -1897,7 +1897,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             categories, uncategorized, hidden = discord_skill_commands_by_category(
                 reserved_names=set(),
@@ -1925,7 +1925,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             categories, uncategorized, hidden = discord_skill_commands_by_category(
                 reserved_names=set(),
@@ -1959,7 +1959,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             categories, uncategorized, hidden = discord_skill_commands_by_category(
                 reserved_names=set(),
@@ -2006,7 +2006,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
         ):
             categories, uncategorized, hidden = discord_skill_commands_by_category(
                 reserved_names=set(),
@@ -2063,7 +2063,7 @@ class TestDiscordSkillCommandsByCategory:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         with (
             patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds),
-            patch("tools.skills_tool.SKILLS_DIR", local_skills_dir),
+            patch("opencodon.tools.skills_tool.SKILLS_DIR", local_skills_dir),
             patch(
                 "opencodon.core.skill_utils.get_external_skills_dirs",
                 return_value=[external_dir],

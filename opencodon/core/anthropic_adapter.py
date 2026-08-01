@@ -39,7 +39,7 @@ def _get_anthropic_sdk():
     global _anthropic_sdk
     if _anthropic_sdk is ...:
         try:
-            from tools.lazy_deps import ensure as _lazy_ensure
+            from opencodon.tools.lazy_deps import ensure as _lazy_ensure
             _lazy_ensure("provider.anthropic", prompt=False)
         except ImportError:
             pass
@@ -1669,7 +1669,7 @@ def _normalize_tool_input_schema(schema: Any) -> Dict[str, Any]:
     if not schema:
         return {"type": "object", "properties": {}}
 
-    from tools.schema_sanitizer import strip_nullable_unions
+    from opencodon.tools.schema_sanitizer import strip_nullable_unions
 
     normalized = strip_nullable_unions(schema, keep_nullable_hint=False)
     if not isinstance(normalized, dict):

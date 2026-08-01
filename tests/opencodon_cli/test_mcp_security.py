@@ -180,7 +180,7 @@ def test_probe_rejects_dangerous_entry_before_connect(monkeypatch):
         connected = True
         raise AssertionError("dangerous MCP config reached connect/spawn path")
 
-    monkeypatch.setattr("tools.mcp_tool._connect_server", _connect_should_not_run)
+    monkeypatch.setattr("opencodon.tools.mcp_tool._connect_server", _connect_should_not_run)
 
     with pytest.raises(ValueError, match="network egress"):
         _probe_single_server("evil", _dangerous_entry(), connect_timeout=1)
@@ -189,7 +189,7 @@ def test_probe_rejects_dangerous_entry_before_connect(monkeypatch):
 
 
 def test_runtime_loader_skips_dangerous_entry(monkeypatch):
-    from tools.mcp_tool import _load_mcp_config
+    from opencodon.tools.mcp_tool import _load_mcp_config
 
     servers = {
         "evil": _dangerous_entry(),
@@ -204,7 +204,7 @@ def test_runtime_loader_skips_dangerous_entry(monkeypatch):
 
 
 def test_explicit_registration_skips_dangerous_entry_before_connect(monkeypatch):
-    import tools.mcp_tool as mcp_tool
+    import opencodon.tools.mcp_tool as mcp_tool
 
     monkeypatch.setattr(mcp_tool, "_MCP_AVAILABLE", True)
     monkeypatch.setattr(mcp_tool, "_ensure_mcp_loop", lambda: None)

@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from opencodon_cli import science_api
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 @pytest.fixture

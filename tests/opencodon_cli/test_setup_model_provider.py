@@ -294,7 +294,7 @@ def test_setup_summary_shows_camofox_when_browser_feature_is_camofox(tmp_path, m
     cfg = load_config()
     cfg.setdefault("browser", {})["cloud_provider"] = "Camofox"
     save_config(cfg)
-    monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: True)
+    monkeypatch.setattr("opencodon.tools.browser_tool.check_browser_requirements", lambda: True)
     monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
@@ -310,7 +310,7 @@ def test_setup_summary_does_not_mark_incomplete_browserbase_as_available(tmp_pat
     cfg = load_config()
     cfg.setdefault("browser", {})["cloud_provider"] = "Browserbase"
     save_config(cfg)
-    monkeypatch.setattr("tools.browser_tool.check_browser_requirements", lambda: False)
+    monkeypatch.setattr("opencodon.tools.browser_tool.check_browser_requirements", lambda: False)
     monkeypatch.setattr("opencodon.core.auxiliary_client.get_available_vision_backends", lambda: [])
 
     _print_setup_summary(load_config(), tmp_path)
@@ -344,8 +344,8 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
 
     # Only stub the readiness probes; the availability gate itself is real.
     monkeypatch.setattr("opencodon_cli.tools_config._has_agent_browser", lambda: True)
-    monkeypatch.setattr("tools.browser_tool._chromium_installed", lambda: False)
-    monkeypatch.setattr("tools.browser_tool._using_lightpanda_engine", lambda: False)
+    monkeypatch.setattr("opencodon.tools.browser_tool._chromium_installed", lambda: False)
+    monkeypatch.setattr("opencodon.tools.browser_tool._using_lightpanda_engine", lambda: False)
     monkeypatch.setattr(
         "opencodon.core.auxiliary_client.get_available_vision_backends", lambda: []
     )

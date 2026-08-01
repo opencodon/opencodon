@@ -45,7 +45,7 @@ def _get_exa_client() -> Any:
     tests that reset that name between cases keep working. Raises
     ``ValueError`` when ``EXA_API_KEY`` is unset.
     """
-    import tools.web_tools as _wt
+    import opencodon.tools.web_tools as _wt
 
     cached = getattr(_wt, "_exa_client", None)
     if cached is not None:
@@ -61,7 +61,7 @@ def _get_exa_client() -> Any:
         )
 
     try:
-        from tools.lazy_deps import ensure as _lazy_ensure
+        from opencodon.tools.lazy_deps import ensure as _lazy_ensure
 
         _lazy_ensure("search.exa", prompt=False)
     except ImportError:
@@ -79,7 +79,7 @@ def _get_exa_client() -> Any:
 
 def _reset_client_for_tests() -> None:
     """Drop the cached Exa client so tests can re-instantiate cleanly."""
-    import tools.web_tools as _wt
+    import opencodon.tools.web_tools as _wt
 
     _wt._exa_client = None
 
@@ -120,7 +120,7 @@ class ExaWebSearchProvider(WebSearchProvider):
         missing API key and SDK install errors).
         """
         try:
-            from tools.interrupt import is_interrupted
+            from opencodon.tools.interrupt import is_interrupted
 
             if is_interrupted():
                 return {"success": False, "error": "Interrupted"}
@@ -162,7 +162,7 @@ class ExaWebSearchProvider(WebSearchProvider):
         results carry an ``error`` field rather than raising.
         """
         try:
-            from tools.interrupt import is_interrupted
+            from opencodon.tools.interrupt import is_interrupted
 
             if is_interrupted():
                 return [

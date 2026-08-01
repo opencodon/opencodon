@@ -135,7 +135,7 @@ async def test_pending_voice_interrupt_reuses_transcript_and_echo():
     )
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         return_value={"success": True, "transcript": "hello once", "provider": "mock"},
     ) as mock_transcribe:
         interrupt_text, interrupt_transcripts = await runner._transcribe_pending_audio_event_once(
@@ -179,7 +179,7 @@ async def test_monitor_to_drain_transcribes_and_echoes_pending_voice_once(
     monkeypatch.setenv("OPENCODON_TOOL_PROGRESS_MODE", "off")
     monkeypatch.setenv("OPENCODON_GATEWAY_NOTIFY_INTERVAL", "0")
     monkeypatch.setitem(sys.modules, "dotenv", types.SimpleNamespace(load_dotenv=lambda: None))
-    monkeypatch.setitem(sys.modules, "run_agent", types.SimpleNamespace(AIAgent=_PendingVoiceAgent))
+    monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=_PendingVoiceAgent))
 
     adapter = _PendingVoiceAdapter()
     runner = _run_agent_runner(adapter)
@@ -201,7 +201,7 @@ async def test_monitor_to_drain_transcribes_and_echoes_pending_voice_once(
         patch("gateway.run._opencodon_home", tmp_path),
         patch("gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "fake"}),
         patch(
-            "tools.transcription_tools.transcribe_audio",
+            "opencodon.tools.transcription_tools.transcribe_audio",
             return_value={"success": True, "transcript": "hello once", "provider": "mock"},
         ) as mock_transcribe,
     ):
@@ -246,9 +246,9 @@ async def test_busy_voice_interrupt_transcribes_before_pending_drain(monkeypatch
     monkeypatch.setenv("OPENCODON_GATEWAY_BUSY_ACK_ENABLED", "false")
 
     with (
-        patch("tools.approval.has_blocking_approval", return_value=False),
+        patch("opencodon.tools.approval.has_blocking_approval", return_value=False),
         patch(
-            "tools.transcription_tools.transcribe_audio",
+            "opencodon.tools.transcription_tools.transcribe_audio",
             return_value={"success": True, "transcript": "interrupt me", "provider": "mock"},
         ) as mock_transcribe,
     ):

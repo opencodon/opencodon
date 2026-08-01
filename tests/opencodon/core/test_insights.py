@@ -3,7 +3,7 @@
 import time
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 from opencodon.core.insights import (
     InsightsEngine,
     _estimate_cost,

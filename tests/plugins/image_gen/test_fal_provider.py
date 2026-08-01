@@ -2,7 +2,7 @@
 """Tests for the FAL.ai image generation plugin.
 
 The plugin is a thin registration adapter — actual FAL pipeline logic
-lives in ``tools.image_generation_tool`` and is exercised by
+lives in ``opencodon.tools.image_generation_tool`` and is exercised by
 ``tests/tools/test_image_generation.py``. These tests focus on:
 
 * the ``ImageGenProvider`` ABC surface (name, models, schema)
@@ -36,13 +36,13 @@ class TestFalImageGenProviderSurface:
 
     def test_default_model_matches_legacy(self):
         from plugins.image_gen.fal import FalImageGenProvider
-        from tools.image_generation_tool import DEFAULT_MODEL
+        from opencodon.tools.image_generation_tool import DEFAULT_MODEL
 
         assert FalImageGenProvider().default_model() == DEFAULT_MODEL
 
     def test_list_models_uses_legacy_catalog(self):
         from plugins.image_gen.fal import FalImageGenProvider
-        from tools.image_generation_tool import FAL_MODELS
+        from opencodon.tools.image_generation_tool import FAL_MODELS
 
         provider = FalImageGenProvider()
         models = provider.list_models()
@@ -66,21 +66,21 @@ class TestFalImageGenProviderSurface:
 
 class TestFalImageGenProviderAvailability:
     def test_is_available_when_legacy_check_passes(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         monkeypatch.setattr(image_tool, "check_fal_api_key", lambda: True)
         assert FalImageGenProvider().is_available() is True
 
     def test_is_available_false_when_legacy_check_fails(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         monkeypatch.setattr(image_tool, "check_fal_api_key", lambda: False)
         assert FalImageGenProvider().is_available() is False
 
     def test_is_available_handles_legacy_exception(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         def _boom():
@@ -101,7 +101,7 @@ class TestFalImageGenProviderGenerate:
         """Plugin must look up ``image_generate_tool`` at call time so
         ``monkeypatch.setattr(image_tool, "image_generate_tool", ...)``
         takes effect."""
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         captured = {}
@@ -134,7 +134,7 @@ class TestFalImageGenProviderGenerate:
         assert result["model"] == "fal-ai/flux-2/klein/9b"
 
     def test_generate_invalid_aspect_ratio_is_coerced(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         seen_aspect = {}
@@ -152,7 +152,7 @@ class TestFalImageGenProviderGenerate:
         assert seen_aspect["v"] == "landscape"
 
     def test_generate_passthrough_drops_none_kwargs(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         seen = {}
@@ -180,7 +180,7 @@ class TestFalImageGenProviderGenerate:
         assert seen.get("num_images") == 2
 
     def test_generate_catches_exception_from_legacy(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         def boom(*args, **kwargs):
@@ -195,7 +195,7 @@ class TestFalImageGenProviderGenerate:
         assert result["provider"] == "fal"
 
     def test_generate_invalid_json_response(self, monkeypatch):
-        import tools.image_generation_tool as image_tool
+        import opencodon.tools.image_generation_tool as image_tool
         from plugins.image_gen.fal import FalImageGenProvider
 
         monkeypatch.setattr(image_tool, "image_generate_tool", lambda **kw: "not-json")

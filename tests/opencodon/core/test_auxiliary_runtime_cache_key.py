@@ -128,7 +128,7 @@ def test_runtime_context_token_restores_previous_value_after_turn():
 
 def test_aiagent_wrapper_resets_runtime_context_after_turn():
     """Every production run_conversation exit restores the caller's Context."""
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     agent = SimpleNamespace(
         _conversation_root_id=lambda: "root-session",

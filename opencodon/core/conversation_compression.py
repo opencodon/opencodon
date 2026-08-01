@@ -170,7 +170,7 @@ def _cached_prompt_reflects_builtin_memory(agent: Any, cached_prompt: str) -> bo
     if snapshot is None:
         return False
     try:
-        from tools.memory_tool import MEMORY_BLOCK_HEADERS
+        from opencodon.tools.memory_tool import MEMORY_BLOCK_HEADERS
     except Exception:
         return False
     for target, block in zip(("memory", "user"), snapshot):
@@ -198,7 +198,7 @@ def _lock_api_is_absent_on_session_db(lock_db: Any) -> bool:
     avoids invoking a present-but-broken descriptor.
     """
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         missing = object()
         return (
@@ -1841,7 +1841,7 @@ def compress_context(
         # read content is summarised away — if the model re-reads the same
         # file it needs the full content, not a "file unchanged" stub.
         try:
-            from tools.file_tools import reset_file_dedup
+            from opencodon.tools.file_tools import reset_file_dedup
             reset_file_dedup(task_id)
         except Exception:
             pass
@@ -1901,7 +1901,7 @@ def try_shrink_image_parts_in_messages(
         return False
 
     try:
-        from tools.vision_tools import _resize_image_for_vision
+        from opencodon.tools.vision_tools import _resize_image_for_vision
     except Exception as exc:
         logger.warning("image-shrink recovery: vision_tools unavailable — %s", exc)
         return False

@@ -26,7 +26,7 @@ from opencodon.config import (
 from opencodon.common.colors import Colors, color
 from opencodon_constants import display_opencodon_home
 from opencodon_cli.mcp_security import validate_mcp_server_entry
-from tools.mcp_tool import _ENV_VAR_PATTERN, _env_ref_name
+from opencodon.tools.mcp_tool import _ENV_VAR_PATTERN, _env_ref_name
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +262,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     auth-requiring servers (e.g. n8n) returned 401 — while runtime tool
     loading worked because it interpolates. (#37792)
     """
-    from tools.mcp_tool import _interpolate_env_vars
+    from opencodon.tools.mcp_tool import _interpolate_env_vars
 
     from opencodon.core.secret_scope import current_secret_scope
 
@@ -291,7 +291,7 @@ def _probe_single_server(
     if issues:
         raise ValueError("; ".join(issues))
 
-    from tools.mcp_tool import (
+    from opencodon.tools.mcp_tool import (
         _ensure_mcp_loop,
         _run_on_mcp_loop,
         _connect_server,
@@ -386,7 +386,7 @@ def _oauth_tokens_present(name: str) -> bool:
     initialize/tools-list without auth (so no token was ever acquired).
     """
     try:
-        from tools.mcp_oauth import OpencodonTokenStorage
+        from opencodon.tools.mcp_oauth import OpencodonTokenStorage
         return OpencodonTokenStorage(name).has_cached_tokens()
     except Exception as exc:  # pragma: no cover — defensive
         logger.debug("Could not check OAuth tokens for '%s': %s", name, exc)
@@ -489,7 +489,7 @@ def cmd_mcp_add(args):
         _info(f"Starting OAuth flow for '{name}'...")
         oauth_ok = False
         try:
-            from tools.mcp_oauth_manager import get_manager
+            from opencodon.tools.mcp_oauth_manager import get_manager
             oauth_auth = get_manager().get_or_build_provider(name, url, None)
             if oauth_auth:
                 server_config["auth"] = "oauth"
@@ -640,7 +640,7 @@ def cmd_mcp_remove(args):
     # any provider instance cached in the current process (e.g. from an
     # earlier `opencodon mcp test` in the same session) is evicted too.
     try:
-        from tools.mcp_oauth_manager import get_manager
+        from opencodon.tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
         _success("Cleaned up OAuth tokens")
     except Exception:
@@ -802,7 +802,7 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
     # Wipe both disk and in-memory cache so the next probe forces a fresh
     # OAuth flow.
     try:
-        from tools.mcp_oauth_manager import get_manager
+        from opencodon.tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
     except Exception as exc:
         _warning(f"Could not clear existing OAuth state: {exc}")

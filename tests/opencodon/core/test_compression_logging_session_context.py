@@ -18,13 +18,13 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import opencodon_logging
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 def _build_agent_with_db(db: SessionDB, session_id: str):
     """Mirror tests/agent/test_compression_concurrent_fork.py's harness."""
     with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",

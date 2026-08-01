@@ -7,7 +7,7 @@ report ``active_at_start=0`` and immediately kill tool subprocesses while a
 cron job's terminal command was still running.
 
 These tests cover the gateway side of the fix:
-  - _active_cron_job_count() reads cron.scheduler's in-flight job set
+  - _active_cron_job_count() reads opencodon.cron.scheduler's in-flight job set
   - _drain_active_agents() waits for cron work the same way it already
     waits for chat sessions
   - the final tool-subprocess kill marks any still-in-flight cron job
@@ -27,7 +27,7 @@ from tests.gateway.restart_test_helpers import make_restart_runner
 
 @pytest.fixture(autouse=True)
 def _reset_cron_running_set():
-    import cron.scheduler as sched
+    import opencodon.cron.scheduler as sched
 
     sched._running_job_ids.clear()
     sched._interrupted_job_ids.clear()
@@ -49,7 +49,7 @@ class TestActiveCronJobCount:
         assert runner._active_cron_job_count() == 0
 
     def test_reflects_cron_scheduler_state(self):
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         runner, _adapter = make_restart_runner()
         sched._running_job_ids.add("job-1")
@@ -62,7 +62,7 @@ class TestActiveCronJobCount:
         runner, _adapter = make_restart_runner()
 
         with patch(
-            "cron.scheduler.get_running_job_ids", side_effect=ImportError("boom")
+            "opencodon.cron.scheduler.get_running_job_ids", side_effect=ImportError("boom")
         ):
             assert runner._active_cron_job_count() == 0
 
@@ -81,7 +81,7 @@ class TestDrainWaitsForCronWork:
         """Before this fix, a cron-only workload made active_at_start=0
         and the drain returned instantly -- this is the exact repro from
         the issue (a `sleep 1800` cron job in flight during /update)."""
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         runner, _adapter = make_restart_runner()
         sched._running_job_ids.add("job-1")
@@ -101,7 +101,7 @@ class TestDrainWaitsForCronWork:
 
     @pytest.mark.asyncio
     async def test_drain_times_out_if_cron_job_outlives_the_window(self):
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         runner, _adapter = make_restart_runner()
         sched._running_job_ids.add("job-1")  # never removed within the window
@@ -131,10 +131,10 @@ class TestDrainWaitsForCronWork:
 class TestKillToolSubprocessesMarksCronInterrupted:
     @pytest.mark.asyncio
     async def test_in_flight_cron_job_marked_interrupted_on_forced_kill(self, monkeypatch):
-        import cron.scheduler as sched
-        import tools.process_registry as _pr
-        import tools.terminal_tool as _tt
-        import tools.browser_tool as _bt
+        import opencodon.cron.scheduler as sched
+        import opencodon.tools.process_registry as _pr
+        import opencodon.tools.terminal_tool as _tt
+        import opencodon.tools.browser_tool as _bt
 
         runner, adapter = make_restart_runner()
         runner._restart_drain_timeout = 0.01  # force the timeout path
@@ -157,7 +157,7 @@ class TestKillToolSubprocessesMarksCronInterrupted:
         monkeypatch.setattr(sched, "mark_running_jobs_interrupted", _spy)
 
         with patch("gateway.status.remove_pid_file"), patch("gateway.status.write_runtime_status"), \
-             patch("cron.scheduler.mark_job_run"):
+             patch("opencodon.cron.scheduler.mark_job_run"):
             await runner.stop()
 
         assert marked_calls, "mark_running_jobs_interrupted was never called during shutdown"
@@ -167,9 +167,9 @@ class TestKillToolSubprocessesMarksCronInterrupted:
     async def test_no_cron_jobs_running_is_a_silent_no_op(self, monkeypatch):
         """Graceful shutdown with nothing in flight must not spuriously
         mark or log anything cron-related."""
-        import tools.process_registry as _pr
-        import tools.terminal_tool as _tt
-        import tools.browser_tool as _bt
+        import opencodon.tools.process_registry as _pr
+        import opencodon.tools.terminal_tool as _tt
+        import opencodon.tools.browser_tool as _bt
 
         runner, adapter = make_restart_runner()
         adapter.disconnect = _make_async_noop()
@@ -179,7 +179,7 @@ class TestKillToolSubprocessesMarksCronInterrupted:
         monkeypatch.setattr(_bt, "cleanup_all_browsers", lambda: None)
 
         with patch("gateway.status.remove_pid_file"), patch("gateway.status.write_runtime_status"), \
-             patch("cron.scheduler.mark_job_run") as mock_mark:
+             patch("opencodon.cron.scheduler.mark_job_run") as mock_mark:
             await runner.stop()
 
         mock_mark.assert_not_called()

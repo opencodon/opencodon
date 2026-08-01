@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 
 from opencodon.core.tool_executor import _ensure_file_checkpoint
-from tools.checkpoint_manager import CheckpointManager
+from opencodon.tools.checkpoint_manager import CheckpointManager
 
 
 def test_relative_file_checkpoint_uses_task_workspace(tmp_path, monkeypatch):
@@ -22,7 +22,7 @@ def test_relative_file_checkpoint_uses_task_workspace(tmp_path, monkeypatch):
     monkeypatch.chdir(process_cwd)
     monkeypatch.setenv("TERMINAL_CWD", str(workspace_cwd))
     monkeypatch.setattr(
-        "tools.checkpoint_manager.CHECKPOINT_BASE",
+        "opencodon.tools.checkpoint_manager.CHECKPOINT_BASE",
         tmp_path / "checkpoints",
     )
 

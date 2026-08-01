@@ -175,7 +175,7 @@ class TestRunCleanupWiring(unittest.TestCase):
                 patch.object(
                     cli_mod, "_cleanup_all_browsers", patches["_cleanup_all_browsers"]
                 ),
-                patch("tools.mcp_tool.shutdown_mcp_servers", lambda *a, **k: None),
+                patch("opencodon.tools.mcp_tool.shutdown_mcp_servers", lambda *a, **k: None),
                 patch(
                     "opencodon.core.auxiliary_client.shutdown_cached_clients",
                     lambda *a, **k: None,

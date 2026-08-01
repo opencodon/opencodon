@@ -373,7 +373,7 @@ def test_config_set_requires_confirmation_then_writes(_isolate_opencodon_home):
 
 
 def test_sessions_list_and_stats_use_isolated_session_store(_isolate_opencodon_home):
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB()
     try:
@@ -394,7 +394,7 @@ def test_sessions_list_and_stats_use_isolated_session_store(_isolate_opencodon_h
 
 
 def test_cron_pause_resume_and_run_require_confirmation(_isolate_opencodon_home):
-    from cron.jobs import create_job, get_job
+    from opencodon.cron.jobs import create_job, get_job
 
     job = create_job(prompt="say hello", schedule="every 1h", name="alpha")
     engine = OpencodonConsoleEngine()

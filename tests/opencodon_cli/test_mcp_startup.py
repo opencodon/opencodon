@@ -78,12 +78,12 @@ def test_prepare_agent_startup_backgrounds_blocking_mcp_for_chat(monkeypatch):
     # would otherwise blow the polling deadline on a loaded CI runner.
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_oauth",
+        "opencodon.tools.mcp_oauth",
         types.SimpleNamespace(suppress_interactive_oauth=lambda: nullcontext()),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(discover_mcp_tools=_blocking_discover),
     )
 
@@ -124,14 +124,14 @@ def test_background_mcp_discovery_suppresses_interactive_oauth(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_oauth",
+        "opencodon.tools.mcp_oauth",
         types.SimpleNamespace(
             suppress_interactive_oauth=lambda: SuppressInteractiveOAuth(),
         ),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(discover_mcp_tools=_discover),
     )
 
@@ -166,7 +166,7 @@ def test_prepare_agent_startup_skips_mcp_bootstrap_for_tui_chat(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(
             discover_mcp_tools=lambda: calls.__setitem__("mcp", calls["mcp"] + 1)
         ),
@@ -185,7 +185,7 @@ def test_cli_get_tool_definitions_briefly_waits_for_fast_mcp_thread(monkeypatch)
 
     monkeypatch.setitem(
         sys.modules,
-        "model_tools",
+        "opencodon.tools.model_tools",
         types.SimpleNamespace(get_tool_definitions=lambda *_a, **_k: ["ok"]),
     )
 
@@ -241,12 +241,12 @@ def _install_retry_stubs(monkeypatch, *, connected: bool, calls: dict):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_oauth",
+        "opencodon.tools.mcp_oauth",
         types.SimpleNamespace(suppress_interactive_oauth=lambda: nullcontext()),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(
             discover_mcp_tools=lambda: calls.__setitem__("mcp", calls["mcp"] + 1),
             get_mcp_status=lambda: [{"connected": connected}],

@@ -298,7 +298,7 @@ class TestExtractCacheBustingConfig:
 
     def test_extract_includes_live_tool_registry_generation(self, monkeypatch):
         from gateway.run import GatewayRunner
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         monkeypatch.setattr(registry, "_generation", 12345)
 
@@ -354,7 +354,7 @@ class TestAgentCacheLifecycle:
 
     def test_cache_hit_returns_same_agent(self):
         """Second message with same config reuses the cached agent instance."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         runner = _make_runner()
         session_key = "telegram:12345"
@@ -381,7 +381,7 @@ class TestAgentCacheLifecycle:
 
     def test_cache_miss_on_model_change(self):
         """Model change produces different signature → cache miss."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         runner = _make_runner()
         session_key = "telegram:12345"
@@ -408,7 +408,7 @@ class TestAgentCacheLifecycle:
 
     def test_evict_on_session_reset(self):
         """_evict_cached_agent removes the entry."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         runner = _make_runner()
         session_key = "telegram:12345"
@@ -442,7 +442,7 @@ class TestAgentCacheLifecycle:
 
     def test_reasoning_config_updates_in_place(self):
         """Reasoning config can be set on a cached agent without eviction."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -465,7 +465,7 @@ class TestAgentCacheLifecycle:
 
     def test_system_prompt_frozen_across_cache_reuse(self):
         """The cached agent's system prompt stays identical across turns."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -484,7 +484,7 @@ class TestAgentCacheLifecycle:
 
     def test_callbacks_update_without_cache_eviction(self):
         """Per-message callbacks can be set on cached agent."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -1137,7 +1137,7 @@ class TestAgentCacheSpilloverLive:
 
     def _real_agent(self):
         """A genuine AIAgent; no API calls are made during these tests."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         return AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
             base_url="https://openrouter.ai/api/v1", provider="openrouter",
@@ -1284,7 +1284,7 @@ class TestAgentCacheIdleResume:
 
     def test_release_clients_does_not_touch_process_registry(self, monkeypatch):
         """release_clients must not call process_registry.kill_all for task_id."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -1295,7 +1295,7 @@ class TestAgentCacheIdleResume:
         )
 
         # Spy on process_registry.kill_all — it MUST NOT be called.
-        from tools import process_registry as _pr
+        from opencodon.tools import process_registry as _pr
         kill_all_calls: list = []
         original_kill_all = _pr.process_registry.kill_all
         _pr.process_registry.kill_all = lambda **kw: kill_all_calls.append(kw)
@@ -1315,9 +1315,9 @@ class TestAgentCacheIdleResume:
 
     def test_release_clients_does_not_touch_terminal_or_browser(self, monkeypatch):
         """release_clients must not call cleanup_vm or cleanup_browser."""
-        from run_agent import AIAgent
-        from tools import terminal_tool as _tt
-        from tools import browser_tool as _bt
+        from opencodon.core.run_agent import AIAgent
+        from opencodon.tools import terminal_tool as _tt
+        from opencodon.tools import browser_tool as _bt
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -1354,7 +1354,7 @@ class TestAgentCacheIdleResume:
 
     def test_release_clients_closes_llm_client(self):
         """release_clients IS expected to close the OpenAI/httpx client."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             model="anthropic/claude-sonnet-4", api_key="test",
@@ -1377,8 +1377,8 @@ class TestAgentCacheIdleResume:
         (full teardown — session is done), cache-eviction path uses
         release_clients() (soft — session may resume).
         """
-        from run_agent import AIAgent
-        import run_agent as _ra
+        from opencodon.core.run_agent import AIAgent
+        from opencodon.core import run_agent as _ra
 
         # Agent A: evicted from cache (soft) — terminal survives.
         # Agent B: session expired (hard) — terminal torn down.
@@ -1423,7 +1423,7 @@ class TestAgentCacheIdleResume:
         that persisted across eviction is reachable via the new agent.
         """
         from gateway import run as gw_run
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         monkeypatch.setattr(gw_run, "_AGENT_CACHE_IDLE_TTL_SECS", 0.01)
         runner = self._runner()
@@ -1719,7 +1719,7 @@ class TestAgentCacheMessageCountRebaseline:
     """
 
     def _runner_with_db(self, db):
-        from opencodon_state import AsyncSessionDB
+        from opencodon.state import AsyncSessionDB
 
         runner = _make_runner()
         # The gateway holds the async facade; the production refresh awaits it.
@@ -1757,7 +1757,7 @@ class TestAgentCacheMessageCountRebaseline:
         writes), turn appends its own rows, then the post-turn re-baseline
         runs — so the NEXT turn's guard sees no external change and reuses.
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")
@@ -1793,7 +1793,7 @@ class TestAgentCacheMessageCountRebaseline:
         """After the re-baseline, a DIFFERENT process appending to the same
         session must still flip the guard to rebuild (the #45966 fix holds).
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")
@@ -1823,7 +1823,7 @@ class TestAgentCacheMessageCountRebaseline:
     async def test_rebaseline_is_fail_safe_and_skips_legacy_and_pending(self, tmp_path):
         """Re-baseline must never crash and must leave legacy 2-tuples and
         pending-sentinel entries untouched."""
-        from opencodon_state import AsyncSessionDB, SessionDB
+        from opencodon.state import AsyncSessionDB, SessionDB
         from gateway.run import _AGENT_PENDING_SENTINEL
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
@@ -1886,7 +1886,7 @@ class TestAgentCacheMessageCountRebaseline:
         cache-hit guard, which reads ``get_session(session_id)`` with the same
         ``session_id`` the recursive ``_run_agent`` call is given.
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")

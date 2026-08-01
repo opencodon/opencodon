@@ -15,7 +15,7 @@ def fireworks_profile():
     """Resolve the registered Fireworks profile through the real discovery path."""
     # Importing model_tools triggers plugin discovery, registering the profile.
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("fireworks")
     assert profile is not None, "fireworks provider profile must be registered"
@@ -48,7 +48,7 @@ class TestFireworksHeaders:
 class TestFireworksAliases:
     @pytest.mark.parametrize("alias", ["fireworks-ai", "fw"])
     def test_alias_resolves_via_registry(self, fireworks_profile, alias):
-        import providers
+        from opencodon import providers
 
         resolved = providers.get_provider_profile(alias)
         assert resolved is not None

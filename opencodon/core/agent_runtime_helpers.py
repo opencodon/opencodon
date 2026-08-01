@@ -54,7 +54,7 @@ _MAX_AUTH_REFRESH_ATTEMPTS = 2
 
 def _ra():
     """Lazy ``run_agent`` reference for test-patch routing."""
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -2420,7 +2420,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
     if block_message is not None:
         result = json.dumps({"error": block_message}, ensure_ascii=False)
         try:
-            from model_tools import _emit_post_tool_call_hook
+            from opencodon.tools.model_tools import _emit_post_tool_call_hook
             _emit_post_tool_call_hook(
                 function_name=function_name,
                 function_args=function_args,
@@ -2444,7 +2444,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
     def _finish_agent_tool(result: Any, observed_args: Optional[dict] = None) -> Any:
         hook_args = observed_args if isinstance(observed_args, dict) else function_args
         try:
-            from model_tools import _emit_post_tool_call_hook
+            from opencodon.tools.model_tools import _emit_post_tool_call_hook
             _emit_post_tool_call_hook(
                 function_name=function_name,
                 function_args=hook_args,
@@ -2463,7 +2463,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
 
     if function_name == "todo":
         def _execute(next_args: dict) -> Any:
-            from tools.todo_tool import todo_tool as _todo_tool
+            from opencodon.tools.todo_tool import todo_tool as _todo_tool
             return _finish_agent_tool(
                 _todo_tool(
                     todos=next_args.get("todos"),
@@ -2476,9 +2476,9 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
         def _execute(next_args: dict) -> Any:
             session_db = agent._get_session_db_for_recall()
             if not session_db:
-                from opencodon_state import format_session_db_unavailable
+                from opencodon.state import format_session_db_unavailable
                 return _finish_agent_tool(json.dumps({"success": False, "error": format_session_db_unavailable()}), next_args)
-            from tools.session_search_tool import session_search as _session_search
+            from opencodon.tools.session_search_tool import session_search as _session_search
             return _finish_agent_tool(
                 _session_search(
                     query=next_args.get("query", ""),
@@ -2497,7 +2497,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
         def _execute(next_args: dict) -> Any:
             target = next_args.get("target", "memory")
             operations = next_args.get("operations")
-            from tools.memory_tool import memory_tool as _memory_tool
+            from opencodon.tools.memory_tool import memory_tool as _memory_tool
             result = _memory_tool(
                 action=next_args.get("action"),
                 target=target,
@@ -2524,7 +2524,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
             return _finish_agent_tool(agent._memory_manager.handle_tool_call(function_name, next_args), next_args)
     elif function_name == "clarify":
         def _execute(next_args: dict) -> Any:
-            from tools.clarify_tool import clarify_tool as _clarify_tool
+            from opencodon.tools.clarify_tool import clarify_tool as _clarify_tool
             return _finish_agent_tool(
                 _clarify_tool(
                     question=next_args.get("question", ""),
@@ -2535,7 +2535,7 @@ def invoke_tool(agent, function_name: str, function_args: dict, effective_task_i
             )
     elif function_name == "read_terminal":
         def _execute(next_args: dict) -> Any:
-            from tools.read_terminal_tool import read_terminal_tool as _read_terminal_tool
+            from opencodon.tools.read_terminal_tool import read_terminal_tool as _read_terminal_tool
             return _finish_agent_tool(
                 _read_terminal_tool(
                     start_line=next_args.get("start_line"),

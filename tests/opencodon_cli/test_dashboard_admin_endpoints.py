@@ -15,7 +15,7 @@ def _client():
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
-    import opencodon_state
+    from opencodon import state as opencodon_state
     from opencodon_constants import get_opencodon_home
     from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -678,7 +678,7 @@ class TestSessionManagementEndpoints:
     @pytest.fixture(autouse=True)
     def _setup(self, _isolate_opencodon_home):
         self.client, _ = _client()
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         db.create_session(session_id="sess-x", source="cli")
@@ -714,7 +714,7 @@ class TestSessionManagementEndpoints:
         # ages (mirrors the CLI: any filter disables the implicit 90-day
         # default). dry_run so nothing is deleted; the seeded session is
         # recent + ended, so it would be invisible under a 90-day cutoff.
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         db.create_session(session_id="sess-recent-ended", source="cli")
@@ -819,7 +819,7 @@ class TestSkillsHubSourcesEndpoint:
             return srcs
 
         monkeypatch.setattr(
-            "tools.skills_hub.create_source_router", _fake_router
+            "opencodon.tools.skills_hub.create_source_router", _fake_router
         )
         r = self.client.get("/api/skills/hub/sources")
         assert r.status_code == 200
@@ -846,7 +846,7 @@ class TestSkillsHubPreviewEndpoint:
 
     def test_preview_returns_skill_md_text(self, monkeypatch):
         monkeypatch.setattr(
-            "tools.skills_hub.create_source_router", lambda: []
+            "opencodon.tools.skills_hub.create_source_router", lambda: []
         )
         bundle = _FakeBundle("github/owner/repo/x")
         meta = _FakeMeta("github/owner/repo/x")
@@ -867,7 +867,7 @@ class TestSkillsHubPreviewEndpoint:
 
     def test_preview_404_when_unresolved(self, monkeypatch):
         monkeypatch.setattr(
-            "tools.skills_hub.create_source_router", lambda: []
+            "opencodon.tools.skills_hub.create_source_router", lambda: []
         )
         monkeypatch.setattr(
             "opencodon_cli.skills_hub._resolve_source_meta_and_bundle",
@@ -887,10 +887,10 @@ class TestSkillsHubScanEndpoint:
         assert r.status_code == 400
 
     def test_scan_returns_verdict_and_policy(self, monkeypatch):
-        from tools.skills_guard import ScanResult, Finding
+        from opencodon.tools.skills_guard import ScanResult, Finding
 
         monkeypatch.setattr(
-            "tools.skills_hub.create_source_router", lambda: []
+            "opencodon.tools.skills_hub.create_source_router", lambda: []
         )
         bundle = _FakeBundle("github/owner/repo/x", trust_level="community")
         monkeypatch.setattr(
@@ -901,7 +901,7 @@ class TestSkillsHubScanEndpoint:
         from pathlib import Path
 
         monkeypatch.setattr(
-            "tools.skills_hub.quarantine_bundle", lambda b: Path("/tmp/_fake_q")
+            "opencodon.tools.skills_hub.quarantine_bundle", lambda b: Path("/tmp/_fake_q")
         )
 
         fake_result = ScanResult(
@@ -923,7 +923,7 @@ class TestSkillsHubScanEndpoint:
             summary="s",
         )
         monkeypatch.setattr(
-            "tools.skills_guard.scan_skill",
+            "opencodon.tools.skills_guard.scan_skill",
             lambda path, source="community": fake_result,
         )
         # Avoid touching the filesystem during cleanup.
@@ -944,7 +944,7 @@ class TestSkillsHubScanEndpoint:
 
     def test_scan_404_when_no_bundle(self, monkeypatch):
         monkeypatch.setattr(
-            "tools.skills_hub.create_source_router", lambda: []
+            "opencodon.tools.skills_hub.create_source_router", lambda: []
         )
         monkeypatch.setattr(
             "opencodon_cli.skills_hub._resolve_source_meta_and_bundle",

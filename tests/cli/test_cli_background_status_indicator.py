@@ -105,7 +105,7 @@ def test_fragments_omit_bg_segment_when_idle():
 
 
 # ── Background terminal-process indicator (⚙ N) ───────────────────────────
-# Source of truth is tools.process_registry.process_registry._running (a dict
+# Source of truth is opencodon.tools.process_registry.process_registry._running (a dict
 # of currently-running shell processes spawned by terminal(background=true)).
 # Distinct from /background tasks above: ▶ counts agent threads, ⚙ counts
 # shell processes. Both can be active simultaneously.
@@ -122,7 +122,7 @@ class _FakeRunningRegistry:
 
 
 def _patch_process_registry(monkeypatch, count: int) -> None:
-    import tools.process_registry as pr_mod
+    import opencodon.tools.process_registry as pr_mod
     monkeypatch.setattr(pr_mod, "process_registry", _FakeRunningRegistry(count))
 
 
@@ -143,7 +143,7 @@ def test_snapshot_counts_live_background_processes(monkeypatch):
 def test_snapshot_safe_when_process_registry_raises(monkeypatch):
     """If count_running() raises the snapshot stays at 0; no propagate."""
     cli_obj = _make_cli()
-    import tools.process_registry as pr_mod
+    import opencodon.tools.process_registry as pr_mod
 
     class _BoomRegistry:
         def count_running(self):
@@ -192,14 +192,14 @@ def test_indicators_independent_agents_and_processes(monkeypatch):
 
 
 # ── Background/async subagent indicator (⛓ N) ─────────────────────────────
-# Source of truth is tools.async_delegation.active_count() — the count of
+# Source of truth is opencodon.tools.async_delegation.active_count() — the count of
 # delegate_task delegations (batch + background single) still in the
 # "running" state. Distinct from ▶ (/background agent threads) and ⚙ (shell
 # processes); all three can be active at once.
 
 
 def _patch_async_active(monkeypatch, count: int) -> None:
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
     monkeypatch.setattr(ad_mod, "active_count", lambda: count)
 
 
@@ -220,7 +220,7 @@ def test_snapshot_counts_live_background_subagents(monkeypatch):
 def test_snapshot_safe_when_async_active_count_raises(monkeypatch):
     """If active_count() raises the snapshot stays at 0; no propagate."""
     cli_obj = _make_cli()
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
 
     def _boom():
         raise RuntimeError("boom")

@@ -24,7 +24,7 @@ def kimi_profile():
     assertions below collapse.
     """
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("kimi-coding")
     assert profile is not None, "kimi-coding provider profile must be registered"
@@ -108,7 +108,7 @@ class TestKimiModelDiscovery:
         """Malformed user URLs must fall through safely, never authorize K3."""
         from unittest.mock import patch
 
-        from providers.base import ProviderProfile
+        from opencodon.providers.base import ProviderProfile
 
         with patch.object(
             ProviderProfile,

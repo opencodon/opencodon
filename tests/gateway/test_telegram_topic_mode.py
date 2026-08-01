@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import MessageEvent
 from gateway.session import SessionEntry, SessionSource, build_session_key
@@ -125,7 +125,7 @@ def _make_runner(session_db=None):
     runner._pending_model_notes = {}
     # Gateway holds the async facade; the slash handlers await it.
     if session_db is not None:
-        from opencodon_state import AsyncSessionDB
+        from opencodon.state import AsyncSessionDB
         session_db = AsyncSessionDB(session_db)
     runner._session_db = session_db
     runner._reasoning_config = None
@@ -1444,7 +1444,7 @@ def test_session_split_restores_source_thread_id_from_binding(tmp_path):
     )
 
     runner = object.__new__(GatewayRunner)
-    from opencodon_state import AsyncSessionDB
+    from opencodon.state import AsyncSessionDB
     runner._session_db = AsyncSessionDB(db)
 
     # Build a source that looks like it came from a synthetic/recovered event:

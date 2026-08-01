@@ -243,10 +243,10 @@ class TestVisionModelOverride:
     @pytest.mark.asyncio
     async def test_env_var_overrides_default(self, monkeypatch):
         monkeypatch.setenv("AUXILIARY_VISION_MODEL", "openai/gpt-4o")
-        from tools.vision_tools import _handle_vision_analyze
+        from opencodon.tools.vision_tools import _handle_vision_analyze
         with (
-            patch("tools.vision_tools.vision_analyze_tool", new_callable=AsyncMock) as mock_tool,
-            patch("tools.vision_tools._should_use_native_vision_fast_path", return_value=False),
+            patch("opencodon.tools.vision_tools.vision_analyze_tool", new_callable=AsyncMock) as mock_tool,
+            patch("opencodon.tools.vision_tools._should_use_native_vision_fast_path", return_value=False),
         ):
             mock_tool.return_value = '{"success": true}'
             await _handle_vision_analyze({"image_url": "http://test.jpg", "question": "test"})
@@ -257,10 +257,10 @@ class TestVisionModelOverride:
     @pytest.mark.asyncio
     async def test_default_model_when_no_override(self, monkeypatch):
         monkeypatch.delenv("AUXILIARY_VISION_MODEL", raising=False)
-        from tools.vision_tools import _handle_vision_analyze
+        from opencodon.tools.vision_tools import _handle_vision_analyze
         with (
-            patch("tools.vision_tools.vision_analyze_tool", new_callable=AsyncMock) as mock_tool,
-            patch("tools.vision_tools._should_use_native_vision_fast_path", return_value=False),
+            patch("opencodon.tools.vision_tools.vision_analyze_tool", new_callable=AsyncMock) as mock_tool,
+            patch("opencodon.tools.vision_tools._should_use_native_vision_fast_path", return_value=False),
         ):
             mock_tool.return_value = '{"success": true}'
             await _handle_vision_analyze({"image_url": "http://test.jpg", "question": "test"})

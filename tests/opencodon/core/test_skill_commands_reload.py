@@ -50,7 +50,7 @@ def opencodon_home(monkeypatch):
 
     # Import lazily (inside fixture) so the modules are already resident,
     # then redirect their captured paths at the new temp dir.
-    import tools.skills_tool as _st
+    import opencodon.tools.skills_tool as _st
     import opencodon.core.skill_commands as _sc
 
     monkeypatch.setattr(_st, "OPENCODON_HOME", home, raising=False)

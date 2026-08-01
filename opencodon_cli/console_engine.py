@@ -20,7 +20,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable, Iterable, Literal, NoReturn, Sequence
 
-from tools.ansi_strip import strip_ansi as _strip_ansi
+from opencodon.tools.ansi_strip import strip_ansi as _strip_ansi
 
 
 ConsoleStatus = Literal["ok", "error", "confirm_required", "exit", "clear"]
@@ -1213,7 +1213,7 @@ def _sessions_list(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if ns.limit < 1 or ns.limit > 200:
         raise ConsoleCommandError("sessions list --limit must be between 1 and 200")
 
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB()
     try:
@@ -1229,7 +1229,7 @@ def _sessions_list(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
 
 def _sessions_stats(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions stats")
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB()
     try:
@@ -1300,7 +1300,7 @@ def _sessions_export(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     ns = parser.parse_args(args)
 
     def _run() -> None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1337,7 +1337,7 @@ def _sessions_rename(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     ns = parser.parse_args(args)
 
     def _run() -> None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1358,7 +1358,7 @@ def _sessions_optimize(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions optimize")
 
     def _run() -> None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         try:
@@ -1377,7 +1377,7 @@ def _sessions_repair(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     ns = parser.parse_args(args)
 
     def _run() -> None:
-        from opencodon_state import DEFAULT_DB_PATH, _db_opens_cleanly, repair_state_db_schema
+        from opencodon.state import DEFAULT_DB_PATH, _db_opens_cleanly, repair_state_db_schema
 
         db_path = DEFAULT_DB_PATH
         if not db_path.exists():
@@ -1433,7 +1433,7 @@ def _cron_status(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
 def _cron_pause(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron pause <job>")
-    from cron.jobs import AmbiguousJobReference, pause_job
+    from opencodon.cron.jobs import AmbiguousJobReference, pause_job
 
     try:
         job = pause_job(args[0], reason="paused from opencodon console")
@@ -1447,7 +1447,7 @@ def _cron_pause(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
 def _cron_resume(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron resume <job>")
-    from cron.jobs import AmbiguousJobReference, resume_job
+    from opencodon.cron.jobs import AmbiguousJobReference, resume_job
 
     try:
         job = resume_job(args[0])
@@ -1461,7 +1461,7 @@ def _cron_resume(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
 def _cron_run(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron run <job>")
-    from cron.jobs import AmbiguousJobReference, trigger_job
+    from opencodon.cron.jobs import AmbiguousJobReference, trigger_job
 
     try:
         job = trigger_job(args[0])

@@ -471,7 +471,7 @@ class TestRequireAzureIdentityMissing:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Simulate lazy installs disabled.
-        from tools.lazy_deps import FeatureUnavailable
+        from opencodon.tools.lazy_deps import FeatureUnavailable
 
         def _fake_ensure(*args, **kwargs):
             raise FeatureUnavailable(
@@ -482,7 +482,7 @@ class TestRequireAzureIdentityMissing:
 
         # The adapter calls ``ensure`` from ``tools.lazy_deps``; intercept
         # it by patching the actual symbol path.
-        monkeypatch.setattr("tools.lazy_deps.ensure", _fake_ensure)
+        monkeypatch.setattr("opencodon.tools.lazy_deps.ensure", _fake_ensure)
 
         with pytest.raises(ImportError) as exc_info:
             _adapter._require_azure_identity()

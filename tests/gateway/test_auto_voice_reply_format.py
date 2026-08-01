@@ -34,7 +34,7 @@ class TestAutoVoiceReplyFormat:
                 "voice_compatible": True,
             })
 
-        with patch("tools.tts_tool.text_to_speech_tool", side_effect=fake_tts):
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", side_effect=fake_tts):
             await runner._send_voice_reply(event, "hello from auto tts")
 
         assert requested_paths
@@ -63,7 +63,7 @@ class TestAutoVoiceReplyFormat:
                 "voice_compatible": False,
             })
 
-        with patch("tools.tts_tool.text_to_speech_tool", side_effect=fake_tts):
+        with patch("opencodon.tools.tts_tool.text_to_speech_tool", side_effect=fake_tts):
             await runner._send_voice_reply(event, "hello from auto tts")
 
         assert requested_paths

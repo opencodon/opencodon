@@ -140,7 +140,7 @@ class TestStatelessChannelForcesSyncDelegation:
     def test_background_delegation_runs_inline_when_channel_is_stateless(
         self, monkeypatch
     ):
-        import tools.delegate_tool as dt
+        import opencodon.tools.delegate_tool as dt
         from gateway.session_context import declare_stateless_channel
 
         class _Parent:
@@ -169,7 +169,7 @@ class TestStatelessChannelForcesSyncDelegation:
         monkeypatch.setattr(dt, "_run_single_child", _child)
         monkeypatch.setattr(dt, "_resolve_delegation_credentials", lambda *a, **k: creds)
         monkeypatch.setattr(
-            "tools.async_delegation.dispatch_async_delegation_batch", _fake_dispatch
+            "opencodon.tools.async_delegation.dispatch_async_delegation_batch", _fake_dispatch
         )
 
         reset_session_vars()
@@ -253,21 +253,21 @@ class TestAdapterCapabilityFlag:
 class TestTerminalNotifyGate:
     @pytest.fixture(autouse=True)
     def _clean_watchers(self):
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         process_registry.pending_watchers = []
         yield
         process_registry.pending_watchers = []
 
     def _run_bg(self, command):
-        from tools.terminal_tool import terminal_tool
+        from opencodon.tools.terminal_tool import terminal_tool
 
         return json.loads(
             terminal_tool(command=command, background=True, notify_on_complete=True)
         )
 
     def test_api_server_skips_watcher_and_notes(self):
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         tokens = set_session_vars(
             platform="api_server", chat_id="s1", session_key="s1", async_delivery=False
@@ -283,7 +283,7 @@ class TestTerminalNotifyGate:
         assert len(process_registry.pending_watchers) == 0
 
     def test_gateway_registers_watcher(self):
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         tokens = set_session_vars(
             platform="telegram",
@@ -306,7 +306,7 @@ class TestTerminalNotifyGate:
     def test_cli_stays_supported(self):
         """CLI delivers via the in-process completion_queue: notify stays on,
         no false 'unsupported' note, and no pending_watcher (empty platform)."""
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         d = self._run_bg("sleep 30 && echo DONE")
         assert d.get("notify_on_complete") is True

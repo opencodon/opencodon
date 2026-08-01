@@ -9,7 +9,7 @@ import pytest
 def opencode_go_profile():
     """Resolve the registered OpenCode Go provider profile."""
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("opencode-go")
     assert profile is not None, "opencode-go provider profile must be registered"

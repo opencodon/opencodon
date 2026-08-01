@@ -59,8 +59,8 @@ def docker_backend(request, monkeypatch):
     the task_id, so a shared id would make one test's teardown remove the
     other's container.
     """
-    from tools import terminal_tool
-    from tools.environments import docker as docker_env
+    from opencodon.tools import terminal_tool
+    from opencodon.tools.environments import docker as docker_env
 
     # The resolver keys the exec-read off TERMINAL_ENV=docker.
     monkeypatch.setenv("TERMINAL_ENV", "docker")
@@ -102,7 +102,7 @@ def _write_png_in_container(env, path, *, mode=None):
 @pytest.mark.asyncio
 async def test_resolves_tmpfs_workspace_file(docker_backend):
     """A container-only path (no host file) is delivered via exec-read."""
-    from tools.image_source import ResolveContext, resolve_image_source
+    from opencodon.tools.image_source import ResolveContext, resolve_image_source
 
     _write_png_in_container(docker_backend, "/workspace/shot.png")
     res = await resolve_image_source(
@@ -115,7 +115,7 @@ async def test_resolves_tmpfs_workspace_file(docker_backend):
 @pytest.mark.asyncio
 async def test_resolves_root_owned_mode600_file(docker_backend):
     """Root-owned mode-600 (host user can't read it) is served in-container."""
-    from tools.image_source import ResolveContext, resolve_image_source
+    from opencodon.tools.image_source import ResolveContext, resolve_image_source
 
     _write_png_in_container(docker_backend, "/workspace/secret.png", mode="600")
     res = await resolve_image_source(
@@ -134,7 +134,7 @@ async def test_host_secret_path_reads_container_not_host(docker_backend, tmp_pat
     never to the host bytes. Proves vision cannot exfiltrate a host file under
     a sandbox backend even when the exact path is real on the host.
     """
-    from tools.image_source import (
+    from opencodon.tools.image_source import (
         ImageResolutionError,
         ResolveContext,
         resolve_image_source,

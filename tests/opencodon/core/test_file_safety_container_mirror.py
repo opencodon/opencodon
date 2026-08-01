@@ -88,7 +88,7 @@ class TestFileToolIntegration:
     """file_tools must catch the mirror path before creating DockerEnvironment."""
 
     def test_guard_uses_current_docker_config_before_env_exists(self, monkeypatch):
-        import tools.file_tools as file_tools
+        import opencodon.tools.file_tools as file_tools
 
         monkeypatch.setattr(
             file_tools,

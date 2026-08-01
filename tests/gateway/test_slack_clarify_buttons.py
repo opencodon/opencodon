@@ -78,7 +78,7 @@ def _attach_auth_runner(adapter, auth_fn=None):
 
 
 def _clear_clarify_state():
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
     with cm._lock:
         cm._entries.clear()
         cm._session_index.clear()
@@ -230,7 +230,7 @@ class TestSlackClarifyChoiceAction:
 
     @pytest.mark.asyncio
     async def test_choice_resolves_with_choice_text(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         _attach_auth_runner(adapter)
@@ -269,7 +269,7 @@ class TestSlackClarifyChoiceAction:
 
     @pytest.mark.asyncio
     async def test_prevents_double_click(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         _attach_auth_runner(adapter)
@@ -298,7 +298,7 @@ class TestSlackClarifyChoiceAction:
 
     @pytest.mark.asyncio
     async def test_unauthorized_click_ignored(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         _attach_auth_runner(adapter, auth_fn=lambda _s: False)
@@ -356,7 +356,7 @@ class TestSlackClarifyOtherFlow:
 
     @pytest.mark.asyncio
     async def test_other_flips_to_text_mode_then_typed_reply_resolves(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         _attach_auth_runner(adapter)

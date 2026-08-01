@@ -26,7 +26,7 @@ from opencodon_constants import (
 )
 from opencodon.config.env_loader import load_opencodon_dotenv
 from utils import is_truthy_value
-from tools.environments.local import opencodon_subprocess_env
+from opencodon.tools.environments.local import opencodon_subprocess_env
 from opencodon.core.replay_cleanup import sanitize_replay_history
 from tui_gateway import git_probe
 from tui_gateway.transport import (
@@ -685,7 +685,7 @@ def _finalize_session(session: dict | None, end_reason: str = "tui_close") -> No
     # the TUI owns the lifecycle — closing a viewer tab on a live gateway
     # session must not kill the gateway's own background work.
     try:
-        from tools.async_delegation import interrupt_for_session
+        from opencodon.tools.async_delegation import interrupt_for_session
 
         _own_sid = str(session.get("_sid") or "")
         if not _own_sid:
@@ -735,7 +735,7 @@ def _teardown_session(session: dict | None, *, end_reason: str = "tui_close") ->
         return
     _finalize_session(session, end_reason=end_reason)
     try:
-        from tools.approval import unregister_gateway_notify
+        from opencodon.tools.approval import unregister_gateway_notify
 
         if key := session.get("session_key"):
             unregister_gateway_notify(key)
@@ -1034,7 +1034,7 @@ _start_idle_reaper()
 def _get_db():
     global _db, _db_error
     if _db is None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         try:
             _db = SessionDB()
@@ -1620,7 +1620,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
             if profile_home:
                 home_token = set_opencodon_home_override(profile_home)
                 try:
-                    from opencodon_state import SessionDB
+                    from opencodon.state import SessionDB
 
                     session_db = SessionDB(db_path=Path(profile_home) / "state.db")
                 except Exception:
@@ -1684,7 +1684,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                 pass
 
             try:
-                from tools.approval import (
+                from opencodon.tools.approval import (
                     register_gateway_notify,
                     load_permanent_allowlist,
                 )
@@ -1740,7 +1740,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                 replaced = _sessions.get(sid) is not current
             if replaced and notify_registered:
                 try:
-                    from tools.approval import unregister_gateway_notify
+                    from opencodon.tools.approval import unregister_gateway_notify
 
                     unregister_gateway_notify(key)
                 except Exception:
@@ -1940,7 +1940,7 @@ def _register_session_cwd(session: dict | None) -> None:
     if not session:
         return
     try:
-        from tools.terminal_tool import register_task_env_overrides
+        from opencodon.tools.terminal_tool import register_task_env_overrides
 
         register_task_env_overrides(
             session["session_key"], {"cwd": _terminal_task_cwd(session)}
@@ -1972,7 +1972,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # unified list mis-tags it, and resume 404s ("session not found").
     profile_home = session.get("profile_home")
     if profile_home:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         try:
             db = SessionDB(db_path=Path(profile_home) / "state.db")
@@ -2134,7 +2134,7 @@ def _session_db(session: dict):
     db, close_db = None, False
     profile_home = session.get("profile_home")
     if profile_home:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         try:
             db, close_db = SessionDB(db_path=Path(profile_home) / "state.db"), True
@@ -2222,7 +2222,7 @@ def _set_session_cwd(session: dict, cwd: str) -> str:
     # Branch/repo-root probes are git subprocesses — capture them off the hot path.
     _persist_session_git_meta(session, resolved)
     try:
-        from tools.terminal_tool import cleanup_vm
+        from opencodon.tools.terminal_tool import cleanup_vm
 
         cleanup_vm(session["session_key"])
     except Exception:
@@ -2466,7 +2466,7 @@ def _clarify_timeout_seconds() -> float | None:
     historical 300s _block default if config can't be read. ``<= 0`` in config
     means unlimited and is returned as ``None`` (never auto-skip)."""
     try:
-        from tools.clarify_gateway import get_clarify_timeout
+        from opencodon.tools.clarify_gateway import get_clarify_timeout
         timeout = get_clarify_timeout()
         return timeout if timeout > 0 else None
     except Exception:
@@ -3000,7 +3000,7 @@ _APPROVAL_MODES = frozenset({"manual", "smart", "off"})
 
 def _load_approval_mode() -> str:
     from opencodon.config import DEFAULT_CONFIG, _deep_merge
-    from tools.approval import _normalize_approval_mode
+    from opencodon.tools.approval import _normalize_approval_mode
 
     raw_cfg = _load_cfg()
     cfg = _deep_merge(DEFAULT_CONFIG, raw_cfg if isinstance(raw_cfg, dict) else {})
@@ -3765,7 +3765,7 @@ def _sync_session_key_after_compress(
         )
 
     try:
-        from tools.approval import (
+        from opencodon.tools.approval import (
             disable_session_yolo,
             enable_session_yolo,
             is_session_yolo_enabled,
@@ -3854,7 +3854,7 @@ def _get_usage(agent) -> dict:
     # batches + background single delegations). Mirrors the classic CLI status
     # bar's ⛓ indicator; sourced from the same async_delegation registry.
     try:
-        from tools.async_delegation import active_count as _async_active_count
+        from opencodon.tools.async_delegation import active_count as _async_active_count
         usage["active_subagents"] = _async_active_count()
     except Exception:
         pass
@@ -4033,7 +4033,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
     yolo = False
     approval_mode = "manual"
     try:
-        from tools.approval import _YOLO_MODE_FROZEN, is_session_yolo_enabled
+        from opencodon.tools.approval import _YOLO_MODE_FROZEN, is_session_yolo_enabled
 
         session_yolo = (
             bool(is_session_yolo_enabled(session_key)) if session_key else False
@@ -4076,7 +4076,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         pass
     if agent is not None and not (session or {}).get("_compute_host_active"):
         try:
-            from model_tools import get_toolset_for_tool
+            from opencodon.tools.model_tools import get_toolset_for_tool
 
             info["tools"] = {}
             for t in getattr(agent, "tools", []) or []:
@@ -4093,7 +4093,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         except Exception:
             pass
     try:
-        from tools.mcp_tool import get_mcp_status
+        from opencodon.tools.mcp_tool import get_mcp_status
 
         info["mcp_servers"] = get_mcp_status()
     except Exception:
@@ -4678,9 +4678,9 @@ def _apply_project_workspace(task_id: str, path: str, _name: str = "") -> None:
 
 
 def _wire_callbacks(sid: str):
-    from tools.terminal_tool import set_sudo_password_callback
-    from tools.skills_tool import set_secret_capture_callback
-    from tools.project_tools import set_project_workspace_callback
+    from opencodon.tools.terminal_tool import set_sudo_password_callback
+    from opencodon.tools.skills_tool import set_secret_capture_callback
+    from opencodon.tools.project_tools import set_project_workspace_callback
 
     set_sudo_password_callback(lambda: _block("sudo.request", sid, {}, timeout=120))
     set_project_workspace_callback(_apply_project_workspace)
@@ -5114,7 +5114,7 @@ def _schedule_mcp_late_refresh(sid: str, agent) -> None:
             ):
                 return
             try:
-                from tools.mcp_tool import refresh_agent_mcp_tools
+                from opencodon.tools.mcp_tool import refresh_agent_mcp_tools
 
                 added = refresh_agent_mcp_tools(agent, quiet_mode=True)
             except Exception as exc:
@@ -5219,7 +5219,7 @@ def _make_agent(
     if synthetic is not None:
         return synthetic
 
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     # MCP tool discovery runs in a background daemon thread at startup so a
     # dead server can't freeze the shell.  The agent snapshots its tool list
@@ -5454,7 +5454,7 @@ def _init_session(
         # Defer hard-failure to slash.exec; chat still works without slash worker.
         _sessions[sid]["slash_worker"] = None
     try:
-        from tools.approval import register_gateway_notify, load_permanent_allowlist
+        from opencodon.tools.approval import register_gateway_notify, load_permanent_allowlist
 
         register_gateway_notify(key, lambda data: _emit_approval_request(sid, data))
         load_permanent_allowlist()
@@ -5518,7 +5518,7 @@ def _active_image_routing_identity(agent: Any) -> tuple[str, str]:
 def _enrich_with_attached_images(user_text: str, image_paths: list[str]) -> str:
     """Pre-analyze attached images via vision and prepend descriptions to user text."""
     import asyncio, json as _json
-    from tools.vision_tools import vision_analyze_tool
+    from opencodon.tools.vision_tools import vision_analyze_tool
 
     prompt = (
         "Describe everything visible in this image in thorough detail. "
@@ -6482,7 +6482,7 @@ def _(rid, params: dict) -> dict:
     # In a profile scope, the agent OWNS a long-lived db handle bound to that
     # profile (do NOT auto-close it here). Otherwise reuse the shared launch db.
     if profile_home is not None:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB(db_path=profile_home / "state.db")
     else:
@@ -8006,7 +8006,7 @@ def _(rid, params: dict) -> dict:
             session["queued_prompt"] = None
         _clear_pending(sid)
         try:
-            from tools.approval import resolve_gateway_approval
+            from opencodon.tools.approval import resolve_gateway_approval
 
             resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
         except Exception:
@@ -8046,7 +8046,7 @@ def _(rid, params: dict) -> dict:
     # process, silently resolving them to empty strings.
     _clear_pending(params.get("session_id", ""))
     try:
-        from tools.approval import resolve_gateway_approval
+        from opencodon.tools.approval import resolve_gateway_approval
 
         resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
     except Exception:
@@ -8062,7 +8062,7 @@ def _(rid, params: dict) -> dict:
 
 @method("delegation.status")
 def _(rid, params: dict) -> dict:
-    from tools.delegate_tool import (
+    from opencodon.tools.delegate_tool import (
         is_spawn_paused,
         list_active_subagents,
         _get_max_concurrent_children,
@@ -8082,7 +8082,7 @@ def _(rid, params: dict) -> dict:
 
 @method("delegation.pause")
 def _(rid, params: dict) -> dict:
-    from tools.delegate_tool import set_spawn_paused
+    from opencodon.tools.delegate_tool import set_spawn_paused
 
     paused = bool(params.get("paused", True))
     return _ok(rid, {"paused": set_spawn_paused(paused)})
@@ -8090,7 +8090,7 @@ def _(rid, params: dict) -> dict:
 
 @method("subagent.interrupt")
 def _(rid, params: dict) -> dict:
-    from tools.delegate_tool import interrupt_subagent
+    from opencodon.tools.delegate_tool import interrupt_subagent
 
     subagent_id = str(params.get("subagent_id") or "").strip()
     if not subagent_id:
@@ -8366,7 +8366,7 @@ def _(rid, params: dict) -> dict:
     if params.get("interrupted"):
         # Client-side barge-in (desktop VAD / typing over playback) — latch it
         # so this turn's model message carries the interruption note.
-        from tools.tts_streaming import mark_speech_interrupted
+        from opencodon.tools.tts_streaming import mark_speech_interrupted
 
         mark_speech_interrupted()
     session, err = _sess_nowait(params, rid)
@@ -8661,7 +8661,7 @@ def _notification_poller_loop(
     poller requeues events owned by another live session and drops addressed
     events whose owner is gone; ownerless legacy notifications remain global.
     """
-    from tools.process_registry import process_registry, format_process_notification
+    from opencodon.tools.process_registry import process_registry, format_process_notification
 
     _emitted = set()  # dedup re-queued events so same completion isn't emitted 50 times while session is busy
     while not stop_event.is_set() and not session.get("_finalized"):
@@ -8734,7 +8734,7 @@ def _notification_poller_loop(
             continue
 
         rid = f"__notif__{int(time.time() * 1000)}"
-        from tools.async_delegation import (
+        from opencodon.tools.async_delegation import (
             claim_event_delivery, complete_event_delivery, release_event_delivery,
         )
         _claim = claim_event_delivery(evt, "tui-poller")
@@ -8802,7 +8802,7 @@ def _notification_poller_loop(
             session["running"] = True
 
         rid = f"__notif__{int(time.time() * 1000)}"
-        from tools.async_delegation import (
+        from opencodon.tools.async_delegation import (
             claim_event_delivery, complete_event_delivery, release_event_delivery,
         )
         _claim = claim_event_delivery(evt, "tui-poller")
@@ -8836,7 +8836,7 @@ def _wire_agent_terminal_output() -> None:
     that owns the process (its gateway session); `_emit`/`write_json` is
     `_stdout_lock`-guarded, so calling it from the registry's reader threads is
     safe."""
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     has_output_sink = getattr(process_registry, "on_output", None) is not None
     has_close_sink = getattr(process_registry, "on_close", None) is not None
@@ -8886,7 +8886,7 @@ def _wire_desktop_ui() -> None:
     if _desktop_ui_wired:
         return
     try:
-        from tools import desktop_ui
+        from opencodon.tools import desktop_ui
     except Exception:
         return
 
@@ -8932,7 +8932,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
         tts_queue = None  # streaming-TTS feed for this turn (voice mode)
         one_turn_restore = session.pop("one_turn_model_restore", None)
         try:
-            from tools.approval import (
+            from opencodon.tools.approval import (
                 reset_current_session_key,
                 set_current_session_key,
             )
@@ -9060,7 +9060,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             # Barged mid-speech? Tell the model (API-message note, same
             # enrichment channel as attached images) so it can react
             # ("rude!") instead of being oblivious to its own interruption.
-            from tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
+            from opencodon.tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
 
             if take_speech_interrupted():
                 if isinstance(run_message, str):
@@ -9459,7 +9459,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
         # requeues every addressed event this session cannot positively claim;
         # the poller then delivers it to a live owner or drops an orphan.
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
 
             # Positive-proof ownership (compression-chain aware) — the same
             # fail-closed gate the poller uses, so the post-turn drain can't
@@ -9478,7 +9478,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                             process_registry.completion_queue.put(pending_evt)
                         break
                     session["running"] = True
-                from tools.async_delegation import (
+                from opencodon.tools.async_delegation import (
                     claim_event_delivery, complete_event_delivery, release_event_delivery,
                 )
                 _claim = claim_event_delivery(_evt, "tui-post-turn")
@@ -10136,7 +10136,7 @@ def _(rid, params: dict) -> dict:
     def run():
         session_tokens = _set_session_context(task_id, cwd=_session_cwd(session))
         try:
-            from run_agent import AIAgent
+            from opencodon.core.run_agent import AIAgent
 
             result = AIAgent(
                 **_background_agent_kwargs(session["agent"], task_id)
@@ -10233,8 +10233,8 @@ def _(rid, params: dict) -> dict:
         # invalid client path, which would silently fall back to the launch dir.
         session_tokens = _set_session_context(task_id, cwd=(preview_cwd or _session_cwd(session)))
         try:
-            from run_agent import AIAgent
-            from tools.terminal_tool import register_task_env_overrides
+            from opencodon.core.run_agent import AIAgent
+            from opencodon.tools.terminal_tool import register_task_env_overrides
 
             if preview_cwd:
                 register_task_env_overrides(task_id, {"cwd": preview_cwd})
@@ -10271,7 +10271,7 @@ def _(rid, params: dict) -> dict:
             )
         finally:
             try:
-                from tools.terminal_tool import clear_task_env_overrides
+                from opencodon.tools.terminal_tool import clear_task_env_overrides
 
                 clear_task_env_overrides(task_id)
             except Exception:
@@ -10333,7 +10333,7 @@ def _(rid, params: dict) -> dict:
     if err:
         return err
     try:
-        from tools.approval import resolve_gateway_approval
+        from opencodon.tools.approval import resolve_gateway_approval
 
         return _ok(
             rid,
@@ -10569,7 +10569,7 @@ def _(rid, params: dict) -> dict:
         #     the TUI, and cron, and survives restarts.
         scope = str(params.get("scope") or "session").strip().lower()
         try:
-            from tools.approval import (
+            from opencodon.tools.approval import (
                 disable_session_yolo,
                 enable_session_yolo,
                 is_session_yolo_enabled,
@@ -10585,7 +10585,7 @@ def _(rid, params: dict) -> dict:
                 return not current
 
             if scope == "global":
-                from tools.approval import _normalize_approval_mode
+                from opencodon.tools.approval import _normalize_approval_mode
 
                 cfg = _load_cfg()
                 appr = cfg.get("approvals") if isinstance(cfg, dict) else None
@@ -11875,7 +11875,7 @@ def _(rid, params: dict) -> dict:
 @method("process.stop")
 def _(rid, params: dict) -> dict:
     try:
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         return _ok(rid, {"killed": process_registry.kill_all()})
     except Exception as e:
@@ -11884,7 +11884,7 @@ def _(rid, params: dict) -> dict:
 
 def _session_processes(session: dict) -> list:
     """Background processes owned by this session (registry session_key match)."""
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     key = str(session.get("session_key") or "")
     owned = []
@@ -11922,7 +11922,7 @@ def _(rid, params: dict) -> dict:
     if not proc_id:
         return _err(rid, 4012, "process_id required")
     try:
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         proc = process_registry.get(proc_id)
         if proc is None or str(getattr(proc, "session_key", "") or "") != str(
@@ -12049,7 +12049,7 @@ def _(rid, params: dict) -> dict:
                 return _err(rid, 5019, f"compute-host reload_mcp failed: {exc}")
             return _ok(rid, {"status": "reloaded", "turn_isolation": True, "host_ack": ack})
 
-        from tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools
+        from opencodon.tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools
 
         def _refresh_session_agent() -> None:
             """Rebuild THIS session's cached tool snapshot from the live
@@ -12062,7 +12062,7 @@ def _(rid, params: dict) -> dict:
                 return
             agent = session["agent"]
             try:
-                from tools.mcp_tool import refresh_agent_mcp_tools
+                from opencodon.tools.mcp_tool import refresh_agent_mcp_tools
 
                 # Explicit reload: re-resolve enabled toolsets so a server the
                 # user just enabled in config this session is picked up.
@@ -12412,7 +12412,7 @@ def _(rid, params: dict) -> dict:
             # Sanitize env to prevent credential leakage —
             # quick commands run in the TUI server process which
             # has all API keys in os.environ.
-            from tools.environments.local import _sanitize_subprocess_env
+            from opencodon.tools.environments.local import _sanitize_subprocess_env
             sanitized_env = _sanitize_subprocess_env(os.environ.copy())
             r = subprocess.run(
                 qc.get("command", ""),
@@ -14040,7 +14040,7 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
         elif name == "reload-mcp" and agent and hasattr(agent, "reload_mcp_tools"):
             agent.reload_mcp_tools()
         elif name == "stop":
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
 
             process_registry.kill_all()
     except Exception as e:
@@ -14237,7 +14237,7 @@ def _tts_stream_begin() -> Optional[queue.Queue]:
     if not _voice_tts_enabled():
         return None
     try:
-        from tools.tts_tool import check_tts_requirements, stream_tts_to_speaker
+        from opencodon.tools.tts_tool import check_tts_requirements, stream_tts_to_speaker
 
         if not check_tts_requirements():
             return None
@@ -14277,12 +14277,12 @@ def _tts_stream_stop(user_barge: bool = True) -> None:
     if state is None:
         return
     if user_barge and not state["done"].is_set():
-        from tools.tts_streaming import mark_speech_interrupted
+        from opencodon.tools.tts_streaming import mark_speech_interrupted
 
         mark_speech_interrupted()
     state["stop"].set()
     try:
-        from tools.voice_mode import stop_playback
+        from opencodon.tools.voice_mode import stop_playback
 
         stop_playback()
     except Exception:
@@ -14299,8 +14299,8 @@ def _tts_stream_barge_in_monitor(stop: threading.Event, done: threading.Event) -
     lost between detection and the next recording start.
     """
     try:
-        from tools.tts_streaming import mark_speech_interrupted
-        from tools.voice_mode import listen_for_speech, stop_playback, transcribe_recording
+        from opencodon.tools.tts_streaming import mark_speech_interrupted
+        from opencodon.tools.voice_mode import listen_for_speech, stop_playback, transcribe_recording
 
         barged = threading.Event()
 
@@ -14387,7 +14387,7 @@ def _(rid, params: dict) -> dict:
             "tts": _voice_tts_enabled(),
         }
         try:
-            from tools.voice_mode import check_voice_requirements
+            from opencodon.tools.voice_mode import check_voice_requirements
 
             reqs = check_voice_requirements()
             payload["available"] = bool(reqs.get("available"))
@@ -14805,7 +14805,7 @@ def _browser_connect(rid, params: dict) -> dict:
     import platform
 
     from opencodon_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
-    from tools.browser_tool import cleanup_all_browsers
+    from opencodon.tools.browser_tool import cleanup_all_browsers
     from urllib.parse import urlparse
 
     raw_url = params.get("url")
@@ -14949,7 +14949,7 @@ def _browser_disconnect(rid) -> dict:
     # window covered by ``_browser_connect``.
     def reap() -> None:
         try:
-            from tools.browser_tool import cleanup_all_browsers
+            from opencodon.tools.browser_tool import cleanup_all_browsers
 
             cleanup_all_browsers()
         except Exception:
@@ -15056,7 +15056,7 @@ def _(rid, params: dict) -> dict:
 @method("tools.show")
 def _(rid, params: dict) -> dict:
     try:
-        from model_tools import get_toolset_for_tool, get_tool_definitions
+        from opencodon.tools.model_tools import get_toolset_for_tool, get_tool_definitions
 
         session = _sessions.get(params.get("session_id", ""))
         enabled = (
@@ -15195,7 +15195,7 @@ def _(rid, params: dict) -> dict:
 @method("agents.list")
 def _(rid, params: dict) -> dict:
     try:
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         procs = process_registry.list_sessions()
         return _ok(
@@ -15220,7 +15220,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     action, jid = params.get("action", "list"), params.get("name", "")
     try:
-        from tools.cronjob_tools import cronjob
+        from opencodon.tools.cronjob_tools import cronjob
 
         if action == "list":
             return _ok(rid, json.loads(cronjob(action="list")))
@@ -15309,7 +15309,7 @@ def _(rid, params: dict) -> dict:
 
             return _ok(rid, {"skills": get_available_skills()})
         if action == "search":
-            from tools.skills_hub import (
+            from opencodon.tools.skills_hub import (
                 GitHubAuth,
                 create_source_router,
                 unified_search,
@@ -15469,7 +15469,7 @@ def _(rid, params: dict) -> dict:
     if not cmd:
         return _err(rid, 4004, "empty command")
     try:
-        from tools.approval import detect_dangerous_command, detect_hardline_command
+        from opencodon.tools.approval import detect_dangerous_command, detect_hardline_command
 
         is_hardline, hardline_desc = detect_hardline_command(cmd)
         if is_hardline:

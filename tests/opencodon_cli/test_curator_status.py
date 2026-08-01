@@ -20,7 +20,7 @@ import pytest
 def test_status_uses_last_activity_not_only_last_used(monkeypatch, capsys):
     import opencodon.core.curator as curator_state
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(curator_state, "load_state", lambda: {
         "paused": False,
@@ -70,7 +70,7 @@ def curator_status_env(tmp_path, monkeypatch):
     import importlib
     import opencodon_constants
     importlib.reload(opencodon_constants)
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     importlib.reload(skill_usage)
     from opencodon.core import curator
     importlib.reload(curator)
@@ -180,7 +180,7 @@ def test_status_no_skills_produces_clean_empty_output(curator_status_env):
 def test_status_marks_missing_last_report_path(monkeypatch, capsys, tmp_path):
     import opencodon.core.curator as curator_state
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     missing_report = tmp_path / "stale-report"
     monkeypatch.setattr(curator_state, "load_state", lambda: {

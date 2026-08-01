@@ -92,11 +92,11 @@ class TestExtractLoggerName:
 
     def test_warning_level(self):
         line = "2026-04-11 10:23:45 WARNING tools.terminal_tool: timeout"
-        assert _extract_logger_name(line) == "tools.terminal_tool"
+        assert _extract_logger_name(line) == "opencodon.tools.terminal_tool"
 
     def test_with_session_tag(self):
         line = "2026-04-11 10:23:45 INFO [abc123] tools.file_tools: reading file"
-        assert _extract_logger_name(line) == "tools.file_tools"
+        assert _extract_logger_name(line) == "opencodon.tools.file_tools"
 
     def test_with_session_tag_and_error(self):
         line = "2026-04-11 10:23:45 ERROR [sess_xyz] agent.context_compressor: failed"

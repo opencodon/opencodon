@@ -94,12 +94,12 @@ class TestChatVerboseArg:
         setattr(fake_cli, "main", fake_main)
         fake_banner = types.ModuleType("opencodon_cli.banner")
         setattr(fake_banner, "prefetch_update_check", lambda: None)
-        fake_skills_sync = types.ModuleType("tools.skills_sync")
+        fake_skills_sync = types.ModuleType("opencodon.tools.skills_sync")
         setattr(fake_skills_sync, "sync_skills", lambda quiet=True: None)
 
         monkeypatch.setitem(sys.modules, "cli", fake_cli)
         monkeypatch.setitem(sys.modules, "opencodon_cli.banner", fake_banner)
-        monkeypatch.setitem(sys.modules, "tools.skills_sync", fake_skills_sync)
+        monkeypatch.setitem(sys.modules, "opencodon.tools.skills_sync", fake_skills_sync)
         monkeypatch.setattr(main_mod, "_has_any_provider_configured", lambda: True)
         monkeypatch.setattr(main_mod, "_has_model_configured", lambda cfg=None: True)
 

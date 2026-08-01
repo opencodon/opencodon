@@ -338,7 +338,7 @@ class TestAdapterInit:
             def __init__(self, **kwargs):
                 captured.update(kwargs)
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
             "gateway.run._resolve_runtime_agent_kwargs",
             lambda: {
@@ -386,7 +386,7 @@ class TestAdapterInit:
             def __init__(self, **kwargs):
                 captured.update(kwargs)
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
             "gateway.run._resolve_runtime_agent_kwargs",
             lambda: {
@@ -425,7 +425,7 @@ class TestAdapterInit:
             def __init__(self, **kwargs):
                 captured.update(kwargs)
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
             "gateway.run._resolve_runtime_agent_kwargs",
             lambda: {
@@ -464,7 +464,7 @@ class TestAdapterInit:
             def __init__(self, **kwargs):
                 captured.update(kwargs)
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
             "gateway.run._resolve_runtime_agent_kwargs",
             lambda: {
@@ -922,8 +922,8 @@ class TestHealthDetailedEndpoint:
         # Completed streams may remain attached for replay; they are not work.
         adapter._run_streams = {"done": object(), "failed": object()}
 
-        with patch("tools.process_registry.process_registry.completion_queue.qsize", return_value=4), \
-             patch("tools.async_delegation.active_count", return_value=2):
+        with patch("opencodon.tools.process_registry.process_registry.completion_queue.qsize", return_value=4), \
+             patch("opencodon.tools.async_delegation.active_count", return_value=2):
             assert adapter._readiness_work_counts() == (3, 4, 2)
 
     def test_readiness_work_counts_include_stopping_runs(self, adapter):
@@ -942,8 +942,8 @@ class TestHealthDetailedEndpoint:
             "cancelled": {"status": "cancelled"},
         }
 
-        with patch("tools.process_registry.process_registry.completion_queue.qsize", return_value=0), \
-             patch("tools.async_delegation.active_count", return_value=0):
+        with patch("opencodon.tools.process_registry.process_registry.completion_queue.qsize", return_value=0), \
+             patch("opencodon.tools.async_delegation.active_count", return_value=0):
             assert adapter._readiness_work_counts() == (4, 0, 0)
 
 
@@ -1076,7 +1076,7 @@ class TestSkillsEndpoint:
             {"name": "ascii-art", "description": "ASCII art generation", "category": "creative"},
         ]
         with patch(
-            "tools.skills_tool._find_all_skills",
+            "opencodon.tools.skills_tool._find_all_skills",
             return_value=list(fake_skills),
         ):
             app = _create_app(adapter)
@@ -1093,7 +1093,7 @@ class TestSkillsEndpoint:
     @pytest.mark.asyncio
     async def test_skills_handles_enumeration_failure(self, adapter):
         with patch(
-            "tools.skills_tool._find_all_skills",
+            "opencodon.tools.skills_tool._find_all_skills",
             side_effect=RuntimeError("boom"),
         ):
             app = _create_app(adapter)
@@ -1105,7 +1105,7 @@ class TestSkillsEndpoint:
 
     @pytest.mark.asyncio
     async def test_skills_requires_auth_when_key_configured(self, auth_adapter):
-        with patch("tools.skills_tool._find_all_skills", return_value=[]):
+        with patch("opencodon.tools.skills_tool._find_all_skills", return_value=[]):
             app = _create_app(auth_adapter)
             async with TestClient(TestServer(app)) as cli:
                 resp = await cli.get("/v1/skills")
@@ -4192,7 +4192,7 @@ class TestSessionIdHeader:
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
             with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run, \
-                 patch("opencodon_state.SessionDB", side_effect=Exception("DB unavailable")):
+                 patch("opencodon.state.SessionDB", side_effect=Exception("DB unavailable")):
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
                 resp = await cli.post(
@@ -4401,7 +4401,7 @@ def _make_routing_adapter(routes) -> APIServerAdapter:
 
 def _patch_create_agent_runtime(monkeypatch, captured: dict, fake_agent_cls):
     """Stub out every external dependency of _create_agent."""
-    monkeypatch.setattr("run_agent.AIAgent", fake_agent_cls)
+    monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent_cls)
     monkeypatch.setattr(
         "gateway.run._resolve_runtime_agent_kwargs",
         lambda: {
@@ -4768,7 +4768,7 @@ class TestSessionDbOffEventLoop:
         auth_adapter._session_db_lock = None
 
         original_class = None
-        import opencodon_state
+        from opencodon import state as opencodon_state
         original_class = opencodon_state.SessionDB
         opencodon_state.SessionDB = FakeDB
         try:

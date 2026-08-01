@@ -1006,7 +1006,7 @@ def test_voice_toggle_returns_configured_record_key(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1040,7 +1040,7 @@ def test_voice_toggle_handles_non_dict_voice_cfg(monkeypatch):
     """
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1244,7 +1244,7 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
@@ -1765,7 +1765,7 @@ def test_live_visible_history_matches_eager_resume_with_real_db(tmp_path):
     projection — both keeping the candidate — so switching to a live session
     shows the same substantive answer a cold resume would.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="tui")
@@ -1797,7 +1797,7 @@ def test_live_visible_history_matches_eager_resume_with_real_db(tmp_path):
 def test_live_visible_history_keeps_candidate_and_new_flushed_turn_real_db(tmp_path):
     """Real-DB variant of the combined case: a candidate from turn 1 AND a
     fully-flushed turn 2 both appear once."""
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="tui")
@@ -1828,7 +1828,7 @@ def test_lazy_child_watch_resume_serves_candidate_inclusive_display(monkeypatch,
     verbatim display projection so a persisted verification candidate is not
     collapsed out of the watch window (#65919 sibling of the warm-payload fix).
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("child1", source="tui")
@@ -1879,7 +1879,7 @@ def test_session_resume_follows_compression_tip(monkeypatch, tmp_path):
     the response generated after compression. session.resume must follow the
     compression tip via resolve_resume_session_id.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     base = int(time.time()) - 10_000
@@ -2064,7 +2064,7 @@ def test_session_resume_profile_uses_profile_db_cwd(monkeypatch, tmp_path):
 
     monkeypatch.setenv("TERMINAL_CWD", str(launch_cwd))
     monkeypatch.setattr(server, "_profile_home", lambda _profile: profile_home)
-    monkeypatch.setattr("opencodon_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("opencodon.state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: launch_db)
     monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
     monkeypatch.setattr(server, "_set_session_context", lambda target: [])
@@ -2079,7 +2079,7 @@ def test_session_resume_profile_uses_profile_db_cwd(monkeypatch, tmp_path):
         lambda _agent, session=None: {"cwd": session.get("cwd") if session else ""},
     )
 
-    import tools.approval as approval
+    import opencodon.tools.approval as approval
 
     monkeypatch.setattr(approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(approval, "load_permanent_allowlist", lambda: None)
@@ -2126,9 +2126,9 @@ def test_session_cwd_set_profile_session_updates_profile_db(monkeypatch, tmp_pat
 
     profile_db = ProfileDB()
 
-    import tools.terminal_tool as terminal_tool
+    import opencodon.tools.terminal_tool as terminal_tool
 
-    monkeypatch.setattr("opencodon_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("opencodon.state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr(terminal_tool, "cleanup_vm", lambda _key: None)
     monkeypatch.setattr(server, "_register_session_cwd", lambda _session: None)
@@ -2595,7 +2595,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
             "credential_pool": None,
         },
     )
-    monkeypatch.setattr("run_agent.AIAgent", fake_agent)
+    monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent)
     monkeypatch.setattr(server, "_load_enabled_toolsets", lambda: ["file"])
     monkeypatch.setattr(server, "_get_db", lambda: None)
 
@@ -2938,7 +2938,7 @@ def test_init_session_fires_reset_hook(monkeypatch):
         lambda event, session_id, *_args: hooks.append((event, session_id)),
     )
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(_approval, "load_permanent_allowlist", lambda: None)
@@ -3237,7 +3237,7 @@ def test_notification_poller_live_loop_requeues_foreign_completion_for_owner(
     """A foreign live-loop dequeue is handed back to its proven owner."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     delivered = {"a": [], "b": []}
     emitted = []
@@ -3300,7 +3300,7 @@ def test_completion_ownership_lineage_lookup_failure_fails_closed(monkeypatch):
     """A provenance lookup failure cannot turn an addressed event into ours."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _BrokenDB:
         def resolve_resume_session_id(self, _session_key):
@@ -3345,7 +3345,7 @@ def test_notification_poller_live_loop_drops_addressed_orphan(
     """A live poll never injects an addressed event whose owner is gone."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     delivered = []
     emitted = []
@@ -3397,7 +3397,7 @@ def test_notification_poller_drops_orphaned_events(monkeypatch, routing):
     """Addressed completions whose owner is gone are dropped, not hijacked."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     emitted = []
     delivered = []
@@ -3459,7 +3459,7 @@ def test_notification_poller_delivers_owned_events(
     """Direct, UI-origin, and compression-lineage owners are delivered."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _CompressionDB:
         def resolve_resume_session_id(self, key):
@@ -3566,7 +3566,7 @@ def test_run_prompt_submit_requeues_foreign_completion(
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     turns = []
@@ -3605,7 +3605,7 @@ def test_run_prompt_submit_requeues_foreign_completion(
 def test_run_prompt_submit_delivers_completion_observed_by_poll(monkeypatch, tmp_path):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     turns = []
@@ -3647,7 +3647,7 @@ def test_run_prompt_submit_requeues_all_unstarted_notifications_with_real_thread
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(
         monkeypatch, tmp_path, immediate_threads=False
@@ -3740,7 +3740,7 @@ def test_run_prompt_submit_delivers_completion_owned_through_compression_lineage
 ):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     class _CompressionDB:
         def resolve_resume_session_id(self, key):
@@ -3793,7 +3793,7 @@ def test_run_prompt_submit_delivers_completion_owned_through_compression_lineage
 def test_run_prompt_submit_prefers_origin_ui_session_id(monkeypatch, tmp_path):
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     _configure_immediate_prompt_run(monkeypatch, tmp_path)
     ownership_checks = []
@@ -4371,7 +4371,7 @@ def test_session_create_drops_pending_title_on_valueerror(monkeypatch):
 
 
 def test_config_set_yolo_toggles_session_scope():
-    from tools.approval import clear_session, is_session_yolo_enabled
+    from opencodon.tools.approval import clear_session, is_session_yolo_enabled
 
     server._sessions["sid"] = _session()
     try:
@@ -6506,7 +6506,7 @@ def test_slash_exec_r7_read_commands_use_metadata_mirror_flag_on(monkeypatch):
 
 
 def test_prompt_submit_sets_approval_session_key(monkeypatch):
-    from tools.approval import get_current_session_key
+    from opencodon.tools.approval import get_current_session_key
 
     captured = {}
 
@@ -7307,9 +7307,9 @@ def test_session_info_includes_mcp_servers(monkeypatch):
         {"name": "filesystem", "transport": "stdio", "tools": 4, "connected": True},
         {"name": "broken", "transport": "stdio", "tools": 0, "connected": False},
     ]
-    fake_mod = types.ModuleType("tools.mcp_tool")
+    fake_mod = types.ModuleType("opencodon.tools.mcp_tool")
     fake_mod.get_mcp_status = lambda: fake_status
-    monkeypatch.setitem(sys.modules, "tools.mcp_tool", fake_mod)
+    monkeypatch.setitem(sys.modules, "opencodon.tools.mcp_tool", fake_mod)
 
     info = server._session_info(types.SimpleNamespace(tools=[], model="", provider="openai-codex"))
 
@@ -8151,7 +8151,7 @@ def test_session_create_close_race_does_not_orphan_worker(monkeypatch):
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: None)
 
     # Shim register/unregister to observe leaks
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(
@@ -8252,7 +8252,7 @@ def test_session_create_no_race_keeps_worker_alive(monkeypatch):
     monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: None)
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(
@@ -8321,7 +8321,7 @@ def test_get_db_degrades_cleanly_when_sessiondb_init_fails(monkeypatch):
             raise RuntimeError("locking protocol")
 
     fake_mod.SessionDB = _BrokenSessionDB
-    monkeypatch.setitem(sys.modules, "opencodon_state", fake_mod)
+    monkeypatch.setitem(sys.modules, "opencodon.state", fake_mod)
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
 
@@ -8355,7 +8355,7 @@ def test_session_create_continues_when_state_db_is_unavailable(monkeypatch):
     monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
     monkeypatch.setattr(server, "_emit", lambda *a, **kw: emits.append(a))
 
-    import tools.approval as _approval
+    import opencodon.tools.approval as _approval
 
     monkeypatch.setattr(_approval, "register_gateway_notify", lambda key, cb: None)
     monkeypatch.setattr(_approval, "load_permanent_allowlist", lambda: None)
@@ -9549,7 +9549,7 @@ def test_browser_manage_status_does_not_call_get_cdp_override(monkeypatch):
             "_get_cdp_override must not run on /browser status (network I/O)"
         )
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "status"}}
         )
@@ -9572,7 +9572,7 @@ def test_browser_manage_connect_sets_env_and_cleans_twice(monkeypatch):
         cleanup_all_browsers=_cleanup_all,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9598,7 +9598,7 @@ def test_browser_manage_connect_defaults_to_loopback(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         urls = _stub_urlopen_capture(monkeypatch, ok=True)
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
@@ -9625,7 +9625,7 @@ def test_browser_manage_connect_default_local_reports_launch_hint(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
@@ -9684,7 +9684,7 @@ def test_browser_manage_connect_no_session_skips_progress_events(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
@@ -9719,7 +9719,7 @@ def test_browser_manage_connect_handles_null_url(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9781,7 +9781,7 @@ def test_browser_manage_connect_default_local_retries_after_launch(monkeypatch):
 
     monkeypatch.setattr(urllib.request, "urlopen", _opener)
     launched = ChromeDebugLaunch(launched=True)
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with (
             patch(
                 "opencodon_cli.browser_connect.launch_chrome_debug",
@@ -9829,7 +9829,7 @@ def test_browser_manage_connect_finds_ipv6_only_browser(monkeypatch):
     import urllib.request
 
     monkeypatch.setattr(urllib.request, "urlopen", _opener)
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
         )
@@ -9873,7 +9873,7 @@ def test_browser_manage_connect_squatted_port_launches_on_alternate(monkeypatch)
         launch_ports.append(port)
         return ChromeDebugLaunch(launched=True)
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with (
             patch("opencodon_cli.browser_connect.launch_chrome_debug", side_effect=_launch),
             patch("opencodon_cli.browser_connect.local_port_in_use", return_value=True),
@@ -9900,7 +9900,7 @@ def test_browser_manage_connect_rejects_unreachable_endpoint(monkeypatch):
         ),
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=False)
         resp = server.handle_request(
             {
@@ -9925,7 +9925,7 @@ def test_browser_manage_connect_normalizes_bare_host_port(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9951,7 +9951,7 @@ def test_browser_manage_connect_strips_discovery_path(monkeypatch):
         cleanup_all_browsers=lambda: None,
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         _stub_urlopen(monkeypatch, ok=True)
         resp = server.handle_request(
             {
@@ -9983,7 +9983,7 @@ def test_browser_manage_connect_preserves_devtools_browser_endpoint(monkeypatch)
         def __exit__(self, *a):
             return False
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         # If urlopen is reached for a concrete ws endpoint, the test
         # would still pass because _stub_urlopen returned ok=True before;
         # patch it to assert-fail so we prove the HTTP probe is skipped.
@@ -10022,7 +10022,7 @@ def test_browser_manage_connect_local_devtools_ws_preserves_path(monkeypatch):
         def __exit__(self, *a):
             return False
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with patch("socket.create_connection", return_value=_OkSocket()):
             resp = server.handle_request(
                 {
@@ -10091,7 +10091,7 @@ def test_browser_manage_connect_concrete_ws_skips_http_probe(monkeypatch):
         seen_targets.append(addr)
         return _OkSocket()
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         # urlopen would 404/ECONNREFUSED on a real hosted CDP endpoint;
         # asserting it's never called proves the probe was skipped.
         with patch(
@@ -10122,7 +10122,7 @@ def test_browser_manage_connect_concrete_ws_tcp_unreachable(monkeypatch):
     )
     concrete = "ws://offline.example/devtools/browser/missing"
 
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         with patch("socket.create_connection", side_effect=OSError("ECONNREFUSED")):
             resp = server.handle_request(
                 {
@@ -10145,7 +10145,7 @@ def test_browser_manage_disconnect_drops_env_and_cleans(monkeypatch):
         ),
         _get_cdp_override=lambda: os.environ.get("BROWSER_CDP_URL", ""),
     )
-    with patch.dict(sys.modules, {"tools.browser_tool": fake}):
+    with patch.dict(sys.modules, {"opencodon.tools.browser_tool": fake}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "disconnect"}}
         )
@@ -10325,7 +10325,7 @@ def _setup_make_agent_mocks(monkeypatch, cfg):
 def test_make_agent_reads_nested_max_turns(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {"agent": {"max_turns": 200}})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 200
@@ -10343,7 +10343,7 @@ def test_make_agent_waits_for_shared_mcp_discovery(monkeypatch):
         lambda timeout=0.75: waited.append(timeout),
     )
 
-    with patch("run_agent.AIAgent"):
+    with patch("opencodon.core.run_agent.AIAgent"):
         server._make_agent("sid1", "key1")
 
     assert waited == [0.75]
@@ -10354,7 +10354,7 @@ def test_make_agent_nested_max_turns_takes_priority(monkeypatch):
         monkeypatch, {"agent": {"max_turns": 500}, "max_turns": 100}
     )
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 500
@@ -10363,7 +10363,7 @@ def test_make_agent_nested_max_turns_takes_priority(monkeypatch):
 def test_make_agent_defaults_to_90(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 90
@@ -10391,7 +10391,7 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
         fake_resolve_runtime_provider,
     )
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent(
             "sid1",
             "key1",
@@ -10411,7 +10411,7 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
 def test_make_agent_handles_null_agent_config(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {"agent": None, "max_turns": 80})
 
-    with patch("run_agent.AIAgent") as mock_agent:
+    with patch("opencodon.core.run_agent.AIAgent") as mock_agent:
         server._make_agent("sid1", "key1")
 
     assert mock_agent.call_args.kwargs["max_iterations"] == 80
@@ -10492,7 +10492,7 @@ def test_notification_poller_delivers_completion(monkeypatch):
     """Poller picks up completion events and triggers agent turns."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
     emitted = []
@@ -10564,7 +10564,7 @@ def test_notification_poller_skips_consumed(monkeypatch):
     """Already-consumed completions are not dispatched by the poller."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
 
@@ -10619,7 +10619,7 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
     """When the agent is busy, the poller requeues the event."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     emitted = []
 
@@ -10770,7 +10770,7 @@ def test_notification_poller_emits_distinct_watch_matches_once(monkeypatch):
     """Distinct watch matches from one process emit; exact replay is deduped."""
     import queue as _queue_mod
 
-    from tools.process_registry import process_registry
+    from opencodon.tools.process_registry import process_registry
 
     turns = []
     emitted = []
@@ -11113,7 +11113,7 @@ def test_close_session_by_id_is_idempotent_and_full(monkeypatch):
 
     monkeypatch.setattr(server, "_finalize_session", _fake_finalize)
     monkeypatch.setattr(
-        "tools.approval.unregister_gateway_notify",
+        "opencodon.tools.approval.unregister_gateway_notify",
         lambda key: calls.__setitem__("unreg", calls["unreg"] + 1), raising=False,
     )
     server._sessions["sid-1"] = {"session_key": "k1", "agent": A(), "slash_worker": W()}
@@ -11537,7 +11537,7 @@ def _sub_rpc(method, params):
 
 # ── _get_usage active_subagents (TUI status-bar ⛓ indicator) ──────────────
 # Mirrors the classic CLI status bar: _get_usage embeds a live count of
-# background/async subagents from tools.async_delegation.active_count() so the
+# background/async subagents from opencodon.tools.async_delegation.active_count() so the
 # Ink status bar can render ⛓ N. Source of truth is the same registry the CLI
 # reads; the field rides the existing per-update `usage` payload.
 
@@ -11550,14 +11550,14 @@ class _BareAgent:
 
 
 def test_get_usage_includes_active_subagents(monkeypatch):
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
     monkeypatch.setattr(ad_mod, "active_count", lambda: 4)
     usage = server._get_usage(_BareAgent())
     assert usage["active_subagents"] == 4
 
 
 def test_get_usage_active_subagents_zero(monkeypatch):
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
     monkeypatch.setattr(ad_mod, "active_count", lambda: 0)
     usage = server._get_usage(_BareAgent())
     assert usage["active_subagents"] == 0
@@ -11565,7 +11565,7 @@ def test_get_usage_active_subagents_zero(monkeypatch):
 
 def test_get_usage_safe_when_active_count_raises(monkeypatch):
     """A raising active_count() must not break the usage payload."""
-    import tools.async_delegation as ad_mod
+    import opencodon.tools.async_delegation as ad_mod
 
     def _boom():
         raise RuntimeError("boom")
@@ -11860,7 +11860,7 @@ class TestResolveRuntimeWithFallback:
             "opencodon_cli.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
-        monkeypatch.setattr("run_agent.AIAgent", fake_agent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent)
         monkeypatch.setattr(server, "_load_enabled_toolsets", lambda: ["file"])
         monkeypatch.setattr(server, "_get_db", lambda: None)
 
@@ -11957,7 +11957,7 @@ def _fake_tts_modules(monkeypatch, *, requirements=True, playback_stops=None, li
 
     monkeypatch.setitem(
         sys.modules,
-        "tools.tts_tool",
+        "opencodon.tools.tts_tool",
         types.SimpleNamespace(
             check_tts_requirements=lambda: requirements,
             stream_tts_to_speaker=fake_stream,
@@ -11965,7 +11965,7 @@ def _fake_tts_modules(monkeypatch, *, requirements=True, playback_stops=None, li
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.voice_mode",
+        "opencodon.tools.voice_mode",
         types.SimpleNamespace(
             stop_playback=lambda: (playback_stops.append(True) if playback_stops is not None else None),
             listen_for_speech=listen or default_listen,
@@ -12025,7 +12025,7 @@ def test_tts_stream_begin_barges_in_on_previous_pipeline(monkeypatch):
 def test_tts_stream_stop_latches_interruption_for_next_turn(monkeypatch):
     """Cutting live speech (interrupt / typing barge) marks the latch the next
     turn's model note consumes; a mode change (user_barge=False) does not."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12043,7 +12043,7 @@ def test_tts_stream_stop_latches_interruption_for_next_turn(monkeypatch):
 
 def test_tts_stream_stop_after_natural_finish_does_not_latch(monkeypatch):
     """Speech that already finished (done set) isn't an interruption."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12063,7 +12063,7 @@ def test_tts_stream_vad_barge_in_cuts_pipeline_and_submits_capture(monkeypatch, 
     emitted as voice.transcript so the TUI submits it — complete from its
     first syllable, no re-record round trip. The cut also latches the
     speech-interrupted note for the next turn."""
-    import tools.tts_streaming as ts
+    import opencodon.tools.tts_streaming as ts
 
     ts._interrupted_at = None
     monkeypatch.setenv("OPENCODON_VOICE_TTS", "1")
@@ -12131,6 +12131,6 @@ def test_clarify_callback_uses_configured_timeout(monkeypatch):
 def test_clarify_timeout_seconds_maps_non_positive_to_unlimited(monkeypatch, configured, expected):
     """A ``<= 0`` clarify timeout means unlimited and reaches _block as None
     (ev.wait(None) waits forever) rather than an immediate ev.wait(0) skip."""
-    monkeypatch.setattr("tools.clarify_gateway.get_clarify_timeout", lambda: configured)
+    monkeypatch.setattr("opencodon.tools.clarify_gateway.get_clarify_timeout", lambda: configured)
 
     assert server._clarify_timeout_seconds() == expected

@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from typing import List, Optional
 
-from tools import write_approval as wa
+from opencodon.tools import write_approval as wa
 
 
 def _fmt_state(subsystem: str) -> str:
@@ -144,11 +144,11 @@ def _apply_one(subsystem: str, rec, memory_store):
         if subsystem == wa.MEMORY:
             if memory_store is None:
                 return False, "memory store unavailable"
-            from tools.memory_tool import apply_memory_pending
+            from opencodon.tools.memory_tool import apply_memory_pending
             result = apply_memory_pending(payload, memory_store)
             return bool(result.get("success")), result.get("error", "")
         else:
-            from tools.skill_manager_tool import apply_skill_pending
+            from opencodon.tools.skill_manager_tool import apply_skill_pending
             result = json.loads(apply_skill_pending(payload))
             return bool(result.get("success")), result.get("error", "")
     except Exception as e:

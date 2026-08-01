@@ -38,7 +38,7 @@ def _fmt_ts(ts: Optional[str]) -> str:
 
 def _cmd_status(args) -> int:
     from opencodon.core import curator
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
 
     state = curator.load_state()
     enabled = curator.is_enabled()
@@ -247,7 +247,7 @@ def _cmd_resume(args) -> int:
 
 
 def _cmd_pin(args) -> int:
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     if not skill_usage.is_agent_created(args.skill):
         print(
             f"curator: '{args.skill}' is bundled or hub-installed — cannot pin "
@@ -260,7 +260,7 @@ def _cmd_pin(args) -> int:
 
 
 def _cmd_unpin(args) -> int:
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     if not skill_usage.is_agent_created(args.skill):
         print(
             f"curator: '{args.skill}' is bundled or hub-installed — "
@@ -273,7 +273,7 @@ def _cmd_unpin(args) -> int:
 
 
 def _cmd_restore(args) -> int:
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     ok, msg = skill_usage.restore_skill(args.skill)
     print(f"curator: {msg}")
     return 0 if ok else 1
@@ -285,7 +285,7 @@ def _cmd_archive(args) -> int:
     The auto-curator archives stale skills on its own schedule; this verb is
     for the user who wants to archive *now* without waiting for a run.
     """
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     if skill_usage.get_record(args.skill).get("pinned"):
         print(
             f"curator: '{args.skill}' is pinned — unpin first with "
@@ -323,7 +323,7 @@ def _cmd_prune(args) -> int:
     ``--days 90`` matches a conservative read of the curator's own archive
     threshold; adjust with ``--days``. Use ``--dry-run`` to preview.
     """
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     days = getattr(args, "days", 90)
     if days < 1:
         print(f"curator: --days must be >= 1 (got {days})", file=sys.stderr)
@@ -478,7 +478,7 @@ def _cmd_rollback(args) -> int:
 
 def _cmd_list_archived(args) -> int:
     """List archived (recoverable) skills."""
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     names = skill_usage.list_archived_skill_names()
     if not names:
         print("curator: no archived skills")
@@ -496,7 +496,7 @@ def _cmd_usage(args) -> int:
     can see how often each is actually used regardless of curation.
     """
     import json as _json
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
 
     rows = skill_usage.usage_report()
 

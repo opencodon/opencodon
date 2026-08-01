@@ -92,22 +92,22 @@ def _cleanup_oneshot_runtime() -> None:
         return
     _oneshot_cleanup_done = True
     try:
-        from tools.terminal_tool import cleanup_all_environments
+        from opencodon.tools.terminal_tool import cleanup_all_environments
         cleanup_all_environments()
     except Exception:
         pass
     try:
-        from tools.async_delegation import interrupt_all
+        from opencodon.tools.async_delegation import interrupt_all
         interrupt_all(reason="oneshot shutdown")
     except Exception:
         pass
     try:
-        from tools.browser_tool import _emergency_cleanup_all_sessions
+        from opencodon.tools.browser_tool import _emergency_cleanup_all_sessions
         _emergency_cleanup_all_sessions()
     except Exception:
         pass
     try:
-        from tools.mcp_tool import shutdown_mcp_servers
+        from opencodon.tools.mcp_tool import shutdown_mcp_servers
         shutdown_mcp_servers()
     except BaseException:
         pass
@@ -867,7 +867,7 @@ def _sync_bundled_skills_for_startup() -> bool:
     if _is_termux_startup_environment() and not _termux_bundled_skills_sync_needed():
         return False
 
-    from tools.skills_sync import sync_skills
+    from opencodon.tools.skills_sync import sync_skills
 
     sync_skills(quiet=True)
     _mark_termux_bundled_skills_synced()
@@ -1307,7 +1307,7 @@ def _resolve_last_session(source: str = "cli") -> Optional[str]:
     """Look up the most recently-used session ID for a source."""
     db = None
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         sessions = db.search_sessions(source=source, limit=1)
@@ -1446,7 +1446,7 @@ def _resolve_session_by_name_or_id(name_or_id: str) -> Optional[str]:
       resumed at the live tip instead of a stale parent with no messages.
     """
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
 
@@ -1499,7 +1499,7 @@ def _print_tui_exit_summary(
 
     db = None
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         db = SessionDB()
         session = db.get_session(target)
@@ -2417,7 +2417,7 @@ def _sync_bundled_skills_quietly() -> None:
     empty skills library.
     """
     try:
-        from tools.skills_sync import sync_skills
+        from opencodon.tools.skills_sync import sync_skills
 
         sync_skills(quiet=True)
     except Exception:
@@ -2516,7 +2516,7 @@ def cmd_chat(args):
         and not getattr(args, "worktree", False)
     ):
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
 
             _saved_cwd = ((SessionDB().get_session(args.resume) or {}).get("cwd") or "").strip()
             if _saved_cwd and not os.path.isdir(_saved_cwd):
@@ -2993,7 +2993,7 @@ def _is_profile_api_key_provider(provider_id: str) -> bool:
     without requiring an explicit elif branch here.
     """
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         _p = get_provider_profile(provider_id)
         return _p is not None and _p.auth_type == "api_key"
     except Exception:
@@ -4741,8 +4741,8 @@ _UPDATE_CRITICAL_FILES = (
     "opencodon_cli/__init__.py",
     "opencodon_cli/web_server.py",
     "cli.py",
-    "run_agent.py",
-    "model_tools.py",
+    "opencodon.core.run_agent.py",
+    "opencodon.tools.model_tools.py",
     "toolsets.py",
     "opencodon_constants.py",
     # Canonical homes after restructure Phase 1 — the root-level entries
@@ -6436,7 +6436,7 @@ def _print_fts_optimize_available_notice() -> None:
 
     try:
         from opencodon_constants import get_opencodon_home
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
     except Exception:
         return
     db_path = get_opencodon_home() / "state.db"
@@ -7042,7 +7042,7 @@ def _update_via_zip(args):
 
     # Sync skills
     try:
-        from tools.skills_sync import sync_skills
+        from opencodon.tools.skills_sync import sync_skills
 
         print("→ Syncing bundled skills...")
         result = sync_skills(quiet=True)
@@ -8281,7 +8281,7 @@ def _refresh_active_lazy_features() -> None:
     Never raises. A failure here must not block the rest of the update.
     """
     try:
-        from tools import lazy_deps
+        from opencodon.tools import lazy_deps
     except Exception as exc:
         logger.debug("Lazy refresh skipped (import failed): %s", exc)
         return
@@ -10917,7 +10917,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         # Sync bundled skills (copies new, updates changed, respects user deletions)
         try:
-            from tools.skills_sync import sync_skills
+            from opencodon.tools.skills_sync import sync_skills
 
             print()
             print("→ Syncing bundled skills...")
@@ -13488,7 +13488,7 @@ def _prepare_agent_startup(args) -> None:
         try:
             # MCP tool discovery remains synchronous for entrypoints that do
             # not own a later bounded/executor startup path.
-            from tools.mcp_tool import discover_mcp_tools
+            from opencodon.tools.mcp_tool import discover_mcp_tools
 
             discover_mcp_tools()
         except Exception:
@@ -13747,7 +13747,7 @@ def cmd_tools(args):
 
 def cmd_insights(args):
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         from opencodon.core.insights import InsightsEngine
 
         db = SessionDB()
@@ -14321,7 +14321,7 @@ def main():
             return
         if action == "status":
             import subprocess
-            from tools.computer_use.cua_backend import (
+            from opencodon.tools.computer_use.cua_backend import (
                 cua_driver_update_check,
                 resolve_cua_driver_cmd,
             )
@@ -14361,7 +14361,7 @@ def main():
             print("  Run: opencodon computer-use install")
             return
         if action == "doctor":
-            from tools.computer_use.doctor import run_doctor
+            from opencodon.tools.computer_use.doctor import run_doctor
             code = run_doctor(
                 include=list(getattr(args, "include", []) or []),
                 skip=list(getattr(args, "skip", []) or []),
@@ -14371,11 +14371,11 @@ def main():
         if action == "permissions":
             perms_action = getattr(args, "computer_use_perms_action", None)
             if perms_action == "grant":
-                from tools.computer_use.permissions import request_permissions_grant
+                from opencodon.tools.computer_use.permissions import request_permissions_grant
                 sys.exit(request_permissions_grant())
             if perms_action == "status":
                 import json as _json
-                from tools.computer_use.permissions import computer_use_status
+                from opencodon.tools.computer_use.permissions import computer_use_status
                 st = computer_use_status()
                 if bool(getattr(args, "json", False)):
                     print(_json.dumps(st, indent=2, sort_keys=True))
@@ -14734,7 +14734,7 @@ def main():
         # exactly the case where SessionDB() can't open, so it operates on the
         # raw file path instead.
         if action == "repair":
-            from opencodon_state import (
+            from opencodon.state import (
                 DEFAULT_DB_PATH,
                 _db_opens_cleanly,
                 repair_state_db_schema,
@@ -14760,7 +14760,7 @@ def main():
                     print(f"  backup: {report['backup_path']}")
                 print(f"  strategy: {report.get('strategy')}")
                 try:
-                    from opencodon_state import SessionDB
+                    from opencodon.state import SessionDB
 
                     n = SessionDB()._conn.execute(
                         "SELECT COUNT(*) FROM sessions"
@@ -14776,7 +14776,7 @@ def main():
             return
 
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
 
             db = SessionDB()
         except Exception as e:
@@ -14788,7 +14788,7 @@ def main():
         _exclude = None if _source else ["tool"]
 
         if action == "list":
-            from opencodon_state import workspace_key as _ws_key
+            from opencodon.state import workspace_key as _ws_key
 
             sessions = db.list_sessions_rich(
                 source=args.source, exclude_sources=_exclude, limit=args.limit

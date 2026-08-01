@@ -48,7 +48,7 @@ def client(monkeypatch, isolated_profiles):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import opencodon_state
+    from opencodon import state as opencodon_state
     from opencodon_constants import get_opencodon_home
     from opencodon_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
@@ -117,7 +117,7 @@ class TestProfileScopedSkills:
     def test_scope_restores_module_globals(self, client, isolated_profiles):
         """The SKILLS_DIR swap is per-request; the module global must be
         restored even after a scoped call (cron-style locked swap)."""
-        import tools.skills_tool as skills_tool
+        import opencodon.tools.skills_tool as skills_tool
 
         before = skills_tool.SKILLS_DIR
         client.get("/api/skills", params={"profile": "worker_alpha"})

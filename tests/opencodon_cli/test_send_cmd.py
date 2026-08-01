@@ -50,12 +50,12 @@ def fake_tool(monkeypatch):
 
     fake = _FakeTool({"success": True, "message_id": "m123"})
 
-    mod = types.ModuleType("tools.send_message_tool")
+    mod = types.ModuleType("opencodon.tools.send_message_tool")
     mod.send_message_tool = fake
     # Register the stub so ``from tools.send_message_tool import ...`` inside
     # cmd_send resolves to our fake. Also patch the parent ``tools`` package
     # entry so attribute lookup works.
-    monkeypatch.setitem(sys.modules, "tools.send_message_tool", mod)
+    monkeypatch.setitem(sys.modules, "opencodon.tools.send_message_tool", mod)
     return fake
 
 
@@ -191,13 +191,13 @@ def test_tool_error_returns_failure_exit(monkeypatch, capsys):
     import sys as _sys
     import types as _types
 
-    fake_mod = _types.ModuleType("tools.send_message_tool")
+    fake_mod = _types.ModuleType("opencodon.tools.send_message_tool")
 
     def _bad_tool(args, **_kw):
         return json.dumps({"error": "platform blew up"})
 
     fake_mod.send_message_tool = _bad_tool
-    monkeypatch.setitem(_sys.modules, "tools.send_message_tool", fake_mod)
+    monkeypatch.setitem(_sys.modules, "opencodon.tools.send_message_tool", fake_mod)
 
     args = _parse(["--to", "telegram", "nope"])
     with pytest.raises(SystemExit) as exc:
@@ -211,11 +211,11 @@ def test_skipped_result_is_success(monkeypatch):
     import sys as _sys
     import types as _types
 
-    fake_mod = _types.ModuleType("tools.send_message_tool")
+    fake_mod = _types.ModuleType("opencodon.tools.send_message_tool")
     fake_mod.send_message_tool = lambda args, **_kw: json.dumps(
         {"success": True, "skipped": True, "reason": "duplicate"}
     )
-    monkeypatch.setitem(_sys.modules, "tools.send_message_tool", fake_mod)
+    monkeypatch.setitem(_sys.modules, "opencodon.tools.send_message_tool", fake_mod)
 
     args = _parse(["--to", "telegram", "dup"])
     with pytest.raises(SystemExit) as exc:

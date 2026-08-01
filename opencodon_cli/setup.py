@@ -414,8 +414,8 @@ def _print_setup_summary(config: dict, opencodon_home):
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
     try:
-        from tools.web_tools import _get_backend as _web_backend_fn
-        from tools.web_tools import check_web_api_key as _web_available_fn
+        from opencodon.tools.web_tools import _get_backend as _web_backend_fn
+        from opencodon.tools.web_tools import check_web_api_key as _web_available_fn
 
         _web_available = bool(_web_available_fn())
         _web_backend = _web_backend_fn() if _web_available else ""
@@ -444,7 +444,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         _browser_cfg_value, _browser_cfg_value or "Local browser"
     )
     try:
-        from tools.browser_tool import check_browser_requirements as _browser_ok_fn
+        from opencodon.tools.browser_tool import check_browser_requirements as _browser_ok_fn
 
         _browser_available = bool(_browser_ok_fn())
     except Exception:
@@ -477,7 +477,7 @@ def _print_setup_summary(config: dict, opencodon_home):
 
     # Image generation — FAL, or any plugin-registered provider (OpenAI, etc.)
     try:
-        from tools.image_generation_tool import check_fal_api_key as _fal_ok_fn
+        from opencodon.tools.image_generation_tool import check_fal_api_key as _fal_ok_fn
 
         _fal_available = bool(_fal_ok_fn())
     except Exception:
@@ -545,7 +545,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
     if cfg_get(config, "terminal", "backend") == "modal":
-        from tools.tool_backend_helpers import has_direct_modal_credentials
+        from opencodon.tools.tool_backend_helpers import has_direct_modal_credentials
 
         if has_direct_modal_credentials():
             tool_status.append(("Modal Execution (direct Modal)", True, None))
@@ -2531,7 +2531,7 @@ def _run_blank_slate_setup(config: dict, opencodon_home, is_existing: bool):
         # Blank Slate means no bundled skills; record the opt-out so future
         # `opencodon update` runs don't re-inject them.
         try:
-            from tools.skills_sync import set_bundled_skills_opt_out
+            from opencodon.tools.skills_sync import set_bundled_skills_opt_out
             set_bundled_skills_opt_out(True)
         except Exception as exc:
             logger.debug("blank-slate skill opt-out error: %s", exc)
@@ -2564,7 +2564,7 @@ def _blank_slate_walkthrough(config: dict, opencodon_home):
         default=False,
     )
     try:
-        from tools.skills_sync import set_bundled_skills_opt_out, sync_skills
+        from opencodon.tools.skills_sync import set_bundled_skills_opt_out, sync_skills
         if seed_skills:
             # Make sure no stale opt-out marker blocks the seed, then sync.
             set_bundled_skills_opt_out(False)

@@ -40,15 +40,15 @@ from opencodon.core.tool_dispatch_helpers import (
     _plan_tool_batch_segments,
     make_tool_result_message,
 )
-from tools.terminal_tool import (
+from opencodon.tools.terminal_tool import (
     get_active_env,
 )
-from tools.thread_context import propagate_context_to_thread
-from tools.tool_result_storage import (
+from opencodon.tools.thread_context import propagate_context_to_thread
+from opencodon.tools.tool_result_storage import (
     maybe_persist_tool_result,
     enforce_turn_budget,
 )
-from tools.budget_config import BudgetConfig, DEFAULT_BUDGET, budget_for_context_window
+from opencodon.tools.budget_config import BudgetConfig, DEFAULT_BUDGET, budget_for_context_window
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def _ensure_file_checkpoint(
     # which can differ from the opencodon process cwd (notably in Docker).  Resolve
     # through that same path pipeline before asking the checkpoint manager to
     # discover the project root.
-    from tools.file_tools import _resolve_path_for_task
+    from opencodon.tools.file_tools import _resolve_path_for_task
 
     resolved_path = _resolve_path_for_task(file_path, effective_task_id or "default")
     work_dir = agent._checkpoint_mgr.get_working_dir_for_path(str(resolved_path))
@@ -156,7 +156,7 @@ def _flush_session_db_after_tool_progress(
 
 def _ra():
     """Lazy reference to ``run_agent`` so patches like ``run_agent._set_interrupt`` work."""
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -179,7 +179,7 @@ def _emit_terminal_post_tool_call(
     middleware_trace: Optional[list[dict[str, Any]]] = None,
 ) -> None:
     try:
-        from model_tools import _emit_post_tool_call_hook
+        from opencodon.tools.model_tools import _emit_post_tool_call_hook
         _emit_post_tool_call_hook(
             function_name=function_name,
             function_args=function_args,
@@ -254,9 +254,9 @@ def _tool_search_scoped_names(agent) -> frozenset:
     a dict lookup, not a full tool-defs rebuild on every tool call.
     """
     try:
-        import model_tools
-        from tools import tool_search as _ts
-        from tools.registry import registry as _registry
+        from opencodon.tools import model_tools
+        from opencodon.tools import tool_search as _ts
+        from opencodon.tools.registry import registry as _registry
     except Exception:
         return frozenset()
 
@@ -426,7 +426,7 @@ def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effe
         # hook, or dispatch fires.
         _ts_scope_block = None
         try:
-            from tools import tool_search as _ts
+            from opencodon.tools import tool_search as _ts
             if function_name == _ts.TOOL_CALL_NAME:
                 _underlying, _underlying_args, _err = _ts.resolve_underlying_call(function_args)
                 if not _err and _underlying:
@@ -616,7 +616,7 @@ def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effe
         # The callback is thread-local; the main thread's callback
         # is invisible to worker threads.
         try:
-            from tools.environments.base import set_activity_callback
+            from opencodon.tools.environments.base import set_activity_callback
             set_activity_callback(agent._touch_activity)
         except Exception:
             pass
@@ -703,7 +703,7 @@ def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effe
             # non-daemon and registered in concurrent.futures' atexit hook,
             # which joins them unconditionally — so one wedged tool thread
             # would block interpreter exit forever (multi-minute CLI exits).
-            from tools.daemon_pool import DaemonThreadPoolExecutor
+            from opencodon.tools.daemon_pool import DaemonThreadPoolExecutor
             executor = DaemonThreadPoolExecutor(max_workers=max_workers)
             abandon_executor = False
             try:
@@ -1107,7 +1107,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
         # underlying tool directly, so session toolset scope is enforced here).
         _ts_scope_block: Optional[str] = None
         try:
-            from tools import tool_search as _ts
+            from opencodon.tools import tool_search as _ts
             if function_name == _ts.TOOL_CALL_NAME:
                 _underlying, _underlying_args, _err = _ts.resolve_underlying_call(function_args)
                 if not _err and _underlying:
@@ -1189,7 +1189,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
         # the agent while a command is running.
         if not _execution_blocked:
             try:
-                from tools.environments.base import set_activity_callback
+                from opencodon.tools.environments.base import set_activity_callback
                 set_activity_callback(agent._touch_activity)
             except Exception:
                 pass
@@ -1270,7 +1270,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
             )
         elif function_name == "todo":
             def _execute(next_args: dict) -> Any:
-                from tools.todo_tool import todo_tool as _todo_tool
+                from opencodon.tools.todo_tool import todo_tool as _todo_tool
                 return _todo_tool(
                     todos=next_args.get("todos"),
                     merge=next_args.get("merge", False),
@@ -1291,9 +1291,9 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
             def _execute(next_args: dict) -> Any:
                 session_db = agent._get_session_db_for_recall()
                 if not session_db:
-                    from opencodon_state import format_session_db_unavailable
+                    from opencodon.state import format_session_db_unavailable
                     return json.dumps({"success": False, "error": format_session_db_unavailable()})
-                from tools.session_search_tool import session_search as _session_search
+                from opencodon.tools.session_search_tool import session_search as _session_search
                 return _session_search(
                     query=next_args.get("query", ""),
                     role_filter=next_args.get("role_filter"),
@@ -1320,7 +1320,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
             def _execute(next_args: dict) -> Any:
                 target = next_args.get("target", "memory")
                 operations = next_args.get("operations")
-                from tools.memory_tool import memory_tool as _memory_tool
+                from opencodon.tools.memory_tool import memory_tool as _memory_tool
                 result = _memory_tool(
                     action=next_args.get("action"),
                     target=target,
@@ -1355,7 +1355,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
                 agent._vprint(f"  {_get_cute_tool_message_impl('memory', function_args, tool_duration, result=function_result)}")
         elif function_name == "clarify":
             def _execute(next_args: dict) -> Any:
-                from tools.clarify_tool import clarify_tool as _clarify_tool
+                from opencodon.tools.clarify_tool import clarify_tool as _clarify_tool
                 return _clarify_tool(
                     question=next_args.get("question", ""),
                     choices=next_args.get("choices"),
@@ -1374,7 +1374,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
                 agent._vprint(f"  {_get_cute_tool_message_impl('clarify', function_args, tool_duration, result=function_result)}")
         elif function_name == "read_terminal":
             def _execute(next_args: dict) -> Any:
-                from tools.read_terminal_tool import read_terminal_tool as _read_terminal_tool
+                from opencodon.tools.read_terminal_tool import read_terminal_tool as _read_terminal_tool
                 return _read_terminal_tool(
                     start_line=next_args.get("start_line"),
                     count=next_args.get("count"),

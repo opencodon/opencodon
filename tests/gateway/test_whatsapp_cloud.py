@@ -1827,7 +1827,7 @@ class TestDispatchInteractiveReplyClarify:
             return True
 
         monkeypatch.setattr(
-            "tools.clarify_gateway.resolve_gateway_clarify", fake_resolve
+            "opencodon.tools.clarify_gateway.resolve_gateway_clarify", fake_resolve
         )
 
         raw = {
@@ -1862,7 +1862,7 @@ class TestDispatchInteractiveReplyClarify:
 
         flipped_ids = []
         monkeypatch.setattr(
-            "tools.clarify_gateway.mark_awaiting_text",
+            "opencodon.tools.clarify_gateway.mark_awaiting_text",
             lambda cid: flipped_ids.append(cid) or True,
         )
 
@@ -1893,7 +1893,7 @@ class TestDispatchInteractiveReplyClarify:
         adapter = _make_adapter()
         adapter._clarify_state["q1"] = "sess-1"
         monkeypatch.setattr(
-            "tools.clarify_gateway.mark_awaiting_text",
+            "opencodon.tools.clarify_gateway.mark_awaiting_text",
             lambda cid: False,  # entry missing on the gateway side
         )
 
@@ -1935,7 +1935,7 @@ class TestDispatchInteractiveReplyClarify:
         adapter = _make_adapter()
         adapter._clarify_state["q1"] = "sess-1"
         monkeypatch.setattr(
-            "tools.clarify_gateway.resolve_gateway_clarify",
+            "opencodon.tools.clarify_gateway.resolve_gateway_clarify",
             lambda cid, r: False,
         )
 
@@ -1966,7 +1966,7 @@ class TestDispatchInteractiveReplyApproval:
 
         calls = []
         monkeypatch.setattr(
-            "tools.approval.resolve_gateway_approval",
+            "opencodon.tools.approval.resolve_gateway_approval",
             lambda session_key, choice: calls.append((session_key, choice)) or 1,
         )
 
@@ -1998,7 +1998,7 @@ class TestDispatchInteractiveReplyApproval:
 
         choices_seen = []
         monkeypatch.setattr(
-            "tools.approval.resolve_gateway_approval",
+            "opencodon.tools.approval.resolve_gateway_approval",
             lambda session_key, choice: choices_seen.append(choice) or 1,
         )
 
@@ -2019,7 +2019,7 @@ class TestDispatchInteractiveReplyApproval:
 
 @pytest.mark.usefixtures("authorized_interactive_env")
 class TestDispatchInteractiveReplySlashConfirm:
-    """Inbound side: slash-confirm-tap → tools.slash_confirm.resolve."""
+    """Inbound side: slash-confirm-tap → opencodon.tools.slash_confirm.resolve."""
 
     @pytest.mark.asyncio
     async def test_once_tap_calls_resolver(self, monkeypatch):
@@ -2038,7 +2038,7 @@ class TestDispatchInteractiveReplySlashConfirm:
             )
             return "MCP reloaded."
 
-        import tools.slash_confirm as _sc
+        import opencodon.tools.slash_confirm as _sc
         monkeypatch.setattr(_sc, "resolve", fake_resolve)
 
         raw = {
@@ -2073,7 +2073,7 @@ class TestDispatchInteractiveReplyAuthorization:
         adapter._exec_approval_state["app1"] = "sess-app-1"
         calls = []
         monkeypatch.setattr(
-            "tools.approval.resolve_gateway_approval",
+            "opencodon.tools.approval.resolve_gateway_approval",
             lambda session_key, choice: calls.append((session_key, choice)) or 1,
         )
 
@@ -2104,7 +2104,7 @@ class TestDispatchInteractiveReplyAuthorization:
         )
         calls = []
         monkeypatch.setattr(
-            "tools.approval.resolve_gateway_approval",
+            "opencodon.tools.approval.resolve_gateway_approval",
             lambda session_key, choice: calls.append((session_key, choice)) or 1,
         )
 
@@ -2133,7 +2133,7 @@ class TestInteractiveReplyEndToEnd:
         adapter = _make_adapter()
         adapter._clarify_state["q1"] = "sess-1"
         monkeypatch.setattr(
-            "tools.clarify_gateway.resolve_gateway_clarify",
+            "opencodon.tools.clarify_gateway.resolve_gateway_clarify",
             lambda cid, r: True,
         )
 

@@ -39,7 +39,7 @@ from gateway.session_context import (
     reset_session_vars,
     set_session_vars,
 )
-from tools.environments.local import _make_run_env
+from opencodon.tools.environments.local import _make_run_env
 
 SESSION_VARS = list(_VAR_MAP.keys())
 

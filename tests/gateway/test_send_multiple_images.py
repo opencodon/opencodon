@@ -556,7 +556,7 @@ class TestSlackMultiImage:
     def test_url_batch_blocks_private_redirect_before_upload(self, adapter, monkeypatch):
         """HTTP redirects are rechecked before Slack batch uploads remote bytes."""
         import httpx
-        import tools.url_safety as url_safety
+        import opencodon.tools.url_safety as url_safety
 
         public_url = "https://cdn.example.test/image.png"
         private_url = "http://169.254.169.254/latest/meta-data/"

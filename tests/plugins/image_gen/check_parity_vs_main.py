@@ -90,7 +90,7 @@ for name in list(sys.modules):
             or name.startswith("opencodon_cli.")):
         sys.modules.pop(name, None)
 
-import tools.image_generation_tool as image_tool
+import opencodon.tools.image_generation_tool as image_tool
 
 dispatch_kind = None
 provider_name = None

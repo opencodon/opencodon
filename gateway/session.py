@@ -1028,7 +1028,7 @@ class SessionStore:
         # Initialize SQLite session database
         self._db = None
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             self._db = SessionDB()
         except Exception as e:
             print(f"[gateway] Warning: SQLite session store unavailable, falling back to JSONL: {e}")

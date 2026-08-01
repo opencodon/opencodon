@@ -40,7 +40,7 @@ def start_background_mcp_discovery(*, logger, thread_name: str) -> None:
             if thread is not None and thread.is_alive():
                 return
             try:
-                from tools.mcp_tool import get_mcp_status
+                from opencodon.tools.mcp_tool import get_mcp_status
 
                 status = get_mcp_status() or []
                 if any(entry.get("connected") for entry in status):
@@ -62,7 +62,7 @@ def start_background_mcp_discovery(*, logger, thread_name: str) -> None:
             try:
                 _discover_mcp_tools_without_interactive_oauth()
                 try:
-                    from tools.mcp_tool import get_mcp_status
+                    from opencodon.tools.mcp_tool import get_mcp_status
                     status = get_mcp_status() or []
                     if not any(entry.get("connected") for entry in status):
                         logger.warning(
@@ -110,12 +110,12 @@ def _resolve_discovery_timeout(explicit: "float | None") -> float:
 def _discover_mcp_tools_without_interactive_oauth() -> None:
     """Run MCP discovery without letting OAuth read from the user's stdin."""
     try:
-        from tools.mcp_oauth import suppress_interactive_oauth
+        from opencodon.tools.mcp_oauth import suppress_interactive_oauth
     except Exception:
         suppress_interactive_oauth = nullcontext
 
     with suppress_interactive_oauth():
-        from tools.mcp_tool import discover_mcp_tools
+        from opencodon.tools.mcp_tool import discover_mcp_tools
 
         discover_mcp_tools()
 

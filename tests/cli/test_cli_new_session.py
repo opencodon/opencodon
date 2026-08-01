@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon_state import SessionDB
-from tools.todo_tool import TodoStore
+from opencodon.state import SessionDB
+from opencodon.tools.todo_tool import TodoStore
 
 
 class _FakeCompressor:

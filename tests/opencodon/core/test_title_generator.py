@@ -10,7 +10,7 @@ from opencodon.core.title_generator import (
     maybe_auto_title,
     _title_language,
 )
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 class TestGenerateTitle:

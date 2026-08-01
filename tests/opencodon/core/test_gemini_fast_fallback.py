@@ -10,7 +10,7 @@ import inspect
 from unittest.mock import MagicMock
 
 from opencodon.core import conversation_loop
-from run_agent import _pool_may_recover_from_rate_limit
+from opencodon.core.run_agent import _pool_may_recover_from_rate_limit
 
 
 def _pool(entries: int = 2):

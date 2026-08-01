@@ -23,7 +23,7 @@ import threading
 
 import pytest
 
-import tools.mcp_tool as mcp_tool
+import opencodon.tools.mcp_tool as mcp_tool
 import tui_gateway.server as srv
 
 

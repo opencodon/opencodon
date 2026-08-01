@@ -123,7 +123,7 @@ def test_helpers_are_staged_into_the_workspace(tmp_path, monkeypatch):
     skills = tmp_path / "skills"
     (skills / "science" / "demo").mkdir(parents=True)
     (skills / "science" / "demo" / "kernel.py").write_text("def demo_helper():\n    return 42\n")
-    monkeypatch.setattr("tools.skills_hub._skills_dir", lambda: skills)
+    monkeypatch.setattr("opencodon.tools.skills_hub._skills_dir", lambda: skills)
 
     workspace = tmp_path / "ws"
     workspace.mkdir()
@@ -138,7 +138,7 @@ def test_staging_never_breaks_a_cell(tmp_path, monkeypatch):
     from science import bridge
 
     monkeypatch.setattr(
-        "tools.skills_hub._skills_dir", lambda: tmp_path / "does-not-exist"
+        "opencodon.tools.skills_hub._skills_dir", lambda: tmp_path / "does-not-exist"
     )
     workspace = tmp_path / "ws"
     workspace.mkdir()
@@ -152,7 +152,7 @@ def test_load_skill_helpers_defines_the_functions(science_runtime, monkeypatch, 
     (skills / "science" / "demo" / "kernel.py").write_text(
         "PALETTE = ['#111']\n\n\ndef demo_helper(x):\n    return x * 2\n"
     )
-    monkeypatch.setattr("tools.skills_hub._skills_dir", lambda: skills)
+    monkeypatch.setattr("opencodon.tools.skills_hub._skills_dir", lambda: skills)
 
     result = science_runtime.run_cell(
         "s1",
@@ -187,7 +187,7 @@ def test_real_figure_style_helpers_load(science_runtime, monkeypatch):
     if not (SKILLS_ROOT / "figure-style" / "kernel.py").exists():
         pytest.skip("figure-style ships no kernel.py")
     monkeypatch.setattr(
-        "tools.skills_hub._skills_dir", lambda: SKILLS_ROOT.parent
+        "opencodon.tools.skills_hub._skills_dir", lambda: SKILLS_ROOT.parent
     )
     result = science_runtime.run_cell(
         "s1",

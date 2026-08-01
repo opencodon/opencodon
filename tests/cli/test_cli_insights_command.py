@@ -21,7 +21,7 @@ def _run_show_insights(command: str):
     cli_obj = OpencodonCLI.__new__(OpencodonCLI)
     db = MagicMock()
     _InsightsEngineStub.calls = []
-    with patch("opencodon_state.SessionDB", return_value=db), \
+    with patch("opencodon.state.SessionDB", return_value=db), \
          patch("opencodon.core.insights.InsightsEngine", _InsightsEngineStub):
         cli_obj._show_insights(command)
     return _InsightsEngineStub.calls, db

@@ -553,7 +553,7 @@ async def _ssrf_redirect_guard(response):
 
     Must be async because httpx.AsyncClient awaits response event hooks.
     """
-    from tools.url_safety import is_safe_url, redirect_target_from_response
+    from opencodon.tools.url_safety import is_safe_url, redirect_target_from_response
     redirect_url = redirect_target_from_response(response)
     if redirect_url and not is_safe_url(redirect_url):
         raise ValueError(
@@ -747,7 +747,7 @@ async def cache_image_from_url(url: str, ext: str = ".jpg", retries: int = 2) ->
     Raises:
         ValueError: If the URL targets a private/internal network (SSRF protection).
     """
-    from tools.url_safety import create_ssrf_safe_async_client, is_safe_url
+    from opencodon.tools.url_safety import create_ssrf_safe_async_client, is_safe_url
     if not is_safe_url(url):
         raise ValueError(f"Blocked unsafe URL (SSRF protection): {safe_url_for_log(url)}")
 
@@ -867,7 +867,7 @@ async def cache_audio_from_url(url: str, ext: str = ".ogg", retries: int = 2) ->
     Raises:
         ValueError: If the URL targets a private/internal network (SSRF protection).
     """
-    from tools.url_safety import create_ssrf_safe_async_client, is_safe_url
+    from opencodon.tools.url_safety import create_ssrf_safe_async_client, is_safe_url
     if not is_safe_url(url):
         raise ValueError(f"Blocked unsafe URL (SSRF protection): {safe_url_for_log(url)}")
 
@@ -1661,7 +1661,7 @@ def cache_media_bytes(
     ``application/octet-stream``); only images that fail validation
     (``cache_image_from_bytes`` raises ValueError) return None.
     """
-    from tools.credential_files import to_agent_visible_cache_path
+    from opencodon.tools.credential_files import to_agent_visible_cache_path
 
     ext = _resolve_media_ext(filename, mime_type)
     mime = (mime_type or "").lower()
@@ -3205,7 +3205,7 @@ class BasePlatformAdapter(ABC):
             text = "\n".join(lines)
             # Text fallback: enable text-capture so the gateway intercept
             # picks up the user's typed reply (e.g. "2" or choice text).
-            from tools.clarify_gateway import mark_awaiting_text
+            from opencodon.tools.clarify_gateway import mark_awaiting_text
             mark_awaiting_text(clarify_id)
         else:
             text = f"❓ {question}"
@@ -4818,7 +4818,7 @@ class BasePlatformAdapter(ABC):
             # reach the resolver before being treated as a new turn."
             if not cmd:
                 try:
-                    from tools import clarify_gateway as _clarify_mod
+                    from opencodon.tools import clarify_gateway as _clarify_mod
                     _has_text_clarify = (
                         _clarify_mod.get_pending_for_session(
                             session_key,
@@ -5089,7 +5089,7 @@ class BasePlatformAdapter(ABC):
                         and text_content
                         and not media_files):
                     try:
-                        from tools.tts_tool import text_to_speech_tool, check_tts_requirements
+                        from opencodon.tools.tts_tool import text_to_speech_tool, check_tts_requirements
                         if check_tts_requirements():
                             import json as _json
                             speech_text = self.prepare_tts_text(text_content)

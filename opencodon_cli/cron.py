@@ -21,7 +21,7 @@ from opencodon.common.colors import Colors, color
 # ``_contains_gateway_lifecycle_command`` here for back-compat: ``tools/
 # terminal_tool.py`` imports it from this module to hard-block the same
 # commands at execution time when ``_OPENCODON_GATEWAY=1``.
-from cron.lifecycle_guard import (  # noqa: F401  (re-exported for terminal_tool)
+from opencodon.cron.lifecycle_guard import (  # noqa: F401  (re-exported for terminal_tool)
     contains_gateway_lifecycle_command as _contains_gateway_lifecycle_command,
 )
 
@@ -43,7 +43,7 @@ def _normalize_skills(single_skill=None, skills: Optional[Iterable[str]] = None)
 
 
 def _cron_api(**kwargs):
-    from tools.cronjob_tools import cronjob as cronjob_tool
+    from opencodon.tools.cronjob_tools import cronjob as cronjob_tool
 
     return json.loads(cronjob_tool(**kwargs))
 
@@ -56,7 +56,7 @@ def _active_cron_provider_name() -> str:
     on any failure so callers fall back to the historical ticker-based checks.
     """
     try:
-        from cron.scheduler_provider import resolve_cron_scheduler
+        from opencodon.cron.scheduler_provider import resolve_cron_scheduler
 
         return resolve_cron_scheduler().name or "builtin"
     except Exception:
@@ -98,7 +98,7 @@ def _warn_if_gateway_not_running() -> None:
 
 def cron_list(show_all: bool = False):
     """List all scheduled jobs."""
-    from cron.jobs import list_jobs
+    from opencodon.cron.jobs import list_jobs
 
     jobs = list_jobs(include_disabled=show_all)
 
@@ -192,13 +192,13 @@ def cron_list(show_all: bool = False):
 
 def cron_tick():
     """Run due jobs once and exit."""
-    from cron.scheduler import tick
+    from opencodon.cron.scheduler import tick
     tick(verbose=True)
 
 
 def cron_runs(job_id: Optional[str] = None, limit: int = 20):
     """Show indexed durable cron execution history."""
-    from cron.executions import list_executions
+    from opencodon.cron.executions import list_executions
 
     records = list_executions(job_id=job_id, limit=limit)
     if not records:
@@ -216,7 +216,7 @@ def cron_runs(job_id: Optional[str] = None, limit: int = 20):
 
 def cron_status():
     """Show cron execution status."""
-    from cron.jobs import list_jobs
+    from opencodon.cron.jobs import list_jobs
     from opencodon_cli.gateway import find_gateway_pids
 
     print()
@@ -252,7 +252,7 @@ def cron_status():
         # the liveness heartbeat and the last-successful-tick marker so we
         # don't report "will fire" when the ticker is dead or failing
         # (#32612, #32895).
-        from cron.jobs import (
+        from opencodon.cron.jobs import (
             get_ticker_heartbeat_age,
             get_ticker_success_age,
             TICKER_INTERVAL_SECONDS,
@@ -357,7 +357,7 @@ def cron_create(args):
 
 
 def cron_edit(args):
-    from cron.jobs import AmbiguousJobReference, resolve_job_ref
+    from opencodon.cron.jobs import AmbiguousJobReference, resolve_job_ref
 
     try:
         job = resolve_job_ref(args.job_id)

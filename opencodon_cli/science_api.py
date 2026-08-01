@@ -90,7 +90,7 @@ def set_reproduce_gate(gate: Callable[[], bool]) -> None:
 def _open_db(profile: Optional[str]):
     if _db_opener is not None:
         return _db_opener(profile)
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     return SessionDB()
 

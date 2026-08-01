@@ -66,7 +66,7 @@ def test_project_local_state_db_remains_writable(fake_homes, tmp_path):
 
 
 def test_write_file_tool_preserves_existing_session_snapshot(fake_homes):
-    import tools.file_tools as ft
+    import opencodon.tools.file_tools as ft
 
     _root, profile = fake_homes
     target = profile / "sessions" / "session_abc.json"

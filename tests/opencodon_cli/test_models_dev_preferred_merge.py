@@ -112,7 +112,7 @@ class TestProviderModelIdsPreferred:
                 "opencodon_cli.auth.resolve_api_key_provider_credentials",
                 return_value={"api_key": "sk-test", "base_url": "https://api.moonshot.ai/v1"},
             ),
-            patch("providers.base.ProviderProfile.fetch_models", return_value=["kimi-k2.6"]),
+            patch("opencodon.providers.base.ProviderProfile.fetch_models", return_value=["kimi-k2.6"]),
         ):
             out = provider_model_ids("kimi-coding")
         # Curated-first order; curated newest (k3) stays ahead of live.

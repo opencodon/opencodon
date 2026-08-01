@@ -420,7 +420,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
 # providers/ that is not already declared above.  New providers only need a
 # plugins/model-providers/<name>/ plugin — no edits to this file required.
 try:
-    from providers import list_providers as _list_providers_for_registry
+    from opencodon.providers import list_providers as _list_providers_for_registry
     for _pp in _list_providers_for_registry():
         if _pp.name in PROVIDER_REGISTRY:
             continue
@@ -1849,7 +1849,7 @@ def resolve_provider(
     # This keeps providers/ as the single source for new aliases while the
     # hardcoded dict above remains authoritative for existing ones.
     try:
-        from providers import list_providers as _lp
+        from opencodon.providers import list_providers as _lp
         for _pp in _lp():
             for _alias in _pp.aliases:
                 if _alias not in _PROVIDER_ALIASES:

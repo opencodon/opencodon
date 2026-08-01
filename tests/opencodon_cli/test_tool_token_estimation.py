@@ -263,7 +263,7 @@ def test_curses_checklist_numbered_fallback_without_status(monkeypatch, capsys):
 
 def test_registry_get_schema_returns_schema():
     """registry.get_schema() should return a tool's schema dict."""
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     # Import to trigger discovery
     import model_tools  # noqa: F401
@@ -277,6 +277,6 @@ def test_registry_get_schema_returns_schema():
 
 def test_registry_get_schema_returns_none_for_unknown():
     """registry.get_schema() should return None for unknown tools."""
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     assert registry.get_schema("nonexistent_tool_xyz") is None

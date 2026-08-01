@@ -343,55 +343,55 @@ class TestMinimaxPreserveDots:
     def test_minimax_provider_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="minimax", base_url="")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_minimax_cn_provider_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="minimax-cn", base_url="")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_minimax_url_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="custom", base_url="https://api.minimax.io/anthropic")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_minimax_cn_url_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="custom", base_url="https://api.minimaxi.com/anthropic")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_anthropic_does_not_preserve_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="anthropic", base_url="https://api.anthropic.com")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is False
 
     def test_opencode_zen_provider_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="opencode-zen", base_url="")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_opencode_zen_url_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="custom", base_url="https://opencode.ai/zen/v1")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_zai_provider_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="zai", base_url="")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_bigmodel_cn_url_preserves_dots(self):
         from types import SimpleNamespace
         agent = SimpleNamespace(provider="custom", base_url="https://open.bigmodel.cn/api/paas/v4")
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         assert AIAgent._anthropic_preserve_dots(agent) is True
 
     def test_normalize_preserves_m25_free_dot(self):
@@ -426,8 +426,8 @@ class TestMinimaxSwitchModelCredentialGuard:
         """switch_model() should NOT call resolve_anthropic_token() for MiniMax."""
         from unittest.mock import patch, MagicMock
 
-        with patch("run_agent.AIAgent.__init__", return_value=None):
-            from run_agent import AIAgent
+        with patch("opencodon.core.run_agent.AIAgent.__init__", return_value=None):
+            from opencodon.core.run_agent import AIAgent
             agent = AIAgent.__new__(AIAgent)
             agent.provider = "anthropic"
             agent.model = "claude-sonnet-4"

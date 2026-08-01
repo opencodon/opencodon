@@ -56,11 +56,11 @@ def _ra():
     ``build_context_files_prompt``,
     ``build_skills_system_prompt`` and ``get_toolset_for_tool`` are
     imported into ``run_agent``'s namespace.  Many tests
-    ``patch("run_agent.load_soul_md", ...)``; if we imported them
+    ``patch("opencodon.core.run_agent.load_soul_md", ...)``; if we imported them
     directly here those patches would not reach us.  Looking them up
     through ``run_agent`` on every call preserves the patch contract.
     """
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -359,7 +359,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # config.yaml ``agent.environment_probe`` (default True).
     if getattr(agent, "_environment_probe", True):
         try:
-            from tools.env_probe import get_environment_probe_line
+            from opencodon.tools.env_probe import get_environment_probe_line
             _probe_line = get_environment_probe_line()
             if _probe_line:
                 stable_parts.append(_probe_line)

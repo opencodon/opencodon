@@ -497,7 +497,7 @@ class ResponseStore:
         # gracefully on NFS/SMB/FUSE-mounted OPENCODON_HOME (same filesystem
         # issue addressed for state.db — see
         # opencodon_state._WAL_INCOMPAT_MARKERS).
-        from opencodon_state import apply_wal_with_fallback
+        from opencodon.state import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="response_store.db")
         self._conn.execute(
             """CREATE TABLE IF NOT EXISTS responses (
@@ -912,7 +912,7 @@ def _derive_chat_session_id(
 
 _CRON_AVAILABLE = False
 try:
-    from cron.jobs import (
+    from opencodon.cron.jobs import (
         list_jobs as _cron_list,
         get_job as _cron_get,
         create_job as _cron_create,
@@ -938,7 +938,7 @@ def _notify_cron_provider_jobs_changed() -> None:
     """Tell the active cron scheduler provider the job set changed after a REST
     mutation (no-op for the built-in). Best-effort — never breaks the handler."""
     try:
-        from cron.scheduler import _notify_provider_jobs_changed
+        from opencodon.cron.scheduler import _notify_provider_jobs_changed
         _notify_provider_jobs_changed()
     except Exception:
         pass
@@ -952,7 +952,7 @@ def _notify_cron_provider_jobs_changed() -> None:
 # which surface created the job.  Imported defensively: a missing scanner
 # must not disable the cron REST API.
 try:
-    from tools.cronjob_tools import _scan_cron_prompt as _scan_cron_prompt
+    from opencodon.tools.cronjob_tools import _scan_cron_prompt as _scan_cron_prompt
 except Exception:  # pragma: no cover - scanner is optional hardening
     _scan_cron_prompt = None
 
@@ -1123,13 +1123,13 @@ class APIServerAdapter(BasePlatformAdapter):
         process_depth = 0
         active_delegations = 0
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
 
             process_depth = process_registry.completion_queue.qsize()
         except Exception:
             pass
         try:
-            from tools.async_delegation import active_count
+            from opencodon.tools.async_delegation import active_count
 
             active_delegations = active_count()
         except Exception:
@@ -1646,7 +1646,7 @@ class APIServerAdapter(BasePlatformAdapter):
         — that stays reserved for an explicit test/manual override, so the first
         profile served can't pin every later request to its DB.
         """
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         key = str(home)
         cache = getattr(self, "_session_dbs", None)
@@ -1820,7 +1820,7 @@ class APIServerAdapter(BasePlatformAdapter):
         this session — its model/provider/api_key/base_url override the
         global defaults for this agent instance only.
         """
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         from gateway.run import (
             _checkpoint_agent_kwargs,
             _current_max_iterations,
@@ -2137,7 +2137,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return auth_err
 
         try:
-            from tools.skills_tool import _find_all_skills, _sort_skills
+            from opencodon.tools.skills_tool import _find_all_skills, _sort_skills
             skills = _sort_skills(_find_all_skills(skip_disabled=False))
         except Exception:
             logger.exception("GET /v1/skills failed")
@@ -4986,7 +4986,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
                 def _run_sync():
                     from gateway.session_context import clear_session_vars
-                    from tools.approval import (
+                    from opencodon.tools.approval import (
                         register_gateway_notify,
                         reset_current_session_key,
                         set_current_session_key,
@@ -5116,7 +5116,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 # waits immediately; the in-thread unregister is harmlessly
                 # idempotent on normal completion.
                 try:
-                    from tools.approval import unregister_gateway_notify
+                    from opencodon.tools.approval import unregister_gateway_notify
 
                     unregister_gateway_notify(approval_session_key)
                 except Exception:
@@ -5264,7 +5264,7 @@ class APIServerAdapter(BasePlatformAdapter):
             or _coerce_request_bool(body.get("resolve_all"), default=False)
         )
         try:
-            from tools.approval import resolve_gateway_approval
+            from opencodon.tools.approval import resolve_gateway_approval
 
             resolved = resolve_gateway_approval(
                 approval_session_key,
@@ -5351,7 +5351,7 @@ class APIServerAdapter(BasePlatformAdapter):
             task_done = task is None or task.done()
             if task_done:
                 try:
-                    from tools.approval import unregister_gateway_notify
+                    from opencodon.tools.approval import unregister_gateway_notify
 
                     approval_session_key = self._run_approval_sessions.get(run_id)
                     if approval_session_key:

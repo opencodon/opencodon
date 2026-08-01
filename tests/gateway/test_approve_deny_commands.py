@@ -68,7 +68,7 @@ def _make_runner():
 
 def _clear_approval_state():
     """Reset all module-level approval state between tests."""
-    from tools import approval as mod
+    from opencodon.tools import approval as mod
     mod._gateway_queues.clear()
     mod._gateway_notify_cbs.clear()
     mod._session_approved.clear()
@@ -89,7 +89,7 @@ class TestBlockingGatewayApproval:
 
     def test_register_and_resolve_unblocks_entry(self):
         """resolve_gateway_approval signals the entry's event."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             resolve_gateway_approval, has_blocking_approval,
             _ApprovalEntry, _gateway_queues,
@@ -118,12 +118,12 @@ class TestBlockingGatewayApproval:
         unregister_gateway_notify(session_key)
 
     def test_resolve_returns_zero_when_no_pending(self):
-        from tools.approval import resolve_gateway_approval
+        from opencodon.tools.approval import resolve_gateway_approval
         assert resolve_gateway_approval("nonexistent", "once") == 0
 
     def test_resolve_all_unblocks_multiple_entries(self):
         """resolve_gateway_approval with resolve_all=True signals all entries."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             resolve_gateway_approval, _ApprovalEntry, _gateway_queues,
         )
         session_key = "test-all"
@@ -139,7 +139,7 @@ class TestBlockingGatewayApproval:
 
     def test_resolve_single_pops_oldest_fifo(self):
         """resolve_gateway_approval without resolve_all resolves oldest first."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             resolve_gateway_approval,
             _ApprovalEntry, _gateway_queues,
         )
@@ -157,7 +157,7 @@ class TestBlockingGatewayApproval:
 
     def test_unregister_signals_all_entries(self):
         """unregister_gateway_notify signals all waiting entries to prevent hangs."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             _ApprovalEntry, _gateway_queues,
         )
@@ -174,7 +174,7 @@ class TestBlockingGatewayApproval:
 
     def test_clear_session_denies_and_signals_all_entries(self):
         """clear_session must wake blocked entries during boundary cleanup."""
-        from tools.approval import clear_session, _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import clear_session, _ApprovalEntry, _gateway_queues
 
         session_key = "test-boundary-cleanup"
         e1 = _ApprovalEntry({"command": "cmd1"})
@@ -203,7 +203,7 @@ class TestApproveCommand:
     @pytest.mark.asyncio
     async def test_approve_resolves_blocking_approval(self):
         """Basic /approve signals the oldest blocked agent thread."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -220,7 +220,7 @@ class TestApproveCommand:
     @pytest.mark.asyncio
     async def test_approve_all_resolves_multiple(self):
         """/approve all resolves all pending approvals."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -238,7 +238,7 @@ class TestApproveCommand:
     @pytest.mark.asyncio
     async def test_approve_all_session(self):
         """/approve all session resolves all with session scope."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -286,7 +286,7 @@ class TestDenyCommand:
     @pytest.mark.asyncio
     async def test_deny_resolves_blocking_approval(self):
         """/deny signals the oldest blocked agent thread with 'deny'."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -303,7 +303,7 @@ class TestDenyCommand:
     @pytest.mark.asyncio
     async def test_deny_all_resolves_all(self):
         """/deny all denies all pending approvals."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -327,7 +327,7 @@ class TestDenyCommand:
     @pytest.mark.asyncio
     async def test_deny_with_reason_attaches_reason(self):
         """/deny <reason> attaches the reason to the resolved entry."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -346,7 +346,7 @@ class TestDenyCommand:
     @pytest.mark.asyncio
     async def test_deny_all_with_reason(self):
         """/deny all <reason> denies everything and relays one reason."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -366,7 +366,7 @@ class TestDenyCommand:
     @pytest.mark.asyncio
     async def test_deny_plain_has_no_reason(self):
         """A bare /deny leaves the reason unset (regression guard)."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -393,7 +393,7 @@ class TestBareTextNoLongerApproves:
     @pytest.mark.asyncio
     async def test_yes_does_not_execute_pending_command(self):
         """Saying 'yes' must not trigger approval. Only /approve works."""
-        from tools.approval import _ApprovalEntry, _gateway_queues
+        from opencodon.tools.approval import _ApprovalEntry, _gateway_queues
 
         runner = _make_runner()
         source = _make_source()
@@ -416,7 +416,7 @@ class TestBlockingApprovalE2E:
 
     @pytest.fixture(autouse=True)
     def _manual_approval_mode(self, monkeypatch):
-        monkeypatch.setattr("tools.approval._get_approval_mode", lambda: "manual")
+        monkeypatch.setattr("opencodon.tools.approval._get_approval_mode", lambda: "manual")
 
     def setup_method(self):
         _clear_approval_state()
@@ -429,7 +429,7 @@ class TestBlockingApprovalE2E:
         # approvals.mode=smart which may auto-approve/deny via aux LLM before
         # notify_cb runs (flaky on CI when the LLM is slow or unavailable).
         self._approval_mode_patch = patch(
-            "tools.approval._get_approval_mode", return_value="manual"
+            "opencodon.tools.approval._get_approval_mode", return_value="manual"
         )
         self._approval_mode_patch.start()
 
@@ -438,7 +438,7 @@ class TestBlockingApprovalE2E:
 
     def test_blocking_approval_approve_once(self):
         """check_all_command_guards blocks until resolve_gateway_approval is called."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             resolve_gateway_approval, check_all_command_guards,
         )
@@ -451,7 +451,7 @@ class TestBlockingApprovalE2E:
         result_holder = [None]
 
         def agent_thread():
-            from tools.approval import reset_current_session_key, set_current_session_key
+            from opencodon.tools.approval import reset_current_session_key, set_current_session_key
 
             token = set_current_session_key(session_key)
             os.environ["OPENCODON_GATEWAY_SESSION"] = "1"
@@ -487,7 +487,7 @@ class TestBlockingApprovalE2E:
 
     def test_blocking_approval_deny(self):
         """check_all_command_guards returns BLOCKED when denied."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             resolve_gateway_approval, check_all_command_guards,
         )
@@ -499,7 +499,7 @@ class TestBlockingApprovalE2E:
         result_holder = [None]
 
         def agent_thread():
-            from tools.approval import reset_current_session_key, set_current_session_key
+            from opencodon.tools.approval import reset_current_session_key, set_current_session_key
 
             token = set_current_session_key(session_key)
             os.environ["OPENCODON_GATEWAY_SESSION"] = "1"
@@ -539,8 +539,8 @@ class TestBlockingApprovalE2E:
     )
     def test_blocking_approval_uses_canonical_timeout(self, approval_config, monkeypatch):
         """Gateway waits use approvals.timeout, without a second timeout knob."""
-        from tools import approval as approval_module
-        from tools.approval import (
+        from opencodon.tools import approval as approval_module
+        from opencodon.tools.approval import (
             check_all_command_guards,
             register_gateway_notify,
             reset_current_session_key,
@@ -562,7 +562,7 @@ class TestBlockingApprovalE2E:
             os.environ["OPENCODON_SESSION_KEY"] = session_key
             try:
                 with patch(
-                    "tools.approval._get_approval_config",
+                    "opencodon.tools.approval._get_approval_config",
                     return_value=approval_config,
                 ):
                     result_holder[0] = check_all_command_guards(
@@ -588,7 +588,7 @@ class TestBlockingApprovalE2E:
 
     def test_parallel_subagent_approvals(self):
         """Multiple threads can block concurrently and be resolved independently."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             resolve_gateway_approval, check_all_command_guards,
             _gateway_queues,
@@ -602,7 +602,7 @@ class TestBlockingApprovalE2E:
 
         def make_agent(idx, cmd):
             def run():
-                from tools.approval import reset_current_session_key, set_current_session_key
+                from opencodon.tools.approval import reset_current_session_key, set_current_session_key
 
                 token = set_current_session_key(session_key)
                 os.environ["OPENCODON_GATEWAY_SESSION"] = "1"
@@ -647,7 +647,7 @@ class TestBlockingApprovalE2E:
 
     def test_parallel_mixed_approve_deny(self):
         """Approve some, deny others in a parallel batch."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             register_gateway_notify, unregister_gateway_notify,
             resolve_gateway_approval, check_all_command_guards,
         )
@@ -659,7 +659,7 @@ class TestBlockingApprovalE2E:
 
         def make_agent(idx, cmd):
             def run():
-                from tools.approval import reset_current_session_key, set_current_session_key
+                from opencodon.tools.approval import reset_current_session_key, set_current_session_key
 
                 token = set_current_session_key(session_key)
                 os.environ["OPENCODON_GATEWAY_SESSION"] = "1"
@@ -684,7 +684,7 @@ class TestBlockingApprovalE2E:
         # Wait for both threads to register pending approvals instead of
         # relying on a fixed sleep.  The approval module stores entries in
         # _gateway_queues[session_key] — poll until we see 2 entries.
-        from tools.approval import _gateway_queues
+        from opencodon.tools.approval import _gateway_queues
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
             if len(_gateway_queues.get(session_key, [])) >= 2:
@@ -721,7 +721,7 @@ class TestFallbackNoCallback:
         to ``pending_approval`` to make the state distinguishable from a
         failed tool call.
         """
-        from tools.approval import check_all_command_guards
+        from opencodon.tools.approval import check_all_command_guards
 
         os.environ["OPENCODON_EXEC_ASK"] = "1"
         os.environ["OPENCODON_SESSION_KEY"] = "no-callback-test"
@@ -760,7 +760,7 @@ class TestCrossSessionApprovalIsolation:
 
     @pytest.fixture(autouse=True)
     def _manual_approval_mode(self, monkeypatch):
-        monkeypatch.setattr("tools.approval._get_approval_mode", lambda: "manual")
+        monkeypatch.setattr("opencodon.tools.approval._get_approval_mode", lambda: "manual")
 
     def setup_method(self):
         _clear_approval_state()
@@ -771,7 +771,7 @@ class TestCrossSessionApprovalIsolation:
 
     def test_contextvar_wins_over_clobbered_environ(self):
         """get_current_session_key honors the contextvar, not stale env."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             get_current_session_key,
             reset_current_session_key,
             set_current_session_key,
@@ -802,7 +802,7 @@ class TestCrossSessionApprovalIsolation:
         the resolver never surfaces it.
         """
         from gateway.session_context import clear_session_vars, set_session_vars
-        from tools.approval import get_current_session_key
+        from opencodon.tools.approval import get_current_session_key
 
         # Simulate: concurrent session B was the last to clobber os.environ
         # under the OLD buggy gateway. With the fix this write never happens,
@@ -830,7 +830,7 @@ class TestCrossSessionApprovalIsolation:
     def test_approval_prompt_routes_to_originating_session(self):
         """A dangerous command in session A's worker thread notifies
         session A's callback, even though os.environ points at session B."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             check_all_command_guards,
             register_gateway_notify,
             reset_current_session_key,
@@ -897,7 +897,7 @@ class TestCrossSessionApprovalIsolation:
         must land in its OWN gateway queue, and resolving one must not resolve
         the other.
         """
-        from tools.approval import (
+        from opencodon.tools.approval import (
             _gateway_queues,
             check_all_command_guards,
             register_gateway_notify,

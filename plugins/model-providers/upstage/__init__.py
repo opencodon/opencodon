@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 # Model-name markers for Solar families that do NOT accept ``reasoning_effort``.

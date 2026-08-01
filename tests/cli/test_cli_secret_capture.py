@@ -4,10 +4,10 @@ import time
 from unittest.mock import patch
 
 import cli as cli_module
-import tools.skills_tool as skills_tool_module
+import opencodon.tools.skills_tool as skills_tool_module
 from cli import OpencodonCLI
 from opencodon_cli.callbacks import prompt_for_secret
-from tools.skills_tool import set_secret_capture_callback
+from opencodon.tools.skills_tool import set_secret_capture_callback
 
 
 class _FakeBuffer:

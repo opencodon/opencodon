@@ -894,21 +894,21 @@ from rich.text import Text as _RichText
 # Import agent and tool systems lazily. Bare interactive startup only needs the
 # prompt; the full agent/tool registry is initialized on first use.
 def AIAgent(*args, **kwargs):
-    from run_agent import AIAgent as _AIAgent
+    from opencodon.core.run_agent import AIAgent as _AIAgent
 
     return _AIAgent(*args, **kwargs)
 
 
 def get_tool_definitions(*args, **kwargs):
     from opencodon_cli.mcp_startup import wait_for_mcp_discovery
-    from model_tools import get_tool_definitions as _get_tool_definitions
+    from opencodon.tools.model_tools import get_tool_definitions as _get_tool_definitions
 
     wait_for_mcp_discovery()
     return _get_tool_definitions(*args, **kwargs)
 
 
 def get_toolset_for_tool(*args, **kwargs):
-    from model_tools import get_toolset_for_tool as _get_toolset_for_tool
+    from opencodon.tools.model_tools import get_toolset_for_tool as _get_toolset_for_tool
 
     return _get_toolset_for_tool(*args, **kwargs)
 
@@ -943,7 +943,7 @@ def _sync_process_session_id(session_id: str) -> None:
 
 # Cron job system for scheduled tasks (execution is handled by the gateway)
 def get_job(*args, **kwargs):
-    from cron import get_job as _get_job
+    from opencodon.cron import get_job as _get_job
 
     return _get_job(*args, **kwargs)
 
@@ -952,31 +952,31 @@ from opencodon_cli.callbacks import prompt_for_secret
 
 
 def _cleanup_all_terminals(*args, **kwargs):
-    from tools.terminal_tool import cleanup_all_environments
+    from opencodon.tools.terminal_tool import cleanup_all_environments
 
     return cleanup_all_environments(*args, **kwargs)
 
 
 def set_sudo_password_callback(*args, **kwargs):
-    from tools.terminal_tool import set_sudo_password_callback as _set_sudo_password_callback
+    from opencodon.tools.terminal_tool import set_sudo_password_callback as _set_sudo_password_callback
 
     return _set_sudo_password_callback(*args, **kwargs)
 
 
 def set_approval_callback(*args, **kwargs):
-    from tools.terminal_tool import set_approval_callback as _set_approval_callback
+    from opencodon.tools.terminal_tool import set_approval_callback as _set_approval_callback
 
     return _set_approval_callback(*args, **kwargs)
 
 
 def set_secret_capture_callback(*args, **kwargs):
-    from tools.skills_tool import set_secret_capture_callback as _set_secret_capture_callback
+    from opencodon.tools.skills_tool import set_secret_capture_callback as _set_secret_capture_callback
 
     return _set_secret_capture_callback(*args, **kwargs)
 
 
 def _cleanup_all_browsers(*args, **kwargs):
-    from tools.browser_tool import _emergency_cleanup_all_sessions
+    from opencodon.tools.browser_tool import _emergency_cleanup_all_sessions
 
     return _emergency_cleanup_all_sessions(*args, **kwargs)
 
@@ -1180,7 +1180,7 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
     except Exception:
         pass
     try:
-        from tools.async_delegation import interrupt_all as _interrupt_async_delegations
+        from opencodon.tools.async_delegation import interrupt_all as _interrupt_async_delegations
         _interrupt_async_delegations(reason="CLI shutdown")
     except Exception:
         pass
@@ -1189,7 +1189,7 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
     except Exception:
         pass
     try:
-        from tools.mcp_tool import shutdown_mcp_servers
+        from opencodon.tools.mcp_tool import shutdown_mcp_servers
         shutdown_mcp_servers()
     except BaseException:
         pass
@@ -1934,7 +1934,7 @@ def _run_checkpoint_auto_maintenance() -> None:
         cfg = (_load_full_config().get("checkpoints") or {})
         if not cfg.get("auto_prune", False):
             return
-        from tools.checkpoint_manager import maybe_auto_prune_checkpoints
+        from opencodon.tools.checkpoint_manager import maybe_auto_prune_checkpoints
         maybe_auto_prune_checkpoints(
             retention_days=int(cfg.get("retention_days", 7)),
             min_interval_hours=int(cfg.get("min_interval_hours", 24)),
@@ -4005,7 +4005,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         self._session_db = None
         self._session_db_unavailable = False
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             self._session_db = SessionDB()
         except Exception as e:
             # #41386: a failed session store means the transcript is NOT
@@ -4714,7 +4714,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Count live background terminal processes (terminal tool background
         # sessions tracked by tools.process_registry). Cheap O(1) read.
         try:
-            from tools.process_registry import process_registry
+            from opencodon.tools.process_registry import process_registry
             snapshot["active_background_processes"] = process_registry.count_running()
         except Exception:
             pass
@@ -4724,7 +4724,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # active_count() iterates an in-memory records dict under a lock —
         # cheap and only counts records still in the "running" state.
         try:
-            from tools.async_delegation import active_count as _async_active_count
+            from opencodon.tools.async_delegation import active_count as _async_active_count
             snapshot["active_background_subagents"] = _async_active_count()
         except Exception:
             pass
@@ -6035,7 +6035,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         set_approval_callback(self._approval_callback)
         set_secret_capture_callback(self._secret_capture_callback)
         try:
-            from tools.computer_use_tool import set_approval_callback as _set_cu_cb
+            from opencodon.tools.computer_use_tool import set_approval_callback as _set_cu_cb
 
             _set_cu_cb(self._computer_use_approval_callback)
         except ImportError:
@@ -6048,7 +6048,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
         self._tirith_security_checked = True
         try:
-            from tools.tirith_security import ensure_installed, is_platform_supported
+            from opencodon.tools.tirith_security import ensure_installed, is_platform_supported
 
             tirith_path = ensure_installed(log_failures=False)
             if tirith_path is None and is_platform_supported():
@@ -6327,7 +6327,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         image later with ``vision_analyze`` if needed.
         """
         import asyncio as _asyncio
-        from tools.vision_tools import vision_analyze_tool
+        from opencodon.tools.vision_tools import vision_analyze_tool
 
         analysis_prompt = (
             "Describe everything visible in this image in thorough detail. "
@@ -6383,7 +6383,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
     def _show_tool_availability_warnings(self):
         """Show warnings about disabled tools due to missing API keys."""
         try:
-            from model_tools import check_tool_availability
+            from opencodon.tools.model_tools import check_tool_availability
             
             available, unavailable = check_tool_availability()
             
@@ -7052,7 +7052,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self.agent._last_flushed_db_idx = 0
             if hasattr(self.agent, "_todo_store"):
                 try:
-                    from tools.todo_tool import TodoStore
+                    from opencodon.tools.todo_tool import TodoStore
                     self.agent._todo_store = TodoStore()
                 except Exception:
                     pass
@@ -7075,7 +7075,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 except Exception:
                     pass
                 if title and self._session_db:
-                    from opencodon_state import SessionDB
+                    from opencodon.state import SessionDB
                     try:
                         sanitized = SessionDB.sanitize_title(title)
                     except ValueError as e:
@@ -8628,7 +8628,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     if self._session_db:
                         # Sanitize the title early so feedback matches what gets stored
                         try:
-                            from opencodon_state import SessionDB
+                            from opencodon.state import SessionDB
                             new_title = SessionDB.sanitize_title(raw_title)
                         except ValueError as e:
                             _cprint(f"  {e}")
@@ -8654,7 +8654,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                                 self._pending_title = new_title
                                 _cprint(f"  Session title queued: {new_title} (will be saved on first message)")
                     else:
-                        from opencodon_state import format_session_db_unavailable
+                        from opencodon.state import format_session_db_unavailable
                         _cprint(f"  {format_session_db_unavailable()}")
                 else:
                     _cprint("  Usage: /title <your session title>")
@@ -8669,7 +8669,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 else:
                     _cprint("  No title set. Usage: /title <your session title>")
             else:
-                from opencodon_state import format_session_db_unavailable
+                from opencodon.state import format_session_db_unavailable
                 _cprint(f"  {format_session_db_unavailable()}")
         elif canonical == "handoff":
             if not self._handle_handoff_command(cmd_original):
@@ -8981,7 +8981,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                             # Sanitize env to prevent credential leakage —
                             # quick commands run in the CLI process which
                             # has all API keys in os.environ.
-                            from tools.environments.local import _sanitize_subprocess_env
+                            from opencodon.tools.environments.local import _sanitize_subprocess_env
                             sanitized_env = _sanitize_subprocess_env(os.environ.copy())
                             result = subprocess.run(
                                 exec_cmd, shell=True, capture_output=True,
@@ -9224,8 +9224,8 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         session identity when draining so another window cannot claim and mark
         delivered a completion that belongs to this one.
         """
-        from tools.process_registry import process_registry
-        from tools.async_delegation import (
+        from opencodon.tools.process_registry import process_registry
+        from opencodon.tools.async_delegation import (
             claim_event_delivery,
             complete_event_delivery,
         )
@@ -9448,7 +9448,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if not old_session_id or not new_session_id or old_session_id == new_session_id:
             return
         try:
-            from tools.approval import (
+            from opencodon.tools.approval import (
                 disable_session_yolo,
                 enable_session_yolo,
                 is_session_yolo_enabled,
@@ -9470,7 +9470,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         happen.
         """
         try:
-            from tools.approval import (
+            from opencodon.tools.approval import (
                 _YOLO_MODE_FROZEN,
                 is_session_yolo_enabled,
             )
@@ -9502,7 +9502,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         next dangerous command in this run.
         """
         from opencodon.common.colors import Colors as _Colors
-        from tools.approval import (
+        from opencodon.tools.approval import (
             disable_session_yolo,
             enable_session_yolo,
             is_session_yolo_enabled,
@@ -9894,7 +9894,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 i += 1
 
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             from opencodon.core.insights import InsightsEngine
 
             db = SessionDB()
@@ -10215,7 +10215,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         sees the updated tools on the next turn.
         """
         try:
-            from tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools, _servers, _lock
+            from opencodon.tools.mcp_tool import shutdown_mcp_servers, discover_mcp_tools, _servers, _lock
 
             # Capture old server names
             with _lock:
@@ -10255,7 +10255,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # (name-diff, thread-safe, and — critically — additive-preserving so
             # memory-provider and context-engine tools survive the rebuild).
             if self.agent is not None:
-                from tools.mcp_tool import refresh_agent_mcp_tools
+                from opencodon.tools.mcp_tool import refresh_agent_mcp_tools
                 # Explicit reload: pick up MCP servers the user ENABLED in config
                 # this session. self.enabled_toolsets was resolved once at
                 # startup; merge in any now-connected server names (unless the
@@ -10584,7 +10584,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """Start capturing audio from the microphone."""
         if getattr(self, '_should_exit', False):
             return
-        from tools.voice_mode import create_audio_recorder, check_voice_requirements
+        from opencodon.tools.voice_mode import create_audio_recorder, check_voice_requirements
 
         reqs = check_voice_requirements()
         if not reqs["audio_available"]:
@@ -10674,7 +10674,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # Audio cue: single beep BEFORE starting stream (avoid CoreAudio conflict)
         if self._voice_beeps_enabled():
             try:
-                from tools.voice_mode import play_beep
+                from opencodon.tools.voice_mode import play_beep
                 play_beep(frequency=880, count=1)
             except Exception:
                 pass
@@ -10749,7 +10749,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             # Audio cue: double beep after stream stopped (no CoreAudio conflict)
             if self._voice_beeps_enabled():
                 try:
-                    from tools.voice_mode import play_beep
+                    from opencodon.tools.voice_mode import play_beep
                     play_beep(frequency=660, count=2)
                 except Exception:
                     pass
@@ -10763,7 +10763,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._app.invalidate()
             _cprint(f"{_DIM}Transcribing...{_RST}")
 
-            from tools.voice_mode import transcribe_recording
+            from opencodon.tools.voice_mode import transcribe_recording
             result = transcribe_recording(wav_path, model=self._voice_stt_model())
 
             if result.get("success") and result.get("transcript", "").strip():
@@ -10834,8 +10834,8 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
         self._voice_tts_done.clear()
         try:
-            from tools.tts_tool import text_to_speech_tool
-            from tools.voice_mode import play_audio_file
+            from opencodon.tools.tts_tool import text_to_speech_tool
+            from opencodon.tools.voice_mode import play_audio_file
 
             # Strip markdown and non-speech content for cleaner TTS
             tts_text = text[:4000] if len(text) > 4000 else text
@@ -10897,11 +10897,11 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             voice_cfg = load_config().get("voice") or {}
             if not (isinstance(voice_cfg, dict) and voice_cfg.get("barge_in", True)):
                 return
-            from tools.voice_mode import listen_for_speech, stop_playback
+            from opencodon.tools.voice_mode import listen_for_speech, stop_playback
 
             def _cut_playback():
                 if not self._voice_tts_done.is_set():
-                    from tools.tts_streaming import mark_speech_interrupted
+                    from opencodon.tools.tts_streaming import mark_speech_interrupted
                     mark_speech_interrupted()
                     self._voice_barge_capture.set()
                     stop_event.set()
@@ -10924,7 +10924,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """Transcribe a barge-captured interruption and queue it as the next turn."""
         submitted = False
         try:
-            from tools.voice_mode import transcribe_recording
+            from opencodon.tools.voice_mode import transcribe_recording
             result = transcribe_recording(wav_path, model=self._voice_stt_model())
             transcript = (result.get("transcript") or "").strip() if result.get("success") else ""
             if transcript:
@@ -10962,7 +10962,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
             _cprint(f"{_DIM}Voice mode is already enabled.{_RST}")
             return
 
-        from tools.voice_mode import check_voice_requirements, detect_audio_environment
+        from opencodon.tools.voice_mode import check_voice_requirements, detect_audio_environment
 
         # Environment detection -- warn and block in incompatible environments
         env_check = detect_audio_environment()
@@ -11042,7 +11042,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         try:
             if self._voice_tts_stop is not None:
                 self._voice_tts_stop.set()
-            from tools.voice_mode import stop_playback
+            from opencodon.tools.voice_mode import stop_playback
             stop_playback()
         except Exception:
             pass
@@ -11061,7 +11061,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         status = "enabled" if self._voice_tts else "disabled"
 
         if self._voice_tts:
-            from tools.tts_tool import check_tts_requirements
+            from opencodon.tools.tts_tool import check_tts_requirements
             if not check_tts_requirements():
                 _cprint(f"{_DIM}Warning: No TTS provider available. Install edge-tts or set API keys.{_RST}")
 
@@ -11069,7 +11069,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
     def _show_voice_status(self):
         """Show current voice mode status."""
-        from tools.voice_mode import check_voice_requirements
+        from opencodon.tools.voice_mode import check_voice_requirements
 
         reqs = check_voice_requirements()
 
@@ -11116,7 +11116,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """
         import time as _time
 
-        from tools.clarify_gateway import resolve_clarify_timeout
+        from opencodon.tools.clarify_gateway import resolve_clarify_timeout
 
         # Canonical clarify timeout, shared with the gateway/TUI path. `<= 0`
         # means unlimited (never auto-skip mid-think) → a null deadline.
@@ -11756,7 +11756,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
         # rich-text editors (Google Docs, Word, etc.).  Lone surrogates are invalid
         # UTF-8 and crash JSON serialization in the OpenAI SDK.
         if isinstance(message, str):
-            from run_agent import _sanitize_surrogates
+            from opencodon.core.run_agent import _sanitize_surrogates
             message = _sanitize_surrogates(message)
 
         # Keep the exact CLI input dict available until turn-start persistence.
@@ -11812,7 +11812,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
             if self._voice_tts:
                 try:
-                    from tools.tts_tool import (
+                    from opencodon.tools.tts_tool import (
                         _import_sounddevice,
                         check_tts_requirements,
                         stream_tts_to_speaker,
@@ -11888,7 +11888,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # Mirrors ``tui_gateway/server.py`` and ``gateway/run.py`` which
                 # bind the same contextvar before invoking the agent.
                 try:
-                    from tools.approval import (
+                    from opencodon.tools.approval import (
                         reset_current_session_key,
                         set_current_session_key,
                     )
@@ -11917,7 +11917,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                     self._pending_skills_reload_note = None
                 # Barged mid-speech (VAD or record key)? Tell the model it was
                 # cut off — same one-shot, API-local note channel as above.
-                from tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
+                from opencodon.tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
                 if take_speech_interrupted():
                     agent_message = _prepend_note_to_message(agent_message, SPEECH_INTERRUPTED_NOTE)
                 _moa_cfg = getattr(self, "_pending_moa_config", None)
@@ -13789,11 +13789,11 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 # the stop event drains the streaming pipeline if one is live.
                 if not cli_ref._voice_tts_done.is_set():
                     try:
-                        from tools.tts_streaming import mark_speech_interrupted
+                        from opencodon.tools.tts_streaming import mark_speech_interrupted
                         mark_speech_interrupted()
                         if cli_ref._voice_tts_stop is not None:
                             cli_ref._voice_tts_stop.set()
-                        from tools.voice_mode import stop_playback
+                        from opencodon.tools.voice_mode import stop_playback
                         stop_playback()
                         cli_ref._voice_tts_done.set()
                     except Exception:
@@ -13848,7 +13848,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 event.app.invalidate()
             if pasted_text:
                 # Sanitize surrogate characters (e.g. from Word/Google Docs paste) before writing
-                from run_agent import _sanitize_surrogates
+                from opencodon.core.run_agent import _sanitize_surrogates
                 pasted_text = _sanitize_surrogates(pasted_text)
                 line_count = pasted_text.count('\n')
                 buf = event.current_buffer
@@ -15274,7 +15274,7 @@ class OpencodonCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 self._voice_recorder = None
             # Clean up old temp voice recordings
             try:
-                from tools.voice_mode import cleanup_temp_recordings
+                from opencodon.tools.voice_mode import cleanup_temp_recordings
                 cleanup_temp_recordings()
             except Exception:
                 pass

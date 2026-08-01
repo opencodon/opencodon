@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 from acp_adapter.session import SessionManager
 
 

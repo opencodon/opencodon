@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 import opencodon.plugins_runtime as plugins_mod
-import model_tools
+from opencodon.tools import model_tools
 
 
 _UNSET = object()
@@ -24,7 +24,7 @@ def _run_handle_function_call(
     invoke_hook=_UNSET,
 ):
     """Drive ``handle_function_call`` with a mocked registry dispatch."""
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     monkeypatch.setattr(
         registry, "dispatch",

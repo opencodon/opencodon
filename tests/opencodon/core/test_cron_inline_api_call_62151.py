@@ -18,7 +18,7 @@ import threading
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from run_agent import AIAgent
+from opencodon.core.run_agent import AIAgent
 
 from opencodon.core.chat_completion_helpers import (
     direct_api_call,

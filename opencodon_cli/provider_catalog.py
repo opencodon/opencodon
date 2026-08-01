@@ -100,7 +100,7 @@ def provider_catalog() -> list[ProviderDescriptor]:
         PROVIDER_REGISTRY = {}
 
     try:
-        from providers import list_providers
+        from opencodon.providers import list_providers
 
         profiles = {p.name: p for p in list_providers()}
     except Exception:

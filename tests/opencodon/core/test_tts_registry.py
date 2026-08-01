@@ -299,11 +299,11 @@ class TestBuiltinSync:
     """
 
     def test_registry_builtins_match_dispatcher_builtins(self):
-        from tools.tts_tool import BUILTIN_TTS_PROVIDERS
+        from opencodon.tools.tts_tool import BUILTIN_TTS_PROVIDERS
 
         assert tts_registry._BUILTIN_NAMES == BUILTIN_TTS_PROVIDERS, (
             "opencodon.core.tts_registry._BUILTIN_NAMES and "
-            "tools.tts_tool.BUILTIN_TTS_PROVIDERS have drifted!\n"
+            "opencodon.tools.tts_tool.BUILTIN_TTS_PROVIDERS have drifted!\n"
             f"  Registry only: {sorted(tts_registry._BUILTIN_NAMES - BUILTIN_TTS_PROVIDERS)}\n"
             f"  Dispatcher only: {sorted(BUILTIN_TTS_PROVIDERS - tts_registry._BUILTIN_NAMES)}\n"
             "Add the missing names to whichever list is incomplete. "

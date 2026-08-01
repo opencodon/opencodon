@@ -63,7 +63,7 @@ def _fmt_age(ts: Any) -> str:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    from tools.checkpoint_manager import store_status
+    from opencodon.tools.checkpoint_manager import store_status
 
     info = store_status()
     base = info["base"]
@@ -99,7 +99,7 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 
 def cmd_prune(args: argparse.Namespace) -> int:
-    from tools.checkpoint_manager import prune_checkpoints
+    from opencodon.tools.checkpoint_manager import prune_checkpoints
 
     retention_days = args.retention_days
     max_size_mb = args.max_size_mb
@@ -133,7 +133,7 @@ def _confirm(prompt: str) -> bool:
 
 
 def cmd_clear(args: argparse.Namespace) -> int:
-    from tools.checkpoint_manager import CHECKPOINT_BASE, clear_all, store_status
+    from opencodon.tools.checkpoint_manager import CHECKPOINT_BASE, clear_all, store_status
 
     info = store_status()
     if info["total_size_bytes"] == 0 and not Path(CHECKPOINT_BASE).exists():

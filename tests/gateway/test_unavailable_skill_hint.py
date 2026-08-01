@@ -68,7 +68,7 @@ def test_frontmatter_slug_matched_even_when_dir_name_differs(
         raising=False,
     )
     with patch(
-        "tools.skills_tool._get_disabled_skill_names",
+        "opencodon.tools.skills_tool._get_disabled_skill_names",
         return_value={"Stable Diffusion Image Generation"},
     ), patch(
         "opencodon.core.skill_utils.get_all_skills_dirs",
@@ -93,7 +93,7 @@ def test_unknown_command_still_returns_none(
     _write_skill(tmp_skills, "creative/ascii-art", "ascii-art")
 
     with patch(
-        "tools.skills_tool._get_disabled_skill_names", return_value=set()
+        "opencodon.tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
         "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
     ):
@@ -109,7 +109,7 @@ def test_matched_but_not_disabled_returns_none(
     _write_skill(tmp_skills, "creative/ascii-art", "ascii-art")
 
     with patch(
-        "tools.skills_tool._get_disabled_skill_names", return_value=set()
+        "opencodon.tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
         "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
     ):
@@ -125,7 +125,7 @@ def test_slug_normalization_strips_non_alnum(
     _write_skill(tmp_skills, "software-development/cpp-review", "C++ Code Review")
 
     with patch(
-        "tools.skills_tool._get_disabled_skill_names",
+        "opencodon.tools.skills_tool._get_disabled_skill_names",
         return_value={"C++ Code Review"},
     ), patch(
         "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[tmp_skills]
@@ -171,7 +171,7 @@ def test_optional_skill_uses_frontmatter_slug(
     empty_skills = tmp_path / "empty-skills"
     empty_skills.mkdir()
     with patch(
-        "tools.skills_tool._get_disabled_skill_names", return_value=set()
+        "opencodon.tools.skills_tool._get_disabled_skill_names", return_value=set()
     ), patch(
         "opencodon.core.skill_utils.get_all_skills_dirs", return_value=[empty_skills]
     ):

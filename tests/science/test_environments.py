@@ -193,9 +193,9 @@ def test_a_changed_environment_downgrades_to_reproduced(science_runtime, monkeyp
 
 @pytest.mark.requirement("SCI-P6-01")
 def test_environments_toolset_matches_the_registry():
-    import tools.env_tools  # noqa: F401 - registers on import
+    import opencodon.tools.env_tools  # noqa: F401 - registers on import
     from toolsets import TOOLSETS
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     declared = set(TOOLSETS["environments"]["tools"])
     registered = {
@@ -206,7 +206,7 @@ def test_environments_toolset_matches_the_registry():
 
 @pytest.mark.requirement("SCI-P6-01")
 def test_env_errors_come_back_as_data():
-    import tools.env_tools as env_tools
+    import opencodon.tools.env_tools as env_tools
 
     payload = json.loads(env_tools._call(em.export_lock, name="no-such-env"))
     assert payload["source"] == "micromamba"

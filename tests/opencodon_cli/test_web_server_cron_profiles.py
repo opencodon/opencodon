@@ -37,7 +37,7 @@ def _drain_queue(q):
 
 
 def test_call_cron_for_profile_routes_storage_without_mutating_globals(isolated_profiles):
-    from cron import jobs as cron_jobs
+    from opencodon.cron import jobs as cron_jobs
     from opencodon_cli import web_server
 
     old_cron_dir = cron_jobs.CRON_DIR
@@ -69,8 +69,8 @@ def test_fire_cron_job_scopes_store_and_runtime_home_together(
     monkeypatch,
 ):
     """A profile fire must execute and persist under the same profile home."""
-    from cron import jobs as cron_jobs
-    from cron import scheduler
+    from opencodon.cron import jobs as cron_jobs
+    from opencodon.cron import scheduler
     from opencodon_cli import web_server
 
     from opencodon_constants import (
@@ -91,7 +91,7 @@ def test_fire_cron_job_scopes_store_and_runtime_home_together(
             return True
 
     monkeypatch.setattr(
-        "cron.scheduler_provider.resolve_cron_scheduler",
+        "opencodon.cron.scheduler_provider.resolve_cron_scheduler",
         lambda: RecordingProvider(),
     )
 
@@ -113,7 +113,7 @@ def test_profile_call_cannot_retarget_ticker_store_mid_write(
     monkeypatch,
 ):
     """A dashboard profile call must not redirect a concurrent ticker save."""
-    from cron import jobs as cron_jobs
+    from opencodon.cron import jobs as cron_jobs
     from opencodon_cli import web_server
 
     default_cron = isolated_profiles["default"] / "cron"

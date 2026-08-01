@@ -65,7 +65,7 @@ def _ra():
     ``run_agent.OpenAI`` / ``run_agent.cleanup_vm`` / ... and have those
     patches reach this code path.
     """
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -93,7 +93,7 @@ def _provider_default_routes(provider: str) -> set[str]:
         pass
 
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
 
         profile = get_provider_profile(provider)
         route = _normalize_route_base_url(
@@ -1141,7 +1141,7 @@ def init_agent(
                 # declare custom headers (e.g. Kimi User-Agent on non-kimi.com
                 # endpoints).
                 try:
-                    from providers import get_provider_profile as _gpf
+                    from opencodon.providers import get_provider_profile as _gpf
                     _ph = _gpf(agent.provider)
                     if _ph and _ph.default_headers:
                         client_kwargs["default_headers"] = dict(_ph.default_headers)
@@ -1353,7 +1353,7 @@ def init_agent(
     # snapshot is derived from FIRST, so a later concurrent refresh can tell
     # whether it holds a newer or staler view (see refresh_agent_mcp_tools).
     try:
-        from tools.registry import registry as _snapshot_registry
+        from opencodon.tools.registry import registry as _snapshot_registry
         agent._tool_snapshot_generation = _snapshot_registry._generation
     except Exception:
         agent._tool_snapshot_generation = 0
@@ -1460,7 +1460,7 @@ def init_agent(
     agent._cached_system_prompt: Optional[str] = None
     
     # Filesystem checkpoint manager (transparent — not a tool)
-    from tools.checkpoint_manager import CheckpointManager
+    from opencodon.tools.checkpoint_manager import CheckpointManager
     agent._checkpoint_mgr = CheckpointManager(
         enabled=checkpoints_enabled,
         max_snapshots=checkpoint_max_snapshots,
@@ -1499,7 +1499,7 @@ def init_agent(
     }
     
     # In-memory todo list for task planning (one per agent/session)
-    from tools.todo_tool import TodoStore
+    from opencodon.tools.todo_tool import TodoStore
     agent._todo_store = TodoStore()
     
     # Load config once for memory, skills, and compression sections
@@ -1576,7 +1576,7 @@ def init_agent(
             agent._user_profile_enabled = mem_config.get("user_profile_enabled", False)
             agent._memory_nudge_interval = int(mem_config.get("nudge_interval", 10))
             if agent._memory_enabled or agent._user_profile_enabled:
-                from tools.memory_tool import MemoryStore
+                from opencodon.tools.memory_tool import MemoryStore
                 agent._memory_store = MemoryStore(
                     memory_char_limit=mem_config.get("memory_char_limit", 2200),
                     user_char_limit=mem_config.get("user_char_limit", 1375),
@@ -1703,7 +1703,7 @@ def init_agent(
     # so by the time the first prompt is built the line is already cached.
     if agent._environment_probe:
         try:
-            from tools.env_probe import warm_environment_probe_async
+            from opencodon.tools.env_probe import warm_environment_probe_async
             warm_environment_probe_async()
         except Exception:
             pass

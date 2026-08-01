@@ -29,8 +29,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from opencodon.core.context_compressor import ContextCompressor
-from opencodon_state import SessionDB
-from run_agent import AIAgent
+from opencodon.state import SessionDB
+from opencodon.core.run_agent import AIAgent
 
 
 def _bare_agent() -> AIAgent:

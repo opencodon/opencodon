@@ -143,8 +143,8 @@ def test_read_file_tool_blocks_relative_path_under_terminal_cwd(
     """
     import json
 
-    import tools.file_tools as ft
-    import tools.terminal_tool as terminal_tool
+    import opencodon.tools.file_tools as ft
+    import opencodon.tools.terminal_tool as terminal_tool
 
     _create(fake_home, "auth.json")
     # Force the file_tools resolver to anchor relative paths at OPENCODON_HOME
@@ -166,8 +166,8 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     """The real read_file tool must not return Gemini OAuth token material."""
     import json
 
-    import tools.file_tools as ft
-    import tools.terminal_tool as terminal_tool
+    import opencodon.tools.file_tools as ft
+    import opencodon.tools.terminal_tool as terminal_tool
 
     oauth = _create(fake_home, Path("auth") / "google_oauth.json")
     oauth.write_text(
@@ -196,8 +196,8 @@ def test_search_tool_blocks_direct_auth_json_path(fake_home, monkeypatch):
     """Searching a credential file directly must not invoke the search backend."""
     import json
 
-    import tools.file_tools as ft
-    import tools.terminal_tool as terminal_tool
+    import opencodon.tools.file_tools as ft
+    import opencodon.tools.terminal_tool as terminal_tool
 
     auth = _create(fake_home, "auth.json")
     auth.write_text("SEARCH_DIRECT_AUTH_SECRET", encoding="utf-8")
@@ -224,9 +224,9 @@ def test_search_tool_filters_credential_results(fake_home, tmp_path, monkeypatch
     """Directory searches omit credential and MCP-token result entries."""
     import json
 
-    from tools.file_operations import SearchMatch, SearchResult
-    import tools.file_tools as ft
-    import tools.terminal_tool as terminal_tool
+    from opencodon.tools.file_operations import SearchMatch, SearchResult
+    import opencodon.tools.file_tools as ft
+    import opencodon.tools.terminal_tool as terminal_tool
 
     auth = _create(fake_home, "auth.json")
     token = _create(fake_home, Path("mcp-tokens") / "provider.json")

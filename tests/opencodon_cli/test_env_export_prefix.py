@@ -4,7 +4,7 @@ Bash-compatible .env files commonly prefix lines with ``export `` (users
 copy-paste from shell profiles, cloud provider docs, tutorials). The three
 hand-rolled parsers — ``opencodon.config.load_env``,
 ``opencodon_cli.main._has_any_provider_configured``, and
-``tools.skills_tool.load_env`` — split on ``line.partition("=")`` and must
+``opencodon.tools.skills_tool.load_env`` — split on ``line.partition("=")`` and must
 strip the ``export `` prefix first, otherwise ``export API_KEY=sk-...`` is
 stored under the wrong key ``"export API_KEY"`` and the real key is lost
 (setup wizard re-triggers, providers undetected, skill env passthrough drops
@@ -78,7 +78,7 @@ def test_skills_tool_load_env_strips_export_prefix(tmp_path, monkeypatch):
     # skills_tool.load_env reads get_opencodon_home()/.env directly.
     import importlib
 
-    import tools.skills_tool as skills_tool
+    import opencodon.tools.skills_tool as skills_tool
 
     importlib.reload(skills_tool)
     with patch.object(skills_tool, "get_opencodon_home", return_value=tmp_path):

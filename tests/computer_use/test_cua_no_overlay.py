@@ -13,7 +13,7 @@ import os
 import sys
 from unittest.mock import mock_open, patch
 
-from tools.computer_use import cua_backend
+from opencodon.tools.computer_use import cua_backend
 
 
 class TestNoOverlayFlag:
@@ -157,7 +157,7 @@ class TestMcpInvocationUsesResolvedCommand:
         ``driver_cmd`` parameter.
         """
         from unittest.mock import patch
-        from tools.computer_use.cua_backend import _resolve_mcp_invocation
+        from opencodon.tools.computer_use.cua_backend import _resolve_mcp_invocation
 
         manifest = (
             '{"mcp_invocation":'
@@ -182,7 +182,7 @@ class TestMcpInvocationUsesResolvedCommand:
         probed.
         """
         from unittest.mock import patch
-        from tools.computer_use.cua_backend import _resolve_mcp_invocation
+        from opencodon.tools.computer_use.cua_backend import _resolve_mcp_invocation
 
         manifest = '{"mcp_invocation":{"args":["mcp"]}}'
         with patch("subprocess.run", new=self._fake_run(stdout=manifest)), \

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from acp_adapter import session as acp_session
 from acp_adapter.session import SessionManager, SessionState
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 def _mock_agent():
@@ -53,7 +53,7 @@ class TestCreateSession:
 
         monkeypatch.setattr("opencodon_constants._wsl_detected", True)
         monkeypatch.setattr(
-            "tools.terminal_tool.register_task_env_overrides",
+            "opencodon.tools.terminal_tool.register_task_env_overrides",
             fake_register_task_env_overrides,
         )
 
@@ -84,7 +84,7 @@ class TestCreateSession:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
-        monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
+        monkeypatch.setattr("opencodon.core.run_agent.AIAgent", FakeAgent)
         monkeypatch.setattr(
             "acp_adapter.session.load_config",
             lambda: {
@@ -434,7 +434,7 @@ class TestPersistence:
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             manager.create_session(cwd="/work")
 
@@ -712,7 +712,7 @@ class TestPersistence:
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             state = manager.create_session(cwd="/work")
             manager.save_session(state.session_id)
@@ -752,7 +752,7 @@ class TestPersistence:
         )
         db = SessionDB(tmp_path / "state.db")
 
-        with patch("run_agent.AIAgent", side_effect=fake_agent):
+        with patch("opencodon.core.run_agent.AIAgent", side_effect=fake_agent):
             manager = SessionManager(db=db)
             state = manager.create_session(cwd="/work")
 

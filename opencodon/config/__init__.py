@@ -8003,7 +8003,7 @@ def _inject_profile_env_vars() -> None:
         return
     _profile_env_vars_injected = True
     try:
-        from providers import list_providers
+        from opencodon.providers import list_providers
         for _pp in list_providers():
             if _pp.auth_type not in {"api_key",}:
                 continue

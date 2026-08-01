@@ -93,7 +93,7 @@ def test_delete_skill_archives_recoverably(home):
 
 
 def test_delete_pinned_skill_refused(home):
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
 
     skill_usage.set_pinned("my-skill", True)
     res = lm.delete_node("my-skill")
@@ -118,7 +118,7 @@ def test_memory_writes_match_memory_tool_format(home):
     """A journey mutation must leave the file byte-identical to what the memory
     tool itself writes — same §-join, no trailing-newline drift — so the two
     surfaces never fight over format and indices stay aligned."""
-    from tools.memory_tool import ENTRY_DELIMITER, MemoryStore
+    from opencodon.tools.memory_tool import ENTRY_DELIMITER, MemoryStore
 
     assert lm.edit_node("memory:memory:0", "alpha rewritten")["ok"]
     path = home / "memories" / "MEMORY.md"

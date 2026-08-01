@@ -8,8 +8,8 @@ their respective plugin subsystems (``plugins/image_gen/deepinfra`` and
 the TTS/STT dispatchers in ``tools/``).
 """
 
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 
 class _DeepInfraProfile(ProviderProfile):

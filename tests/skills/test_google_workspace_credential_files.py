@@ -48,7 +48,7 @@ class TestGoogleWorkspaceCredentialFiles:
         (opencodon_home / "google_token.json").write_text("{}")
         (opencodon_home / "google_client_secret.json").write_text("{}")
 
-        from tools.credential_files import (
+        from opencodon.tools.credential_files import (
             clear_credential_files,
             get_credential_file_mounts,
             register_credential_files,
@@ -77,7 +77,7 @@ class TestGoogleWorkspaceCredentialFiles:
         opencodon_home.mkdir()
         (opencodon_home / "google_client_secret.json").write_text("{}")
 
-        from tools.credential_files import (
+        from opencodon.tools.credential_files import (
             clear_credential_files,
             get_credential_file_mounts,
             register_credential_files,

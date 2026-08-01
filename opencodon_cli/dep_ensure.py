@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 from opencodon_constants import agent_browser_runnable
-from tools.environments.local import opencodon_subprocess_env
+from opencodon.tools.environments.local import opencodon_subprocess_env
 
 _IS_WINDOWS = platform.system() == "Windows"
 

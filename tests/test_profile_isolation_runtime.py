@@ -56,7 +56,7 @@ class TestSkillsHubPathResolution:
 
     def test_skills_dir_follows_override(self, two_profiles):
         prof_a, prof_b = two_profiles
-        import tools.skills_hub as sh
+        import opencodon.tools.skills_hub as sh
 
         # Importing/touching under A must NOT pin the path for B.
         a_seen = _under_override(prof_a, lambda: Path(sh.SKILLS_DIR))
@@ -68,7 +68,7 @@ class TestSkillsHubPathResolution:
 
     def test_hub_derived_paths_follow_override(self, two_profiles):
         prof_a, prof_b = two_profiles
-        import tools.skills_hub as sh
+        import opencodon.tools.skills_hub as sh
 
         b_lock = _under_override(prof_b, lambda: Path(sh.LOCK_FILE))
         b_audit = _under_override(prof_b, lambda: Path(sh.AUDIT_LOG))
@@ -80,7 +80,7 @@ class TestSkillsHubPathResolution:
 
     def test_lockfile_default_arg_resolves_active_profile(self, two_profiles):
         prof_a, prof_b = two_profiles
-        from tools.skills_hub import HubLockFile, TapsManager
+        from opencodon.tools.skills_hub import HubLockFile, TapsManager
 
         lock_b = _under_override(prof_b, lambda: HubLockFile())
         taps_b = _under_override(prof_b, lambda: TapsManager())
@@ -170,7 +170,7 @@ class TestThreadContextPropagation:
 
     def test_propagate_primitive_preserves_override(self, two_profiles):
         _prof_a, prof_b = two_profiles
-        from tools.thread_context import propagate_context_to_thread
+        from opencodon.tools.thread_context import propagate_context_to_thread
 
         seen = {}
 
@@ -186,7 +186,7 @@ class TestThreadContextPropagation:
         assert seen["home"] == str(prof_b)
 
     def test_run_async_worker_preserves_override(self, two_profiles):
-        """model_tools._run_async's worker-thread branch must keep the override.
+        """opencodon.tools.model_tools._run_async's worker-thread branch must keep the override.
 
         This is the generic sync->async bridge for every async tool; if it
         leaks, every async tool that resolves get_opencodon_home() leaks.
@@ -194,7 +194,7 @@ class TestThreadContextPropagation:
         import asyncio
 
         _prof_a, prof_b = two_profiles
-        import model_tools
+        from opencodon.tools import model_tools
 
         async def reads_home():
             return str(get_opencodon_home())

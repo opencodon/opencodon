@@ -60,7 +60,7 @@ def test_hosted_callback_is_public_and_delivers_code():
 
     from opencodon_cli import web_server
     from opencodon_cli.dashboard_auth.public_paths import PUBLIC_API_PATHS
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     flow = DashboardOAuthFlow(
         flow_id="flow-public",
@@ -90,7 +90,7 @@ def test_hosted_callback_bypasses_gated_cookie_auth(monkeypatch):
     from starlette.testclient import TestClient
 
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     flow = DashboardOAuthFlow(
         flow_id="flow-gated",
@@ -119,7 +119,7 @@ def test_hosted_callback_rejects_wrong_state_before_waking_sdk():
     import asyncio
 
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     flow = DashboardOAuthFlow(
         flow_id="flow-state-route",
@@ -144,7 +144,7 @@ def test_hosted_callback_rejects_wrong_state_before_waking_sdk():
 
 def test_hosted_auth_start_bounds_pending_flow_registry():
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     client = _client()
     client.post(
@@ -167,7 +167,7 @@ def test_hosted_auth_start_bounds_pending_flow_registry():
 
 def test_hosted_auth_rejects_overlapping_flow_for_same_server():
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     client = _client()
     client.post(
@@ -193,7 +193,7 @@ def test_hosted_auth_rejects_overlapping_flow_for_same_server():
 
 def test_hosted_auth_allows_same_server_name_in_different_profiles(tmp_path, monkeypatch):
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     profile_home = tmp_path / "profiles" / "work"
     profile_home.mkdir(parents=True)
@@ -233,7 +233,7 @@ def test_callback_route_supports_server_names_with_slashes():
     import asyncio
 
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     flow = DashboardOAuthFlow(
         flow_id="flow-slash",
@@ -255,7 +255,7 @@ def test_callback_route_supports_server_names_with_slashes():
 
 def test_flow_status_does_not_expose_authorization_code():
     from opencodon_cli import web_server
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     flow = DashboardOAuthFlow(
         flow_id="flow-status",

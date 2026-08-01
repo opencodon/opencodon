@@ -69,7 +69,7 @@ class TestDefineDiscordViewClasses:
         # Patch lazy_deps.ensure to be a no-op (pretend install succeeds).
         # The discord imports inside check_discord_requirements() succeed because
         # _ensure_discord_mock() in conftest.py already registered the mock.
-        with patch("tools.lazy_deps.ensure"):
+        with patch("opencodon.tools.lazy_deps.ensure"):
             result = dp.check_discord_requirements()
 
         assert result is True, "check_discord_requirements() should return True after lazy install"

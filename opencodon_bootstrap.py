@@ -175,7 +175,7 @@ def activate_durable_lazy_target() -> None:
     if not os.environ.get("OPENCODON_LAZY_INSTALL_TARGET", "").strip():
         return
     try:
-        from tools import lazy_deps
+        from opencodon.tools import lazy_deps
         lazy_deps.activate_durable_lazy_target()
     except Exception:
         # Bootstrap must never crash an entry point. If activation fails the

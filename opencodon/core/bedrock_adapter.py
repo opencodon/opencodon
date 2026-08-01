@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 # EKS deployment without baking boto3 into the base image.
 # ---------------------------------------------------------------------------
 try:
-    from tools.lazy_deps import ensure
+    from opencodon.tools.lazy_deps import ensure
     ensure("provider.bedrock", prompt=False)
 except Exception:
     pass  # lazy_deps unavailable or install failed — let downstream imports surface the real error

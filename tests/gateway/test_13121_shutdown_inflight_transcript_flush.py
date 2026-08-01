@@ -152,8 +152,8 @@ class TestShutdownTranscriptSurvivesResumeE2E:
         # Isolated state.db.
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
-        from opencodon_state import SessionDB
-        from run_agent import AIAgent
+        from opencodon.state import SessionDB
+        from opencodon.core.run_agent import AIAgent
 
         db = SessionDB(db_path=tmp_path / "state.db")
         session_id = "sess-e2e-13121"
@@ -225,8 +225,8 @@ class TestShutdownTranscriptSurvivesResumeE2E:
         duplicate rows when _finalize_shutdown_agents re-flushes."""
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
-        from opencodon_state import SessionDB
-        from run_agent import AIAgent
+        from opencodon.state import SessionDB
+        from opencodon.core.run_agent import AIAgent
 
         db = SessionDB(db_path=tmp_path / "state.db")
         session_id = "sess-e2e-idem"

@@ -103,7 +103,7 @@ def match_blueprint(query: str) -> Tuple[Optional[Any], List[Any]]:
     dashboard/Discord where it's picked): exact key first, then case-insensitive
     prefix on key or title, then a difflib fuzzy pass.
     """
-    from cron.blueprint_catalog import CATALOG, get_blueprint
+    from opencodon.cron.blueprint_catalog import CATALOG, get_blueprint
 
     q = (query or "").strip().lower()
     if not q:
@@ -146,7 +146,7 @@ def match_blueprint(query: str) -> Tuple[Optional[Any], List[Any]]:
 
 
 def _humanize_schedule(blueprint) -> str:
-    from cron.blueprint_catalog import _humanize_schedule as _h
+    from opencodon.cron.blueprint_catalog import _humanize_schedule as _h
 
     try:
         return _h(blueprint)
@@ -162,7 +162,7 @@ def build_blueprint_seed(blueprint) -> str:
     cron expression it builds from the blueprint's ``schedule_template`` and the
     rendered prompt. Defaults are stated so the agent can offer them.
     """
-    from cron.blueprint_catalog import WEEKDAY_PRESETS
+    from opencodon.cron.blueprint_catalog import WEEKDAY_PRESETS
 
     lines: List[str] = []
     lines.append(
@@ -201,7 +201,7 @@ def build_blueprint_seed(blueprint) -> str:
 
 
 def _fmt_catalog() -> str:
-    from cron.blueprint_catalog import CATALOG
+    from opencodon.cron.blueprint_catalog import CATALOG
 
     lines = ["Automation Blueprints — `/blueprint <name>` and I'll ask you what I need:\n"]
     for r in CATALOG:
@@ -223,7 +223,7 @@ def _fmt_candidates(query: str, candidates: List[Any]) -> str:
 
 
 def _fmt_no_match(query: str) -> str:
-    from cron.blueprint_catalog import CATALOG
+    from opencodon.cron.blueprint_catalog import CATALOG
 
     keys = [r.key for r in CATALOG]
     close = difflib.get_close_matches((query or "").lower(), keys, n=3, cutoff=0.4)
@@ -261,7 +261,7 @@ def handle_blueprint_command(
     ``/cron`` only exists on the CLI.
     """
     try:
-        from cron.blueprint_catalog import fill_blueprint, BlueprintFillError
+        from opencodon.cron.blueprint_catalog import fill_blueprint, BlueprintFillError
     except Exception as e:  # pragma: no cover - import guard
         logger.debug("blueprint catalog import failed: %s", e)
         return BlueprintCommandResult("Automation Blueprints are unavailable in this build.")
@@ -303,7 +303,7 @@ def handle_blueprint_command(
         )
 
     try:
-        from cron.jobs import create_job
+        from opencodon.cron.jobs import create_job
 
         job = create_job(**spec)
     except Exception as e:

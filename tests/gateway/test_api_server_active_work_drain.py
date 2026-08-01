@@ -211,7 +211,7 @@ class TestDrainWaitsForApiWork:
 
     @pytest.mark.asyncio
     async def test_drain_still_waits_for_chat_cron_and_api_work(self):
-        import cron.scheduler as sched
+        import opencodon.cron.scheduler as sched
 
         runner, _adapter = make_restart_runner()
         runner._running_agents = {"session-1": MagicMock()}

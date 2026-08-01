@@ -72,7 +72,7 @@ class TestBlankSlateMinimalToolsets:
 
     def test_tool_schema_builder_yields_only_file_and_terminal_tools(self):
         # End-to-end: the exact schema set the agent would send to the model.
-        import model_tools
+        from opencodon.tools import model_tools
         from opencodon_cli.tools_config import _get_platform_tools
         cfg = {}
         _blank_slate_minimal_toolsets(cfg)
@@ -93,7 +93,7 @@ class TestBlankSlateMinimalToolsets:
         like ``coding`` in disabled_toolsets caused model_tools to subtract
         terminal, read_file, write_file, etc. (#57315).
         """
-        import model_tools
+        from opencodon.tools import model_tools
         from opencodon_cli.tools_config import _get_platform_tools
         cfg = {}
         _blank_slate_minimal_toolsets(cfg)
@@ -155,7 +155,7 @@ class TestBlankSlateFork:
         monkeypatch.setattr(s, "_blank_slate_walkthrough",
                             lambda cfg, home: walked.__setitem__("called", True))
         opted_out = {"value": None}
-        monkeypatch.setattr("tools.skills_sync.set_bundled_skills_opt_out",
+        monkeypatch.setattr("opencodon.tools.skills_sync.set_bundled_skills_opt_out",
                             lambda enabled: opted_out.__setitem__("value", enabled))
 
         cfg = {}

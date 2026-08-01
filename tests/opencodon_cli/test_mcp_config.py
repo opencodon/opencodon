@@ -17,7 +17,7 @@ def _set_interactive_stdin(monkeypatch, *, is_tty: bool = True) -> None:
 
     mock_stdin = MagicMock()
     mock_stdin.isatty.return_value = is_tty
-    monkeypatch.setattr("tools.mcp_oauth.sys.stdin", mock_stdin)
+    monkeypatch.setattr("opencodon.tools.mcp_oauth.sys.stdin", mock_stdin)
 
 
 # ---------------------------------------------------------------------------
@@ -450,7 +450,7 @@ class TestMcpTest:
         """OAuth-capable probes must not hard-code a short 30s timeout."""
         import asyncio
         from opencodon_cli import mcp_config
-        import tools.mcp_tool as mcp_tool
+        import opencodon.tools.mcp_tool as mcp_tool
 
         captured = {}
 
@@ -492,21 +492,21 @@ class TestMcpTest:
 class TestEnvVarInterpolation:
     def test_interpolate_simple(self, monkeypatch):
         monkeypatch.setenv("MY_KEY", "secret123")
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         result = _interpolate_env_vars("Bearer ${MY_KEY}")
         assert result == "Bearer secret123"
 
     def test_interpolate_missing_var(self, monkeypatch):
         monkeypatch.delenv("MISSING_VAR", raising=False)
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         result = _interpolate_env_vars("Bearer ${MISSING_VAR}")
         assert result == "Bearer ${MISSING_VAR}"
 
     def test_interpolate_nested_dict(self, monkeypatch):
         monkeypatch.setenv("API_KEY", "abc")
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         result = _interpolate_env_vars({
             "url": "https://example.com",
@@ -517,13 +517,13 @@ class TestEnvVarInterpolation:
 
     def test_interpolate_list(self, monkeypatch):
         monkeypatch.setenv("ARG1", "hello")
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         result = _interpolate_env_vars(["${ARG1}", "static"])
         assert result == ["hello", "static"]
 
     def test_interpolate_non_string(self):
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         assert _interpolate_env_vars(42) == 42
         assert _interpolate_env_vars(True) is True
@@ -532,19 +532,19 @@ class TestEnvVarInterpolation:
     def test_interpolate_cursor_env_prefix(self, monkeypatch):
         """Cursor-style ${env:VAR} resolves the same secret as ${VAR}."""
         monkeypatch.setenv("MY_KEY", "secret123")
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         assert _interpolate_env_vars("Bearer ${env:MY_KEY}") == "Bearer secret123"
 
     def test_interpolate_cursor_env_prefix_missing(self, monkeypatch):
         """An unset ${env:VAR} keeps its literal placeholder, like ${VAR}."""
         monkeypatch.delenv("MISSING_VAR", raising=False)
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
 
         assert _interpolate_env_vars("Bearer ${env:MISSING_VAR}") == "Bearer ${env:MISSING_VAR}"
 
     def test_env_ref_name_strips_prefix(self):
-        from tools.mcp_tool import _env_ref_name
+        from opencodon.tools.mcp_tool import _env_ref_name
 
         assert _env_ref_name("env:API_KEY") == "API_KEY"
         assert _env_ref_name("API_KEY") == "API_KEY"
@@ -622,7 +622,7 @@ class TestProbeEnvResolution:
             seen["config"] = config
             return _FakeServer()
 
-        monkeypatch.setattr("tools.mcp_tool._connect_server", _fake_connect)
+        monkeypatch.setattr("opencodon.tools.mcp_tool._connect_server", _fake_connect)
 
         tools = mc._probe_single_server("n8n", {
             "url": "http://localhost:5678/mcp-server/http",
@@ -695,7 +695,7 @@ class TestProbeCapabilityGating:
         async def _fake_connect(name, cfg):
             return self._make_server(called, caps)
 
-        monkeypatch.setattr("tools.mcp_tool._connect_server", _fake_connect)
+        monkeypatch.setattr("opencodon.tools.mcp_tool._connect_server", _fake_connect)
         details: dict = {}
         mc._probe_single_server("srv", config, details=details)
         return called, details
@@ -851,7 +851,7 @@ class TestMcpRemoveEvictsManager:
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         _set_interactive_stdin(monkeypatch)
 
-        from tools.mcp_oauth_manager import get_manager, reset_manager_for_tests
+        from opencodon.tools.mcp_oauth_manager import get_manager, reset_manager_for_tests
         reset_manager_for_tests()
 
         mgr = get_manager()

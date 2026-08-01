@@ -2,8 +2,8 @@
 
 from unittest.mock import patch
 
-from tools.computer_use import cua_backend
-from tools.computer_use import tool as cu_tool
+from opencodon.tools.computer_use import cua_backend
+from opencodon.tools.computer_use import tool as cu_tool
 
 
 def test_max_image_dimension_default():
@@ -57,7 +57,7 @@ def test_aux_vision_route_caches_per_provider_model(monkeypatch):
 
     monkeypatch.setattr("opencodon.config.load_config", fake_load)
     monkeypatch.setattr(
-        "tools.computer_use.vision_routing.should_route_capture_to_aux_vision",
+        "opencodon.tools.computer_use.vision_routing.should_route_capture_to_aux_vision",
         lambda *a, **k: True,
     )
 

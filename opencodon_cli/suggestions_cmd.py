@@ -81,7 +81,7 @@ def handle_suggestions_command(
     if origin is None:
         origin = _resolve_origin()
     try:
-        from cron import suggestions as store
+        from opencodon.cron import suggestions as store
     except Exception as e:  # pragma: no cover - import guard
         logger.debug("suggestions store import failed: %s", e)
         return "Suggestions are unavailable in this build."
@@ -125,7 +125,7 @@ def handle_suggestions_command(
 
     if sub == "catalog":
         try:
-            from cron.suggestion_catalog import seed_catalog_suggestions
+            from opencodon.cron.suggestion_catalog import seed_catalog_suggestions
 
             created = seed_catalog_suggestions()
         except Exception as e:

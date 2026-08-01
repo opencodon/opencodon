@@ -26,7 +26,7 @@ def copilot_profile():
     ``ProviderProfile`` the assertions below collapse.
     """
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("copilot")
     assert profile is not None, "copilot provider profile must be registered"

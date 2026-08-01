@@ -5,16 +5,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from cron.jobs import create_job, get_job, list_jobs
+from opencodon.cron.jobs import create_job, get_job, list_jobs
 from opencodon_cli import cron as cron_cli
 from opencodon_cli.cron import cron_command
 
 
 @pytest.fixture()
 def tmp_cron_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr("cron.jobs.CRON_DIR", tmp_path / "cron")
-    monkeypatch.setattr("cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
-    monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
+    monkeypatch.setattr("opencodon.cron.jobs.CRON_DIR", tmp_path / "cron")
+    monkeypatch.setattr("opencodon.cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
+    monkeypatch.setattr("opencodon.cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
     return tmp_path
 
 
@@ -124,7 +124,7 @@ class TestCronCommandLifecycle:
     def test_list_does_not_crash_when_repeat_is_null(self, tmp_cron_dir, capsys):
         """A one-shot job can be persisted with ``"repeat": null``. `cron
         list` must render it as ∞ rather than crashing on .get(...)\\.get."""
-        from cron.jobs import load_jobs, save_jobs
+        from opencodon.cron.jobs import load_jobs, save_jobs
 
         create_job(prompt="One shot", schedule="every 1h")
         # Force the present-but-null shape that .get("repeat", {}) mishandles.
@@ -142,7 +142,7 @@ class TestCronCommandLifecycle:
         `cron list` must fall back to the default channel rather than crashing
         on ``", ".join(None)`` — same dict-default pitfall as ``repeat`` (#32896).
         """
-        from cron.jobs import load_jobs, save_jobs
+        from opencodon.cron.jobs import load_jobs, save_jobs
 
         create_job(prompt="No deliver", schedule="every 1h")
         jobs = load_jobs()
@@ -284,7 +284,7 @@ class TestExternalCronProviderStatus:
 
 def test_cron_list_warns_when_gateway_not_running(monkeypatch, capsys):
     monkeypatch.setattr(
-        "cron.jobs.list_jobs",
+        "opencodon.cron.jobs.list_jobs",
         lambda include_disabled=False: [
             {
                 "id": "job-1",
@@ -311,7 +311,7 @@ def test_cron_status_reports_running_gateway(monkeypatch, capsys):
     monkeypatch.setattr(cron_cli, "_active_cron_provider_name", lambda: "builtin")
     monkeypatch.setattr("opencodon_cli.gateway.find_gateway_pids", lambda: [1234, 5678])
     monkeypatch.setattr(
-        "cron.jobs.list_jobs",
+        "opencodon.cron.jobs.list_jobs",
         lambda include_disabled=False: [
             {"next_run_at": "2026-06-01T00:00:00Z"},
             {"next_run_at": "2026-05-31T12:00:00Z"},
@@ -329,7 +329,7 @@ def test_cron_status_reports_running_gateway(monkeypatch, capsys):
 
 def test_cron_tick_invokes_scheduler_tick_with_verbose(monkeypatch):
     calls = []
-    monkeypatch.setattr("cron.scheduler.tick", lambda verbose=False: calls.append(verbose))
+    monkeypatch.setattr("opencodon.cron.scheduler.tick", lambda verbose=False: calls.append(verbose))
 
     cron_cli.cron_tick()
 

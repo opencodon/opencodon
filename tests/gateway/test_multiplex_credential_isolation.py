@@ -67,7 +67,7 @@ class TestMcpInterpolationUsesScope:
     """MCP config ${VAR} interpolation resolves through the secret scope."""
 
     def test_interpolation_reads_scope(self, monkeypatch):
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
         monkeypatch.setenv("MY_MCP_TOKEN", "global-token")
         ss.set_multiplex_active(True)
         tok = ss.set_secret_scope({"MY_MCP_TOKEN": "profile-token"})
@@ -78,13 +78,13 @@ class TestMcpInterpolationUsesScope:
             ss.reset_secret_scope(tok)
 
     def test_interpolation_unset_keeps_placeholder(self, monkeypatch):
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
         monkeypatch.delenv("UNSET_MCP_VAR", raising=False)
         # multiplex off: unset var keeps literal placeholder (legacy behavior)
         assert _interpolate_env_vars("${UNSET_MCP_VAR}") == "${UNSET_MCP_VAR}"
 
     def test_interpolation_off_reads_environ(self, monkeypatch):
-        from tools.mcp_tool import _interpolate_env_vars
+        from opencodon.tools.mcp_tool import _interpolate_env_vars
         monkeypatch.setenv("MY_MCP_TOKEN", "env-token")
         # multiplex off: legacy os.environ resolution
         assert _interpolate_env_vars("${MY_MCP_TOKEN}") == "env-token"
@@ -111,7 +111,7 @@ class TestProfilePathResolutionUnderMultiplexScope:
 
     def test_skills_dir_follows_multiplex_scope(self, tmp_path):
         from gateway.run import _profile_runtime_scope
-        import tools.skills_hub as sh
+        import opencodon.tools.skills_hub as sh
 
         prof_a, prof_b = self._profiles(tmp_path)
         with _profile_runtime_scope(prof_a):
@@ -142,7 +142,7 @@ class TestProfilePathResolutionUnderMultiplexScope:
 
         from gateway.run import _profile_runtime_scope
         from opencodon_constants import get_opencodon_home
-        from tools.thread_context import propagate_context_to_thread
+        from opencodon.tools.thread_context import propagate_context_to_thread
 
         _prof_a, prof_b = self._profiles(tmp_path)
         seen = {}

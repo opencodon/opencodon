@@ -34,7 +34,7 @@ from opencodon.core.image_gen_provider import (
     save_url_image,
     success_response,
 )
-from tools.xai_http import (
+from opencodon.tools.xai_http import (
     build_xai_storage_options,
     opencodon_xai_user_agent,
     maybe_mark_xai_storage_notice_seen,

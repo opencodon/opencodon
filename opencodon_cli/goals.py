@@ -514,7 +514,7 @@ def _get_session_db() -> Optional[Any]:
     """
     try:
         from opencodon_constants import get_opencodon_home
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         home = str(get_opencodon_home())
     except Exception as exc:  # pragma: no cover
@@ -666,7 +666,7 @@ def _session_waiting(session_id: str) -> bool:
     if not session_id:
         return False
     try:
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         return bool(process_registry.is_session_waiting(session_id))
     except Exception:
@@ -986,7 +986,7 @@ def gather_background_processes(task_id: Optional[str] = None) -> List[Dict[str,
     ``GoalManager.evaluate_after_turn(background_processes=...)``.
     """
     try:
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
 
         sessions = process_registry.list_sessions(task_id=task_id) or []
     except Exception as exc:

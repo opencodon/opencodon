@@ -12,7 +12,7 @@ from acp.schema import (
 )
 
 from acp_adapter.permissions import make_approval_callback
-from tools.approval import prompt_dangerous_approval
+from opencodon.tools.approval import prompt_dangerous_approval
 
 
 def _make_response(outcome):

@@ -5,8 +5,8 @@ from unittest.mock import patch
 from rich.console import Console
 
 import opencodon_cli.banner as banner
-import model_tools
-import tools.mcp_tool
+from opencodon.tools import model_tools
+import opencodon.tools.mcp_tool
 
 
 def test_display_toolset_name_strips_legacy_suffix():
@@ -42,7 +42,7 @@ def test_build_welcome_banner_uses_normalized_toolset_names():
         ),
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(
             record=True, force_terminal=False, color_system=None, width=160
@@ -75,8 +75,8 @@ def test_build_welcome_banner_title_is_hyperlinked_to_release():
     import io
     from unittest.mock import patch as _patch
     import opencodon_cli.banner as _banner
-    import model_tools as _mt
-    import tools.mcp_tool as _mcp
+    from opencodon.tools import model_tools as _mt
+    import opencodon.tools.mcp_tool as _mcp
 
     _banner._latest_release_cache = None
     tag_url = ("v2026.4.23", "https://github.com/opencodon/opencodon/releases/tag/v2026.4.23")
@@ -110,8 +110,8 @@ def test_build_welcome_banner_title_falls_back_when_no_tag():
     import io
     from unittest.mock import patch as _patch
     import opencodon_cli.banner as _banner
-    import model_tools as _mt
-    import tools.mcp_tool as _mcp
+    from opencodon.tools import model_tools as _mt
+    import opencodon.tools.mcp_tool as _mcp
 
     _banner._latest_release_cache = None
     buf = io.StringIO()
@@ -142,7 +142,7 @@ def test_build_welcome_banner_disabled_mcp_shows_disabled_not_failed():
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
         patch.object(
-            tools.mcp_tool,
+            opencodon.tools.mcp_tool,
             "get_mcp_status",
             return_value=[
                 {"name": "linear", "transport": "http", "tools": 0,
@@ -175,7 +175,7 @@ def test_build_welcome_banner_configured_mcp_is_not_failed():
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
         patch.object(
-            tools.mcp_tool,
+            opencodon.tools.mcp_tool,
             "get_mcp_status",
             return_value=[
                 {
@@ -225,7 +225,7 @@ def test_banner_hides_toolsets_not_enabled_for_platform():
         ),
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(record=True, force_terminal=False, color_system=None, width=160)
         banner.build_welcome_banner(
@@ -252,7 +252,7 @@ def test_banner_skills_section_reflects_disabled_skills_toolset():
         patch.object(model_tools, "check_tool_availability", return_value=(["file", "terminal"], [])),
         patch.object(banner, "get_available_skills", return_value=fake_skills),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(record=True, force_terminal=False, color_system=None, width=160)
         banner.build_welcome_banner(
@@ -268,7 +268,7 @@ def test_banner_skills_section_reflects_disabled_skills_toolset():
         patch.object(model_tools, "check_tool_availability", return_value=(["file", "terminal", "skills"], [])),
         patch.object(banner, "get_available_skills", return_value=fake_skills),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(record=True, force_terminal=False, color_system=None, width=160)
         banner.build_welcome_banner(
@@ -311,7 +311,7 @@ def test_build_welcome_banner_moa_provider_shows_preset_and_aggregator(tmp_path,
         patch.object(model_tools, "check_tool_availability", return_value=([], [])),
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(record=True, force_terminal=False, color_system=None, width=160)
         banner.build_welcome_banner(
@@ -337,7 +337,7 @@ def test_build_welcome_banner_non_moa_unchanged(tmp_path, monkeypatch):
         patch.object(model_tools, "check_tool_availability", return_value=([], [])),
         patch.object(banner, "get_available_skills", return_value={}),
         patch.object(banner, "get_update_result", return_value=None),
-        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+        patch.object(opencodon.tools.mcp_tool, "get_mcp_status", return_value=[]),
     ):
         console = Console(record=True, force_terminal=False, color_system=None, width=160)
         banner.build_welcome_banner(

@@ -35,7 +35,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from opencodon.core.memory_provider import MemoryProvider
 from opencodon.core.skill_commands import extract_user_instruction_from_skill_message
-from tools.registry import tool_error
+from opencodon.tools.registry import tool_error
 
 logger = logging.getLogger(__name__)
 
@@ -736,7 +736,7 @@ class MemoryManager:
                 try:
                     # Daemon workers (see tools.daemon_pool): a provider wedged
                     # on a network call must never block interpreter exit.
-                    from tools.daemon_pool import DaemonThreadPoolExecutor
+                    from opencodon.tools.daemon_pool import DaemonThreadPoolExecutor
                     self._sync_executor = DaemonThreadPoolExecutor(
                         max_workers=1,
                         thread_name_prefix="mem-sync",

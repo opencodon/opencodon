@@ -37,7 +37,7 @@ def _fake_rows():
 
 def test_usage_lists_all_provenances(monkeypatch, capsys):
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(skill_usage, "usage_report", _fake_rows)
     args = SimpleNamespace(sort="activity", provenance=None, json=False)
@@ -52,7 +52,7 @@ def test_usage_lists_all_provenances(monkeypatch, capsys):
 
 def test_usage_sort_activity_orders_most_used_first(monkeypatch, capsys):
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(skill_usage, "usage_report", _fake_rows)
     args = SimpleNamespace(sort="activity", provenance=None, json=False)
@@ -64,7 +64,7 @@ def test_usage_sort_activity_orders_most_used_first(monkeypatch, capsys):
 
 def test_usage_provenance_filter(monkeypatch, capsys):
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(skill_usage, "usage_report", _fake_rows)
     args = SimpleNamespace(sort="activity", provenance="bundled", json=False)
@@ -77,7 +77,7 @@ def test_usage_provenance_filter(monkeypatch, capsys):
 
 def test_usage_json_output(monkeypatch, capsys):
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(skill_usage, "usage_report", _fake_rows)
     args = SimpleNamespace(sort="name", provenance=None, json=True)
@@ -90,7 +90,7 @@ def test_usage_json_output(monkeypatch, capsys):
 
 def test_usage_empty(monkeypatch, capsys):
     import opencodon_cli.curator as curator_cli
-    import tools.skill_usage as skill_usage
+    import opencodon.tools.skill_usage as skill_usage
 
     monkeypatch.setattr(skill_usage, "usage_report", lambda: [])
     args = SimpleNamespace(sort="activity", provenance=None, json=False)

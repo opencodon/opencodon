@@ -24,7 +24,7 @@ from opencodon.config import (
     load_config, save_config, get_env_value, save_env_value,
 )
 from opencodon.common.colors import Colors, color
-from tools.tool_backend_helpers import fal_key_is_configured
+from opencodon.tools.tool_backend_helpers import fal_key_is_configured
 from utils import base_url_hostname, is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def _xai_credentials_present() -> bool:
     except Exception:
         pass
     try:
-        from tools.xai_http import get_env_value as _xai_get_env_value
+        from opencodon.tools.xai_http import get_env_value as _xai_get_env_value
 
         if str(_xai_get_env_value("XAI_API_KEY") or "").strip():
             return True
@@ -539,7 +539,7 @@ def _cua_driver_cmd() -> str:
 
 def _resolved_cua_driver_cmd() -> Optional[str]:
     """Resolve cua-driver exactly as the runtime and Desktop status do."""
-    from tools.computer_use.cua_backend import resolve_cua_driver_cmd
+    from opencodon.tools.computer_use.cua_backend import resolve_cua_driver_cmd
 
     return resolve_cua_driver_cmd()
 
@@ -553,7 +553,7 @@ def _cua_driver_env() -> dict:
     never break on a telemetry-helper error.
     """
     try:
-        from tools.computer_use.cua_backend import cua_driver_child_env
+        from opencodon.tools.computer_use.cua_backend import cua_driver_child_env
 
         return cua_driver_child_env()
     except Exception:
@@ -783,7 +783,7 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     # re-run the installer as before.
     if binary:
         try:
-            from tools.computer_use.cua_backend import cua_driver_update_check
+            from opencodon.tools.computer_use.cua_backend import cua_driver_update_check
             _state = cua_driver_update_check()
             if _state is not None and not _state.get("update_available"):
                 _print_success(
@@ -1157,7 +1157,7 @@ def _run_post_setup(post_setup_key: str):
         try:
             # Import lazily so the tools_config UI doesn't pull in the full
             # browser_tool module at import time.
-            from tools.browser_tool import (
+            from opencodon.tools.browser_tool import (
                 _chromium_installed,
                 _running_in_docker,
             )
@@ -1212,7 +1212,7 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    Chromium installed")
                 # Invalidate the cached "missing" result so subsequent
                 # check_browser_requirements() calls see the new install.
-                import tools.browser_tool as _bt
+                import opencodon.tools.browser_tool as _bt
                 _bt._cached_chromium_installed = None
             else:
                 _print_warning("    Chromium install failed:")
@@ -2018,7 +2018,7 @@ def _estimate_tool_tokens() -> Dict[str, int]:
     try:
         # Trigger full tool discovery (imports all tool modules).
         import model_tools  # noqa: F401
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
     except Exception:
         logger.debug("Tool registry unavailable; skipping token estimation")
         _tool_token_cache = {}
@@ -2467,7 +2467,7 @@ def _local_browser_runnable() -> bool:
     if not _has_agent_browser():
         return False
     try:
-        from tools.browser_tool import _chromium_installed, _using_lightpanda_engine
+        from opencodon.tools.browser_tool import _chromium_installed, _using_lightpanda_engine
     except Exception:
         # If the runtime probe can't be imported, fall back to binary presence
         # (prior behaviour) rather than crashing the setup/status surface.
@@ -2763,7 +2763,7 @@ def _detect_active_provider_index(
 
 def _fal_model_catalog():
     """Lazy-load the FAL model catalog from the tool module."""
-    from tools.image_generation_tool import FAL_MODELS, DEFAULT_MODEL
+    from opencodon.tools.image_generation_tool import FAL_MODELS, DEFAULT_MODEL
     return FAL_MODELS, DEFAULT_MODEL
 
 
@@ -3938,7 +3938,7 @@ def _configure_mcp_tools_interactive(config: dict):
     print(color(f"  Connecting to {len(enabled_names)} server(s): {', '.join(enabled_names)}", Colors.DIM))
 
     try:
-        from tools.mcp_tool import probe_mcp_server_tools
+        from opencodon.tools.mcp_tool import probe_mcp_server_tools
         server_tools = probe_mcp_server_tools()
     except Exception as exc:
         _print_error(f"Failed to probe MCP servers: {exc}")

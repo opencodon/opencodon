@@ -128,7 +128,7 @@ class TestCacheImageFromBytes:
 # cache_image_from_url (base.py)
 # ---------------------------------------------------------------------------
 
-@patch("tools.url_safety.is_safe_url", return_value=True)
+@patch("opencodon.tools.url_safety.is_safe_url", return_value=True)
 class TestCacheImageFromUrl:
     """Tests for gateway.platforms.base.cache_image_from_url"""
 
@@ -288,7 +288,7 @@ class TestCacheImageFromUrlConnectGuard:
 # cache_audio_from_url (base.py)
 # ---------------------------------------------------------------------------
 
-@patch("tools.url_safety.is_safe_url", return_value=True)
+@patch("opencodon.tools.url_safety.is_safe_url", return_value=True)
 class TestCacheAudioFromUrl:
     """Tests for gateway.platforms.base.cache_audio_from_url"""
 
@@ -472,7 +472,7 @@ class TestSSRFRedirectGuard:
             return url == "https://public.example.com/image.png"
 
         async def run():
-            with patch("tools.url_safety.is_safe_url", side_effect=fake_safe), \
+            with patch("opencodon.tools.url_safety.is_safe_url", side_effect=fake_safe), \
                  patch("httpx.AsyncClient", side_effect=factory):
                 from gateway.platforms.base import cache_image_from_url
                 await cache_image_from_url(
@@ -507,7 +507,7 @@ class TestSSRFRedirectGuard:
             return url == "https://public.example.com/voice.ogg"
 
         async def run():
-            with patch("tools.url_safety.is_safe_url", side_effect=fake_safe), \
+            with patch("opencodon.tools.url_safety.is_safe_url", side_effect=fake_safe), \
                  patch("httpx.AsyncClient", side_effect=factory):
                 from gateway.platforms.base import cache_audio_from_url
                 await cache_audio_from_url(
@@ -545,7 +545,7 @@ class TestSSRFRedirectGuard:
         mock_client.stream = MagicMock(side_effect=fake_stream)
 
         async def run():
-            with patch("tools.url_safety.is_safe_url", return_value=True), \
+            with patch("opencodon.tools.url_safety.is_safe_url", return_value=True), \
                  patch("httpx.AsyncClient", side_effect=factory):
                 from gateway.platforms.base import cache_image_from_url
                 return await cache_image_from_url(

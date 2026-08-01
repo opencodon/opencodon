@@ -29,7 +29,7 @@ def store(tmp_path, monkeypatch):
     at opencodon_state import time, before pytest's OPENCODON_HOME monkeypatch
     fires — the autouse fixture's OPENCODON_HOME override doesn't help here.)
     """
-    import opencodon_state
+    from opencodon import state as opencodon_state
     monkeypatch.setattr(opencodon_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
     config = GatewayConfig()
     s = SessionStore(sessions_dir=tmp_path, config=config)

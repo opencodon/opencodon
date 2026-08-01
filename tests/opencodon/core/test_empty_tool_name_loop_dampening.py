@@ -139,7 +139,7 @@ def agent_env():
     for mod in list(sys.modules):
         if mod == "run_agent" or mod.startswith(("agent.", "opencodon.")) or mod.startswith("tools.") or mod.startswith("opencodon_"):
             del sys.modules[mod]
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     agent = AIAgent(
         api_key="test-key", base_url=f"http://127.0.0.1:{port}/v1",

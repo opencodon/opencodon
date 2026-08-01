@@ -143,7 +143,7 @@ class AnthropicTransport(ProviderTransport):
                     # Resolve by registry lookup, preferring whichever original
                     # is actually registered; never rewrite a name the LLM used
                     # that already resolves natively. GH-25255.
-                    from tools.registry import registry as _tool_registry
+                    from opencodon.tools.registry import registry as _tool_registry
                     if not _tool_registry.get_entry(name):
                         bare = name[len(_MCP_PREFIX):]            # read_file
                         single = "mcp_" + bare                    # mcp_read_file / mcp_linear_get_issue

@@ -240,7 +240,7 @@ def test_main_top_level_tui_accepts_toolsets(monkeypatch, main_mod):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(discover_mcp_tools=lambda: None),
     )
     monkeypatch.setattr(config_mod, "load_config", lambda: {})
@@ -490,7 +490,7 @@ def test_termux_skips_bundled_skill_sync_when_stamp_fresh(monkeypatch, tmp_path,
     main_mod._mark_termux_bundled_skills_synced()
     monkeypatch.setitem(
         sys.modules,
-        "tools.skills_sync",
+        "opencodon.tools.skills_sync",
         types.SimpleNamespace(sync_skills=lambda quiet: calls.append(quiet)),
     )
 
@@ -507,7 +507,7 @@ def test_termux_forced_bundled_skill_sync_runs(monkeypatch, tmp_path, main_mod):
     monkeypatch.setattr(main_mod, "_termux_bundled_skills_fingerprint", lambda: "fp1")
     monkeypatch.setitem(
         sys.modules,
-        "tools.skills_sync",
+        "opencodon.tools.skills_sync",
         types.SimpleNamespace(sync_skills=lambda quiet: calls.append(quiet)),
     )
 
@@ -622,7 +622,7 @@ def test_main_top_level_oneshot_accepts_toolsets(monkeypatch, main_mod):
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(discover_mcp_tools=lambda: None),
     )
     monkeypatch.setattr(config_mod, "load_config", lambda: {})
@@ -877,23 +877,23 @@ def test_run_and_exit_oneshot_cleans_global_runtime_before_hard_exit(
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.terminal_tool",
-        _mod("tools.terminal_tool", cleanup_all_environments=lambda: events.append("terminal")),
+        "opencodon.tools.terminal_tool",
+        _mod("opencodon.tools.terminal_tool", cleanup_all_environments=lambda: events.append("terminal")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.async_delegation",
-        _mod("tools.async_delegation", interrupt_all=lambda **kw: events.append("delegation")),
+        "opencodon.tools.async_delegation",
+        _mod("opencodon.tools.async_delegation", interrupt_all=lambda **kw: events.append("delegation")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.browser_tool",
-        _mod("tools.browser_tool", _emergency_cleanup_all_sessions=lambda: events.append("browser")),
+        "opencodon.tools.browser_tool",
+        _mod("opencodon.tools.browser_tool", _emergency_cleanup_all_sessions=lambda: events.append("browser")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
-        _mod("tools.mcp_tool", shutdown_mcp_servers=lambda: events.append("mcp")),
+        "opencodon.tools.mcp_tool",
+        _mod("opencodon.tools.mcp_tool", shutdown_mcp_servers=lambda: events.append("mcp")),
     )
     monkeypatch.setitem(
         sys.modules,
@@ -924,22 +924,22 @@ def test_run_and_exit_oneshot_still_exits_when_global_cleanup_raises(
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.terminal_tool",
+        "opencodon.tools.terminal_tool",
         types.SimpleNamespace(cleanup_all_environments=lambda: events.append("terminal")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.async_delegation",
+        "opencodon.tools.async_delegation",
         types.SimpleNamespace(interrupt_all=lambda **kw: events.append("delegation")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.browser_tool",
+        "opencodon.tools.browser_tool",
         types.SimpleNamespace(_emergency_cleanup_all_sessions=lambda: events.append("browser")),
     )
     monkeypatch.setitem(
         sys.modules,
-        "tools.mcp_tool",
+        "opencodon.tools.mcp_tool",
         types.SimpleNamespace(shutdown_mcp_servers=_raise_mcp),
     )
     monkeypatch.setitem(
@@ -1194,7 +1194,7 @@ def test_oneshot_run_agent_closes_agent_after_chat(monkeypatch):
             closed.append(True)
 
     monkeypatch.setitem(
-        sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
+        sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
         "opencodon.config.load_config",
@@ -1244,7 +1244,7 @@ def test_oneshot_run_agent_closes_agent_when_chat_raises(monkeypatch):
             closed.append(True)
 
     monkeypatch.setitem(
-        sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
+        sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
         "opencodon.config.load_config",
@@ -1299,7 +1299,7 @@ def test_oneshot_run_agent_closes_session_db(monkeypatch):
             db_closed.append(True)
 
     monkeypatch.setitem(
-        sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
+        sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
         "opencodon.config.load_config",
@@ -1346,7 +1346,7 @@ def test_oneshot_run_agent_closes_session_db_when_agent_init_raises(monkeypatch)
             raise RuntimeError("init boom")
 
     monkeypatch.setitem(
-        sys.modules, "run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
+        sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=FakeAgent)
     )
     monkeypatch.setattr(
         "opencodon.config.load_config",
@@ -1598,8 +1598,8 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
             setattr(module, key, value)
         return module
 
-    monkeypatch.setitem(sys.modules, "run_agent", mod("run_agent", AIAgent=FakeAgent))
-    monkeypatch.setitem(sys.modules, "opencodon_state", mod("opencodon_state", SessionDB=FakeSessionDB))
+    monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", mod("run_agent", AIAgent=FakeAgent))
+    monkeypatch.setitem(sys.modules, "opencodon.state", mod("opencodon_state", SessionDB=FakeSessionDB))
     monkeypatch.setitem(
         sys.modules,
         "opencodon.config",
@@ -1868,7 +1868,7 @@ def test_print_tui_exit_summary_includes_resume_and_token_totals(monkeypatch, ca
             return None
 
     monkeypatch.setitem(
-        sys.modules, "opencodon_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
+        sys.modules, "opencodon.state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
     )
 
     main_mod._print_tui_exit_summary("20260409_000001_abc123")
@@ -1908,7 +1908,7 @@ def test_print_tui_exit_summary_prefers_actual_active_session_file(
     active = tmp_path / "active.json"
     active.write_text('{"session_id":"actual_session"}', encoding="utf-8")
     monkeypatch.setitem(
-        sys.modules, "opencodon_state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
+        sys.modules, "opencodon.state", types.SimpleNamespace(SessionDB=lambda: _FakeDB())
     )
 
     main_mod._print_tui_exit_summary("startup_resume", str(active))

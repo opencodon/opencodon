@@ -258,7 +258,7 @@ class TestRunBackgroundTask:
         }
         with patch("gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}), \
              patch("gateway.run._load_gateway_config", return_value=checkpoint_config), \
-             patch("run_agent.AIAgent") as MockAgent:
+             patch("opencodon.core.run_agent.AIAgent") as MockAgent:
             mock_agent_instance = MagicMock()
             mock_agent_instance.shutdown_memory_provider = MagicMock()
             mock_agent_instance.close = MagicMock()
@@ -431,7 +431,7 @@ class TestRunBackgroundTask:
         )
 
         with patch("gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}), \
-             patch("run_agent.AIAgent") as MockAgent:
+             patch("opencodon.core.run_agent.AIAgent") as MockAgent:
             mock_agent_instance = MagicMock()
             mock_agent_instance.shutdown_memory_provider = MagicMock()
             mock_agent_instance.close = MagicMock()

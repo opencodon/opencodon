@@ -1117,7 +1117,7 @@ class TestNovitaProvider:
     """Tests for NovitaAI — an OpenAI-compatible multi-model aggregator."""
 
     def test_novita_profile_loads(self):
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         profile = get_provider_profile("novita")
         assert profile is not None
         assert profile.name == "novita"
@@ -1126,7 +1126,7 @@ class TestNovitaProvider:
         assert "NOVITA_API_KEY" in profile.env_vars
 
     def test_novita_aliases(self):
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         profile = get_provider_profile("novita")
         assert "novita-ai" in profile.aliases
         assert "novitaai" in profile.aliases
@@ -1324,7 +1324,7 @@ class TestMinimaxOAuthProvider:
         # of truth; _get_aux_model_for_provider() reads from it first
         # and only falls back to the dict when no profile is registered.
         import model_tools  # noqa: F401  -- triggers plugin discovery
-        import providers
+        from opencodon import providers
 
         profile = providers.get_provider_profile("minimax-oauth")
         assert profile is not None, "minimax-oauth provider profile must be registered"
@@ -1456,7 +1456,7 @@ class TestFetchDeepInfraModels:
         self, monkeypatch
     ):
         import opencodon_cli.models as models
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
 
         profile = get_provider_profile("deepinfra")
         assert profile is not None
@@ -1647,7 +1647,7 @@ class TestDeepInfraProviderProfile:
     """plugins/model-providers/deepinfra registration + aux resolution."""
 
     def test_profile_registered_with_alias_and_aux(self):
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         from opencodon.core.auxiliary_client import _get_aux_model_for_provider
         from opencodon_cli.auth import PROVIDER_REGISTRY, resolve_provider
         from opencodon.config import OPTIONAL_ENV_VARS
@@ -1674,7 +1674,7 @@ class TestDeepInfraProviderProfile:
 
     def test_profile_does_not_force_one_output_cap_across_mixed_catalog(self):
         """DeepInfra model output limits vary, so the server default is safest."""
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
 
         profile = get_provider_profile("deepinfra")
         assert profile is not None

@@ -486,8 +486,8 @@ def _build_apikey_providers_list() -> list:
     _dedicated_canonical = {"anthropic", "openrouter", "bedrock"}
     _known_canonical.update(_dedicated_canonical)
     try:
-        from providers import list_providers
-        from providers.base import ProviderProfile as _PP
+        from opencodon.providers import list_providers
+        from opencodon.providers.base import ProviderProfile as _PP
         try:
             from opencodon_cli.providers import normalize_provider as _normalize_provider
         except Exception:  # pragma: no cover - normalization is best-effort
@@ -1280,7 +1280,7 @@ def run_doctor(args):
             # through the triggers. `_db_opens_cleanly` now drives a rolled-back
             # write so this otherwise-silent corruption class is surfaced (and
             # repaired in place with --fix).
-            from opencodon_state import _db_opens_cleanly, repair_state_db_schema
+            from opencodon.state import _db_opens_cleanly, repair_state_db_schema
 
             _write_reason = _db_opens_cleanly(state_db_path)
             if _write_reason is not None:
@@ -1315,7 +1315,7 @@ def run_doctor(args):
                         "(or 'opencodon sessions repair') to rebuild the FTS index"
                     )
         except Exception as e:
-            from opencodon_state import is_malformed_db_error, repair_state_db_schema
+            from opencodon.state import is_malformed_db_error, repair_state_db_schema
 
             if is_malformed_db_error(e):
                 # sqlite_master itself is malformed (e.g. duplicate
@@ -1630,7 +1630,7 @@ def run_doctor(args):
             try:
                 # Lazy import: browser_tool is a ~150KB module we don't want
                 # to eagerly load in every `opencodon doctor` invocation.
-                from tools.browser_tool import (
+                from opencodon.tools.browser_tool import (
                     _chromium_installed,
                     _is_camofox_mode,
                     _get_cloud_provider,
@@ -2216,7 +2216,7 @@ def run_doctor(args):
     try:
         # Add project root to path for imports
         sys.path.insert(0, str(PROJECT_ROOT))
-        from model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
+        from opencodon.tools.model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
         
         available, unavailable = check_tool_availability()
         

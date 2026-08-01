@@ -411,7 +411,7 @@ class TestHistoryDisplay:
 
     def test_resume_updates_opencodon_session_id_env_and_context(self, tmp_path):
         from gateway.session_context import _UNSET, _VAR_MAP, get_session_env
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
 
         cli = _make_cli()
         cli.session_id = "current_session"

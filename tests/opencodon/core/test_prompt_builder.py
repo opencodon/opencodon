@@ -378,7 +378,7 @@ class TestPromptBuilderImports:
         original_import = builtins.__import__
 
         def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
-            if name == "tools.skills_tool" or (
+            if name == "opencodon.tools.skills_tool" or (
                 name == "tools" and fromlist and "skills_tool" in fromlist
             ):
                 raise ModuleNotFoundError("simulated optional tool import failure")
@@ -1241,7 +1241,7 @@ class TestEnvironmentHints:
         ``get_environment`` from ``tools.environments`` and always died with
         ``ImportError: cannot import name 'get_environment'`` (cosmetic — it
         only dropped the live backend description to a static fallback). The
-        real factory is ``_create_environment`` in ``tools.terminal_tool``;
+        real factory is ``_create_environment`` in ``opencodon.tools.terminal_tool``;
         the probe must import and call THAT, returning a parsed line instead
         of None."""
         import opencodon.core.prompt_builder as _pb
@@ -1265,9 +1265,9 @@ class TestEnvironmentHints:
             created["env_type"] = env_type
             return _FakeEnv()
 
-        # Patch the REAL factory in tools.terminal_tool — the probe imports it
+        # Patch the REAL factory in opencodon.tools.terminal_tool — the probe imports it
         # locally, so the import itself must succeed (the bug was here).
-        import tools.terminal_tool as _tt
+        import opencodon.tools.terminal_tool as _tt
         monkeypatch.setattr(_tt, "_create_environment", _fake_create_environment)
 
         line = _pb._probe_remote_backend("docker")

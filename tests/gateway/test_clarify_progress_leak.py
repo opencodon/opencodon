@@ -108,8 +108,8 @@ def _install_fakes(monkeypatch, mode):
 
     fake_run_agent = types.ModuleType("run_agent")
     fake_run_agent.AIAgent = ClarifyThenToolAgent
-    monkeypatch.setitem(sys.modules, "run_agent", fake_run_agent)
-    import tools.terminal_tool  # noqa: F401 — register terminal emoji
+    monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", fake_run_agent)
+    import opencodon.tools.terminal_tool  # noqa: F401 — register terminal emoji
 
     gateway_run = importlib.import_module("gateway.run")
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})

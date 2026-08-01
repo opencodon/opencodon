@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
 from opencodon_constants import get_opencodon_home
-from tools import skill_usage
+from opencodon.tools import skill_usage
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -295,7 +295,7 @@ def _cron_referenced_skills() -> Set[str]:
     but no crash).
     """
     try:
-        from cron.jobs import referenced_skill_names as _refs
+        from opencodon.cron.jobs import referenced_skill_names as _refs
         return _refs()
     except Exception as e:
         logger.debug("Curator could not read cron skill references: %s", e, exc_info=True)
@@ -314,7 +314,7 @@ def apply_automatic_transitions(now: Optional[datetime] = None) -> Dict[str, int
 
     Returns a counter dict describing what changed.
     """
-    from tools import skill_usage as _u
+    from opencodon.tools import skill_usage as _u
 
     if now is None:
         now = datetime.now(timezone.utc)
@@ -1206,7 +1206,7 @@ def _write_run_report(
             if isinstance(e, dict) and e.get("name")
         ]
         if consolidated_map or pruned_names:
-            from cron.jobs import rewrite_skill_refs as _rewrite_cron_refs
+            from opencodon.cron.jobs import rewrite_skill_refs as _rewrite_cron_refs
             cron_rewrites = _rewrite_cron_refs(
                 consolidated=consolidated_map,
                 pruned=pruned_names,
@@ -1845,7 +1845,7 @@ def _run_llm_review(prompt: str) -> Dict[str, Any]:
         "error": None,
     }
     try:
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
     except Exception as e:
         result_meta["error"] = f"AIAgent import failed: {e}"
         result_meta["summary"] = result_meta["error"]

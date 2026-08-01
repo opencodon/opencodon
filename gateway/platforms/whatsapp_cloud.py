@@ -1683,7 +1683,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 )
                 return False
             try:
-                from tools.clarify_gateway import resolve_gateway_clarify
+                from opencodon.tools.clarify_gateway import resolve_gateway_clarify
             except ImportError:
                 logger.warning(
                     "[whatsapp_cloud] clarify resolver unavailable; "
@@ -1701,7 +1701,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 # blocked in clarify and produces an "Interrupting
                 # current task" loop.
                 try:
-                    from tools.clarify_gateway import mark_awaiting_text
+                    from opencodon.tools.clarify_gateway import mark_awaiting_text
                     flipped = mark_awaiting_text(clarify_id)
                 except Exception:
                     logger.exception(
@@ -1778,7 +1778,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 self._exec_approval_state[approval_id] = session_key
                 return False
             try:
-                from tools.approval import resolve_gateway_approval
+                from opencodon.tools.approval import resolve_gateway_approval
             except ImportError:
                 logger.warning(
                     "[whatsapp_cloud] approval resolver unavailable"
@@ -1826,7 +1826,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 self._slash_confirm_state[confirm_id] = session_key
                 return False
             try:
-                from tools import slash_confirm as _slash_confirm_mod
+                from opencodon.tools import slash_confirm as _slash_confirm_mod
             except ImportError:
                 logger.warning(
                     "[whatsapp_cloud] slash_confirm resolver unavailable"

@@ -160,7 +160,7 @@ def get_tool_emoji(tool_name: str, default: str = "⚡") -> str:
             return override
     # 2. Registry default
     try:
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
         emoji = registry.get_emoji(tool_name, default="")
         if emoji:
             return emoji
@@ -752,7 +752,7 @@ def _resolve_skill_manage_paths(args: dict) -> list[Path]:
     if not action or not name:
         return []
 
-    from tools.skill_manager_tool import _find_skill, _resolve_skill_dir
+    from opencodon.tools.skill_manager_tool import _find_skill, _resolve_skill_dir
 
     if action == "create":
         skill_dir = _resolve_skill_dir(name, args.get("category"))

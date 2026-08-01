@@ -12,7 +12,7 @@ gated on ``skip_memory``.
 
 import pytest
 
-from run_agent import AIAgent
+from opencodon.core.run_agent import AIAgent
 
 
 class _FakeOpenAI:
@@ -25,9 +25,9 @@ class _FakeOpenAI:
 
 
 def _make_agent(monkeypatch, enabled_toolsets=None, skip_memory=True):
-    monkeypatch.setattr("run_agent.get_tool_definitions", lambda **kw: [])
-    monkeypatch.setattr("run_agent.check_toolset_requirements", lambda: {})
-    monkeypatch.setattr("run_agent.OpenAI", _FakeOpenAI)
+    monkeypatch.setattr("opencodon.core.run_agent.get_tool_definitions", lambda **kw: [])
+    monkeypatch.setattr("opencodon.core.run_agent.check_toolset_requirements", lambda: {})
+    monkeypatch.setattr("opencodon.core.run_agent.OpenAI", _FakeOpenAI)
     return AIAgent(
         api_key="test-key",
         base_url="http://test",
@@ -88,7 +88,7 @@ def test_skip_memory_memory_tool_handler_works_and_provider_skipped(
 
     # Dispatch through the same entry point the tool executor uses
     # (agent/tool_executor.py wires store=agent._memory_store).
-    from tools.memory_tool import memory_tool
+    from opencodon.tools.memory_tool import memory_tool
 
     raw = memory_tool(
         action="add",

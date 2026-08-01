@@ -556,7 +556,7 @@ def test_inline_skill_shell_hides_bash_window(monkeypatch):
 
 
 def test_tts_opus_conversion_hides_ffmpeg_window(monkeypatch, tmp_path):
-    from tools import tts_tool
+    from opencodon.tools import tts_tool
 
     captured = []
 
@@ -575,7 +575,7 @@ def test_tts_opus_conversion_hides_ffmpeg_window(monkeypatch, tmp_path):
 
 
 def test_local_stt_audio_prep_hides_ffmpeg_window(monkeypatch, tmp_path):
-    from tools import transcription_tools
+    from opencodon.tools import transcription_tools
 
     captured = []
 
@@ -593,7 +593,7 @@ def test_local_stt_audio_prep_hides_ffmpeg_window(monkeypatch, tmp_path):
     assert captured[0][1]["creationflags"] == _CREATE_NO_WINDOW
 
 def test_checkpoint_manager_git_hides_windows(monkeypatch):
-    from tools import checkpoint_manager
+    from opencodon.tools import checkpoint_manager
 
     captured = []
 
@@ -611,7 +611,7 @@ def test_checkpoint_manager_git_hides_windows(monkeypatch):
 
 
 def test_skills_hub_gh_token_hides_windows(monkeypatch):
-    from tools import skills_hub
+    from opencodon.tools import skills_hub
 
     captured = []
 

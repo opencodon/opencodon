@@ -18,14 +18,14 @@ import pytest
 from gateway.config import Platform
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from tools.process_registry import ProcessRegistry, ProcessSession
+from opencodon.tools.process_registry import ProcessRegistry, ProcessSession
 
 
 @pytest.fixture(autouse=True)
 def isolated_registry(tmp_path, monkeypatch):
     """Any current/future durable compatibility path must stay in tmp state."""
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     monkeypatch.setattr(pr_module, "CHECKPOINT_PATH", tmp_path / "processes.json")
     registry = pr_module.ProcessRegistry()
@@ -170,7 +170,7 @@ def test_failed_async_injection_is_retried_and_only_success_is_acked(
     runner = _runner(adapter)
     _stop_after_sleeps(monkeypatch, runner, count=3)
 
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     acknowledgements = []
     monkeypatch.setattr(
@@ -187,7 +187,7 @@ def test_failed_async_injection_is_retried_and_only_success_is_acked(
 
 
 def _persist_pending_completion(event):
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     async_delegation._persist_dispatch({
         "delegation_id": event["delegation_id"],
@@ -206,7 +206,7 @@ def test_compression_parent_delivery_targets_tip_and_is_acked(
     monkeypatch, isolated_registry,
 ):
     """A compression-rotated parent with a live tip is deliverable + acked."""
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     event = _async_event("deleg_compression")
     event["parent_session_id"] = "sess_parent"
@@ -245,7 +245,7 @@ def test_explicit_reset_drop_is_terminal_not_falsely_delivered(
     'pending' (restart recovery would replay a completion that is fail-closed
     dropped again on every boot).
     """
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     event = _async_event("deleg_explicit_new")
     event["parent_session_id"] = "sess_reset"
@@ -278,7 +278,7 @@ def test_midflight_compression_rotation_stays_pending_for_retry(
     monkeypatch, isolated_registry,
 ):
     """A rotation without a visible continuation yet is retryable, not dropped."""
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     event = _async_event("deleg_midflight")
     event["parent_session_id"] = "sess_rotating"
@@ -312,7 +312,7 @@ def test_retry_attempts_are_capped_to_a_terminal_drop(
     monkeypatch, isolated_registry,
 ):
     """Endless claim/release churn converges to a terminal 'dropped' state."""
-    from tools import async_delegation
+    from opencodon.tools import async_delegation
 
     event = _async_event("deleg_attempt_cap")
     event["parent_session_id"] = "sess_rotating"
@@ -434,7 +434,7 @@ def test_async_completion_uses_canonical_origin_routing(monkeypatch, isolated_re
 
 
 def test_explicit_kill_returns_output_before_consuming_notification(monkeypatch):
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     registry = ProcessRegistry()
     session = ProcessSession(
@@ -478,7 +478,7 @@ def test_explicit_kill_returns_output_before_consuming_notification(monkeypatch)
 
 
 def test_process_tool_redacts_explicit_kill_output(monkeypatch):
-    from tools import process_registry as pr_module
+    from opencodon.tools import process_registry as pr_module
 
     registry = ProcessRegistry()
     session = ProcessSession(
@@ -574,7 +574,7 @@ def test_bulk_kill_does_not_consume_discarded_completion_output(monkeypatch):
 
 
 def test_unobserved_normal_completion_still_notifies(monkeypatch):
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     class _Registry:
         def get(self, _session_id):
@@ -612,7 +612,7 @@ def test_unobserved_normal_completion_still_notifies(monkeypatch):
 
 def test_autonomous_completion_redacts_real_command_and_output_secrets(monkeypatch):
     import opencodon.core.redact as redact_module
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     secret = "abc123randomopaquetokenvalue999"
     registry = ProcessRegistry()

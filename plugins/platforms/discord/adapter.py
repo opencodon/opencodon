@@ -135,7 +135,7 @@ from gateway.platforms.base import (
     utf16_len,
     validate_inbound_media_size,
 )
-from tools.url_safety import is_safe_url
+from opencodon.tools.url_safety import is_safe_url
 
 
 async def _read_url_image_with_redirect_guard(
@@ -351,7 +351,7 @@ def check_discord_requirements() -> bool:
     if DISCORD_AVAILABLE:
         return True
     try:
-        from tools.lazy_deps import ensure as _lazy_ensure
+        from opencodon.tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("platform.discord", prompt=False)
     except Exception:
         return False
@@ -3720,7 +3720,7 @@ class DiscordAdapter(BasePlatformAdapter):
         )
         os.makedirs(os.path.dirname(audio_path), exist_ok=True)
         try:
-            from tools.tts_tool import text_to_speech_tool
+            from opencodon.tools.tts_tool import text_to_speech_tool
             result_json = await asyncio.to_thread(
                 text_to_speech_tool, text=phrase, output_path=audio_path
             )
@@ -4091,7 +4091,7 @@ class DiscordAdapter(BasePlatformAdapter):
 
     async def _process_voice_input(self, guild_id: int, user_id: int, pcm_data: bytes):
         """Convert PCM -> WAV -> STT -> callback."""
-        from tools.voice_mode import is_whisper_hallucination
+        from opencodon.tools.voice_mode import is_whisper_hallucination
 
         tmp_f = tempfile.NamedTemporaryFile(suffix=".wav", prefix="vc_listen_", delete=False)
         wav_path = tmp_f.name
@@ -4099,7 +4099,7 @@ class DiscordAdapter(BasePlatformAdapter):
         try:
             await asyncio.to_thread(VoiceReceiver.pcm_to_wav, pcm_data, wav_path)
 
-            from tools.transcription_tools import transcribe_audio
+            from opencodon.tools.transcription_tools import transcribe_audio
             result = await asyncio.to_thread(transcribe_audio, wav_path)
 
             if not result.get("success"):
@@ -7922,7 +7922,7 @@ def _define_discord_view_classes() -> None:
             # A click that lands after the approval wait timed out (count == 0)
             # must not claim "Approved" — the command was already denied.
             try:
-                from tools.approval import resolve_gateway_approval
+                from opencodon.tools.approval import resolve_gateway_approval
                 count = resolve_gateway_approval(self.session_key, choice)
                 logger.info(
                     "Discord button resolved %d approval(s) for session %s (choice=%s, user=%s)",
@@ -8057,7 +8057,7 @@ def _define_discord_view_classes() -> None:
             # Resolve via the module-level primitive.  If the handler
             # returns a follow-up message, post it in the same channel.
             try:
-                from tools import slash_confirm as _slash_confirm_mod
+                from opencodon.tools import slash_confirm as _slash_confirm_mod
                 result_text = await _slash_confirm_mod.resolve(
                     self.session_key, self.confirm_id, choice,
                 )
@@ -8769,7 +8769,7 @@ def _define_discord_view_classes() -> None:
             # we round-trip the original value, not a button-label variant.
             resolved_text: Optional[str] = None
             try:
-                from tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
+                from opencodon.tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
                 entry = _clarify_entries.get(self.clarify_id)
                 if entry and entry.choices and 0 <= index < len(entry.choices):
                     resolved_text = entry.choices[index]
@@ -8779,7 +8779,7 @@ def _define_discord_view_classes() -> None:
                 resolved_text = choice
 
             try:
-                from tools.clarify_gateway import resolve_gateway_clarify
+                from opencodon.tools.clarify_gateway import resolve_gateway_clarify
                 resolved = resolve_gateway_clarify(self.clarify_id, resolved_text)
                 logger.info(
                     "Discord clarify button resolved (id=%s, choice=%r, user=%s, ok=%s)",
@@ -8810,7 +8810,7 @@ def _define_discord_view_classes() -> None:
             # until the user actually types. Just mark it as awaiting text
             # and disable the buttons so the user can't double-click.
             try:
-                from tools.clarify_gateway import mark_awaiting_text
+                from opencodon.tools.clarify_gateway import mark_awaiting_text
                 mark_awaiting_text(self.clarify_id)
             except Exception as exc:
                 logger.warning(

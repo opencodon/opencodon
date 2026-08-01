@@ -80,7 +80,7 @@ from opencodon.core.trajectory import has_incomplete_scratchpad
 from opencodon.core.usage_pricing import estimate_usage_cost, normalize_usage
 from opencodon_constants import PARTIAL_STREAM_STUB_ID
 from opencodon_logging import set_session_context
-from tools.skill_provenance import set_current_write_origin
+from opencodon.tools.skill_provenance import set_current_write_origin
 from utils import base_url_host_matches, env_var_enabled
 
 logger = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ def _ra():
     ``run_agent.handle_function_call`` / ``run_agent._set_interrupt`` /
     ``run_agent.OpenAI`` and have those patches reach this code path.
     """
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -3120,7 +3120,7 @@ def run_conversation(
                 ):
                     _retry.llama_cpp_grammar_retry_attempted = True
                     try:
-                        from tools.schema_sanitizer import strip_pattern_and_format
+                        from opencodon.tools.schema_sanitizer import strip_pattern_and_format
                         _, _stripped = strip_pattern_and_format(agent.tools)
                     except Exception as _strip_exc:  # pragma: no cover — defensive
                         logger.warning(

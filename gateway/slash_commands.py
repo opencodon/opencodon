@@ -177,7 +177,7 @@ class GatewaySlashCommandsMixin:
         # chats are pinned to it via parent_session_id) and by the routing
         # key as a fallback for older records.
         try:
-            from tools.async_delegation import interrupt_for_session
+            from opencodon.tools.async_delegation import interrupt_for_session
 
             interrupt_for_session(
                 session_key=session_key,
@@ -188,13 +188,13 @@ class GatewaySlashCommandsMixin:
             pass
 
         try:
-            from tools.env_passthrough import clear_env_passthrough
+            from opencodon.tools.env_passthrough import clear_env_passthrough
             clear_env_passthrough()
         except Exception:
             pass
 
         try:
-            from tools.credential_files import clear_credential_files
+            from opencodon.tools.credential_files import clear_credential_files
             clear_credential_files()
         except Exception:
             pass
@@ -256,7 +256,7 @@ class GatewaySlashCommandsMixin:
         _title_arg = event.get_command_args().strip()
         _title_note = ""
         if _title_arg and self._session_db and new_entry:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             try:
                 sanitized = SessionDB.sanitize_title(_title_arg)
             except ValueError as e:
@@ -822,7 +822,7 @@ class GatewaySlashCommandsMixin:
     async def _handle_agents_command(self, event: MessageEvent) -> str:
         """Handle /agents command - list active agents and running tasks."""
         from gateway.run import _AGENT_PENDING_SENTINEL
-        from tools.process_registry import format_uptime_short, process_registry
+        from opencodon.tools.process_registry import format_uptime_short, process_registry
 
         now = time.time()
         current_session_key = self._session_key_for_source(event.source)
@@ -2514,7 +2514,7 @@ class GatewaySlashCommandsMixin:
     async def _handle_rollback_command(self, event: MessageEvent) -> str:
         """Handle /rollback command — list or restore filesystem checkpoints."""
         from gateway.run import _checkpoint_agent_kwargs, _load_gateway_config
-        from tools.checkpoint_manager import CheckpointManager, format_checkpoint_list
+        from opencodon.tools.checkpoint_manager import CheckpointManager, format_checkpoint_list
 
         cp_kwargs = _checkpoint_agent_kwargs(_load_gateway_config())
 
@@ -2846,8 +2846,8 @@ class GatewaySlashCommandsMixin:
         """
         from gateway.run import _opencodon_home
         from opencodon_cli.write_approval_commands import handle_pending_subcommand
-        from tools import write_approval as wa
-        from tools.memory_tool import load_on_disk_store
+        from opencodon.tools import write_approval as wa
+        from opencodon.tools.memory_tool import load_on_disk_store
 
         raw_args = event.get_command_args().strip()
         args = raw_args.split() if raw_args else []
@@ -2896,7 +2896,7 @@ class GatewaySlashCommandsMixin:
         """
         from gateway.run import _opencodon_home
         from opencodon_cli.write_approval_commands import handle_pending_subcommand
-        from tools import write_approval as wa
+        from opencodon.tools import write_approval as wa
 
         raw_args = event.get_command_args().strip()
         args = raw_args.split() if raw_args else []
@@ -3027,7 +3027,7 @@ class GatewaySlashCommandsMixin:
 
     async def _handle_yolo_command(self, event: MessageEvent) -> Union[str, EphemeralReply]:
         """Handle /yolo — toggle dangerous command approval bypass for this session only."""
-        from tools.approval import (
+        from opencodon.tools.approval import (
             disable_session_yolo,
             enable_session_yolo,
             is_session_yolo_enabled,
@@ -3257,7 +3257,7 @@ class GatewaySlashCommandsMixin:
             return "\n".join(lines)
 
         try:
-            from run_agent import AIAgent
+            from opencodon.core.run_agent import AIAgent
             from opencodon.core.manual_compression_feedback import summarize_manual_compression
             from opencodon.core.model_metadata import estimate_request_tokens_rough
 
@@ -3504,7 +3504,7 @@ class GatewaySlashCommandsMixin:
         if source.platform != Platform.TELEGRAM or source.chat_type != "dm":
             return t("gateway.topic.not_telegram_dm")
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
 
         # Authorization: /topic activates multi-session mode and mutates
@@ -3594,7 +3594,7 @@ class GatewaySlashCommandsMixin:
         session_id = session_entry.session_id
 
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
 
         # Ensure session exists in SQLite DB (it may only exist in session_store
@@ -3621,7 +3621,7 @@ class GatewaySlashCommandsMixin:
         if title_arg:
             # Sanitize the title before setting
             try:
-                from opencodon_state import SessionDB
+                from opencodon.state import SessionDB
                 sanitized = SessionDB.sanitize_title(title_arg)
             except ValueError as e:
                 return t("gateway.shared.warn_passthrough", error=e)
@@ -3662,7 +3662,7 @@ class GatewaySlashCommandsMixin:
     async def _handle_resume_command(self, event: MessageEvent) -> str:
         """Handle /resume command — list or switch to a previous session."""
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
 
         source = event.source
@@ -3798,7 +3798,7 @@ class GatewaySlashCommandsMixin:
     async def _handle_sessions_command(self, event: MessageEvent) -> str:
         """Handle /sessions — list previous sessions for gateway chats."""
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
 
         from opencodon_cli.session_listing import (
@@ -3871,7 +3871,7 @@ class GatewaySlashCommandsMixin:
         import uuid as _uuid
 
         if not self._session_db:
-            from opencodon_state import format_session_db_unavailable
+            from opencodon.state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
 
         source = event.source
@@ -4181,7 +4181,7 @@ class GatewaySlashCommandsMixin:
                     i += 1
 
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             from opencodon.core.insights import InsightsEngine
 
             loop = asyncio.get_running_loop()
@@ -4420,7 +4420,7 @@ class GatewaySlashCommandsMixin:
         source = event.source
         session_key = self._session_key_for_source(source)
 
-        from tools.approval import (
+        from opencodon.tools.approval import (
             resolve_gateway_approval, has_blocking_approval,
         )
 
@@ -4469,7 +4469,7 @@ class GatewaySlashCommandsMixin:
         source = event.source
         session_key = self._session_key_for_source(source)
 
-        from tools.approval import (
+        from opencodon.tools.approval import (
             resolve_gateway_approval, has_blocking_approval,
         )
 

@@ -31,7 +31,7 @@ import pytest
 
 from opencodon.core.memory_manager import build_memory_context_block
 from opencodon.core.turn_context import build_turn_context, compose_user_api_content
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +311,7 @@ class TestPrologueStamping:
 
 class TestFlushOverrideSidecar:
     def _make_agent(self, db, sid):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",
@@ -462,7 +462,7 @@ def wire_env():
     prev_home = os.environ.get("OPENCODON_HOME")
     os.environ["OPENCODON_HOME"] = os.path.join(test_home, ".opencodon")
 
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     from pathlib import Path
 
@@ -721,7 +721,7 @@ class TestSetLatestUserApiContent:
 
 class TestFlushCompressedSummaryOverrideGuard:
     def _make_agent(self, db, sid):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",
@@ -768,7 +768,7 @@ class TestFlushCompressedSummaryOverrideGuard:
 
 class TestFlushSanitizeDivergenceCapture:
     def _make_agent(self, db, sid):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",
@@ -832,7 +832,7 @@ class TestMaxIterationsSummaryReplay:
         main-loop call sent — popping the sidecar without substituting sends
         CLEAN content and diverges the prefix at the earliest injected
         message, exactly when the context is largest."""
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         from opencodon.core.chat_completion_helpers import handle_max_iterations
 
         agent = AIAgent(
@@ -890,7 +890,7 @@ class TestSessionRowExistsBeforePreflightCompaction:
     against a real, empty SessionDB."""
 
     def _make_agent(self, db, sid, *, in_place):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
             agent = AIAgent(

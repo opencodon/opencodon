@@ -1,20 +1,16 @@
 [importlinter]
 root_packages =
     opencodon
-    tools
     gateway
     tui_gateway
     acp_adapter
     opencodon_cli
-    cron
-    providers
-    agent
 include_external_packages = True
 
 # Target layering (docs/plans/2026-08-01-repo-restructure-plan.md):
 #   frontends (opencodon_cli, gateway, tui_gateway, acp_adapter, cli, mcp_serve)
-#     -> core (opencodon.core [ex-agent], run_agent, model_tools, tools, cron)
-#     -> opencodon config/state/plugins_runtime (config may import providers)
+#     -> opencodon.core / opencodon.tools / opencodon.cron
+#     -> opencodon config/state/plugins_runtime/providers
 #     -> opencodon.common (leaf)
 # ignore_imports lists are the grandfathered baseline — shrink-only.
 
@@ -25,6 +21,11 @@ source_modules = opencodon.core
 forbidden_modules = opencodon_cli
 allow_indirect_imports = True
 ignore_imports =
+    opencodon.core.run_agent -> opencodon_cli
+    opencodon.core.run_agent -> opencodon_cli.auth
+    opencodon.core.run_agent -> opencodon_cli.copilot_auth
+    opencodon.core.run_agent -> opencodon_cli.models
+    opencodon.core.run_agent -> opencodon_cli.profiles
     opencodon.core.account_usage -> opencodon_cli.auth
     opencodon.core.account_usage -> opencodon_cli.runtime_provider
     opencodon.core.agent_init -> opencodon_cli.auth
@@ -59,63 +60,64 @@ ignore_imports =
     opencodon.core.skill_commands -> opencodon_cli.commands
 
 [importlinter:contract:tools-not-cli-pkg]
-name = tools must not import the CLI frontend (opencodon_cli)
+name = opencodon.tools must not import the CLI frontend (opencodon_cli)
 type = forbidden
-source_modules = tools
+source_modules = opencodon.tools
 forbidden_modules = opencodon_cli
 allow_indirect_imports = True
 ignore_imports =
-    tools.browser_tool -> opencodon_cli.dep_ensure
-    tools.cronjob_tools -> opencodon_cli.auth
-    tools.cronjob_tools -> opencodon_cli.runtime_provider
-    tools.delegate_tool -> opencodon_cli.runtime_provider
-    tools.environments.docker -> opencodon_cli.profiles
-    tools.environments.local -> opencodon_cli.auth
-    tools.mcp_tool -> opencodon_cli.mcp_security
-    tools.project_tools -> opencodon_cli.projects_db
-    tools.session_search_tool -> opencodon_cli.profiles
-    tools.terminal_tool -> opencodon_cli.cron
-    tools.transcription_tools -> opencodon_cli.models
-    tools.tts_tool -> opencodon_cli
-    tools.tts_tool -> opencodon_cli.models
-    tools.xai_http -> opencodon_cli
-    tools.xai_http -> opencodon_cli.auth
+    opencodon.tools.browser_tool -> opencodon_cli.dep_ensure
+    opencodon.tools.cronjob_tools -> opencodon_cli.auth
+    opencodon.tools.cronjob_tools -> opencodon_cli.runtime_provider
+    opencodon.tools.delegate_tool -> opencodon_cli.runtime_provider
+    opencodon.tools.environments.docker -> opencodon_cli.profiles
+    opencodon.tools.environments.local -> opencodon_cli.auth
+    opencodon.tools.mcp_tool -> opencodon_cli.mcp_security
+    opencodon.tools.model_tools -> opencodon_cli.runtime_provider
+    opencodon.tools.project_tools -> opencodon_cli.projects_db
+    opencodon.tools.session_search_tool -> opencodon_cli.profiles
+    opencodon.tools.terminal_tool -> opencodon_cli.cron
+    opencodon.tools.transcription_tools -> opencodon_cli.models
+    opencodon.tools.tts_tool -> opencodon_cli
+    opencodon.tools.tts_tool -> opencodon_cli.models
+    opencodon.tools.xai_http -> opencodon_cli
+    opencodon.tools.xai_http -> opencodon_cli.auth
 
 [importlinter:contract:core-not-run-agent]
 name = opencodon.core must not import the run_agent god-file
 type = forbidden
 source_modules = opencodon.core
-forbidden_modules = run_agent
+forbidden_modules = opencodon.core.run_agent
 allow_indirect_imports = True
 ignore_imports =
-    opencodon.core.agent_init -> run_agent
-    opencodon.core.agent_runtime_helpers -> run_agent
-    opencodon.core.background_review -> run_agent
-    opencodon.core.chat_completion_helpers -> run_agent
-    opencodon.core.codex_runtime -> run_agent
-    opencodon.core.conversation_loop -> run_agent
-    opencodon.core.curator -> run_agent
-    opencodon.core.system_prompt -> run_agent
-    opencodon.core.tool_executor -> run_agent
-    opencodon.core.transports.codex -> run_agent
+    opencodon.core.agent_init -> opencodon.core.run_agent
+    opencodon.core.agent_runtime_helpers -> opencodon.core.run_agent
+    opencodon.core.background_review -> opencodon.core.run_agent
+    opencodon.core.chat_completion_helpers -> opencodon.core.run_agent
+    opencodon.core.codex_runtime -> opencodon.core.run_agent
+    opencodon.core.conversation_loop -> opencodon.core.run_agent
+    opencodon.core.curator -> opencodon.core.run_agent
+    opencodon.core.system_prompt -> opencodon.core.run_agent
+    opencodon.core.tool_executor -> opencodon.core.run_agent
+    opencodon.core.transports.codex -> opencodon.core.run_agent
 
 [importlinter:contract:tools-not-run-agent]
-name = tools must not import the run_agent god-file
+name = opencodon.tools must not import the run_agent god-file
 type = forbidden
-source_modules = tools
-forbidden_modules = run_agent
+source_modules = opencodon.tools
+forbidden_modules = opencodon.core.run_agent
 allow_indirect_imports = True
 ignore_imports =
-    tools.delegate_tool -> run_agent
+    opencodon.tools.delegate_tool -> opencodon.core.run_agent
 
 [importlinter:contract:tools-not-cli-module]
-name = tools must not import cli.py
+name = opencodon.tools must not import cli.py
 type = forbidden
-source_modules = tools
+source_modules = opencodon.tools
 forbidden_modules = cli
 allow_indirect_imports = True
 ignore_imports =
-    tools.delegate_tool -> cli
+    opencodon.tools.delegate_tool -> cli
 
 [importlinter:contract:frontends-not-cli-module]
 name = gateway / tui_gateway / acp_adapter must not import cli.py
@@ -131,20 +133,20 @@ ignore_imports =
     tui_gateway.slash_worker -> cli
 
 [importlinter:contract:lower-layers-purity]
-name = opencodon common/config/state/plugins_runtime must not import core, frontends, or god-files
+name = opencodon common/config/state/providers/plugins_runtime must not import core, tools, frontends, or god-files
 type = forbidden
 source_modules =
     opencodon.common
     opencodon.config
+    opencodon.state
+    opencodon.providers
     opencodon.plugins_runtime
     opencodon.toolsets
 forbidden_modules =
     opencodon.core
+    opencodon.tools
     opencodon_cli
-    tools
     cli
-    run_agent
-    model_tools
 allow_indirect_imports = True
 ignore_imports =
     opencodon.common.logging_setup -> opencodon.core.redact
@@ -175,10 +177,15 @@ ignore_imports =
     opencodon.plugins_runtime -> opencodon.core.tts_registry
     opencodon.plugins_runtime -> opencodon.core.web_search_provider
     opencodon.plugins_runtime -> opencodon.core.web_search_registry
+    opencodon.plugins_runtime -> opencodon.tools.approval
+    opencodon.plugins_runtime -> opencodon.tools.registry
     opencodon.plugins_runtime -> opencodon_cli.commands
     opencodon.plugins_runtime -> opencodon_cli.dashboard_auth
     opencodon.plugins_runtime -> opencodon_cli.main
     opencodon.plugins_runtime -> opencodon_cli.profiles
-    opencodon.plugins_runtime -> tools.approval
-    opencodon.plugins_runtime -> tools.registry
-    opencodon.toolsets -> tools.registry
+    opencodon.providers.base -> opencodon_cli
+    opencodon.providers.base -> opencodon_cli.urllib_security
+    opencodon.state -> opencodon.core.agent_runtime_helpers
+    opencodon.state -> opencodon.core.memory_manager
+    opencodon.state -> opencodon.core.message_sanitization
+    opencodon.toolsets -> opencodon.tools.registry

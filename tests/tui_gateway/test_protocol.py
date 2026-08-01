@@ -928,7 +928,7 @@ def test_session_resume_reuses_existing_live_session(server, monkeypatch):
         register_gateway_notify=lambda *_args, **_kwargs: None,
     )
 
-    with patch.dict(sys.modules, {"tools.approval": fake_approval}):
+    with patch.dict(sys.modules, {"opencodon.tools.approval": fake_approval}):
         first_holder = {}
 
         def resume_first():
@@ -1068,7 +1068,7 @@ def test_sync_session_key_after_compress_reanchors_active_session_lease(
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda *_args, **_kwargs: None)
 
-    with patch.dict(sys.modules, {"tools.approval": fake_approval}):
+    with patch.dict(sys.modules, {"opencodon.tools.approval": fake_approval}):
         server._sync_session_key_after_compress("ui-1", session)
 
     snapshot = active_session_registry_snapshot()
@@ -1144,7 +1144,7 @@ def test_session_resume_live_payload_uses_current_history_with_ancestors(server,
         register_gateway_notify=lambda *_args, **_kwargs: None,
     )
 
-    with patch.dict(sys.modules, {"tools.approval": fake_approval}):
+    with patch.dict(sys.modules, {"opencodon.tools.approval": fake_approval}):
         first = server.handle_request(
             {
                 "id": "first",
@@ -1392,7 +1392,7 @@ def test_make_agent_accepts_list_system_prompt(server, monkeypatch):
             captured.update(kwargs)
             self.model = kwargs.get("model", "")
 
-    monkeypatch.setitem(sys.modules, "run_agent", types.SimpleNamespace(AIAgent=_Agent))
+    monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=_Agent))
     monkeypatch.setitem(
         sys.modules,
         "opencodon_cli.runtime_provider",
@@ -1771,7 +1771,7 @@ def test_skills_manage_search_uses_tools_hub_sources(server):
         unified_search=search,
     )
 
-    with patch.dict(sys.modules, {"tools.skills_hub": fake_hub}):
+    with patch.dict(sys.modules, {"opencodon.tools.skills_hub": fake_hub}):
         resp = server.handle_request({
             "id": "skills-search",
             "method": "skills.manage",

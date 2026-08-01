@@ -16,8 +16,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from opencodon_state import SessionDB
-from run_agent import AIAgent
+from opencodon.state import SessionDB
+from opencodon.core.run_agent import AIAgent
 
 
 def _make_flush_agent(db: SessionDB, session_id: str):

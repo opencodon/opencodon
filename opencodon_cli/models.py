@@ -598,7 +598,7 @@ CANONICAL_PROVIDERS: list[ProviderEntry] = [
 # downstream consumers — no edits to this file needed.
 _canonical_slugs = {p.slug for p in CANONICAL_PROVIDERS}
 try:
-    from providers import list_providers as _list_providers_for_canonical
+    from opencodon.providers import list_providers as _list_providers_for_canonical
     for _pp in _list_providers_for_canonical():
         if _pp.name in _canonical_slugs:
             continue
@@ -2021,7 +2021,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     # Handles any provider registered in providers/ with auth_type="api_key".
     # Replaces per-provider copy-paste blocks (stepfun, gmi, zai, etc.).
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         from opencodon_cli.auth import resolve_api_key_provider_credentials
 
         _p = get_provider_profile(normalized)

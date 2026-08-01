@@ -119,7 +119,7 @@ def test_bg_work_blocks_idle_via_async_delegation(monkeypatch):
     r = GatewayRunner.__new__(GatewayRunner)
     r._background_tasks = set()
 
-    monkeypatch.setattr("tools.async_delegation.active_count", lambda: 1)
+    monkeypatch.setattr("opencodon.tools.async_delegation.active_count", lambda: 1)
 
     assert r._scale_to_zero_has_live_background_work() is True
 

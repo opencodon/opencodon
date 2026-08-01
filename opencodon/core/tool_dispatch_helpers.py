@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 from opencodon.core.tool_result_classification import (
     FILE_MUTATING_TOOL_NAMES as _FILE_MUTATING_TOOLS,
 )
-from tools.threat_patterns import scan_for_threats
+from opencodon.tools.threat_patterns import scan_for_threats
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ def _is_mcp_tool_parallel_safe(tool_name: str) -> bool:
     Returns False if the MCP module is not available.
     """
     try:
-        from tools.mcp_tool import is_mcp_tool_parallel_safe
+        from opencodon.tools.mcp_tool import is_mcp_tool_parallel_safe
         return is_mcp_tool_parallel_safe(tool_name)
     except Exception:
         return False

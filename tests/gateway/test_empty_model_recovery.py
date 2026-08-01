@@ -115,7 +115,7 @@ def test_bare_runner_without_cache_attr_does_not_crash(monkeypatch):
 
 
 def _bare_agent():
-    import run_agent
+    from opencodon.core import run_agent
 
     return object.__new__(run_agent.AIAgent)
 

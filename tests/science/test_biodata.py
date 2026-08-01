@@ -344,9 +344,9 @@ def test_bioactivities_keep_the_source_document():
 
 @pytest.mark.requirement("SCI-P5-30")
 def test_biodata_toolset_matches_the_registry():
-    import tools.biodata_tools  # noqa: F401 - registers on import
+    import opencodon.tools.biodata_tools  # noqa: F401 - registers on import
     from toolsets import TOOLSETS
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     declared = set(TOOLSETS["biodata"]["tools"])
     registered = {
@@ -357,7 +357,7 @@ def test_biodata_toolset_matches_the_registry():
 
 @pytest.mark.requirement("SCI-P5-31")
 def test_tool_errors_are_returned_as_data():
-    import tools.biodata_tools as biodata_tools
+    import opencodon.tools.biodata_tools as biodata_tools
 
     payload = json.loads(biodata_tools._call(genes.gene_lookup, symbol=""))
     assert payload["source"] == "ensembl"

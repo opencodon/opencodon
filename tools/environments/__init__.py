@@ -1,14 +1,8 @@
-"""opencodon execution environment backends.
+"""Compat shim package: ``tools.environments`` -> ``opencodon.tools.environments`` (restructure Phase 3a).
 
-Each backend provides the same interface (BaseEnvironment ABC) for running
-shell commands in a specific execution context: local, Docker, SSH,
-Singularity, Modal, or Daytona. (Modal additionally has direct and
-managed modes, selected via terminal.modal_mode.)
-
-The terminal_tool.py factory (_create_environment) selects the backend
-based on the TERMINAL_ENV configuration.
+Per-module shim files alias each submodule; importing this package pulls in
+the real package (preserving its import-time side effects). Deleted in
+Phase 5.
 """
 
-from tools.environments.base import BaseEnvironment
-
-__all__ = ["BaseEnvironment"]
+import opencodon.tools.environments as _real  # noqa: F401

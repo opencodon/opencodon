@@ -320,7 +320,7 @@ def build_bundle_invocation_message(
             continue
 
         try:
-            from tools.skill_usage import bump_use
+            from opencodon.tools.skill_usage import bump_use
             bump_use(skill_name)
         except Exception:
             pass

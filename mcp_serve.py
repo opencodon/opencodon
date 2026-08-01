@@ -72,7 +72,7 @@ def _get_sessions_dir() -> Path:
 def _get_session_db():
     """Get a SessionDB instance for reading message transcripts."""
     try:
-        from opencodon_state import SessionDB
+        from opencodon.state import SessionDB
         return SessionDB()
     except Exception as e:
         logger.debug("SessionDB unavailable: %s", e)
@@ -847,7 +847,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
             return json.dumps({"error": "Both target and message are required"})
 
         try:
-            from tools.send_message_tool import send_message_tool
+            from opencodon.tools.send_message_tool import send_message_tool
             result_str = send_message_tool(
                 {"action": "send", "target": target, "message": message}
             )

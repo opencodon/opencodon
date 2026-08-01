@@ -531,7 +531,7 @@ def test_fireworks_plugin_fallback_models_all_have_pricing():
     """Invariant: every model in the Fireworks provider plugin's
     fallback_models (the picker's curated safety net) must resolve to a
     pricing entry — otherwise the default picker choices bill as unknown."""
-    from providers import get_provider_profile
+    from opencodon.providers import get_provider_profile
 
     profile = get_provider_profile("fireworks")
     assert profile is not None

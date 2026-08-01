@@ -19,7 +19,7 @@ def _make_opencodon_tree(root: Path) -> None:
     """Create a realistic ~/.opencodon directory structure for testing."""
     (root / "config.yaml").write_text("model:\n  provider: openrouter\n")
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-test-123\n")
-    for db_name in ("memory_store.db", "opencodon_state.db"):
+    for db_name in ("memory_store.db", "opencodon.state.db"):
         with sqlite3.connect(root / db_name) as conn:
             conn.execute("CREATE TABLE sample (value TEXT)")
             conn.execute("INSERT INTO sample VALUES ('test')")
@@ -53,7 +53,7 @@ def _make_opencodon_tree(root: Path) -> None:
 
     # opencodon repo (should be EXCLUDED)
     (root / "opencodon").mkdir(exist_ok=True)
-    (root / "opencodon" / "run_agent.py").write_text("# big file\n")
+    (root / "opencodon" / "opencodon.core.run_agent.py").write_text("# big file\n")
     (root / "opencodon" / ".git").mkdir()
     (root / "opencodon" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
 
@@ -533,7 +533,7 @@ class TestValidateBackupZip:
         """A zip with only opencodon_state.db (old wrong name) is rejected."""
         from opencodon_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "old.zip"
-        self._make_zip(zip_path, ["opencodon_state.db", "memory_store.db"])
+        self._make_zip(zip_path, ["opencodon.state.db", "memory_store.db"])
         with zipfile.ZipFile(zip_path, "r") as zf:
             ok, reason = _validate_backup_zip(zf)
         assert not ok

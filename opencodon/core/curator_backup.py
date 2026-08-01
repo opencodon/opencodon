@@ -471,7 +471,7 @@ def _restore_cron_skill_links(snapshot_dir: Path) -> Dict[str, Any]:
 
     # Load and rewrite the live jobs under the scheduler's cross-process lock.
     try:
-        from cron.jobs import load_jobs, save_jobs, _jobs_lock
+        from opencodon.cron.jobs import load_jobs, save_jobs, _jobs_lock
     except ImportError as e:
         report["error"] = f"cron module unavailable: {e}"
         return report

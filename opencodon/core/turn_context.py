@@ -404,8 +404,8 @@ def build_turn_context(
             # This keeps the no-MCP first turn off the heavy import path
             # without changing behavior for MCP users.
             import sys as _sys
-            if "tools.mcp_tool" in _sys.modules:
-                from tools.mcp_tool import has_registered_mcp_tools, refresh_agent_mcp_tools
+            if "opencodon.tools.mcp_tool" in _sys.modules:
+                from opencodon.tools.mcp_tool import has_registered_mcp_tools, refresh_agent_mcp_tools
                 if has_registered_mcp_tools():
                     refresh_agent_mcp_tools(agent, quiet_mode=True)
     except Exception:
@@ -842,7 +842,7 @@ def build_turn_context(
         # can't inflate every subsequent turn's prompt. Ported from
         # openai/codex PR #21069 ("Spill large hook outputs from context").
         try:
-            from tools.hook_output_spill import (
+            from opencodon.tools.hook_output_spill import (
                 get_spill_config as _spill_cfg,
                 spill_if_oversized as _spill_if_oversized,
             )

@@ -13,7 +13,7 @@ from opencodon.core.context_compressor import (
     _summarize_tool_result,
     _is_summary_access_or_quota_error,
 )
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 class StubProviderError(Exception):

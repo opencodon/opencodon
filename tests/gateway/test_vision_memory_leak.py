@@ -38,7 +38,7 @@ class TestEnrichMessageWithVision:
             "success": True,
             "analysis": "A photograph of a sunset over the ocean.",
         })
-        with patch("tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
+        with patch("opencodon.tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
             out = _run(gateway_runner._enrich_message_with_vision("caption", ["/tmp/img.jpg"]))
         assert "sunset over the ocean" in out
 
@@ -53,7 +53,7 @@ class TestEnrichMessageWithVision:
             "A photograph of a cat."
         )
         fake_result = json.dumps({"success": True, "analysis": leaked})
-        with patch("tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
+        with patch("opencodon.tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
             out = _run(gateway_runner._enrich_message_with_vision("caption", ["/tmp/img.jpg"]))
         assert "photograph of a cat" in out
         assert "<memory-context>" not in out
@@ -73,7 +73,7 @@ class TestEnrichMessageWithVision:
             "A photograph of a dog."
         )
         fake_result = json.dumps({"success": True, "analysis": leaked})
-        with patch("tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
+        with patch("opencodon.tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=fake_result)):
             out = _run(gateway_runner._enrich_message_with_vision("caption", ["/tmp/img.jpg"]))
         assert "photograph of a dog" in out
         assert "fenced leak" not in out

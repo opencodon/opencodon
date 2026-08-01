@@ -30,7 +30,7 @@ def custom_profile():
     ``ProviderProfile``, the assertions below collapse.
     """
     import model_tools  # noqa: F401
-    import providers
+    from opencodon import providers
 
     profile = providers.get_provider_profile("custom")
     assert profile is not None, "custom provider profile must be registered"

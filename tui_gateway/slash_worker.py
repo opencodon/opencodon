@@ -118,7 +118,7 @@ def _run(cli: OpencodonCLI, command: str) -> str:
     # up truecolor from the gateway's inherited COLORTERM) would otherwise leak
     # raw escapes; strip them at the single choke point. (The TUI opens /journey
     # as an overlay, so it never travels this path.)
-    from tools.ansi_strip import strip_ansi
+    from opencodon.tools.ansi_strip import strip_ansi
 
     return strip_ansi(buf.getvalue().rstrip())
 

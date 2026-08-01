@@ -36,7 +36,7 @@ from opencodon.core.model_metadata import (
 )
 from opencodon.core.redact import redact_sensitive_text
 from opencodon.core.turn_context import drop_stale_api_content
-from tools.todo_tool import TODO_INJECTION_HEADER
+from opencodon.tools.todo_tool import TODO_INJECTION_HEADER
 
 logger = logging.getLogger(__name__)
 

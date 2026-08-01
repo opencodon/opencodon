@@ -28,7 +28,7 @@ from opencodon.core.secret_scope import get_secret as _get_secret, is_multiplex_
 # handles on-demand installation so the Vertex provider still works for users
 # who installed plain `opencodon` and only later selected a Gemini model.
 try:
-    from tools.lazy_deps import ensure as _lazy_ensure
+    from opencodon.tools.lazy_deps import ensure as _lazy_ensure
     _lazy_ensure("provider.vertex", prompt=False)
 except Exception:
     pass  # lazy_deps unavailable or install failed — fall through to the real ImportError below

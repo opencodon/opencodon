@@ -39,7 +39,7 @@ from opencodon.core.message_sanitization import (
     _repair_tool_call_arguments,
 )
 from opencodon.core.stream_single_writer import claim_stream_writer, stream_writer_is_current
-from tools.terminal_tool import is_persistent_env
+from opencodon.tools.terminal_tool import is_persistent_env
 from utils import base_url_host_matches, base_url_hostname, env_float, env_int
 
 logger = logging.getLogger(__name__)
@@ -61,10 +61,10 @@ def _ra():
     """Lazy ``run_agent`` reference.
 
     Used to honor test patches like
-    ``patch("run_agent.cleanup_vm")`` / ``patch("run_agent.cleanup_browser")``
+    ``patch("opencodon.core.run_agent.cleanup_vm")`` / ``patch("opencodon.core.run_agent.cleanup_browser")``
     that target symbols imported into ``run_agent``'s namespace.
     """
-    import run_agent
+    from opencodon.core import run_agent
     return run_agent
 
 
@@ -1057,7 +1057,7 @@ def build_api_kwargs(agent, api_messages: list) -> dict:
         if is_xai_responses:
             try:
                 import copy as _copy
-                from tools.schema_sanitizer import (
+                from opencodon.tools.schema_sanitizer import (
                     strip_pattern_and_format,
                     strip_slash_enum,
                 )
@@ -1154,7 +1154,7 @@ def build_api_kwargs(agent, api_messages: list) -> dict:
     # Profiles handle per-provider quirks via hooks. When a profile is
     # found, delegate fully; otherwise fall through to the legacy flag path.
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         _profile = get_provider_profile(agent.provider)
     except Exception:
         _profile = None
@@ -1990,7 +1990,7 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
             provider_preferences = _provider_preferences_for_agent(agent)
             profile_extra_body = {}
             try:
-                from providers import get_provider_profile
+                from opencodon.providers import get_provider_profile
 
                 provider_profile = get_provider_profile(agent.provider)
                 if provider_profile is not None:
@@ -2142,7 +2142,7 @@ def cleanup_task_resources(agent, task_id: str) -> None:
     try:
         headed = False
         try:
-            from tools.browser_tool import _is_headed_mode
+            from opencodon.tools.browser_tool import _is_headed_mode
             headed = _is_headed_mode()
         except Exception:
             headed = bool(os.environ.get("AGENT_BROWSER_HEADED"))

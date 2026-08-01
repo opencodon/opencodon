@@ -169,7 +169,7 @@ def test_manager_reset_flag_preserved():
 
 
 def test_sync_all_propagates_session_id_to_providers():
-    """run_agent.py's sync_all call must pass session_id through to providers.
+    """opencodon.core.run_agent.py's sync_all call must pass session_id through to providers.
 
     Without this, a provider that updates _session_id defensively in
     sync_turn (as Hindsight does at hindsight/__init__.py:1199) never

@@ -120,7 +120,7 @@ class TestStartupPlatformIsolation:
                 with patch("opencodon.config.load_config", return_value={}):
                     with patch("opencodon.core.shell_hooks.register_from_config"):
                         with patch(
-                            "tools.process_registry.process_registry.recover_from_checkpoint",
+                            "opencodon.tools.process_registry.process_registry.recover_from_checkpoint",
                             return_value=0,
                         ):
                             with patch(

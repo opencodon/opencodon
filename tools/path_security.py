@@ -1,43 +1,11 @@
-"""Shared path validation helpers for tool implementations.
+"""Compat shim — real module: ``opencodon.tools.path_security`` (restructure Phase 3a).
 
-Extracts the ``resolve() + relative_to()`` and ``..`` traversal check
-patterns previously duplicated across skill_manager_tool, skills_tool,
-skills_hub, cronjob_tools, and credential_files.
+Aliases the real module object in ``sys.modules`` so old and new import
+paths share one module. Deleted in Phase 5.
 """
 
-import logging
-from pathlib import Path
-from typing import Optional
+import sys
 
-logger = logging.getLogger(__name__)
+import opencodon.tools.path_security as _real
 
-
-def validate_within_dir(path: Path, root: Path) -> Optional[str]:
-    """Ensure *path* resolves to a location within *root*.
-
-    Returns an error message string if validation fails, or ``None`` if the
-    path is safe.  Uses ``Path.resolve()`` to follow symlinks and normalize
-    ``..`` components.
-
-    Usage::
-
-        error = validate_within_dir(user_path, allowed_root)
-        if error:
-            return json.dumps({"error": error})
-    """
-    try:
-        resolved = path.resolve()
-        root_resolved = root.resolve()
-        resolved.relative_to(root_resolved)
-    except (ValueError, OSError) as exc:
-        return f"Path escapes allowed directory: {exc}"
-    return None
-
-
-def has_traversal_component(path_str: str) -> bool:
-    """Return True if *path_str* contains ``..`` traversal components.
-
-    Quick check for obvious traversal attempts before doing full resolution.
-    """
-    parts = Path(path_str).parts
-    return ".." in parts
+sys.modules[__name__] = _real

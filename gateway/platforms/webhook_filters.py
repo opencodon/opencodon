@@ -245,7 +245,7 @@ class WebhookRouteProcessor:
             argv = [sys.executable, str(path)]
 
         try:
-            from tools.environments.local import _sanitize_subprocess_env
+            from opencodon.tools.environments.local import _sanitize_subprocess_env
 
             popen_kwargs = {"creationflags": 0x08000000} if sys.platform == "win32" else {}
             result = subprocess.run(

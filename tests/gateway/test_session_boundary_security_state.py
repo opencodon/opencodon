@@ -1,4 +1,4 @@
-from opencodon_state import AsyncSessionDB
+from opencodon.state import AsyncSessionDB
 """Regression tests for approval-state cleanup on session boundaries."""
 
 from datetime import datetime
@@ -9,9 +9,9 @@ import pytest
 from gateway.config import Platform
 from gateway.platforms.base import MessageEvent
 from gateway.session import SessionEntry, SessionSource, build_session_key
-from tools import approval as approval_mod
-from tools import slash_confirm as slash_confirm_mod
-from tools.approval import (
+from opencodon.tools import approval as approval_mod
+from opencodon.tools import slash_confirm as slash_confirm_mod
+from opencodon.tools.approval import (
     _ApprovalEntry,
     approve_session,
     enable_session_yolo,

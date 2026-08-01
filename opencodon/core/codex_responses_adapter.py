@@ -1008,7 +1008,7 @@ def _preflight_codex_api_kwargs(
     is_xai_model = model_name_for_provider_check.startswith(("grok-", "x-ai/grok-"))
     if is_xai_model and normalized.get("tools"):
         try:
-            from tools.schema_sanitizer import strip_slash_enum
+            from opencodon.tools.schema_sanitizer import strip_slash_enum
             normalized["tools"], _ = strip_slash_enum(normalized["tools"])
         except Exception:
             pass  # Best-effort — the caller-level sanitization should have handled it

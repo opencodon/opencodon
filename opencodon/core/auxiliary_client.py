@@ -475,7 +475,7 @@ def _get_aux_model_for_provider(provider_id: str) -> str:
     legacy hardcoded dict for providers that predate the profiles system.
     """
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         _p = get_provider_profile(provider_id)
         if _p and _p.default_aux_model:
             return _p.default_aux_model
@@ -535,7 +535,7 @@ def _resolve_provider_vision_default(provider: str) -> Optional[str]:
     if static:
         return static
     try:
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
         profile = get_provider_profile(provider)
     except Exception:
         return None
@@ -974,7 +974,7 @@ class _CodexCompletionsAdapter:
             # constraints after the first auxiliary xAI call.  See #27907.
             try:
                 import copy as _copy
-                from tools.schema_sanitizer import (
+                from opencodon.tools.schema_sanitizer import (
                     strip_pattern_and_format,
                     strip_slash_enum,
                 )
@@ -1064,7 +1064,7 @@ class _CodexCompletionsAdapter:
                     _close_client_on_timeout()
                 raise TimeoutError(_timeout_message())
             try:
-                from tools.interrupt import is_interrupted
+                from opencodon.tools.interrupt import is_interrupted
                 # Honor interrupt protection for atomic aux tasks (compression):
                 # a mid-flight gateway interrupt must NOT abort the summary call
                 # and trigger a degraded fallback marker (#23975). Timeouts above
@@ -1798,7 +1798,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
                 extra["default_headers"] = build_nvidia_nim_headers(base_url)
             else:
                 try:
-                    from providers import get_provider_profile as _gpf_aux
+                    from opencodon.providers import get_provider_profile as _gpf_aux
                     _ph_aux = _gpf_aux(provider_id)
                     if _ph_aux and _ph_aux.default_headers:
                         extra["default_headers"] = dict(_ph_aux.default_headers)
@@ -1838,7 +1838,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             extra["default_headers"] = build_nvidia_nim_headers(base_url)
         else:
             try:
-                from providers import get_provider_profile as _gpf_aux2
+                from opencodon.providers import get_provider_profile as _gpf_aux2
                 _ph_aux2 = _gpf_aux2(provider_id)
                 if _ph_aux2 and _ph_aux2.default_headers:
                     extra["default_headers"] = dict(_ph_aux2.default_headers)
@@ -4316,7 +4316,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         # User-Agent strings). Provider is inferred from the hostname.
         try:
             from opencodon.core.model_metadata import _infer_provider_from_url
-            from providers import get_provider_profile as _gpf_async
+            from opencodon.providers import get_provider_profile as _gpf_async
             _inferred = _infer_provider_from_url(sync_base_url)
             if _inferred:
                 _ph_async = _gpf_async(_inferred)
@@ -4625,7 +4625,7 @@ def resolve_provider_client(
                 # Fall back to profile.default_headers for providers that
                 # declare client-level attribution headers on their profile.
                 try:
-                    from providers import get_provider_profile as _gpf_custom
+                    from opencodon.providers import get_provider_profile as _gpf_custom
                     _ph_custom = _gpf_custom(provider)
                     if _ph_custom and _ph_custom.default_headers:
                         extra["default_headers"] = dict(_ph_custom.default_headers)
@@ -4884,7 +4884,7 @@ def resolve_provider_client(
             # client-level attribution headers on their profile (e.g. GMI
             # User-Agent for traffic identification).
             try:
-                from providers import get_provider_profile as _gpf_main
+                from opencodon.providers import get_provider_profile as _gpf_main
                 _ph_main = _gpf_main(provider)
                 if _ph_main and _ph_main.default_headers:
                     headers.update(_ph_main.default_headers)
@@ -6333,8 +6333,8 @@ def _build_call_kwargs(
     profile_top_level: Dict[str, Any] = {}
     profile_handles_reasoning = False
     try:
-        from providers import get_provider_profile
-        from providers.base import ProviderProfile
+        from opencodon.providers import get_provider_profile
+        from opencodon.providers.base import ProviderProfile
 
         profile = get_provider_profile(str(provider or "").strip().lower())
         if profile is not None:

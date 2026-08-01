@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 from gateway.config import GatewayConfig
 from gateway.session import SessionStore
 

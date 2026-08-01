@@ -2,7 +2,7 @@
 
 Pre-fix bug (issue #33925): ``cli.OpencodonCLI._toggle_yolo`` mutated only
 ``os.environ["OPENCODON_YOLO_MODE"]``. That env var is captured once at
-module-import time into ``tools.approval._YOLO_MODE_FROZEN`` (security
+module-import time into ``opencodon.tools.approval._YOLO_MODE_FROZEN`` (security
 hardening: stops prompt-injected skills from flipping the bypass mid-run),
 so the post-startup toggle was a silent no-op. ``/yolo`` advertised "YOLO ON"
 in the status bar while every dangerous command still hit the approval
@@ -29,7 +29,7 @@ from unittest.mock import patch
 
 import pytest
 
-import tools.approval as approval_module
+import opencodon.tools.approval as approval_module
 from cli import OpencodonCLI
 
 

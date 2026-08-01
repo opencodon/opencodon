@@ -817,7 +817,7 @@ def _collect_gateway_skill_entries(
     skill_triples: list[tuple[str, str, str]] = []
     try:
         from opencodon.core.skill_commands import get_skill_commands
-        from tools.skills_tool import SKILLS_DIR
+        from opencodon.tools.skills_tool import SKILLS_DIR
         from opencodon.core.skill_utils import get_external_skills_dirs
         _skills_dir = str(SKILLS_DIR.resolve())
         _hub_dir = str((SKILLS_DIR / ".hub").resolve()).rstrip("/") + "/"
@@ -998,7 +998,7 @@ def discord_skill_commands_by_category(
     try:
         from opencodon.core.skill_commands import get_skill_commands
         from opencodon.core.skill_utils import get_external_skills_dirs
-        from tools.skills_tool import SKILLS_DIR
+        from opencodon.tools.skills_tool import SKILLS_DIR
 
         _skills_dir = SKILLS_DIR.resolve()
         _hub_dir = (SKILLS_DIR / ".hub").resolve()

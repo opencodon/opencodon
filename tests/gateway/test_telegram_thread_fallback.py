@@ -1029,7 +1029,7 @@ async def test_send_image_url_dm_topic_reply_not_found_retry_drops_thread_id(mon
         return SimpleNamespace(message_id=784)
 
     adapter._bot = SimpleNamespace(send_photo=mock_send_photo)
-    import tools.url_safety as url_safety
+    import opencodon.tools.url_safety as url_safety
 
     monkeypatch.setattr(url_safety, "is_safe_url", lambda _url: True)
 
@@ -1084,7 +1084,7 @@ async def test_send_image_upload_dm_topic_reply_not_found_retry_drops_thread_id(
             return _FakeResponse()
 
     adapter._bot = SimpleNamespace(send_photo=mock_send_photo)
-    import tools.url_safety as url_safety
+    import opencodon.tools.url_safety as url_safety
 
     monkeypatch.setattr(url_safety, "is_safe_url", lambda _url: True)
     monkeypatch.setattr(
@@ -1182,7 +1182,7 @@ async def test_slash_confirm_private_topic_callback_followup_sends_thread_and_re
     async def resolve(_session_key, _confirm_id, _choice):
         return "done"
 
-    from tools import slash_confirm
+    from opencodon.tools import slash_confirm
 
     monkeypatch.setattr(slash_confirm, "resolve", resolve)
     adapter._bot = SimpleNamespace(send_message=mock_send_message)
@@ -1224,7 +1224,7 @@ async def test_slash_confirm_forum_callback_followup_keeps_existing_thread_behav
     async def resolve(_session_key, _confirm_id, _choice):
         return "done"
 
-    from tools import slash_confirm
+    from opencodon.tools import slash_confirm
 
     monkeypatch.setattr(slash_confirm, "resolve", resolve)
     adapter._bot = SimpleNamespace(send_message=mock_send_message)

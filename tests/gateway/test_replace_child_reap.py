@@ -317,7 +317,7 @@ async def test_start_gateway_replace_reaps_old_gateway_children_posix(
     )
     monkeypatch.setattr("gateway.run.os.getpid", lambda: 100)
     monkeypatch.setattr("time.sleep", lambda _: None)
-    monkeypatch.setattr("tools.skills_sync.sync_skills", lambda quiet=True: None)
+    monkeypatch.setattr("opencodon.tools.skills_sync.sync_skills", lambda quiet=True: None)
     monkeypatch.setattr(
         "opencodon_logging.setup_logging", lambda opencodon_home, mode: tmp_path
     )

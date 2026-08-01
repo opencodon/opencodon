@@ -28,7 +28,7 @@ def curator_env(tmp_path, monkeypatch):
     importlib.reload(opencodon_constants)
     from opencodon.core import curator
     importlib.reload(curator)
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
     importlib.reload(skill_usage)
     yield {"home": home, "curator": curator, "skill_usage": skill_usage}
 
@@ -279,20 +279,20 @@ def test_state_transitions_captured_in_report(curator_env):
 # cron job that listed X in its ``skills`` field would fail to load X at
 # run time — the scheduler logs a warning and skips it, so the scheduled
 # job runs without the instructions it was scheduled to follow. These
-# tests verify that _write_run_report calls into cron.jobs to repair
+# tests verify that _write_run_report calls into opencodon.cron.jobs to repair
 # those references and records what it did in both run.json and
 # cron_rewrites.json.
 
 
 @pytest.fixture
 def curator_env_with_cron(curator_env, monkeypatch):
-    """Extend curator_env with an initialized + repointed cron.jobs module."""
+    """Extend curator_env with an initialized + repointed opencodon.cron.jobs module."""
     home = curator_env["home"]
     (home / "cron").mkdir(exist_ok=True)
     (home / "cron" / "output").mkdir(exist_ok=True)
 
     import importlib
-    import cron.jobs as jobs_mod
+    import opencodon.cron.jobs as jobs_mod
     importlib.reload(jobs_mod)
     monkeypatch.setattr(jobs_mod, "OPENCODON_DIR", home)
     monkeypatch.setattr(jobs_mod, "CRON_DIR", home / "cron")

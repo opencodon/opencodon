@@ -64,7 +64,7 @@ def _fresh_modules():
     """Drop cached opencodon modules so each test reloads against current env."""
     for mod in list(sys.modules.keys()):
         if mod.startswith(("opencodon.core.auxiliary_client", "opencodon.core.image_routing",
-                           "tools.vision_tools", "tools.browser_tool",
+                           "opencodon.tools.vision_tools", "opencodon.tools.browser_tool",
                            "opencodon.config")):
             del sys.modules[mod]
 
@@ -212,7 +212,7 @@ auxiliary:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         _fresh_modules()
 
-        from tools.vision_tools import check_vision_requirements
+        from opencodon.tools.vision_tools import check_vision_requirements
         assert check_vision_requirements() is True
 
     def test_check_vision_falls_back_to_auto(self, isolated_home, monkeypatch):
@@ -231,7 +231,7 @@ auxiliary:
         monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
         _fresh_modules()
 
-        from tools.vision_tools import check_vision_requirements
+        from opencodon.tools.vision_tools import check_vision_requirements
         assert check_vision_requirements() is True
 
     def test_check_vision_false_with_text_only_main_and_no_aggregator(
@@ -245,7 +245,7 @@ model:
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         _fresh_modules()
 
-        from tools.vision_tools import check_vision_requirements
+        from opencodon.tools.vision_tools import check_vision_requirements
         assert check_vision_requirements() is False
 
     def test_browser_vision_requires_both_browser_and_vision(self, isolated_home, monkeypatch):
@@ -260,10 +260,10 @@ model:
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         _fresh_modules()
 
-        import tools.browser_tool
+        import opencodon.tools.browser_tool
         # Force the browser side to True so we exercise the vision-gating part.
-        with patch.object(tools.browser_tool, "check_browser_requirements", return_value=True):
-            assert tools.browser_tool.check_browser_vision_requirements() is False
+        with patch.object(opencodon.tools.browser_tool, "check_browser_requirements", return_value=True):
+            assert opencodon.tools.browser_tool.check_browser_vision_requirements() is False
 
     def test_browser_vision_false_when_browser_missing(self, isolated_home, monkeypatch):
         from unittest.mock import patch
@@ -276,10 +276,10 @@ model:
         monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
         _fresh_modules()
 
-        import tools.browser_tool
-        with patch.object(tools.browser_tool, "check_browser_requirements", return_value=False):
+        import opencodon.tools.browser_tool
+        with patch.object(opencodon.tools.browser_tool, "check_browser_requirements", return_value=False):
             # Vision available but browser missing → still False.
-            assert tools.browser_tool.check_browser_vision_requirements() is False
+            assert opencodon.tools.browser_tool.check_browser_vision_requirements() is False
 
     def test_browser_vision_true_when_both_available(self, isolated_home, monkeypatch):
         from unittest.mock import patch
@@ -292,6 +292,6 @@ model:
         monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
         _fresh_modules()
 
-        import tools.browser_tool
-        with patch.object(tools.browser_tool, "check_browser_requirements", return_value=True):
-            assert tools.browser_tool.check_browser_vision_requirements() is True
+        import opencodon.tools.browser_tool
+        with patch.object(opencodon.tools.browser_tool, "check_browser_requirements", return_value=True):
+            assert opencodon.tools.browser_tool.check_browser_vision_requirements() is True

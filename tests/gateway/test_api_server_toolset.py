@@ -65,7 +65,7 @@ class TestApiServerPlatformConfig:
         opencodon-api-server composite, so the old all-tools subset test dropped
         'terminal' entirely. Its static membership (terminal, process) IS in the
         composite, so it must stay enabled."""
-        from tools.registry import discover_builtin_tools
+        from opencodon.tools.registry import discover_builtin_tools
         from opencodon_cli.tools_config import _get_platform_tools
         discover_builtin_tools()
         assert "terminal" in _get_platform_tools({}, "api_server")
@@ -75,7 +75,7 @@ class TestApiServerPlatformConfig:
         NEW tool into an existing configurable toolset must never remove that
         toolset from a platform whose composite lists the toolset's static
         tools. Synthetic registration keeps the test hermetic in CI."""
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
         from opencodon_cli.tools_config import _get_platform_tools
 
         sentinel = "test_sentinel_delegation_tool"
@@ -123,7 +123,7 @@ class TestApiServerAdapterToolset:
         with patch("gateway.run._resolve_runtime_agent_kwargs") as mock_kwargs, \
              patch("gateway.run._resolve_gateway_model") as mock_model, \
              patch("gateway.run._load_gateway_config") as mock_config, \
-             patch("run_agent.AIAgent") as mock_agent_cls:
+             patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
 
             mock_kwargs.return_value = {"api_key": "test-key", "base_url": None,
                                         "provider": None, "api_mode": None,
@@ -153,7 +153,7 @@ class TestApiServerAdapterToolset:
         with patch("gateway.run._resolve_runtime_agent_kwargs") as mock_kwargs, \
              patch("gateway.run._resolve_gateway_model") as mock_model, \
              patch("gateway.run._load_gateway_config") as mock_config, \
-             patch("run_agent.AIAgent") as mock_agent_cls:
+             patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
 
             mock_kwargs.return_value = {"api_key": "test-key", "base_url": None,
                                         "provider": None, "api_mode": None,

@@ -60,7 +60,7 @@ def _make_adapter(extra=None):
 
 
 def _clear_clarify_state():
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
     with cm._lock:
         cm._entries.clear()
         cm._session_index.clear()
@@ -202,7 +202,7 @@ class TestTelegramClarifyCallback:
 
     @pytest.mark.asyncio
     async def test_numeric_choice_resolves_with_choice_text(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         # Pre-register a clarify entry so the callback can look up the choice text
@@ -244,7 +244,7 @@ class TestTelegramClarifyCallback:
 
     @pytest.mark.asyncio
     async def test_other_button_flips_to_text_mode(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         cm.register("cidB", "sk-cb-other", "Pick", ["x", "y"])
@@ -308,7 +308,7 @@ class TestTelegramClarifyCallback:
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_rejected(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         cm.register("cidC", "sk-auth", "Pick", ["a", "b"])
@@ -418,7 +418,7 @@ class TestTelegramClarifyCallback:
 
     @pytest.mark.asyncio
     async def test_invalid_choice_token(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
 
         adapter = _make_adapter()
         cm.register("cidD", "sk-inv", "Q?", ["a"])

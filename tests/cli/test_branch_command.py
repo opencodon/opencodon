@@ -21,7 +21,7 @@ def session_db(tmp_path):
     """Create a real SessionDB for testing."""
     os.environ["OPENCODON_HOME"] = str(tmp_path / ".opencodon")
     os.makedirs(tmp_path / ".opencodon", exist_ok=True)
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
     db = SessionDB(db_path=tmp_path / ".opencodon" / "test_sessions.db")
     yield db
     db.close()

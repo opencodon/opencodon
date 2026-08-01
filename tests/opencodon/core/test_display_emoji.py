@@ -26,7 +26,7 @@ class TestGetToolEmoji:
                 # Patch tools.registry module
                 mock_module = MagicMock()
                 mock_module.registry = mock_reg
-                with mock_patch.dict(sys.modules, {"tools.registry": mock_module}):
+                with mock_patch.dict(sys.modules, {"opencodon.tools.registry": mock_module}):
                     result = get_tool_emoji("read_file")
                     assert result == "📖"
 
@@ -48,7 +48,7 @@ class TestGetToolEmoji:
         mock_module = MagicMock()
         mock_module.registry = mock_reg
         with mock_patch("opencodon.core.display._get_skin", return_value=skin), \
-             mock_patch.dict(sys.modules, {"tools.registry": mock_module}):
+             mock_patch.dict(sys.modules, {"opencodon.tools.registry": mock_module}):
             result = get_tool_emoji("terminal")
             assert result == "💻"
 
@@ -62,7 +62,7 @@ class TestGetToolEmoji:
         mock_module = MagicMock()
         mock_module.registry = mock_reg
         with mock_patch("opencodon.core.display._get_skin", return_value=skin), \
-             mock_patch.dict(sys.modules, {"tools.registry": mock_module}):
+             mock_patch.dict(sys.modules, {"opencodon.tools.registry": mock_module}):
             result = get_tool_emoji("unknown_tool")
             assert result == "⚡"
 
@@ -74,7 +74,7 @@ class TestGetToolEmoji:
             import sys
             mock_module = MagicMock()
             mock_module.registry = mock_reg
-            with mock_patch.dict(sys.modules, {"tools.registry": mock_module}):
+            with mock_patch.dict(sys.modules, {"opencodon.tools.registry": mock_module}):
                 result = get_tool_emoji("x", default="⚙️")
                 assert result == "⚙️"
 
@@ -88,7 +88,7 @@ class TestGetToolEmoji:
         mock_module = MagicMock()
         mock_module.registry = mock_reg
         with mock_patch("opencodon.core.display._get_skin", return_value=skin), \
-             mock_patch.dict(sys.modules, {"tools.registry": mock_module}):
+             mock_patch.dict(sys.modules, {"opencodon.tools.registry": mock_module}):
             assert get_tool_emoji("terminal") == "⚔"  # skin override
             assert get_tool_emoji("web_search") == "🔍"  # registry fallback
 

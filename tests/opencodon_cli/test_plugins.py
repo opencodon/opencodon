@@ -938,7 +938,7 @@ class TestResolvePreToolBlock:
             lambda hook_name, **kwargs: [{"action": "approve", "message": "why"}],
         )
         monkeypatch.setattr(
-            "tools.approval.request_tool_approval",
+            "opencodon.tools.approval.request_tool_approval",
             lambda *a, **k: {"approved": False, "message": "user denied it"},
         )
         assert resolve_pre_tool_block("write_file", {}) == "user denied it"
@@ -950,7 +950,7 @@ class TestResolvePreToolBlock:
             lambda hook_name, **kwargs: [{"action": "approve", "message": "why"}],
         )
         monkeypatch.setattr(
-            "tools.approval.request_tool_approval",
+            "opencodon.tools.approval.request_tool_approval",
             lambda *a, **k: {"approved": True, "message": None},
         )
         assert resolve_pre_tool_block("write_file", {}) is None
@@ -977,7 +977,7 @@ class TestResolvePreToolBlock:
             seen["rule_key"] = kwargs.get("rule_key")
             return {"approved": True, "message": None}
 
-        monkeypatch.setattr("tools.approval.request_tool_approval", _approve)
+        monkeypatch.setattr("opencodon.tools.approval.request_tool_approval", _approve)
 
         assert resolve_pre_tool_block("write_file", {}) is None
         assert seen == {
@@ -1006,7 +1006,7 @@ class TestResolvePreToolBlock:
             seen["rule_key"] = kwargs.get("rule_key")
             return {"approved": True, "message": None}
 
-        monkeypatch.setattr("tools.approval.request_tool_approval", _approve)
+        monkeypatch.setattr("opencodon.tools.approval.request_tool_approval", _approve)
 
         assert resolve_pre_tool_block("write_file", {}) is None
         assert seen["rule_key"] == "write_file"
@@ -1019,7 +1019,7 @@ class TestResolvePreToolBlock:
         )
         def _boom(*a, **k):
             raise RuntimeError("gate crashed")
-        monkeypatch.setattr("tools.approval.request_tool_approval", _boom)
+        monkeypatch.setattr("opencodon.tools.approval.request_tool_approval", _boom)
         msg = resolve_pre_tool_block("terminal", {})
         assert msg is not None and "gate failed" in msg  # fail-closed
 
@@ -1212,12 +1212,12 @@ class TestPluginContext:
 
         assert "plugin_echo" in mgr._plugin_tool_names
 
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
         assert "plugin_echo" in registry._tools
 
     def test_register_tool_rejects_shadow_without_override(self, tmp_path, monkeypatch, caplog):
         """Without override=True, registering a tool name claimed by a different toolset is rejected."""
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         # Seed an existing entry from a non-plugin toolset.
         registry.register(
@@ -1247,7 +1247,7 @@ class TestPluginContext:
             )
             monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-            with caplog.at_level(logging.ERROR, logger="tools.registry"):
+            with caplog.at_level(logging.ERROR, logger="opencodon.tools.registry"):
                 mgr = PluginManager()
                 mgr.discover_and_load()
 
@@ -1261,7 +1261,7 @@ class TestPluginContext:
 
     def test_register_tool_override_replaces_existing(self, tmp_path, monkeypatch, caplog):
         """override=True lets a plugin replace an existing built-in tool."""
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         registry.register(
             name="override_target",
@@ -1297,7 +1297,7 @@ class TestPluginContext:
             )
             monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
 
-            with caplog.at_level(logging.INFO, logger="tools.registry"):
+            with caplog.at_level(logging.INFO, logger="opencodon.tools.registry"):
                 mgr = PluginManager()
                 mgr.discover_and_load()
 
@@ -1316,7 +1316,7 @@ class TestPluginContext:
 
     def test_register_tool_override_on_new_name_is_noop_path(self, tmp_path, monkeypatch):
         """override=True on a brand-new name still registers cleanly (no existing entry to replace)."""
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         plugins_dir = tmp_path / "opencodon_test" / "plugins"
         plugin_dir = plugins_dir / "new_override_plugin"
@@ -1359,7 +1359,7 @@ class TestPluginContext:
         enabled third-party plugin could replace a built-in tool (e.g.
         ``shell_exec``, ``write_file``) without the operator's knowledge.
         """
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
         from opencodon.plugins_runtime import PluginToolOverrideError
 
         registry.register(
@@ -1428,7 +1428,7 @@ class TestPluginContext:
         Regression for the residual bypass: the trust gate must be enforced at
         the registry sink (during plugin load), not only in the ctx wrapper.
         """
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         registry.register(
             name="gated_override_target",
@@ -1480,7 +1480,7 @@ class TestPluginContext:
         to the handler's defining plugin module, not to a transient "currently
         loading" flag, so the timing of the call cannot launder the override.
         """
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         registry.register(
             name="gated_override_target",
@@ -1570,7 +1570,7 @@ class TestPluginToolVisibility:
         mgr.discover_and_load()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", mgr)
 
-        from model_tools import get_tool_definitions
+        from opencodon.tools.model_tools import get_tool_definitions
 
         # Plugin tools are included when their toolset is explicitly enabled
         tools = get_tool_definitions(enabled_toolsets=["terminal", "plugin_vis_plugin"], quiet_mode=True)
@@ -2111,7 +2111,7 @@ class TestPluginDispatchTool:
 
         with patch("opencodon.plugins_runtime.PluginContext.dispatch_tool.__module__", "opencodon.plugins_runtime"):
             with patch.dict("sys.modules", {}):
-                with patch("tools.registry.registry", mock_registry):
+                with patch("opencodon.tools.registry.registry", mock_registry):
                     result = ctx.dispatch_tool("web_search", {"query": "test"})
 
         assert result == '{"result": "ok"}'
@@ -2130,7 +2130,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"ok": true}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             ctx.dispatch_tool("delegate_task", {"goal": "test"})
 
         mock_registry.dispatch.assert_called_once()
@@ -2147,7 +2147,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"ok": true}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             ctx.dispatch_tool("delegate_task", {"goal": "test"})
 
         call_kwargs = mock_registry.dispatch.call_args
@@ -2166,7 +2166,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"ok": true}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             ctx.dispatch_tool("delegate_task", {"goal": "test"})
 
         call_kwargs = mock_registry.dispatch.call_args
@@ -2188,7 +2188,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"ok": true}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             ctx.dispatch_tool("delegate_task", {"goal": "test"}, parent_agent=explicit_agent)
 
         call_kwargs = mock_registry.dispatch.call_args
@@ -2204,7 +2204,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"ok": true}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             ctx.dispatch_tool("some_tool", {"x": 1}, task_id="test-123")
 
         call_kwargs = mock_registry.dispatch.call_args
@@ -2220,7 +2220,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"error": "Unknown tool: fake"}'
 
-        with patch("tools.registry.registry", mock_registry):
+        with patch("opencodon.tools.registry.registry", mock_registry):
             result = ctx.dispatch_tool("fake", {})
 
         assert '"error"' in result
@@ -2344,7 +2344,7 @@ class TestDispatchToolWithoutCliRef:
     """
 
     def test_dispatch_tool_invokes_handler_without_cli_ref(self):
-        from tools.registry import registry
+        from opencodon.tools.registry import registry
 
         mgr = PluginManager()
         assert mgr._cli_ref is None  # worker/hook context

@@ -28,7 +28,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 
 from opencodon.core.file_safety import get_read_block_error, get_write_denied_error
 from opencodon.core.redact import redact_sensitive_text
-from tools.environments.local import opencodon_subprocess_env
+from opencodon.tools.environments.local import opencodon_subprocess_env
 
 ACP_MARKER_BASE_URL = "acp://copilot"
 _DEFAULT_TIMEOUT_SECONDS = 900.0

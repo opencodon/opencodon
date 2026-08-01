@@ -39,8 +39,8 @@ def test_gateway_config_flags_use_shared_helper():
 
 
 def test_desktop_gate_accepts_on():
-    from tools.close_terminal_tool import check_close_terminal_requirements
-    from tools.read_terminal_tool import check_read_terminal_requirements
+    from opencodon.tools.close_terminal_tool import check_close_terminal_requirements
+    from opencodon.tools.read_terminal_tool import check_read_terminal_requirements
 
     with patch.dict(os.environ, {"OPENCODON_DESKTOP": "on"}):
         assert check_read_terminal_requirements() is True

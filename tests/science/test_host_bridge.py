@@ -163,7 +163,7 @@ class TestToolAllowlist:
         assert "not in the science.host_tools allowlist" in reply["error"]
 
     def test_allowed_tool_dispatches_and_logs(self, bridge, store, cell, monkeypatch):
-        import model_tools
+        from opencodon.tools import model_tools
 
         monkeypatch.setattr(
             model_tools,

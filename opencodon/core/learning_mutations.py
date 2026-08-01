@@ -68,7 +68,7 @@ def _locate_memory(source: str, gidx: int) -> tuple[Path, list[str], int]:
     Entries come from ``MemoryStore._read_file`` — the same parser the memory
     tool uses — so journey indices stay aligned with what the graph renders.
     """
-    from tools.memory_tool import MemoryStore
+    from opencodon.tools.memory_tool import MemoryStore
 
     path = _memories_dir() / _MEMORY_FILES[source]
     if not path.exists():
@@ -100,7 +100,7 @@ def _node_detail(node_id: str) -> dict[str, Any]:
 
         return {"ok": True, "kind": "memory", "id": node_id, "label": body.splitlines()[0][:80], "content": body}
 
-    from tools.skill_manager_tool import _find_skill
+    from opencodon.tools.skill_manager_tool import _find_skill
 
     found = _find_skill(node_id)
     if not found:
@@ -129,7 +129,7 @@ def delete_node(node_id: str) -> dict[str, Any]:
 
 
 def _delete_skill(name: str) -> dict[str, Any]:
-    from tools import skill_usage
+    from opencodon.tools import skill_usage
 
     if skill_usage.get_record(name).get("pinned"):
         return {"ok": False, "message": f"'{name}' is pinned — unpin it first (opencodon curator unpin {name})"}
@@ -162,7 +162,7 @@ def edit_node(node_id: str, content: str) -> dict[str, Any]:
 
 
 def _edit_skill(name: str, content: str) -> dict[str, Any]:
-    from tools.skill_manager_tool import _edit_skill as _do_edit
+    from opencodon.tools.skill_manager_tool import _edit_skill as _do_edit
 
     result = _do_edit(name, content)
     if result.get("success"):
@@ -192,7 +192,7 @@ def _edit_memory(node_id: str, content: str) -> dict[str, Any]:
 def _write_memory(path: Path, chunks: list[str]) -> None:
     """Atomic temp-file + rename via the memory tool, so a concurrent reader
     never sees a half-written file (and the §-join stays single-sourced)."""
-    from tools.memory_tool import MemoryStore
+    from opencodon.tools.memory_tool import MemoryStore
 
     MemoryStore._write_file(path, [c.strip() for c in chunks if c.strip()])
 

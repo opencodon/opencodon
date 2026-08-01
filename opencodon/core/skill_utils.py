@@ -530,7 +530,7 @@ def normalize_skill_lookup_name(identifier: str) -> str:
     # exact root skill_view() will enforce.  Import deferred to avoid a
     # module cycle (tools.skills_tool imports agent.skill_utils).
     try:
-        from tools import skills_tool as _skills_tool
+        from opencodon.tools import skills_tool as _skills_tool
         primary_root = Path(_skills_tool.SKILLS_DIR)
     except Exception:
         primary_root = get_skills_dir()

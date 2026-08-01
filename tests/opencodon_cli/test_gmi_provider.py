@@ -119,7 +119,7 @@ class TestGmiModelCatalog:
         # Generic profile path uses ProviderProfile.fetch_models (urllib), not
         # fetch_api_models — must stub it or CI can hit the real endpoint.
         monkeypatch.setattr(
-            "providers.base.ProviderProfile.fetch_models",
+            "opencodon.providers.base.ProviderProfile.fetch_models",
             lambda self, *, api_key=None, base_url=None, timeout=8.0: None,
         )
 
@@ -190,7 +190,7 @@ class TestGmiDoctor:
             check_tool_availability=lambda *a, **kw: ([], []),
             TOOLSET_REQUIREMENTS={},
         )
-        monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
+        monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
         try:
             from opencodon_cli import auth as _auth_mod
@@ -281,7 +281,7 @@ class TestGmiAuxiliary:
 
     def test_gmi_profile_declares_opencodon_user_agent(self):
         """The GMI plugin sets a OpencodonAgent/<ver> User-Agent on its profile."""
-        from providers import get_provider_profile
+        from opencodon.providers import get_provider_profile
 
         profile = get_provider_profile("gmi")
         assert profile is not None

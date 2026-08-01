@@ -24,7 +24,7 @@ from gateway.platforms.api_server import (
     cors_middleware,
     security_headers_middleware,
 )
-from tools import approval as approval_mod
+from opencodon.tools import approval as approval_mod
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ class TestRunEvents:
         adapter._run_approval_sessions[run_id] = "session-123"
 
         async with TestClient(TestServer(app)) as cli:
-            with patch("tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
+            with patch("opencodon.tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
                 approval_resp = await cli.post(
                     f"/v1/runs/{run_id}/approval",
                     json={"choice": "once", "all": "false"},

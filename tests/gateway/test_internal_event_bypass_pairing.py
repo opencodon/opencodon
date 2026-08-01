@@ -17,7 +17,7 @@ from gateway.config import GatewayConfig, Platform
 from gateway.platforms.base import MessageEvent
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from tools.process_registry import ProcessRegistry, ProcessSession
+from opencodon.tools.process_registry import ProcessRegistry, ProcessSession
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def _watcher_dict_with_notify():
 @pytest.mark.asyncio
 async def test_notify_on_complete_sets_internal_flag(monkeypatch, tmp_path):
     """Synthetic completion event must have internal=True."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [
         SimpleNamespace(
@@ -103,7 +103,7 @@ async def test_notify_on_complete_sets_internal_flag(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_poll_does_not_suppress_notify_on_complete_watcher(monkeypatch, tmp_path):
     """Regression: polling an exited process must not suppress watcher injection."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     registry = ProcessRegistry()
     session = ProcessSession(
@@ -243,7 +243,7 @@ async def test_internal_event_does_not_trigger_pairing(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_notify_on_complete_preserves_user_identity(monkeypatch, tmp_path):
     """Synthetic completion event should carry user_id and user_name from the watcher."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [
         SimpleNamespace(
@@ -273,7 +273,7 @@ async def test_notify_on_complete_preserves_user_identity(monkeypatch, tmp_path)
 
 @pytest.mark.asyncio
 async def test_notify_on_complete_uses_session_store_origin_for_group_topic(monkeypatch, tmp_path):
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
     from gateway.session import SessionSource
 
     sessions = [

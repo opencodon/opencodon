@@ -18,8 +18,8 @@ import contextlib
 import io
 from pathlib import Path
 
-from opencodon_state import SessionDB
-from run_agent import AIAgent
+from opencodon.state import SessionDB
+from opencodon.core.run_agent import AIAgent
 
 
 def _config(max_attempts=None) -> dict:

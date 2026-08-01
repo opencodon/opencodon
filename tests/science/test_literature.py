@@ -498,9 +498,9 @@ def test_id_conversion_requires_input():
 
 @pytest.mark.requirement("SCI-P2-20")
 def test_literature_toolset_matches_the_registered_tools():
-    import tools.literature_tools  # noqa: F401 - registers on import
+    import opencodon.tools.literature_tools  # noqa: F401 - registers on import
     from toolsets import TOOLSETS
-    from tools.registry import registry
+    from opencodon.tools.registry import registry
 
     declared = set(TOOLSETS["literature"]["tools"])
     registered = {
@@ -512,7 +512,7 @@ def test_literature_toolset_matches_the_registered_tools():
 
 @pytest.mark.requirement("SCI-P2-20")
 def test_tool_errors_come_back_as_data_not_exceptions():
-    import tools.literature_tools as literature_tools
+    import opencodon.tools.literature_tools as literature_tools
 
     payload = json.loads(literature_tools._call(crossref.get_work, doi="not-a-doi"))
     assert payload["source"] == "crossref"

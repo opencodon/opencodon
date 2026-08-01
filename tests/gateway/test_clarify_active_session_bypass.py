@@ -47,7 +47,7 @@ def _event(text="custom answer"):
 
 
 def _clear_clarify_state():
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     with cm._lock:
         cm._entries.clear()
@@ -66,7 +66,7 @@ async def test_active_session_routes_typed_choice_clarify_reply_to_runner_not_bu
     never resolved.
     """
     _clear_clarify_state()
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _ClarifyBypassAdapter()
     adapter._message_handler = AsyncMock(return_value="")
@@ -98,7 +98,7 @@ async def test_gateway_clarify_reply_resumes_typing_before_returning_empty_ack()
     """
     _clear_clarify_state()
     from gateway.run import GatewayRunner
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
 
     adapter = _ClarifyBypassAdapter()
     adapter.pause_typing_for_chat("12345")

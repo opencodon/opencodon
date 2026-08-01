@@ -363,7 +363,7 @@ class TestNormalizeSkillLookupName:
         skill_dir.mkdir(parents=True)
         # Patch the root skill_view() itself enforces — normalization reads
         # tools.skills_tool.SKILLS_DIR at call time so the two stay in sync.
-        monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", skills_dir)
+        monkeypatch.setattr("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir)
         assert normalize_skill_lookup_name(str(skill_dir)) == "category/my-skill"
 
     def test_absolute_via_symlink_uses_lexical_relative_path(self, tmp_path, monkeypatch):
@@ -378,13 +378,13 @@ class TestNormalizeSkillLookupName:
             link.symlink_to(external)
         except OSError:
             pytest.skip("Symlinks not supported")
-        monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", skills_dir)
+        monkeypatch.setattr("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir)
         assert normalize_skill_lookup_name(str(link)) == "my-skill"
 
     def test_untrusted_absolute_returned_unchanged(self, tmp_path, monkeypatch):
         from opencodon.core.skill_utils import normalize_skill_lookup_name
 
-        monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", tmp_path / "skills")
+        monkeypatch.setattr("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path / "skills")
         monkeypatch.setattr("opencodon.core.skill_utils.get_skills_dir", lambda: tmp_path / "skills")
         outside = str(tmp_path / "outside" / "skill")
         assert normalize_skill_lookup_name(outside) == outside
@@ -484,7 +484,7 @@ class TestBOMToleranceSiblingSites:
     SKILL = "---\nname: bom-skill\ndescription: Saved by Notepad\n---\n\n# Body\n"
 
     def test_skill_manager_validate_accepts_bom(self):
-        from tools.skill_manager_tool import _validate_frontmatter
+        from opencodon.tools.skill_manager_tool import _validate_frontmatter
 
         assert _validate_frontmatter("\ufeff" + self.SKILL) is None
 
@@ -499,14 +499,14 @@ class TestBOMToleranceSiblingSites:
     def test_blueprints_split_frontmatter_bom(self):
         # str.lstrip() does NOT strip U+FEFF (it is not whitespace), so the
         # pre-existing lstrip() in _split_frontmatter never covered it.
-        from tools.blueprints import _split_frontmatter
+        from opencodon.tools.blueprints import _split_frontmatter
 
         fm = _split_frontmatter("\ufeff---\nname: bp\n---\nbody")
         assert fm is not None
         assert fm.get("name") == "bp"
 
     def test_skills_hub_parsers_accept_bom(self):
-        from tools.skills_hub import GitHubSource, OptionalSkillSource
+        from opencodon.tools.skills_hub import GitHubSource, OptionalSkillSource
 
         for parser in (
             GitHubSource._parse_frontmatter_quick,

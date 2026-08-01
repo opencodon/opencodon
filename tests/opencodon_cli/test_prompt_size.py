@@ -88,7 +88,7 @@ def test_inspection_agent_uses_resolved_platform_toolsets(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "run_agent",
+        "opencodon.core.run_agent",
         SimpleNamespace(AIAgent=FakeAIAgent),
     )
     monkeypatch.setattr("opencodon.config.load_config", lambda: cfg)

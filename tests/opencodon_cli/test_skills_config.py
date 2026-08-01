@@ -123,13 +123,13 @@ class TestIsSkillDisabled:
     @patch("opencodon.config.load_config")
     def test_globally_disabled(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["bad-skill"]}}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("bad-skill") is True
 
     @patch("opencodon.config.load_config")
     def test_globally_enabled(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["other"]}}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("good-skill") is False
 
     @patch("opencodon.config.load_config")
@@ -138,7 +138,7 @@ class TestIsSkillDisabled:
             "disabled": [],
             "platform_disabled": {"telegram": ["tg-skill"]}
         }}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("tg-skill", platform="telegram") is True
 
     @patch("opencodon.config.load_config")
@@ -147,7 +147,7 @@ class TestIsSkillDisabled:
             "disabled": ["skill-a"],
             "platform_disabled": {"telegram": ["tg-skill"]}
         }}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         # Union: a globally-disabled skill stays disabled on a platform that
         # has its own platform_disabled list (matches issue #46201).
         assert _is_skill_disabled("skill-a", platform="telegram") is True
@@ -159,7 +159,7 @@ class TestIsSkillDisabled:
             "disabled": ["skill-a"],
             "platform_disabled": {"telegram": []}
         }}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         # An explicit empty platform list does NOT re-enable a globally-disabled
         # skill — global disables hold on every platform.
         assert _is_skill_disabled("skill-a", platform="telegram") is True
@@ -167,20 +167,20 @@ class TestIsSkillDisabled:
     @patch("opencodon.config.load_config")
     def test_platform_falls_back_to_global(self, mock_load):
         mock_load.return_value = {"skills": {"disabled": ["skill-a"]}}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         # no platform_disabled for cli -> global
         assert _is_skill_disabled("skill-a", platform="cli") is True
 
     @patch("opencodon.config.load_config")
     def test_empty_config(self, mock_load):
         mock_load.return_value = {}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("any-skill") is False
 
     @patch("opencodon.config.load_config")
     def test_exception_returns_false(self, mock_load):
         mock_load.side_effect = Exception("config error")
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("any-skill") is False
 
     @patch("opencodon.config.load_config")
@@ -189,7 +189,7 @@ class TestIsSkillDisabled:
         mock_load.return_value = {"skills": {
             "platform_disabled": {"discord": ["discord-skill"]}
         }}
-        from tools.skills_tool import _is_skill_disabled
+        from opencodon.tools.skills_tool import _is_skill_disabled
         assert _is_skill_disabled("discord-skill") is True
 
 
@@ -301,8 +301,8 @@ class TestGetDisabledSkillNames:
 # ---------------------------------------------------------------------------
 
 class TestFindAllSkillsFiltering:
-    @patch("tools.skills_tool._get_disabled_skill_names", return_value={"my-skill"})
-    @patch("tools.skills_tool.skill_matches_platform", return_value=True)
+    @patch("opencodon.tools.skills_tool._get_disabled_skill_names", return_value={"my-skill"})
+    @patch("opencodon.tools.skills_tool.skill_matches_platform", return_value=True)
     def test_disabled_skill_excluded(self, mock_platform, mock_disabled, tmp_path, monkeypatch):
         skill_dir = tmp_path / "my-skill"
         skill_dir.mkdir()
@@ -310,42 +310,42 @@ class TestFindAllSkillsFiltering:
         skill_md.write_text("---\nname: my-skill\ndescription: A test skill\n---\nContent")
         # Point SKILLS_DIR at the real tempdir so iter_skill_index_files
         # (which uses os.walk) can actually find the file.
-        import tools.skills_tool as _st
+        import opencodon.tools.skills_tool as _st
         import opencodon.core.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
-        from tools.skills_tool import _find_all_skills
+        from opencodon.tools.skills_tool import _find_all_skills
         skills = _find_all_skills()
         assert not any(s["name"] == "my-skill" for s in skills)
 
-    @patch("tools.skills_tool._get_disabled_skill_names", return_value=set())
-    @patch("tools.skills_tool.skill_matches_platform", return_value=True)
+    @patch("opencodon.tools.skills_tool._get_disabled_skill_names", return_value=set())
+    @patch("opencodon.tools.skills_tool.skill_matches_platform", return_value=True)
     def test_enabled_skill_included(self, mock_platform, mock_disabled, tmp_path, monkeypatch):
         skill_dir = tmp_path / "my-skill"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text("---\nname: my-skill\ndescription: A test skill\n---\nContent")
-        import tools.skills_tool as _st
+        import opencodon.tools.skills_tool as _st
         import opencodon.core.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
-        from tools.skills_tool import _find_all_skills
+        from opencodon.tools.skills_tool import _find_all_skills
         skills = _find_all_skills()
         assert any(s["name"] == "my-skill" for s in skills)
 
-    @patch("tools.skills_tool._get_disabled_skill_names", return_value={"my-skill"})
-    @patch("tools.skills_tool.skill_matches_platform", return_value=True)
+    @patch("opencodon.tools.skills_tool._get_disabled_skill_names", return_value={"my-skill"})
+    @patch("opencodon.tools.skills_tool.skill_matches_platform", return_value=True)
     def test_skip_disabled_returns_all(self, mock_platform, mock_disabled, tmp_path, monkeypatch):
         """skip_disabled=True ignores the disabled set (for config UI)."""
         skill_dir = tmp_path / "my-skill"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text("---\nname: my-skill\ndescription: A test skill\n---\nContent")
-        import tools.skills_tool as _st
+        import opencodon.tools.skills_tool as _st
         import opencodon.core.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
-        from tools.skills_tool import _find_all_skills
+        from opencodon.tools.skills_tool import _find_all_skills
         skills = _find_all_skills(skip_disabled=True)
         assert any(s["name"] == "my-skill" for s in skills)
 

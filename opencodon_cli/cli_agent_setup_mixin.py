@@ -249,7 +249,7 @@ class CLIAgentSetupMixin:
         # Initialize SQLite session store for CLI sessions (if not already done in __init__)
         if self._session_db is None:
             try:
-                from opencodon_state import SessionDB
+                from opencodon.state import SessionDB
                 self._session_db = SessionDB()
             except Exception as e:
                 logger.warning("SQLite session store not available — session will NOT be indexed: %s", e)
@@ -531,7 +531,7 @@ class CLIAgentSetupMixin:
         an indicator for earlier hidden messages.
         """
         from cli import CLI_CONFIG, _record_output_history_entry, _strip_reasoning_tags, _suspend_output_history
-        from tools.ansi_strip import sanitize_display_text as _sanitize_display_text
+        from opencodon.tools.ansi_strip import sanitize_display_text as _sanitize_display_text
         if not self.conversation_history:
             return
 

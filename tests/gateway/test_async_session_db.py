@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-import opencodon_state
-from opencodon_state import AsyncSessionDB
+from opencodon import state as opencodon_state
+from opencodon.state import AsyncSessionDB
 
 
 class _SpyDB:

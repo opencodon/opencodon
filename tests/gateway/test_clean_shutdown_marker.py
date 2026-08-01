@@ -121,9 +121,9 @@ class TestCleanShutdownMarker:
              patch("gateway.run.GatewayRunner._finalize_shutdown_agents"), \
              patch("gateway.run.GatewayRunner._update_runtime_status"), \
              patch("gateway.status.remove_pid_file"), \
-             patch("tools.process_registry.process_registry") as mock_proc_reg, \
-             patch("tools.terminal_tool.cleanup_all_environments"), \
-             patch("tools.browser_tool.cleanup_all_browsers"):
+             patch("opencodon.tools.process_registry.process_registry") as mock_proc_reg, \
+             patch("opencodon.tools.terminal_tool.cleanup_all_environments"), \
+             patch("opencodon.tools.browser_tool.cleanup_all_browsers"):
             mock_proc_reg.kill_all = MagicMock()
 
             import asyncio
@@ -214,9 +214,9 @@ class TestCleanShutdownMarker:
              patch("gateway.run.GatewayRunner._finalize_shutdown_agents"), \
              patch("gateway.run.GatewayRunner._update_runtime_status"), \
              patch("gateway.status.remove_pid_file"), \
-             patch("tools.process_registry.process_registry") as mock_proc_reg, \
-             patch("tools.terminal_tool.cleanup_all_environments"), \
-             patch("tools.browser_tool.cleanup_all_browsers"):
+             patch("opencodon.tools.process_registry.process_registry") as mock_proc_reg, \
+             patch("opencodon.tools.terminal_tool.cleanup_all_environments"), \
+             patch("opencodon.tools.browser_tool.cleanup_all_browsers"):
             mock_proc_reg.kill_all = MagicMock()
 
             import asyncio

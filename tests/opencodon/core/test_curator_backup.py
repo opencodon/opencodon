@@ -323,7 +323,7 @@ def test_dry_run_skips_snapshot(backup_env, monkeypatch):
 
 def _write_cron_jobs(home: Path, jobs: list) -> Path:
     """Write a synthetic cron/jobs.json under OPENCODON_HOME. Returns the path.
-    Mirrors cron.jobs.save_jobs() wrapper shape: `{"jobs": [...], "updated_at": ...}`.
+    Mirrors opencodon.cron.jobs.save_jobs() wrapper shape: `{"jobs": [...], "updated_at": ...}`.
     """
     cron_dir = home / "cron"
     cron_dir.mkdir(parents=True, exist_ok=True)
@@ -336,15 +336,15 @@ def _write_cron_jobs(home: Path, jobs: list) -> Path:
 
 
 def _reload_cron_jobs(home: Path):
-    """Reload cron.jobs so its module-level OPENCODON_DIR picks up the tmp HOME."""
+    """Reload opencodon.cron.jobs so its module-level OPENCODON_DIR picks up the tmp HOME."""
     import opencodon_constants
     importlib.reload(opencodon_constants)
-    if "cron.jobs" in sys.modules:
-        import cron.jobs as _cj
+    if "opencodon.cron.jobs" in sys.modules:
+        import opencodon.cron.jobs as _cj
         importlib.reload(_cj)
     else:
-        import cron.jobs as _cj  # noqa: F401
-    import cron.jobs as cj
+        import opencodon.cron.jobs as _cj  # noqa: F401
+    import opencodon.cron.jobs as cj
     return cj
 
 

@@ -13,7 +13,7 @@ _MOCK_SKILLS = [
 
 def test_get_available_skills_delegates_to_find_all_skills():
     """get_available_skills should call _find_all_skills (which handles filtering)."""
-    with patch("tools.skills_tool._find_all_skills", return_value=list(_MOCK_SKILLS)):
+    with patch("opencodon.tools.skills_tool._find_all_skills", return_value=list(_MOCK_SKILLS)):
         from opencodon_cli.banner import get_available_skills
         result = get_available_skills()
 
@@ -28,7 +28,7 @@ def test_get_available_skills_excludes_disabled():
     # _find_all_skills already filters disabled skills, so if we give it
     # a filtered list, get_available_skills should reflect that.
     filtered = [s for s in _MOCK_SKILLS if s["name"] != "skill-b"]
-    with patch("tools.skills_tool._find_all_skills", return_value=filtered):
+    with patch("opencodon.tools.skills_tool._find_all_skills", return_value=filtered):
         from opencodon_cli.banner import get_available_skills
         result = get_available_skills()
 
@@ -40,7 +40,7 @@ def test_get_available_skills_excludes_disabled():
 
 def test_get_available_skills_empty_when_no_skills():
     """No skills installed returns empty dict."""
-    with patch("tools.skills_tool._find_all_skills", return_value=[]):
+    with patch("opencodon.tools.skills_tool._find_all_skills", return_value=[]):
         from opencodon_cli.banner import get_available_skills
         result = get_available_skills()
 
@@ -49,7 +49,7 @@ def test_get_available_skills_empty_when_no_skills():
 
 def test_get_available_skills_handles_import_failure():
     """If _find_all_skills import fails, return empty dict gracefully."""
-    with patch("tools.skills_tool._find_all_skills", side_effect=ImportError("boom")):
+    with patch("opencodon.tools.skills_tool._find_all_skills", side_effect=ImportError("boom")):
         from opencodon_cli.banner import get_available_skills
         result = get_available_skills()
 
@@ -59,7 +59,7 @@ def test_get_available_skills_handles_import_failure():
 def test_get_available_skills_null_category_becomes_general():
     """Skills with None category should be grouped under 'general'."""
     skills = [{"name": "orphan-skill", "description": "No cat", "category": None}]
-    with patch("tools.skills_tool._find_all_skills", return_value=skills):
+    with patch("opencodon.tools.skills_tool._find_all_skills", return_value=skills):
         from opencodon_cli.banner import get_available_skills
         result = get_available_skills()
 

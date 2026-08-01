@@ -193,7 +193,7 @@ def test_cli_close_uses_distinct_history_as_baseline():
 
 def _real_agent(db, session_id, session_messages):
     """Build the real persistence seam without the heavyweight LLM client."""
-    from run_agent import AIAgent
+    from opencodon.core.run_agent import AIAgent
 
     agent = object.__new__(AIAgent)
     agent._session_db = db
@@ -227,7 +227,7 @@ def test_cli_close_persist_real_db_survives_history_alias(tmp_path, monkeypatch)
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-alias"
@@ -263,7 +263,7 @@ def test_cli_close_preflush_resumed_prefix_is_not_duplicated(tmp_path, monkeypat
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-preflush-resume"
@@ -297,7 +297,7 @@ def test_cli_close_preflush_resumed_prefix_is_not_duplicated(tmp_path, monkeypat
             agent._session_messages = messages
             entered_flush.set()
             assert release_flush.wait(timeout=5)
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         # Runtime accepts None; the stub keeps that optional contract explicit.
         return AIAgent._flush_messages_to_session_db(
@@ -352,7 +352,7 @@ def test_cli_close_preserves_unflushed_tail_after_prior_prefix_flush(tmp_path, m
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-tail"
@@ -386,7 +386,7 @@ def test_cli_close_hands_staged_user_marker_to_turn_start(tmp_path, monkeypatch)
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-staged-user"
@@ -456,7 +456,7 @@ def test_cli_close_persists_pending_user_when_agent_snapshot_is_empty(tmp_path, 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-before-worker"
@@ -497,7 +497,7 @@ def test_cli_close_uses_clean_override_for_shortened_pending_snapshot(tmp_path, 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-shortened-noted-pending"
@@ -542,7 +542,7 @@ def test_cli_close_preserves_clean_staged_user_across_noted_worker_turn(tmp_path
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
 
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-noted-staged-user"
@@ -635,7 +635,7 @@ def test_cli_close_builds_prompt_before_creating_first_session_row(tmp_path, mon
 
     import opencodon.core.conversation_loop as loop_mod
     import cli as cli_mod
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-first-turn"

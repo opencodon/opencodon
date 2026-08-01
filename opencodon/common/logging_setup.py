@@ -242,12 +242,12 @@ COMPONENT_PREFIXES = {
     # "opencodon.core" is the canonical home of the ex-``agent`` package
     # (restructure Phase 3a); the old prefix stays until the shims retire.
     "agent": ("agent", "opencodon.core", "run_agent", "model_tools", "batch_runner"),
-    "tools": ("tools",),
+    "tools": ("tools", "opencodon.tools"),
     # opencodon.config / common / plugins_runtime moved out of opencodon_cli
     # in Phase 2 — their loggers renamed with them.
     "cli": ("opencodon_cli", "cli", "opencodon.config", "opencodon.common",
             "opencodon.plugins_runtime"),
-    "cron": ("cron",),
+    "cron": ("cron", "opencodon.cron"),
     "gui": (
         "opencodon_cli.web_server",
         "opencodon_cli.pty_bridge",

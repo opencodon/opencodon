@@ -40,7 +40,7 @@ async def test_enrich_message_with_transcription_surfaces_path_when_stt_disabled
     runner.config = GatewayConfig(stt_enabled=False)
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         side_effect=AssertionError("transcribe_audio should not be called when STT is disabled"),
     ), patch(
         "gateway.run._probe_audio_duration",
@@ -87,7 +87,7 @@ async def test_enrich_message_with_transcription_avoids_bogus_no_provider_messag
     runner.config = GatewayConfig(stt_enabled=True)
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         return_value={"success": False, "error": "VOICE_TOOLS_OPENAI_KEY not set"},
     ):
         result, transcripts = await runner._enrich_message_with_transcription(
@@ -122,7 +122,7 @@ async def test_enrich_message_with_transcription_returns_tuple_for_empty_content
     runner.config = GatewayConfig(stt_enabled=True)
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         return_value={
             "success": True,
             "transcript": "hello from a captionless voice note",
@@ -165,7 +165,7 @@ async def test_prepare_inbound_message_text_transcribes_queued_voice_event():
     )
 
     with patch(
-        "tools.transcription_tools.transcribe_audio",
+        "opencodon.tools.transcription_tools.transcribe_audio",
         return_value={
             "success": True,
             "transcript": "queued voice transcript",

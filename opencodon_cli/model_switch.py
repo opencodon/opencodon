@@ -1836,7 +1836,7 @@ def list_authenticated_providers(
         # their own picker row.
         _canonical = opencodon_id
         try:
-            from providers import get_provider_profile as _gpp
+            from opencodon.providers import get_provider_profile as _gpp
             _prof = _gpp(opencodon_id)
             if _prof is not None:
                 _canonical = _prof.name

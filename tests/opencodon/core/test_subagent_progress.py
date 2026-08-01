@@ -14,7 +14,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from opencodon.core.display import KawaiiSpinner
-from tools.delegate_tool import _build_child_progress_callback
+from opencodon.tools.delegate_tool import _build_child_progress_callback
 
 
 # =========================================================================

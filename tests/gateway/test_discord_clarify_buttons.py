@@ -47,7 +47,7 @@ def _make_adapter(*, allowed_users=None, allowed_roles=None):
 
 
 def _clear_clarify_state():
-    from tools import clarify_gateway as cm
+    from opencodon.tools import clarify_gateway as cm
     with cm._lock:
         cm._entries.clear()
         cm._session_index.clear()
@@ -199,7 +199,7 @@ class TestClarifyChoiceResolve:
 
     @pytest.mark.asyncio
     async def test_choice_resolves_with_canonical_choice_text(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
         cm.register("cidA", "sk-A", "Pick", ["red", "green", "blue"])
 
         view = ClarifyChoiceView(
@@ -260,7 +260,7 @@ class TestClarifyChoiceResolve:
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_rejected(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
         cm.register("cidC", "sk-C", "Pick", ["x"])
 
         # Allowlist set, user not in it
@@ -296,7 +296,7 @@ class TestClarifyOtherButton:
 
     @pytest.mark.asyncio
     async def test_other_flips_entry_to_awaiting_text(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
         cm.register("cidD", "sk-D", "Pick", ["x", "y"])
 
         view = ClarifyChoiceView(
@@ -325,7 +325,7 @@ class TestClarifyOtherButton:
 
     @pytest.mark.asyncio
     async def test_other_unauthorized_user_rejected(self):
-        from tools import clarify_gateway as cm
+        from opencodon.tools import clarify_gateway as cm
         cm.register("cidE", "sk-E", "Pick", ["x"])
 
         view = ClarifyChoiceView(

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from opencodon.config import recommended_update_command
 from opencodon_cli.main import cmd_update
-from tools.skills_hub import OptionalSkillSource
+from opencodon.tools.skills_hub import OptionalSkillSource
 
 
 def test_recommended_update_command_defaults_to_opencodon_update(monkeypatch):

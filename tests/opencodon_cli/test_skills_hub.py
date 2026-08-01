@@ -19,7 +19,7 @@ class _DummyLockFile:
 @pytest.fixture()
 def hub_env(monkeypatch, tmp_path):
     """Set up isolated hub directory paths and return (monkeypatch, tmp_path)."""
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
 
     hub_dir = tmp_path / "skills" / ".hub"
     monkeypatch.setattr(hub, "SKILLS_DIR", tmp_path / "skills")
@@ -51,9 +51,9 @@ _BUILTIN_MANIFEST = {"builtin-skill": "abc123"}
 @pytest.fixture()
 def three_source_env(monkeypatch, hub_env):
     """Populate hub/builtin/local skills for source-classification tests."""
-    import tools.skills_hub as hub
-    import tools.skills_sync as skills_sync
-    import tools.skills_tool as skills_tool
+    import opencodon.tools.skills_hub as hub
+    import opencodon.tools.skills_sync as skills_sync
+    import opencodon.tools.skills_tool as skills_tool
 
     monkeypatch.setattr(hub, "HubLockFile", lambda: _DummyLockFile([_HUB_ENTRY]))
     monkeypatch.setattr(skills_tool, "_find_all_skills", lambda **_kwargs: list(_ALL_THREE_SKILLS))
@@ -71,7 +71,7 @@ def _capture(source_filter: str = "all") -> str:
 
 
 def _capture_check(monkeypatch, results, name=None) -> str:
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
 
     sink = StringIO()
     console = Console(file=sink, force_terminal=False, color_system=None)
@@ -81,7 +81,7 @@ def _capture_check(monkeypatch, results, name=None) -> str:
 
 
 def _capture_update(monkeypatch, results) -> tuple[str, list[tuple[str, str, bool]]]:
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
     import opencodon_cli.skills_hub as cli_hub
 
     sink = StringIO()
@@ -104,8 +104,8 @@ def _capture_update(monkeypatch, results) -> tuple[str, list[tuple[str, str, boo
 
 
 def test_do_list_initializes_hub_dir(monkeypatch, hub_env):
-    import tools.skills_sync as skills_sync
-    import tools.skills_tool as skills_tool
+    import opencodon.tools.skills_sync as skills_sync
+    import opencodon.tools.skills_tool as skills_tool
 
     monkeypatch.setattr(skills_tool, "_find_all_skills", lambda **_kwargs: [])
     monkeypatch.setattr(skills_sync, "_read_manifest", lambda: {})
@@ -258,15 +258,15 @@ def test_handle_skills_slash_search_accepts_chatconsole_without_status_errors():
         "identifier": "skills-sh/example/kubernetes",
     })()]
 
-    with patch("tools.skills_hub.unified_search", return_value=results), \
-         patch("tools.skills_hub.create_source_router", return_value={}), \
-         patch("tools.skills_hub.GitHubAuth"):
+    with patch("opencodon.tools.skills_hub.unified_search", return_value=results), \
+         patch("opencodon.tools.skills_hub.create_source_router", return_value={}), \
+         patch("opencodon.tools.skills_hub.GitHubAuth"):
         handle_skills_slash("/skills search kubernetes", console=ChatConsole())
 
 
 def test_do_install_scans_with_resolved_identifier(monkeypatch, tmp_path, hub_env):
-    import tools.skills_guard as guard
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_guard as guard
+    import opencodon.tools.skills_hub as hub
 
     canonical_identifier = "skills-sh/anthropics/skills/frontend-design"
 
@@ -320,8 +320,8 @@ def test_do_install_scans_with_resolved_identifier(monkeypatch, tmp_path, hub_en
 def test_do_install_scans_official_bundles_with_source_provenance(
     monkeypatch, tmp_path, hub_env
 ):
-    import tools.skills_guard as guard
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_guard as guard
+    import opencodon.tools.skills_hub as hub
 
     class _OfficialSource:
         def inspect(self, identifier):
@@ -438,8 +438,8 @@ def _make_url_bundle_fetcher(name="", awaiting_name=True, url="https://example.c
 
 def _install_mocks(monkeypatch, tmp_path, source_factory, category_hint=""):
     """Wire the minimum set of monkeypatches for a do_install dry run."""
-    import tools.skills_hub as hub
-    import tools.skills_guard as guard
+    import opencodon.tools.skills_hub as hub
+    import opencodon.tools.skills_guard as guard
 
     q_path = tmp_path / "skills" / ".hub" / "quarantine" / "pending"
     q_path.mkdir(parents=True)
@@ -536,7 +536,7 @@ def test_url_install_prompts_interactively_when_tty(monkeypatch, tmp_path, hub_e
 
 
 def test_url_install_prompts_category_and_uses_typed_value(monkeypatch, tmp_path, hub_env):
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
     installs = _install_mocks(
         monkeypatch, tmp_path,
         _make_url_bundle_fetcher(name="sharethis-chat", awaiting_name=False),
@@ -582,7 +582,7 @@ def test_url_install_cancel_name_prompt_aborts(monkeypatch, tmp_path, hub_env):
 
 
 def test_existing_categories_skips_top_level_skills(monkeypatch, tmp_path, hub_env):
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
     from opencodon_cli.skills_hub import _existing_categories
 
     # Category bucket with nested skill.
@@ -605,7 +605,7 @@ def test_existing_categories_skips_top_level_skills(monkeypatch, tmp_path, hub_e
 
 def test_existing_categories_returns_empty_when_skills_dir_missing(monkeypatch, tmp_path, hub_env):
     # hub_env creates tmp_path/skills/.hub — we point SKILLS_DIR at a missing sibling.
-    import tools.skills_hub as hub
+    import opencodon.tools.skills_hub as hub
     monkeypatch.setattr(hub, "SKILLS_DIR", tmp_path / "does-not-exist")
 
     from opencodon_cli.skills_hub import _existing_categories
@@ -624,7 +624,7 @@ def test_browse_skills_dedup_uses_identifier_not_name(monkeypatch):
     fix, both were keyed by name so only one survived deduplication. After the
     fix, each unique identifier produces a distinct result.
     """
-    from tools.skills_hub import SkillMeta
+    from opencodon.tools.skills_hub import SkillMeta
     from opencodon_cli.skills_hub import browse_skills
 
     airbnb = SkillMeta(
@@ -641,9 +641,9 @@ def test_browse_skills_dedup_uses_identifier_not_name(monkeypatch):
         "search": lambda self, q, limit=500: [airbnb, booking],
     })()
 
-    # browse_skills() imports create_source_router locally from tools.skills_hub,
+    # browse_skills() imports create_source_router locally from opencodon.tools.skills_hub,
     # so the patch must target the source module, not opencodon_cli.skills_hub.
-    with patch("tools.skills_hub.create_source_router", return_value=[mock_src]):
+    with patch("opencodon.tools.skills_hub.create_source_router", return_value=[mock_src]):
         result = browse_skills(page=1, page_size=50)
 
     names = [item["name"] for item in result["items"]]
@@ -659,7 +659,7 @@ def test_do_browse_reports_live_per_source_progress():
     a slow source blocks. The page is still rendered once, after the full
     result set is merged and trust-sorted."""
     from opencodon_cli.skills_hub import do_browse
-    from tools.skills_hub import SkillMeta
+    from opencodon.tools.skills_hub import SkillMeta
 
     meta = SkillMeta(
         name="demo", description="d", source="official",
@@ -681,9 +681,9 @@ def test_do_browse_reports_live_per_source_progress():
     sink = StringIO()
     console = Console(file=sink, force_terminal=False, color_system=None, width=120)
 
-    with patch("tools.skills_hub.create_source_router", return_value=[]), \
-         patch("tools.skills_hub.GitHubAuth"), \
-         patch("tools.skills_hub.parallel_search_sources", side_effect=fake_parallel):
+    with patch("opencodon.tools.skills_hub.create_source_router", return_value=[]), \
+         patch("opencodon.tools.skills_hub.GitHubAuth"), \
+         patch("opencodon.tools.skills_hub.parallel_search_sources", side_effect=fake_parallel):
         do_browse(page=1, page_size=20, console=console)
 
     assert captured.get("called"), "parallel_search_sources was not invoked"
@@ -723,9 +723,9 @@ def test_do_search_identifier_column_does_not_truncate_long_slug():
     # wrapped (not ellipsis-truncated).
     console = Console(file=sink, force_terminal=False, color_system=None, width=40)
 
-    with patch("tools.skills_hub.unified_search", return_value=[_LONG_RESULT]), \
-         patch("tools.skills_hub.create_source_router", return_value={}), \
-         patch("tools.skills_hub.GitHubAuth"):
+    with patch("opencodon.tools.skills_hub.unified_search", return_value=[_LONG_RESULT]), \
+         patch("opencodon.tools.skills_hub.create_source_router", return_value={}), \
+         patch("opencodon.tools.skills_hub.GitHubAuth"):
         do_search("weather", console=console)
 
     output = sink.getvalue()
@@ -765,9 +765,9 @@ def test_do_search_json_flag_emits_full_identifiers(capsys):
     sink = StringIO()
     console = Console(file=sink, force_terminal=False, color_system=None, width=40)
 
-    with patch("tools.skills_hub.unified_search", return_value=[_LONG_RESULT]), \
-         patch("tools.skills_hub.create_source_router", return_value={}), \
-         patch("tools.skills_hub.GitHubAuth"):
+    with patch("opencodon.tools.skills_hub.unified_search", return_value=[_LONG_RESULT]), \
+         patch("opencodon.tools.skills_hub.create_source_router", return_value={}), \
+         patch("opencodon.tools.skills_hub.GitHubAuth"):
         do_search("weather", console=console, as_json=True)
 
     # JSON goes to stdout via print(), not the Rich console sink.

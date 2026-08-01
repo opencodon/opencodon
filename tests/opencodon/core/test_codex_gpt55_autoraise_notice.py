@@ -23,8 +23,8 @@ from pathlib import Path
 import pytest
 
 from opencodon_constants import get_opencodon_home
-from opencodon_state import SessionDB
-from run_agent import AIAgent
+from opencodon.state import SessionDB
+from opencodon.core.run_agent import AIAgent
 
 from opencodon.core.agent_init import (
     _codex_gpt55_autoraise_notice_marker,

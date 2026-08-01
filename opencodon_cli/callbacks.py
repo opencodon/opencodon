@@ -22,7 +22,7 @@ def clarify_callback(cli, question, choices):
     responds. Returns the user's choice or a timeout message.
     """
     from cli import CLI_CONFIG
-    from tools.clarify_gateway import resolve_clarify_timeout
+    from opencodon.tools.clarify_gateway import resolve_clarify_timeout
 
     # Canonical clarify timeout, shared with the gateway/TUI path. `<= 0`
     # means unlimited (never auto-skip mid-think) → a null deadline.

@@ -87,7 +87,7 @@ def _raise_stream_error(event: Any) -> None:
     Imported lazily so this module stays importable from places that don't
     pull in ``run_agent`` (e.g. plugin code, doc tools).
     """
-    from run_agent import _StreamErrorEvent
+    from opencodon.core.run_agent import _StreamErrorEvent
 
     nested = _event_field(event, "error")
 

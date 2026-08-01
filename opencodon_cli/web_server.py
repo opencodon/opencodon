@@ -109,7 +109,7 @@ except ImportError:
     # running `opencodon dashboard` needs fastapi+uvicorn; lazy install keeps
     # them out of every other install path. After install, re-import.
     try:
-        from tools.lazy_deps import ensure as _lazy_ensure
+        from opencodon.tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("tool.dashboard", prompt=False)
         from fastapi import (
             FastAPI, File, Form, HTTPException, Request, UploadFile,
@@ -154,7 +154,7 @@ def _start_desktop_cron_ticker(stop_event: "threading.Event", interval: int = 60
     real gateway on the same OPENCODON_HOME — whichever process grabs the lock
     first wins the tick.
     """
-    from cron.scheduler_provider import resolve_cron_scheduler
+    from opencodon.cron.scheduler_provider import resolve_cron_scheduler
 
     provider = resolve_cron_scheduler()
     _log.info("Desktop cron scheduler started (provider=%s, interval=%ds)", provider.name, interval)
@@ -1082,9 +1082,9 @@ def _custom_provider_options(
     # ``deepinfra``), and filtering on it would offer names the runtime
     # would never honour as command providers.
     if kind == "tts":
-        from tools.tts_tool import BUILTIN_TTS_PROVIDERS as _runtime_builtins
+        from opencodon.tools.tts_tool import BUILTIN_TTS_PROVIDERS as _runtime_builtins
     else:
-        from tools.transcription_tools import BUILTIN_STT_PROVIDERS as _runtime_builtins
+        from opencodon.tools.transcription_tools import BUILTIN_STT_PROVIDERS as _runtime_builtins
 
     def _add(name: Any) -> None:
         if not isinstance(name, str):
@@ -1619,7 +1619,7 @@ def _count_status_active_sessions() -> int:
     connection so /api/status never tries to initialise or migrate state.db
     while another opencodon process is writing to it.
     """
-    from opencodon_state import DEFAULT_DB_PATH, SessionDB
+    from opencodon.state import DEFAULT_DB_PATH, SessionDB
 
     # read_only opens require the DB to already exist (see SessionDB.__init__
     # read_only contract) — on a fresh install every /api/status poll would
@@ -3209,7 +3209,7 @@ async def get_status(profile: Optional[str] = None):
         # update. None/absent when no rebuild is pending (the common case).
         # Read-only probe, never blocks startup, never raises.
         try:
-            from opencodon_state import SessionDB as _SDB
+            from opencodon.state import SessionDB as _SDB
             from opencodon_constants import get_opencodon_home as _ghh
 
             _db_path = _ghh() / "state.db"
@@ -4205,7 +4205,7 @@ async def transcribe_audio_upload(payload: AudioTranscriptionRequest):
         # hallucinations and maps provider "empty transcript" errors to a
         # successful empty result — the live voice loop treats "" as silence
         # and re-listens instead of surfacing a 400 on every quiet turn.
-        from tools.voice_mode import transcribe_recording
+        from opencodon.tools.voice_mode import transcribe_recording
 
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(None, transcribe_recording, temp_path)
@@ -4349,7 +4349,7 @@ async def speak_text(payload: TTSSpeakRequest):
         raise HTTPException(status_code=400, detail="Text is required")
 
     try:
-        from tools.tts_tool import text_to_speech_tool
+        from opencodon.tools.tts_tool import text_to_speech_tool
         loop = asyncio.get_running_loop()
         result_json = await loop.run_in_executor(None, text_to_speech_tool, text)
     except Exception as exc:
@@ -4402,7 +4402,7 @@ async def speak_text(payload: TTSSpeakRequest):
 
 def _split_text_for_speak_stream(text: str, cap: int) -> list:
     """Split *text* into provider-cap-sized pieces on sentence boundaries."""
-    from tools.tts_streaming import SENTENCE_BOUNDARY_RE as _SENTENCE_BOUNDARY_RE
+    from opencodon.tools.tts_streaming import SENTENCE_BOUNDARY_RE as _SENTENCE_BOUNDARY_RE
 
     cap = cap if cap and cap > 0 else 4000
     pieces, buf = [], ""
@@ -4451,8 +4451,8 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
     loop = asyncio.get_running_loop()
 
     def _resolve():
-        from tools.tts_streaming import resolve_streaming_provider
-        from tools.tts_tool import _get_provider, _load_tts_config, _resolve_max_text_length
+        from opencodon.tools.tts_streaming import resolve_streaming_provider
+        from opencodon.tools.tts_tool import _get_provider, _load_tts_config, _resolve_max_text_length
 
         cfg = _load_tts_config()
         streamer = resolve_streaming_provider(cfg)
@@ -4479,8 +4479,8 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
     chunks: asyncio.Queue = asyncio.Queue()  # PCM out; None = synthesis done
 
     def _produce():
-        from tools.tts_streaming import SentenceChunker
-        from tools.tts_tool import _strip_markdown_for_tts
+        from opencodon.tools.tts_streaming import SentenceChunker
+        from opencodon.tools.tts_tool import _strip_markdown_for_tts
 
         chunker = SentenceChunker()
 
@@ -4750,7 +4750,7 @@ def get_profiles_sessions(
     if order not in ("created", "recent"):
         raise HTTPException(status_code=400, detail="order must be one of: created, recent")
 
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
     from opencodon_cli import profiles as profiles_mod
 
     targets: List[Tuple[str, Path]] = []
@@ -4874,7 +4874,7 @@ def get_profiles_sessions_sidebar(
     ``min_messages=1`` / ``archived=exclude`` / recency order, matching the
     desktop's per-slice calls.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
     from opencodon_cli import profiles as profiles_mod
 
     # cron + messaging are cross-profile; recents is scoped to recents_profile.
@@ -10358,7 +10358,7 @@ def _open_session_db_for_profile(profile: Optional[str]):
     ``state.db`` directly so the primary backend can serve cross-profile reads
     (transcripts, detail) without spawning that profile's backend.
     """
-    from opencodon_state import SessionDB
+    from opencodon.state import SessionDB
     if not profile:
         return SessionDB()
     _name, home = _cron_profile_home(profile)
@@ -10902,7 +10902,7 @@ def _call_cron_for_profile(target_profile: Optional[str], func_name: str, *args,
     cannot retarget a concurrent desktop ticker's load/save transaction.
     """
     profile_name, home = _cron_profile_home(target_profile)
-    from cron import jobs as cron_jobs
+    from opencodon.cron import jobs as cron_jobs
     from opencodon_constants import (
         reset_opencodon_home_override,
         set_opencodon_home_override,
@@ -11093,7 +11093,7 @@ async def get_cron_delivery_targets():
         }
     ]
     try:
-        from cron.scheduler import cron_delivery_targets
+        from opencodon.cron.scheduler import cron_delivery_targets
 
         targets.extend(cron_delivery_targets())
     except Exception:
@@ -11213,8 +11213,8 @@ def _fire_cron_job_for_profile(profile: str, job_id: str) -> bool:
     send path.
     """
     _profile_name, home = _cron_profile_home(profile)
-    from cron import jobs as cron_jobs
-    from cron.scheduler_provider import resolve_cron_scheduler
+    from opencodon.cron import jobs as cron_jobs
+    from opencodon.cron.scheduler_provider import resolve_cron_scheduler
     from opencodon_constants import (
         reset_opencodon_home_override,
         set_opencodon_home_override,
@@ -11249,11 +11249,11 @@ async def list_cron_blueprints():
     form never offers a platform that isn't connected.
     """
     try:
-        from cron.blueprint_catalog import CATALOG, blueprint_catalog_entry
+        from opencodon.cron.blueprint_catalog import CATALOG, blueprint_catalog_entry
 
         deliver_options = None
         try:
-            from cron.scheduler import cron_delivery_targets
+            from opencodon.cron.scheduler import cron_delivery_targets
 
             platforms = [t["id"] for t in cron_delivery_targets() if t.get("id")]
             deliver_options = ["origin", "local", *platforms]
@@ -11278,7 +11278,7 @@ async def list_cron_blueprints():
 async def instantiate_blueprint(body: AutomationBlueprintInstantiate, profile: str = "default"):
     """Fill a blueprint's slots and create the cron job (form-submit path)."""
     try:
-        from cron.blueprint_catalog import fill_blueprint, get_blueprint, BlueprintFillError
+        from opencodon.cron.blueprint_catalog import fill_blueprint, get_blueprint, BlueprintFillError
 
         blueprint = get_blueprint(body.blueprint)
         if blueprint is None:
@@ -11639,9 +11639,9 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
             set_secret_scope,
         )
         from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
-        from tools.mcp_dashboard_oauth import dashboard_oauth_flow
-        from tools.mcp_oauth import OpencodonTokenStorage, force_interactive_oauth
-        from tools.mcp_oauth_manager import get_manager
+        from opencodon.tools.mcp_dashboard_oauth import dashboard_oauth_flow
+        from opencodon.tools.mcp_oauth import OpencodonTokenStorage, force_interactive_oauth
+        from opencodon.tools.mcp_oauth_manager import get_manager
 
         home_token = set_opencodon_home_override(flow.opencodon_home)
         secret_token = set_secret_scope(build_profile_secret_scope(Path(flow.opencodon_home)))
@@ -11671,7 +11671,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
                     flow.tools = [{"name": t, "description": d} for t, d in tools]
                     flow.mark_approved()
                     if flow.reconnect_live:
-                        from tools.mcp_tool import reconnect_mcp_server
+                        from opencodon.tools.mcp_tool import reconnect_mcp_server
 
                         reconnect_mcp_server(flow.server_name)
                 except Exception:
@@ -11709,7 +11709,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
 async def auth_mcp_server(name: str, request: Request, profile: Optional[str] = None):
     """Start MCP OAuth and hand the authorization URL to the dashboard browser."""
     from opencodon_cli.mcp_config import _get_mcp_servers
-    from tools.mcp_dashboard_oauth import DashboardOAuthFlow
+    from opencodon.tools.mcp_dashboard_oauth import DashboardOAuthFlow
 
     _require_token(request)
     _gc_mcp_oauth_flows()
@@ -13114,7 +13114,7 @@ def _installed_hub_identifiers(profile: Optional[str] = None) -> dict:
     Best-effort: returns an empty dict if the lock file can't be read.
     """
     try:
-        from tools.skills_hub import HubLockFile
+        from opencodon.tools.skills_hub import HubLockFile
 
         requested = (profile or "").strip()
         if requested and requested.lower() != "current":
@@ -13148,7 +13148,7 @@ async def list_skills_hub_sources(profile: Optional[str] = None):
     """
 
     def _run():
-        from tools.skills_hub import create_source_router
+        from opencodon.tools.skills_hub import create_source_router
 
         with _config_profile_scope(profile):
             sources = create_source_router()
@@ -13225,7 +13225,7 @@ async def search_skills_hub(
         return {"results": [], "source_counts": {}, "timed_out": [], "installed": {}}
 
     def _run():
-        from tools.skills_hub import create_source_router, parallel_search_sources
+        from opencodon.tools.skills_hub import create_source_router, parallel_search_sources
 
         with _config_profile_scope(profile):
             sources = create_source_router()
@@ -13278,7 +13278,7 @@ async def preview_skill_hub(identifier: str = "", profile: Optional[str] = None)
 
     def _run():
         from opencodon_cli.skills_hub import _resolve_source_meta_and_bundle
-        from tools.skills_hub import create_source_router
+        from opencodon.tools.skills_hub import create_source_router
 
         with _config_profile_scope(profile):
             sources = create_source_router()
@@ -13346,8 +13346,8 @@ async def scan_skill_hub(identifier: str = "", profile: Optional[str] = None):
         import shutil as _shutil
 
         from opencodon_cli.skills_hub import _resolve_source_meta_and_bundle
-        from tools.skills_hub import create_source_router, quarantine_bundle
-        from tools.skills_guard import scan_skill, should_allow_install
+        from opencodon.tools.skills_hub import create_source_router, quarantine_bundle
+        from opencodon.tools.skills_guard import scan_skill, should_allow_install
 
         with _config_profile_scope(profile):
             sources = create_source_router()
@@ -14076,8 +14076,8 @@ def _profile_scope(profile: Optional[str]):
         set_opencodon_home_override,
         reset_opencodon_home_override,
     )
-    from tools import skills_tool as _skills_tool
-    from tools import skill_manager_tool as _skill_mgr
+    from opencodon.tools import skills_tool as _skills_tool
+    from opencodon.tools import skill_manager_tool as _skill_mgr
 
     token = None
     if not requested or requested.lower() == "current":
@@ -14148,9 +14148,9 @@ class SkillToggle(BaseModel):
 
 @app.get("/api/skills")
 async def get_skills(profile: Optional[str] = None):
-    from tools.skills_tool import _find_all_skills
+    from opencodon.tools.skills_tool import _find_all_skills
     from opencodon_cli.skills_config import get_disabled_skills
-    from tools.skill_usage import (
+    from opencodon.tools.skill_usage import (
         _read_bundled_manifest_names,
         _read_hub_installed_names,
         activity_count,
@@ -14221,7 +14221,7 @@ def _clear_skills_prompt_cache() -> None:
 @app.get("/api/skills/content")
 async def get_skill_content(name: str, profile: Optional[str] = None):
     """Return the raw SKILL.md text for a skill, for the dashboard editor."""
-    from tools.skill_manager_tool import _find_skill
+    from opencodon.tools.skill_manager_tool import _find_skill
 
     with _profile_scope(profile):
         found = _find_skill(name)
@@ -14246,7 +14246,7 @@ async def create_skill(body: SkillCreate):
     optional security scan) — but bypasses the agent write-approval gate:
     a write from the authenticated dashboard IS the user acting directly.
     """
-    from tools.skill_manager_tool import _create_skill
+    from opencodon.tools.skill_manager_tool import _create_skill
 
     with _profile_scope(body.profile):
         result = _create_skill(body.name, body.content, body.category or None)
@@ -14259,7 +14259,7 @@ async def create_skill(body: SkillCreate):
 @app.put("/api/skills/content")
 async def update_skill_content(body: SkillContentUpdate):
     """Replace the SKILL.md of an existing skill (full rewrite) from the editor."""
-    from tools.skill_manager_tool import _edit_skill
+    from opencodon.tools.skill_manager_tool import _edit_skill
 
     with _profile_scope(body.profile):
         result = _edit_skill(body.name, body.content)
@@ -14455,7 +14455,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
             # shared web.backend → credential auto-detect), so the GUI badges
             # reflect what a tool call would actually hit right now.
             try:
-                from tools.web_tools import _get_extract_backend, _get_search_backend
+                from opencodon.tools.web_tools import _get_extract_backend, _get_search_backend
 
                 active_search_backend = _get_search_backend()
                 active_extract_backend = _get_extract_backend()
@@ -14959,7 +14959,7 @@ def _probe_ssh_backend(terminal_cfg: dict) -> tuple:
 
 def _probe_modal_backend() -> tuple:
     try:
-        from tools.tool_backend_helpers import has_direct_modal_credentials
+        from opencodon.tools.tool_backend_helpers import has_direct_modal_credentials
 
         if has_direct_modal_credentials():
             return ("ready", "")
@@ -15096,7 +15096,7 @@ async def get_computer_use_status(profile: Optional[str] = None):
     shape. Read-only and fast (shells ``cua-driver doctor`` + macOS
     ``permissions status``).
     """
-    from tools.computer_use.permissions import computer_use_status
+    from opencodon.tools.computer_use.permissions import computer_use_status
 
     with _profile_scope(profile):
         return computer_use_status()
@@ -17865,7 +17865,7 @@ def _merged_plugins_hub() -> Dict[str, Any]:
         provides_tools = manifest_data.get("provides_tools") or []
         if provides_tools:
             try:
-                from tools.registry import registry
+                from opencodon.tools.registry import registry
                 for tname in provides_tools:
                     entry = registry.get_entry(tname)
                     if entry and entry.check_fn and not entry.check_fn():

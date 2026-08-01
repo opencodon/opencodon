@@ -182,7 +182,7 @@ class TestLoadBackgroundNotificationsMode:
 async def test_run_process_watcher_respects_notification_mode(
     monkeypatch, tmp_path, mode, sessions, expected_calls, expected_fragment
 ):
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     monkeypatch.setattr(pr_module, "process_registry", _FakeRegistry(sessions))
 
@@ -207,7 +207,7 @@ async def test_run_process_watcher_respects_notification_mode(
 @pytest.mark.asyncio
 async def test_thread_id_passed_to_send(monkeypatch, tmp_path):
     """thread_id from watcher dict is forwarded as metadata to adapter.send()."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [SimpleNamespace(output_buffer="done\n", exited=True, exit_code=0)]
     monkeypatch.setattr(pr_module, "process_registry", _FakeRegistry(sessions))
@@ -229,7 +229,7 @@ async def test_thread_id_passed_to_send(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_no_thread_id_sends_no_metadata(monkeypatch, tmp_path):
     """When thread_id is empty, metadata should be None (general topic)."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [SimpleNamespace(output_buffer="done\n", exited=True, exit_code=0)]
     monkeypatch.setattr(pr_module, "process_registry", _FakeRegistry(sessions))
@@ -290,7 +290,7 @@ async def test_agent_notification_carries_message_id_reply_anchor(monkeypatch, t
 
     Without an anchor, Telegram private-chat topic sends fall back to the main
     chat (see _thread_kwargs_for_send / telegram_dm_topic_reply_fallback)."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [SimpleNamespace(
         output_buffer="SMOKE_OK\n", exited=True, exit_code=0, command="sleep 1",
@@ -327,7 +327,7 @@ async def test_agent_notification_carries_message_id_reply_anchor(monkeypatch, t
 async def test_agent_notification_no_message_id_is_tolerated(monkeypatch, tmp_path):
     """A watcher dict without message_id (CLI spawn, pre-upgrade checkpoint)
     still injects — message_id is simply None."""
-    import tools.process_registry as pr_module
+    import opencodon.tools.process_registry as pr_module
 
     sessions = [SimpleNamespace(
         output_buffer="done\n", exited=True, exit_code=0, command="sleep 1",

@@ -408,7 +408,7 @@ def _run_references_parallel(
     # contextvars.Context — propagate the parent turn's context (approval
     # callbacks + the provider conversation tag) into each worker so
     # advisor calls attribute to the same conversation as the acting turn.
-    from tools.thread_context import propagate_context_to_thread
+    from opencodon.tools.thread_context import propagate_context_to_thread
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         for idx, slot in enumerate(reference_models):

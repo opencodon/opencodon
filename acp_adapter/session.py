@@ -120,7 +120,7 @@ def _register_task_cwd(task_id: str, cwd: str) -> None:
     if not task_id:
         return
     try:
-        from tools.terminal_tool import register_task_env_overrides
+        from opencodon.tools.terminal_tool import register_task_env_overrides
         register_task_env_overrides(task_id, {"cwd": _translate_acp_cwd(cwd)})
     except Exception:
         logger.debug("Failed to register ACP task cwd override", exc_info=True)
@@ -149,7 +149,7 @@ def _clear_task_cwd(task_id: str) -> None:
     if not task_id:
         return
     try:
-        from tools.terminal_tool import clear_task_env_overrides
+        from opencodon.tools.terminal_tool import clear_task_env_overrides
         clear_task_env_overrides(task_id)
     except Exception:
         logger.debug("Failed to clear ACP task cwd override", exc_info=True)
@@ -401,7 +401,7 @@ class SessionManager:
         if self._db_instance is not None:
             return self._db_instance
         try:
-            from opencodon_state import SessionDB
+            from opencodon.state import SessionDB
             opencodon_home = get_opencodon_home()
             self._db_instance = SessionDB(db_path=opencodon_home / "state.db")
             return self._db_instance
@@ -600,7 +600,7 @@ class SessionManager:
         if self._agent_factory is not None:
             return self._agent_factory()
 
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
         from opencodon.config import load_config
         from opencodon_cli.runtime_provider import resolve_runtime_provider
 

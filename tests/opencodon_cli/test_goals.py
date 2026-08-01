@@ -1099,7 +1099,7 @@ class TestSessionTriggerBarrier:
     @staticmethod
     def _inject(sid, *, watch_patterns=None, exited=False):
         import time as _t
-        from tools.process_registry import process_registry, ProcessSession
+        from opencodon.tools.process_registry import process_registry, ProcessSession
         s = ProcessSession(id=sid, command="watcher.sh", task_id="t",
                            session_key="", cwd="/tmp", started_at=_t.time())
         if watch_patterns:
@@ -1130,7 +1130,7 @@ class TestSessionTriggerBarrier:
         assert reg.is_session_waiting("proc_t3") is False
 
     def test_registry_unknown_session_never_waits(self, opencodon_home):
-        from tools.process_registry import process_registry
+        from opencodon.tools.process_registry import process_registry
         assert process_registry.is_session_waiting("proc_does_not_exist") is False
 
     def test_goal_parks_on_session_and_releases_on_trigger(self, opencodon_home):

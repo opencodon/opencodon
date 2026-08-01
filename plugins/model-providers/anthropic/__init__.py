@@ -5,8 +5,8 @@ import logging
 import urllib.request
 
 from opencodon_cli.urllib_security import open_credentialed_url
-from providers import register_provider
-from providers.base import ProviderProfile
+from opencodon.providers import register_provider
+from opencodon.providers.base import ProviderProfile
 
 logger = logging.getLogger(__name__)
 

@@ -84,7 +84,7 @@ def _degraded_report() -> dict:
 
 class TestDoctorExitCodes:
     def test_ok_exits_0(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -97,7 +97,7 @@ class TestDoctorExitCodes:
         assert code == 0
 
     def test_degraded_exits_1(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -112,7 +112,7 @@ class TestDoctorExitCodes:
     def test_failed_overall_exits_1(self):
         """`failed` overall (every check failed) is also exit 1, not 2 —
         the tool ran successfully; the diagnosis was bad."""
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         report = _degraded_report()
         report["overall"] = "failed"
@@ -127,7 +127,7 @@ class TestDoctorExitCodes:
         assert code == 1
 
     def test_missing_binary_exits_2(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         with patch("shutil.which", return_value=None), \
              patch("sys.stdout", new_callable=StringIO):
@@ -137,7 +137,7 @@ class TestDoctorExitCodes:
     def test_protocol_error_exits_2(self, capsys):
         """An empty stdout response (driver crashed during handshake) is a
         protocol failure → exit 2."""
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = MagicMock()
         proc.stdin = MagicMock()
@@ -162,7 +162,7 @@ class TestDoctorExitCodes:
 
 class TestResponseShapeParsing:
     def test_prefers_structuredContent(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -180,7 +180,7 @@ class TestResponseShapeParsing:
     def test_falls_back_to_text_content_when_structuredContent_absent(self):
         """Older cua-driver builds may emit health_report as a text content
         item carrying the JSON — the doctor should still parse it."""
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -201,7 +201,7 @@ class TestResponseShapeParsing:
         assert "ok" in out.getvalue()
 
     def test_jsonrpc_error_response_exits_2(self, capsys):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -219,7 +219,7 @@ class TestResponseShapeParsing:
 
 class TestArgPassthrough:
     def test_include_passed_through_to_tools_call(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -238,7 +238,7 @@ class TestArgPassthrough:
         ]
 
     def test_skip_passed_through(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -256,7 +256,7 @@ class TestArgPassthrough:
         """When neither include nor skip is given, the arguments object is
         empty — not present-but-null — so the driver's default 'run every
         check' branch fires."""
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -276,7 +276,7 @@ class TestArgPassthrough:
 
 class TestJsonOutput:
     def test_json_output_is_parseable_round_trip(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -298,7 +298,7 @@ class TestJsonOutput:
 
 class TestDriverCmdResolution:
     def test_explicit_driver_cmd_arg_wins(self):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
@@ -313,7 +313,7 @@ class TestDriverCmdResolution:
         which_mock.assert_called_with("/custom/path/cua-driver")
 
     def test_env_var_used_when_no_arg_given(self, monkeypatch):
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         monkeypatch.setenv("OPENCODON_CUA_DRIVER_CMD", "/env/path/cua-driver")
         proc = _fake_proc_with_responses(
@@ -330,7 +330,7 @@ class TestDriverCmdResolution:
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX user-local path regression")
     def test_user_local_driver_is_found_when_path_omits_it(self, tmp_path, monkeypatch):
         """Doctor must inspect the same user-local driver as the runtime."""
-        from tools.computer_use import doctor
+        from opencodon.tools.computer_use import doctor
 
         driver = tmp_path / ".local" / "bin" / "cua-driver"
         driver.parent.mkdir(parents=True)
@@ -341,7 +341,7 @@ class TestDriverCmdResolution:
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 
-        with patch("tools.computer_use.doctor._drive_health_report", return_value=_ok_report()) as health, \
+        with patch("opencodon.tools.computer_use.doctor._drive_health_report", return_value=_ok_report()) as health, \
              patch("sys.stdout", new_callable=StringIO):
             assert doctor.run_doctor() == 0
 

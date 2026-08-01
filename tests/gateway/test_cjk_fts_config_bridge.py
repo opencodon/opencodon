@@ -60,7 +60,7 @@ def test_search_knobs_have_documented_defaults():
 
 def test_config_false_disables_cjk_semantics(tmp_path, monkeypatch):
     """The bridged 'False' string must parse as OFF in opencodon_state."""
-    from opencodon_state import _cjk_fts_config_enabled
+    from opencodon.state import _cjk_fts_config_enabled
 
     monkeypatch.setenv("OPENCODON_CJK_FTS", "False")
     assert not _cjk_fts_config_enabled()

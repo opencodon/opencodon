@@ -8,7 +8,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from gateway.config import PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ async def test_run_agent_binds_api_session_context_for_tool_env(adapter, monkeyp
 
         def run_conversation(self, user_message, conversation_history, task_id):
             from gateway.session_context import get_session_env
-            from tools.environments.local import _make_run_env
+            from opencodon.tools.environments.local import _make_run_env
 
             observed["task_id"] = task_id
             observed["context_session_id"] = get_session_env("OPENCODON_SESSION_ID")

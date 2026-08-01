@@ -80,7 +80,7 @@ def _require_azure_identity():
         return _ai
     except ImportError:
         try:
-            from tools.lazy_deps import ensure, FeatureUnavailable
+            from opencodon.tools.lazy_deps import ensure, FeatureUnavailable
         except ImportError as exc:
             raise ImportError(
                 "The 'azure-identity' package is required for Azure AI "

@@ -380,7 +380,7 @@ def check_telegram_requirements() -> bool:
     if TELEGRAM_AVAILABLE:
         return True
     try:
-        from tools.lazy_deps import ensure as _lazy_ensure
+        from opencodon.tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("platform.telegram", prompt=False)
     except Exception:
         return False
@@ -5981,7 +5981,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # the command was already denied and will not run (#63501
                 # regression follow-up: 60s waits made stale taps common).
                 try:
-                    from tools.approval import resolve_gateway_approval
+                    from opencodon.tools.approval import resolve_gateway_approval
                     count = resolve_gateway_approval(session_key, choice)
                     logger.info(
                         "Telegram button resolved %d approval(s) for session %s (choice=%s, user=%s)",
@@ -6076,7 +6076,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # loop and (if it returns a string) send it as a follow-up
                 # message in the same chat.
                 try:
-                    from tools import slash_confirm as _slash_confirm_mod
+                    from opencodon.tools import slash_confirm as _slash_confirm_mod
                     result_text = await _slash_confirm_mod.resolve(
                         session_key, confirm_id, choice,
                     )
@@ -6163,7 +6163,7 @@ class TelegramAdapter(BasePlatformAdapter):
                     # is cleared by something else.
                     flipped = False
                     try:
-                        from tools.clarify_gateway import mark_awaiting_text
+                        from opencodon.tools.clarify_gateway import mark_awaiting_text
                         flipped = mark_awaiting_text(clarify_id)
                     except Exception as exc:
                         logger.warning("[%s] mark_awaiting_text failed: %s", self.name, exc)
@@ -6198,7 +6198,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # has been cleaned up (race with timeout / session reset).
                 resolved_text: Optional[str] = None
                 try:
-                    from tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
+                    from opencodon.tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
                     entry = _clarify_entries.get(clarify_id)
                     if entry and entry.choices and 0 <= idx < len(entry.choices):
                         resolved_text = entry.choices[idx]
@@ -6214,7 +6214,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 # Pop state and resolve
                 self._clarify_state.pop(clarify_id, None)
                 try:
-                    from tools.clarify_gateway import resolve_gateway_clarify
+                    from opencodon.tools.clarify_gateway import resolve_gateway_clarify
                     resolved = resolve_gateway_clarify(clarify_id, resolved_text)
                 except Exception as exc:
                     logger.error("[%s] resolve_gateway_clarify failed: %s", self.name, exc)
@@ -6885,7 +6885,7 @@ class TelegramAdapter(BasePlatformAdapter):
         if not self._bot:
             return SendResult(success=False, error="Not connected")
 
-        from tools.url_safety import is_safe_url
+        from opencodon.tools.url_safety import is_safe_url
         if not is_safe_url(image_url):
             logger.warning("[%s] Blocked unsafe image URL (SSRF protection)", self.name)
             return await super().send_image(chat_id, image_url, caption, reply_to, metadata=metadata)
@@ -6926,7 +6926,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # Fallback: download and upload as file (supports up to 10MB)
             try:
                 from gateway.platforms.base import _ssrf_redirect_guard
-                from tools.url_safety import create_ssrf_safe_async_client
+                from opencodon.tools.url_safety import create_ssrf_safe_async_client
 
                 async with create_ssrf_safe_async_client(
                     timeout=30.0,
@@ -8787,7 +8787,7 @@ class TelegramAdapter(BasePlatformAdapter):
             cached_path = cache_image_from_bytes(bytes(image_bytes), ext=".webp")
             logger.info("[Telegram] Analyzing sticker at %s", cached_path)
 
-            from tools.vision_tools import vision_analyze_tool
+            from opencodon.tools.vision_tools import vision_analyze_tool
             result_json = await vision_analyze_tool(
                 image_url=cached_path,
                 user_prompt=STICKER_VISION_PROMPT,
@@ -9319,7 +9319,7 @@ async def _standalone_send(
     disable_link_previews = bool(
         getattr(pconfig, "extra", {}) and pconfig.extra.get("disable_link_previews")
     )
-    from tools.send_message_tool import _send_telegram
+    from opencodon.tools.send_message_tool import _send_telegram
     return await _send_telegram(
         token,
         chat_id,

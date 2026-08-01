@@ -623,8 +623,8 @@ def _run_review_in_thread(
     via ``agent._safe_print`` and ``agent.background_review_callback``.
     """
     # Local import to avoid a hard circular dep at module load.
-    from run_agent import AIAgent
-    from tools.terminal_tool import set_approval_callback as _set_approval_callback
+    from opencodon.core.run_agent import AIAgent
+    from opencodon.tools.terminal_tool import set_approval_callback as _set_approval_callback
 
     # Install a non-interactive approval callback on this worker
     # thread so any dangerous-command guard the review agent trips
@@ -802,7 +802,7 @@ def _run_review_in_thread(
             # agent.compression_enabled, so this short-circuits both paths.
             review_agent.compression_enabled = False
 
-            from model_tools import get_tool_definitions
+            from opencodon.tools.model_tools import get_tool_definitions
             from opencodon.plugins_runtime import (
                 set_thread_tool_whitelist,
                 clear_thread_tool_whitelist,
@@ -830,7 +830,7 @@ def _run_review_in_thread(
                 ),
             )
             try:
-                from tools.skill_manager_tool import _reset_background_review_read_marks
+                from opencodon.tools.skill_manager_tool import _reset_background_review_read_marks
 
                 _reset_background_review_read_marks()
             except Exception:

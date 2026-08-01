@@ -214,7 +214,7 @@ class TestSlackApprovalAction:
         mock_client = adapter._team_clients["T1"]
         mock_client.chat_update = AsyncMock()
 
-        with patch("tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
+        with patch("opencodon.tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
             await adapter._handle_approval_action(ack, body, action)
 
         ack.assert_called_once()
@@ -242,7 +242,7 @@ class TestSlackApprovalAction:
             "value": "some-session",
         }
 
-        with patch("tools.approval.resolve_gateway_approval") as mock_resolve:
+        with patch("opencodon.tools.approval.resolve_gateway_approval") as mock_resolve:
             await adapter._handle_approval_action(ack, body, action)
 
         # Should have acked but NOT resolved
@@ -268,7 +268,7 @@ class TestSlackApprovalAction:
         mock_client = adapter._team_clients["T1"]
         mock_client.chat_update = AsyncMock()
 
-        with patch("tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
+        with patch("opencodon.tools.approval.resolve_gateway_approval", return_value=1) as mock_resolve:
             await adapter._handle_approval_action(ack, body, action)
 
         mock_resolve.assert_called_once_with("session-key", "deny")
@@ -299,7 +299,7 @@ class TestSlackApprovalAction:
         mock_client = adapter._team_clients["T1"]
         mock_client.chat_update = AsyncMock()
 
-        with patch("tools.approval.resolve_gateway_approval", return_value=1):
+        with patch("opencodon.tools.approval.resolve_gateway_approval", return_value=1):
             await adapter._handle_approval_action(ack, body, action)
 
         update_kwargs = mock_client.chat_update.call_args[1]
@@ -326,7 +326,7 @@ class TestSlackApprovalAction:
             "value": "agent:main:slack:group:C1:1111",
         }
 
-        with patch("tools.approval.resolve_gateway_approval") as mock_resolve:
+        with patch("opencodon.tools.approval.resolve_gateway_approval") as mock_resolve:
             await adapter._handle_approval_action(ack, body, action)
 
         ack.assert_called_once()
@@ -395,7 +395,7 @@ class TestSlackSlashConfirmAction:
             "value": "agent:main:slack:group:C1:1111|confirm-1",
         }
 
-        with patch("tools.slash_confirm.resolve", new=AsyncMock(return_value="follow-up")) as mock_resolve:
+        with patch("opencodon.tools.slash_confirm.resolve", new=AsyncMock(return_value="follow-up")) as mock_resolve:
             await adapter._handle_slash_confirm_action(ack, body, action)
 
         ack.assert_called_once()
@@ -434,7 +434,7 @@ class TestSlackSlashConfirmAction:
             "value": "agent:main:slack:group:C1:1111|confirm-1",
         }
 
-        with patch("tools.slash_confirm.resolve", new=AsyncMock(return_value="follow-up")):
+        with patch("opencodon.tools.slash_confirm.resolve", new=AsyncMock(return_value="follow-up")):
             await adapter._handle_slash_confirm_action(ack, body, action)
 
         secondary_client.chat_update.assert_awaited_once()
@@ -468,7 +468,7 @@ class TestSlackSlashConfirmAction:
         mock_client.chat_update = AsyncMock()
         mock_client.chat_postMessage = AsyncMock()
 
-        with patch("tools.slash_confirm.resolve", new=AsyncMock(return_value="ok")):
+        with patch("opencodon.tools.slash_confirm.resolve", new=AsyncMock(return_value="ok")):
             await adapter._handle_slash_confirm_action(ack, body, action)
 
         update_kwargs = mock_client.chat_update.call_args[1]

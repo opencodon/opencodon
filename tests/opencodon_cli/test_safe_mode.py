@@ -101,7 +101,7 @@ def test_plugin_discovery_runs_without_safe_mode(monkeypatch):
 
 def test_mcp_servers_empty(monkeypatch):
     monkeypatch.setenv("OPENCODON_SAFE_MODE", "1")
-    from tools.mcp_tool import _load_mcp_config
+    from opencodon.tools.mcp_tool import _load_mcp_config
 
     monkeypatch.setattr(
         "opencodon.config.load_config",
@@ -112,7 +112,7 @@ def test_mcp_servers_empty(monkeypatch):
 
 
 def test_mcp_servers_load_without_safe_mode(monkeypatch):
-    from tools.mcp_tool import _load_mcp_config
+    from opencodon.tools.mcp_tool import _load_mcp_config
 
     monkeypatch.setattr(
         "opencodon.config.load_config",

@@ -19,8 +19,8 @@ from opencodon.core.conversation_compression import (
     _ensure_compressed_has_user_turn,
     compress_context,
 )
-from opencodon_state import SessionDB
-from tools.todo_tool import TODO_INJECTION_HEADER
+from opencodon.state import SessionDB
+from opencodon.tools.todo_tool import TODO_INJECTION_HEADER
 
 
 def _response(content: str) -> SimpleNamespace:
@@ -87,7 +87,7 @@ def _assistant_turns(start: int, count: int) -> list[dict]:
 
 def _lifecycle_agent(db: SessionDB, session_id: str):
     with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",

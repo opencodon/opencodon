@@ -317,7 +317,7 @@ class TestGatewayMode:
         """gateway.log does NOT capture records from tools.*, agent.*, etc."""
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gateway")
 
-        tool_logger = logging.getLogger("tools.terminal_tool")
+        tool_logger = logging.getLogger("opencodon.tools.terminal_tool")
         tool_logger.info("running command")
 
         agent_logger = logging.getLogger("opencodon.core.context_compressor")
@@ -336,7 +336,7 @@ class TestGatewayMode:
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gateway")
 
         gw_logger = logging.getLogger("gateway.run")
-        file_logger = logging.getLogger("tools.file_tools")
+        file_logger = logging.getLogger("opencodon.tools.file_tools")
         # Ensure propagation and levels are clean (cross-test pollution defense)
         gw_logger.propagate = True
         file_logger.propagate = True
@@ -556,7 +556,7 @@ class TestComponentFilter:
     def test_blocks_non_matching(self):
         f = opencodon_logging._ComponentFilter(("gateway",))
         record = logging.LogRecord(
-            "tools.terminal_tool", logging.INFO, "", 0, "msg", (), None
+            "opencodon.tools.terminal_tool", logging.INFO, "", 0, "msg", (), None
         )
         assert f.filter(record) is False
 

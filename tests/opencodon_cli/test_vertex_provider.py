@@ -11,7 +11,7 @@ import pytest
 
 
 def test_vertex_profile_registered():
-    from providers import get_provider_profile
+    from opencodon.providers import get_provider_profile
 
     p = get_provider_profile("vertex")
     assert p is not None
@@ -22,7 +22,7 @@ def test_vertex_profile_registered():
 
 @pytest.mark.parametrize("alias", ["google-vertex", "vertex-ai", "gcp-vertex"])
 def test_vertex_aliases_resolve(alias):
-    from providers import get_provider_profile
+    from opencodon.providers import get_provider_profile
 
     assert get_provider_profile(alias).name == "vertex"
 
@@ -81,7 +81,7 @@ def test_resolve_runtime_provider_raises_autherror_when_unresolved(monkeypatch):
 
 
 def test_vertex_extra_body_thinking_config():
-    from providers import get_provider_profile
+    from opencodon.providers import get_provider_profile
 
     p = get_provider_profile("vertex")
     body = p.build_extra_body(
@@ -94,7 +94,7 @@ def test_vertex_extra_body_thinking_config():
 
 
 def test_vertex_extra_body_empty_without_reasoning():
-    from providers import get_provider_profile
+    from opencodon.providers import get_provider_profile
 
     p = get_provider_profile("vertex")
     assert p.build_extra_body(model="google/gemini-3-flash-preview") == {}

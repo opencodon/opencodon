@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from opencodon_state import SessionDB
+from opencodon.state import SessionDB
 
 
 def _build_agent_with_db(db: SessionDB, session_id: str):
@@ -39,7 +39,7 @@ def _build_agent_with_db(db: SessionDB, session_id: str):
     regardless of the global default.
     """
     with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
-        from run_agent import AIAgent
+        from opencodon.core.run_agent import AIAgent
 
         agent = AIAgent(
             api_key="test-key",
