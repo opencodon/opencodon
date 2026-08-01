@@ -12,8 +12,8 @@ api_messages``). There ``last_head_role`` defaults to ``"user"`` and the
 summary is emitted as ``role="assistant"``.
 
 On a session whose only genuine user turn falls into the compressed
-middle — the canonical shape being a ``opencodon kanban`` worker seeded with
-a single short ``"work kanban task <id>"`` prompt followed by nothing but
+middle — the canonical shape being a headless ``opencodon chat -q`` run
+seeded with a single short prompt followed by nothing but
 assistant/tool turns — the compressed output then contains no user-role
 message at all. OpenAI-compatible backends (vLLM/Qwen) reject such a
 request with a non-retryable ``400 No user query found in messages``,
@@ -78,7 +78,7 @@ def _role_hist(messages: list[dict]) -> dict[str, int]:
 
 
 class TestCompressAlwaysKeepsAUserTurn:
-    def test_kanban_worker_recompaction_keeps_user_turn(self, compressor):
+    def test_headless_worker_recompaction_keeps_user_turn(self, compressor):
         """The exact #58753 shape: no system prompt in the list, a
         re-compaction (``protect_first_n`` decayed to 0), and the only
         user turn old enough to fall into the compressed middle. Before
@@ -91,7 +91,7 @@ class TestCompressAlwaysKeepsAUserTurn:
         # to 0 so compress_start lands at 0 (no protected head).
         c.compression_count = 1
         # No system message: the main loop prepends it separately.
-        messages = [{"role": "user", "content": "work kanban task 42"}]
+        messages = [{"role": "user", "content": "do the task"}]
         messages += _tool_turns(0, 12)
 
         mocked = f"{SUMMARY_PREFIX}\nrolled-up summary of the tool work"
@@ -116,7 +116,7 @@ class TestCompressAlwaysKeepsAUserTurn:
 
         c = compressor
         c.compression_count = 1
-        messages = [{"role": "user", "content": "work kanban task 7"}]
+        messages = [{"role": "user", "content": "do the task"}]
         messages += _tool_turns(0, 12)
 
         mocked = f"{SUMMARY_PREFIX}\nsummary body"
@@ -139,7 +139,7 @@ class TestCompressAlwaysKeepsAUserTurn:
 
         c = compressor
         c.compression_count = 1
-        messages = [{"role": "user", "content": "work kanban task 9"}]
+        messages = [{"role": "user", "content": "do the task"}]
         messages += _tool_turns(0, 12)
 
         mocked = f"{SUMMARY_PREFIX}\nsummary body"

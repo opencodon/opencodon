@@ -9,7 +9,7 @@ loopback (``X-Hermes-Session-Token`` header) and gated OAuth
 
 Plugins that hand-roll ``fetch`` / ``WebSocket`` and read
 ``window.__OPENCODON_SESSION_TOKEN__`` directly send an empty token in gated mode
-and 401/1008. That bug shipped in the kanban and achievements plugins and was
+and 401/1008. That bug shipped in bundled plugins and was
 invisible until the dashboard ran gated on hosted Fly agents.
 
 This test fails if any bundled plugin's frontend reads the token global
@@ -47,14 +47,20 @@ def _plugin_frontend_bundles() -> list[Path]:
     return sorted(_PLUGINS_DIR.glob("*/dashboard/dist/*.js"))
 
 
-def test_there_are_plugin_bundles_to_check() -> None:
-    """Sanity: the glob actually finds the bundles, so a future layout change
-    doesn't silently turn this guard into a no-op."""
+def test_bundle_glob_resolves_plugin_names() -> None:
+    """Sanity: when bundles exist, the glob must resolve their plugin names, so
+    a layout change can't silently turn this guard into a no-op.
+
+    No bundled plugin ships a ``dashboard/dist/`` frontend today — the last one
+    went away with the kanban plugin. The guard is dormant rather than deleted:
+    it re-arms on its own the moment a plugin dashboard lands again, which is
+    exactly when the token-reading footgun comes back. The skip (rather than a
+    hard assert) keeps that dormancy honest and visible in the test report.
+    """
     bundles = _plugin_frontend_bundles()
+    if not bundles:
+        pytest.skip("no plugin ships a dashboard/dist frontend — guard dormant")
     names = {b.parent.parent.parent.name for b in bundles}
-    # kanban + opencodon-achievements are bundled today; assert at least one is
-    # found so the guard can't pass vacuously.
-    assert bundles, "no plugin dashboard bundles found — glob/layout drift?"
     assert names, "could not resolve plugin names from bundle paths"
 
 

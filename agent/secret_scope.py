@@ -103,11 +103,8 @@ _GLOBAL_ENV_EXACT = frozenset({
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
-    # Kanban paths (per-board, not per-profile-secret)
-    "OPENCODON_KANBAN_DB", "OPENCODON_KANBAN_WORKSPACES_ROOT", "OPENCODON_KANBAN_BOARD",
 })
 _GLOBAL_ENV_PREFIXES = (
-    "OPENCODON_KANBAN_",
     "OPENCODON_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
     "TERMINAL_",          # terminal/sandbox backend settings
 )

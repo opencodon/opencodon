@@ -1,6 +1,6 @@
 """Invariants for the authoritative project-tree builder (tui_gateway.project_tree).
 
-These assert structural contracts (worktree folding, kanban collapse, lane id
+These assert structural contracts (worktree folding, lane id
 scheme, membership union) rather than snapshots, so routine data changes don't
 break them.
 """
@@ -103,55 +103,6 @@ def test_linked_worktrees_fold_under_their_common_repo_root():
     linked = next(g for repo in project["repos"] for g in repo["groups"] if not g["isMain"])
     assert linked["id"] == "/elsewhere/wt"
     assert linked["path"] == "/elsewhere/wt"
-
-
-def test_kanban_task_worktrees_collapse_into_one_bucket():
-    resolve = _resolver(
-        {
-            "/repo": ("/repo", "/repo"),
-            "/repo/.worktrees/t_aaaaaaaa": ("/repo", "/repo/.worktrees/t_aaaaaaaa"),
-            "/repo/.worktrees/t_bbbbbbbb": ("/repo", "/repo/.worktrees/t_bbbbbbbb"),
-        }
-    )
-    sessions = [
-        _session("/repo", branch="main"),
-        _session("/repo/.worktrees/t_aaaaaaaa"),
-        _session("/repo/.worktrees/t_bbbbbbbb"),
-    ]
-
-    tree = pt.build_tree([], sessions, [], resolve, hydrate=True)
-    project = tree["projects"][0]
-    kanban = [g for repo in project["repos"] for g in repo["groups"] if g.get("isKanban")]
-
-    assert len(kanban) == 1
-    assert kanban[0]["id"] == "/repo::kanban"
-    assert kanban[0]["path"] == "/repo/.worktrees"
-    assert len(kanban[0]["sessions"]) == 2
-    # The bucket sorts below the real main branch.
-    assert _lane_ids(project)[-1] == "/repo::kanban"
-
-
-def test_user_worktree_under_dotworktrees_is_its_own_lane_not_kanban():
-    # A user "New worktree" lives at <repo>/.worktrees/<slug> (no t_ id), so it
-    # must NOT collapse into the kanban bucket — it gets its own linked lane.
-    resolve = _resolver(
-        {
-            "/repo": ("/repo", "/repo"),
-            "/repo/.worktrees/test-gui-stuff": ("/repo", "/repo/.worktrees/test-gui-stuff"),
-        }
-    )
-    sessions = [
-        _session("/repo", branch="main"),
-        _session("/repo/.worktrees/test-gui-stuff", branch="opencodon/test-gui-stuff"),
-    ]
-
-    tree = pt.build_tree([], sessions, [], resolve, hydrate=True)
-    project = tree["projects"][0]
-    lanes = {g["id"]: g for repo in project["repos"] for g in repo["groups"]}
-
-    assert "/repo/.worktrees/test-gui-stuff" in lanes
-    assert not lanes["/repo/.worktrees/test-gui-stuff"].get("isKanban")
-    assert "/repo::kanban" not in lanes
 
 
 def test_unrecorded_and_recorded_main_share_one_lane():

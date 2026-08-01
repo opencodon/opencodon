@@ -11,7 +11,7 @@
  *
  * Turned OFF: the dashboard runs against the `default` profile only. The
  * backend is untouched — `opencodon -p <name>`, the profile wrapper aliases,
- * gateway multiplexing, and the kanban decomposer's profile routing all keep
+ * gateway multiplexing and profile routing all keep
  * working from the CLI. This flag hides only the *client* surfaces:
  *
  *   - the `/profiles` management page (the route stays reserved so the path is

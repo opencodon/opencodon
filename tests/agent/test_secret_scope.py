@@ -66,11 +66,6 @@ class TestMultiplexActiveFailClosed:
         # No scope, multiplex on — but OPENCODON_HOME is global, so no raise.
         assert ss.get_secret("OPENCODON_HOME") == "/opt/data"
 
-    def test_kanban_prefix_is_global(self, monkeypatch):
-        monkeypatch.setenv("OPENCODON_KANBAN_DB", "/x/kanban.db")
-        ss.set_multiplex_active(True)
-        assert ss.get_secret("OPENCODON_KANBAN_DB") == "/x/kanban.db"
-
 
 class TestScopedSingleProfile:
     """Multiplex OFF with a scope installed: the scope is an overlay, not a

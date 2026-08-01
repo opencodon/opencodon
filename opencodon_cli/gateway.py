@@ -4477,10 +4477,10 @@ def _guard_supervised_gateway_conflict(force: bool = False) -> None:
 
     Running ``opencodon gateway run [--replace]`` (or the manual-restart fallback)
     from a shell on a systemd/launchd host spawns a second, long-lived
-    dispatcher that escapes the service cgroup, survives
-    ``systemctl restart``, and becomes a silent concurrent writer on the shared
-    kanban DB — the documented root cause of multi-writer SQLite WAL corruption
-    (issue #35240). Pass ``--force`` to start anyway.
+    gateway that escapes the service cgroup, survives ``systemctl restart``,
+    and becomes a silent concurrent writer on the shared state DB — the
+    documented root cause of multi-writer SQLite WAL corruption (issue
+    #35240). Pass ``--force`` to start anyway.
     """
     if force or _running_under_gateway_supervisor():
         return
@@ -4497,8 +4497,8 @@ def _guard_supervised_gateway_conflict(force: bool = False) -> None:
         f"A gateway is already running under {snapshot.manager} for this profile."
     )
     print(
-        "  Starting another one from a shell leaves an orphan dispatcher that\n"
-        "  escapes the service, survives restarts, and writes to the same kanban\n"
+        "  Starting another one from a shell leaves an orphan process that\n"
+        "  escapes the service, survives restarts, and writes to the same state\n"
         "  DB concurrently — which can corrupt it. Restart the supervised gateway\n"
         "  instead:"
     )

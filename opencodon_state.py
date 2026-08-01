@@ -180,8 +180,8 @@ MAX_FTS5_QUERY_CHARS = 2_048
 #
 # On those filesystems ``PRAGMA journal_mode=WAL`` raises
 # ``sqlite3.OperationalError: locking protocol`` (SQLITE_PROTOCOL).  If we
-# propagate that, every feature backed by state.db / kanban.db breaks
-# silently — /resume, /title, /history, /branch, kanban dispatcher, etc.
+# propagate that, every feature backed by state.db breaks silently —
+# /resume, /title, /history, /branch, etc.
 #
 # Instead, fall back to ``journal_mode=DELETE`` (the pre-WAL default) which
 # works on NFS.  Concurrency drops — concurrent readers are blocked during
@@ -194,16 +194,15 @@ _WAL_INCOMPAT_MARKERS = (
 # Last SessionDB() init error, per-process.  Surfaced in /resume and
 # related slash-command error strings so users know WHY the DB is
 # unavailable instead of getting a bare "Session database not available."
-# Only SessionDB.__init__ writes to this; kanban_db.connect() failures
-# do not update it (by design — kanban failures are reported via their
-# own caller's error handling, not via /resume-style slash commands).
+# Only SessionDB.__init__ writes to this; other stores report their own
+# connect failures via their caller's error handling, not via
+# /resume-style slash commands.
 _last_init_error: Optional[str] = None
 _last_init_error_lock = threading.Lock()
 
 # Paths for which we've already logged a WAL-fallback WARNING.  Without
-# this, kanban_db.connect() (called on every kanban operation — see
-# opencodon_cli/kanban_db.py for ~30 call sites) would re-log the same
-# filesystem-incompat warning on every connection, filling errors.log.
+# this, a store that opens a fresh connection per operation would re-log
+# the same filesystem-incompat warning every time, filling errors.log.
 _wal_fallback_warned_paths: set[str] = set()
 _wal_fallback_warned_lock = threading.Lock()
 
@@ -424,13 +423,12 @@ def apply_wal_with_fallback(
     log one WARNING explaining why.
 
     The WARNING is deduplicated per ``db_label``: repeated connections
-    to the same underlying DB (e.g. kanban_db.connect() which is called
-    on every kanban operation) log once per process, not once per call.
-    Different db_labels log independently, so state.db and kanban.db
-    each get one warning on the same NFS mount.
+    to the same underlying DB log once per process, not once per call.
+    Different db_labels log independently, so each database gets one
+    warning on the same NFS mount.
 
-    Shared by :class:`SessionDB` and ``opencodon_cli.kanban_db.connect`` so
-    both databases get identical fallback behavior.
+    Shared by :class:`SessionDB` and the other per-profile SQLite stores so
+    every database gets identical fallback behavior.
 
     Never downgrades to DELETE if the on-disk DB header reports WAL — see _on_disk_journal_mode.
     """
@@ -467,9 +465,9 @@ def apply_wal_with_fallback(
 def _log_wal_fallback_once(db_label: str, exc: Exception) -> None:
     """Log a single WARNING per (process, db_label) about WAL fallback.
 
-    Without this dedup, NFS users running kanban (which opens a fresh
-    connection on every operation — see opencodon_cli/kanban_db.py) would
-    fill errors.log with hundreds of identical warnings per hour.
+    Without this dedup, NFS users of a store that opens a fresh connection
+    per operation would fill errors.log with hundreds of identical
+    warnings per hour.
     """
     with _wal_fallback_warned_lock:
         if db_label in _wal_fallback_warned_paths:
@@ -4343,7 +4341,7 @@ class SessionDB:
         cached agent accumulates across messages).
         """
         # Ensure the session row exists so the UPDATE doesn't silently affect
-        # 0 rows.  Under concurrent load (cron + kanban + delegate_task) the
+        # 0 rows.  Under concurrent load (cron + delegate_task) the
         # initial create_session() may have failed due to SQLite locking.
         # INSERT OR IGNORE is cheap and idempotent.
         self._insert_session_row(session_id, "unknown", model=model)

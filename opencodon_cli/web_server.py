@@ -6379,8 +6379,6 @@ _AUX_TASK_SLOTS: Tuple[str, ...] = (
     "approval",
     "mcp",
     "title_generation",
-    "triage_specifier",
-    "kanban_decomposer",
     "profile_describer",
     "curator",
 )
@@ -13966,7 +13964,7 @@ async def update_profile_soul(name: str, body: ProfileSoulUpdate):
 
 @app.put("/api/profiles/{name}/description")
 async def update_profile_description_endpoint(name: str, body: ProfileDescriptionUpdate):
-    """Set or clear a profile's role description (kanban routing signal).
+    """Set or clear a profile's role description.
 
     Empty string clears the description. Non-empty stores it as a
     user-authored description (``description_auto: false``) so the
