@@ -35,7 +35,7 @@ def test_skill_view_uses_live_profile_home_after_module_import(tmp_path, monkeyp
     profile_skill_dir = _write_skill(
         profile_home,
         "software-development",
-        "kanban-orchestrator-operations",
+        "custom-profile-skill",
         "orchestrator profile",
     )
 
@@ -45,11 +45,11 @@ def test_skill_view_uses_live_profile_home_after_module_import(tmp_path, monkeyp
     monkeypatch.setenv("OPENCODON_HOME", str(profile_home))
 
     result = json.loads(
-        skills_tool.skill_view("kanban-orchestrator-operations", preprocess=False)
+        skills_tool.skill_view("custom-profile-skill", preprocess=False)
     )
 
     assert result["success"] is True
-    assert result["name"] == "kanban-orchestrator-operations"
+    assert result["name"] == "custom-profile-skill"
     assert Path(result["skill_dir"]) == profile_skill_dir
     assert "orchestrator profile" in result["content"]
 
@@ -62,7 +62,7 @@ def test_skills_list_uses_live_profile_home_after_module_import(tmp_path, monkey
     _write_skill(
         profile_home,
         "software-development",
-        "kanban-orchestrator-operations",
+        "custom-profile-skill",
         "orchestrator profile",
     )
 
@@ -73,7 +73,7 @@ def test_skills_list_uses_live_profile_home_after_module_import(tmp_path, monkey
     names = {skill["name"] for skill in result["skills"]}
 
     assert result["success"] is True
-    assert "kanban-orchestrator-operations" in names
+    assert "custom-profile-skill" in names
     assert "default-only" not in names
 
 

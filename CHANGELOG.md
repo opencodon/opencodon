@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Removed
+
+- **The kanban multi-agent board is gone.** The `opencodon kanban` command
+  tree, the `/kanban` slash command (CLI and gateway), the `kanban` toolset
+  and its `kanban_*` model tools, the board SQLite kernel, the dispatcher and
+  notifier watchers that ran inside the gateway, the goal-mode worker loop,
+  the `plugins/kanban/` dashboard and systemd unit, and the whole
+  `tests/stress/` suite (which existed only to battle-test the board kernel)
+  have all been removed.
+- Follow-on cleanups: the `kanban` and `triage_specifier` /
+  `kanban_decomposer` config blocks, the `kanban_task_*` plugin hooks, the
+  `OPENCODON_KANBAN_*` environment contract, `project bind-board` and the
+  projects `board_slug` binding, and the sidebar's collapsed kanban worktree
+  lane (`<repoRoot>::kanban`) on both the Python and client side.
+
 ### Changed
 
 - **The science layer is on by default.** `run_code`, `load_artifact`,

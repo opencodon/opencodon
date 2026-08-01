@@ -22,7 +22,6 @@ def main_mod(monkeypatch):
 
     # Credentials present in every test here — these cover the *second* guard.
     monkeypatch.setattr(mod, "_has_any_provider_configured", lambda: True)
-    monkeypatch.setattr(mod, "_pin_kanban_board_env", lambda: None)
     monkeypatch.setattr(mod, "_sync_bundled_skills_for_startup", lambda: None)
     monkeypatch.setattr(mod, "_termux_should_prefetch_update_check", lambda: False)
     monkeypatch.setattr(mod, "_oneshot_cleanup_done", False)

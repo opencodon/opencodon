@@ -187,31 +187,6 @@ VALID_HOOKS: Set[str] = {
     #   decided_by: "aux_llm"  -- only on surface="smart"
     "pre_approval_request",
     "post_approval_response",
-    # Kanban task lifecycle hooks. Fired by opencodon_cli.kanban_db when a task
-    # transitions state, AFTER the change is committed to the board DB (so the
-    # hook always sees durable state and a slow plugin can never hold the
-    # SQLite write lock). Observers only: return values are ignored.
-    #
-    # WHICH PROCESS each fires in matters, because kanban workers run as
-    # separate `opencodon -p <profile> chat -q` subprocesses:
-    #   - kanban_task_claimed   -> the DISPATCHER process (gateway-embedded
-    #                              dispatcher or `opencodon kanban dispatch`),
-    #                              right before the worker subprocess spawns.
-    #   - kanban_task_completed -> the WORKER process, when it calls
-    #                              kanban_complete (or a CLI/manual complete).
-    #   - kanban_task_blocked   -> the WORKER process (worker-initiated block)
-    #                              or whichever process drove the block.
-    # A plugin that needs to observe every transition centrally should hook in
-    # the dispatcher; one that needs per-task in-session context should hook in
-    # the worker.
-    #
-    # Common kwargs: task_id: str, board: str | None, assignee: str | None,
-    #   run_id: int | None, profile_name: str.
-    # kanban_task_completed adds: summary: str | None.
-    # kanban_task_blocked adds:   reason: str | None.
-    "kanban_task_claimed",
-    "kanban_task_completed",
-    "kanban_task_blocked",
 }
 
 ENTRY_POINTS_GROUP = "opencodon_agent.plugins"
@@ -373,7 +348,7 @@ class PluginContext:
         Derived from ``OPENCODON_HOME`` via
         :func:`opencodon_cli.profiles.get_active_profile_name`, so it works in
         every execution context — interactive CLI, gateway, and
-        kanban-spawned worker sessions alike — without depending on
+        spawned worker sessions alike — without depending on
         ``_cli_ref`` (which is ``None`` outside an interactive CLI run).
 
         Returns ``"default"`` for the default profile, the profile id when

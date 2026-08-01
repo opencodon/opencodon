@@ -116,7 +116,7 @@ export const ROUTES_AREA = 'routes'
 
 /** Payload of a `routes` contribution's `data`. */
 export interface RouteContribution {
-  /** Absolute path, e.g. `/kanban`. One segment; no params. */
+  /** Absolute path, e.g. `/settings`. One segment; no params. */
   path: string
 }
 

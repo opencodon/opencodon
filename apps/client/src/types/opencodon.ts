@@ -709,7 +709,6 @@ export interface ProjectInfo {
   description: null | string
   icon: null | string
   color: null | string
-  board_slug: null | string
   primary_path: null | string
   /** Free text injected into every agent's system prompt for this project.
    *  `description` is the human-facing blurb and never reaches a prompt. */

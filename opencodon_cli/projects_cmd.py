@@ -1,9 +1,8 @@
 """``opencodon project`` CLI — manage first-class, multi-folder Projects.
 
 A Project is a human-named workspace spanning one or more folders, with one
-designated primary repo. Projects anchor desktop session grouping and (when
-bound to a kanban board) give kanban tasks a deterministic worktree + branch
-convention. State lives in the per-profile ``$OPENCODON_HOME/projects.db`` store
+designated primary repo. Projects anchor desktop session grouping. State
+lives in the per-profile ``$OPENCODON_HOME/projects.db`` store
 (see :mod:`opencodon_cli.projects_db`).
 
 This is a footprint-ladder rung-2 capability: a CLI command + gateway RPC,
@@ -28,9 +27,8 @@ def build_parser(
         help="Manage projects (named, multi-folder workspaces)",
         description=(
             "Projects are human-named workspaces that can span multiple "
-            "folders / repos. They anchor desktop session grouping and, when "
-            "bound to a kanban board, give tasks a deterministic worktree + "
-            "branch convention. State is per-profile."
+            "folders / repos. They anchor desktop session grouping. "
+            "State is per-profile."
         ),
     )
     sub = parser.add_subparsers(dest="project_action")
@@ -47,9 +45,6 @@ def build_parser(
     p_create.add_argument("--description", default=None)
     p_create.add_argument("--icon", default=None)
     p_create.add_argument("--color", default=None)
-    p_create.add_argument(
-        "--board", default=None, metavar="SLUG", help="Bind a kanban board"
-    )
     p_create.add_argument(
         "--use", action="store_true", help="Set as the active project"
     )
@@ -95,12 +90,6 @@ def build_parser(
     p_restore = sub.add_parser("restore", help="Restore an archived project")
     p_restore.add_argument("project", help="Project id or slug")
 
-    p_bind = sub.add_parser("bind-board", help="Bind a kanban board to a project")
-    p_bind.add_argument("project", help="Project id or slug")
-    p_bind.add_argument(
-        "board", nargs="?", default="", help="Board slug (omit to unbind)"
-    )
-
     parser.set_defaults(_project_parser=parser)
     return parser
 
@@ -132,7 +121,6 @@ def projects_command(args: argparse.Namespace) -> int:
         "use": _cmd_use,
         "archive": _cmd_archive,
         "restore": _cmd_restore,
-        "bind-board": _cmd_bind_board,
     }
     handler = handlers.get(action)
     if handler is None:
@@ -176,8 +164,6 @@ def _print_project(proj) -> None:
     print(f"  name:    {proj.name}")
     if proj.description:
         print(f"  about:   {proj.description}")
-    if proj.board_slug:
-        print(f"  board:   {proj.board_slug}")
     if proj.primary_path:
         print(f"  primary: {proj.primary_path}")
     if proj.folders:
@@ -200,7 +186,6 @@ def _cmd_create(args: argparse.Namespace) -> int:
                 description=args.description,
                 icon=args.icon,
                 color=args.color,
-                board_slug=args.board,
             )
             if args.use:
                 pdb.set_active(conn, pid)
@@ -303,33 +288,3 @@ def _cmd_restore(args, conn, proj) -> int:
     return 0
 
 
-@_with_project
-def _cmd_bind_board(args, conn, proj) -> int:
-    pdb.update_project(conn, proj.id, board_slug=args.board)
-    if args.board.strip():
-        print(f"Bound {proj.slug} -> board {args.board}")
-        _sync_board_default_workdir(proj, args.board)
-    else:
-        print(f"Unbound board from {proj.slug}")
-    return 0
-
-
-def _sync_board_default_workdir(proj, board_slug: str) -> None:
-    """Best-effort: point the bound board's default_workdir at the primary repo.
-
-    Keeps kanban task worktrees anchored to the project's repo. Failures here
-    are non-fatal — the binding itself already succeeded.
-    """
-    if not proj.primary_path:
-        return
-    try:
-        from opencodon_cli import kanban_db as kb
-
-        slug = kb._normalize_board_slug(board_slug)
-        if not slug:
-            return
-        if slug != kb.DEFAULT_BOARD and not kb.board_exists(slug):
-            return
-        kb.write_board_metadata(slug, default_workdir=proj.primary_path)
-    except Exception:
-        pass

@@ -253,8 +253,8 @@ def _wants_tui_early(argv: "list[str] | None" = None) -> bool:
     non-interactive stdio can't host the Ink UI, so ambient config never
     boots it there), then ``display.interface`` in config.
 
-    The TTY gate is load-bearing for headless spawners — kanban workers,
-    cron jobs, pipes run ``opencodon … chat -q`` with stdio on a pipe. This
+    The TTY gate is load-bearing for headless spawners — cron jobs and
+    pipes run ``opencodon … chat -q`` with stdio on a pipe. This
     is the earliest launch decision (it runs before ``cmd_chat`` /
     ``_resolve_use_tui``), so a ``display.interface: tui`` default used to
     boot the TUI here — whose no-TTY bail-out exits 0 without doing the
@@ -2369,27 +2369,6 @@ def _launch_tui(
     sys.exit(code)
 
 
-def _pin_kanban_board_env() -> None:
-    """Pin the active kanban board into ``OPENCODON_KANBAN_BOARD`` for the chat session.
-
-    Without this, in-process tools (``kanban_*``) and shelled-out CLI calls
-    (``opencodon kanban …``) resolve the board on different paths: the env-pin if
-    set, otherwise the global ``<root>/kanban/current`` file. A concurrent
-    ``opencodon kanban boards switch`` from another session can flip the file
-    mid-turn, so the same chat sees its tool calls hit board A while its shell
-    calls hit board B (#20074). Pinning at chat boot mirrors what the
-    dispatcher already does for spawned workers.
-    """
-    if os.environ.get("OPENCODON_KANBAN_BOARD"):
-        return
-    try:
-        from opencodon_cli.kanban_db import get_current_board
-
-        os.environ["OPENCODON_KANBAN_BOARD"] = get_current_board()
-    except Exception:
-        pass
-
-
 def _sync_bundled_skills_quietly() -> None:
     """Seed ``~/.opencodon/skills/`` with the bundled skill library on first launch.
 
@@ -2425,13 +2404,12 @@ def _resolve_use_tui(args) -> bool:
     working regardless of the configured default.
 
     The TTY gate (3) is load-bearing: ambient TUI preferences (env var or
-    config default) must never hijack a NON-interactive invocation. Kanban
-    workers, cron jobs, and pipelines run ``opencodon … chat -q`` with stdout
-    on a pipe; booting the Ink TUI there hits its no-TTY bail-out, which
-    prints a resume hint and exits 0 — a kanban worker then dies with
-    "exited cleanly without calling kanban_complete — protocol violation"
-    on every attempt (found dogfooding the desktop kanban board). A user
-    who *explicitly* passes ``--tui`` still gets the informative bail-out.
+    config default) must never hijack a NON-interactive invocation. Cron
+    jobs and pipelines run ``opencodon … chat -q`` with stdout on a pipe;
+    booting the Ink TUI there hits its no-TTY bail-out, which prints a
+    resume hint and exits 0 — so the requested work silently never runs.
+    A user who *explicitly* passes ``--tui`` still gets the informative
+    bail-out.
     """
     if getattr(args, "cli", False):
         return False
@@ -2628,8 +2606,6 @@ def cmd_chat(args):
     # --source: tag session source for filtering (e.g. 'tool' for third-party integrations)
     if getattr(args, "source", None):
         os.environ["OPENCODON_SESSION_SOURCE"] = args.source
-
-    _pin_kanban_board_env()
 
     if use_tui:
         _launch_tui(
@@ -3479,8 +3455,6 @@ _AUX_TASKS: list[tuple[str, str, str]] = [
     ("memory_query_rewrite", "Memory query rewrite", "memory retrieval queries"),
     ("tts_audio_tags", "TTS audio tags", "Gemini TTS tag insertion"),
     ("skills_hub", "Skills hub", "skills search/install"),
-    ("triage_specifier", "Triage specifier", "kanban spec fleshing"),
-    ("kanban_decomposer", "Kanban decomposer", "task decomposition"),
     ("profile_describer", "Profile describer", "auto profile descriptions"),
     ("curator", "Curator", "skill-usage review pass"),
 ]
@@ -4529,13 +4503,6 @@ def cmd_slack(args):
 
     print(f"Unknown slack subcommand: {sub}", file=sys.stderr)
     return 1
-
-
-def cmd_kanban(args):
-    """Multi-profile collaboration board."""
-    from opencodon_cli.kanban import kanban_command
-
-    return kanban_command(args)
 
 
 def cmd_project(args):
@@ -12180,9 +12147,8 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "describe":
-        # Read or write a profile's description. The description is
-        # consumed by the kanban decomposer to route tasks based on
-        # role instead of name alone.
+        # Read or write a profile's description. The description lets
+        # other surfaces route work by role instead of name alone.
         from opencodon_cli import profiles as _profiles_mod
 
         all_flag = bool(getattr(args, "all_missing", False))
@@ -13295,7 +13261,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
-        "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "moa",
+        "gui", "desktop", "login", "logout", "logs", "lsp", "mcp", "memory", "moa",
         "model", "pairing", "plugins", "profile",
         "project", "proxy",
         "prompt-size",
@@ -13595,7 +13561,7 @@ def _try_termux_fast_tui_launch() -> bool:
     """Launch obvious Termux TUI invocations before building every subparser.
 
     `opencodon --tui` is the hot path on phones. The full parser setup imports
-    command modules for model, fallback, migrate, kanban, bundles, plugins,
+    command modules for model, fallback, migrate, bundles, plugins,
     etc. even though the TUI immediately execs Node. On Termux only, parse the
     lightweight top-level/chat parser and hand off to ``cmd_chat`` when the
     invocation is unambiguously the built-in TUI/chat path.
@@ -14014,14 +13980,6 @@ def main():
     # webhook command  (parser built in opencodon_cli/subcommands/webhook.py)
     # =========================================================================
     build_webhook_parser(subparsers, cmd_webhook=cmd_webhook)
-
-    # =========================================================================
-    # kanban command — multi-profile collaboration board
-    # =========================================================================
-    from opencodon_cli.kanban import build_parser as _build_kanban_parser
-
-    kanban_parser = _build_kanban_parser(subparsers)
-    kanban_parser.set_defaults(func=cmd_kanban)
 
     # =========================================================================
     # project command — named, multi-folder workspaces

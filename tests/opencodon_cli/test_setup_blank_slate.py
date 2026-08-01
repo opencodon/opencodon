@@ -31,8 +31,6 @@ class TestBlankSlateMinimalToolsets:
         for ts in ("web", "browser", "code_execution", "vision", "memory",
                    "delegation", "cronjob", "skills", "image_gen"):
             assert ts in disabled
-        # The recovered non-configurable toolset that used to leak is suppressed.
-        assert "kanban" in disabled
 
     def test_disabled_toolsets_excludes_posture_toolsets(self):
         """Posture toolsets (e.g. coding) are session-level selections made by

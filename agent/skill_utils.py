@@ -230,7 +230,7 @@ def skill_matches_platform(frontmatter: Dict[str, Any]) -> bool:
 # ``--skills``), because an explicit request is explicit consent.
 #
 # Detection is cached for the process lifetime via ``_ENV_DETECT_CACHE``.
-_KNOWN_ENVIRONMENTS = frozenset({"kanban", "docker", "s6"})
+_KNOWN_ENVIRONMENTS = frozenset({"docker", "s6"})
 
 _ENV_DETECT_CACHE: Dict[str, bool] = {}
 
@@ -245,23 +245,7 @@ def _detect_environment(env: str) -> bool:
         return _ENV_DETECT_CACHE[env]
 
     result = True
-    if env == "kanban":
-        # Kanban is "active" either as a dispatcher-spawned worker (the
-        # dispatcher sets ``OPENCODON_KANBAN_TASK`` / ``OPENCODON_KANBAN_BOARD`` in the
-        # worker env) or as an orchestrator profile that has opted into the
-        # kanban toolset. Mirror the same signals the kanban tools themselves
-        # gate on (``tools/kanban_tools.py``) so the offer filter agrees with
-        # tool availability.
-        if os.getenv("OPENCODON_KANBAN_TASK") or os.getenv("OPENCODON_KANBAN_BOARD"):
-            result = True
-        else:
-            try:
-                from tools.kanban_tools import _profile_has_kanban_toolset
-
-                result = bool(_profile_has_kanban_toolset())
-            except Exception:
-                result = False
-    elif env == "docker":
+    if env == "docker":
         try:
             from opencodon_constants import is_container
 
@@ -286,7 +270,6 @@ def skill_matches_environment(frontmatter: Dict[str, Any]) -> bool:
 
     Skills may declare an ``environments`` list in their YAML frontmatter::
 
-        environments: [kanban]        # only relevant when kanban is active
         environments: [s6]            # only relevant inside the s6 Docker image
         environments: [docker]        # only relevant inside any container
 

@@ -166,10 +166,8 @@ function RepoFlatSection({
         <SidebarWorkspaceGroup
           group={group}
           key={group.id}
-          // The kanban bucket is read-only: it aggregates many task worktrees, so
-          // "new session here" and "remove worktree" have no single target.
-          onNewSession={group.isKanban ? undefined : onNewSession}
-          onRemove={group.isMain || group.isKanban ? undefined : () => setRemoveTarget(group)}
+          onNewSession={onNewSession}
+          onRemove={group.isMain ? undefined : () => setRemoveTarget(group)}
           renderRows={renderRows}
         />
       ))}

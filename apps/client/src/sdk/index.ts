@@ -98,7 +98,7 @@ export const host = {
   /** One-shot system status snapshot (platforms, versions, …). */
   status: async () => getStatus(),
 
-  /** Gateway JSON-RPC — sessions, config, skills, cron, kanban, everything
+  /** Gateway JSON-RPC — sessions, config, skills, cron, everything
    *  the app itself uses. Lazy: resolves the LIVE socket per call. */
   request: async <T>(method: string, params: Record<string, unknown> = {}): Promise<T> => {
     const gateway = $gateway.get()
@@ -191,7 +191,7 @@ export type {
  *  children render in the target area's slot; unmount disposes it. Use for
  *  page-owned chrome (a page's titlebar control leaves with the page) —
  *  `ctx.register` stays the door for permanent contributions. Namespace the
- *  id with your plugin slug (`kanban:board-switcher`). */
+ *  id with your plugin slug (`my-plugin:widget`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
 export type { Contribution } from '@/contrib/types'
 /** Localized copy. `useI18n` reuses the app's strings; `usePluginI18n(id)` +

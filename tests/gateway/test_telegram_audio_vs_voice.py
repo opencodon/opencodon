@@ -29,7 +29,6 @@ def _make_runner(stt_enabled: bool = True) -> "GatewayRunner":  # type: ignore[n
     runner.adapters = {}
     runner._model = "test-model"
     runner._base_url = ""
-    runner._has_setup_skill = lambda: False
     return runner
 
 

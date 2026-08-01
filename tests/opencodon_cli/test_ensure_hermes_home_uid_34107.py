@@ -3,7 +3,7 @@
 When opencodon runs in Docker with ``OPENCODON_UID=1000`` / ``OPENCODON_GID=911``,
 the entrypoint chowns the top-level ``OPENCODON_HOME`` once at startup. But
 subdirectories created at runtime by ``ensure_opencodon_home()`` — especially
-for profile namespaces under ``profiles/<name>/`` spawned by kanban
+for profile namespaces under ``profiles/<name>/`` spawned by
 workers — were landing as ``root:root`` and blocking subsequent
 uid-mapped worker invocations with ``PermissionError [Errno 13]``.
 

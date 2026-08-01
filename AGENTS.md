@@ -251,7 +251,6 @@ opencodon/
 │   ├── memory/           # Memory-provider plugins (none bundled; user-installed)
 │   ├── context_engine/   # Context-engine plugins
 │   ├── model-providers/  # Inference backend plugins (openrouter, anthropic, gmi, ...)
-│   ├── kanban/           # Multi-agent board dispatcher + worker plugin
 │   ├── opencodon-achievements/  # Gamified achievement tracking
 │   ├── observability/    # Metrics / traces / logs plugin
 │   ├── image_gen/        # Image-generation providers
@@ -808,7 +807,7 @@ don't own. Promote standalone plugins in the Nous Research Discord
 (`#plugins-skills-and-skins`). PRs that add such a directory under
 `plugins/` are closed with a pointer to publish it as its own repo —
 this is a coupling decision, not a quality judgment. (The
-`observability/`, `kanban/`, `disk-cleanup/`, etc. directories already
+`observability/`, `disk-cleanup/`, etc. directories already
 in the tree are existing precedent, not an invitation to add more
 third-party-product plugins alongside them.)
 
@@ -970,7 +969,7 @@ platforms inherit from.
 
 Current toolset keys: `browser`, `clarify`, `code_execution`, `cronjob`,
 `debugging`, `delegation`, `discord`, `discord_admin`, `feishu_doc`,
-`feishu_drive`, `file`, `homeassistant`, `image_gen`, `kanban`, `memory`,
+`feishu_drive`, `file`, `homeassistant`, `image_gen`, `memory`,
 `messaging`, `moa`, `rl`, `safe`, `search`, `session_search`, `skills`,
 `terminal`, `todo`, `tts`, `video`, `vision`, `web`, `yuanbao`.
 
@@ -1082,49 +1081,6 @@ Hardening invariants:
 Cron deliveries are **not** mirrored into the target gateway session —
 they land in their own cron session with a header/footer frame so the
 main conversation's message-role alternation stays intact.
-
----
-
-## Kanban (multi-agent work queue)
-
-Durable SQLite-backed board that lets multiple profiles / workers
-collaborate on shared tasks. Users drive it via `opencodon kanban <verb>`;
-workers spawned by the dispatcher drive it via a dedicated `kanban_*`
-toolset so their schema footprint is zero when they're not inside a
-kanban task.
-
-- **CLI:** `opencodon_cli/kanban.py` wires `opencodon kanban` with verbs
-  `init`, `create`, `list` (alias `ls`), `show`, `assign`, `link`,
-  `unlink`, `comment`, `attach`, `attachments`, `attach-rm`, `complete`,
-  `block`, `unblock`, `archive`, `tail`, plus less-commonly-used `watch`,
-  `stats`, `runs`, `log`, `assignees`, `heartbeat`, `notify-*`,
-  `dispatch`, `daemon`, `gc`.
-- **Worker/orchestrator toolset:** `tools/kanban_tools.py` exposes
-  `kanban_show`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`,
-  `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_attach`,
-  `kanban_attach_url`, `kanban_attachments`; profiles that explicitly
-  enable the `kanban` toolset outside a dispatcher-spawned task also get
-  `kanban_list` and `kanban_unblock` for board routing.
-- **Dispatcher:** long-lived loop that (default every 60s) reclaims
-  stale claims, promotes ready tasks, atomically claims, and spawns
-  assigned profiles. Runs **inside the gateway** by default via
-  `kanban.dispatch_in_gateway: true`.
-- **Plugin assets:** `plugins/kanban/dashboard/` (web UI) +
-  `plugins/kanban/systemd/` (`opencodon-kanban-dispatcher.service` for
-  standalone dispatcher deployment).
-
-Isolation model:
-- **Board** is the hard boundary — workers are spawned with
-  `OPENCODON_KANBAN_BOARD` pinned in their env so they can't see other
-  boards.
-- **Tenant** is a soft namespace *within* a board — one specialist
-  fleet can serve multiple businesses with workspace-path + memory-key
-  isolation.
-- After `kanban.failure_limit` consecutive non-success attempts on the
-  same task (default: 2), the dispatcher auto-blocks it to prevent spin
-  loops.
-
-Full user-facing docs: `website/docs/user-guide/features/kanban.md`.
 
 ---
 

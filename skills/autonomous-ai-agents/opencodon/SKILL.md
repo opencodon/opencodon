@@ -241,7 +241,6 @@ opencodon desktop / gui        Launch the native desktop app
 opencodon dashboard            Web admin panel + embedded chat
 opencodon proxy                OpenAI-compatible local proxy backed by an OAuth provider
 opencodon portal               Quick setup / sign in via Nous Portal
-opencodon kanban <verb>        Multi-agent work-queue board (init/create/list/show/assign/…)
 opencodon pairing list/approve/revoke  DM authorization
 opencodon plugins list/install/remove  Plugin management
 opencodon secrets bitwarden …  External secret store (Bitwarden Secrets Manager)
@@ -314,7 +313,6 @@ The registry of record is `opencodon_cli/commands.py` — every consumer
 /reload-mcp          Reload MCP servers
 /cron                Manage cron jobs (CLI)
 /curator [sub]       Background skill maintenance (status, run, pin, archive, …)
-/kanban [sub]        Multi-profile collaboration board (tasks, links, comments)
 /plugins             List plugins (CLI)
 ```
 
@@ -451,7 +449,6 @@ Enable/disable via `opencodon tools` (interactive) or `opencodon tools enable/di
 | `clarify` | Ask user clarifying questions |
 | `messaging` | Cross-platform message sending |
 | `todo` | In-session task planning and tracking |
-| `kanban` | Multi-agent work-queue tools (gated to workers) |
 | `debugging` | Extra introspection/debug tools (off by default) |
 | `safe` | Minimal, low-risk toolset for locked-down sessions |
 | `spotify` | Spotify playback and playlist control |
@@ -762,35 +759,6 @@ so nothing is lost.
 
 Config: `curator.*` (`enabled`, `interval_hours`, `min_idle_hours`,
 `stale_after_days`, `archive_after_days`, `backup.*`).
-User docs: https://github.com/opencodon/opencodon/tree/main/docs
-
-### Kanban (multi-agent work queue)
-
-Durable SQLite board for multi-profile / multi-worker collaboration.
-Users drive it via `opencodon kanban <verb>`; dispatcher-spawned workers
-see a focused `kanban_*` toolset gated by `OPENCODON_KANBAN_TASK`, and
-orchestrator profiles can opt into the broader `kanban` toolset. Normal
-sessions still have zero `kanban_*` schema footprint unless configured.
-
-- **CLI verbs (common):** `init`, `create`, `list` (alias `ls`),
-  `show`, `assign`, `link`, `unlink`, `comment`, `complete`, `block`,
-  `unblock`, `archive`, `tail`. Less common: `watch`, `stats`, `runs`,
-  `log`, `dispatch`, `daemon`, `gc`.
-- **Worker/orchestrator toolset:** `kanban_show`, `kanban_complete`,
-  `kanban_block`, `kanban_heartbeat`, `kanban_comment`, `kanban_create`,
-  `kanban_link`; profiles that explicitly enable the `kanban` toolset
-  outside a dispatcher-spawned task also get `kanban_list` and
-  `kanban_unblock` for board routing.
-- **Dispatcher** runs inside the gateway by default
-  (`kanban.dispatch_in_gateway: true`) — reclaims stale claims,
-  promotes ready tasks, atomically claims, spawns assigned profiles.
-  Auto-blocks a task after `failure_limit` consecutive spawn failures
-  (default 2; configurable via `kanban.failure_limit` or per-task
-  `max_retries`).
-- **Isolation:** board is the hard boundary (workers get
-  `OPENCODON_KANBAN_BOARD` pinned in env); tenant is a soft namespace
-  within a board for workspace-path + memory-key isolation.
-
 User docs: https://github.com/opencodon/opencodon/tree/main/docs
 
 ---

@@ -26,7 +26,7 @@ function ProjectedNode({ $node }: { $node: WritableAtom<ReactNode> }) {
 export interface ContributeProps {
   /** Target area id (e.g. `titleBar.center`). */
   area: string
-  /** Stable contribution id — namespace it (`kanban:board-switcher`). */
+  /** Stable contribution id — namespace it (`my-plugin:widget`). */
   id: string
   order?: number
   children: ReactNode

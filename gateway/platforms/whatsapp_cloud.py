@@ -76,7 +76,6 @@ from gateway.platforms.base import (
     MessageEvent,
     MessageType,
     SendResult,
-    SUPPORTED_DOCUMENT_TYPES,
 )
 from gateway.platforms.whatsapp_common import WhatsAppBehaviorMixin
 from gateway import rich_sent_store
@@ -210,10 +209,8 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         self._phone_number_id: str = str(extra.get("phone_number_id", "")).strip()
         self._access_token: str = str(extra.get("access_token", "")).strip()
 
-        # Optional / used in later phases
-        self._app_id: str = str(extra.get("app_id", "")).strip()
+        # Optional
         self._app_secret: str = str(extra.get("app_secret", "")).strip()
-        self._waba_id: str = str(extra.get("waba_id", "")).strip()
         self._verify_token: str = str(extra.get("verify_token", "")).strip()
 
         # Webhook server config

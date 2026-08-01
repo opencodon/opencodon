@@ -15,7 +15,6 @@ def _make_runner() -> "GatewayRunner":  # type: ignore[name-defined]
     runner = GatewayRunner.__new__(GatewayRunner)
     runner.config = GatewayConfig()
     runner.adapters = {}
-    runner._has_setup_skill = lambda: False
     return runner
 
 
