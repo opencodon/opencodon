@@ -1079,33 +1079,10 @@ def _profile_cache_roots() -> List[Path]:
     return roots
 
 
-def _kanban_attachment_roots() -> List[Path]:
-    """Return durable Kanban attachment roots without importing kanban_db."""
-    override = os.environ.get("OPENCODON_KANBAN_ATTACHMENTS_ROOT", "").strip()
-    if override:
-        return [Path(override).expanduser()]
-    home_override = os.environ.get("OPENCODON_KANBAN_HOME", "").strip()
-    root = Path(home_override).expanduser() if home_override else _OPENCODON_ROOT
-    roots = [root / "kanban" / "attachments"]
-    boards_root = root / "kanban" / "boards"
-    try:
-        board_dirs = [
-            path for path in boards_root.iterdir()
-            if path.is_dir() and not path.is_symlink()
-            and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", path.name)
-            and (path / "kanban.db").is_file()
-        ]
-    except OSError:
-        return roots
-    roots.extend(path / "attachments" for path in board_dirs)
-    return roots
-
-
 def _media_delivery_allowed_roots() -> List[Path]:
     """Return roots from which model-emitted local media may be delivered."""
     roots = [Path(root) for root in MEDIA_DELIVERY_SAFE_ROOTS]
     roots.extend(_profile_cache_roots())
-    roots.extend(_kanban_attachment_roots())
     extra_roots = os.environ.get(MEDIA_DELIVERY_ALLOW_DIRS_ENV, "")
     for chunk in extra_roots.split(os.pathsep):
         for raw_root in chunk.split(","):
@@ -1198,7 +1175,7 @@ def _media_delivery_denied_paths() -> List[Path]:
     # The write side already denies it (file_tools _check_sensitive_path);
     # this pairs the media-delivery (exfil) side so a prompt-injection MEDIA
     # tag can't deliver a live bearer token as a native attachment.
-    # (session/kanban SQLite stores are handled by #41071 — kept out here.)
+    # (session SQLite stores are handled by #41071 — kept out here.)
     _ROOT_CREDENTIAL_DIRS = (
         "pairing",
         "mcp-tokens",
@@ -2682,84 +2659,6 @@ class BasePlatformAdapter(ABC):
             f"{type(self).__name__} does not implement send_draft"
         )
 
-    # ── Structured stream-event rendering ────────────────────────────────
-    #
-    # These methods let an adapter decide *how* to present each structured
-    # streaming event (see gateway/stream_events.py).  The default
-    # implementations reproduce the historical behavior exactly: assistant
-    # text/commentary/segment events delegate to the stream consumer, and
-    # tool events render the same "emoji tool_name: preview" chrome the
-    # gateway has always produced.  Adapters override these to be more native
-    # to their platform (e.g. Telegram streaming a MarkdownV2 ```bash``` block
-    # as a draft; iMessage eating tool chrome it cannot format).
-    #
-    # The contract is presentation-only: nothing rendered here is persisted to
-    # conversation history.  History is owned by the agent; what an adapter
-    # chooses to "eat" must never change the bytes the agent stored.
-
-    def render_message_event(self, event: Any, sink: Any) -> None:
-        """Render a MessageChunk / MessageStop / Commentary onto the sink.
-
-        Default: map onto the stream consumer's existing primitives, preserving
-        today's behavior 1:1.  ``sink`` is a GatewayStreamConsumer.
-        """
-        from gateway.stream_events import MessageChunk, MessageStop, Commentary
-
-        if isinstance(event, MessageChunk):
-            if event.text:
-                sink.on_delta(event.text)
-        elif isinstance(event, MessageStop):
-            # An intermediate stop (text → tool → text) is a segment break;
-            # the terminal stop is signalled by the gateway via finish(),
-            # not here, so we only break segments on non-final stops.
-            if not event.final:
-                sink.on_segment_break()
-        elif isinstance(event, Commentary):
-            if event.text:
-                sink.on_commentary(event.text)
-
-    def format_tool_event(self, event: Any, *, mode: str = "all",
-                          preview_max_len: int = 40) -> Optional[str]:
-        """Return the rendered chrome for a ToolCallChunk, or None to eat it.
-
-        Reproduces the gateway's historical tool-progress formatting: an emoji
-        for the tool, the tool name, and a short argument preview (or the full
-        args dict in ``verbose`` mode).  Adapters that cannot render tool chrome
-        (no message editing, plain-text only) should override to return None so
-        the event is dropped rather than spamming separate bubbles.
-
-        ``mode`` is the resolved tool-progress mode ("all" / "new" / "verbose");
-        ``preview_max_len`` mirrors the ``tool_preview_length`` config (0 means
-        "no cap" in verbose mode).
-        """
-        from gateway.stream_events import ToolCallChunk
-        if not isinstance(event, ToolCallChunk):
-            return None
-
-        from agent.display import get_tool_emoji
-        emoji = get_tool_emoji(event.tool_name, default="⚙️")
-
-        if mode == "verbose":
-            if event.args:
-                import json
-                args_str = json.dumps(event.args, ensure_ascii=False, default=str)
-                if preview_max_len > 0 and len(args_str) > preview_max_len:
-                    args_str = args_str[:preview_max_len - 3] + "..."
-                return f"{emoji} {event.tool_name}({list(event.args.keys())})\n{args_str}"
-            if event.preview:
-                return f"{emoji} {event.tool_name}: \"{event.preview}\""
-            return f"{emoji} {event.tool_name}..."
-
-        # "all" / "new": short preview, capped (default 40 to keep gateway
-        # progress bubbles compact — they persist as permanent messages).
-        preview = event.preview
-        if preview:
-            cap = preview_max_len if preview_max_len > 0 else 40
-            if len(preview) > cap:
-                preview = preview[:cap - 3] + "..."
-            return f"{emoji} {event.tool_name}: \"{preview}\""
-        return f"{emoji} {event.tool_name}..."
-
     @property
     def has_fatal_error(self) -> bool:
         return self._fatal_error_message is not None
@@ -3705,7 +3604,6 @@ class BasePlatformAdapter(ABC):
         ``MEDIA:`/path/to/file.png` ``) to avoid breaking path extraction.
         """
         chars = list(content)
-        n = len(chars)
 
         # Build list of (start, end) spans to mask
         spans: list = []

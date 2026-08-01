@@ -45,7 +45,8 @@ def _add_server_runtime_args(parser) -> None:
         help=(
             "Skip the web UI build step and serve the existing dist directly. "
             "Useful for non-interactive contexts (Windows Scheduled Tasks, CI) "
-            "where npm may not be available. Pre-build with: cd web && npm run build"
+            "where npm may not be available. Pre-build with: "
+            "npm run build --workspace @opencodon/web"
         ),
     )
     parser.add_argument(

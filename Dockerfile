@@ -115,11 +115,12 @@ WORKDIR /opt/opencodon
 # apps/tui/package.json.  Copying the tree up front lets npm resolve the
 # workspace to real content instead of stopping at a bare package.json.
 COPY package.json package-lock.json ./
-COPY web/package.json web/
+COPY apps/web/package.json apps/web/
+COPY apps/client/package.json apps/client/
 COPY apps/tui/package.json apps/tui/
 COPY apps/tui/packages/opencodon-ink/ apps/tui/packages/opencodon-ink/
-# apps/shared/ is copied IN FULL because web/package.json references it as a
-# `file:` workspace dependency (same pattern as opencodon-ink above).
+# apps/shared/ is copied IN FULL because apps/web/package.json references it as
+# a `file:` workspace dependency (same pattern as opencodon-ink above).
 COPY apps/shared/ apps/shared/
 
 # `npm_config_install_links=false` forces npm to install `file:` deps as
@@ -172,12 +173,13 @@ RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra 
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't
-# invalidate the (relatively slow) web + apps/tui build layer.
-COPY web/ web/
+# invalidate the (relatively slow) apps/web + apps/tui build layer.
+COPY apps/web/ apps/web/
+COPY apps/client/ apps/client/
 COPY apps/tui/ apps/tui/
 COPY apps/shared/ apps/shared/
-RUN cd web && npm run build && \
-    cd ../apps/tui && npm run build
+RUN (cd apps/web && npm run build) && \
+    (cd apps/tui && npm run build)
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.

@@ -5255,7 +5255,7 @@ def _make_agent(
             missing_display = ", ".join(missing_skills)
             # Degrade gracefully when some skills loaded; only hard-fail when
             # every requested skill is missing. Mirrors cli.py — a typo'd skill
-            # name should not crash the worker and auto-block the Kanban task.
+            # name should not crash the worker.
             if loaded_skills:
                 logger.warning(
                     "Unknown skill(s) requested, skipping: %s. "
@@ -11035,7 +11035,6 @@ def _(rid, params, pdb, conn) -> dict:
         description=params.get("description"),
         icon=params.get("icon"),
         color=params.get("color"),
-        board_slug=params.get("board_slug"),
         context=params.get("context"),
     )
     if params.get("use"):
@@ -11054,7 +11053,6 @@ def _(rid, params, pdb, conn) -> dict:
         description=params.get("description"),
         icon=params.get("icon"),
         color=params.get("color"),
-        board_slug=params.get("board_slug"),
         context=params.get("context"),
     )
     return _ok(rid, {"project": pdb.get_project(conn, proj.id).to_dict()})

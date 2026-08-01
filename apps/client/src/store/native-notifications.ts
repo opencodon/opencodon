@@ -129,7 +129,7 @@ function shouldFire(kind: NativeNotificationKind, sessionId?: null | string, glo
   }
 
   // Completion kinds: only the active session, only while away — so a busy
-  // gateway (messaging, kanban, cron) can't spam a toast per background session.
+  // gateway (messaging, cron) can't spam a toast per background session.
   return isBackgrounded() && Boolean(sessionId) && sessionId === $activeSessionId.get()
 }
 

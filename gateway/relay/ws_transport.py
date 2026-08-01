@@ -317,7 +317,6 @@ class WebSocketRelayTransport:
             )
         self._url = _ws_dial_url(url)
         self._platform = platform
-        self._bot_id = bot_id
         # Phase 1.5 (Shape A): the full SET of (platform, bot_id) this gateway
         # fronts on this one WS. The handshake sends one `hello` per identity so
         # the connector accumulates them into its advertised set (gateway-gateway

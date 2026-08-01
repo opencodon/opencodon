@@ -172,7 +172,7 @@ class TestApi401Envelope:
         through the OAuth dance and landed the user on the raw JSON
         endpoint instead of the dashboard. The gate now drops API paths
         from ``next=`` entirely; the SPA's own ``opencodon.lastLocation``
-        fallback in ``web/src/lib/api.ts`` covers the deep-link case.
+        fallback in the browser client covers the deep-link case.
         """
         r = gated_app.get("/api/sessions?page=2")
         body = r.json()

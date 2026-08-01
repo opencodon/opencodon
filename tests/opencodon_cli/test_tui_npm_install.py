@@ -264,7 +264,7 @@ def test_make_tui_argv_keeps_desktop_workspace_install_behaviour(
         "/bin/npm",
         "install",
         "--workspace",
-        "apps/tui",
+        "opencodon-tui",
         "--include=dev",
         "--silent",
         "--no-fund",
@@ -503,13 +503,22 @@ def test_make_tui_argv_restores_missing_workspace_from_git(
 # ── _workspace_root helper ──────────────────────────────────────────
 
 
-def test_workspace_root_returns_parent_when_subpackage(tmp_path: Path, main_mod) -> None:
-    """Sub-package has package.json, no lockfile; parent has lockfile → parent."""
+def test_workspace_root_returns_hint_when_subpackage(tmp_path: Path, main_mod) -> None:
+    """Sub-package has package.json, no lockfile; the hinted root has one → hint.
+
+    apps/tui sits two levels down, so ``sub.parent`` is ``apps/`` and carries
+    no lockfile — the root has to be named via ``root_hint``.  That hint is
+    what ``_workspace_root_hint`` computes for real callers.
+    """
     sub = tmp_path / "apps/tui"
     sub.mkdir(parents=True)
     (sub / "package.json").write_text("{}")
     (tmp_path / "package-lock.json").write_text("{}")
-    assert main_mod._workspace_root(sub) == tmp_path
+    assert main_mod._workspace_root_hint(sub) == tmp_path
+    assert main_mod._workspace_root(sub, root_hint=tmp_path) == tmp_path
+    # Without the hint the bare parent (apps/) has no lockfile, so the
+    # sub-package is treated as standalone rather than adopting a stray root.
+    assert main_mod._workspace_root(sub) == sub
 
 
 def test_workspace_root_returns_dir_when_standalone(tmp_path: Path, main_mod) -> None:
@@ -609,7 +618,7 @@ def test_no_stray_lockfiles_in_workspace_subdirs(main_mod) -> None:
 def test_tui_launch_install_uses_workspace_scope(
     tmp_path: Path, main_mod, monkeypatch
 ) -> None:
-    """TUI launch npm install must pass --workspace apps/tui to avoid pulling apps/desktop."""
+    """TUI launch npm install must pass --workspace opencodon-tui to avoid pulling apps/desktop."""
     tui_dir = tmp_path / "apps/tui"
     tui_dir.mkdir(parents=True)
     (tui_dir / "package.json").write_text("{}")
@@ -636,14 +645,15 @@ def test_tui_launch_install_uses_workspace_scope(
     assert npm_calls, "expected npm install to be called"
     install_cmd = npm_calls[0]
     assert "--workspace" in install_cmd
-    assert "apps/tui" in install_cmd
+    assert "opencodon-tui" in install_cmd
 
 def test_make_tui_argv_omits_workspace_when_tui_has_own_lockfile(
     tmp_path: Path, main_mod, monkeypatch
 ) -> None:
     """When apps/tui/ has its own package-lock.json, _workspace_root returns
-    tui_dir itself.  npm install --workspace apps/tui would fail in that case
-    because npm cannot find a workspace named "apps/tui" inside apps/tui/.
+    tui_dir itself.  npm install --workspace opencodon-tui would fail in that
+    case because npm cannot find a workspace named "opencodon-tui" inside
+    apps/tui/.
     The fix omits --workspace and runs plain npm install from tui_dir.
     See #42973.
     """

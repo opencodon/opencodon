@@ -247,8 +247,8 @@ def _checklist_toolset_keys(platform: str) -> Set[str]:
     selection can therefore only ever be a subset of this universe.
 
     Non-configurable toolsets that ``_get_platform_tools`` resolves at read
-    time — ``kanban`` and other check_fn-gated toolsets, recovered platform
-    composites, MCP server names — are NOT in this set because the checklist
+    time — check_fn-gated toolsets, recovered platform composites, MCP
+    server names — are NOT in this set because the checklist
     never shows them. Use this to scope the added/removed diff the UI prints,
     so ``opencodon tools`` never claims to add or remove a toolset the user was
     never given a checkbox for. The underlying config is unaffected — those
@@ -3646,10 +3646,10 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
 
             # Only diff against toolsets the checklist actually offered. The
             # resolved ``current_enabled`` can include non-configurable toolsets
-            # (e.g. ``kanban``, recovered platform composites) the user was
-            # never shown a checkbox for; without this scope the summary would
-            # print spurious ``- kanban`` removals even though the config keeps
-            # them. See _checklist_toolset_keys.
+            # (e.g. recovered platform composites) the user was never shown
+            # a checkbox for; without this scope the summary would print
+            # spurious removals even though the config keeps them.
+            # See _checklist_toolset_keys.
             _diff_universe = _checklist_toolset_keys(pkey)
             added = (new_enabled - current_enabled) & _diff_universe
             removed = (current_enabled - new_enabled) & _diff_universe
@@ -3778,8 +3778,8 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 for pk in platform_keys:
                     prev = _get_platform_tools(config, pk, include_default_mcp_servers=False)
                     # Scope the printed diff to the checklist's universe (see
-                    # _checklist_toolset_keys) so non-configurable toolsets like
-                    # ``kanban`` aren't reported as added/removed.
+                    # _checklist_toolset_keys) so non-configurable toolsets
+                    # aren't reported as added/removed.
                     _diff_universe = _checklist_toolset_keys(pk)
                     added = (new_enabled - prev) & _diff_universe
                     removed = (prev - new_enabled) & _diff_universe
@@ -3861,8 +3861,8 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
 
         if new_enabled != current_enabled or selected_to_configure:
             # Scope the printed diff to the checklist's universe (see
-            # _checklist_toolset_keys) so non-configurable toolsets like
-            # ``kanban`` aren't reported as added/removed.
+            # _checklist_toolset_keys) so non-configurable toolsets
+            # aren't reported as added/removed.
             _diff_universe = _checklist_toolset_keys(pkey)
             added = (new_enabled - current_enabled) & _diff_universe
             removed = (current_enabled - new_enabled) & _diff_universe

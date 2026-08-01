@@ -193,19 +193,6 @@ _OPENCODON_BEHAVIORAL_VARS = frozenset({
     "OPENCODON_EXEC_ASK",
     "OPENCODON_HOME_MODE",
     "OPENCODON_AGENT_USE_LEGACY_SESSION_KEYS",
-    # Kanban path/board pins must never leak from a developer shell or
-    # dispatched worker into tests; otherwise tests can write fake tasks to
-    # the real ~/.opencodon/kanban.db instead of the per-test OPENCODON_HOME.
-    "OPENCODON_KANBAN_DB",
-    "OPENCODON_KANBAN_BOARD",
-    "OPENCODON_KANBAN_HOME",
-    "OPENCODON_KANBAN_WORKSPACES_ROOT",
-    "OPENCODON_KANBAN_LOGS_ROOT",
-    "OPENCODON_KANBAN_TASK",
-    "OPENCODON_KANBAN_WORKSPACE",
-    "OPENCODON_KANBAN_RUN_ID",
-    "OPENCODON_KANBAN_CLAIM_LOCK",
-    "OPENCODON_KANBAN_DISPATCH_IN_GATEWAY",
     "OPENCODON_TENANT",
     # Dashboard OAuth auth gate (PR #30156). When set, the bundled
     # dashboard-auth `nous` plugin auto-registers itself on plugin discovery,

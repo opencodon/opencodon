@@ -73,10 +73,8 @@ ignored/
 .worktrees/
 environments/benchmarks/evals/
 
-# Web UI build output
+# Browser UI build output (apps/web → npm run build -w @opencodon/web)
 opencodon_cli/web_dist/
-# Browser session UI build output (apps/desktop → npm run build:web)
-opencodon_cli/web_app_dist/
 # Cross-process web UI build lock (flock target, always empty)
 .web_ui_build.lock
 apps/desktop/build/
@@ -94,11 +92,6 @@ apps/shared/src/**/*.js.map
 apps/shared/src/**/*.d.ts
 apps/desktop/release/
 *.tsbuildinfo
-
-# Web UI assets — synced from @nous-research/ui at build time via
-# `npm run sync-assets` (see web/package.json).
-web/public/fonts/
-web/public/ds-assets/
 
 # Release script temp files
 .release_notes.md

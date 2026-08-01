@@ -466,7 +466,7 @@ def test_env_scrub_opencodon_allowlist_and_secret_blocks():
         "OPENCODON_CONFIG": "/c.yaml", "OPENCODON_ENV": "/e",
         # other OPENCODON_* → dropped (broad prefix removed)
         "OPENCODON_BASE_URL": "https://x", "OPENCODON_INTERACTIVE": "1",
-        "OPENCODON_KANBAN_DB": "postgres://u:p@h/db",
+        "OPENCODON_CRON_DB": "postgres://u:p@h/db",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
         "OPENAI_API_KEY": "sk", "GITHUB_TOKEN": "ghp",
@@ -478,7 +478,7 @@ def test_env_scrub_opencodon_allowlist_and_secret_blocks():
     for kept in ("OPENCODON_HOME", "OPENCODON_PROFILE", "OPENCODON_CONFIG", "OPENCODON_ENV", "PATH"):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "OPENCODON_BASE_URL", "OPENCODON_INTERACTIVE", "OPENCODON_KANBAN_DB",
+        "OPENCODON_BASE_URL", "OPENCODON_INTERACTIVE", "OPENCODON_CRON_DB",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):
@@ -542,7 +542,7 @@ def test_env_scrub_logs_dropped_opencodon_vars(caplog):
     env = {
         "OPENCODON_HOME": "/h",          # allowlisted → kept, not logged
         "OPENCODON_BASE_URL": "https://x",   # dropped → logged
-        "OPENCODON_KANBAN_DB": "postgres://u:p@h/db",  # dropped → logged
+        "OPENCODON_CRON_DB": "postgres://u:p@h/db",  # dropped → logged
         "OPENCODON_API_KEY": "sk",       # secret → dropped silently (not logged)
         "PATH": "/usr/bin",           # safe prefix → kept
     }
@@ -550,10 +550,10 @@ def test_env_scrub_logs_dropped_opencodon_vars(caplog):
         out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
     assert "OPENCODON_HOME" in out and "PATH" in out
-    assert "OPENCODON_BASE_URL" not in out and "OPENCODON_KANBAN_DB" not in out
+    assert "OPENCODON_BASE_URL" not in out and "OPENCODON_CRON_DB" not in out
 
     msgs = "\n".join(r.getMessage() for r in caplog.records)
-    assert "OPENCODON_BASE_URL" in msgs and "OPENCODON_KANBAN_DB" in msgs
+    assert "OPENCODON_BASE_URL" in msgs and "OPENCODON_CRON_DB" in msgs
     assert "env_passthrough" in msgs
     # Secret vars are dropped but must NOT be named in the diagnostic log.
     assert "OPENCODON_API_KEY" not in msgs

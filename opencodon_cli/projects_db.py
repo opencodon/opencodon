@@ -1,21 +1,13 @@
 """Per-profile first-class Project store.
 
 A **Project** is a human-named, multi-folder workspace. Unlike the desktop's
-old inferred "workspaces" (derived from each session's ``cwd`` + a git probe)
-and unlike kanban's self-generated worktrees, a Project is an explicit,
-persisted entity the user creates and names. It anchors:
-
-- **Desktop session grouping** — a session belongs to a project when its
-  ``cwd`` lives under one of the project's folders (longest-prefix match).
-- **Kanban task worktrees** — a task linked to a project creates its worktree
-  under the project's primary repo with a deterministic branch name, instead
-  of the random ``wt/<task-id>`` fallback.
+old inferred "workspaces" (derived from each session's ``cwd`` + a git probe),
+a Project is an explicit, persisted entity the user creates and names. It
+anchors **desktop session grouping** — a session belongs to a project when its
+``cwd`` lives under one of the project's folders (longest-prefix match).
 
 Scope: **per-profile**, stored at ``$OPENCODON_HOME/projects.db`` (resolved via
-``get_opencodon_home()``), mirroring sessions / config / cron. This deliberately
-differs from kanban, whose board DB is root-anchored and shared across
-profiles. A Project may *bind* a kanban board (``board_slug``) so the two
-systems agree on the repo + branch convention without merging their stores.
+``get_opencodon_home()``), mirroring sessions / config / cron.
 """
 
 from __future__ import annotations
@@ -59,7 +51,6 @@ CREATE TABLE IF NOT EXISTS projects (
     description   TEXT,
     icon          TEXT,
     color         TEXT,
-    board_slug    TEXT,
     primary_path  TEXT,
     -- Free text the user writes once and every agent in this project reads:
     -- conventions, domain background, house rules. Distinct from `description`,
@@ -187,7 +178,7 @@ def connect_closing(db_path: Optional[Path] = None):
     sqlite3's connection context manager only commits/rollbacks; it does NOT
     close the file descriptor. Long-lived processes (gateway, dashboard) route
     many project operations through ``connect()``; without closing, FDs to
-    ``projects.db`` accumulate. Mirrors ``kanban_db.connect_closing``.
+    ``projects.db`` accumulate.
     """
     conn = connect(db_path=db_path)
     try:
@@ -229,7 +220,6 @@ class Project:
     description: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
-    board_slug: Optional[str] = None
     primary_path: Optional[str] = None
     context: Optional[str] = None
     archived: bool = False
@@ -243,7 +233,6 @@ class Project:
             "description": self.description,
             "icon": self.icon,
             "color": self.color,
-            "board_slug": self.board_slug,
             "primary_path": self.primary_path,
             "context": self.context,
             "archived": bool(self.archived),
@@ -262,7 +251,6 @@ def _project_from_row(row: sqlite3.Row) -> Project:
         description=row["description"] if "description" in keys else None,
         icon=row["icon"] if "icon" in keys else None,
         color=row["color"] if "color" in keys else None,
-        board_slug=row["board_slug"] if "board_slug" in keys else None,
         primary_path=row["primary_path"] if "primary_path" in keys else None,
         context=row["context"] if "context" in keys else None,
         archived=bool(row["archived"]) if "archived" in keys else False,
@@ -320,7 +308,6 @@ def create_project(
     description: Optional[str] = None,
     icon: Optional[str] = None,
     color: Optional[str] = None,
-    board_slug: Optional[str] = None,
     context: Optional[str] = None,
 ) -> str:
     """Create a project and return its id.
@@ -353,9 +340,9 @@ def create_project(
         unique = _unique_slug(conn, slug_candidate)
         conn.execute(
             "INSERT INTO projects "
-            "(id, slug, name, description, icon, color, board_slug, "
+            "(id, slug, name, description, icon, color, "
             " primary_path, context, created_at, archived) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
             (
                 pid,
                 unique,
@@ -363,7 +350,6 @@ def create_project(
                 description,
                 icon,
                 color,
-                normalize_slug(board_slug) if board_slug else None,
                 primary,
                 (context or None),
                 now,
@@ -414,12 +400,11 @@ def update_project(
     description: Optional[str] = None,
     icon: Optional[str] = None,
     color: Optional[str] = None,
-    board_slug: Optional[str] = None,
     context: Optional[str] = None,
 ) -> bool:
     """Patch top-level project fields. Only provided fields change.
 
-    ``icon``, ``color``, and ``board_slug`` accept an empty string to clear
+    ``icon`` and ``color`` accept an empty string to clear
     (store NULL) — passing ``None`` leaves the field untouched, so callers that
     want to clear must send ``""``.
     """
@@ -445,9 +430,6 @@ def update_project(
     if color is not None:
         sets.append("color = ?")
         params.append(color or None)
-    if board_slug is not None:
-        sets.append("board_slug = ?")
-        params.append(normalize_slug(board_slug) if board_slug.strip() else None)
     if not sets:
         return False
     params.append(project_id)
@@ -761,21 +743,3 @@ def project_for_path(
     return get_project(conn, best_pid)
 
 
-# Deterministic branch slug: lowercase, separators collapsed, capped.
-_BRANCH_SAFE_RE = re.compile(r"[^a-z0-9._-]+")
-
-
-def branch_name_for(project: Project, task_id: str, *, title: str = "") -> str:
-    """Deterministic branch name for a project-linked kanban task.
-
-    Shape: ``<project-slug>/<task-id>`` (optionally ``-<title-slug>``). Stable
-    and human-meaningful, replacing the random ``wt/<task-id>`` fallback.
-    """
-    slug = project.slug or _slugify(project.name)
-    base = f"{slug}/{task_id}"
-    if title:
-        tslug = _BRANCH_SAFE_RE.sub("-", str(title).strip().lower()).strip("-")
-        tslug = tslug[:40].strip("-")
-        if tslug:
-            base = f"{base}-{tslug}"
-    return base

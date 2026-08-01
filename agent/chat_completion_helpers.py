@@ -567,7 +567,7 @@ def interruptible_api_call(agent, api_kwargs: dict):
         # ``recv``/``send`` unwinds with an ``EPIPE`` / EOF — and let the
         # worker close ``client`` from its own thread on its way out. That
         # avoids the FD-recycling race where the kernel reassigned a
-        # just-closed TLS socket FD to ``kanban.db``, and the still-live SSL
+        # just-closed TLS socket FD to a SQLite store, and the still-live SSL
         # BIO on the worker thread then wrote a 24-byte TLS application-data
         # record into the SQLite header (#29507).
         with request_client_lock:

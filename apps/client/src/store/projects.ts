@@ -651,7 +651,6 @@ export interface CreateProjectInput {
   context?: string
   icon?: string
   color?: string
-  boardSlug?: string
   use?: boolean
   // Free-text project idea; written to IDEA.md at the primary folder on create.
   idea?: string
@@ -766,7 +765,6 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectI
       context: input.context,
       icon: input.icon,
       color: input.color,
-      board_slug: input.boardSlug,
       use: input.use ?? false
     })
   } catch (err) {

@@ -22,10 +22,6 @@ export interface SidebarSessionGroup {
   // collapses all main-checkout sessions, labeled by the worktree's LIVE branch
   // (defaulting to `main`). Renders a home glyph and pins to the top.
   isHome?: boolean
-  // True for the synthetic lane that collapses all of a repo's kanban task
-  // worktrees (`<repo>/.worktrees/t_*`) into one row, so a heavy board doesn't
-  // spray hundreds of throwaway branch lanes across the sidebar.
-  isKanban?: boolean
   loadingMore?: boolean
   mode?: 'profile' | 'source' | 'workspace'
   onLoadMore?: () => void
@@ -97,16 +93,6 @@ const pathKey = (path: null | string | undefined): string => comparisonSegments(
 /** Last path segment. */
 export const baseName = (path: string): string | undefined => segments(path).pop()
 
-// The `.worktrees` dir for a KANBAN-TASK worktree path, else null. Only matches
-// task worktrees (`<repo>/.worktrees/t_<hex>`, the `t_…` id kanban_db mints) so
-// the many ephemeral task worktrees collapse into one lane — while user-named
-// "New worktree" dirs (`<repo>/.worktrees/<slug>`) stay as their own lanes.
-const KANBAN_DIR_RE = /^(.*[/\\]\.worktrees)[/\\]t_[0-9a-f]+[/\\]?$/
-
-export function kanbanWorktreeDir(path: string): null | string {
-  return path.match(KANBAN_DIR_RE)?.[1] ?? null
-}
-
 /** Label for a main-checkout lane whose session recorded no branch. */
 export const DEFAULT_BRANCH_LABEL = 'main'
 
@@ -129,12 +115,11 @@ const laneActivity = (group: SidebarSessionGroup): number =>
 
 // Lane tiers (low sorts first): the repo's primary ("home") checkout pins above
 // everything (it's "where you are", labeled by its live branch), then trunk,
-// then ordinary branches/worktrees, then the kanban aggregate.
-const laneRank = (group: SidebarSessionGroup): number =>
-  group.isHome ? 0 : isTrunkLane(group) ? 1 : group.isKanban ? 3 : 2
+// then ordinary branches/worktrees.
+const laneRank = (group: SidebarSessionGroup): number => (group.isHome ? 0 : isTrunkLane(group) ? 1 : 2)
 
 /**
- * Sort by tier (home → trunk → branches/worktrees → kanban); within a tier, by
+ * Sort by tier (home → trunk → branches/worktrees); within a tier, by
  * most-recent activity (empty lanes fall last), label as the tiebreak.
  */
 function compareWorktreeGroups(a: SidebarSessionGroup, b: SidebarSessionGroup): number {
@@ -203,7 +188,7 @@ export function mergeRepoWorktreeGroups(
   //     opens a different, stale checkout. The home checkout is folded
   //     separately (below), never here.
   const reconcile = (group: SidebarSessionGroup): SidebarSessionGroup => {
-    if (group.isMain || group.isKanban) {
+    if (group.isMain) {
       return group
     }
 
@@ -295,13 +280,6 @@ export function mergeRepoWorktreeGroups(
       continue
     }
 
-    // Kanban task worktrees never get their own lane — they fold into the
-    // session-derived `::kanban` bucket. Listing every `git worktree list` entry
-    // here is exactly what blew the sidebar up to hundreds of empty rows.
-    if (!worktree.isMain && kanbanWorktreeDir(wtPath)) {
-      continue
-    }
-
     const label =
       (worktree.isMain ? worktree.branch?.trim() || DEFAULT_BRANCH_LABEL : worktree.branch?.trim()) ||
       baseName(wtPath) ||
@@ -332,7 +310,7 @@ export function mergeRepoWorktreeGroups(
 // `$sessions` store onto the tree at render time. This is ADDITIVE only: the
 // backend still owns membership, structure, counts, and history. The overlay
 // just places rows already present in `$sessions` into the project/lane the
-// backend would put them in, using the same id scheme. Worktree/kanban folding
+// backend would put them in, using the same id scheme. Worktree folding
 // needs the backend common-root probe, so those rows are left for the next
 // tree refresh; the common case (a new main-checkout session) overlays here.
 
@@ -355,8 +333,8 @@ function isPathUnder(folder: string, target: string): boolean {
  * its repo root (the root is right there in the path), so a freshly-created
  * worktree session — e.g. from "convert a branch" / "new worktree" — surfaces in
  * the overview at once instead of waiting for the next backend refresh. Returns
- * null only for sessions we genuinely can't place from the row alone: cwd-less,
- * kanban-task worktrees (they fold into the kanban bucket), or a worktree that
+ * null only for sessions we genuinely can't place from the row alone: cwd-less
+ * ones, or a worktree that
  * lives OUTSIDE the repo root (a sibling dir) AND under no explicit project
  * folder. An explicit-project folder match always places the row — even when
  * the row's cwd sits outside its recorded repo root (a mid-session relocation,
@@ -382,7 +360,7 @@ export function liveSessionProjectId(session: SessionInfo, explicitProjects: Pro
   const repoRoot = (session.git_repo_root || '').trim() || cwd
   const anchor = cwd || repoRoot
 
-  if (!anchor || kanbanWorktreeDir(anchor)) {
+  if (!anchor) {
     return null
   }
 
@@ -428,7 +406,7 @@ export function liveSessionProjectId(session: SessionInfo, explicitProjects: Pro
  * unless the user set one, so a session only tints when it belongs to a colored
  * project (inheritance is opt-in by coloring the project). Reuses
  * {@link liveSessionProjectId} so the color follows the SAME membership the
- * sidebar groups by; returns null for rootless / kanban / out-of-tree rows and
+ * sidebar groups by; returns null for rootless / out-of-tree rows and
  * for sessions under an uncolored (or auto) project.
  */
 export function sessionProjectColor(session: SessionInfo, projects: ProjectInfo[]): null | string {
@@ -448,8 +426,7 @@ const upsertSession = (rows: SessionInfo[], session: SessionInfo): SessionInfo[]
  * The lane a live session belongs to WITHIN a known repo root, by path — the
  * entered project already knows its repo roots, so we don't need the session's
  * (often-unset, on a fresh row) git_repo_root. Mirrors the backend's lane ids:
- * main checkout -> branch lane, `.worktrees/t_<hex>` -> kanban, any other
- * `.worktrees/<slug>` -> that worktree's own lane.
+ * main checkout -> branch lane, `.worktrees/<slug>` -> that worktree's own lane.
  */
 function liveLaneForRepo(repoRoot: string, session: SessionInfo): null | SidebarSessionGroup {
   const cwd = (session.cwd || '').trim()
@@ -461,11 +438,9 @@ function liveLaneForRepo(repoRoot: string, session: SessionInfo): null | Sidebar
   const wt = cwd.match(/^(.*[/\\]\.worktrees)[/\\]([^/\\]+)/)
 
   if (wt) {
-    const [worktreeRoot, worktreesDir, slug] = [wt[0], wt[1], wt[2]]
+    const [worktreeRoot, , slug] = [wt[0], wt[1], wt[2]]
 
-    return /^t_[0-9a-f]+$/.test(slug)
-      ? { id: `${repoRoot}::kanban`, isKanban: true, isMain: false, label: 'kanban', path: worktreesDir, sessions: [] }
-      : { id: worktreeRoot, isMain: false, label: slug, path: worktreeRoot, sessions: [] }
+    return { id: worktreeRoot, isMain: false, label: slug, path: worktreeRoot, sessions: [] }
   }
 
   const branch = (session.git_branch || '').trim() || DEFAULT_BRANCH_LABEL
@@ -535,7 +510,7 @@ export function overlayRepoLanes(
     }
 
     // (2) Else place under the repo root via a computed lane (main / branch /
-    // in-tree `.worktrees` / kanban). Match by id, then path (the backend may
+    // in-tree `.worktrees`). Match by id, then path (the backend may
     // key a worktree lane off the git-probed root OR a branch-style id), then
     // the main-lane label; create it when the snapshot lacked it.
     if (!lane) {

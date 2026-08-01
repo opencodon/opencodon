@@ -43,7 +43,6 @@ const treeNode = (
 
 const projectInfo = (overrides: Partial<ProjectInfo> & Pick<ProjectInfo, 'id' | 'slug'>): ProjectInfo => ({
   archived: false,
-  board_slug: null,
   color: null,
   created_at: 0,
   description: null,

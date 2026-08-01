@@ -253,8 +253,8 @@ def _wants_tui_early(argv: "list[str] | None" = None) -> bool:
     non-interactive stdio can't host the Ink UI, so ambient config never
     boots it there), then ``display.interface`` in config.
 
-    The TTY gate is load-bearing for headless spawners — kanban workers,
-    cron jobs, pipes run ``opencodon … chat -q`` with stdio on a pipe. This
+    The TTY gate is load-bearing for headless spawners — cron jobs and
+    pipes run ``opencodon … chat -q`` with stdio on a pipe. This
     is the earliest launch decision (it runs before ``cmd_chat`` /
     ``_resolve_use_tui``), so a ``display.interface: tui`` default used to
     boot the TUI here — whose no-TTY bail-out exits 0 without doing the
@@ -1558,33 +1558,23 @@ to avoid false-positive reinstalls on every launch.
 """
 
 
-# How far above a workspace member its root may sit.  ``web`` is 1 level
-# below the repo root, ``apps/tui`` is 2; anything deeper is not a layout
-# this repo produces, and climbing further risks leaving the checkout.
-_MAX_WORKSPACE_ROOT_DEPTH = 2
-
-
-def _workspace_root(dir: Path) -> Path:
+def _workspace_root(dir: Path, *, root_hint: Optional[Path] = None) -> Path:
     """Return the npm workspace root for *dir*.
 
     In a workspace checkout the single ``package-lock.json`` and hoisted
-    ``node_modules/`` live at the workspace root, some number of levels
-    above the sub-package directory.  Heuristic: if *dir* has a
-    ``package.json`` but **no** ``package-lock.json``, the nearest
-    **ancestor** carrying a ``package-lock.json`` is the workspace root.
-    Otherwise *dir* itself is the root (standalone project or
-    prebuilt-bundle layout).
+    ``node_modules/`` live at the workspace root.  Heuristic: if *dir* has a
+    ``package.json`` but **no** ``package-lock.json``, and a candidate root
+    has one, that candidate is the workspace root.  Otherwise *dir* itself is
+    the root (standalone project or prebuilt-bundle layout).
 
-    The ancestor walk (rather than a single ``dir.parent`` check) is what
-    lets nested members like ``apps/tui`` resolve to the repo root two
-    levels up.  Stopping at the first lockfile keeps a deliberately
-    standalone sub-package (its own lockfile) self-rooted.
-
-    The walk is depth-bounded on purpose: an unbounded climb escapes the
-    checkout entirely and can latch onto an unrelated ``package-lock.json``
-    somewhere above it (a stray one in ``$HOME``, or a sibling temp tree
-    under pytest).  ``_MAX_WORKSPACE_ROOT_DEPTH`` covers every real caller —
-    ``web`` is one level below the root, ``apps/tui`` two.
+    Candidates are *root_hint* (when given) then ``dir.parent``.  The hint
+    exists because no member sits directly under the root any more — both
+    ``apps/tui`` and ``apps/web`` are two levels down, so ``dir.parent`` is
+    ``apps/``, which carries no lockfile.  Deliberately NOT a blind walk up
+    the tree: an ancestor that merely happens to hold a ``package-lock.json``
+    (a scratch directory, a parent project, a pytest tmp root) is not this
+    package's workspace root, and adopting it would run ``npm`` against a
+    lockfile that knows nothing about us.
 
     Used by ``_tui_need_npm_install``, ``_make_tui_argv``, and
     ``_build_web_ui`` so that lockfile/node_modules resolution and
@@ -1593,18 +1583,38 @@ def _workspace_root(dir: Path) -> Path:
     sub-package lockfile (e.g. running ``npm install`` in the wrong
     directory).
     """
-    if (dir / "package.json").is_file() and not (dir / "package-lock.json").is_file():
-        for ancestor in list(dir.parents)[:_MAX_WORKSPACE_ROOT_DEPTH]:
-            if (ancestor / "package-lock.json").is_file():
-                return ancestor
+    if not (dir / "package.json").is_file() or (dir / "package-lock.json").is_file():
+        return dir
+    for candidate in ((root_hint,) if root_hint is not None else ()) + (dir.parent,):
+        if candidate != dir and (candidate / "package-lock.json").is_file():
+            return candidate
     return dir
 
 
+def _workspace_root_hint(member_dir: Path) -> Path:
+    """Best guess at the workspace root for a member directory.
+
+    Members under ``apps/`` (``apps/tui``, ``apps/web``) sit two levels below
+    the root, so ``member_dir.parent`` is ``apps/`` — which carries no
+    lockfile.  Everything else is assumed to sit directly under the root.
+    Feed the result to :func:`_workspace_root` as ``root_hint``; it still
+    verifies a ``package-lock.json`` is actually there before adopting it.
+    """
+    return member_dir.parent.parent if member_dir.parent.name == "apps" else member_dir.parent
+
+
 def _termux_workspace_install_context(
-    dir: Path, *, include_child_workspaces: bool = False
+    dir: Path,
+    *,
+    include_child_workspaces: bool = False,
+    root_hint: Optional[Path] = None,
 ) -> tuple[Path, tuple[str, ...]]:
-    """Return Termux-only ``(cwd, npm_args)`` for installing deps for *dir* only."""
-    ws_root = _workspace_root(dir)
+    """Return Termux-only ``(cwd, npm_args)`` for installing deps for *dir* only.
+
+    *root_hint* is forwarded to :func:`_workspace_root` for members that do
+    not sit directly under the workspace root (``apps/web``).
+    """
+    ws_root = _workspace_root(dir, root_hint=root_hint)
     if ws_root == dir:
         return dir, ()
 
@@ -1661,7 +1671,7 @@ def _tui_need_npm_install(root: Path) -> bool:
     # shipped, dist/entry.js is the single runtime artefact.
     entry = root / "dist" / "entry.js"
     # With npm workspaces the lockfile lives at the workspace root.
-    ws_root = _workspace_root(root)
+    ws_root = _workspace_root(root, root_hint=_workspace_root_hint(root))
     lock = ws_root / "package-lock.json"
     if entry.is_file() and not lock.is_file():
         return False
@@ -1850,19 +1860,22 @@ def _restore_tui_workspace(tui_dir: Path) -> bool:
     or the restore leaves the directory still missing — the caller then prints
     the manual-recovery message.
 
-    The checkout root is searched for rather than assumed to be
+    The checkout root is a named candidate rather than assumed to be
     ``tui_dir.parent``: a nested member like ``apps/tui`` has ``.git`` two
-    levels up, not one.  ``.exists()`` (not ``.is_dir()``) because ``.git``
-    is a *file* in a linked worktree.
+    levels up, not one.  Same candidate order as :func:`_workspace_root`
+    (hint, then parent) and for the same reason — a blind walk upward could
+    find some unrelated repository that has never heard of this checkout.
+    ``.exists()`` rather than ``.is_dir()`` because ``.git`` is a *file* in a
+    linked worktree.
     """
     git = shutil.which("git")
     if not git:
         return False
     repo_root = next(
         (
-            ancestor
-            for ancestor in list(tui_dir.parents)[:_MAX_WORKSPACE_ROOT_DEPTH]
-            if (ancestor / ".git").exists()
+            candidate
+            for candidate in (_workspace_root_hint(tui_dir), tui_dir.parent)
+            if (candidate / ".git").exists()
         ),
         None,
     )
@@ -1994,18 +2007,21 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
         npm = _node_bin("npm")
         if not os.environ.get("OPENCODON_QUIET"):
             print("Installing TUI dependencies…")
-        npm_cwd = _workspace_root(tui_dir)
-        # --workspace apps/tui avoids resolving apps/desktop (Electron + node-pty).
-        # See #38772.
+        ws_root_hint = _workspace_root_hint(tui_dir)
+        npm_cwd = _workspace_root(tui_dir, root_hint=ws_root_hint)
+        # --workspace opencodon-tui avoids resolving apps/desktop (Electron +
+        # node-pty).  See #38772.  Named by package rather than path so it
+        # survives further relocation of the workspace.
         # When apps/tui/ has its own package-lock.json (e.g. curl install),
         # _workspace_root() returns tui_dir itself.  Passing --workspace in
-        # that case fails because npm cannot find a workspace named "apps/tui"
-        # inside apps/tui/.  See #42973.
-        npm_workspace_args: tuple[str, ...] = () if npm_cwd == tui_dir else ("--workspace", "apps/tui")
+        # that case fails because npm cannot find a workspace named
+        # "opencodon-tui" inside apps/tui/.  See #42973.
+        npm_workspace_args: tuple[str, ...] = () if npm_cwd == tui_dir else ("--workspace", "opencodon-tui")
         if termux_startup:
             npm_cwd, npm_workspace_args = _termux_workspace_install_context(
                 tui_dir,
                 include_child_workspaces=True,
+                root_hint=ws_root_hint,
             )
         result = subprocess.run(
             [
@@ -2388,27 +2404,6 @@ def _launch_tui(
     sys.exit(code)
 
 
-def _pin_kanban_board_env() -> None:
-    """Pin the active kanban board into ``OPENCODON_KANBAN_BOARD`` for the chat session.
-
-    Without this, in-process tools (``kanban_*``) and shelled-out CLI calls
-    (``opencodon kanban …``) resolve the board on different paths: the env-pin if
-    set, otherwise the global ``<root>/kanban/current`` file. A concurrent
-    ``opencodon kanban boards switch`` from another session can flip the file
-    mid-turn, so the same chat sees its tool calls hit board A while its shell
-    calls hit board B (#20074). Pinning at chat boot mirrors what the
-    dispatcher already does for spawned workers.
-    """
-    if os.environ.get("OPENCODON_KANBAN_BOARD"):
-        return
-    try:
-        from opencodon_cli.kanban_db import get_current_board
-
-        os.environ["OPENCODON_KANBAN_BOARD"] = get_current_board()
-    except Exception:
-        pass
-
-
 def _sync_bundled_skills_quietly() -> None:
     """Seed ``~/.opencodon/skills/`` with the bundled skill library on first launch.
 
@@ -2444,13 +2439,12 @@ def _resolve_use_tui(args) -> bool:
     working regardless of the configured default.
 
     The TTY gate (3) is load-bearing: ambient TUI preferences (env var or
-    config default) must never hijack a NON-interactive invocation. Kanban
-    workers, cron jobs, and pipelines run ``opencodon … chat -q`` with stdout
-    on a pipe; booting the Ink TUI there hits its no-TTY bail-out, which
-    prints a resume hint and exits 0 — a kanban worker then dies with
-    "exited cleanly without calling kanban_complete — protocol violation"
-    on every attempt (found dogfooding the desktop kanban board). A user
-    who *explicitly* passes ``--tui`` still gets the informative bail-out.
+    config default) must never hijack a NON-interactive invocation. Cron
+    jobs and pipelines run ``opencodon … chat -q`` with stdout on a pipe;
+    booting the Ink TUI there hits its no-TTY bail-out, which prints a
+    resume hint and exits 0 — so the requested work silently never runs.
+    A user who *explicitly* passes ``--tui`` still gets the informative
+    bail-out.
     """
     if getattr(args, "cli", False):
         return False
@@ -2647,8 +2641,6 @@ def cmd_chat(args):
     # --source: tag session source for filtering (e.g. 'tool' for third-party integrations)
     if getattr(args, "source", None):
         os.environ["OPENCODON_SESSION_SOURCE"] = args.source
-
-    _pin_kanban_board_env()
 
     if use_tui:
         _launch_tui(
@@ -3498,8 +3490,6 @@ _AUX_TASKS: list[tuple[str, str, str]] = [
     ("memory_query_rewrite", "Memory query rewrite", "memory retrieval queries"),
     ("tts_audio_tags", "TTS audio tags", "Gemini TTS tag insertion"),
     ("skills_hub", "Skills hub", "skills search/install"),
-    ("triage_specifier", "Triage specifier", "kanban spec fleshing"),
-    ("kanban_decomposer", "Kanban decomposer", "task decomposition"),
     ("profile_describer", "Profile describer", "auto profile descriptions"),
     ("curator", "Curator", "skill-usage review pass"),
 ]
@@ -4550,13 +4540,6 @@ def cmd_slack(args):
     return 1
 
 
-def cmd_kanban(args):
-    """Multi-profile collaboration board."""
-    from opencodon_cli.kanban import kanban_command
-
-    return kanban_command(args)
-
-
 def cmd_project(args):
     """Manage projects (named, multi-folder workspaces)."""
     from opencodon_cli.projects_cmd import projects_command
@@ -4883,9 +4866,10 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
     source had genuinely changed (serving a stale dashboard) and force a
     rebuild when nothing had. A content hash is stable across mtime churn.
 
-    The dashboard source lives under ``web/`` but Vite outputs to
-    ``opencodon_cli/web_dist/`` (per vite.config.ts outDir), NOT ``web/dist/``,
-    so the dist directory is never part of the hashed source tree.
+    The source lives under ``apps/web/`` but Vite outputs to
+    ``opencodon_cli/web_dist/`` (per its vite.config.ts outDir), NOT
+    ``apps/web/dist/``, so the dist directory is never part of the hashed
+    source tree.
     """
     project_root = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
     dist_dir = project_root / "opencodon_cli" / "web_dist"
@@ -4912,12 +4896,17 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
 def _compute_web_ui_content_hash(project_root: Path, web_dir: Path) -> str:
     """Return a SHA-256 hex digest of the web UI source tree.
 
-    Covers ``web_dir`` (the dashboard frontend source) plus the root
-    ``package.json`` / ``package-lock.json`` (workspace config that
-    determines dependency resolution). Mirrors
-    ``_compute_desktop_content_hash()``: ignored paths (``node_modules/``,
-    ``dist/``, ``*.pyc``, ...) are skipped via the repo-root ``.gitignore``
-    so build output never feeds back into its own staleness check.
+    Covers ``web_dir`` (the browser host), the workspaces it builds from
+    (``apps/client`` — where essentially all of the UI lives — and
+    ``apps/shared``), plus the root ``package.json`` / ``package-lock.json``
+    (workspace config that determines dependency resolution). Hashing the
+    host alone would miss every real UI change, since ``apps/web`` is a
+    ~10-line entry point over ``@opencodon/client``.
+
+    Mirrors ``_compute_desktop_content_hash()``: ignored paths
+    (``node_modules/``, ``dist/``, ``*.pyc``, ...) are skipped via the
+    repo-root ``.gitignore`` so build output never feeds back into its own
+    staleness check.
     """
     h = hashlib.sha256()
 
@@ -4949,19 +4938,27 @@ def _compute_web_ui_content_hash(project_root: Path, web_dir: Path) -> str:
             if not spec.match_file(rel):
                 _hash_file(p)
 
-    # Walk the web source tree, pruning ignored directories in-place so we
-    # never descend into node_modules/ or a stray dist/. Sort filenames for
-    # a deterministic, order-independent digest.
-    for dirpath, dirnames, filenames in os.walk(web_dir, topdown=True):
-        dirnames[:] = [
-            d for d in dirnames
-            if not spec.match_file(str((Path(dirpath) / d).relative_to(project_root)))
-        ]
-        for fn in sorted(filenames):
-            fp = Path(dirpath) / fn
-            rel = str(fp.relative_to(project_root))
-            if not spec.match_file(rel):
-                _hash_file(fp)
+    # Walk the source trees the bundle is built from, pruning ignored
+    # directories in-place so we never descend into node_modules/ or a stray
+    # dist/. Sort filenames (and the roots) for a deterministic,
+    # order-independent digest.
+    roots = [web_dir]
+    if web_dir.parent.name == "apps":
+        # `file:` workspace deps of apps/web — the UI itself lives here.
+        roots += [web_dir.parent / "client", web_dir.parent / "shared"]
+    for root in sorted(set(roots)):
+        if not root.is_dir():
+            continue
+        for dirpath, dirnames, filenames in os.walk(root, topdown=True):
+            dirnames[:] = [
+                d for d in dirnames
+                if not spec.match_file(str((Path(dirpath) / d).relative_to(project_root)))
+            ]
+            for fn in sorted(filenames):
+                fp = Path(dirpath) / fn
+                rel = str(fp.relative_to(project_root))
+                if not spec.match_file(rel):
+                    _hash_file(fp)
 
     return h.hexdigest()
 
@@ -5259,7 +5256,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     """Build the web UI frontend if npm is available.
 
     Args:
-        web_dir: Path to the dashboard frontend source directory.
+        web_dir: Path to the browser frontend source directory.
         fatal: If True, print error guidance and return False on failure
                instead of a soft warning (used by ``opencodon web``).
 
@@ -5289,7 +5286,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if not npm:
         if fatal:
             _say("Web UI frontend not built and npm is not available.")
-            _say("Install Node.js, then run:  cd web && npm install && npm run build")
+            _say("Install Node.js, then run:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return not fatal
     build_env = with_opencodon_node_path()
     _say("→ Building web UI...")
@@ -5309,16 +5306,21 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
             if text:
                 _say(text)
 
-    npm_cwd = _workspace_root(web_dir)
+    # apps/web sits two levels below the workspace root, so the root has to be
+    # named rather than discovered by walking up from web_dir.
+    ws_root_hint = _workspace_root_hint(web_dir)
+    npm_cwd = _workspace_root(web_dir, root_hint=ws_root_hint)
     # Scope the install to the web workspace only so that the full workspace
     # graph (including apps/desktop with its Electron + node-pty deps) is never
     # resolved here.  Without --workspace the root package.json's apps/* glob
     # would pull in desktop on every web build. See #38772.
-    # When web/ has its own package-lock.json, _workspace_root() returns
+    # When apps/web/ has its own package-lock.json, _workspace_root() returns
     # web_dir itself and --workspace would fail.  See #42973.
-    npm_workspace_args: tuple[str, ...] = () if npm_cwd == web_dir else ("--workspace", "web")
+    npm_workspace_args: tuple[str, ...] = () if npm_cwd == web_dir else ("--workspace", "@opencodon/web")
     if _is_termux_startup_environment():
-        npm_cwd, npm_workspace_args = _termux_workspace_install_context(web_dir)
+        npm_cwd, npm_workspace_args = _termux_workspace_install_context(
+            web_dir, root_hint=ws_root_hint
+        )
     r1 = _run_npm_install_deterministic(
         npm,
         npm_cwd,
@@ -5332,7 +5334,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
         )
         _relay(r1)
         if fatal:
-            _say("  Run manually:  npm install --workspace web && npm run build -w web")
+            _say("  Run manually:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return False
     # First attempt — stream output via idle-timeout helper (issue #33788).
     # capture_output=True on a long Vite build looks identical to a hang;
@@ -5374,7 +5376,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
         )
         _relay(r2)
         if fatal:
-            _say("  Run manually:  npm install --workspace web && npm run build -w web")
+            _say("  Run manually:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
         return False
     _say("  ✓ Web UI built")
     project_root = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
@@ -7028,7 +7030,7 @@ def _update_via_zip(args):
         _install_python_dependencies_with_optional_fallback(pip_cmd)
 
     node_failures = _update_node_dependencies()
-    _build_web_ui(PROJECT_ROOT / "web")
+    _build_web_ui(PROJECT_ROOT / "apps" / "web")
 
     # Sync skills
     try:
@@ -8937,9 +8939,9 @@ def _update_node_dependencies() -> list[str]:
             failed = ["repo root"]
             if any(
                 (PROJECT_ROOT / workspace / "package.json").exists()
-                for workspace in ("apps/tui", "web")
+                for workspace in ("apps/tui", "apps/web")
             ):
-                failed.append("apps/tui, web workspaces")
+                failed.append("apps/tui, apps/web workspaces")
             return failed
         return []
 
@@ -8996,9 +8998,10 @@ def _update_node_dependencies() -> list[str]:
             print(f"    {stderr.splitlines()[-1]}")
         return _partial_update_failure("repo root")
 
-    # Step 2: install only the workspaces update needs (apps/tui, web).
+    # Step 2: install only the workspaces update needs (apps/tui, apps/web).
     # --workspace selects specific workspaces; the rest (desktop) are skipped.
-    ws_args = [*extra_args, "--workspace", "apps/tui", "--workspace", "web"]
+    # Named by package rather than path so they survive further relocation.
+    ws_args = [*extra_args, "--workspace", "opencodon-tui", "--workspace", "@opencodon/web"]
     ws_result = _run_npm_install_deterministic(
         npm,
         PROJECT_ROOT,
@@ -9008,14 +9011,14 @@ def _update_node_dependencies() -> list[str]:
     )
     if ws_result.returncode == 0:
         _record_npm_lockfile_hash(shared_opencodon_root)
-        print("  ✓ repo root + apps/tui, web workspaces (desktop skipped)")
+        print("  ✓ repo root + apps/tui, apps/web workspaces (desktop skipped)")
         return []
 
     print("  ⚠ npm workspace install failed")
     stderr = (ws_result.stderr or "").strip() if ws_result.stderr else ""
     if stderr:
         print(f"    {stderr.splitlines()[-1]}")
-    return _partial_update_failure("apps/tui, web workspaces")
+    return _partial_update_failure("apps/tui, apps/web workspaces")
 
 
 class _UpdateOutputStream:
@@ -10831,7 +10834,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         _refresh_active_lazy_features()
 
         node_failures = _update_node_dependencies()
-        _build_web_ui(PROJECT_ROOT / "web")
+        _build_web_ui(PROJECT_ROOT / "apps" / "web")
 
         # Rebuild the desktop app if the source tree changed since the last
         # build.  ``opencodon desktop --build-only`` uses the content-hash stamp
@@ -12180,9 +12183,8 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "describe":
-        # Read or write a profile's description. The description is
-        # consumed by the kanban decomposer to route tasks based on
-        # role instead of name alone.
+        # Read or write a profile's description. The description lets
+        # other surfaces route work by role instead of name alone.
         from opencodon_cli import profiles as _profiles_mod
 
         all_flag = bool(getattr(args, "all_missing", False))
@@ -13099,7 +13101,7 @@ def cmd_dashboard(args):
         # below) to disable it even if a stray dist exists. Set it first.
         os.environ["OPENCODON_SERVE_HEADLESS"] = "1"
     elif "OPENCODON_WEB_DIST" not in os.environ and not getattr(args, "skip_build", False):
-        if not _build_web_ui(PROJECT_ROOT / "web", fatal=True):
+        if not _build_web_ui(PROJECT_ROOT / "apps" / "web", fatal=True):
             sys.exit(1)
     elif getattr(args, "skip_build", False):
         # --build-mode skip trusts the caller to have pre-built the web UI.
@@ -13121,12 +13123,12 @@ def cmd_dashboard(args):
             if _recoverable:
                 print(f"⚠ --skip-build was passed but no web dist found at: {_dist_root}")
                 print("  Attempting one recovery build of the web UI...")
-                _build_web_ui(PROJECT_ROOT / "web", fatal=True)
+                _build_web_ui(PROJECT_ROOT / "apps" / "web", fatal=True)
             if not (_dist_root / "index.html").exists():
                 print(f"✗ --skip-build was passed but no web dist found at: {_dist_root}")
                 if _recoverable:
                     print("  The recovery build did not produce a usable dist.")
-                print("  Pre-build first:  npm install --workspace web && npm run build -w web")
+                print("  Pre-build first:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
                 print("  Or drop --skip-build to build automatically.")
                 sys.exit(1)
             print("  ✓ Recovery build produced a web dist")
@@ -13140,7 +13142,7 @@ def cmd_dashboard(args):
         _dist_root = Path(os.environ["OPENCODON_WEB_DIST"]).expanduser()
         if not (_dist_root / "index.html").exists():
             print(f"✗ OPENCODON_WEB_DIST is set but no web dist found at: {_dist_root}")
-            print("  Pre-build first:  npm install --workspace web && npm run build -w web")
+            print("  Pre-build first:  npm install --workspace @opencodon/web && npm run build -w @opencodon/web")
             print("  Or unset OPENCODON_WEB_DIST to build and use the default web UI dist.")
             sys.exit(1)
         # Write the expanded path back: web_server reads OPENCODON_WEB_DIST raw
@@ -13295,7 +13297,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
-        "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "moa",
+        "gui", "desktop", "login", "logout", "logs", "lsp", "mcp", "memory", "moa",
         "model", "pairing", "plugins", "profile",
         "project", "proxy",
         "prompt-size",
@@ -13595,7 +13597,7 @@ def _try_termux_fast_tui_launch() -> bool:
     """Launch obvious Termux TUI invocations before building every subparser.
 
     `opencodon --tui` is the hot path on phones. The full parser setup imports
-    command modules for model, fallback, migrate, kanban, bundles, plugins,
+    command modules for model, fallback, migrate, bundles, plugins,
     etc. even though the TUI immediately execs Node. On Termux only, parse the
     lightweight top-level/chat parser and hand off to ``cmd_chat`` when the
     invocation is unambiguously the built-in TUI/chat path.
@@ -14014,14 +14016,6 @@ def main():
     # webhook command  (parser built in opencodon_cli/subcommands/webhook.py)
     # =========================================================================
     build_webhook_parser(subparsers, cmd_webhook=cmd_webhook)
-
-    # =========================================================================
-    # kanban command — multi-profile collaboration board
-    # =========================================================================
-    from opencodon_cli.kanban import build_parser as _build_kanban_parser
-
-    kanban_parser = _build_kanban_parser(subparsers)
-    kanban_parser.set_defaults(func=cmd_kanban)
 
     # =========================================================================
     # project command — named, multi-folder workspaces

@@ -541,7 +541,6 @@ class TestSenderPrefixWithBackfill:
         r.adapters = {}
         r._model = "test-model"
         r._base_url = ""
-        r._has_setup_skill = lambda: False
         return r
 
     @pytest.fixture()

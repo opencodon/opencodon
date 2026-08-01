@@ -621,11 +621,11 @@ def test_run_command_tags_task_and_profile_labels(monkeypatch):
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "research-bot")
     calls = _mock_subprocess_run(monkeypatch)
 
-    _make_dummy_env(task_id="kanban-42")
+    _make_dummy_env(task_id="task-42")
 
     labels = _labels_in_run_args(_run_args_from_calls(calls))
-    assert "opencodon-task-id=kanban-42" in labels, (
-        f"opencodon-task-id=kanban-42 missing; got: {sorted(labels)}"
+    assert "opencodon-task-id=task-42" in labels, (
+        f"opencodon-task-id=task-42 missing; got: {sorted(labels)}"
     )
     assert "opencodon-profile=research-bot" in labels, (
         f"opencodon-profile=research-bot missing; got: {sorted(labels)}"

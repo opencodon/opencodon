@@ -2340,7 +2340,7 @@ class TestDispatchToolWithoutCliRef:
 
     This pins the contract the plugin docs rely on: a plugin can drive
     tools from a hook callback even when running in the gateway or a
-    kanban-spawned worker session, where _cli_ref is None.
+    spawned worker session, where _cli_ref is None.
     """
 
     def test_dispatch_tool_invokes_handler_without_cli_ref(self):

@@ -114,7 +114,7 @@ def is_idle(
     """The idle predicate (D2/D3/F7). Pure — composes the three conjuncts.
 
     Idle iff: no in-flight agent turn, no inbound within the timeout window, and
-    no live background work (backgrounded delegate_task / kanban / bg terminal).
+    no live background work (backgrounded delegate_task / bg terminal).
     Any active work keeps the gateway awake — suspending mid-flight would lose it.
     """
     if running_agent_count > 0:

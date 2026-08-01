@@ -1,16 +1,17 @@
-# nix/web.nix — opencodon Web Dashboard (Vite/React) frontend build
+# nix/web.nix — opencodon browser UI (Vite/React) frontend build
 { pkgs, opencodonNpmLib, ... }:
 let
-  # @opencodon/shared ships as a file: workspace dep of web, so its source
-  # must be in the filtered src tree too.
+  # @opencodon/client and @opencodon/shared ship as file: workspace deps of
+  # apps/web, so their source must be in the filtered src tree too.
   npm = opencodonNpmLib.mkNpmPassthru {
     dirs = [
-      "web"
+      "apps/web"
+      "apps/client"
       "apps/shared"
     ];
   };
 
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/web/package.json"));
+  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/apps/web/package.json"));
   version = packageJson.version;
 in
 pkgs.buildNpmPackage (npm // {
@@ -20,22 +21,21 @@ pkgs.buildNpmPackage (npm // {
   doCheck = false;
 
   buildPhase = ''
-    # Build from web/ so vite.config.ts and tsconfig resolve correctly.
-    # The workspace root's node_modules/ is at ../node_modules/.
-    cd web
-    node ../node_modules/typescript/bin/tsc -b
-    # outDir in vite.config.ts points to ../opencodon_cli/web_dist for the
+    # Build from apps/web so vite.config.ts and tsconfig resolve correctly.
+    # The workspace root's node_modules/ is at ../../node_modules/.
+    cd apps/web
+    # outDir in vite.config.ts points to ../../opencodon_cli/web_dist for the
     # monorepo layout.  Override with --outDir dist for the nix build.
-    node ../node_modules/vite/bin/vite.js build --outDir dist
+    node ../../node_modules/vite/bin/vite.js build --outDir dist
 
     # Return to source root so installPhase paths are correct.
-    cd ..
+    cd ../..
   '';
 
   installPhase = ''
     runHook preInstall
-    # vite writes to web/dist/ (we cd'd there, overrode outDir, then cd'd back).
-    cp -r web/dist $out
+    # vite writes to apps/web/dist/ (we cd'd there, overrode outDir, then cd'd back).
+    cp -r apps/web/dist $out
     runHook postInstall
   '';
 })
