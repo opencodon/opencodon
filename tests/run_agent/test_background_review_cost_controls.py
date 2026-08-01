@@ -37,19 +37,10 @@ class _FakeAgent:
         return {
             "api_key": "parent-key",
             "base_url": "https://chatgpt.com/backend-api/codex",
-            "api_mode": "codex_app_server",
+            "api_mode": "codex_responses",
         }
 
 
-def test_routing_auto_inherits_parent_and_downgrades_codex_app_server():
-    agent = _FakeAgent()
-    cfg = {"auxiliary": {"background_review": {"provider": "auto", "model": ""}}}
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
-        rt = br._resolve_review_runtime(agent)
-    assert rt["routed"] is False
-    assert rt["provider"] == "openai-codex"
-    assert rt["model"] == "gpt-5.5"
-    assert rt["api_mode"] == "codex_responses"  # downgraded so agent-loop tools dispatch
 
 
 def test_routing_to_different_model_marks_routed_and_resolves_credentials():

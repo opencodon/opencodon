@@ -33,8 +33,6 @@ else:
     import fcntl
 
 _GATEWAY_KIND = "opencodon-gateway"
-# State files written before the rename carry the old kind tag.
-_LEGACY_GATEWAY_KINDS = (_GATEWAY_KIND, "opencodon-gateway")
 _RUNTIME_STATUS_FILE = "gateway_state.json"
 _LOCKS_DIRNAME = "gateway-locks"
 _IS_WINDOWS = sys.platform == "win32"
@@ -471,7 +469,7 @@ def _looks_like_gateway_process(pid: int) -> bool:
 
 def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
     """Validate gateway identity from PID-file metadata when cmdline is unavailable."""
-    if record.get("kind") not in _LEGACY_GATEWAY_KINDS:
+    if record.get("kind") != _GATEWAY_KIND:
         return False
 
     argv = record.get("argv")

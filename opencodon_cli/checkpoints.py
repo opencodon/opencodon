@@ -8,7 +8,6 @@ store at ``~/.opencodon/checkpoints/``.  Actions:
     opencodon checkpoints list          # per-project checkpoint counts + workdir
     opencodon checkpoints prune [opts]  # force a sweep (ignores the 24h marker)
     opencodon checkpoints clear [-f]    # nuke the entire base (asks first)
-    opencodon checkpoints clear-legacy  # delete just the legacy-* archives
 
 Examples::
 
@@ -71,7 +70,6 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Checkpoint base: {base}")
     print(f"Total size:      {_fmt_bytes(info['total_size_bytes'])}")
     print(f"  store/         {_fmt_bytes(info['store_size_bytes'])}")
-    print(f"  legacy-*       {_fmt_bytes(info['legacy_size_bytes'])}")
     print(f"Projects:        {info['project_count']}")
 
     projects = sorted(
@@ -92,14 +90,6 @@ def cmd_status(args: argparse.Namespace) -> int:
             last = _fmt_age(p.get("last_touch"))
             print(f"  {wd:<60}  {commits:>7}  {last:>12}  {state}")
 
-    legacy = info.get("legacy_archives", [])
-    if legacy:
-        print()
-        print(f"Legacy archives ({len(legacy)}):")
-        for arch in sorted(legacy, key=lambda a: a.get("mtime", 0), reverse=True):
-            print(f"  {arch['name']:<40}  {_fmt_bytes(arch['size_bytes']):>10}")
-        print()
-        print("Clear with: opencodon checkpoints clear-legacy")
     return 0
 
 
@@ -153,7 +143,6 @@ def cmd_clear(args: argparse.Namespace) -> int:
     print(f"This will delete the ENTIRE checkpoint base at {info['base']}")
     print(f"  size:        {_fmt_bytes(info['total_size_bytes'])}")
     print(f"  projects:    {info['project_count']}")
-    print(f"  legacy dirs: {len(info.get('legacy_archives', []))}")
     print()
     print("All /rollback history for every working directory will be lost.")
     if not args.force and not _confirm("Proceed?"):
@@ -166,32 +155,6 @@ def cmd_clear(args: argparse.Namespace) -> int:
         return 0
     print("Could not clear checkpoint base (see logs).")
     return 2
-
-
-def cmd_clear_legacy(args: argparse.Namespace) -> int:
-    from tools.checkpoint_manager import clear_legacy, store_status
-
-    info = store_status()
-    legacy = info.get("legacy_archives", [])
-    if not legacy:
-        print("No legacy archives to clear.")
-        return 0
-
-    total = sum(a.get("size_bytes", 0) for a in legacy)
-    print(f"Found {len(legacy)} legacy archive(s), total {_fmt_bytes(total)}:")
-    for arch in legacy:
-        print(f"  {arch['name']:<40}  {_fmt_bytes(arch['size_bytes']):>10}")
-    print()
-    print("Legacy archives hold pre-v2 per-project shadow repos, moved aside")
-    print("during the single-store migration. Delete when you're confident")
-    print("you don't need the old /rollback history.")
-    if not args.force and not _confirm("Delete all legacy archives?"):
-        print("Aborted.")
-        return 1
-
-    result = clear_legacy()
-    print(f"Deleted {result['deleted']} archive(s), reclaimed {_fmt_bytes(result['bytes_freed'])}.")
-    return 0
 
 
 def register_cli(parser: argparse.ArgumentParser) -> None:
@@ -235,10 +198,3 @@ def register_cli(parser: argparse.ArgumentParser) -> None:
                          help="Skip confirmation prompt")
     p_clear.set_defaults(func=cmd_clear)
 
-    p_legacy = subs.add_parser(
-        "clear-legacy",
-        help="Delete only the legacy-<ts>/ archives from v1 migration",
-    )
-    p_legacy.add_argument("-f", "--force", action="store_true",
-                          help="Skip confirmation prompt")
-    p_legacy.set_defaults(func=cmd_clear_legacy)

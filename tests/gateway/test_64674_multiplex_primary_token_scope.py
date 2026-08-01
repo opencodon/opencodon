@@ -107,9 +107,9 @@ class TestPlatformHasBotCredential:
                 Platform.TELEGRAM,
                 Platform.DISCORD,
                 Platform.SLACK,
-                Platform.MATTERMOST,
-                Platform.MATRIX,
-                Platform.WEIXIN,
+                Platform.API_SERVER,
+                Platform.WEBHOOK,
+                Platform.WHATSAPP,
             }:
                 continue
             assert _platform_has_bot_credential(

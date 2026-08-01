@@ -225,7 +225,7 @@ class GatewayStreamConsumer:
         # can't recognize an already-delivered response. (#65919 review)
         self._delivered_segment_texts: list[str] = []
         # Cache adapter lifecycle capability: only platforms that need an
-        # explicit finalize call (e.g. DingTalk AI Cards) force us to make
+        # explicit finalize call (e.g. card-based renderers) force us to make
         # a redundant final edit.  Everyone else keeps the fast path.
         # Use ``is True`` (not ``bool(...)``) so MagicMock attribute access
         # in tests doesn't incorrectly enable this path.
@@ -265,8 +265,8 @@ class GatewayStreamConsumer:
     ) -> dict | None:
         """Return per-send metadata for stream-created messages.
 
-        Mattermost treats notify-worthy sends as user-visible final content
-        when deciding whether a broken thread root may fall back flat.  Preview
+        Notify-worthy sends count as user-visible final content when deciding
+        whether a broken thread root may fall back flat.  Preview
         and progress sends keep their original metadata and remain thread-strict.
 
         ``expect_edits`` preserves the upstream Telegram streaming contract:
@@ -847,7 +847,7 @@ class GatewayStreamConsumer:
                         display_text += self.cfg.cursor
 
                     # Segment break: finalize the current message so platforms
-                    # that need explicit closure (e.g. DingTalk AI Cards) don't
+                    # that need explicit closure (e.g. card-based renderers) don't
                     # leave the previous segment stuck in a loading state when
                     # the next segment (tool progress, next chunk) creates a
                     # new message below it.  got_done has its own finalize
@@ -932,7 +932,7 @@ class GatewayStreamConsumer:
                 # creates a fresh message below any tool-progress messages.
                 #
                 # Exception: when _message_id is "__no_edit__" the platform
-                # never returned a real message ID (e.g. Signal, webhook with
+                # never returned a real message ID (e.g. webhook with
                 # github_comment delivery).  Resetting to None would re-enter
                 # the "first send" path on every tool boundary and post one
                 # platform message per tool call — that is what caused 155
@@ -1792,7 +1792,7 @@ class GatewayStreamConsumer:
         # before switching to tool calls; the resulting "X ▉" message risks
         # leaving the cursor permanently visible if the follow-up edit (to
         # strip the cursor on segment break) is rate-limited by the platform.
-        # This was reported on Telegram, Matrix, and other clients where the
+        # This was reported on Telegram and other clients where the
         # ▉ block character renders as a visible white box ("tofu").
         # Existing messages (edits) are unaffected — only first sends gated.
         _MIN_NEW_MSG_CHARS = 4

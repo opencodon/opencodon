@@ -303,17 +303,6 @@ class TestPrologueStamping:
         assert "api_content" not in ctx.messages[ctx.current_turn_user_idx]
         assert agent.api_content_at_persist is None
 
-    def test_no_stamp_for_codex_app_server(self):
-        """codex_app_server turns bypass the api_messages build, so the
-        injected bytes are never sent — stamping would persist a lie."""
-        agent = _FakeAgent()
-        agent.api_mode = "codex_app_server"
-        with patch(
-            "opencodon_cli.plugins.invoke_hook",
-            return_value=[{"context": "PLUGIN-CTX"}],
-        ):
-            ctx = _build(agent)
-        assert "api_content" not in ctx.messages[ctx.current_turn_user_idx]
 
 
 # ---------------------------------------------------------------------------

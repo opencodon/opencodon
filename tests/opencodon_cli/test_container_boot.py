@@ -696,37 +696,6 @@ def test_default_slot_autostarts_when_root_state_running(tmp_path: Path) -> None
     assert not (scandir / "gateway-default" / "down").exists()
 
 
-@pytest.mark.parametrize(
-    "container_argv",
-    [
-        ("gateway", "run"),
-        ("/init", "/opt/opencodon/docker/main-wrapper.sh", "gateway", "run"),
-    ],
-)
-def test_legacy_gateway_run_cmd_seeds_default_running_state(
-    tmp_path: Path,
-    container_argv: tuple[str, ...],
-) -> None:
-    """Pre-s6 Docker users often ran `gateway run` as the container
-    command. With no persisted gateway_state.json yet, s6 reconciliation
-    must migrate that legacy intent into a running default gateway slot."""
-    scandir = tmp_path / "run-service"; scandir.mkdir()
-
-    actions = reconcile_profile_gateways(
-        opencodon_home=tmp_path,
-        scandir=scandir,
-        dry_run=False,
-        container_argv=container_argv,
-    )
-
-    default_action = next(a for a in actions if a.profile == "default")
-    assert default_action.prior_state == "running"
-    assert default_action.action == "started"
-    assert not (scandir / "gateway-default" / "down").exists()
-    state = json.loads((tmp_path / "gateway_state.json").read_text())
-    assert state["gateway_state"] == "running"
-    assert state["desired_state"] == "running"
-    assert state["migrated_from"] == "legacy-container-cmd"
 
 
 @pytest.mark.parametrize(

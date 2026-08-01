@@ -237,7 +237,7 @@ _LAST_EXPANDED_CONFIG_BY_PATH: Dict[str, Any] = {}
 # load_config() returns a deepcopy of the cached value when the file
 # hasn't changed since the last load, skipping yaml.safe_load +
 # _deep_merge + _normalize_* + _expand_env_vars (~13 ms/call).
-# save_config() + migrate_config() write via atomic_yaml_write which
+# save_config() + reconcile_config() write via atomic_yaml_write which
 # produces a fresh inode, so stat() sees a new mtime_ns and the next
 # load repopulates automatically — no explicit invalidation hook.
 # Cached tuple is (user_mtime_ns, user_size, managed_mtime_ns, managed_size,
@@ -1419,7 +1419,6 @@ DEFAULT_CONFIG = {
                                       # autoraise banner. Set False to keep the
                                       # 85% threshold autoraise but suppress the
                                       # user-facing notice in CLI/gateway output.
-        "codex_app_server_auto": "native",  # Codex app-server (codex CLI runtime) thread
                                       # compaction mode. The codex agent owns the real
                                       # thread context, so opencodon' summarizer cannot
                                       # shrink it (#36801). native = codex decides when
@@ -2707,7 +2706,7 @@ DEFAULT_CONFIG = {
         #     into it, and that thread's session is seeded so the user's reply
         #     in-thread continues with full context. Each continuable job gets
         #     its own scrollback, isolated from the parent channel.
-        #   - DM-only platforms (WhatsApp / Signal / SMS): no threads exist, so
+        #   - DM-only platforms (WhatsApp): no threads exist, so
         #     the brief is mirrored into the origin DM session instead — the
         #     DM itself is the continuation surface.
         # Both paths ride the shipped gateway.mirror.mirror_to_session and are
@@ -3036,7 +3035,7 @@ DEFAULT_CONFIG = {
         #             supports it (Telegram DMs via sendMessageDraft,
         #             Bot API 9.5+) and fall back to edit-based elsewhere.
         #             Safe global default: platforms without draft support
-        #             (Discord, Slack, Matrix, Telegram groups) transparently
+        #             (Discord, Slack, Telegram groups) transparently
         #             use the edit path, so "auto" only upgrades chats that
         #             can render the smoother native preview.
         #   "draft" — explicitly request native drafts; falls back to edit
@@ -3432,24 +3431,11 @@ DEFAULT_CONFIG = {
         "region": "global",
     },
 
-    # Config schema version - bump this when adding new required fields
-    "_config_version": 33,
 }
 
 # =============================================================================
-# Config Migration System
+# Environment variables
 # =============================================================================
-
-# Track which env vars were introduced in each config version.
-# Migration only mentions vars new since the user's previous version.
-ENV_VARS_BY_VERSION: Dict[int, List[str]] = {
-    3: ["FIRECRAWL_API_KEY", "BROWSERBASE_API_KEY", "BROWSERBASE_PROJECT_ID", "FAL_KEY"],
-    4: ["VOICE_TOOLS_OPENAI_KEY", "ELEVENLABS_API_KEY"],
-    5: ["WHATSAPP_ENABLED", "WHATSAPP_MODE", "WHATSAPP_ALLOWED_USERS",
-        "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_ALLOWED_USERS"],
-    10: ["TAVILY_API_KEY"],
-    11: ["TERMINAL_MODAL_MODE"],
-}
 
 # Required environment variables with metadata for migration prompts.
 # LLM provider is required but handled in the setup wizard's provider
@@ -4525,34 +4511,6 @@ def _format_config_get_value(value, *, as_json: bool) -> str:
     return str(value)
 
 
-def get_missing_config_fields() -> List[Dict[str, Any]]:
-    """
-    Check which config fields are missing or outdated (recursive).
-    
-    Walks the DEFAULT_CONFIG tree at arbitrary depth and reports any keys
-    present in defaults but absent from the user's loaded config.
-    """
-    config = load_config()
-    missing = []
-
-    def _check(defaults: dict, current: dict, prefix: str = ""):
-        for key, default_value in defaults.items():
-            if key.startswith('_'):
-                continue
-            full_key = key if not prefix else f"{prefix}.{key}"
-            if key not in current:
-                missing.append({
-                    "key": full_key,
-                    "default": default_value,
-                    "description": f"New config option: {full_key}",
-                })
-            elif isinstance(default_value, dict) and isinstance(current.get(key), dict):
-                _check(default_value, current[key], full_key)
-
-    _check(DEFAULT_CONFIG, config)
-    return missing
-
-
 def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     """Return skill-declared config vars that are missing or empty in config.yaml.
 
@@ -5105,48 +5063,6 @@ def get_custom_provider_context_length(
     return None
 
 
-def _coerce_config_version(value: Any) -> int:
-    """Return a safe integer config version, treating invalid values as legacy."""
-    if isinstance(value, bool):
-        return 0
-    try:
-        version = int(value)
-    except (TypeError, ValueError):
-        return 0
-    return max(version, 0)
-
-
-def check_config_version() -> Tuple[int, int]:
-    """
-    Check the raw on-disk config schema version.
-
-    ``load_config()`` deliberately starts from ``DEFAULT_CONFIG`` and deep-merges
-    the user's file, which is correct for runtime reads but wrong for deciding
-    whether the user's persisted schema has been migrated. A config file with no
-    raw ``_config_version`` must remain visible as legacy instead of inheriting
-    the latest default version in memory.
-
-    Returns (current_version, latest_version).
-    """
-    latest = _coerce_config_version(DEFAULT_CONFIG.get("_config_version", 1)) or 1
-    config_path = get_config_path()
-    if not config_path.exists():
-        return latest, latest
-
-    try:
-        with open(config_path, encoding="utf-8") as f:
-            config = fast_safe_load(f) or {}
-    except Exception as e:
-        # Invalid YAML needs a parse warning, not an automatic schema rewrite
-        # that could replace the user's broken file with defaults.
-        _warn_config_parse_failure(config_path, e)
-        return latest, latest
-
-    if not isinstance(config, dict):
-        config = {}
-    current = _coerce_config_version(config.get("_config_version"))
-    return current, latest
-
 
 # =============================================================================
 # Config structure validation
@@ -5181,7 +5097,6 @@ _EXTRA_KNOWN_ROOT_KEYS = {
     "platforms",             # top-level per-platform map merged by gateway/config.py
     "require_mention",       # top-level convenience form honored by the gateway (#3979)
     "unauthorized_dm_behavior",  # top-level form read by gateway/config.py
-    "signal",            # Signal settings bridged to env vars by gateway/config.py
 }
 _KNOWN_ROOT_KEYS = frozenset(DEFAULT_CONFIG.keys()) | _EXTRA_KNOWN_ROOT_KEYS
 
@@ -5424,610 +5339,32 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
         sys.stderr.write("\n".join(lines) + "\n\n")
 
 
-def _persist_migration(config: Dict[str, Any]) -> None:
-    """Persist a migrated config under the migration write invariant.
+def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str, Any]:
+    """Repair and validate config/.env, prompting for anything still missing.
 
-    THE INVARIANT (single source of truth for the whole migration pipeline):
-    a migration may only persist values that DIFFER from the current schema
-    default, plus explicit removals/renames of user data. Pure schema defaults
-    are never materialised to disk — ``load_config()``'s deep-merge supplies
-    them at read time, so writing them adds nothing and actively shadows future
-    default changes (see ``save_config``'s docstring). Materialising defaults on
-    every version bump is what rewrote hand-curated configs into full
-    DEFAULT_CONFIG dumps (the "opencodon update / opencodon -p blows up my config"
-    reports).
+    Runs on startup and from ``opencodon config reconcile``. There is no
+    version-upgrade path: ``load_config()`` deep-merges ``DEFAULT_CONFIG`` at
+    read time, so a key absent from disk already takes effect with its default
+    and nothing needs materialising. What remains are the passes that are
+    always correct to run — repair a corrupted .env, quarantine an
+    exfiltration-shaped MCP entry, reject an invalid toolset name, and collect
+    values only the user can supply.
 
-    Every migration step MUST route its write through this helper instead of
-    calling ``save_config`` directly. It is a thin wrapper over
-    ``save_config(config)`` (default-stripping ON, no ``merge_existing``);
-    centralising the call makes the invariant impossible to regress one
-    migration at a time. Callers must pass the full raw config returned by
-    ``read_raw_config()`` after in-place mutations (including key removals);
-    deep-merging the on-disk file back in would resurrect keys the migration
-    just deleted. Partial-save preservation for unrelated top-level sections
-    belongs on ``save_config(..., merge_existing=True)``, not here.
+    Returns ``{"env_added": [...], "config_added": [...], "warnings": [...]}``.
     """
-    save_config(config)
+    results: Dict[str, Any] = {"env_added": [], "config_added": [], "warnings": []}
 
-
-def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, Any]:
-    """
-    Migrate config to latest version, prompting for new required fields.
-    
-    Args:
-        interactive: If True, prompt user for missing values
-        quiet: If True, suppress output
-        
-    Returns:
-        Dict with migration results: {"env_added": [...], "config_added": [...], "warnings": [...]}
-    """
-    results = {"env_added": [], "config_added": [], "warnings": []}
-
-    # ── Always: sanitize .env (split concatenated keys) ──
+    # ── Repair .env (split concatenated keys) ──
     try:
         fixes = sanitize_env_file()
         if fixes and not quiet:
             print(f"  ✓ Repaired .env file ({fixes} corrupted entries fixed)")
     except Exception:
-        pass  # best-effort; don't block migration on sanitize failure
+        pass  # best-effort; never block startup on sanitize failure
 
-    # Check config version
-    current_ver, latest_ver = check_config_version()
-    
-    # ── Version 3 → 4: migrate tool progress from .env to config.yaml ──
-    if current_ver < 4:
-        config = read_raw_config()
-        display = config.get("display", {})
-        if not isinstance(display, dict):
-            display = {}
-        if "tool_progress" not in display:
-            old_enabled = get_env_value("OPENCODON_TOOL_PROGRESS")
-            old_mode = get_env_value("OPENCODON_TOOL_PROGRESS_MODE")
-            if old_enabled and old_enabled.lower() in {"false", "0", "no"}:
-                display["tool_progress"] = "off"
-                results["config_added"].append("display.tool_progress=off (from OPENCODON_TOOL_PROGRESS=false)")
-            elif old_mode and old_mode.lower() in {"new", "all", "verbose"}:
-                display["tool_progress"] = old_mode.lower()
-                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from OPENCODON_TOOL_PROGRESS_MODE)")
-            else:
-                display["tool_progress"] = "all"
-                results["config_added"].append("display.tool_progress=all (default)")
-            config["display"] = display
-            _persist_migration(config)
-            if not quiet:
-                print(f"  ✓ Migrated tool progress to config.yaml: {display['tool_progress']}")
-    
-    # ── Version 4 → 5: add timezone field ──
-    if current_ver < 5:
-        config = read_raw_config()
-        if "timezone" not in config:
-            old_tz = os.getenv("OPENCODON_TIMEZONE", "")
-            if old_tz and old_tz.strip():
-                config["timezone"] = old_tz.strip()
-                results["config_added"].append(f"timezone={old_tz.strip()} (from OPENCODON_TIMEZONE)")
-            else:
-                config["timezone"] = ""
-                results["config_added"].append("timezone= (empty, uses server-local)")
-            _persist_migration(config)
-            if not quiet:
-                tz_display = config["timezone"] or "(server-local)"
-                print(f"  ✓ Added timezone to config.yaml: {tz_display}")
-
-    # ── Version 8 → 9: clear ANTHROPIC_TOKEN from .env ──
-    # The new Anthropic auth flow no longer uses this env var.
-    if current_ver < 9:
-        try:
-            old_token = get_env_value("ANTHROPIC_TOKEN")
-            if old_token:
-                save_env_value("ANTHROPIC_TOKEN", "")
-                if not quiet:
-                    print("  ✓ Cleared ANTHROPIC_TOKEN from .env (no longer used)")
-        except Exception:
-            pass
-
-    # ── Version 11 → 12: migrate custom_providers list → providers dict ──
-    if current_ver < 12:
-        config = read_raw_config()
-        custom_list = config.get("custom_providers")
-        if isinstance(custom_list, list) and custom_list:
-            providers_dict = config.get("providers", {})
-            if not isinstance(providers_dict, dict):
-                providers_dict = {}
-            migrated_count = 0
-            for entry in custom_list:
-                if not isinstance(entry, dict):
-                    continue
-                old_name = entry.get("name", "")
-                old_url = entry.get("base_url", "") or entry.get("url", "") or entry.get("api", "") or ""
-                if not old_url:
-                    continue  # skip entries with no URL
-
-                # Generate a kebab-case key from the display name
-                key = old_name.strip().lower().replace(" ", "-").replace("(", "").replace(")", "")
-                # Remove consecutive hyphens and trailing hyphens
-                while "--" in key:
-                    key = key.replace("--", "-")
-                key = key.strip("-")
-                if not key:
-                    # Fallback: derive from URL hostname
-                    try:
-                        from urllib.parse import urlparse
-                        parsed = urlparse(old_url)
-                        key = (parsed.hostname or "endpoint").replace(".", "-")
-                    except Exception:
-                        key = f"endpoint-{migrated_count}"
-
-                # Don't overwrite existing entries
-                base_key = key
-                suffix = migrated_count
-                while key in providers_dict:
-                    key = f"{base_key}-{suffix}"
-                    suffix += 1
-
-                new_entry = _custom_provider_entry_to_provider_config(
-                    entry,
-                    provider_key=key,
-                )
-                if new_entry is None:
-                    continue
-                if not old_name:
-                    new_entry.pop("name", None)
-                if new_entry.get("api_key") in {"no-key", "no-key-required", ""}:
-                    new_entry.pop("api_key", None)
-
-                providers_dict[key] = new_entry
-                migrated_count += 1
-
-            if migrated_count > 0:
-                config["providers"] = providers_dict
-                # Remove the old list — runtime reads via get_compatible_custom_providers()
-                config.pop("custom_providers", None)
-                _persist_migration(config)
-                if not quiet:
-                    print(f"  ✓ Migrated {migrated_count} custom provider(s) to providers: section")
-                    for key in list(providers_dict.keys())[-migrated_count:]:
-                        ep = providers_dict[key]
-                        print(f"    → {key}: {ep.get('api', '')}")
-
-    # ── Version 12 → 13: clear dead LLM_MODEL / OPENAI_MODEL from .env ──
-    # These env vars were written by the old setup wizard but nothing reads
-    # them anymore (config.yaml is the sole source of truth since March 2026).
-    # Stale entries cause user confusion — see issue report.
-    if current_ver < 13:
-        for dead_var in ("LLM_MODEL", "OPENAI_MODEL"):
-            try:
-                old_val = get_env_value(dead_var)
-                if old_val:
-                    save_env_value(dead_var, "")
-                    if not quiet:
-                        print(f"  ✓ Cleared {dead_var} from .env (no longer used — config.yaml is source of truth)")
-            except Exception:
-                pass
-
-    # ── Version 13 → 14: migrate legacy flat stt.model to provider section ──
-    # Old configs (and cli-config.yaml.example) had a flat `stt.model` key
-    # that was provider-agnostic.  When the provider was "local" this caused
-    # OpenAI model names (e.g. "whisper-1") to be fed to faster-whisper,
-    # crashing with "Invalid model size".  Move the value into the correct
-    # provider-specific section and remove the flat key.
-    if current_ver < 14:
-        # Read raw config (no defaults merged) to check what the user actually
-        # wrote, then apply changes to the merged config for saving.
-        raw = read_raw_config()
-        raw_stt = raw.get("stt", {})
-        if isinstance(raw_stt, dict) and "model" in raw_stt:
-            legacy_model = raw_stt["model"]
-            provider = raw_stt.get("provider", "local")
-            config = read_raw_config()
-            stt = config.get("stt", {})
-            # Remove the legacy flat key
-            stt.pop("model", None)
-            # Place it in the appropriate provider section only if the
-            # user didn't already set a model there
-            if provider in {"local", "local_command"}:
-                # Don't migrate an OpenAI model name into the local section
-                _local_models = {
-                    "tiny.en", "tiny", "base.en", "base", "small.en", "small",
-                    "medium.en", "medium", "large-v1", "large-v2", "large-v3",
-                    "large", "distil-large-v2", "distil-medium.en",
-                    "distil-small.en", "distil-large-v3", "distil-large-v3.5",
-                    "large-v3-turbo", "turbo",
-                }
-                if legacy_model in _local_models:
-                    # Check raw config — only set if user didn't already
-                    # have a nested local.model
-                    raw_local = raw_stt.get("local", {})
-                    if not isinstance(raw_local, dict) or "model" not in raw_local:
-                        local_cfg = stt.setdefault("local", {})
-                        local_cfg["model"] = legacy_model
-                # else: drop it — it was an OpenAI model name, local section
-                # already defaults to "base" via DEFAULT_CONFIG
-            else:
-                # Cloud provider — put it in that provider's section only
-                # if user didn't already set a nested model
-                raw_provider = raw_stt.get(provider, {})
-                if not isinstance(raw_provider, dict) or "model" not in raw_provider:
-                    provider_cfg = stt.setdefault(provider, {})
-                    provider_cfg["model"] = legacy_model
-            config["stt"] = stt
-            _persist_migration(config)
-            if not quiet:
-                print("  ✓ Migrated legacy stt.model to provider-specific config")
-
-    # ── Version 14 → 15: add explicit gateway interim-message gate ──
-    if current_ver < 15:
-        config = read_raw_config()
-        display = config.get("display", {})
-        if not isinstance(display, dict):
-            display = {}
-        if "interim_assistant_messages" not in display:
-            display["interim_assistant_messages"] = True
-            config["display"] = display
-            results["config_added"].append("display.interim_assistant_messages=true (default)")
-            _persist_migration(config)
-            if not quiet:
-                print("  ✓ Added display.interim_assistant_messages=true")
-
-    # ── Version 15 → 16: migrate tool_progress_overrides into display.platforms ──
-    if current_ver < 16:
-        config = read_raw_config()
-        display = config.get("display", {})
-        if not isinstance(display, dict):
-            display = {}
-        old_overrides = display.get("tool_progress_overrides")
-        if isinstance(old_overrides, dict) and old_overrides:
-            platforms = display.get("platforms", {})
-            if not isinstance(platforms, dict):
-                platforms = {}
-            for plat, mode in old_overrides.items():
-                if plat not in platforms:
-                    platforms[plat] = {}
-                if "tool_progress" not in platforms[plat]:
-                    platforms[plat]["tool_progress"] = mode
-            display["platforms"] = platforms
-            config["display"] = display
-            _persist_migration(config)
-            if not quiet:
-                migrated = ", ".join(f"{p}={m}" for p, m in old_overrides.items())
-                print(f"  ✓ Migrated tool_progress_overrides → display.platforms: {migrated}")
-            results["config_added"].append("display.platforms (migrated from tool_progress_overrides)")
-
-    # ── Version 16 → 17: remove legacy compression.summary_* keys ──
-    if current_ver < 17:
-        config = read_raw_config()
-        comp = config.get("compression", {})
-        if isinstance(comp, dict):
-            s_model = comp.pop("summary_model", None)
-            s_provider = comp.pop("summary_provider", None)
-            s_base_url = comp.pop("summary_base_url", None)
-            migrated_keys = []
-            # Migrate non-empty, non-default values to auxiliary.compression
-            if s_model and str(s_model).strip():
-                aux = config.setdefault("auxiliary", {})
-                aux_comp = aux.setdefault("compression", {})
-                if not aux_comp.get("model"):
-                    aux_comp["model"] = str(s_model).strip()
-                    migrated_keys.append(f"model={s_model}")
-            if s_provider and str(s_provider).strip() not in {"", "auto"}:
-                aux = config.setdefault("auxiliary", {})
-                aux_comp = aux.setdefault("compression", {})
-                if not aux_comp.get("provider") or aux_comp.get("provider") == "auto":
-                    aux_comp["provider"] = str(s_provider).strip()
-                    migrated_keys.append(f"provider={s_provider}")
-            if s_base_url and str(s_base_url).strip():
-                aux = config.setdefault("auxiliary", {})
-                aux_comp = aux.setdefault("compression", {})
-                if not aux_comp.get("base_url"):
-                    aux_comp["base_url"] = str(s_base_url).strip()
-                    migrated_keys.append(f"base_url={s_base_url}")
-            if migrated_keys or s_model is not None or s_provider is not None or s_base_url is not None:
-                config["compression"] = comp
-                _persist_migration(config)
-                if not quiet:
-                    if migrated_keys:
-                        print(f"  ✓ Migrated compression.summary_* → auxiliary.compression: {', '.join(migrated_keys)}")
-                    else:
-                        print("  ✓ Removed unused compression.summary_* keys")
-
-    # ── Version 20 → 21: plugins are now opt-in; grandfather existing user plugins ──
-    # The loader now requires plugins to appear in ``plugins.enabled`` before
-    # loading. Existing installs had all discovered plugins loading by default
-    # (minus anything in ``plugins.disabled``). To avoid silently breaking
-    # those setups on upgrade, populate ``plugins.enabled`` with the set of
-    # currently-installed user plugins that aren't already disabled.
-    #
-    # Bundled plugins (shipped in the repo itself) are NOT grandfathered —
-    # they ship off for everyone, including existing users, so any user who
-    # wants one has to opt in explicitly.
-    if current_ver < 21:
-        config = read_raw_config()
-        plugins_cfg = config.get("plugins")
-        if not isinstance(plugins_cfg, dict):
-            plugins_cfg = {}
-        # Only migrate if the enabled allow-list hasn't been set yet.
-        if "enabled" not in plugins_cfg:
-            disabled = plugins_cfg.get("disabled", []) or []
-            if not isinstance(disabled, list):
-                disabled = []
-            disabled_set = set(disabled)
-
-            # Scan ``$OPENCODON_HOME/plugins/`` for currently installed user plugins.
-            grandfathered: List[str] = []
-            try:
-                user_plugins_dir = get_opencodon_home() / "plugins"
-                if user_plugins_dir.is_dir():
-                    for child in sorted(user_plugins_dir.iterdir()):
-                        if not child.is_dir():
-                            continue
-                        manifest_file = child / "plugin.yaml"
-                        if not manifest_file.exists():
-                            manifest_file = child / "plugin.yml"
-                        if not manifest_file.exists():
-                            continue
-                        try:
-                            with open(manifest_file, encoding="utf-8") as _mf:
-                                manifest = fast_safe_load(_mf) or {}
-                        except Exception:
-                            manifest = {}
-                        name = manifest.get("name") or child.name
-                        if name in disabled_set:
-                            continue
-                        grandfathered.append(name)
-            except Exception:
-                grandfathered = []
-
-            plugins_cfg["enabled"] = grandfathered
-            config["plugins"] = plugins_cfg
-            _persist_migration(config)
-            results["config_added"].append(
-                f"plugins.enabled (opt-in allow-list, {len(grandfathered)} grandfathered)"
-            )
-            if not quiet:
-                if grandfathered:
-                    print(
-                        f"  ✓ Plugins now opt-in: grandfathered "
-                        f"{len(grandfathered)} existing plugin(s) into plugins.enabled"
-                    )
-                else:
-                    print(
-                        "  ✓ Plugins now opt-in: no existing plugins to grandfather. "
-                        "Use `opencodon plugins enable <name>` to activate."
-                    )
-
-    # ── Version 22 → 23: seed curator defaults + create logs/curator/ ──
-    # The curator (background skill maintenance) was added in PR #16049, but
-    # existing configs from before that PR (or before the April 2026
-    # unification under `auxiliary.curator`) never wrote the curator section
-    # to disk. The runtime deep-merge in `load_config()` fills defaults at
-    # read time, so the curator *functions*; but users can't see/edit the
-    # settings in their `config.yaml`, and `opencodon curator status` has no
-    # stable logs dir to point at until the first run mkdir's it.
-    #
-    # This migration:
-    #   1. Writes the `curator` top-level section to config.yaml (enabled,
-    #      interval_hours, min_idle_hours, stale_after_days, archive_after_days)
-    #      — only keys the user hasn't already overridden.
-    #   2. Writes the `auxiliary.curator` aux-task slot (provider, model,
-    #      base_url, api_key, timeout, extra_body) — canonical slot for
-    #      routing the curator fork to a cheaper aux model.
-    #   3. Creates `~/.opencodon/logs/curator/` if missing (belt-and-suspenders
-    #      on top of ensure_opencodon_home() — old profiles that predate this
-    #      migration still benefit).
-    if current_ver < 23:
-        try:
-            curator_dir = get_opencodon_home() / "logs" / "curator"
-            curator_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            results["warnings"].append(f"Could not create {curator_dir}: {e}")
-
-        config = read_raw_config()
-        touched = False
-
-        # (1) Top-level curator section — only add missing keys
-        _curator_defaults = DEFAULT_CONFIG.get("curator", {})
-        raw_curator = config.get("curator")
-        if not isinstance(raw_curator, dict):
-            raw_curator = {}
-        added_curator: List[str] = []
-        for k, v in _curator_defaults.items():
-            if k not in raw_curator:
-                raw_curator[k] = copy.deepcopy(v)
-                added_curator.append(k)
-        if added_curator:
-            config["curator"] = raw_curator
-            touched = True
-
-        # (2) auxiliary.curator task slot
-        _aux_curator_defaults = (
-            DEFAULT_CONFIG.get("auxiliary", {}).get("curator", {})
-        )
-        raw_aux = config.get("auxiliary")
-        if not isinstance(raw_aux, dict):
-            raw_aux = {}
-        raw_aux_curator = raw_aux.get("curator")
-        if not isinstance(raw_aux_curator, dict):
-            raw_aux_curator = {}
-        added_aux: List[str] = []
-        for k, v in _aux_curator_defaults.items():
-            if k not in raw_aux_curator:
-                raw_aux_curator[k] = copy.deepcopy(v)
-                added_aux.append(k)
-        if added_aux:
-            raw_aux["curator"] = raw_aux_curator
-            config["auxiliary"] = raw_aux
-            touched = True
-
-        if touched:
-            _persist_migration(config)
-            if added_curator:
-                results["config_added"].append(
-                    f"curator ({len(added_curator)} default key(s))"
-                )
-                if not quiet:
-                    print(
-                        "  ✓ Curator settings now available "
-                        f"({', '.join(added_curator)}) — edit via `opencodon config set`"
-                    )
-            if added_aux:
-                results["config_added"].append(
-                    f"auxiliary.curator ({len(added_aux)} default key(s))"
-                )
-                if not quiet:
-                    print(
-                        "  ✓ auxiliary.curator settings now available "
-                        f"({', '.join(added_aux)}) — edit via `opencodon config set`"
-                    )
-
-    # ── Version 24 → 25: lower model_catalog TTL 24h → 1h ──
-    # The model picker now refreshes its curated list hourly so freshly
-    # published model-catalog.json deploys reach users without a day-long
-    # stale window. Only rewrite the OLD default (24) — never clobber a
-    # value the user deliberately customized.
-    if current_ver < 25:
-        config = read_raw_config()
-        raw_mc = config.get("model_catalog")
-        if isinstance(raw_mc, dict) and raw_mc.get("ttl_hours") == 24:
-            raw_mc["ttl_hours"] = 1
-            config["model_catalog"] = raw_mc
-            _persist_migration(config)
-            results["config_added"].append("model_catalog.ttl_hours 24→1")
-            if not quiet:
-                print("  ✓ Lowered model_catalog.ttl_hours to 1 (hourly picker refresh)")
-
-    # ── Version 28 → 29: rename memory/skills write_mode → write_approval ──
-    # The tri-state write_mode (on|off|approve) was replaced by a clear boolean
-    # write_approval (default false = gate off, writes flow freely; true =
-    # require approval). Only an explicit "approve" carried gating intent, so
-    # it maps to true; everything else (on/off/unset) → false. The old
-    # "off = block all writes" mode is dropped — memory_enabled: false disables
-    # memory entirely. Only rewrite a key the user actually persisted; never
-    # invent one.
-    if current_ver < 29:
-        config = read_raw_config()
-        touched = False
-        for subsystem in ("memory", "skills"):
-            sub = config.get(subsystem)
-            if not isinstance(sub, dict) or "write_mode" not in sub:
-                continue
-            old = sub.pop("write_mode")
-            old_norm = old.strip().lower() if isinstance(old, str) else old
-            sub["write_approval"] = (old_norm == "approve")
-            config[subsystem] = sub
-            touched = True
-            results["config_added"].append(
-                f"{subsystem}.write_mode → write_approval={sub['write_approval']}"
-            )
-        if touched:
-            _persist_migration(config)
-            if not quiet:
-                print("  ✓ Renamed write_mode → write_approval (boolean gate)")
-
-    # ── Version 29 → 30: curator.consolidate defaults to false ──
-    # Consolidation (the LLM umbrella-building fork) is opt-in, OFF by default;
-    # the deterministic inactivity prune still runs whenever the curator is
-    # enabled. No write is needed: the schema default (curator.consolidate=false)
-    # is supplied by load_config()'s deep-merge at read time, and persisting a
-    # default-valued key would only bloat a lean config (it gets stripped on
-    # save anyway). Existing installs that WANT the old always-consolidate
-    # behavior set it to true explicitly via `opencodon config set`.
-
-    # ── Version 30 → 31: switch verify_on_stop OFF (one-time) ──
-    # verify_on_stop defaulted to the "auto" sentinel (surface-aware: on for
-    # interactive coding surfaces). In practice the verification narrative was
-    # more noise than signal — it even fired on doc/markdown/skill edits with
-    # nothing to verify. The new default is OFF. This migration switches
-    # existing installs off ONCE, but only when the user never expressed an
-    # explicit preference: we rewrite the value only if it's missing or still
-    # the "auto" sentinel. An explicit true/false the user set is preserved.
-    if current_ver < 31:
-        config = read_raw_config()
-        raw_agent = config.get("agent")
-        if not isinstance(raw_agent, dict):
-            raw_agent = {}
-        cur = raw_agent.get("verify_on_stop")
-        is_auto_sentinel = (
-            isinstance(cur, str) and cur.strip().lower() == "auto"
-        )
-        # Only flip the non-committal states; leave explicit bool/on/off alone.
-        if cur is None or is_auto_sentinel:
-            raw_agent["verify_on_stop"] = False
-            config["agent"] = raw_agent
-            _persist_migration(config)
-            results["config_added"].append("agent.verify_on_stop=false")
-            if not quiet:
-                print(
-                    "  ✓ Turned off verify-on-stop (agent.verify_on_stop: false). "
-                    "Set it to true to re-enable, or \"auto\" for the legacy "
-                    "surface-aware behavior."
-                )
-
-    # ── Version 31 → 32: flip the BAKED-IN literal true to OFF (one-time) ──
-    # The v30→v31 flip above only caught missing/"auto" values. But the very
-    # first ship of verify-on-stop (config v30, commit 2f1a47b90) defaulted
-    # DEFAULT_CONFIG["agent"]["verify_on_stop"] to a literal True, and
-    # migrate_config persists defaults with strip_defaults=False — so every
-    # install that updated through v30 got `verify_on_stop: true` written into
-    # config.yaml as a literal. v31's guard deliberately preserves an explicit
-    # bool, so it skipped that whole population and left them ON. That literal
-    # true was never a user choice: the feature had no off-switch worth setting
-    # it against until v31 introduced one, so a true persisted before v32 is
-    # always the old machine default. Flip it off once here. A true the user
-    # sets AFTER v32 (config already at version 32) is never touched.
-    if current_ver < 32:
-        config = read_raw_config()
-        raw_agent = config.get("agent")
-        if isinstance(raw_agent, dict) and raw_agent.get("verify_on_stop") is True:
-            raw_agent["verify_on_stop"] = False
-            config["agent"] = raw_agent
-            _persist_migration(config)
-            results["config_added"].append("agent.verify_on_stop=false")
-            if not quiet:
-                print(
-                    "  ✓ Turned off verify-on-stop (agent.verify_on_stop: false) — "
-                    "the old default was written into your config as a literal "
-                    "true. Set it to true again to re-enable, or \"auto\" for the "
-                    "legacy surface-aware behavior."
-                )
-
-    # ── Version 32 → 33: unify delegation concurrency caps ──
-    # delegation.max_async_children is deprecated: max_concurrent_children now
-    # caps both a single batch's parallelism and concurrent background
-    # delegation units. Fold a raised max_async_children into
-    # max_concurrent_children (take the max so nobody loses headroom), then
-    # drop the stale key.
-    if current_ver < 33:
-        config = read_raw_config()
-        raw_deleg = config.get("delegation")
-        if isinstance(raw_deleg, dict) and "max_async_children" in raw_deleg:
-            old_async = raw_deleg.pop("max_async_children")
-            try:
-                old_async_i = int(old_async)
-            except (TypeError, ValueError):
-                old_async_i = None
-            if old_async_i is not None and old_async_i > 3:
-                try:
-                    cur_children = int(raw_deleg.get("max_concurrent_children", 3))
-                except (TypeError, ValueError):
-                    cur_children = 3
-                if old_async_i > cur_children:
-                    raw_deleg["max_concurrent_children"] = old_async_i
-                    results["config_added"].append(
-                        f"delegation.max_concurrent_children={old_async_i} "
-                        f"(folded from deprecated max_async_children)"
-                    )
-            config["delegation"] = raw_deleg
-            _persist_migration(config)
-            if not quiet:
-                print(
-                    "  ✓ Removed deprecated delegation.max_async_children — "
-                    "delegation.max_concurrent_children now caps background "
-                    "delegations too."
-                )
-
-    # ── Post-migration: disable exfiltration-shaped MCP stdio entries ──
-    # Users can hand-edit mcp_servers, and older installs may already contain a
-    # malicious entry. Preserve the stanza for auditability but mark it
-    # disabled so the next startup will not spawn it. (#45620)
+    # ── Disable exfiltration-shaped MCP stdio entries ──
+    # Users can hand-edit mcp_servers. Preserve the stanza for auditability but
+    # mark it disabled so the next startup will not spawn it. (#45620)
     config = read_raw_config()
     raw_mcp_servers = config.get("mcp_servers")
     if isinstance(raw_mcp_servers, dict):
@@ -6054,13 +5391,12 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                     print(f"  ⚠ Disabled MCP server '{server_name}' pending review")
             if mcp_touched:
                 config["mcp_servers"] = raw_mcp_servers
-                _persist_migration(config)
+                save_config(config)
 
-    # ── Always: validate platform_toolsets after migration ──
-    # A migration (or hand-edit) that leaves an invalid toolset name in
-    # platform_toolsets silently disables the affected tools — resolve_toolset()
-    # returns [] for an unknown name, so the agent quietly loses tools with no
-    # error or warning. Surface it loudly instead. See #38798.
+    # ── Validate platform_toolsets ──
+    # A hand-edit that leaves an invalid toolset name in platform_toolsets
+    # silently disables the affected tools — resolve_toolset() returns [] for an
+    # unknown name, so the agent quietly loses tools with no error. See #38798.
     try:
         from toolsets import validate_toolset
         from opencodon_cli.toolset_validation import validate_platform_toolsets
@@ -6073,31 +5409,28 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
             if not quiet:
                 print(f"  ⚠ {w}")
     except Exception as _ts_val_err:
-        # best-effort; never block migration on validation
+        # best-effort; never block startup on validation
         logger.debug("platform_toolsets validation skipped: %s", _ts_val_err)
 
-    if current_ver < latest_ver and not quiet:
-        print(f"Config version: {current_ver} → {latest_ver}")
-
-    # Check for missing required env vars
+    # ── Missing required env vars ──
     missing_env = get_missing_env_vars(required_only=True)
-    
+
     if missing_env and not quiet:
         print("\n⚠️  Missing required environment variables:")
         for var in missing_env:
             print(f"   • {var['name']}: {var['description']}")
-    
+
     if interactive and missing_env:
         print("\nLet's configure them now:\n")
         for var in missing_env:
             if var.get("url"):
                 print(f"  Get your key at: {var['url']}")
-            
+
             if var.get("password"):
                 value = masked_secret_prompt(f"  {var['prompt']}: ")
             else:
                 value = input(f"  {var['prompt']}: ").strip()
-            
+
             if value:
                 save_env_value(var["name"], value)
                 results["env_added"].append(var["name"])
@@ -6105,79 +5438,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
             else:
                 results["warnings"].append(f"Skipped {var['name']} - some features may not work")
             print()
-    
-    # Check for missing optional env vars and offer to configure interactively
-    # Skip "advanced" vars (like OPENAI_BASE_URL) -- those are for power users
-    missing_optional = get_missing_env_vars(required_only=False)
-    required_names = {v["name"] for v in missing_env} if missing_env else set()
-    missing_optional = [
-        v for v in missing_optional
-        if v["name"] not in required_names and not v.get("advanced")
-    ]
-    
-    # Only offer to configure env vars that are NEW since the user's previous version
-    new_var_names = set()
-    for ver in range(current_ver + 1, latest_ver + 1):
-        new_var_names.update(ENV_VARS_BY_VERSION.get(ver, []))
 
-    if new_var_names and interactive and not quiet:
-        new_and_unset = [
-            (name, OPTIONAL_ENV_VARS[name])
-            for name in sorted(new_var_names)
-            if not get_env_value(name) and name in OPTIONAL_ENV_VARS
-        ]
-        if new_and_unset:
-            print(f"\n  {len(new_and_unset)} new optional key(s) in this update:")
-            for name, info in new_and_unset:
-                print(f"    • {name} — {info.get('description', '')}")
-            print()
-            try:
-                answer = input("  Configure new keys? [y/N]: ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                answer = "n"
-
-            if answer in {"y", "yes"}:
-                print()
-                for name, info in new_and_unset:
-                    if info.get("url"):
-                        print(f"  {info.get('description', name)}")
-                        print(f"  Get your key at: {info['url']}")
-                    else:
-                        print(f"  {info.get('description', name)}")
-                    if info.get("password"):
-                        value = masked_secret_prompt(
-                            f"  {info.get('prompt', name)} (Enter to skip): "
-                        )
-                    else:
-                        value = input(f"  {info.get('prompt', name)} (Enter to skip): ").strip()
-                    if value:
-                        save_env_value(name, value)
-                        results["env_added"].append(name)
-                        print(f"  ✓ Saved {name}")
-                    print()
-            else:
-                print("  Set later with: opencodon config set <key> <value>")
-    
-    # Check for missing config fields.
-    #
-    # New default keys are NOT materialised to disk: load_config() deep-merges
-    # DEFAULT_CONFIG at read time, so a missing key already takes effect with
-    # its default (see _persist_migration's invariant). We surface the list for
-    # the informational "N new config option(s) available" display in
-    # `opencodon update`, but only the version bump is persisted.
-    missing_config = get_missing_config_fields()
-    if missing_config:
-        results["config_added"].extend(field["key"] for field in missing_config)
-
-    if current_ver < latest_ver:
-        config = read_raw_config()
-        config["_config_version"] = latest_ver
-        _persist_migration(config)
-
-    # ── Skill-declared config vars ──────────────────────────────────────
-    # Skills can declare config.yaml settings they need via
-    # metadata.opencodon.config in their SKILL.md frontmatter.
-    # Prompt for any that are missing/empty.
+    # ── Skill-declared config vars ──
+    # Skills declare config.yaml settings they need via metadata.opencodon.config
+    # in their SKILL.md frontmatter. Prompt for any that are missing/empty.
     missing_skill_config = get_missing_skill_config_vars()
     if missing_skill_config and interactive and not quiet:
         print(f"\n  {len(missing_skill_config)} skill setting(s) not configured:")
@@ -6213,7 +5477,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                         f"Skipped {var['key']} — skill '{var.get('skill', '?')}' may ask for it later"
                     )
                 print()
-            _persist_migration(config)
+            save_config(config)
         else:
             print("  Set later with: opencodon config set <key> <value>")
 
@@ -6226,9 +5490,8 @@ def _merge_partial_save(raw: dict, override: dict) -> dict:
     Top-level sections omitted from *override* are preserved from *raw*.
     Shared top-level dict sections are deep-merged so a caller can update one
     nested key without dropping sibling keys from disk. Intentional key
-    removals within a section are not supported here — migration writes must
-    route through ``_persist_migration`` with a full ``read_raw_config()`` dict
-    instead.
+    removals within a section are not supported here — pass a full
+    ``read_raw_config()`` dict to ``save_config`` instead.
     """
     result = copy.deepcopy(override)
     for key, value in raw.items():
@@ -6518,7 +5781,7 @@ def _strip_default_values(
     default-only subtrees (e.g. ``gateway``) never bloat ``config.yaml``
     when the user has nothing to say about them.
     """
-    preserve_keys = {("_config_version",)} | set(preserve_keys or ())
+    preserve_keys = set(preserve_keys or ())
 
     def _strip(value: Any, default: Any, path: Tuple[str, ...]) -> Any:
         if path in preserve_keys:
@@ -7218,8 +6481,9 @@ def save_config(
     default changes invisible to users.
 
     When ``merge_existing`` is True, the on-disk raw config is deep-merged
-    under *config* before writing so partial callers (migration steps via
-    ``_persist_migration``) cannot drop unrelated sections the caller omitted.
+    under *config* before writing so partial callers cannot drop unrelated
+    sections they omitted. Callers passing a full ``read_raw_config()`` dict
+    (with intentional key removals) must leave it False.
     Full-document replacement callers (dashboard raw YAML editor, callers that
     already deep-merge) must leave this False so intentional deletions survive.
     """
@@ -7277,7 +6541,7 @@ def save_config(
         # Strip schema-default values so the user's custom settings are not
         # silently reset on every save.  Keys the user explicitly set (paths
         # from the raw pre-normalisation config) are always preserved.
-        effective_preserve_keys: Set[Tuple[str, ...]] = {("_config_version",)}
+        effective_preserve_keys: Set[Tuple[str, ...]] = set()
         if explicit_raw_paths:
             effective_preserve_keys.update(explicit_raw_paths)
         if preserve_keys:
@@ -8700,28 +7964,13 @@ def config_command(args):
     elif subcmd == "env-path":
         print(get_env_path())
     
-    elif subcmd == "migrate":
+    elif subcmd == "reconcile":
         print()
-        print(color("🔄 Checking configuration for updates...", Colors.CYAN, Colors.BOLD))
+        print(color("🔄 Checking configuration...", Colors.CYAN, Colors.BOLD))
         print()
-        
-        # Check what's missing
+
         missing_env = get_missing_env_vars(required_only=False)
-        missing_config = get_missing_config_fields()
-        current_ver, latest_ver = check_config_version()
-        
-        if not missing_env and not missing_config and current_ver >= latest_ver:
-            print(color("✓ Configuration is up to date!", Colors.GREEN))
-            print()
-            return
-        
-        # Show what needs to be updated
-        if current_ver < latest_ver:
-            print(f"  Config version: {current_ver} → {latest_ver}")
-        
-        if missing_config:
-            print(f"\n  {len(missing_config)} new config option(s) will be added with defaults")
-        
+
         required_missing = [v for v in missing_env if v.get("is_required")]
         optional_missing = [
             v for v in missing_env
@@ -8741,10 +7990,9 @@ def config_command(args):
                 print(f"     • {var['name']}{tools_str}")
         
         print()
-        
-        # Run migration
-        results = migrate_config(interactive=True, quiet=False)
-        
+
+        results = reconcile_config(interactive=True, quiet=False)
+
         print()
         if results["env_added"] or results["config_added"]:
             print(color("✓ Configuration updated!", Colors.GREEN))
@@ -8762,13 +8010,6 @@ def config_command(args):
         print(color("📋 Configuration Status", Colors.CYAN, Colors.BOLD))
         print()
         
-        current_ver, latest_ver = check_config_version()
-        if current_ver >= latest_ver:
-            print(f"  Config version: {current_ver} ✓")
-        else:
-            print(color(f"  Config version: {current_ver} → {latest_ver} (update available)", Colors.YELLOW))
-        
-        print()
         print(color("  Required:", Colors.BOLD))
         for var_name in REQUIRED_ENV_VARS:
             if get_env_value(var_name):
@@ -8786,12 +8027,6 @@ def config_command(args):
                 tools_str = f" → {', '.join(tools[:2])}" if tools else ""
                 print(color(f"    ○ {var_name}{tools_str}", Colors.DIM))
         
-        missing_config = get_missing_config_fields()
-        if missing_config:
-            print()
-            print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
-            print("    Run 'opencodon config migrate' to add them")
-        
         print()
     
     else:
@@ -8804,7 +8039,7 @@ def config_command(args):
         print("  opencodon config set <key> <value>   Set a config value")
         print("  opencodon config unset <key>        Remove a config value")
         print("  opencodon config check     Check for missing/outdated config")
-        print("  opencodon config migrate   Update config with new options")
+        print("  opencodon config reconcile Repair config and prompt for missing keys")
         print("  opencodon config path      Show config file path")
         print("  opencodon config env-path  Show .env file path")
         sys.exit(1)

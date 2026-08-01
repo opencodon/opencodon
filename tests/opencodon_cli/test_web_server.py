@@ -1973,7 +1973,6 @@ class TestWebServerEndpoints:
                 },
             },
         )
-        monkeypatch.setattr(web_server, "check_config_version", lambda: (1, 1))
         monkeypatch.setattr(gateway_config, "load_gateway_config", lambda: _GatewayConfig())
 
         resp = self.client.get("/api/status")
@@ -2004,7 +2003,6 @@ class TestWebServerEndpoints:
                 },
             },
         )
-        monkeypatch.setattr(web_server, "check_config_version", lambda: (1, 1))
         monkeypatch.setattr(gateway_config, "load_gateway_config", lambda: _GatewayConfig())
 
         resp = self.client.get("/api/status")
@@ -2664,34 +2662,17 @@ class TestWebServerEndpoints:
         assert "Copy member ID" in fields["SLACK_ALLOWED_USERS"]["help"]
 
     def test_messaging_catalog_covers_wired_gateway_platforms(self):
-        """Catalog is derived from the Platform enum, so every WIRED built-in shows up."""
-        from gateway.config import RETIRED_PLATFORM_VALUES, Platform
-
-        resp = self.client.get("/api/messaging/platforms")
-        platforms = {entry["id"] for entry in resp.json()["platforms"]}
-
-        for member in Platform.__members__.values():
-            if member.value == "local" or member.value in RETIRED_PLATFORM_VALUES:
-                continue
-            assert member.value in platforms, f"Missing gateway platform {member.value} from /api/messaging/platforms"
-
-    def test_messaging_catalog_omits_retired_platforms(self):
-        """A fork-cut platform must never be offered.
-
-        Its enum member survives so stale configs and session stores still
-        parse, but no adapter exists — listing it hands the user a card, a
-        credential form and an enable toggle for a connection the gateway will
-        refuse to make. This is the half of the invariant that has teeth: the
-        coverage test above passes just as well if the filter drops everything.
-        """
-        from gateway.config import RETIRED_PLATFORM_VALUES
+        """Catalog is derived from the Platform enum, so every built-in shows up."""
+        from gateway.config import Platform
 
         resp = self.client.get("/api/messaging/platforms")
         platforms = {entry["id"] for entry in resp.json()["platforms"]}
 
         assert platforms, "catalog is empty — the filter is dropping wired platforms too"
-        offered_but_dead = platforms & RETIRED_PLATFORM_VALUES
-        assert not offered_but_dead, f"retired platforms offered by the dashboard: {sorted(offered_but_dead)}"
+        for member in Platform.__members__.values():
+            if member.value == "local":
+                continue
+            assert member.value in platforms, f"Missing gateway platform {member.value} from /api/messaging/platforms"
 
     def test_messaging_catalog_includes_plugin_platforms(self, monkeypatch):
         """Plugin-registered adapters appear in the catalog without per-platform code."""
@@ -3726,7 +3707,7 @@ class TestConfigRoundTrip:
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def test_get_config_no_internal_keys(self):
-        """GET /api/config should not expose _config_version or _model_meta."""
+        """GET /api/config should not expose underscore-prefixed internal keys."""
         config = self.client.get("/api/config").json()
         internal = [k for k in config if k.startswith("_")]
         assert not internal, f"Internal keys leaked to frontend: {internal}"
@@ -4120,8 +4101,6 @@ class TestNewEndpoints:
         cloned_root = get_opencodon_home() / "profiles" / "cloned"
         cloned_skill = cloned_root / "skills" / "custom" / "new-skill" / "SKILL.md"
         assert cloned_skill.exists()
-        cloned_config = yaml.safe_load((cloned_root / "config.yaml").read_text(encoding="utf-8"))
-        assert cloned_config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         profiles = {p["name"]: p for p in self.client.get("/api/profiles").json()["profiles"]}
         assert profiles["cloned"]["skill_count"] == 1
 

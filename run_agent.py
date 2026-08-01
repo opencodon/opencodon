@@ -2817,20 +2817,6 @@ class AIAgent:
             self._interrupt_message = message
             self._pending_redirect = None
 
-        # Codex app-server owns its model/tool loop and watches a private
-        # interrupt event rather than opencodon' per-thread flag.
-        if getattr(self, "api_mode", None) == "codex_app_server":
-            _codex_session = getattr(self, "_codex_session", None)
-            _request_interrupt = getattr(_codex_session, "request_interrupt", None)
-            if callable(_request_interrupt):
-                try:
-                    _request_interrupt()
-                except Exception:
-                    logger.debug(
-                        "Failed to interrupt Codex app-server turn",
-                        exc_info=True,
-                    )
-
         # A cron turn performs its API request on the conversation thread to
         # avoid the nested interrupt-worker deadlock.  Unlike the normal worker
         # path, its client is registered here so this cross-thread interrupt can
@@ -2980,8 +2966,6 @@ class AIAgent:
         the displayed partial reasoning as plain assistant context, appends the
         correction as a real user message, and retries. During tool execution
         it degrades to ``steer()`` so the tool can finish at a safe boundary.
-        Codex app-server has a native ``turn/steer`` operation and uses it
-        directly instead of cancelling.
 
         Returns ``False`` when there is no live turn or the text is empty, so
         surfaces can fall back to their existing next-turn queue.
@@ -2989,25 +2973,6 @@ class AIAgent:
         if not text or not text.strip():
             return False
         cleaned = text.strip()
-
-        # Codex owns its internal reasoning/tool loop, so use its first-class
-        # active-turn steering protocol rather than interrupting the subprocess.
-        if getattr(self, "api_mode", None) == "codex_app_server":
-            _codex_session = getattr(self, "_codex_session", None)
-            _native_steer = getattr(_codex_session, "request_steer", None)
-            if callable(_native_steer):
-                _redirect_lock = getattr(self, "_pending_redirect_lock", None)
-                if _redirect_lock is not None:
-                    with _redirect_lock:
-                        if self._interrupt_requested:
-                            return False
-                elif self._interrupt_requested:
-                    return False
-                try:
-                    return bool(_native_steer(cleaned))
-                except Exception:
-                    logger.debug("Codex app-server turn/steer failed", exc_info=True)
-                    return False
 
         # Never kill a tool merely to deliver conversational guidance. The
         # existing steer drain puts it on the final tool result before the next
@@ -6421,18 +6386,6 @@ class AIAgent:
         result = self.run_conversation(message, stream_callback=stream_callback)
         return result["final_response"]
 
-    def _run_codex_app_server_turn(
-        self,
-        *,
-        user_message: str,
-        original_user_message: Any,
-        messages: List[Dict[str, Any]],
-        effective_task_id: str,
-        should_review_memory: bool = False,
-    ) -> Dict[str, Any]:
-        """Forwarder — see ``agent.codex_runtime.run_codex_app_server_turn``."""
-        from agent.codex_runtime import run_codex_app_server_turn
-        return run_codex_app_server_turn(self, user_message=user_message, original_user_message=original_user_message, messages=messages, effective_task_id=effective_task_id, should_review_memory=should_review_memory)
 
 def main(
     query: str = None,

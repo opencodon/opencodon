@@ -390,9 +390,7 @@ def _setup_update_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(opencodon_main, "_stash_local_changes_if_needed", lambda *a, **kw: None)
     monkeypatch.setattr(opencodon_main, "_restore_stashed_changes", lambda *a, **kw: True)
     monkeypatch.setattr(opencodon_config, "get_missing_env_vars", lambda required_only=True: [])
-    monkeypatch.setattr(opencodon_config, "get_missing_config_fields", lambda: [])
-    monkeypatch.setattr(opencodon_config, "check_config_version", lambda: (5, 5))
-    monkeypatch.setattr(opencodon_config, "migrate_config", lambda **kw: {"env_added": [], "config_added": []})
+    monkeypatch.setattr(opencodon_config, "reconcile_config", lambda **kw: {"env_added": [], "config_added": [], "warnings": []})
     monkeypatch.setattr(opencodon_main, "_refresh_active_lazy_features", lambda: None)
 
 

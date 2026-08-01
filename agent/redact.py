@@ -101,7 +101,6 @@ _PREFIX_PATTERNS = [
     r"tvly-[A-Za-z0-9]{10,}",           # Tavily search API key
     r"exa_[A-Za-z0-9]{10,}",            # Exa search API key
     r"gsk_[A-Za-z0-9]{10,}",            # Groq Cloud API key
-    r"syt_[A-Za-z0-9]{10,}",            # Matrix access token
     r"xai-[A-Za-z0-9]{30,}",            # xAI (Grok) API key
     r"ntn_[A-Za-z0-9]{10,}",            # Notion internal integration token
     r"fw-[A-Za-z0-9]{30,}",             # Fireworks AI API key
@@ -262,7 +261,7 @@ _JWT_RE = re.compile(
 
 # E.164 phone numbers: +<country><number>, 7-15 digits
 # Negative lookahead prevents matching hex strings or identifiers
-_SIGNAL_PHONE_RE = re.compile(r"(\+[1-9]\d{6,14})(?![A-Za-z0-9])")
+_E164_PHONE_RE = re.compile(r"(\+[1-9]\d{6,14})(?![A-Za-z0-9])")
 
 # URLs containing query strings — matches `scheme://...?...[# or end]`.
 # Used to scan text for URLs whose query params may contain secrets.
@@ -727,14 +726,14 @@ def redact_sensitive_text(
     if "&" in text and "=" in text:
         text = _redact_form_body(text)
 
-    # E.164 phone numbers (Signal, WhatsApp)
+    # E.164 phone numbers (WhatsApp)
     if "+" in text:
         def _redact_phone(m):
             phone = m.group(1)
             if len(phone) <= 8:
                 return phone[:2] + "****" + phone[-2:]
             return phone[:4] + "****" + phone[-4:]
-        text = _SIGNAL_PHONE_RE.sub(_redact_phone, text)
+        text = _E164_PHONE_RE.sub(_redact_phone, text)
 
     return text
 

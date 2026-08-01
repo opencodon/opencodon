@@ -286,25 +286,7 @@ class Platform(Enum):
     API_SERVER = "api_server"
     WEBHOOK = "webhook"
     RELAY = "relay"  # generic relay adapter fronted by the connector (EXPERIMENTAL)
-    # ── Retired platforms (fork cut) ──────────────────────────────────────
-    # Adapters removed in the opencodon-opencodon slimming pass. The enum
-    # members remain so stale configs/session stores parse and residual
-    # guarded branches keep compiling; no adapter wiring exists for them.
-    SIGNAL = "signal"  # retired platform (fork cut)
-    MATTERMOST = "mattermost"  # retired platform (fork cut)
-    MATRIX = "matrix"  # retired platform (fork cut)
-    HOMEASSISTANT = "homeassistant"  # retired platform (fork cut)
-    EMAIL = "email"  # retired platform (fork cut)
-    SMS = "sms"  # retired platform (fork cut)
-    DINGTALK = "dingtalk"  # retired platform (fork cut)
-    MSGRAPH_WEBHOOK = "msgraph_webhook"  # retired platform (fork cut)
-    FEISHU = "feishu"  # retired platform (fork cut)
-    WECOM = "wecom"  # retired platform (fork cut)
-    WECOM_CALLBACK = "wecom_callback"  # retired platform (fork cut)
-    WEIXIN = "weixin"  # retired platform (fork cut)
-    BLUEBUBBLES = "bluebubbles"  # retired platform (fork cut)
-    QQBOT = "qqbot"  # retired platform (fork cut)
-    YUANBAO = "yuanbao"  # retired platform (fork cut)
+
     @classmethod
     def _missing_(cls, value):
         """Accept unknown platform names only for known plugin adapters.
@@ -377,35 +359,6 @@ class Platform(Enum):
 _BUILTIN_PLATFORM_VALUES = frozenset(m.value for m in Platform.__members__.values())
 
 
-# Platforms whose adapters were removed in the fork cut. The enum members above
-# stay so stale configs and session stores still parse — a retired platform is
-# readable history, not a config error — but nothing can dial them: no branch in
-# ``_make_adapter`` builds one and no module under ``gateway/platforms/`` or
-# ``plugins/platforms/`` implements one.
-#
-# This is the machine-readable form of the "retired platform (fork cut)"
-# comments, and exists so surfaces that ENUMERATE platforms (the dashboard's
-# channel catalog) can't advertise a connection the gateway would refuse to
-# make. Keep it in step with the enum: a member is either wired or listed here.
-RETIRED_PLATFORM_VALUES = frozenset({
-    "signal",
-    "mattermost",
-    "matrix",
-    "homeassistant",
-    "email",
-    "sms",
-    "dingtalk",
-    "msgraph_webhook",
-    "feishu",
-    "wecom",
-    "wecom_callback",
-    "weixin",
-    "bluebubbles",
-    "qqbot",
-    "yuanbao",
-})
-
-
 # Platforms that bind a host TCP port (HTTP/webhook listeners). In a profile
 # multiplexer the default profile owns the single shared listener and serves
 # every profile through the /p/<profile>/ URL prefix, so a SECONDARY profile
@@ -420,26 +373,10 @@ PORT_BINDING_PLATFORM_VALUES = frozenset({
     "whatsapp_cloud",
 })
 
-# Platforms whose port-binding status depends on connection mode: only the
-# listed mode binds a port. Maps platform value → the mode value that
-# actually binds (#52563). Empty since the fork cut removed the last
-# mode-conditional platform (Feishu).
-PORT_BINDING_CONDITIONAL_MODES: dict[str, str] = {}
 
-
-def platform_binds_port(platform_value: str, extra: Optional[dict] = None) -> bool:
-    """Return True when *platform_value* actually binds a port for *extra* config.
-
-    Mode-conditional platforms (Feishu) only bind in their listener mode;
-    everything else in ``PORT_BINDING_PLATFORM_VALUES`` always binds.
-    """
-    if platform_value not in PORT_BINDING_PLATFORM_VALUES:
-        return False
-    expected_mode = PORT_BINDING_CONDITIONAL_MODES.get(platform_value)
-    if expected_mode is not None:
-        actual = str((extra or {}).get("connection_mode", "websocket")).strip().lower()
-        return actual == expected_mode
-    return True
+def platform_binds_port(platform_value: str) -> bool:
+    """Return True when *platform_value* binds a host TCP port."""
+    return platform_value in PORT_BINDING_PLATFORM_VALUES
 
 
 @dataclass
@@ -618,7 +555,7 @@ class PlatformConfig:
     # assistant:write scope to render) and Google Chat's visible marker
     # message. None keeps each platform's built-in default ("is thinking..." /
     # "opencodon is thinking…"). Platforms with textless indicators (Discord,
-    # Telegram, Matrix, …) ignore it.
+    # Telegram, …) ignore it.
     typing_status_text: Optional[str] = None
 
     # Per-channel model/provider/system_prompt overrides (channel_id -> ChannelOverride)
@@ -725,8 +662,8 @@ class StreamingConfig:
     # Default is "auto": prefer native draft streaming on platforms that
     # support it (Telegram DMs via sendMessageDraft, Bot API 9.5+) and fall
     # back to edit-based streaming everywhere else.  This is safe as a global
-    # default because adapters without draft support (Discord, Slack, Matrix,
-    # …) report supports_draft_streaming() == False and transparently use the
+    # default because adapters without draft support (Discord, Slack, …)
+    # report supports_draft_streaming() == False and transparently use the
     # edit path — so "auto" never regresses non-Telegram platforms, it only
     # upgrades the chats that can render the smoother native preview.
     transport: str = "auto"
@@ -1509,7 +1446,7 @@ def load_gateway_config() -> GatewayConfig:
                     # Mark the explicit enable/disable so the registry-driven
                     # plugin-enable pass in _apply_env_overrides honors an
                     # explicit ``enabled: false`` for migrated plugin platforms
-                    # (slack, telegram, matrix, dingtalk, whatsapp, feishu …)
+                    # (slack, telegram, whatsapp, discord …)
                     # instead of re-enabling them on token/SDK presence. #41112.
                     extra["_enabled_explicit"] = True
                 extra.update(bridged)
@@ -1679,7 +1616,7 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
         # Read (don't pop) the explicit-enable marker: the registry-driven
         # plugin-enable pass later in this function also needs it to avoid
         # re-enabling a platform the user explicitly disabled (migrated plugin
-        # platforms — telegram, matrix — flow through here too, #41112). The
+        # platforms — telegram, slack — flow through here too, #41112). The
         # flag is cleared once for all platforms in the final cleanup at the
         # end of _apply_env_overrides.
         enabled_was_explicit = bool(platform_config.extra.get("_enabled_explicit", False))
@@ -2023,7 +1960,7 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
             # ``check_fn`` lazy-INSTALLS the platform SDK (pip) as a side
             # effect, so running it as an unconditional sweep over every
             # registered platform made ``load_gateway_config()`` pip-install
-            # Discord/Telegram/Slack/Feishu/Dingtalk on every call — including
+            # Discord/Telegram/Slack on every call — including
             # the desktop/dashboard readiness probe (``GET /api/status``, which
             # awaits this synchronously) — even when the user configured none
             # of them.  That blocked startup until every install finished and
@@ -2065,7 +2002,7 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
     # connector relay URL is configured via GATEWAY_RELAY_URL (env) or
     # gateway.relay_url (config.yaml). The adapter is registered into the
     # platform_registry at gateway startup (gateway.relay.register_relay_adapter)
-    # and dials OUT to the connector — so, like Telegram/Matrix, it has no public
+    # and dials OUT to the connector — so, like Telegram, it has no public
     # inbound port and just needs Platform.RELAY present+enabled in
     # config.platforms for start_gateway()'s connect loop to bring it up. The
     # connected-checker (Platform.RELAY in _PLATFORM_CONNECTED_CHECKERS) keys on

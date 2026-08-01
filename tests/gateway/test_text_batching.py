@@ -222,7 +222,7 @@ def _make_matrix_adapter():
 
     config = PlatformConfig(enabled=True, token="test-token")
     adapter = object.__new__(MatrixAdapter)
-    adapter._platform = Platform.MATRIX
+    adapter._platform = Platform.WHATSAPP
     adapter.config = config
     adapter._pending_text_batches = {}
     adapter._pending_text_batch_tasks = {}
@@ -245,7 +245,7 @@ def _make_wecom_adapter():
 
     config = PlatformConfig(enabled=True, token="test-token")
     adapter = object.__new__(WeComAdapter)
-    adapter._platform = Platform.WECOM
+    adapter._platform = Platform.SLACK
     adapter.config = config
     adapter._pending_text_batches = {}
     adapter._pending_text_batch_tasks = {}
@@ -332,7 +332,7 @@ def _make_feishu_adapter():
 
     config = PlatformConfig(enabled=True, token="test-token")
     adapter = object.__new__(FeishuAdapter)
-    adapter._platform = Platform.FEISHU
+    adapter._platform = Platform.API_SERVER
     adapter.config = config
     batch_state = FeishuBatchState()
     adapter._pending_text_batches = batch_state.events

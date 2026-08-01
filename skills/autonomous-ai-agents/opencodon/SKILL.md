@@ -111,7 +111,7 @@ opencodon config set KEY VAL   Set a config value
 opencodon config path          Print config.yaml path
 opencodon config env-path      Print .env path
 opencodon config check         Check for missing/outdated config
-opencodon config migrate       Update config with new options
+opencodon config reconcile     Repair config/.env and prompt for missing keys
 opencodon doctor [--fix]       Check dependencies and config
 opencodon status [--all]       Show component status
 ```

@@ -1,7 +1,7 @@
 """
 Base platform adapter interface.
 
-All platform adapters (Telegram, Discord, WhatsApp, Weixin, and more) inherit from this
+All platform adapters (Telegram, Discord, WhatsApp, Slack, and more) inherit from this
 and implement the required methods.
 """
 
@@ -111,8 +111,6 @@ def _reply_anchor_for_event(event) -> str | None:
         return getattr(event, "message_id", None) or getattr(event, "reply_to_message_id", None)
     if platform == "telegram" and thread_id:
         return None
-    if platform == "feishu" and thread_id and getattr(event, "reply_to_message_id", None):
-        return getattr(event, "reply_to_message_id", None)
     return getattr(event, "message_id", None)
 
 
@@ -2343,7 +2341,7 @@ class BasePlatformAdapter(ABC):
     # next to the bot name) rather than a native textless bubble. When True,
     # the gateway feeds live per-tool status phrases via set_status_text()
     # ("is running pytest…") and send_typing() renders them. Textless
-    # platforms (Telegram, Discord, Matrix, …) keep the default False and
+    # platforms (Telegram, Discord, …) keep the default False and
     # never see these calls.
     supports_status_text: bool = False
 
@@ -2393,7 +2391,7 @@ class BasePlatformAdapter(ABC):
     # opencodon commands.  Default "/" (most platforms deliver "/approve" etc.
     # as plain message text).  Platforms where typing a leading "/" is
     # intercepted or restricted by the client (Slack blocks native slash
-    # commands inside threads; Matrix clients reserve "/" for client-local
+    # commands inside threads; some clients reserve "/" for client-local
     # commands) ship a "!" alias rewrite in their adapter and set this to
     # "!" so user-facing instruction text ("Reply `!approve` ...") tells
     # users the form that actually works everywhere.  Capability flag —
@@ -2542,7 +2540,7 @@ class BasePlatformAdapter(ABC):
     def enforces_own_access_policy(self) -> bool:
         """Whether this adapter gates inbound access before dispatch.
 
-        Some adapters (WeCom, Weixin, Yuanbao, QQBot, WhatsApp) implement a
+        Some adapters (WhatsApp) implement a
         documented config-driven access surface — ``dm_policy`` / ``group_policy`` /
         ``allow_from`` / ``group_allow_from`` in ``PlatformConfig.extra`` — and
         enforce it at intake: a message is dropped inside the adapter and never
@@ -3087,7 +3085,7 @@ class BasePlatformAdapter(ABC):
     # no-op and is happy to have the stream consumer skip redundant final
     # edits.  Subclasses that *require* an explicit finalize call to close
     # out the message lifecycle (e.g. rich card / AI assistant surfaces
-    # such as DingTalk AI Cards) override this to True (class attribute or
+    # such as card-based renderers) override this to True (class attribute or
     # property) so the stream consumer knows not to short-circuit.
     REQUIRES_EDIT_FINALIZE: bool = False
 
@@ -3132,12 +3130,12 @@ class BasePlatformAdapter(ABC):
         sending a new message.
 
         ``finalize`` signals that this is the last edit in a streaming
-        sequence.  Most platforms (Telegram, Slack, Discord, Matrix,
+        sequence.  Most platforms (Telegram, Slack, Discord,
         etc.) treat it as a no-op because their edit APIs have no notion
         of message lifecycle state — an edit is an edit.  Platforms that
         render streaming updates with a distinct "in progress" state and
         require explicit closure (e.g. rich card / AI assistant surfaces
-        such as DingTalk AI Cards) use it to finalize the message and
+        such as card-based renderers) use it to finalize the message and
         transition the UI out of the streaming indicator — those should
         also set ``REQUIRES_EDIT_FINALIZE = True`` so callers route a
         final edit through even when content is unchanged.  Callers
@@ -3244,7 +3242,7 @@ class BasePlatformAdapter(ABC):
         invalidates the provider prompt cache.
 
         Platforms with inline-button support (Telegram, Discord, Slack,
-        Matrix, Feishu) should override this to render three buttons:
+        Slack) should override this to render three buttons:
         Approve Once / Always Approve / Cancel.  Button callbacks MUST be
         routed back through the gateway by calling
         ``GatewayRunner._resolve_slash_confirm(confirm_id, choice)`` where

@@ -85,7 +85,7 @@ def test_status_preserves_existing_fields(loopback_client):
     body = r.json()
     expected_keys = {
         "version", "release_date", "opencodon_home", "config_path", "env_path",
-        "config_version", "latest_config_version", "gateway_running",
+        "gateway_running",
         "gateway_pid", "gateway_health_url", "gateway_state",
         "gateway_platforms", "gateway_exit_reason", "gateway_updated_at",
         "active_sessions", "auth_required", "auth_providers",

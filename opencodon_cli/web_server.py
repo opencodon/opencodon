@@ -71,7 +71,6 @@ from opencodon_cli.config import (
     save_config,
     save_env_value,
     remove_env_value,
-    check_config_version,
     detect_install_method,
     format_docker_update_message,
     recommended_update_command_for_method,
@@ -978,10 +977,6 @@ def _build_schema_from_config(
     schema: Dict[str, Dict[str, Any]] = {}
     for key, value in config.items():
         full_key = f"{prefix}.{key}" if prefix else key
-
-        # Skip internal / version keys
-        if full_key in {"_config_version"}:
-            continue
 
         # Category is the first path component for nested keys, or "general"
         # for top-level scalar fields (model, toolsets, timezone, etc.).
@@ -2993,7 +2988,6 @@ async def get_status(profile: Optional[str] = None):
         status_scope.__enter__()
 
     try:
-        current_ver, latest_ver = check_config_version()
         # --- Gateway liveness detection ---
         # Try local PID check first (same-host).  If that fails and a remote
         # GATEWAY_HEALTH_URL is configured, probe the gateway over HTTP so the
@@ -3152,8 +3146,6 @@ async def get_status(profile: Optional[str] = None):
         status = {
             "version": __version__,
             "release_date": __release_date__,
-            "config_version": current_ver,
-            "latest_config_version": latest_ver,
             "can_update_opencodon": not _dashboard_local_update_managed_externally(),
             "gateway_running": gateway_running,
             "gateway_state": gateway_state,
@@ -3528,7 +3520,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Diagnostics: prompt-size, support dump, debug upload, config migrate.
+# Diagnostics: prompt-size, support dump, debug upload, config reconcile.
 # All produce text output, so they spawn background actions tailed via
 # /api/actions/<name>/status.
 # ---------------------------------------------------------------------------
@@ -3555,7 +3547,7 @@ async def run_dump():
 @app.post("/api/ops/config-migrate")
 async def run_config_migrate():
     try:
-        proc = _spawn_opencodon_action(["config", "migrate"], "config-migrate")
+        proc = _spawn_opencodon_action(["config", "reconcile"], "config-reconcile")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed: {exc}")
     return {"ok": True, "pid": proc.pid, "name": "config-migrate"}
@@ -7704,25 +7696,20 @@ _MESSAGING_ENV_FALLBACKS: dict[str, dict[str, Any]] = {
 def _messaging_platform_catalog() -> tuple[dict[str, Any], ...]:
     """Build the messaging catalog from the gateway's Platform enum + plugin registry.
 
-    Built-in platforms come from ``gateway.config.Platform`` (LOCAL is excluded,
-    and so are the fork-cut platforms in ``RETIRED_PLATFORM_VALUES`` — their enum
-    members survive only so stale configs parse, and listing a platform the
-    gateway has no adapter for offers the user a connection that can never be
-    made). Plugin platforms come from ``gateway.platform_registry.plugin_entries()``,
+    Built-in platforms come from ``gateway.config.Platform`` (LOCAL is excluded).
+    Plugin platforms come from ``gateway.platform_registry.plugin_entries()``,
     which lets newly installed adapters (e.g. IRC) appear without a code change
     here. Per-platform UI metadata (description, docs URL, env-var picks) lives
     in :data:`_PLATFORM_OVERRIDES`; anything not overridden gets reasonable
     defaults derived from the platform id and required_env.
     """
-    from gateway.config import RETIRED_PLATFORM_VALUES, Platform
+    from gateway.config import Platform
 
     seen: set[str] = set()
     entries: list[dict[str, Any]] = []
 
     for member in Platform.__members__.values():
         if member.value == "local":
-            continue
-        if member.value in RETIRED_PLATFORM_VALUES:
             continue
         if member.value in seen:
             continue
@@ -7768,7 +7755,7 @@ def _channel_managed_env_keys() -> frozenset[str]:
 
 # Cross-cutting gateway / relay knobs stay on the Keys → Settings tab even though
 # they use the ``messaging`` category in OPTIONAL_ENV_VARS. Platform-scoped vars
-# (``DISCORD_*``, ``MATRIX_*``, …) are owned by the Messaging UI instead.
+# (``DISCORD_*``, ``TELEGRAM_*``, …) are owned by the Messaging UI instead.
 _MESSAGING_KEYS_PAGE_KEYS = frozenset({
     "GATEWAY_ALLOW_ALL_USERS",
     "GATEWAY_PROXY_KEY",
@@ -7778,16 +7765,6 @@ _MESSAGING_KEYS_PAGE_KEYS = frozenset({
 
 def _platform_env_prefixes(platform_id: str) -> tuple[str, ...]:
     """Env-var prefixes owned by a messaging platform card."""
-    aliases: dict[str, tuple[str, ...]] = {
-        "email": ("EMAIL_",),
-        "homeassistant": ("HASS_",),
-        "qqbot": ("QQ_", "QQBOT_"),
-        "sms": ("TWILIO_",),
-        "wecom": ("WECOM_BOT_", "WECOM_SECRET"),
-        "wecom_callback": ("WECOM_CALLBACK_",),
-    }
-    if platform_id in aliases:
-        return aliases[platform_id]
     return (platform_id.upper().replace("-", "_") + "_",)
 
 

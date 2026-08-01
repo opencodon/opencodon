@@ -1,31 +1,13 @@
 """Shared SQLite primitives for the small per-profile / board stores.
 
-The projects and kanban stores open WAL SQLite files with the same two
-primitives — an idempotent column-add migration and an IMMEDIATE write
-transaction. One definition here keeps the two stores from drifting.
+The projects and kanban stores open WAL SQLite files with the same IMMEDIATE
+write transaction. One definition here keeps the two stores from drifting.
 """
 
 from __future__ import annotations
 
 import contextlib
 import sqlite3
-
-
-def add_column_if_missing(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> bool:
-    """``ALTER TABLE <table> ADD COLUMN <ddl>``, idempotent across races.
-
-    Returns ``True`` when this call added the column. Swallows the
-    ``duplicate column name`` error a concurrent migrator may have run first
-    (issue #21708). ``column`` is the human-readable name for the call site;
-    ``ddl`` carries the actual definition.
-    """
-    try:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
-        return True
-    except sqlite3.OperationalError as exc:
-        if "duplicate column name" in str(exc).lower():
-            return False
-        raise
 
 
 @contextlib.contextmanager

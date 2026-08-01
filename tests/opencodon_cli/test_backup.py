@@ -2200,7 +2200,6 @@ class TestRunPreUpdateBackup:
     def _set_mode(opencodon_home, value):
         import yaml
         (opencodon_home / "config.yaml").write_text(yaml.safe_dump({
-            "_config_version": 22,
             "updates": {"pre_update_backup": value},
         }))
         import sys as _sys

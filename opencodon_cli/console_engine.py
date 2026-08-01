@@ -854,12 +854,12 @@ class OpencodonConsoleEngine:
             )
 
         self.register(
-            ("config", "migrate"),
-            "config migrate",
-            "Update config with new options.",
-            _config_migrate,
+            ("config", "reconcile"),
+            "config reconcile",
+            "Repair config/.env and prompt for missing keys.",
+            _config_reconcile,
             mutating=True,
-            confirmation="Update opencodon configuration with missing defaults?",
+            confirmation="Reconcile opencodon configuration?",
         )
         self.register(
             ("sessions", "export"),
@@ -1027,8 +1027,8 @@ class OpencodonConsoleEngine:
                 "opencodon_cli.checkpoints",
                 "register_cli",
                 None,
-                [("status",), ("list",), ("prune",), ("clear",), ("clear-legacy",)],
-                {("prune",), ("clear",), ("clear-legacy",)},
+                [("status",), ("list",), ("prune",), ("clear",)],
+                {("prune",), ("clear",)},
             ),
             "curator": (
                 "opencodon_cli.curator",
@@ -1210,7 +1210,7 @@ def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
             setattr(args, attr, True)
     if getattr(args, "_console_command", None) == "import":
         setattr(args, "force", True)
-    if getattr(args, "checkpoints_command", None) in {"clear", "clear-legacy"}:
+    if getattr(args, "checkpoints_command", None) == "clear":
         setattr(args, "force", True)
     if getattr(args, "plugins_action", None) == "install":
         if not getattr(args, "enable", False) and not getattr(args, "no_enable", False):
@@ -1351,13 +1351,13 @@ def _config_set(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: set_config_value(key, value))
 
 
-def _config_migrate(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
-    _expect_no_args(args, "config migrate")
+def _config_reconcile(_engine: OpencodonConsoleEngine, args: list[str]) -> str:
+    _expect_no_args(args, "config reconcile")
 
     def _run() -> None:
-        from opencodon_cli.config import migrate_config
+        from opencodon_cli.config import reconcile_config
 
-        results = migrate_config(interactive=False, quiet=False)
+        results = reconcile_config(interactive=False, quiet=False)
         if results.get("env_added") or results.get("config_added"):
             print("Configuration updated.")
         else:

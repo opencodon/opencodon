@@ -730,20 +730,6 @@ def run_conversation(
     # over instead of spinning. Reset here so each turn starts fresh. See #26080.
     agent._auth_pool_refresh_counts = {}
 
-    # Optional opt-in runtime: if api_mode == codex_app_server, hand the
-    # turn to the codex app-server subprocess (terminal/file ops/patching
-    # all run inside Codex). Default opencodon path is bypassed entirely.
-    # See agent/transports/codex_app_server_session.py for the adapter
-    # and references/codex-app-server-runtime.md for the rationale.
-    if agent.api_mode == "codex_app_server":
-        return agent._run_codex_app_server_turn(
-            user_message=user_message,
-            original_user_message=original_user_message,
-            messages=messages,
-            effective_task_id=effective_task_id,
-            should_review_memory=_should_review_memory,
-        )
-
     while (api_call_count < agent.max_iterations and agent.iteration_budget.remaining > 0) or agent._budget_grace_call:
         _redirect_text = agent._drain_pending_redirect()
         if _redirect_text:

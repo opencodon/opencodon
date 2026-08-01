@@ -350,7 +350,7 @@ class TestGetOrCreateResumePending:
         """Interrupted platform mappings must not stay pinned to compressed roots."""
         store = _make_store(tmp_path)
         source = _make_source(
-            platform=Platform.WEIXIN,
+            platform=Platform.SLACK,
             chat_id="wx-chat",
             user_id="wx-user",
         )

@@ -5258,23 +5258,23 @@ class TestMultiTargetDeliveryContinuesOnFailure:
     and silently dropping every subsequent target.
     """
 
-    def _email_cfg(self):
+    def _multi_target_cfg(self):
         from gateway.config import Platform
 
         pconfig = MagicMock()
         pconfig.enabled = True
         mock_cfg = MagicMock()
-        mock_cfg.platforms = {Platform.EMAIL: pconfig}
+        mock_cfg.platforms = {Platform.WHATSAPP: pconfig}
         return mock_cfg
 
     def test_first_target_failure_does_not_crash_loop(self):
-        """First email target fails in the fallback; the second is still attempted."""
+        """First target fails in the fallback; the second is still attempted."""
         job = {
-            "id": "multi-email-job",
-            "deliver": "email:a@example.com,email:b@example.com",
+            "id": "multi-target-job",
+            "deliver": "whatsapp:+15550001111,whatsapp:+15550002222",
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=self._email_cfg()), \
+        with patch("gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
              patch("cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run", side_effect=RuntimeError("no running loop")), \
              patch("concurrent.futures.ThreadPoolExecutor") as mock_pool_cls:
@@ -5295,17 +5295,17 @@ class TestMultiTargetDeliveryContinuesOnFailure:
         )
         # First target's failure is surfaced in the returned error string.
         assert result is not None
-        assert "a@example.com" in result
+        assert "+15550001111" in result
         assert "SMTP connection refused" in result
 
     def test_all_targets_fail_returns_combined_errors(self):
         """When every target fails, the result reports all of them."""
         job = {
             "id": "all-fail-job",
-            "deliver": "email:a@example.com,email:b@example.com",
+            "deliver": "whatsapp:+15550001111,whatsapp:+15550002222",
         }
 
-        with patch("gateway.config.load_gateway_config", return_value=self._email_cfg()), \
+        with patch("gateway.config.load_gateway_config", return_value=self._multi_target_cfg()), \
              patch("cron.scheduler.load_config", return_value={"cron": {"wrap_response": False}}), \
              patch("asyncio.run", side_effect=RuntimeError("no running loop")), \
              patch("concurrent.futures.ThreadPoolExecutor") as mock_pool_cls:
@@ -5319,8 +5319,8 @@ class TestMultiTargetDeliveryContinuesOnFailure:
             result = _deliver_result(job, "Report content")
 
         assert result is not None
-        assert "a@example.com" in result
-        assert "b@example.com" in result
+        assert "+15550001111" in result
+        assert "+15550002222" in result
         assert mock_pool.submit.call_count == 2
 
 

@@ -37,7 +37,7 @@ incoming `MessageEvent` and used for routing, isolation, and context injection.
 | `user_name` | `Optional[str]` | `None` | Display name of the message author. Injected into system prompt. |
 | `thread_id` | `Optional[str]` | `None` | Forum topic / Discord thread / Slack thread identifier. Differentiates threaded conversations. |
 | `chat_topic` | `Optional[str]` | `None` | Channel topic or description (Discord channel topic, Slack channel purpose). |
-| `user_id_alt` | `Optional[str]` | `None` | Platform-specific stable alternative ID (Signal UUID, Feishu union_id). Used when `user_id` is ephemeral. |
+| `user_id_alt` | `Optional[str]` | `None` | Platform-specific stable alternative ID. Used when `user_id` is ephemeral. |
 | `chat_id_alt` | `Optional[str]` | `None` | Signal group internal ID — maps a Signal group V2 identifier to its canonical form. |
 | `is_bot` | `bool` | `False` | True when the message author is a bot or webhook (Discord bots). |
 | `guild_id` | `Optional[str]` | `None` | Discord guild / Slack workspace / Matrix server scope identifier. |

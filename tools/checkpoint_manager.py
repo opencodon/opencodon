@@ -21,7 +21,6 @@ Storage layout (single shared store, git objects deduplicated across projects)
             projects/<hash16>.json      — {workdir, created_at, last_touch}
             info/exclude                — default excludes (shared)
         .last_prune                     — auto-prune idempotency marker
-        legacy-<timestamp>/             — archived pre-v2 per-project shadow
                                           repos (auto-migrated on first init)
 
 Why a single store?
@@ -76,7 +75,6 @@ _STORE_DIRNAME = "store"
 _REFS_PREFIX = "refs/opencodon"
 _INDEXES_DIRNAME = "indexes"
 _PROJECTS_DIRNAME = "projects"
-_LEGACY_PREFIX = "legacy-"
 
 DEFAULT_EXCLUDES = [
     # Dependency / build output
@@ -364,73 +362,17 @@ def _run_git(
 
 
 # ---------------------------------------------------------------------------
-# Store initialisation + legacy migration
+# Store initialisation
 # ---------------------------------------------------------------------------
 
-def _migrate_legacy_store(base: Path) -> Optional[Path]:
-    """Move pre-v2 per-project shadow repos into a ``legacy-<ts>/`` dir.
-
-    The pre-v2 layout had one shadow git repo per working directory directly
-    under ``CHECKPOINT_BASE``.  The v2 layout wants a single ``store/`` dir.
-    Rather than delete the old data (users might want to recover), rename
-    everything except our own v2 entries into ``legacy-<timestamp>/``.  The
-    legacy dir is subject to the same retention sweep and can be manually
-    cleared with ``opencodon checkpoints clear-legacy``.
-
-    Returns the legacy-archive path, or None if nothing to migrate.
-    """
-    if not base.exists():
-        return None
-    store = _store_path(base)
-    legacy_root: Optional[Path] = None
-    # Reserved top-level entries managed by v2.
-    reserved = {_STORE_DIRNAME, _PRUNE_MARKER_NAME}
-    for child in list(base.iterdir()):
-        name = child.name
-        if name in reserved or name.startswith(_LEGACY_PREFIX):
-            continue
-        # Candidate: pre-v2 shadow repo (has HEAD) OR stray dir.  Either way
-        # we archive it so v2 starts clean.
-        if legacy_root is None:
-            stamp = time.strftime("%Y%m%d-%H%M%S")
-            legacy_root = base / f"{_LEGACY_PREFIX}{stamp}"
-            try:
-                legacy_root.mkdir(parents=True, exist_ok=True)
-            except OSError as exc:
-                logger.warning("Could not create legacy archive dir: %s", exc)
-                return None
-        dest = legacy_root / name
-        try:
-            shutil.move(str(child), str(dest))
-        except OSError as exc:
-            logger.warning("Could not archive legacy checkpoint %s: %s", child, exc)
-    # If the store still hasn't been created, create it here.
-    _ = store
-    if legacy_root is not None:
-        logger.info(
-            "Migrated pre-v2 checkpoint repos to %s. "
-            "Clear with `opencodon checkpoints clear-legacy` when safe.",
-            legacy_root,
-        )
-    return legacy_root
-
-
 def _init_store(store: Path, working_dir: str) -> Optional[str]:
-    """Initialise the shared shadow store if needed.  Returns error or None.
-
-    Also performs one-time migration of pre-v2 per-directory shadow repos
-    into ``legacy-<timestamp>/``.
-    """
+    """Initialise the shared shadow store if needed.  Returns error or None."""
     base = store.parent
-    # One-time legacy migration before we create the store.
     if not store.exists():
         try:
             base.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             return f"Could not create checkpoint base: {exc}"
-        # Only migrate if the base dir has pre-existing content that isn't
-        # our own v2 layout.
-        _migrate_legacy_store(base)
 
     if (store / "HEAD").exists():
         return None
@@ -1239,9 +1181,8 @@ def format_checkpoint_list(checkpoints: List[Dict], directory: str) -> str:
 # Auto-maintenance
 # ---------------------------------------------------------------------------
 #
-# v2 rewrite.  The sweep now operates on per-project refs inside the shared
-# store rather than per-project shadow repos.  Legacy-archive dirs
-# (``legacy-<ts>/``) are swept with the same retention policy.
+# v2 rewrite.  The sweep operates on per-project refs inside the shared
+# store rather than per-project shadow repos.
 
 _PRUNE_MARKER_NAME = ".last_prune"
 
@@ -1273,9 +1214,6 @@ def prune_checkpoints(
     after orphan/stale pruning, the oldest commit per remaining project is
     dropped until the store is under the cap.
 
-    Legacy-archive dirs (``legacy-*``) older than ``retention_days`` are
-    also deleted.
-
     Returns a dict with counts ``{"scanned", "deleted_orphan",
     "deleted_stale", "errors", "bytes_freed"}``.
 
@@ -1294,79 +1232,9 @@ def prune_checkpoints(
 
     size_before = _dir_size_bytes(base)
 
-    # --- Legacy pre-v2 per-project shadow repos (kept directly under base) ---
-    # Pre-v2 layout: ``base/<hash>/HEAD`` etc.  We treat these exactly as the
-    # v1 pruner did so behaviour is unchanged for anyone still on that layout
-    # or sitting on a mid-migration system.
     cutoff = 0.0
     if retention_days > 0:
         cutoff = time.time() - retention_days * 86400
-
-    for child in base.iterdir():
-        if not child.is_dir():
-            continue
-        if child.name == _STORE_DIRNAME:
-            continue
-        if child.name.startswith(_LEGACY_PREFIX):
-            # Legacy archive: prune by dir mtime using same retention rule.
-            if retention_days <= 0:
-                continue
-            try:
-                m = child.stat().st_mtime
-            except OSError:
-                continue
-            if m >= cutoff:
-                continue
-            try:
-                size = _dir_size_bytes(child)
-                shutil.rmtree(child)
-                result["bytes_freed"] += size
-                result["deleted_stale"] += 1
-            except OSError as exc:
-                result["errors"] += 1
-                logger.warning("Failed to delete legacy archive %s: %s", child, exc)
-            continue
-        # Only count as a pre-v2 shadow repo if it has a HEAD.
-        if not (child / "HEAD").exists():
-            continue
-        result["scanned"] += 1
-        reason: Optional[str] = None
-        if delete_orphans:
-            workdir: Optional[str] = None
-            wd_marker = child / "OPENCODON_WORKDIR"
-            if wd_marker.exists():
-                try:
-                    workdir = wd_marker.read_text(encoding="utf-8").strip()
-                except (OSError, UnicodeDecodeError):
-                    workdir = None
-            if workdir is None or not Path(workdir).exists():
-                reason = "orphan"
-        if reason is None and retention_days > 0:
-            newest = 0.0
-            try:
-                for p in child.rglob("*"):
-                    try:
-                        mt = p.stat().st_mtime
-                        newest = max(newest, mt)
-                    except OSError:
-                        continue
-            except OSError:
-                pass
-            if newest > 0 and newest < cutoff:
-                reason = "stale"
-        if reason is None:
-            continue
-        try:
-            size = _dir_size_bytes(child)
-            shutil.rmtree(child)
-            result["bytes_freed"] += size
-            if reason == "orphan":
-                result["deleted_orphan"] += 1
-            else:
-                result["deleted_stale"] += 1
-        except OSError as exc:
-            result["errors"] += 1
-            logger.warning("Failed to prune checkpoint repo %s: %s", child.name, exc)
 
     # --- v2 shared store: per-project ref pruning via metadata ---
     store = _store_path(base)
@@ -1570,19 +1438,16 @@ def maybe_auto_prune_checkpoints(
 def store_status(checkpoint_base: Optional[Path] = None) -> Dict:
     """Return a summary of the shadow store.
 
-    ``{"base": path, "store_size_bytes": N, "legacy_size_bytes": N,
-       "total_size_bytes": N, "project_count": N, "projects": [...],
-       "legacy_archives": [...]}``
+    ``{"base": path, "store_size_bytes": N, "total_size_bytes": N,
+       "project_count": N, "projects": [...]}``
     """
     base = checkpoint_base or CHECKPOINT_BASE
     out: Dict = {
         "base": str(base),
         "store_size_bytes": 0,
-        "legacy_size_bytes": 0,
         "total_size_bytes": 0,
         "project_count": 0,
         "projects": [],
-        "legacy_archives": [],
     }
     if not base.exists():
         return out
@@ -1613,29 +1478,12 @@ def store_status(checkpoint_base: Optional[Path] = None) -> Dict:
                 })
     out["project_count"] = len(out["projects"])
 
-    for child in base.iterdir():
-        if child.is_dir() and child.name.startswith(_LEGACY_PREFIX):
-            try:
-                size = _dir_size_bytes(child)
-            except OSError:
-                size = 0
-            out["legacy_size_bytes"] += size
-            try:
-                mt = child.stat().st_mtime
-            except OSError:
-                mt = 0
-            out["legacy_archives"].append({
-                "name": child.name,
-                "size_bytes": size,
-                "mtime": mt,
-            })
-
     out["total_size_bytes"] = _dir_size_bytes(base)
     return out
 
 
 def clear_all(checkpoint_base: Optional[Path] = None) -> Dict[str, int]:
-    """Nuke the entire checkpoint base (store + legacy).  Irreversible.
+    """Nuke the entire checkpoint base.  Irreversible.
 
     Returns ``{"bytes_freed": N, "deleted": bool}``.
     """
@@ -1650,26 +1498,4 @@ def clear_all(checkpoint_base: Optional[Path] = None) -> Dict[str, int]:
         out["deleted"] = True
     except OSError as exc:
         logger.warning("Could not clear checkpoint base %s: %s", base, exc)
-    return out
-
-
-def clear_legacy(checkpoint_base: Optional[Path] = None) -> Dict[str, int]:
-    """Delete all ``legacy-*`` archive directories.
-
-    Returns ``{"bytes_freed": N, "deleted": count}``.
-    """
-    base = checkpoint_base or CHECKPOINT_BASE
-    out = {"bytes_freed": 0, "deleted": 0}
-    if not base.exists():
-        return out
-    for child in list(base.iterdir()):
-        if not child.is_dir() or not child.name.startswith(_LEGACY_PREFIX):
-            continue
-        try:
-            size = _dir_size_bytes(child)
-            shutil.rmtree(child)
-            out["bytes_freed"] += size
-            out["deleted"] += 1
-        except OSError as exc:
-            logger.warning("Could not delete legacy archive %s: %s", child, exc)
     return out

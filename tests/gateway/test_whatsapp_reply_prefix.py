@@ -4,7 +4,6 @@ Covers:
 - config.yaml whatsapp.reply_prefix bridging into PlatformConfig.extra
 - WhatsAppAdapter reading reply_prefix from config.extra
 - Bridge subprocess receiving WHATSAPP_REPLY_PREFIX env var
-- Config version covers all ENV_VARS_BY_VERSION keys (regression guard)
 """
 
 from unittest.mock import patch
@@ -110,10 +109,3 @@ class TestAdapterInit:
 # ---------------------------------------------------------------------------
 
 
-class TestConfigVersionCoverage:
-    """Ensure _config_version covers all ENV_VARS_BY_VERSION keys."""
-
-    def test_default_config_version_covers_env_var_versions(self):
-        """_config_version must be >= the highest ENV_VARS_BY_VERSION key."""
-        from opencodon_cli.config import DEFAULT_CONFIG, ENV_VARS_BY_VERSION
-        assert DEFAULT_CONFIG["_config_version"] >= max(ENV_VARS_BY_VERSION)
