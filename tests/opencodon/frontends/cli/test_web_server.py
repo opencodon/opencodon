@@ -32,7 +32,7 @@ from opencodon.config import (
 # depend on its routes opt in via the `_install_example_plugin` fixture
 # below.
 _EXAMPLE_PLUGIN_FIXTURE = (
-    Path(__file__).resolve().parent.parent / "fixtures" / "plugins" / "example-dashboard"
+    Path(__file__).resolve().parents[3] / "fixtures" / "plugins" / "example-dashboard"
 )
 
 

@@ -7,7 +7,7 @@ The auxiliary client uses the OpenAI SDK, which needs /v1 instead.
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 from opencodon.core.auxiliary_client import _to_openai_base_url
 
