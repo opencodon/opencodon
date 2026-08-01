@@ -214,7 +214,7 @@ class TestCompress:
                     "type": "function",
                     "function": {
                         "name": "read_file",
-                        "arguments": '{"path":"agent/context_compressor.py","offset":1}',
+                        "arguments": '{"path":"src/opencodon/core/context_compressor.py","offset":1}',
                     },
                 }],
             },
@@ -241,7 +241,7 @@ class TestCompress:
         assert HISTORICAL_TASK_HEADING in combined
         assert "Please fix the compression summary failure" in combined
         assert "read_file" in combined
-        assert "agent/context_compressor.py" in combined
+        assert "src/opencodon/core/context_compressor.py" in combined
         assert "Summary generation was unavailable" in combined
         assert "removed to free context space but could not be summarized" not in combined
         assert c._last_summary_fallback_used is True

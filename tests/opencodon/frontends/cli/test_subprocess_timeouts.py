@@ -7,10 +7,10 @@ import pytest
 
 # Parameterise over every CLI module that calls subprocess.run
 _CLI_MODULES = [
-    "opencodon_cli/doctor.py",
-    "opencodon_cli/status.py",
-    "opencodon_cli/clipboard.py",
-    "opencodon_cli/banner.py",
+    "src/opencodon_cli/doctor.py",
+    "src/opencodon_cli/status.py",
+    "src/opencodon_cli/clipboard.py",
+    "src/opencodon_cli/banner.py",
 ]
 
 

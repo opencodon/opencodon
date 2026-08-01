@@ -278,7 +278,7 @@ async def test_clear_reactions_returns_false_without_bot(monkeypatch):
 
 
 def test_config_bridges_telegram_reactions(monkeypatch, tmp_path):
-    """gateway/config.py bridges telegram.reactions to TELEGRAM_REACTIONS env var."""
+    """src/opencodon/frontends/gateway/config.py bridges telegram.reactions to TELEGRAM_REACTIONS env var."""
     import yaml
     config_file = tmp_path / "config.yaml"
     config_file.write_text(yaml.dump({

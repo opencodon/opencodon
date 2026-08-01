@@ -182,16 +182,19 @@ mechanical and separately verifiable.
   (parents[N] arithmetic changes AGAIN — test_path_anchors must pass),
   sys.modules stub keys, source-scan string assertions, dist/data paths
   (gateway/assets package-data, web_dist, Dockerfile/nix COPY paths).
-**3a progress (2026-08-01):** cluster 1 (agent→opencodon/core) and
-cluster 2 (tools+model_tools→opencodon/tools, cron, providers,
-run_agent→core, opencodon_state→opencodon/state) are committed. Fallout
-classes catalogued for cluster 3: __file__/dirname/os.path.join anchors
-(code AND test side), quoted patch/stub/sys.modules strings (use
-known-module whitelists; watch filename-vs-module and config-dotpath
-collisions), caplog logger names, COMPONENT_PREFIXES log routing,
-cross-test-package imports, entry-point invariants (opencodon_bootstrap
-first import), packages whose __init__ carries API need whole-package
-alias shims (providers).
+**3a progress (2026-08-01):** ALL FOUR STEPS EXECUTED — cluster 1
+(agent→opencodon/core), cluster 2 (tools/model_tools/cron/providers/
+run_agent/opencodon_state), cluster 3 (gateway/tui/acp/opencodon_cli/
+cli.py/mcp_serve → opencodon/frontends/*), and the src/ flip (everything
+including shim trees under src/, package_dir src, where=[src],
+PYTHONPATH=src for CI lint-imports, vite outDir + Dockerfile +
+_UPDATE_CRITICAL_FILES + bootstrap-invariant paths updated; repo-root
+parents[N] anchors bumped +1 by per-file depth rule). Full catalogue of
+fallout classes and both-era process-detection matchers are in the
+cluster commit messages. Follow-up for 3b: consolidate the ~47
+__file__-derived repo-root anchors onto one shared helper so depth never
+bites again (excluding modules whose tests monkeypatch __file__ for
+relocation logic, e.g. whatsapp_common).
 
 - **3b — regroup within the new tree.** `core/` internal split
   (providers/context/memory/media/credentials/skills/prompt), the

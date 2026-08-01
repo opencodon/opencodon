@@ -20,7 +20,7 @@ import opencodon_bootstrap
 def _entry_source() -> str:
     here = pathlib.Path(__file__).resolve()
     repo_root = here.parents[4]  # tests/opencodon/frontends/tui/ -> repo root
-    return (repo_root / "opencodon" / "frontends" / "tui" / "entry.py").read_text(encoding="utf-8")
+    return (repo_root / "src" / "opencodon" / "frontends" / "tui" / "entry.py").read_text(encoding="utf-8")
 
 
 def test_entry_calls_shared_harden_guard_before_heavy_imports():

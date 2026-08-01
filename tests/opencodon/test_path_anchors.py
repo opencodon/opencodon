@@ -16,7 +16,7 @@ def test_get_project_root_is_the_repo_checkout():
     root = get_project_root()
     # The repo root is identified by its packaging metadata, not by name.
     assert (root / "pyproject.toml").is_file()
-    assert (root / "opencodon").is_dir()
+    assert (root / "src" / "opencodon").is_dir()
 
 
 def test_install_method_project_root_matches_get_project_root():

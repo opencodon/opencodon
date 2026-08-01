@@ -319,7 +319,7 @@ class TestDefaultModelFromCache:
         import opencodon.frontends.cli.model_catalog as model_catalog
         from opencodon.frontends.cli.models import PREFERRED_SILENT_DEFAULT_MODEL
 
-        repo_root = Path(model_catalog.__file__).resolve().parents[3]
+        repo_root = Path(model_catalog.__file__).resolve().parents[4]
         manifest = json.loads(
             (repo_root / "catalog" / "model-catalog.json").read_text()
         )

@@ -68,7 +68,7 @@ def test_run_consumes_was_auto_reset_in_cleanup_block():
             found = True
             break
     assert found, (
-        "gateway/run.py auto-reset cleanup block must consume "
+        "src/opencodon/frontends/gateway/run.py auto-reset cleanup block must consume "
         "`was_auto_reset` (set it False) so it can't re-fire and wipe a "
         "model override stored between turns (#48031)."
     )
@@ -82,6 +82,6 @@ def test_slash_command_model_path_consumes_was_auto_reset():
     src = inspect.getsource(gateway_slash)
     tree = ast.parse(src)
     assert _assigns_false(tree, "was_auto_reset"), (
-        "gateway/slash_commands.py model path must set "
+        "src/opencodon/frontends/gateway/slash_commands.py model path must set "
         "`was_auto_reset = False` before storing the model override (#48031)."
     )

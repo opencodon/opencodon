@@ -245,18 +245,18 @@ def test_cron_provider_package_does_not_shadow_core_cron_package(monkeypatch):
 
     repo_root = Path(__file__).resolve().parents[3]
 
-    monkeypatch.syspath_prepend(str(repo_root))
+    monkeypatch.syspath_prepend(str(repo_root / "src"))
     monkeypatch.syspath_prepend(str(repo_root / "plugins"))
 
     cron_spec = PathFinder.find_spec("cron")
     assert cron_spec is not None
     # The importable top-level "cron" is now the Phase 3a shim tree; the
     # invariant is unchanged: the repo package wins over plugins/cron_providers.
-    assert Path(cron_spec.origin).resolve() == repo_root / "cron" / "__init__.py"
+    assert Path(cron_spec.origin).resolve() == repo_root / "src" / "cron" / "__init__.py"
 
-    jobs_spec = PathFinder.find_spec("opencodon.cron.jobs", [str(repo_root / "opencodon" / "cron")])
+    jobs_spec = PathFinder.find_spec("opencodon.cron.jobs", [str(repo_root / "src" / "opencodon" / "cron")])
     assert jobs_spec is not None
-    assert Path(jobs_spec.origin).resolve() == repo_root / "opencodon" / "cron" / "jobs.py"
+    assert Path(jobs_spec.origin).resolve() == repo_root / "src" / "opencodon" / "cron" / "jobs.py"
 
 
 def test_resolve_defaults_to_builtin(monkeypatch):

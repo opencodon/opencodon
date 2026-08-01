@@ -26,7 +26,7 @@ from pathlib import Path
 
 # gateway/relay package directory: tests/gateway/relay/ -> repo root parents[3].
 _REPO_ROOT = Path(__file__).resolve().parents[5]
-_RELAY_PKG = _REPO_ROOT / "opencodon" / "frontends" / "gateway" / "relay"
+_RELAY_PKG = _REPO_ROOT / "src" / "opencodon" / "frontends" / "gateway" / "relay"
 
 # Modules / symbols that mean "platform crypto re-validation". If the relay path
 # imports any of these it has re-coupled the gateway to a platform secret.
@@ -121,7 +121,7 @@ def test_channel_auth_uses_only_stdlib_crypto_not_platform_modules():
     above honest (auth.py can't smuggle in platform verification).
     """
     auth_py = _RELAY_PKG / "auth.py"
-    assert auth_py.is_file(), "gateway/relay/auth.py (channel authenticator) is missing"
+    assert auth_py.is_file(), "src/opencodon/frontends/gateway/relay/auth.py (channel authenticator) is missing"
     tree = ast.parse(auth_py.read_text(encoding="utf-8"), filename=str(auth_py))
     imported: list[str] = []
     for node in ast.walk(tree):

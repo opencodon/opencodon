@@ -10,10 +10,10 @@ from pathlib import Path
 
 # Files that must have Windows-safe process management
 GUARDED_FILES = [
-    "opencodon/tools/environments/local.py",
-    "opencodon/tools/process_registry.py",
-    "opencodon/tools/code_execution_tool.py",
-    "gateway/platforms/whatsapp.py",
+    "src/opencodon/tools/environments/local.py",
+    "src/opencodon/tools/process_registry.py",
+    "src/opencodon/tools/code_execution_tool.py",
+    "src/opencodon/frontends/gateway/platforms/whatsapp.py",
 ]
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]

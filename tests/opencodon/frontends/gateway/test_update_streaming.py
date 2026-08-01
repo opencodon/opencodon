@@ -218,9 +218,9 @@ class TestUpdateCommandGatewayFlag:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 

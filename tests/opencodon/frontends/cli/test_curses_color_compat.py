@@ -24,7 +24,7 @@ from unittest.mock import patch, MagicMock
 
 
 # Path to the source files under test
-_SRC_ROOT = Path(__file__).resolve().parents[4] / "opencodon_cli"
+_SRC_ROOT = Path(__file__).resolve().parents[4] / "src" / "opencodon" / "frontends" / "cli"
 
 
 class TestInitPairClampingBehavior:

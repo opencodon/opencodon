@@ -96,7 +96,7 @@ class TestAutoResetBlockReSyncsBinding:
                 ):
                     captured = True
         assert captured, (
-            "gateway/run.py auto-reset block calls reset_session() but discards "
+            "src/opencodon/frontends/gateway/run.py auto-reset block calls reset_session() but discards "
             "its return value. The fresh SessionEntry must be captured so the "
             "topic binding can be re-pointed at it; otherwise the next message "
             "resolves back to the bloated compressed child (#35809)."
@@ -126,7 +126,7 @@ class TestAutoResetBlockReSyncsBinding:
 
         sync_calls = [sub for sub in ast.walk(block) if _references_helper(sub)]
         assert sync_calls, (
-            "gateway/run.py auto-reset block does not call "
+            "src/opencodon/frontends/gateway/run.py auto-reset block does not call "
             "_sync_telegram_topic_binding after reset_session. Without it the "
             "(chat_id, thread_id) -> bloated-child binding survives the reset "
             "and the binding-heal walk re-anchors the fresh lane onto the "

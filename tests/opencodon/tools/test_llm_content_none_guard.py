@@ -39,7 +39,7 @@ def _run(coro):
 # ── web_tools — LLM content processor (line 419) ─────────────────────────
 
 class TestWebToolsProcessorContentNone:
-    """opencodon/tools/web_tools.py — _process_with_llm() return line"""
+    """src/opencodon/tools/web_tools.py — _process_with_llm() return line"""
 
     def test_none_content_raises_before_fix(self):
         response = _make_response(None)
@@ -57,7 +57,7 @@ class TestWebToolsProcessorContentNone:
 # ── web_tools — synthesis/summarization (line 538) ────────────────────────
 
 class TestWebToolsSynthesisContentNone:
-    """opencodon/tools/web_tools.py — synthesize_content() final_summary line"""
+    """src/opencodon/tools/web_tools.py — synthesize_content() final_summary line"""
 
     def test_none_content_raises_before_fix(self):
         response = _make_response(None)
@@ -75,7 +75,7 @@ class TestWebToolsSynthesisContentNone:
 # ── vision_tools (line 350) ───────────────────────────────────────────────
 
 class TestVisionToolsContentNone:
-    """opencodon/tools/vision_tools.py — analyze_image() analysis extraction"""
+    """src/opencodon/tools/vision_tools.py — analyze_image() analysis extraction"""
 
     def test_none_content_raises_before_fix(self):
         response = _make_response(None)
@@ -93,7 +93,7 @@ class TestVisionToolsContentNone:
 # ── skills_guard (line 963) ───────────────────────────────────────────────
 
 class TestSkillsGuardContentNone:
-    """opencodon/tools/skills_guard.py — _llm_audit_skill() llm_text extraction"""
+    """src/opencodon/tools/skills_guard.py — _llm_audit_skill() llm_text extraction"""
 
     def test_none_content_raises_before_fix(self):
         response = _make_response(None)
@@ -125,23 +125,23 @@ class TestSourceLinesAreGuarded:
             return f.read()
 
     def test_web_tools_guarded(self):
-        src = self._read_file("opencodon/tools/web_tools.py")
+        src = self._read_file("src/opencodon/tools/web_tools.py")
         assert ".message.content.strip()" not in src, (
-            "opencodon/tools/web_tools.py still has unguarded "
+            "src/opencodon/tools/web_tools.py still has unguarded "
             ".content.strip() — apply `(... or \"\").strip()` guard"
         )
 
     def test_vision_tools_guarded(self):
-        src = self._read_file("opencodon/tools/vision_tools.py")
+        src = self._read_file("src/opencodon/tools/vision_tools.py")
         assert ".message.content.strip()" not in src, (
-            "opencodon/tools/vision_tools.py still has unguarded "
+            "src/opencodon/tools/vision_tools.py still has unguarded "
             ".content.strip() — apply `(... or \"\").strip()` guard"
         )
 
     def test_skills_guard_guarded(self):
-        src = self._read_file("opencodon/tools/skills_guard.py")
+        src = self._read_file("src/opencodon/tools/skills_guard.py")
         assert ".message.content.strip()" not in src, (
-            "opencodon/tools/skills_guard.py still has unguarded "
+            "src/opencodon/tools/skills_guard.py still has unguarded "
             ".content.strip() — apply `(... or \"\").strip()` guard"
         )
 
@@ -149,7 +149,7 @@ class TestSourceLinesAreGuarded:
 # ── extract_content_or_reasoning() ────────────────────────────────────────
 
 class TestExtractContentOrReasoning:
-    """agent/auxiliary_client.py — extract_content_or_reasoning()"""
+    """src/opencodon/core/auxiliary_client.py — extract_content_or_reasoning()"""
 
     def test_normal_content_returned(self):
         response = _make_response("  Hello world  ")

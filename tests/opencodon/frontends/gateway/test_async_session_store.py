@@ -57,7 +57,7 @@ def test_gateway_async_code_uses_one_awaited_session_store_boundary() -> None:
     """Loop-side store calls must use the facade; raw store remains sync-only."""
     root = Path(__file__).resolve().parents[4]
     violations: list[str] = []
-    for rel in ("gateway/run.py", "gateway/slash_commands.py"):
+    for rel in ("src/opencodon/frontends/gateway/run.py", "src/opencodon/frontends/gateway/slash_commands.py"):
         tree = ast.parse((root / rel).read_text(encoding="utf-8"))
         parents = {
             child: parent
@@ -109,7 +109,7 @@ def test_gateway_async_code_uses_one_awaited_session_store_boundary() -> None:
 
 def test_every_async_compression_check_is_awaited() -> None:
     root = Path(__file__).resolve().parents[4]
-    tree = ast.parse((root / "opencodon/frontends/gateway/run.py").read_text(encoding="utf-8"))
+    tree = ast.parse((root / "src/opencodon/frontends/gateway/run.py").read_text(encoding="utf-8"))
     parents = {
         child: parent
         for parent in ast.walk(tree)
@@ -128,7 +128,7 @@ def test_every_async_compression_check_is_awaited() -> None:
 
 
 def test_gateway_initializes_async_session_store_facade() -> None:
-    source = (Path(__file__).resolve().parents[4] / "opencodon/frontends/gateway/run.py").read_text(
+    source = (Path(__file__).resolve().parents[4] / "src/opencodon/frontends/gateway/run.py").read_text(
         encoding="utf-8"
     )
     tree = ast.parse(source)

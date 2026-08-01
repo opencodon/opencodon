@@ -375,7 +375,7 @@ def test_circuit_breaker_cleared_on_reconnect(monkeypatch, tmp_path):
             "srv",
             OAuthFlowError("initial"),
             _retry_call,
-            "opencodon/tools/call test",
+            "tools/call test",
         )
         # The call as a whole still surfaces needs_reauth because the
         # retry itself didn't succeed, but the breaker state must

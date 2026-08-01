@@ -249,7 +249,7 @@ class TestSystemPromptActiveProfile:
         # paths, (3) says "do not modify another profile's" without
         # explicit user direction.
         from pathlib import Path
-        src = Path("opencodon/core/system_prompt.py").read_text()
+        src = Path("src/opencodon/core/system_prompt.py").read_text()
         assert "Active opencodon profile" in src
         assert "cross_profile=True" in src
         assert "~/.opencodon/profiles/" in src

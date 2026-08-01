@@ -207,7 +207,7 @@ def test_background_and_main_agent_paths_call_refresh():
     from pathlib import Path
 
     source = (
-        Path(__file__).resolve().parents[4] / "opencodon" / "frontends" / "gateway" / "run.py"
+        Path(__file__).resolve().parents[4] / "src" / "opencodon" / "frontends" / "gateway" / "run.py"
     ).read_text(encoding="utf-8")
     assert "fallback_model=self._refresh_fallback_model()" in source
     assert source.count("fallback_model=self._refresh_fallback_model()") >= 2

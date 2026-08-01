@@ -354,7 +354,7 @@ class TestCheckFnExceptionHandling:
 
 class TestBuiltinDiscovery:
     def test_discovers_all_real_self_registering_builtin_tool_modules(self):
-        tools_dir = Path(__file__).resolve().parents[3] / "opencodon" / "tools"
+        tools_dir = Path(__file__).resolve().parents[3] / "src" / "opencodon" / "tools"
         expected = [
             f"tools.{path.stem}"
             for path in sorted(tools_dir.glob("*.py"))

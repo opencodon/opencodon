@@ -284,11 +284,13 @@ opencodon-agent = "opencodon.core.run_agent:main"
 opencodon-acp = "opencodon.frontends.acp.entry:main"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 # Top-level single-file modules (not packages). Without this, uv2nix's
 # sealed venv is missing opencodon_constants, run_agent, etc.
 py-modules = ["run_agent", "model_tools", "toolsets", "cli", "opencodon_bootstrap", "opencodon_constants", "opencodon_state", "opencodon_time", "opencodon_logging", "utils", "mcp_serve"]
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["opencodon", "opencodon.*", "agent", "agent.*", "tools", "tools.*", "opencodon_cli", "opencodon_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "science", "science.*"]
 
 [tool.setuptools.package-data]

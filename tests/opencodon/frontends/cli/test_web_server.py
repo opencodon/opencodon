@@ -6987,7 +6987,7 @@ class TestDeleteEmptySessionsEndpoint:
             "If this assertion fails, the literal /api/sessions/empty "
             "route is being shadowed by the templated /api/sessions/"
             "{session_id} route — check registration order in "
-            "opencodon_cli/web_server.py."
+            "src/opencodon_cli/web_server.py."
         )
 
 

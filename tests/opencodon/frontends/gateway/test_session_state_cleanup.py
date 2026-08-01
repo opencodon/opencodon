@@ -123,7 +123,7 @@ class TestNoMoreBareDeleteSites:
         from pathlib import Path
         import re
 
-        gateway_run = (Path(__file__).resolve().parents[4] / "opencodon" / "frontends" / "gateway" / "run.py").read_text()
+        gateway_run = (Path(__file__).resolve().parents[4] / "src" / "opencodon" / "frontends" / "gateway" / "run.py").read_text()
         # Match `del self._running_agents[...]` that is NOT inside a
         # triple-quoted docstring.  We scan non-docstring lines only.
         lines = gateway_run.splitlines()

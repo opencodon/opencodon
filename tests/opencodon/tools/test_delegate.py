@@ -2571,7 +2571,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
             }
         }
 
-        with patch.dict("sys.modules", {"cli": stale_cli}):
+        with patch.dict("sys.modules", {"cli": stale_cli, "opencodon.frontends.cli.shell": stale_cli}):
             with patch(
                 "opencodon.config.load_config_readonly", return_value=active_config
             ):
@@ -2587,7 +2587,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
             }
         }
 
-        with patch.dict("sys.modules", {"cli": fallback_cli}):
+        with patch.dict("sys.modules", {"cli": fallback_cli, "opencodon.frontends.cli.shell": fallback_cli}):
             with patch(
                 "opencodon.config.load_config_readonly",
                 side_effect=RuntimeError("boom"),
@@ -2608,7 +2608,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
         }
         user_config = {"delegation": {"max_concurrent_children": 50}}
 
-        with patch.dict("sys.modules", {"cli": ignoring_cli}):
+        with patch.dict("sys.modules", {"cli": ignoring_cli, "opencodon.frontends.cli.shell": ignoring_cli}):
             with patch.dict(os.environ, {"OPENCODON_IGNORE_USER_CONFIG": "1"}):
                 with patch(
                     "opencodon.config.load_config_readonly",

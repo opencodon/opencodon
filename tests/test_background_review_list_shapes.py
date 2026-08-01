@@ -331,7 +331,7 @@ def test_e_call_does_not_unwind_module_callables():
     blind regression test — keeping it text-anchored guards the
     ``_run_review_in_thread`` invariant without a real LLM.
     """
-    src_path = os.path.join(REPO_ROOT, "agent", "background_review.py")
+    src_path = os.path.join(REPO_ROOT, "src", "opencodon", "core", "background_review.py")
     src = open(src_path, encoding="utf-8").read()
     # The fix added: ``try: actions = summarize_background_review_actions(...)``
     # followed by ``except Exception as e: ... actions = []``.

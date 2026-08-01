@@ -47,7 +47,7 @@ def test_check_for_updates_invalidates_on_version_change(tmp_path, monkeypatch):
     import opencodon.frontends.cli.banner as banner
 
     # No local git checkout -> the PyPI path is exercised (pip-install class).
-    fake_banner = tmp_path / "opencodon_cli" / "banner.py"
+    fake_banner = tmp_path / "src" / "opencodon_cli" / "banner.py"
     fake_banner.parent.mkdir(parents=True, exist_ok=True)
     fake_banner.touch()
     monkeypatch.setattr(banner, "__file__", str(fake_banner))
@@ -226,7 +226,7 @@ def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
     import opencodon.frontends.cli.banner as banner
 
     # Create a fake banner.py so the fallback path also has no .git
-    fake_banner = tmp_path / "opencodon_cli" / "banner.py"
+    fake_banner = tmp_path / "src" / "opencodon_cli" / "banner.py"
     fake_banner.parent.mkdir(parents=True, exist_ok=True)
     fake_banner.touch()
 

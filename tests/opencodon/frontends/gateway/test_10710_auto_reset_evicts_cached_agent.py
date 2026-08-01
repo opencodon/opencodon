@@ -71,7 +71,7 @@ def test_auto_reset_cleanup_evicts_cached_agent():
             and _assigns_false(node, "was_auto_reset")
         ):
             assert "_evict_cached_agent" in calls, (
-                "gateway/run.py auto-reset cleanup block must call "
+                "src/opencodon/frontends/gateway/run.py auto-reset cleanup block must call "
                 "`_evict_cached_agent(session_key)` so the auto-reset session "
                 "does not reuse the previous cached agent and leak its "
                 "context_compressor._previous_summary into new compaction "
@@ -81,7 +81,7 @@ def test_auto_reset_cleanup_evicts_cached_agent():
             break
     assert found, (
         "could not locate the auto-reset transient-state cleanup block in "
-        "gateway/run.py (fingerprint: _clear_conversation_scope + "
+        "src/opencodon/frontends/gateway/run.py (fingerprint: _clear_conversation_scope + "
         "was_auto_reset = False)."
     )
 

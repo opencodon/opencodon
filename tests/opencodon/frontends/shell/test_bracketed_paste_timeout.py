@@ -15,7 +15,7 @@ from prompt_toolkit.keys import Keys
 
 
 ROOT = Path(__file__).resolve().parents[4]
-CLI_PATH = ROOT / "opencodon" / "frontends" / "cli" / "shell.py"
+CLI_PATH = ROOT / "src" / "opencodon" / "frontends" / "cli" / "shell.py"
 
 
 def _load_production_patch_helper():

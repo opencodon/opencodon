@@ -159,7 +159,7 @@ def test_builtin_set_covers_every_registered_subcommand():
     assert not missing_from_declaration, (
         f"_BUILTIN_SUBCOMMANDS is missing these live subcommands: "
         f"{sorted(missing_from_declaration)}. Add them to "
-        f"opencodon_cli/main.py::_BUILTIN_SUBCOMMANDS so plugin discovery "
+        f"src/opencodon_cli/main.py::_BUILTIN_SUBCOMMANDS so plugin discovery "
         f"can be skipped when the user targets them."
     )
 

@@ -360,7 +360,7 @@ async def test_auto_thread_failure_notify_error_does_not_crash(adapter, monkeypa
 
 
 def test_config_bridges_ignored_channels(monkeypatch, tmp_path):
-    """gateway/config.py bridges discord.ignored_channels to env var."""
+    """src/opencodon/frontends/gateway/config.py bridges discord.ignored_channels to env var."""
     import yaml
     config_file = tmp_path / "config.yaml"
     config_file.write_text(yaml.dump({
@@ -381,7 +381,7 @@ def test_config_bridges_ignored_channels(monkeypatch, tmp_path):
 
 
 def test_config_bridges_no_thread_channels(monkeypatch, tmp_path):
-    """gateway/config.py bridges discord.no_thread_channels to env var."""
+    """src/opencodon/frontends/gateway/config.py bridges discord.no_thread_channels to env var."""
     import yaml
     config_file = tmp_path / "config.yaml"
     config_file.write_text(yaml.dump({

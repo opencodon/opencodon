@@ -234,7 +234,7 @@ class TestCliEnsureRuntimeCredentialsCallable:
         # ``CLIAgentSetupMixin`` (god-file decomposition Phase 4). Read the
         # module the method actually lives in now.
         src = (Path(__file__).resolve().parents[4]
-               / "opencodon_cli" / "cli_agent_setup_mixin.py").read_text()
+               / "src" / "opencodon" / "frontends" / "cli" / "cli_agent_setup_mixin.py").read_text()
         # The fix introduces ``_is_callable_provider`` which gates the
         # string-only check so callable token providers survive.
         assert "_is_callable_provider = callable(api_key)" in src, (
@@ -262,14 +262,14 @@ class TestInlinedDisplayMasks:
         crash ``len(api_key)``."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "opencodon" / "core" / "agent_init.py").read_text()
+               / "src" / "opencodon" / "core" / "agent_init.py").read_text()
         assert src.count("is_token_provider(") >= 2, (
-            "agent/agent_init.py must guard BOTH masked-banner paths "
+            "src/opencodon/core/agent_init.py must guard BOTH masked-banner paths "
             "(chat_completions and anthropic_messages) with "
             "is_token_provider()."
         )
         assert src.count('"🔑 Using credentials: Microsoft Entra ID"') >= 2, (
-            "agent/agent_init.py banner blocks should print a static "
+            "src/opencodon/core/agent_init.py banner blocks should print a static "
             "'Microsoft Entra ID' label for callable api_keys — no "
             "placeholder plumbing, no describe-mask fallback."
         )
@@ -282,7 +282,7 @@ class TestInlinedDisplayMasks:
         run_agent banners."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "cli.py").read_text()
+               / "src" / "opencodon" / "frontends" / "cli" / "shell.py").read_text()
         assert "is_token_provider(self.api_key)" in src, (
             "cli.OpencodonCLI.show_config must guard self.api_key via "
             "is_token_provider so callable Entra ID providers don't "
@@ -303,7 +303,7 @@ class TestInlinedDisplayMasks:
         ``len(callable)``."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "opencodon" / "core" / "run_agent.py").read_text()
+               / "src" / "opencodon" / "core" / "run_agent.py").read_text()
         # The function now starts with a callable check.
         assert (
             "if callable(key) and not isinstance(key, str):" in src
@@ -322,11 +322,11 @@ class TestInlinedDisplayMasks:
         Anthropic-style mode that's a callable; slicing crashes."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "opencodon" / "core" / "conversation_loop.py").read_text()
+               / "src" / "opencodon" / "core" / "conversation_loop.py").read_text()
         # The Anthropic 401 block now branches on is_token_provider
         # before slicing the key.
         assert "Microsoft Entra ID (httpx event hook)" in src, (
-            "agent/conversation_loop.py Anthropic 401 diagnostic must "
+            "src/opencodon/core/conversation_loop.py Anthropic 401 diagnostic must "
             "surface a Microsoft Entra ID branch before slicing the "
             "key prefix."
         )

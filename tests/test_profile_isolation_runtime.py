@@ -52,7 +52,7 @@ def _under_override(home: Path, fn):
 # ---------------------------------------------------------------------------
 
 class TestSkillsHubPathResolution:
-    """tools/skills_hub.py path constants must reflect the active profile."""
+    """src/opencodon/tools/skills_hub.py path constants must reflect the active profile."""
 
     def test_skills_dir_follows_override(self, two_profiles):
         prof_a, prof_b = two_profiles
@@ -90,7 +90,7 @@ class TestSkillsHubPathResolution:
 
 
 class TestGatewayCacheDirResolution:
-    """gateway/platforms/base.py cache getters must follow the active profile."""
+    """src/opencodon/frontends/gateway/platforms/base.py cache getters must follow the active profile."""
 
     def test_image_cache_dir_follows_override(self, two_profiles):
         prof_a, prof_b = two_profiles
@@ -130,7 +130,7 @@ class TestGatewayCacheDirResolution:
 
 
 class TestRichSentStorePathResolution:
-    """gateway/rich_sent_store.py must honor the override, not read os.environ."""
+    """src/opencodon/frontends/gateway/rich_sent_store.py must honor the override, not read os.environ."""
 
     def test_store_path_follows_override(self, two_profiles, monkeypatch):
         prof_a, prof_b = two_profiles

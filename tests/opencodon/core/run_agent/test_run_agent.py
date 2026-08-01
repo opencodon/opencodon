@@ -3688,9 +3688,9 @@ class TestAgentRuntimePostHookOwnershipSync:
         )
         assert inline_names == set(AGENT_RUNTIME_POST_HOOK_TOOL_NAMES), (
             "Inline dispatch chain in "
-            "agent/tool_executor.py:execute_tool_calls_sequential has drifted "
+            "src/opencodon/core/tool_executor.py:execute_tool_calls_sequential has drifted "
             "from AGENT_RUNTIME_POST_HOOK_TOOL_NAMES in "
-            "agent/agent_runtime_helpers.py.\n"
+            "src/opencodon/core/agent_runtime_helpers.py.\n"
             f"  Inline branches:     {sorted(inline_names)}\n"
             f"  Ownership frozenset: {sorted(AGENT_RUNTIME_POST_HOOK_TOOL_NAMES)}\n"
             "Update both together so post_tool_call fires exactly once per "
@@ -3712,7 +3712,7 @@ class TestAgentRuntimePostHookOwnershipSync:
         )
         assert invoke_tool_names == inline_names, (
             "Static `function_name == \"...\"` branches diverged between "
-            "agent/agent_runtime_helpers.py:invoke_tool (concurrent path) "
+            "src/opencodon/core/agent_runtime_helpers.py:invoke_tool (concurrent path) "
             "and agent/tool_executor.py:execute_tool_calls_sequential "
             "(sequential path).\n"
             f"  invoke_tool:                   {sorted(invoke_tool_names)}\n"

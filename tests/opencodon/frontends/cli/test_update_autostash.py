@@ -257,7 +257,7 @@ def test_restore_stashed_changes_always_resets_on_conflict(monkeypatch, tmp_path
         if cmd[1:3] == ["stash", "apply"]:
             return SimpleNamespace(stdout="conflict output\n", stderr="conflict stderr\n", returncode=1)
         if cmd[1:3] == ["diff", "--name-only"]:
-            return SimpleNamespace(stdout="opencodon_cli/main.py\n", stderr="", returncode=0)
+            return SimpleNamespace(stdout="src/opencodon_cli/main.py\n", stderr="", returncode=0)
         if cmd[1:3] == ["reset", "--hard"]:
             return SimpleNamespace(stdout="", stderr="", returncode=0)
         raise AssertionError(f"unexpected command: {cmd}")
@@ -270,7 +270,7 @@ def test_restore_stashed_changes_always_resets_on_conflict(monkeypatch, tmp_path
     assert result is False
     out = capsys.readouterr().out
     assert "Conflicted files:" in out
-    assert "opencodon_cli/main.py" in out
+    assert "src/opencodon_cli/main.py" in out
     assert "stashed changes are preserved" in out
     assert "Working tree reset to clean state" in out
     assert "git stash apply abc123" in out
@@ -869,7 +869,7 @@ def test_bootstrap_marker_not_autostashed_by_update(tmp_path):
     if shutil.which("git") is None:
         pytest.skip("git not available")
 
-    repo_gitignore = Path(opencodon_main.__file__).resolve().parents[3] / ".gitignore"
+    repo_gitignore = Path(opencodon_main.__file__).resolve().parents[4] / ".gitignore"
 
     def git(*args):
         return subprocess.run(
@@ -919,7 +919,7 @@ def test_install_method_marker_not_autostashed_by_update(tmp_path):
     if shutil.which("git") is None:
         pytest.skip("git not available")
 
-    repo_gitignore = Path(opencodon_main.__file__).resolve().parents[3] / ".gitignore"
+    repo_gitignore = Path(opencodon_main.__file__).resolve().parents[4] / ".gitignore"
 
     def git(*args):
         return subprocess.run(

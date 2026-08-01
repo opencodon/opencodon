@@ -119,7 +119,7 @@ def test_non_callable_attribute_passes_through():
 # Guard: no raw self._session_db.<method>( on the gateway loop
 # --------------------------------------------------------------------------
 
-_GATEWAY_FILES = ("gateway/run.py", "gateway/slash_commands.py")
+_GATEWAY_FILES = ("src/opencodon/frontends/gateway/run.py", "src/opencodon/frontends/gateway/slash_commands.py")
 # The only legitimate non-loop paths:
 #   - SessionDB.sanitize_title: pure @staticmethod string cleaning, no DB.
 #   - self._session_db._db.<x>: the sync escape, allowed ONLY where the call is

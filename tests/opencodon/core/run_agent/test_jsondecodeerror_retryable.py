@@ -98,7 +98,7 @@ class TestAgentLoopSourceStillHasCarveOut:
         # break us.
         assert "is_local_validation_error" in src
         assert "JSONDecodeError" in src, (
-            "agent/conversation_loop.py must carve out json.JSONDecodeError "
+            "src/opencodon/core/conversation_loop.py must carve out json.JSONDecodeError "
             "from the is_local_validation_error classification — see #14782."
         )
 
@@ -151,6 +151,6 @@ class TestAgentLoopSourceHasNoneTypeCarveOut:
         assert "is_local_validation_error" in src
         # The specific check must be present.
         assert "nonetype" in src.lower() and "not iterable" in src.lower(), (
-            "agent/conversation_loop.py must carve out 'NoneType is not iterable' "
+            "src/opencodon/core/conversation_loop.py must carve out 'NoneType is not iterable' "
             "TypeErrors from the is_local_validation_error classification — see #33136."
         )

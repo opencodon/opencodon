@@ -126,7 +126,7 @@ class TestSourceStillHasBillingExclusionRemoved:
         # Locate the is_client_error block and inspect its exclusion set.
         marker = "is_client_error = ("
         assert marker in src, (
-            "agent/conversation_loop.py must define is_client_error — "
+            "src/opencodon/core/conversation_loop.py must define is_client_error — "
             "the bug-fix anchor for #31273 has moved or been renamed."
         )
         idx = src.index(marker)

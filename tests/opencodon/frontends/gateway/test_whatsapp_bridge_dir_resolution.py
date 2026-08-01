@@ -32,7 +32,7 @@ def test_writable_install_returns_install_dir(tmp_path, monkeypatch):
     # Point the resolver's two anchors at our temp dirs.
     monkeypatch.setattr(
         whatsapp_common, "__file__",
-        str(install_root / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
+        str(install_root / "src" / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
     )
     monkeypatch.setattr(
         "opencodon_constants.get_opencodon_home", lambda: opencodon_home
@@ -55,7 +55,7 @@ def test_readonly_install_mirrors_to_opencodon_home(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         whatsapp_common, "__file__",
-        str(install_root / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
+        str(install_root / "src" / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
     )
     monkeypatch.setattr(
         "opencodon_constants.get_opencodon_home", lambda: opencodon_home
@@ -98,7 +98,7 @@ def test_readonly_install_reuses_existing_mirror(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         whatsapp_common, "__file__",
-        str(install_root / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
+        str(install_root / "src" / "opencodon" / "frontends" / "gateway" / "platforms" / "whatsapp_common.py"),
     )
     monkeypatch.setattr(
         "opencodon_constants.get_opencodon_home", lambda: opencodon_home

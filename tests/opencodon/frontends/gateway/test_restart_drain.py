@@ -297,7 +297,7 @@ def test_windows_gateway_venv_imports_add_site_packages(monkeypatch, tmp_path):
     site_packages.mkdir(parents=True)
     pth_extra.mkdir()
     (site_packages / "pywin32.pth").write_text(str(pth_extra), encoding="utf-8")
-    project_root = str(gateway_run.Path(gateway_run.__file__).resolve().parents[3])
+    project_root = str(gateway_run.Path(gateway_run.__file__).resolve().parents[4])
 
     monkeypatch.setattr(gateway_run.sys, "platform", "win32")
     monkeypatch.setattr(gateway_run.sys, "path", ["existing"])

@@ -38,7 +38,7 @@ def _make_request():
 # ---------------------------------------------------------------------------
 
 class TestSSEAgentCancelOnDisconnect:
-    """gateway/platforms/api_server.py — _write_sse_chat_completion()"""
+    """src/opencodon/frontends/gateway/platforms/api_server.py — _write_sse_chat_completion()"""
 
     def test_agent_task_cancelled_on_client_disconnect(self):
         """When response.write raises ConnectionResetError (client dropped),
@@ -308,7 +308,7 @@ def _finish_reason(chunks: list):
 
 
 class TestSSEAgentFailureFinishReason:
-    """gateway/platforms/api_server.py — _write_sse_chat_completion()
+    """src/opencodon/frontends/gateway/platforms/api_server.py — _write_sse_chat_completion()
 
     A clean stream-queue termination (sentinel received) followed by an agent
     failure must NOT report finish_reason: "stop". Both failure modes — an

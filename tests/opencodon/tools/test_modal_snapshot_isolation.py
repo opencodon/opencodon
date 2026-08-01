@@ -9,7 +9,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-TOOLS_DIR = REPO_ROOT / "opencodon" / "tools"
+TOOLS_DIR = REPO_ROOT / "src" / "opencodon" / "tools"
 
 
 def _load_module(module_name: str, path: Path):

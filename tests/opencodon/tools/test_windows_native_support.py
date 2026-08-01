@@ -299,7 +299,7 @@ class TestSigkillFallback:
     )
     def test_module_uses_getattr_fallback(self, module_path, line_pattern):
         """Source-level check that our modules use the safe fallback."""
-        rel = module_path.replace(".", "/") + ".py"
+        rel = "src/" + module_path.replace(".", "/") + ".py"
         root = Path(__file__).resolve().parents[3]
         source = (root / rel).read_text(encoding="utf-8")
         assert line_pattern in source, (
@@ -472,7 +472,7 @@ class TestWebServerPtyBridgeGuard:
 
     def test_import_guard_present_in_source(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon_cli" / "web_server.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "cli" / "web_server.py").read_text(encoding="utf-8")
         assert "_PTY_BRIDGE_AVAILABLE" in source
         assert "except ImportError" in source, (
             "web_server.py must wrap the pty_bridge import in try/except ImportError"
@@ -481,7 +481,7 @@ class TestWebServerPtyBridgeGuard:
     def test_pty_handler_checks_availability_flag(self):
         """The /api/pty handler must short-circuit when the bridge is unavailable."""
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon_cli" / "web_server.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "cli" / "web_server.py").read_text(encoding="utf-8")
         assert "if not _PTY_BRIDGE_AVAILABLE" in source, (
             "/api/pty handler must return a friendly error when PTY is unavailable"
         )
@@ -497,7 +497,7 @@ class TestEntryPointsConfigureStdio:
 
     @pytest.mark.parametrize(
         "relpath",
-        ["cli.py", "opencodon_cli/main.py", "gateway/run.py"],
+        ["src/opencodon/frontends/cli/shell.py", "src/opencodon/frontends/cli/main.py", "src/opencodon/frontends/gateway/run.py"],
     )
     def test_entry_point_calls_configure_stdio(self, relpath):
         root = Path(__file__).resolve().parents[3]
@@ -514,7 +514,7 @@ class TestEntryPointsConfigureStdio:
 
 
 class TestSubprocessCompatHelpers:
-    """opencodon_cli/_subprocess_compat.py POSIX + Windows behaviour."""
+    """src/opencodon_cli/_subprocess_compat.py POSIX + Windows behaviour."""
 
     def test_is_windows_matches_sys_platform(self):
         from opencodon.frontends.cli import _subprocess_compat as sc
@@ -641,7 +641,7 @@ class TestTuiGatewayEntrySignalGuards:
 
     def test_source_guards_each_signal_installation(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "tui_gateway" / "entry.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "tui" / "entry.py").read_text(encoding="utf-8")
         # Every signal.signal(...) at module scope must be preceded by a
         # hasattr check.  We look at the text: no bare "signal.signal("
         # call should appear outside a function body without a guard.
@@ -676,7 +676,7 @@ class TestCodeExecutionTransportTcpFallback:
 
     def test_generated_client_handles_tcp_endpoint(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
         # _UDS_TRANSPORT_HEADER body must parse both transports.
         assert 'endpoint.startswith("tcp://")' in source, (
             "generated sandbox client must accept tcp:// endpoints for Windows"
@@ -687,7 +687,7 @@ class TestCodeExecutionTransportTcpFallback:
 
     def test_server_side_branches_on_use_tcp_rpc(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "tools" / "code_execution_tool.py").read_text(encoding="utf-8")
         assert "_use_tcp_rpc = _IS_WINDOWS" in source
         assert 'rpc_endpoint = f"tcp://{_host}:{_port}"' in source
 
@@ -703,7 +703,7 @@ class TestCronSchedulerBashResolution:
 
     def test_source_uses_shutil_which_for_bash(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
         # The old hardcoded path should be gone as the sole bash source.
         # It may still appear as a POSIX fallback after shutil.which(), so
         # we check for the shutil.which call near the .sh/.bash branch.
@@ -713,7 +713,7 @@ class TestCronSchedulerBashResolution:
 
     def test_error_message_when_bash_missing(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "cron" / "scheduler.py").read_text(encoding="utf-8")
         # The graceful-failure message must mention "bash not found" so
         # Windows users without Git Bash see an actionable error instead
         # of a WinError 2 traceback.
@@ -733,10 +733,10 @@ class TestNpmBareSpawnsResolved:
     @pytest.mark.parametrize(
         "relpath",
         [
-            "opencodon_cli/tools_config.py",
-            "opencodon_cli/doctor.py",
+            "src/opencodon_cli/tools_config.py",
+            "src/opencodon_cli/doctor.py",
             "plugins/platforms/whatsapp/adapter.py",
-            "opencodon/tools/browser_tool.py",
+            "src/opencodon/tools/browser_tool.py",
         ],
     )
     def test_no_bare_npm_or_npx_in_popen_argv(self, relpath):
@@ -803,7 +803,7 @@ class TestLocalEnvironmentWindowsTempDir:
 
     def test_source_has_windows_branch_using_opencodon_home(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
         assert "if _IS_WINDOWS:" in source
         assert "get_opencodon_home" in source
         assert 'cache_dir = get_opencodon_home() / "cache" / "terminal"' in source
@@ -865,7 +865,7 @@ class TestWorktreeSymlinkFallback:
 
     def test_source_has_symlink_fallback(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "cli.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "cli" / "shell.py").read_text(encoding="utf-8")
         # Look for the try/except that handles OSError around os.symlink
         # with a shutil.copytree fallback.
         assert "os.symlink(str(src_resolved), str(dst))" in source
@@ -886,9 +886,9 @@ class TestGatewayDetachedWatcherWindowsFlags:
 
     def test_opencodon_cli_gateway_uses_compat_kwargs(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon_cli" / "gateway.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "cli" / "gateway.py").read_text(encoding="utf-8")
         assert "windows_detach_popen_kwargs" in source, (
-            "opencodon_cli/gateway.py must use the platform-aware detach helper"
+            "the cli frontend gateway.py must use the platform-aware detach helper"
         )
         # The legacy start_new_session=True on the outer Popen should be
         # replaced by **windows_detach_popen_kwargs(). Inside the watcher
@@ -897,7 +897,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
 
     def test_gateway_run_update_has_windows_branch(self):
         root = Path(__file__).resolve().parents[3]
-        source = (root / "opencodon" / "frontends" / "gateway" / "run.py").read_text(encoding="utf-8")
+        source = (root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").read_text(encoding="utf-8")
         # Both the /restart and /update paths must have sys.platform=='win32' branches.
         assert 'if sys.platform == "win32":' in source
         # Windows branch uses windows_detach_popen_kwargs
@@ -917,7 +917,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
         ensures a future refactor of the dedent block doesn't silently drop it.
         """
         root = Path(__file__).resolve().parents[3]
-        text = (root / "opencodon_cli" / "gateway.py").read_text(encoding="utf-8")
+        text = (root / "src" / "opencodon" / "frontends" / "cli" / "gateway.py").read_text(encoding="utf-8")
         marker = "watcher = textwrap.dedent("
         idx = text.find(marker)
         assert idx != -1, "watcher block not found in gateway.py"
@@ -958,7 +958,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
         is the regression guard.
         """
         root = Path(__file__).resolve().parents[3]
-        text = (root / "opencodon_cli" / "gateway.py").read_text(encoding="utf-8")
+        text = (root / "src" / "opencodon" / "frontends" / "cli" / "gateway.py").read_text(encoding="utf-8")
         assert "windows_detach_flags_without_breakaway" in text, (
             "launch_detached_profile_gateway_restart must import "
             "windows_detach_flags_without_breakaway so it can retry a "
@@ -998,7 +998,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
         the inlined respawn ``Popen``.
         """
         root = Path(__file__).resolve().parents[3]
-        text = (root / "opencodon_cli" / "gateway.py").read_text(encoding="utf-8")
+        text = (root / "src" / "opencodon" / "frontends" / "cli" / "gateway.py").read_text(encoding="utf-8")
         assert "windowless_gateway_restart_spec" in text, (
             "_spawn_gateway_restart_watcher must rewrite the respawn argv via "
             "gateway_windows.windowless_gateway_restart_spec so the gateway "

@@ -47,7 +47,7 @@ def _make_web_dir(tmp_path: Path) -> tuple[Path, Path]:
     web_dir = tmp_path / "apps" / "web"
     web_dir.mkdir(parents=True)
     (web_dir / "package.json").touch()
-    dist_dir = tmp_path / "opencodon_cli" / "web_dist"
+    dist_dir = tmp_path / "src" / "opencodon_cli" / "web_dist"
     return web_dir, dist_dir
 
 

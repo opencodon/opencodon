@@ -588,7 +588,7 @@ def test_session_expired_handler_returns_none_without_loop(monkeypatch):
             "srv-noloop",
             RuntimeError("Invalid or expired session"),
             lambda: '{"ok": true}',
-            "opencodon/tools/call",
+            "tools/call",
         )
         assert out is None, (
             "Without an event loop, session-expired handler must fall "
@@ -606,7 +606,7 @@ def test_session_expired_handler_returns_none_without_server_record():
         "does-not-exist",
         RuntimeError("Invalid or expired session"),
         lambda: '{"ok": true}',
-        "opencodon/tools/call",
+        "tools/call",
     )
     assert out is None
 
@@ -633,7 +633,7 @@ def test_session_expired_handler_returns_none_when_retry_also_fails(
             "srv-retry-fail",
             RuntimeError("Invalid or expired session"),
             _retry_raises,
-            "opencodon/tools/call",
+            "tools/call",
         )
         assert out is None, (
             "When the retry itself fails, the handler must return None "

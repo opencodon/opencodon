@@ -10,7 +10,7 @@ import { clientBase, fsAllow, publicDir } from '../client/vite.base'
  * bundle the FastAPI process serves for the whole browser surface — both `/app`
  * and the site root, which used to be a second SPA under `web/`.
  *
- *   npm run build --workspace @opencodon/web   →   opencodon_cli/web_dist/
+ *   npm run build --workspace @opencodon/web   →   src/opencodon/frontends/cli/web_dist/
  *
  * `base` is absolute (not the desktop build's './') because the app is served
  * from a path prefix while its own routes live on the hash — relative asset
@@ -51,7 +51,7 @@ export default defineConfig({
   plugins: [...(clientBase.plugins ?? []), injectBootstrap()],
   build: {
     ...clientBase.build,
-    outDir: path.resolve(__dirname, '../../opencodon_cli/web_dist'),
+    outDir: path.resolve(__dirname, '../../src/opencodon/frontends/cli/web_dist'),
     emptyOutDir: true,
     // The shared base disables code splitting because electron-builder can OOM
     // scanning thousands of files when packaging the desktop app. Nothing

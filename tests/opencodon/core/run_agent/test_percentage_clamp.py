@@ -8,7 +8,7 @@ memory tool output.
 """
 
 class TestMemoryToolPercentClamp:
-    """opencodon/tools/memory_tool.py — _success_response and _render_block pct"""
+    """src/opencodon/tools/memory_tool.py — _success_response and _render_block pct"""
 
     def test_over_limit_clamped_at_100(self):
         """Percentage should be capped at 100 even if current > limit."""
@@ -55,7 +55,7 @@ class TestCLIStatsPercentClamp:
 
 
 class TestGatewayStatsPercentClamp:
-    """gateway/run.py — _format_usage_stats percentage"""
+    """src/opencodon/frontends/gateway/run.py — _format_usage_stats percentage"""
 
     def test_over_context_clamped_at_100(self):
         last_prompt_tokens = 210_000
@@ -83,22 +83,22 @@ class TestSourceLinesAreClamped:
     def test_gateway_run_clamped(self):
         # The /usage stats handler was extracted from gateway/run.py into
         # gateway/slash_commands.py (god-file decomposition Phase 3b).
-        src = self._read_file("gateway/slash_commands.py")
+        src = self._read_file("src/opencodon/frontends/gateway/slash_commands.py")
         # Check that the stats handler clamps the context pct with min(100, ...).
         # Assert the clamp intent, not a specific local name (the occupancy
         # value is read into a clamped `_lpt` local, #50421).
         assert "min(100, _lpt / ctx.context_length" in src, (
-            "gateway/slash_commands.py stats pct is not clamped with min(100, ...)"
+            "src/opencodon/frontends/gateway/slash_commands.py stats pct is not clamped with min(100, ...)"
         )
 
     def test_cli_clamped(self):
-        src = self._read_file("cli.py")
+        src = self._read_file("src/opencodon/frontends/cli/shell.py")
         assert "min(100, (last_prompt" in src, (
             "cli.py /stats pct is not clamped with min(100, ...)"
         )
 
     def test_memory_tool_clamped(self):
-        src = self._read_file("opencodon/tools/memory_tool.py")
+        src = self._read_file("src/opencodon/tools/memory_tool.py")
         # Both _success_response and _render_block should have min(100, ...)
         count = src.count("min(100, int((current / limit)")
         assert count >= 2, (

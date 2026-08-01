@@ -95,12 +95,12 @@ def test_validate_critical_files_syntax_ok_when_all_files_parse(tmp_path):
 
 def test_validate_critical_files_syntax_detects_conflict_markers(tmp_path):
     """The exact PR #28452 failure mode: orphan ``<<<<<<<`` in config.py."""
-    _populate_critical_tree(tmp_path, broken_file="opencodon_cli/config.py")
+    _populate_critical_tree(tmp_path, broken_file="src/opencodon_cli/config.py")
 
     ok, failing_path, error = opencodon_main._validate_critical_files_syntax(tmp_path)
 
     assert ok is False
-    assert failing_path is not None and failing_path.endswith("opencodon_cli/config.py")
+    assert failing_path is not None and failing_path.endswith("src/opencodon_cli/config.py")
     assert error is not None
     # The error mentions either the syntax error itself or the file path —
     # either is enough proof we caught the bad commit.
@@ -108,21 +108,21 @@ def test_validate_critical_files_syntax_detects_conflict_markers(tmp_path):
 
 
 def test_validate_critical_files_syntax_detects_break_in_main_py(tmp_path):
-    _populate_critical_tree(tmp_path, broken_file="opencodon_cli/main.py")
+    _populate_critical_tree(tmp_path, broken_file="src/opencodon_cli/main.py")
 
     ok, failing_path, _ = opencodon_main._validate_critical_files_syntax(tmp_path)
 
     assert ok is False
-    assert failing_path is not None and failing_path.endswith("opencodon_cli/main.py")
+    assert failing_path is not None and failing_path.endswith("src/opencodon_cli/main.py")
 
 
 def test_validate_critical_files_syntax_detects_break_in_web_server(tmp_path):
-    _populate_critical_tree(tmp_path, broken_file="opencodon_cli/web_server.py")
+    _populate_critical_tree(tmp_path, broken_file="src/opencodon_cli/web_server.py")
 
     ok, failing_path, _ = opencodon_main._validate_critical_files_syntax(tmp_path)
 
     assert ok is False
-    assert failing_path is not None and failing_path.endswith("opencodon_cli/web_server.py")
+    assert failing_path is not None and failing_path.endswith("src/opencodon_cli/web_server.py")
 
 
 def test_validate_critical_files_syntax_tolerates_missing_files(tmp_path):
@@ -130,7 +130,7 @@ def test_validate_critical_files_syntax_tolerates_missing_files(tmp_path):
     guard should skip missing files, not falsely flag the install as broken."""
     # Populate everything except opencodon_constants.py
     for relpath in opencodon_main._UPDATE_CRITICAL_FILES:
-        if relpath == "opencodon_constants.py":
+        if relpath == "src/opencodon_constants.py":
             continue
         path = tmp_path / relpath
         path.parent.mkdir(parents=True, exist_ok=True)

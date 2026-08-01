@@ -53,7 +53,7 @@ def test_sys_path_guard_runs_before_cli_import():
     """The guard must execute before ``import cli`` — reordering it below the
     import would re-introduce the shadowing crash. Assert via AST that the
     ``opencodon_bootstrap.harden_import_path()`` call precedes ``import cli``."""
-    src = (PROJECT_ROOT / "opencodon" / "frontends" / "tui" / "slash_worker.py").read_text()
+    src = (PROJECT_ROOT / "src" / "opencodon" / "frontends" / "tui" / "slash_worker.py").read_text()
     tree = ast.parse(src)
 
     harden_call_line = None
@@ -88,7 +88,7 @@ def test_sys_path_guard_runs_before_cli_import():
 def test_guard_delegates_to_shared_helper_not_inline():
     """slash_worker should delegate to the shared guard, not re-implement the
     old inline ``{"", "."}`` sys.path filter that #51693 replaced."""
-    src = (PROJECT_ROOT / "opencodon" / "frontends" / "tui" / "slash_worker.py").read_text()
+    src = (PROJECT_ROOT / "src" / "opencodon" / "frontends" / "tui" / "slash_worker.py").read_text()
     assert '{"", "."}' not in src and "{'', '.'}" not in src, (
         "slash_worker.py should delegate to opencodon_bootstrap.harden_import_path, "
         "not re-implement the guard inline"

@@ -11,7 +11,7 @@ from unittest.mock import patch
 # ── TTS tool ──────────────────────────────────────────────────────────────
 
 class TestTTSProviderNullGuard:
-    """opencodon/tools/tts_tool.py — _get_provider()"""
+    """src/opencodon/tools/tts_tool.py — _get_provider()"""
 
     def test_explicit_null_provider_returns_default(self):
         """YAML ``tts: {provider: null}`` should fall back to default."""
@@ -58,7 +58,7 @@ class TestTTSProviderNullGuard:
 # ── Web tools ─────────────────────────────────────────────────────────────
 
 class TestWebBackendNullGuard:
-    """opencodon/tools/web_tools.py — _get_backend()"""
+    """src/opencodon/tools/web_tools.py — _get_backend()"""
 
     @patch("opencodon.tools.web_tools._load_web_config", return_value={"backend": None})
     def test_explicit_null_backend_does_not_crash(self, _cfg):
@@ -80,7 +80,7 @@ class TestWebBackendNullGuard:
 # ── MCP tool ──────────────────────────────────────────────────────────────
 
 class TestMCPAuthNullGuard:
-    """opencodon/tools/mcp_tool.py — MCPServerTask.__init__() auth config line"""
+    """src/opencodon/tools/mcp_tool.py — MCPServerTask.__init__() auth config line"""
 
     def test_explicit_null_auth_does_not_crash(self):
         """YAML ``auth: null`` in MCP server config should not raise."""

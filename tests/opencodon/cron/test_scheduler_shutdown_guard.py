@@ -112,7 +112,7 @@ class TestSourceGuardrail:
         from pathlib import Path
 
         return (
-            Path(__file__).resolve().parents[3] / "opencodon" / "cron" / "scheduler.py"
+            Path(__file__).resolve().parents[3] / "src" / "opencodon" / "cron" / "scheduler.py"
         ).read_text(encoding="utf-8")
 
     def test_helper_defined(self, source):

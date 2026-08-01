@@ -79,9 +79,9 @@ class TestHandleUpdateCommand:
             # The _handle_update_command handler lives in gateway/slash_commands.py
             # (extracted from run.py in the god-file decomposition); it resolves
             # project_root via Path(__file__).parent.parent, so fake that file.
-            fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "slash_commands.py")
-            (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-            (fake_root / "opencodon" / "frontends" / "gateway" / "slash_commands.py").touch()
+            fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "slash_commands.py")
+            (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+            (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "slash_commands.py").touch()
 
             with patch("opencodon.frontends.gateway.slash_commands.__file__", fake_file):
                 result = await runner._handle_update_command(event)
@@ -98,9 +98,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
 
         with patch("opencodon.frontends.gateway.run._opencodon_home", tmp_path), \
              patch("opencodon.frontends.gateway.run.__file__", fake_file), \
@@ -120,9 +120,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -186,9 +186,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -222,9 +222,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -247,9 +247,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -276,9 +276,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -316,9 +316,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 
@@ -342,9 +342,9 @@ class TestHandleUpdateCommand:
         fake_root = tmp_path / "project"
         fake_root.mkdir()
         (fake_root / ".git").mkdir()
-        (fake_root / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
-        (fake_root / "opencodon" / "frontends" / "gateway" / "run.py").touch()
-        fake_file = str(fake_root / "opencodon" / "frontends" / "gateway" / "run.py")
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway").mkdir(parents=True)
+        (fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py").touch()
+        fake_file = str(fake_root / "src" / "opencodon" / "frontends" / "gateway" / "run.py")
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir()
 

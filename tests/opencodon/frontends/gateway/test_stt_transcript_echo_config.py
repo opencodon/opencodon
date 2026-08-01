@@ -55,7 +55,7 @@ def test_gateway_runner_uses_stt_echo_transcripts_flag():
 
 
 def test_all_gateway_transcript_echo_sends_are_gated():
-    source = Path(__file__).resolve().parents[4] / "opencodon" / "frontends" / "gateway" / "run.py"
+    source = Path(__file__).resolve().parents[4] / "src" / "opencodon" / "frontends" / "gateway" / "run.py"
     lines = source.read_text().splitlines()
 
     echo_send_lines = [
