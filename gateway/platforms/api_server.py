@@ -44,7 +44,7 @@ import errno
 import hashlib
 import hmac
 import json
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from contextvars import ContextVar
 from functools import wraps
 import logging
@@ -335,14 +335,12 @@ def _normalize_multimodal_content(content: Any) -> Any:
 
     items = content[:MAX_CONTENT_LIST_SIZE] if len(content) > MAX_CONTENT_LIST_SIZE else content
     normalized_parts: List[Dict[str, Any]] = []
-    text_accum_len = 0
 
     for part in items:
         if isinstance(part, str):
             if part:
                 trimmed = part[:MAX_NORMALIZED_TEXT_LENGTH]
                 normalized_parts.append({"type": "text", "text": trimmed})
-                text_accum_len += len(trimmed)
             continue
 
         if not isinstance(part, dict):
@@ -363,7 +361,6 @@ def _normalize_multimodal_content(content: Any) -> Any:
             if text:
                 trimmed = text[:MAX_NORMALIZED_TEXT_LENGTH]
                 normalized_parts.append({"type": "text", "text": trimmed})
-                text_accum_len += len(trimmed)
             continue
 
         if part_type in _IMAGE_PART_TYPES:
@@ -791,29 +788,6 @@ def _admit_api_agent_request(handler):
             _api_agent_request_reservation.reset(token)
 
     return _wrapped
-
-
-def _release_pending_api_work(adapter, reservation: dict[str, bool]) -> None:
-    """Release a pending-work reservation exactly once."""
-    if reservation["active"]:
-        reservation["active"] = False
-        adapter._pending_agent_requests = max(0, adapter._pending_agent_requests - 1)
-
-
-@contextmanager
-def _reserve_pending_api_work(adapter):
-    """Keep externally-triggered background work visible across awaits.
-
-    A handler can detach the reservation to an asyncio task; its done callback
-    then owns release so shutdown cannot miss the handoff to background work.
-    """
-    reservation = {"active": True, "detached": False}
-    adapter._pending_agent_requests += 1
-    try:
-        yield reservation
-    finally:
-        if not reservation["detached"]:
-            _release_pending_api_work(adapter, reservation)
 
 
 if AIOHTTP_AVAILABLE:
@@ -2701,21 +2675,18 @@ class APIServerAdapter(BasePlatformAdapter):
             headers["X-Hermes-Session-Key"] = gateway_session_key
         response = web.StreamResponse(status=200, headers=headers)
         await response.prepare(request)
-        last_write = time.monotonic()
         try:
             while True:
                 try:
                     item = await asyncio.wait_for(queue.get(), timeout=CHAT_COMPLETIONS_SSE_KEEPALIVE_SECONDS)
                 except asyncio.TimeoutError:
                     await response.write(b": keepalive\n\n")
-                    last_write = time.monotonic()
                     continue
                 if item is None:
                     break
                 name, payload = item
                 data = json.dumps(payload, ensure_ascii=False)
                 await response.write(f"event: {name}\ndata: {data}\n\n".encode("utf-8"))
-                last_write = time.monotonic()
         except (asyncio.CancelledError, ConnectionResetError):
             task.cancel()
             raise
@@ -3241,7 +3212,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 except (asyncio.CancelledError, Exception):
                     pass
             logger.info("SSE client disconnected; interrupted agent task %s", completion_id)
-        except Exception as _exc:
+        except Exception:
             # Agent crashed mid-stream.  Try to emit an error chunk
             # so the client gets a proper response instead of a
             # TransferEncodingError from incomplete chunked encoding.
@@ -3614,7 +3585,7 @@ class APIServerAdapter(BasePlatformAdapter):
                     return
                 # Clear timer reference BEFORE flush so new deltas
                 # can start a fresh timer while we emit
-                nonlocal _batch_buf, _batch_timer
+                nonlocal _batch_timer
                 _batch_timer = None
                 await _flush_batch()
 

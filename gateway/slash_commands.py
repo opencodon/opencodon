@@ -3886,7 +3886,6 @@ class GatewaySlashCommandsMixin:
         # Count messages for context
         history = await self.async_session_store.load_transcript(target_id)
         msg_count = len([m for m in history if m.get("role") == "user"]) if history else 0
-        msg_part = f" ({msg_count} message{'s' if msg_count != 1 else ''})" if msg_count else ""
 
         if not msg_count:
             return t("gateway.resume.resumed_no_count", title=title)

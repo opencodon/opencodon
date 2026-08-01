@@ -39,20 +39,12 @@ import signal
 import tempfile
 import threading
 import time
-import sqlite3
 from collections import OrderedDict
 from contextvars import copy_context
 from pathlib import Path
 from datetime import datetime
 from typing import Awaitable, Callable, Dict, Optional, Any, List, Union, cast
 
-# account_usage imports the OpenAI SDK chain (~230 ms). Only needed by
-# /usage; we still import it at module top in the gateway because test
-# patches (tests/gateway/test_usage_command.py) target
-# `gateway.run.fetch_account_usage` as a module-level attribute. The
-# gateway is a long-running daemon, so its boot cost matters less than
-# preserving the established test-patch surface.
-from agent.account_usage import fetch_account_usage, render_account_usage_lines
 from agent.async_utils import consume_detached_task_result, safe_schedule_threadsafe
 from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 from agent.i18n import t
@@ -303,7 +295,6 @@ def _gateway_loop_exception_handler(
     """
     exc = context.get("exception")
     if exc is not None and _is_transient_network_error(exc):
-        message = context.get("message") or "transient network error"
         task = context.get("future") or context.get("task")
         task_name = ""
         if task is not None:
@@ -1104,7 +1095,6 @@ _AUTO_APPEND_MEDIA_TOOL_NAMES = {
 # implementation.  Re-exported under the historical private names so existing
 # call sites and tests keep working.
 from agent.replay_cleanup import (  # noqa: E402
-    is_interrupted_tool_result as _is_interrupted_tool_result,
     strip_interrupted_tool_tails as _strip_interrupted_tool_tails,
     strip_dangling_tool_call_tail as _strip_dangling_tool_call_tail,
     strip_stale_dangerous_confirmations as _strip_stale_dangerous_confirmations,
@@ -1399,7 +1389,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Resolve opencodon home directory (respects OPENCODON_HOME override)
 from opencodon_constants import get_opencodon_home, get_opencodon_home_override
-from utils import atomic_json_write, atomic_yaml_write, base_url_host_matches, is_truthy_value
+from utils import atomic_json_write, is_truthy_value
 _opencodon_home = get_opencodon_home()
 
 # Load environment variables from ~/.opencodon/.env first.
@@ -1908,7 +1898,6 @@ from gateway.config import (
     Platform,
     _BUILTIN_PLATFORM_VALUES,
     GatewayConfig,
-    HomeChannel,
     PlatformConfig,
     load_gateway_config,
 )
@@ -1950,13 +1939,6 @@ from gateway.restart import (
     GATEWAY_FATAL_CONFIG_EXIT_CODE,
     GATEWAY_SERVICE_RESTART_EXIT_CODE,
     parse_restart_drain_timeout,
-)
-
-
-from gateway.whatsapp_identity import (
-    canonical_whatsapp_identifier as _canonical_whatsapp_identifier,  # noqa: F401
-    expand_whatsapp_aliases as _expand_whatsapp_auth_aliases,
-    normalize_whatsapp_identifier as _normalize_whatsapp_identifier,
 )
 
 
@@ -3509,16 +3491,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         )
 
 
-
-    # -- Setup skill availability ----------------------------------------
-
-    def _has_setup_skill(self) -> bool:
-        """Check if the opencodon-setup skill is installed."""
-        try:
-            from tools.skill_manager_tool import _find_skill
-            return _find_skill("opencodon-setup") is not None
-        except Exception:
-            return False
 
     # -- Voice mode persistence ------------------------------------------
 
@@ -12992,7 +12964,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # under that profile's loaded config — check after scope install.
             if not home_env:
                 try:
-                    from opencodon_cli.profiles import get_profile_dir
                     from gateway.config import load_gateway_config as _lgc
                     prof = (getattr(source, "profile", None) or "").strip()
                     if prof and prof != "default":
@@ -20789,10 +20760,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
             agent.clarify_callback = _clarify_callback_sync
 
-            # Show assistant thinking between tool calls — independent of
-            # tool_progress mode. Some platforms need an explicit per-platform
-            # opt-in so global scratch-text display does not leak into threads.
-            agent.thinking_progress = _thinking_enabled
             # Store agent reference for interrupt support
             agent_holder[0] = agent
             # Capture the full tool definitions for transcript logging
@@ -21957,7 +21924,6 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     # transcript back to the user in the same 🎙️ format as
                     # fresh voice messages.
                     _pending_text = pending_event.text or ""
-                    _media_urls = getattr(pending_event, "media_urls", None) or []
                     if self._pending_event_audio_paths(pending_event):
                         pending, _ = await self._transcribe_and_echo_pending_voice(
                             pending_event,

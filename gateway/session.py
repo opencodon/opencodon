@@ -92,7 +92,6 @@ from .config import (
 )
 from .whatsapp_identity import (
     canonical_whatsapp_identifier,
-    normalize_whatsapp_identifier,  # noqa: F401 - re-exported for gateway.session callers
 )
 from utils import atomic_replace
 from agent.turn_context import extract_api_content_sidecar
@@ -2575,7 +2574,7 @@ class SessionStore:
             # Cap pending messages per session to avoid unbounded memory
             # growth when the DB is persistently broken. Drop the oldest.
             if len(pending) > self._MAX_PENDING_PER_SESSION:
-                dropped = pending.pop(0)
+                pending.pop(0)
                 logger.warning(
                     "Session DB transcript pending queue full for %s "
                     "(cap=%d); dropping oldest message to make room",
