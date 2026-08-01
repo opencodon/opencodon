@@ -92,7 +92,7 @@ class TestSourceLinesAreClamped:
         )
 
     def test_cli_clamped(self):
-        src = self._read_file("src/opencodon/frontends/cli/shell.py")
+        src = self._read_file("src/opencodon/frontends/cli/shell_show.py")
         assert "min(100, (last_prompt" in src, (
             "cli.py /stats pct is not clamped with min(100, ...)"
         )
