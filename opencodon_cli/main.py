@@ -4745,6 +4745,14 @@ _UPDATE_CRITICAL_FILES = (
     "model_tools.py",
     "toolsets.py",
     "opencodon_constants.py",
+    # Canonical homes after restructure Phase 1 — the root-level entries
+    # above are now thin shims aliasing these (see docs/plans/
+    # 2026-08-01-repo-restructure-plan.md).
+    "opencodon/__init__.py",
+    "opencodon/toolsets.py",
+    "opencodon/common/__init__.py",
+    "opencodon/common/constants.py",
+    "opencodon/common/utils.py",
 )
 
 

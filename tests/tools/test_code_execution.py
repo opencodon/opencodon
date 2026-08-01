@@ -257,9 +257,11 @@ class TestExecuteCode(unittest.TestCase):
 
     def test_repo_root_modules_are_importable(self):
         """Sandboxed scripts can import modules that live at the repo root."""
+        # The old root-module name imports via the Phase 1 shim, which aliases
+        # the canonical module — __file__ reports opencodon/common/constants.py.
         result = self._run('import opencodon_constants; print(opencodon_constants.__file__)')
         self.assertEqual(result["status"], "success")
-        self.assertIn("opencodon_constants.py", result["output"])
+        self.assertIn("constants.py", result["output"])
 
     def test_single_tool_call(self):
         """Script calls terminal and prints the result."""
