@@ -186,7 +186,7 @@ def test_dashboard_process_isolation_config_coerces_raw_values():
 
 
 def test_default_config_seeds_dashboard_process_isolation_keys():
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
 
     dashboard = DEFAULT_CONFIG["dashboard"]
     assert dashboard["turn_isolation"] is False
@@ -1273,7 +1273,7 @@ def test_load_enabled_toolsets_filters_invalid_tui_env(monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "web, nope")
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
@@ -1295,7 +1295,7 @@ def test_load_enabled_toolsets_accepts_plugin_env_after_discovery(monkeypatch):
     monkeypatch.setattr(toolsets, "validate_toolset", fake_validate)
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(
             discover_plugins=lambda: discovered.update({"ready": True})
         ),
@@ -1321,11 +1321,11 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "mcp-off")
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         config_mod,
@@ -1355,11 +1355,11 @@ def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, caps
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: {"platform_toolsets": {"cli": ["memory"]}}
@@ -1377,11 +1377,11 @@ def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, cap
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
@@ -1394,7 +1394,7 @@ def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, cap
 def test_load_enabled_toolsets_honors_builtin_env_if_config_fails(monkeypatch):
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "web")
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
@@ -1422,11 +1422,11 @@ def test_load_enabled_toolsets_reports_disabled_mcp_separately(monkeypatch, caps
     monkeypatch.setenv("OPENCODON_TUI_TOOLSETS", "web,mcp-off,nope")
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     monkeypatch.setattr(
         config_mod,
@@ -7031,7 +7031,7 @@ def test_command_dispatch_exec_nonzero_surfaces_error(monkeypatch):
 
 
 def test_plugins_list_surfaces_loader_error(monkeypatch):
-    with patch("opencodon_cli.plugins.get_plugin_manager", side_effect=Exception("boom")):
+    with patch("opencodon.plugins_runtime.get_plugin_manager", side_effect=Exception("boom")):
         resp = server.handle_request(
             {"id": "1", "method": "plugins.list", "params": {}}
         )
@@ -8774,7 +8774,7 @@ def test_model_save_key_uses_credential_lifecycle_and_picker_context(monkeypatch
             )
         },
     )
-    monkeypatch.setattr("opencodon_cli.config.is_managed", lambda: False)
+    monkeypatch.setattr("opencodon.config.is_managed", lambda: False)
     save_credential = Mock()
     monkeypatch.setattr(
         "opencodon_cli.credential_lifecycle.save_provider_env_credential",

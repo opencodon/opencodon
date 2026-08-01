@@ -75,7 +75,7 @@ class TestUpstageEnvCatalog:
     """
 
     def test_optional_env_vars_include_upstage(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
 
         assert "UPSTAGE_API_KEY" in OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["UPSTAGE_API_KEY"]["category"] == "provider"

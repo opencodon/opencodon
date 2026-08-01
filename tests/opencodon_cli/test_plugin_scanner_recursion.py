@@ -14,7 +14,7 @@ from typing import Any, Dict
 import pytest
 import yaml
 
-from opencodon_cli.plugins import PluginManager
+from opencodon.plugins_runtime import PluginManager
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────

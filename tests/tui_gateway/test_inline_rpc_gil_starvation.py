@@ -36,7 +36,7 @@ def _restore_stdout():
 def server():
     with patch.dict("sys.modules", {
         "opencodon_constants": MagicMock(get_opencodon_home=MagicMock(return_value="/tmp/opencodon_test")),
-        "opencodon_cli.env_loader": MagicMock(),
+        "opencodon.config.env_loader": MagicMock(),
         "opencodon_cli.banner": MagicMock(),
         "opencodon_state": MagicMock(),
     }):

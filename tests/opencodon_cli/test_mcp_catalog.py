@@ -52,13 +52,13 @@ def _isolate_opencodon_home(tmp_path, monkeypatch):
     hh.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(hh))
     monkeypatch.setattr(
-        "opencodon_cli.config.get_opencodon_home", lambda: hh
+        "opencodon.config.get_opencodon_home", lambda: hh
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.get_config_path", lambda: hh / "config.yaml"
+        "opencodon.config.get_config_path", lambda: hh / "config.yaml"
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.get_env_path", lambda: hh / ".env"
+        "opencodon.config.get_env_path", lambda: hh / ".env"
     )
     # mcp_catalog grabs get_opencodon_home() lazily through opencodon_constants
     monkeypatch.setattr(
@@ -234,7 +234,7 @@ class TestInstall:
     def test_install_simple_stdio_writes_config(self, catalog_dir):
         _write_manifest(catalog_dir, "demo", _basic_manifest())
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
 
@@ -258,7 +258,7 @@ class TestInstall:
             }
         )
         _write_manifest(catalog_dir, "evil", body)
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
         from opencodon_cli.mcp_catalog import CatalogError, install_entry
 
         with pytest.raises(CatalogError, match="rejected"):
@@ -288,7 +288,7 @@ class TestInstall:
 
         from opencodon_cli import mcp_catalog
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         with patch.object(mcp_catalog, "_do_git_install", return_value=fake_clone):
             install_entry(_entry("demo"), enable=True)
@@ -311,7 +311,7 @@ class TestInstall:
         monkeypatch.setattr(mcp_catalog, "_prompt_input", lambda *a, **kw: "secret-val")
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import get_env_value, load_config
+        from opencodon.config import get_env_value, load_config
 
         install_entry(_entry("demo"), enable=True)
 
@@ -326,7 +326,7 @@ class TestInstall:
         _write_manifest(catalog_dir, "demo", body)
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
 
@@ -362,7 +362,7 @@ class TestUninstall:
     def test_uninstall_removes_server_block(self, catalog_dir):
         _write_manifest(catalog_dir, "demo", _basic_manifest())
         from opencodon_cli.mcp_catalog import install_entry, uninstall_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         assert "demo" in load_config().get("mcp_servers", {})
@@ -408,7 +408,7 @@ class TestPicker:
     def test_install_by_name_success(self, catalog_dir):
         _write_manifest(catalog_dir, "demo", _basic_manifest())
         from opencodon_cli.mcp_picker import install_by_name
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         rc = install_by_name("demo")
         assert rc == 0
@@ -440,7 +440,7 @@ class TestToolSelection:
         body = _basic_manifest()
         _write_manifest(catalog_dir, "demo", body)
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         server = load_config()["mcp_servers"]["demo"]
@@ -453,7 +453,7 @@ class TestToolSelection:
         )
         _write_manifest(catalog_dir, "demo", body)
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         server = load_config()["mcp_servers"]["demo"]
@@ -474,7 +474,7 @@ class TestToolSelection:
         monkeypatch.setattr(_sys.stdin, "isatty", lambda: False)
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         server = load_config()["mcp_servers"]["demo"]
@@ -493,7 +493,7 @@ class TestToolSelection:
         monkeypatch.setattr(_sys.stdin, "isatty", lambda: False)
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         server = load_config()["mcp_servers"]["demo"]
@@ -516,7 +516,7 @@ class TestToolSelection:
         monkeypatch.setattr(_sys.stdin, "isatty", lambda: False)
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config
+        from opencodon.config import load_config
 
         install_entry(_entry("demo"), enable=True)
         server = load_config()["mcp_servers"]["demo"]
@@ -539,7 +539,7 @@ class TestToolSelection:
         monkeypatch.setattr(_sys.stdin, "isatty", lambda: False)
 
         from opencodon_cli.mcp_catalog import install_entry
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
 
         # First install
         install_entry(_entry("demo"), enable=True)
@@ -633,7 +633,7 @@ class TestCustomMcpRows:
         picker text dump with a 'custom' status."""
         _write_manifest(catalog_dir, "demo", _basic_manifest())
 
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         cfg = load_config()
         cfg.setdefault("mcp_servers", {})["my-custom"] = {
             "command": "npx",
@@ -652,7 +652,7 @@ class TestCustomMcpRows:
     def test_custom_mcp_only_no_catalog(self, catalog_dir, capsys):
         """If the catalog is empty but the user has custom MCPs, they\'re
         still visible — the picker is the unified surface."""
-        from opencodon_cli.config import load_config, save_config
+        from opencodon.config import load_config, save_config
         cfg = load_config()
         cfg.setdefault("mcp_servers", {})["my-custom"] = {
             "url": "https://mcp.example.com",

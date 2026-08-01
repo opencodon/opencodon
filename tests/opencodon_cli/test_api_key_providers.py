@@ -1650,7 +1650,7 @@ class TestDeepInfraProviderProfile:
         from providers import get_provider_profile
         from agent.auxiliary_client import _get_aux_model_for_provider
         from opencodon_cli.auth import PROVIDER_REGISTRY, resolve_provider
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
         from opencodon_cli.models import CANONICAL_PROVIDERS
 
         profile = get_provider_profile("deepinfra")

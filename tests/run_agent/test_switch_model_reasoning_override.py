@@ -59,7 +59,7 @@ class TestSwitchModelReasoningOverride:
             },
         }
 
-        with patch("opencodon_cli.config.load_config", return_value=fake_cfg):
+        with patch("opencodon.config.load_config", return_value=fake_cfg):
             try:
                 switch_model(
                     agent,
@@ -91,7 +91,7 @@ class TestSwitchModelReasoningOverride:
             },
         }
 
-        with patch("opencodon_cli.config.load_config", return_value=fake_cfg):
+        with patch("opencodon.config.load_config", return_value=fake_cfg):
             try:
                 switch_model(
                     agent,
@@ -123,7 +123,7 @@ class TestSwitchModelReasoningOverride:
             },
         }
 
-        with patch("opencodon_cli.config.load_config", return_value=fake_cfg):
+        with patch("opencodon.config.load_config", return_value=fake_cfg):
             try:
                 switch_model(
                     agent,
@@ -204,7 +204,7 @@ class TestSwitchModelReasoningOverride:
             },
         }
 
-        with patch("opencodon_cli.config.load_config", return_value=fake_cfg):
+        with patch("opencodon.config.load_config", return_value=fake_cfg):
             try:
                 switch_model(
                     agent,

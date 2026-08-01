@@ -510,12 +510,12 @@ def test_codex_provider_strips_provider_prefix_from_model(monkeypatch):
 
 def test_cmd_model_falls_back_to_auto_on_invalid_provider(monkeypatch, capsys):
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "gpt-5", "provider": "invalid-provider"}},
     )
-    monkeypatch.setattr("opencodon_cli.config.save_config", lambda cfg: None)
-    monkeypatch.setattr("opencodon_cli.config.get_env_value", lambda key: "")
-    monkeypatch.setattr("opencodon_cli.config.save_env_value", lambda key, value: None)
+    monkeypatch.setattr("opencodon.config.save_config", lambda cfg: None)
+    monkeypatch.setattr("opencodon.config.get_env_value", lambda key: "")
+    monkeypatch.setattr("opencodon.config.save_env_value", lambda key, value: None)
 
     def _resolve_provider(requested, **kwargs):
         if requested == "invalid-provider":
@@ -536,11 +536,11 @@ def test_cmd_model_falls_back_to_auto_on_invalid_provider(monkeypatch, capsys):
 
 def test_model_flow_custom_saves_verified_v1_base_url(monkeypatch, capsys):
     monkeypatch.setattr(
-        "opencodon_cli.config.get_env_value",
+        "opencodon.config.get_env_value",
         lambda key: "" if key in {"OPENAI_BASE_URL", "OPENAI_API_KEY"} else "",
     )
     saved_env = {}
-    monkeypatch.setattr("opencodon_cli.config.save_env_value", lambda key, value: saved_env.__setitem__(key, value))
+    monkeypatch.setattr("opencodon.config.save_env_value", lambda key, value: saved_env.__setitem__(key, value))
     monkeypatch.setattr("opencodon_cli.auth._save_model_choice", lambda model: saved_env.__setitem__("MODEL", model))
     monkeypatch.setattr("opencodon_cli.auth.deactivate_provider", lambda: None)
     monkeypatch.setattr("opencodon_cli.main._save_custom_provider", lambda *args, **kwargs: None)
@@ -555,10 +555,10 @@ def test_model_flow_custom_saves_verified_v1_base_url(monkeypatch, capsys):
         },
     )
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {"model": {"default": "", "provider": "custom", "base_url": ""}},
     )
-    monkeypatch.setattr("opencodon_cli.config.save_config", lambda cfg: None)
+    monkeypatch.setattr("opencodon.config.save_config", lambda cfg: None)
 
     # After the probe detects a single model ("llm"), the flow asks
     # "Use this model? [Y/n]:" — confirm with Enter, then context length,
@@ -582,7 +582,7 @@ def test_model_flow_custom_persists_selected_api_mode(monkeypatch):
     captured_provider = {}
 
     monkeypatch.setattr(
-        "opencodon_cli.config.get_env_value",
+        "opencodon.config.get_env_value",
         lambda key: "" if key in {"OPENAI_BASE_URL", "OPENAI_API_KEY"} else "",
     )
     monkeypatch.setattr("opencodon_cli.auth._save_model_choice", lambda model: None)
@@ -597,8 +597,8 @@ def test_model_flow_custom_persists_selected_api_mode(monkeypatch):
             "used_fallback": False,
         },
     )
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: saved_cfg)
-    monkeypatch.setattr("opencodon_cli.config.save_config", lambda cfg: saved_cfg.update(cfg))
+    monkeypatch.setattr("opencodon.config.load_config", lambda: saved_cfg)
+    monkeypatch.setattr("opencodon.config.save_config", lambda cfg: saved_cfg.update(cfg))
     monkeypatch.setattr(
         "opencodon_cli.main._save_custom_provider",
         lambda base_url, api_key="", model="", context_length=None, name=None, api_mode=None: captured_provider.update(
@@ -666,12 +666,12 @@ def test_save_custom_provider_uses_provided_name(monkeypatch, tmp_path):
     cfg_path.write_text(yaml.dump({}))
 
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config", lambda: yaml.safe_load(cfg_path.read_text()) or {},
+        "opencodon.config.load_config", lambda: yaml.safe_load(cfg_path.read_text()) or {},
     )
     saved = {}
     def _save(cfg):
         saved.update(cfg)
-    monkeypatch.setattr("opencodon_cli.config.save_config", _save)
+    monkeypatch.setattr("opencodon.config.save_config", _save)
 
     _save_custom_provider("http://localhost:11434/v1", name="Ollama")
     entries = saved.get("custom_providers", [])

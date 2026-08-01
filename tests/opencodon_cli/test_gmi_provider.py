@@ -17,7 +17,7 @@ if "dotenv" not in sys.modules:
     sys.modules["dotenv"] = fake_dotenv
 
 from opencodon_cli.auth import resolve_provider
-from opencodon_cli.config import load_config
+from opencodon.config import load_config
 from opencodon_cli.models import (
     CANONICAL_PROVIDERS,
     _PROVIDER_LABELS,
@@ -64,7 +64,7 @@ class TestGmiAliases:
 
 class TestGmiConfigRegistry:
     def test_optional_env_vars_include_gmi(self):
-        from opencodon_cli.config import OPTIONAL_ENV_VARS
+        from opencodon.config import OPTIONAL_ENV_VARS
 
         assert "GMI_API_KEY" in OPTIONAL_ENV_VARS
         assert OPTIONAL_ENV_VARS["GMI_API_KEY"]["category"] == "provider"
@@ -305,7 +305,7 @@ class TestGmiMainFlow:
     def test_chat_parser_accepts_gmi_provider(self, monkeypatch):
         recorded: dict[str, str] = {}
 
-        monkeypatch.setattr("opencodon_cli.config.get_container_exec_info", lambda: None)
+        monkeypatch.setattr("opencodon.config.get_container_exec_info", lambda: None)
         monkeypatch.setattr(
             "opencodon_cli.main.cmd_chat",
             lambda args: recorded.setdefault("provider", args.provider),

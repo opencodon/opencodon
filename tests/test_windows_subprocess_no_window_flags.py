@@ -38,7 +38,7 @@ def _spawns(captured, *needles):
 def _is_git_spawn(cmd) -> bool:
     """True only for a ``git -C <cwd> ...`` spawn.
 
-    ``bounded_git_probe`` lives in ``opencodon_cli._subprocess_compat`` and both
+    ``bounded_git_probe`` lives in ``opencodon.common._subprocess_compat`` and both
     probe call sites delegate to it, so these tests patch
     ``_subprocess_compat.subprocess.Popen`` — which is the shared ``subprocess``
     module singleton, i.e. a process-wide patch. Any unrelated daemon spawn
@@ -645,7 +645,7 @@ def test_tui_slash_worker_hides_python_window(monkeypatch):
     monkeypatch.setattr(server.subprocess, "Popen", fake_popen)
     monkeypatch.setattr(server.threading, "Thread", lambda *a, **k: SimpleNamespace(start=lambda: None))
 
-    import opencodon_cli._subprocess_compat as subprocess_compat
+    import opencodon.common._subprocess_compat as subprocess_compat
 
     monkeypatch.setattr(subprocess_compat, "windows_hide_flags", lambda: _CREATE_NO_WINDOW)
 

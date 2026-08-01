@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import textwrap
 
-from opencodon_cli.timeouts import (
+from opencodon.config.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )

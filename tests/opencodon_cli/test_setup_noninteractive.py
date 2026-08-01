@@ -4,7 +4,7 @@ from argparse import Namespace
 from unittest.mock import patch
 
 import pytest
-from opencodon_cli.config import DEFAULT_CONFIG, load_config, save_config
+from opencodon.config import DEFAULT_CONFIG, load_config, save_config
 
 
 def _make_setup_args(**overrides):

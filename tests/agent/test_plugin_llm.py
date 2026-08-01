@@ -778,7 +778,7 @@ plugins:
 
 class TestPluginContextIntegration:
     def test_ctx_llm_is_lazy_singleton(self):
-        from opencodon_cli.plugins import PluginContext, PluginManifest, PluginManager
+        from opencodon.plugins_runtime import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(name="test-plugin", source="test", key="test-plugin")
         manager = PluginManager()
@@ -790,7 +790,7 @@ class TestPluginContextIntegration:
         assert first._plugin_id == "test-plugin"  # type: ignore[attr-defined]
 
     def test_ctx_llm_uses_manifest_key_for_policy(self):
-        from opencodon_cli.plugins import PluginContext, PluginManifest, PluginManager
+        from opencodon.plugins_runtime import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(
             name="bare-name", source="test", key="image_gen/openai"
@@ -908,7 +908,7 @@ class TestHookMode:
     the real ``invoke_hook`` machinery, and check the call landed."""
 
     def test_complete_works_from_post_tool_call_hook(self):
-        from opencodon_cli.plugins import PluginContext, PluginManifest, PluginManager
+        from opencodon.plugins_runtime import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(name="hook-plugin", source="test", key="hook-plugin")
         manager = PluginManager()
@@ -964,7 +964,7 @@ class TestHookMode:
     def test_complete_works_from_post_tool_call_hook_when_async_caller_set(self):
         """Hooks fired synchronously should still work with sync
         ctx.llm.complete even if other callsites use async."""
-        from opencodon_cli.plugins import PluginContext, PluginManifest, PluginManager
+        from opencodon.plugins_runtime import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(name="hook-async", source="test", key="hook-async")
         manager = PluginManager()

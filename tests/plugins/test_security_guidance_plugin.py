@@ -320,10 +320,10 @@ class TestPluginDiscovery:
 
         # Wipe any cached plugin state from earlier tests in this worker.
         for k in list(sys.modules):
-            if k.startswith(("opencodon_plugins", "opencodon_cli.plugins")):
+            if k.startswith(("opencodon_plugins", "opencodon.plugins_runtime")):
                 del sys.modules[k]
 
-        from opencodon_cli.plugins import _ensure_plugins_discovered
+        from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         mgr = _ensure_plugins_discovered(force=True)
         loaded = set()

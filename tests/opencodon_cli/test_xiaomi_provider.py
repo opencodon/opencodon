@@ -263,17 +263,17 @@ class TestXiaomiNormalization:
     """Model name normalization — Xiaomi is a direct provider."""
 
     def test_vendor_prefix_mapping(self):
-        from opencodon_cli.model_normalize import _VENDOR_PREFIXES
+        from opencodon.common.model_normalize import _VENDOR_PREFIXES
         assert _VENDOR_PREFIXES.get("mimo") == "xiaomi"
 
     def test_matching_prefix_strip(self):
         """xiaomi/mimo-v2-pro should normalize to mimo-v2-pro for direct API."""
-        from opencodon_cli.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
+        from opencodon.common.model_normalize import _MATCHING_PREFIX_STRIP_PROVIDERS
         assert "xiaomi" in _MATCHING_PREFIX_STRIP_PROVIDERS
 
     def test_lowercase_model_provider(self):
         """Xiaomi must be in _LOWERCASE_MODEL_PROVIDERS."""
-        from opencodon_cli.model_normalize import _LOWERCASE_MODEL_PROVIDERS
+        from opencodon.common.model_normalize import _LOWERCASE_MODEL_PROVIDERS
         assert "xiaomi" in _LOWERCASE_MODEL_PROVIDERS
 
     def test_lowercase_subset_of_matching_prefix(self):
@@ -282,7 +282,7 @@ class TestXiaomiNormalization:
         Otherwise the .lower() code path is unreachable dead code — the
         provider check at line 422 gates entry to the block.
         """
-        from opencodon_cli.model_normalize import (
+        from opencodon.common.model_normalize import (
             _LOWERCASE_MODEL_PROVIDERS,
             _MATCHING_PREFIX_STRIP_PROVIDERS,
         )
@@ -292,19 +292,19 @@ class TestXiaomiNormalization:
         )
 
     def test_normalize_strips_provider_prefix(self):
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider("xiaomi/mimo-v2-pro", "xiaomi")
         assert result == "mimo-v2-pro"
 
     def test_normalize_bare_name_unchanged(self):
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider("mimo-v2-pro", "xiaomi")
         assert result == "mimo-v2-pro"
 
     @pytest.mark.parametrize("empty_input", ["", None, "   "])
     def test_normalize_empty_and_none(self, empty_input):
         """None, empty, and whitespace-only inputs return empty string."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider(empty_input, "xiaomi")
         assert result == ""
 
@@ -320,7 +320,7 @@ class TestXiaomiNormalization:
     ])
     def test_normalize_lowercases_mixed_case(self, input_name, expected):
         """Xiaomi's API requires lowercase model IDs — mixed case from docs must be lowered."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider(input_name, "xiaomi")
         assert result == expected
 
@@ -331,7 +331,7 @@ class TestXiaomiNormalization:
     ])
     def test_normalize_strips_prefix_and_lowercases(self, input_name, expected):
         """Provider prefix stripping AND lowercasing must both work together."""
-        from opencodon_cli.model_normalize import normalize_model_for_provider
+        from opencodon.common.model_normalize import normalize_model_for_provider
         result = normalize_model_for_provider(input_name, "xiaomi")
         assert result == expected
 

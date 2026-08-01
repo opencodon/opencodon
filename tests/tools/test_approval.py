@@ -28,11 +28,11 @@ from tools.approval import (
 
 class TestApprovalModeParsing:
     def test_unquoted_yaml_off_boolean_false_maps_to_off(self):
-        with mock_patch("opencodon_cli.config.load_config", return_value={"approvals": {"mode": False}}):
+        with mock_patch("opencodon.config.load_config", return_value={"approvals": {"mode": False}}):
             assert _get_approval_mode() == "off"
 
     def test_string_off_still_maps_to_off(self):
-        with mock_patch("opencodon_cli.config.load_config", return_value={"approvals": {"mode": "off"}}):
+        with mock_patch("opencodon.config.load_config", return_value={"approvals": {"mode": "off"}}):
             assert _get_approval_mode() == "off"
 
     def test_valid_modes_pass_through(self):
@@ -59,7 +59,7 @@ class TestApprovalModeParsing:
 
 class TestSmartApproval:
     def test_smart_is_the_default_approval_mode(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
 
         assert DEFAULT_CONFIG["approvals"]["mode"] == "smart"
 
@@ -2382,7 +2382,7 @@ class TestTirithImportErrorFailOpenPolicy:
         }
         real_import = builtins.__import__
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
-            with _patch("opencodon_cli.config.load_config", return_value=cfg):
+            with _patch("opencodon.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
                     with mock_patch.dict("os.environ", {"OPENCODON_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards("echo hello", "local")
@@ -2407,7 +2407,7 @@ class TestTirithImportErrorFailOpenPolicy:
 
         real_import = builtins.__import__
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
-            with _patch("opencodon_cli.config.load_config", return_value=cfg):
+            with _patch("opencodon.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
                     with mock_patch.dict("os.environ", {"OPENCODON_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards(
@@ -2438,7 +2438,7 @@ class TestTirithImportErrorFailOpenPolicy:
         }
         real_import = builtins.__import__
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
-            with _patch("opencodon_cli.config.load_config", return_value=cfg):
+            with _patch("opencodon.config.load_config", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
                     with mock_patch.dict("os.environ", {"OPENCODON_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards("echo hello", "local")
@@ -2507,7 +2507,7 @@ class TestApprovalPromptRedaction:
             "print(api_key)"
         )
         cfg = {"approvals": {"mode": "manual"}}
-        with _patch("opencodon_cli.config.load_config", return_value=cfg):
+        with _patch("opencodon.config.load_config", return_value=cfg):
             with _patch("tools.approval._is_gateway_approval_context",
                         return_value=True):
                 with _patch("tools.approval._get_approval_mode",

@@ -522,7 +522,7 @@ class TestSubprocessCompatHelpers:
 
     def test_resolve_node_command_returns_absolute_on_posix(self):
         """On Linux, resolve_node_command('sh', ['-c','echo hi']) picks up /bin/sh."""
-        from opencodon_cli._subprocess_compat import resolve_node_command
+        from opencodon.common._subprocess_compat import resolve_node_command
         # We can't assert "npm is on PATH" portably; use `sh` which is
         # guaranteed on POSIX.  On Windows the test only confirms the
         # no-crash fallback path.
@@ -532,7 +532,7 @@ class TestSubprocessCompatHelpers:
         # name (fallback) — both are acceptable behaviours.
 
     def test_resolve_node_command_fallback_when_absent(self):
-        from opencodon_cli._subprocess_compat import resolve_node_command
+        from opencodon.common._subprocess_compat import resolve_node_command
         argv = resolve_node_command(
             "zzz-definitely-not-on-path-xyzzy", ["--help"]
         )
@@ -541,7 +541,7 @@ class TestSubprocessCompatHelpers:
         assert argv[1:] == ["--help"]
 
     def test_windows_flags_zero_on_posix(self):
-        from opencodon_cli._subprocess_compat import (
+        from opencodon.common._subprocess_compat import (
             windows_detach_flags,
             windows_detach_flags_without_breakaway,
             windows_hide_flags,
@@ -552,7 +552,7 @@ class TestSubprocessCompatHelpers:
             assert windows_hide_flags() == 0
 
     def test_windows_detach_popen_kwargs_is_posix_equivalent_on_posix(self):
-        from opencodon_cli._subprocess_compat import windows_detach_popen_kwargs
+        from opencodon.common._subprocess_compat import windows_detach_popen_kwargs
         kwargs = windows_detach_popen_kwargs()
         if sys.platform != "win32":
             # POSIX path MUST produce start_new_session=True, which maps to
@@ -727,7 +727,7 @@ class TestCronSchedulerBashResolution:
 
 class TestNpmBareSpawnsResolved:
     """Every spawn site that launches ``npm``/``npx`` must resolve via
-    shutil.which / opencodon_cli._subprocess_compat.resolve_node_command
+    shutil.which / opencodon.common._subprocess_compat.resolve_node_command
     so Windows can execute the .cmd batch shims."""
 
     @pytest.mark.parametrize(
@@ -910,7 +910,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
 
         Static check — the watcher source is built at import time and embedded
         verbatim in the module text.  The literal Win32 bits live in
-        opencodon_cli._subprocess_compat; the watcher must call that helper from
+        opencodon.common._subprocess_compat; the watcher must call that helper from
         inside the inlined payload so runtime behavior keeps the breakaway bit.
 
         The bit was added to the inlined payload by PR #40909.  This test
@@ -924,7 +924,7 @@ class TestGatewayDetachedWatcherWindowsFlags:
         end = text.find(").strip()", idx)
         assert end != -1, "watcher block end not found"
         block = text[idx:end]
-        assert "from opencodon_cli._subprocess_compat import" in block
+        assert "from opencodon.common._subprocess_compat import" in block
         assert "windows_detach_flags" in block
         assert "windows_detach_flags()" in block, (
             "Inlined respawn watcher must call windows_detach_flags() for the "
@@ -1054,7 +1054,7 @@ class TestWindowlessGatewayRestartSpec:
         # patch below — a fresh import would run gateway/status.py's
         # ``if sys.platform == "win32": import msvcrt`` branch and crash on
         # Linux CI with ModuleNotFoundError.
-        import opencodon_cli.config  # noqa: F401
+        import opencodon.config  # noqa: F401
         import opencodon_cli.gateway  # noqa: F401
 
         argv = [
@@ -1079,7 +1079,7 @@ class TestWindowlessGatewayRestartSpec:
         ), mock.patch.object(
             gw, "_stable_gateway_working_dir", return_value="C:/opencodon"
         ), mock.patch(
-            "opencodon_cli.config.get_opencodon_home", return_value="C:/opencodon"
+            "opencodon.config.get_opencodon_home", return_value="C:/opencodon"
         ):
             new_argv, cwd, env = gw.windowless_gateway_restart_spec(list(argv))
 

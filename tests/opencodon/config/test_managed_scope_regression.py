@@ -79,7 +79,7 @@ def test_no_managed_dir_means_user_value_wins(opencodon_home):
 
 
 def test_user_env_overrides_shell(tmp_path, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home = tmp_path / "home"
     home.mkdir()
@@ -90,7 +90,7 @@ def test_user_env_overrides_shell(tmp_path, monkeypatch):
 
 
 def test_missing_user_env_is_noop(tmp_path, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home = tmp_path / "home"
     home.mkdir()

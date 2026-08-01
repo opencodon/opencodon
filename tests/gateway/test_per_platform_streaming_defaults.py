@@ -12,7 +12,7 @@ from __future__ import annotations
 
 
 def test_default_per_platform_streaming_flags():
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
     plats = DEFAULT_CONFIG["display"]["platforms"]
     assert plats["telegram"]["streaming"] is True
     assert plats["discord"]["streaming"] is False
@@ -21,7 +21,7 @@ def test_default_per_platform_streaming_flags():
 def test_resolver_telegram_on_discord_off_when_global_enabled():
     """With global streaming on, the per-platform defaults make Telegram stream
     and Discord not — matching the platforms' actual streaming quality."""
-    from opencodon_cli.config import DEFAULT_CONFIG
+    from opencodon.config import DEFAULT_CONFIG
     from gateway.display_config import resolve_display_setting
 
     cfg = dict(DEFAULT_CONFIG)
@@ -41,7 +41,7 @@ def test_resolver_telegram_on_discord_off_when_global_enabled():
 def test_user_override_wins_over_default():
     """A user who explicitly enables Discord streaming keeps their value — the
     default false must not clobber it (config deep-merge: user wins)."""
-    from opencodon_cli.config import DEFAULT_CONFIG, _deep_merge
+    from opencodon.config import DEFAULT_CONFIG, _deep_merge
 
     user = {"display": {"platforms": {"discord": {"streaming": True}}}}
     merged = _deep_merge(dict(DEFAULT_CONFIG), user)

@@ -243,7 +243,7 @@ async def test_auto_registers_plugin_commands_for_discord(adapter):
     adapter._run_simple_slash = AsyncMock()
 
     with patch(
-        "opencodon_cli.plugins.get_plugin_commands",
+        "opencodon.plugins_runtime.get_plugin_commands",
         return_value={
             "metricas": {
                 "handler": lambda _a: "ok",
@@ -272,7 +272,7 @@ async def test_auto_registered_plugin_command_without_args_hint(adapter):
     adapter._run_simple_slash = AsyncMock()
 
     with patch(
-        "opencodon_cli.plugins.get_plugin_commands",
+        "opencodon.plugins_runtime.get_plugin_commands",
         return_value={
             "ping": {
                 "handler": lambda _a: "pong",
@@ -297,7 +297,7 @@ async def test_plugin_command_name_conflict_skipped(adapter):
     adapter._run_simple_slash = AsyncMock()
 
     with patch(
-        "opencodon_cli.plugins.get_plugin_commands",
+        "opencodon.plugins_runtime.get_plugin_commands",
         return_value={
             "status": {
                 "handler": lambda _a: "plugin-status",
@@ -351,7 +351,7 @@ async def test_slash_command_registration_stays_under_discord_limit(adapter):
         for i in range(200)
     }
 
-    with patch("opencodon_cli.plugins.get_plugin_commands", return_value=many_plugins):
+    with patch("opencodon.plugins_runtime.get_plugin_commands", return_value=many_plugins):
         adapter._register_slash_commands()
 
     tree_names = set(adapter._client.tree.commands.keys())

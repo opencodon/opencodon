@@ -2,7 +2,7 @@
 
 Bash-compatible .env files commonly prefix lines with ``export `` (users
 copy-paste from shell profiles, cloud provider docs, tutorials). The three
-hand-rolled parsers — ``opencodon_cli.config.load_env``,
+hand-rolled parsers — ``opencodon.config.load_env``,
 ``opencodon_cli.main._has_any_provider_configured``, and
 ``tools.skills_tool.load_env`` — split on ``line.partition("=")`` and must
 strip the ``export `` prefix first, otherwise ``export API_KEY=sk-...`` is
@@ -26,7 +26,7 @@ def _write_env(path: Path, contents: str) -> None:
 
 
 def test_config_load_env_strips_export_prefix(tmp_path):
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     env_path = tmp_path / ".env"
     _write_env(
@@ -37,7 +37,7 @@ def test_config_load_env_strips_export_prefix(tmp_path):
     )
     invalidate_env_cache()
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=env_path):
+        with patch("opencodon.config.get_env_path", return_value=env_path):
             env = load_env()
     finally:
         invalidate_env_cache()
@@ -51,13 +51,13 @@ def test_config_load_env_strips_export_prefix(tmp_path):
 
 def test_config_load_env_does_not_mangle_non_export(tmp_path):
     """A bare 'export' word without trailing space is not a prefix."""
-    from opencodon_cli.config import invalidate_env_cache, load_env
+    from opencodon.config import invalidate_env_cache, load_env
 
     env_path = tmp_path / ".env"
     _write_env(env_path, "PLAIN_KEY=val1\nexportNOSPACE=val2\nexport REAL=val3\n")
     invalidate_env_cache()
     try:
-        with patch("opencodon_cli.config.get_env_path", return_value=env_path):
+        with patch("opencodon.config.get_env_path", return_value=env_path):
             env = load_env()
     finally:
         invalidate_env_cache()

@@ -344,7 +344,7 @@ class TestOneTurnNeverPersisted:
             ),
         )
         monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
-        monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: opencodon_home)
+        monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: opencodon_home)
 
         runner = object.__new__(GatewayRunner)
         runner.adapters = {}

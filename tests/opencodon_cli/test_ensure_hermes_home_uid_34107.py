@@ -30,7 +30,7 @@ class TestResolveOpencodonUidGid:
     def test_returns_parsed_values_when_both_set(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", "1000")
         monkeypatch.setenv("OPENCODON_GID", "911")
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid == 1000
         assert gid == 911
@@ -38,7 +38,7 @@ class TestResolveOpencodonUidGid:
     def test_returns_none_when_unset(self, monkeypatch):
         monkeypatch.delenv("OPENCODON_UID", raising=False)
         monkeypatch.delenv("OPENCODON_GID", raising=False)
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid is None
         assert gid is None
@@ -46,7 +46,7 @@ class TestResolveOpencodonUidGid:
     def test_uid_only_returns_gid_none(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", "1000")
         monkeypatch.delenv("OPENCODON_GID", raising=False)
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid == 1000
         assert gid is None
@@ -54,7 +54,7 @@ class TestResolveOpencodonUidGid:
     def test_invalid_uid_returns_none_for_that_field(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", "not-a-number")
         monkeypatch.setenv("OPENCODON_GID", "911")
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid is None
         assert gid == 911
@@ -62,7 +62,7 @@ class TestResolveOpencodonUidGid:
     def test_empty_string_treated_as_unset(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", "")
         monkeypatch.setenv("OPENCODON_GID", "")
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid is None
         assert gid is None
@@ -70,7 +70,7 @@ class TestResolveOpencodonUidGid:
     def test_whitespace_padded_values(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", " 1000 ")
         monkeypatch.setenv("OPENCODON_GID", "  911")
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid == 1000
         assert gid == 911
@@ -79,7 +79,7 @@ class TestResolveOpencodonUidGid:
     def test_windows_returns_none_none(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_UID", "1000")
         monkeypatch.setenv("OPENCODON_GID", "911")
-        from opencodon_cli.config import _resolve_opencodon_uid_gid
+        from opencodon.config import _resolve_opencodon_uid_gid
         uid, gid = _resolve_opencodon_uid_gid()
         assert uid is None
         assert gid is None

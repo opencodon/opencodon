@@ -3,11 +3,11 @@
 These cover the home-channel save logic that previously lived in
 ``opencodon_cli/setup.py::_setup_slack`` before the Slack adapter migrated to a
 bundled plugin (#41112). ``interactive_setup`` lazy-imports its CLI helpers
-from ``opencodon_cli.config`` (get_env_value / save_env_value) and
+from ``opencodon.config`` (get_env_value / save_env_value) and
 ``opencodon_cli.cli_output`` (prompt / prompt_yes_no / print_*), so we patch those
 source modules.
 """
-import opencodon_cli.config as config_mod
+import opencodon.config as config_mod
 import opencodon_cli.cli_output as cli_output_mod
 from plugins.platforms.slack.adapter import interactive_setup
 

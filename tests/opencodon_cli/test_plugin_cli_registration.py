@@ -12,7 +12,7 @@ import sys
 from unittest.mock import MagicMock
 
 
-from opencodon_cli.plugins import (
+from opencodon.plugins_runtime import (
     PluginContext,
     PluginManager,
     PluginManifest,

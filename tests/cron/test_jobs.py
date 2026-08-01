@@ -1799,14 +1799,14 @@ class TestCronOutputRetention:
     def test_cron_output_keep_reads_config(self, monkeypatch):
         import cron.jobs as jobs
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config", lambda: {"cron": {"output_retention": 7}}
+            "opencodon.config.load_config", lambda: {"cron": {"output_retention": 7}}
         )
         assert jobs._cron_output_keep() == 7
 
     def test_cron_output_keep_defaults_on_bad_config(self, monkeypatch):
         import cron.jobs as jobs
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config", lambda: {"cron": {"output_retention": "oops"}}
+            "opencodon.config.load_config", lambda: {"cron": {"output_retention": "oops"}}
         )
         assert jobs._cron_output_keep() == jobs._CRON_OUTPUT_DEFAULT_KEEP
 

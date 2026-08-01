@@ -1027,7 +1027,7 @@ def test_load_pool_persists_bitwarden_origin_metadata_without_secret(tmp_path, m
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     monkeypatch.setenv("OPENROUTER_API_KEY", sentinel)
     monkeypatch.setattr(
-        "opencodon_cli.env_loader.get_secret_source",
+        "opencodon.config.env_loader.get_secret_source",
         lambda env_var: "bitwarden" if env_var == "OPENROUTER_API_KEY" else None,
     )
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})

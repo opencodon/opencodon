@@ -269,7 +269,7 @@ def test_check_for_updates_docker_returns_none(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     cache_file = tmp_path / ".update_check"
 
-    with patch("opencodon_cli.config.detect_install_method", return_value="docker"), \
+    with patch("opencodon.config.detect_install_method", return_value="docker"), \
          patch("opencodon_cli.banner.subprocess.run") as mock_run:
         result = banner.check_for_updates()
 

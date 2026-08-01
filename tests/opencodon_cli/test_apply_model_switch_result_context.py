@@ -196,7 +196,7 @@ def test_global_switch_clears_context_pin_owned_by_previous_route(monkeypatch):
             "agent.model_metadata.get_model_context_length",
             return_value=256_000,
         ),
-        patch("opencodon_cli.config.load_config_readonly", return_value=configured),
+        patch("opencodon.config.load_config_readonly", return_value=configured),
     ):
         cli_mod.OpencodonCLI._apply_model_switch_result(cli, result, True)
 

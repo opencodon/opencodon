@@ -113,7 +113,7 @@ def _setup_isolated_home(tmp_path, monkeypatch, model_yaml_value):
     _stub_picker_dependencies(monkeypatch)
     # save_config writes to ``get_opencodon_home() / config.yaml`` — point it here.
     monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
-    monkeypatch.setattr("opencodon_cli.config.get_opencodon_home", lambda: opencodon_home)
+    monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: opencodon_home)
     return cfg_path
 
 

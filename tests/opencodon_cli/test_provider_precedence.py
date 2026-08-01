@@ -20,7 +20,7 @@ def _login(monkeypatch, provider_id):
 
 
 def _config(monkeypatch, model_cfg):
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"model": model_cfg})
+    monkeypatch.setattr("opencodon.config.load_config", lambda: {"model": model_cfg})
 
 
 def _no_aws(monkeypatch):

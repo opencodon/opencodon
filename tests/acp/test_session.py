@@ -97,7 +97,7 @@ class TestCreateSession:
             raising=False,
         )
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {
                 "model": {
                     "default": "fake-model",
@@ -420,7 +420,7 @@ class TestPersistence:
             captured.update(kwargs)
             return SimpleNamespace(model=kwargs.get("model"), enabled_toolsets=kwargs.get("enabled_toolsets"))
 
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {
             "model": {"provider": "openrouter", "default": "test-model"},
             "mcp_servers": {
                 "olympus": {"command": "python", "enabled": True},
@@ -703,7 +703,7 @@ class TestPersistence:
                 api_mode=kwargs.get("api_mode"),
             )
 
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {
             "model": {"provider": runtime_choice["provider"], "default": "test-model"}
         })
         monkeypatch.setattr(
@@ -743,7 +743,7 @@ class TestPersistence:
         def fake_agent(**kwargs):
             return SimpleNamespace(model=kwargs.get("model"), _print_fn=None)
 
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {
             "model": {"provider": "openrouter", "default": "test-model"}
         })
         monkeypatch.setattr(

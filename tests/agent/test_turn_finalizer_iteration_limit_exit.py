@@ -116,7 +116,7 @@ def _finalize(
 
 def test_pending_verify_response_is_preserved_for_cron_delivery(monkeypatch):
     """A held-back verification response survives last-turn exhaustion."""
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
     report = "complete cron report body"
 
@@ -133,7 +133,7 @@ def test_pending_verify_response_is_preserved_for_cron_delivery(monkeypatch):
 
 
 def test_pending_pre_verify_response_is_preserved_on_budget_exhaustion(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
     report = "budget exhausted but complete"
 
@@ -150,7 +150,7 @@ def test_pending_pre_verify_response_is_preserved_on_budget_exhaustion(monkeypat
 
 
 def test_empty_pending_verification_response_uses_summary_fallback(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
 
     result = _finalize(
@@ -166,7 +166,7 @@ def test_empty_pending_verification_response_uses_summary_fallback(monkeypatch):
 
 
 def test_short_generated_summary_keeps_abnormal_turn_explainer(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent(completion_explainer=True)
     agent._handle_max_iterations = lambda *_args: "The"
 
@@ -176,7 +176,7 @@ def test_short_generated_summary_keeps_abnormal_turn_explainer(monkeypatch):
 
 
 def test_short_preserved_verification_response_is_not_rewritten(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent(completion_explainer=True)
 
     result = _finalize(
@@ -190,7 +190,7 @@ def test_short_preserved_verification_response_is_not_rewritten(monkeypatch):
 
 
 def test_text_response_exit_not_rewritten_at_iteration_limit(monkeypatch):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent(budget_remaining=5)
     exit_reason = "text_response(finish_reason=stop)"
 
@@ -216,7 +216,7 @@ def test_text_response_exit_not_rewritten_at_iteration_limit(monkeypatch):
     ],
 )
 def test_unrelated_non_success_response_is_not_reclassified(monkeypatch, exit_reason):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
 
     result = _finalize(
@@ -241,7 +241,7 @@ def test_unrelated_non_success_response_is_not_reclassified(monkeypatch, exit_re
 def test_pending_response_does_not_mask_later_terminal_exit(
     monkeypatch, exit_reason, interrupted, failed
 ):
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
 
     result = finalize_turn(
@@ -274,7 +274,7 @@ def test_published_pending_candidate_is_not_duplicated_by_finalizer(monkeypatch)
     already the tail assistant message, the finalizer must NOT append a
     duplicate. The content-comparison guard prevents this. (#65919 §7)
     """
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
     report = "the composed report"
 
@@ -313,7 +313,7 @@ def test_terminal_verification_failure_is_persisted_as_one_correction(monkeypatc
     the finalizer drops the synthetic nudge and the assistant candidate
     persists as a single correction. No duplicate assistant appended. (#65919 §7)
     """
-    monkeypatch.setattr("opencodon_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("opencodon.plugins_runtime.invoke_hook", lambda *_a, **_kw: [])
     agent = _LimitAgent()
     report = "terminal failure correction"
 

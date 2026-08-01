@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from opencodon_cli.config import get_custom_provider_context_length
+from opencodon.config import get_custom_provider_context_length
 
 
 class TestGetCustomProviderContextLength:

@@ -710,7 +710,7 @@ class TestResumeDisplayConfig:
 
     def test_default_config_has_resume_display(self):
         """DEFAULT_CONFIG in opencodon_cli/config.py includes resume_display."""
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
         display = DEFAULT_CONFIG.get("display", {})
         assert "resume_display" in display
         assert display["resume_display"] == "full"

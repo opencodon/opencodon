@@ -71,7 +71,7 @@ class TestPluginSkillRegistry:
     @pytest.fixture
     def pm(self, monkeypatch):
         from opencodon_cli import plugins as plugins_mod
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         fresh = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", fresh)
@@ -120,7 +120,7 @@ class TestPluginContextRegisterSkill:
     @pytest.fixture
     def ctx(self, tmp_path, monkeypatch):
         from opencodon_cli import plugins as plugins_mod
-        from opencodon_cli.plugins import PluginContext, PluginManager, PluginManifest
+        from opencodon.plugins_runtime import PluginContext, PluginManager, PluginManifest
 
         pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", pm)
@@ -165,7 +165,7 @@ class TestSkillViewQualifiedName:
     def _isolate(self, tmp_path, monkeypatch):
         """Fresh plugin manager + empty SKILLS_DIR for each test."""
         from opencodon_cli import plugins as plugins_mod
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)
@@ -273,7 +273,7 @@ class TestSkillViewPluginGuards:
         import sys
 
         from opencodon_cli import plugins as plugins_mod
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)
@@ -296,7 +296,7 @@ class TestSkillViewPluginGuards:
         from tools.skills_tool import skill_view
 
         self._reg(tmp_path, "---\nname: foo\n---\nBody.\n")
-        monkeypatch.setattr("opencodon_cli.plugins._get_disabled_plugins", lambda: {"myplugin"})
+        monkeypatch.setattr("opencodon.plugins_runtime._get_disabled_plugins", lambda: {"myplugin"})
 
         result = json.loads(skill_view("myplugin:foo"))
         assert result["success"] is False
@@ -330,7 +330,7 @@ class TestBundleContextBanner:
     @pytest.fixture(autouse=True)
     def _isolate(self, tmp_path, monkeypatch):
         from opencodon_cli import plugins as plugins_mod
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)

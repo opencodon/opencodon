@@ -12,7 +12,7 @@ import os
 import yaml
 
 from opencodon_cli.cli_commands_mixin import CLICommandsMixin
-from opencodon_cli.config import DEFAULT_CONFIG
+from opencodon.config import DEFAULT_CONFIG
 
 
 class _Stub(CLICommandsMixin):

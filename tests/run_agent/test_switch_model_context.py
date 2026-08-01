@@ -98,7 +98,7 @@ def _make_direct_start_agent(
     cfg: dict, *, model: str, provider: str, base_url: str
 ) -> AIAgent:
     with (
-        patch("opencodon_cli.config.load_config", return_value=cfg),
+        patch("opencodon.config.load_config", return_value=cfg),
         patch("run_agent.get_tool_definitions", return_value=[]),
         patch("run_agent.check_toolset_requirements", return_value={}),
         patch("run_agent.OpenAI"),

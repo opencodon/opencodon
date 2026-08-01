@@ -130,7 +130,7 @@ def test_include_moa_adds_virtual_provider_with_named_presets(monkeypatch):
 
     monkeypatch.setattr(model_switch, "list_authenticated_providers",
                         lambda **kw: list(base))
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: moa_config)
+    monkeypatch.setattr("opencodon.config.load_config", lambda: moa_config)
     monkeypatch.setattr("opencodon_cli.models.fetch_openrouter_models",
                         lambda *a, **kw: pytest.fail("should not be called"))
 

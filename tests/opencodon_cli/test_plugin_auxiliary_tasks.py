@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon_cli.plugins import (
+from opencodon.plugins_runtime import (
     PluginContext,
     PluginManager,
     PluginManifest,
@@ -235,7 +235,7 @@ def test_all_aux_tasks_swallows_plugin_discovery_failure(monkeypatch):
         raise RuntimeError("plugin scan exploded")
 
     monkeypatch.setattr(
-        "opencodon_cli.plugins.get_plugin_auxiliary_tasks", _broken
+        "opencodon.plugins_runtime.get_plugin_auxiliary_tasks", _broken
     )
 
     merged = main_mod._all_aux_tasks()
@@ -249,7 +249,7 @@ def test_all_aux_tasks_swallows_plugin_discovery_failure(monkeypatch):
 def test_reset_aux_to_auto_resets_plugin_tasks(tmp_path, monkeypatch, patched_manager):
     """Plugin task with non-auto config gets reset alongside built-ins."""
     from pathlib import Path
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     from opencodon_cli.main import _reset_aux_to_auto
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))
@@ -313,7 +313,7 @@ def test_get_auxiliary_task_config_user_config_wins_over_plugin_defaults(
 ):
     """User's config.yaml entry overrides plugin-declared defaults."""
     from pathlib import Path
-    from opencodon_cli.config import load_config, save_config
+    from opencodon.config import load_config, save_config
     from agent.auxiliary_client import _get_auxiliary_task_config
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / ".opencodon"))

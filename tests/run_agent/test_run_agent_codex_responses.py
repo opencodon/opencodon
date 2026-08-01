@@ -1142,11 +1142,11 @@ def test_copilot_final_preflight_sanitizes_both_middleware_layers(monkeypatch):
         return _codex_message_response("OK")
 
     monkeypatch.setattr(
-        "opencodon_cli.middleware.apply_llm_request_middleware",
+        "opencodon.plugins_runtime.middleware.apply_llm_request_middleware",
         _request_middleware,
     )
     monkeypatch.setattr(
-        "opencodon_cli.middleware.run_llm_execution_middleware",
+        "opencodon.plugins_runtime.middleware.run_llm_execution_middleware",
         _execution_middleware,
     )
     monkeypatch.setattr(agent, "_interruptible_api_call", _capture_api_call)
@@ -1180,7 +1180,7 @@ def test_codex_final_preflight_bounds_middleware_cache_key(monkeypatch):
         return _codex_message_response("OK")
 
     monkeypatch.setattr(
-        "opencodon_cli.middleware.run_llm_execution_middleware",
+        "opencodon.plugins_runtime.middleware.run_llm_execution_middleware",
         _execution_middleware,
     )
     monkeypatch.setattr(agent, "_interruptible_api_call", _capture_api_call)

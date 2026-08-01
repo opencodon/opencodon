@@ -568,22 +568,22 @@ class TestAuth:
 
 class TestConcurrencyCap:
     def test_resolve_defaults_to_10_when_unset(self):
-        with patch("opencodon_cli.config.load_config", return_value={}):
+        with patch("opencodon.config.load_config", return_value={}):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_resolve_reads_config_value(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": 3}}}
-        with patch("opencodon_cli.config.load_config", return_value=cfg):
+        with patch("opencodon.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 3
 
     def test_resolve_clamps_negative_to_zero(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": -5}}}
-        with patch("opencodon_cli.config.load_config", return_value=cfg):
+        with patch("opencodon.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 0
 
     def test_resolve_malformed_falls_back_to_default(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": "not-an-int"}}}
-        with patch("opencodon_cli.config.load_config", return_value=cfg):
+        with patch("opencodon.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_under_cap_returns_none(self):

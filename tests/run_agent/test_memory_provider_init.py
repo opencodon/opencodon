@@ -30,7 +30,7 @@ def test_aiagent_forwards_user_id_alt_to_memory_provider():
     cfg = {"memory": {"provider": "recording"}, "agent": {}}
 
     with (
-        patch("opencodon_cli.config.load_config", return_value=cfg),
+        patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.memory.load_memory_provider", return_value=provider),
         patch("agent.model_metadata.get_model_context_length", return_value=204_800),
         patch("run_agent.get_tool_definitions", return_value=[]),
@@ -107,7 +107,7 @@ def test_aiagent_forwards_warning_callback_to_cli_memory_provider():
     cfg = {"memory": {"provider": "recording"}, "agent": {}}
 
     with (
-        patch("opencodon_cli.config.load_config", return_value=cfg),
+        patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.memory.load_memory_provider", return_value=provider),
         patch("agent.model_metadata.get_model_context_length", return_value=204_800),
         patch("run_agent.get_tool_definitions", return_value=[]),

@@ -59,7 +59,7 @@ class TestRegisterTTSProvider:
     """End-to-end: a fake plugin registers via the hook, ends up in the registry."""
 
     def test_accepts_valid_provider(self):
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()
@@ -92,7 +92,7 @@ class TestRegisterTTSProvider:
 
     def test_rejects_non_provider(self, caplog):
         """A plugin that passes a non-TTSProvider gets a warning, no exception."""
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()
@@ -122,7 +122,7 @@ class TestRegisterTTSProvider:
         rejected by the underlying registry — both with a registry-level warning
         AND with the registry remaining empty (plugin still loads OK).
         """
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()

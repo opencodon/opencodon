@@ -29,7 +29,7 @@ def opencodon_home(monkeypatch, tmp_path):
     home = tmp_path / "pat_home"
     home.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))
-    from opencodon_cli.config import invalidate_env_cache
+    from opencodon.config import invalidate_env_cache
 
     invalidate_env_cache()
     return home
@@ -37,7 +37,7 @@ def opencodon_home(monkeypatch, tmp_path):
 
 def _write_env_raw(home, text):
     home.joinpath(".env").write_text(text, encoding="utf-8")
-    from opencodon_cli.config import invalidate_env_cache
+    from opencodon.config import invalidate_env_cache
 
     invalidate_env_cache()
 
@@ -50,7 +50,7 @@ def test_classic_pat_save_via_endpoint_succeeds(opencodon_home):
     )
     assert resp.status_code == 200, resp.text
 
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert load_env()["GITHUB_TOKEN"] == NEW_PAT
 
@@ -70,7 +70,7 @@ def test_remove_export_prefixed_token(opencodon_home):
     env_text = opencodon_home.joinpath(".env").read_text(encoding="utf-8")
     assert OLD_PAT not in env_text
 
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert "GITHUB_TOKEN" not in load_env()
 
@@ -91,14 +91,14 @@ def test_update_export_prefixed_token_does_not_duplicate(opencodon_home):
         "export-prefixed one"
     )
 
-    from opencodon_cli.config import load_env
+    from opencodon.config import load_env
 
     assert load_env()["GITHUB_TOKEN"] == NEW_PAT
 
 
 def test_plain_line_save_and_remove_still_work(opencodon_home):
     """Sanity: the ordinary KEY= path is unchanged."""
-    from opencodon_cli.config import load_env, remove_env_value, save_env_value
+    from opencodon.config import load_env, remove_env_value, save_env_value
 
     save_env_value("GITHUB_TOKEN", OLD_PAT)
     assert load_env()["GITHUB_TOKEN"] == OLD_PAT

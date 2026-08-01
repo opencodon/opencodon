@@ -784,7 +784,7 @@ class TestSubcommandCompletion:
             "opencodon_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: {"web", "file"},
         )
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
@@ -802,7 +802,7 @@ class TestSubcommandCompletion:
             "opencodon_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: {"web", "file"},
         )
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
@@ -818,7 +818,7 @@ class TestSubcommandCompletion:
             "opencodon_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: set(),
         )
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
@@ -834,7 +834,7 @@ class TestSubcommandCompletion:
             "opencodon_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: set(),
         )
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {})
         monkeypatch.setattr(
             "opencodon_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
@@ -850,7 +850,7 @@ class TestSubcommandCompletion:
             lambda *_a, **_k: set(),
         )
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {"mcp_servers": {"github": {}, "linear": {}}},
         )
         monkeypatch.setattr(
@@ -1244,7 +1244,7 @@ class TestTelegramMenuCommands:
     def test_configured_priority_prepends_plugin_commands(self, tmp_path, monkeypatch):
         """Configured Telegram priorities keep local/plugin commands visible."""
         from unittest.mock import patch
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         plugin_dir = tmp_path / "plugins" / "cmd-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -1279,7 +1279,7 @@ class TestTelegramMenuCommands:
     def test_configured_priority_append_keeps_defaults_before_user_priority(self, tmp_path, monkeypatch):
         """append mode preserves built-in defaults ahead of configured names."""
         from unittest.mock import patch
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         plugin_dir = tmp_path / "plugins" / "cmd-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -1387,7 +1387,7 @@ class TestTelegramMenuCommands:
     def test_includes_plugin_commands_via_lazy_discovery(self, tmp_path, monkeypatch):
         """Telegram menu generation should discover plugin slash commands on first access."""
         from unittest.mock import patch
-        import opencodon_cli.plugins as plugins_mod
+        import opencodon.plugins_runtime as plugins_mod
 
         plugin_dir = tmp_path / "plugins" / "cmd-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -2096,7 +2096,7 @@ class TestPluginCommandEnumeration:
     """
 
     def _patch_plugin_commands(self, monkeypatch, commands):
-        """Monkeypatch opencodon_cli.plugins.get_plugin_commands() to a fixed dict."""
+        """Monkeypatch opencodon.plugins_runtime.get_plugin_commands() to a fixed dict."""
         from opencodon_cli import plugins as _plugins_mod
 
         monkeypatch.setattr(

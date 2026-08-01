@@ -1439,9 +1439,9 @@ def test_save_discovered_models_skips_unchanged(monkeypatch):
     def fake_save(config):
         save_calls.append(dict(config))
 
-    monkeypatch.setattr("opencodon_cli.config.save_config", fake_save)
+    monkeypatch.setattr("opencodon.config.save_config", fake_save)
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {
             "custom_providers": [
                 {
@@ -1482,7 +1482,7 @@ def test_save_discovered_models_noop_on_empty_args(monkeypatch):
         load_calls += 1
         return {"custom_providers": []}
 
-    monkeypatch.setattr("opencodon_cli.config.load_config", fake_load)
+    monkeypatch.setattr("opencodon.config.load_config", fake_load)
 
     _save_discovered_models_to_config("", ["a"])
     _save_discovered_models_to_config("https://x.com", [])
@@ -1502,9 +1502,9 @@ def test_save_discovered_models_preserves_dict_form(monkeypatch):
     def fake_save(config):
         save_calls.append(dict(config))
 
-    monkeypatch.setattr("opencodon_cli.config.save_config", fake_save)
+    monkeypatch.setattr("opencodon.config.save_config", fake_save)
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {
             "custom_providers": [
                 {
@@ -1539,9 +1539,9 @@ def test_save_discovered_models_preserves_list_of_dicts_form(monkeypatch):
     def fake_save(config):
         save_calls.append(dict(config))
 
-    monkeypatch.setattr("opencodon_cli.config.save_config", fake_save)
+    monkeypatch.setattr("opencodon.config.save_config", fake_save)
     monkeypatch.setattr(
-        "opencodon_cli.config.load_config",
+        "opencodon.config.load_config",
         lambda: {
             "custom_providers": [
                 {

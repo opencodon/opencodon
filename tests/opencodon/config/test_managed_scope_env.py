@@ -18,7 +18,7 @@ def env_homes(tmp_path, monkeypatch):
 
 
 def test_managed_env_beats_user_env(env_homes, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home, managed = env_homes
     (home / ".env").write_text("OPENAI_API_BASE=https://user.example/v1\n", encoding="utf-8")
@@ -28,7 +28,7 @@ def test_managed_env_beats_user_env(env_homes, monkeypatch):
 
 
 def test_managed_env_beats_shell(env_homes, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home, managed = env_homes
     monkeypatch.setenv("OPENAI_API_BASE", "https://shell.example/v1")
@@ -38,7 +38,7 @@ def test_managed_env_beats_shell(env_homes, monkeypatch):
 
 
 def test_managed_env_leaves_unmanaged_keys_alone(env_homes, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home, managed = env_homes
     (home / ".env").write_text("USER_ONLY=keepme\n", encoding="utf-8")
@@ -49,7 +49,7 @@ def test_managed_env_leaves_unmanaged_keys_alone(env_homes, monkeypatch):
 
 
 def test_no_managed_env_is_noop(env_homes, monkeypatch):
-    from opencodon_cli.env_loader import load_opencodon_dotenv
+    from opencodon.config.env_loader import load_opencodon_dotenv
 
     home, managed = env_homes  # managed dir exists but has no .env
     monkeypatch.setenv("SOME_VALUE", "from_shell")

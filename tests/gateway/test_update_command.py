@@ -419,7 +419,7 @@ class TestUpdateCommandPlatformGate:
         assert Platform.DISCORD not in GatewayRunner._UPDATE_ALLOWED_PLATFORMS
 
         # Make sure the plugin registry is populated so the fallback fires.
-        from opencodon_cli.plugins import PluginManager
+        from opencodon.plugins_runtime import PluginManager
         PluginManager().discover_and_load(force=True)
         from gateway.platform_registry import platform_registry
         discord_entry = platform_registry.get("discord")

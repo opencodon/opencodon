@@ -508,10 +508,10 @@ class TestCmdUpdateBranchFallback:
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input") as mock_input, patch(
-            "opencodon_cli.config.get_missing_env_vars",
+            "opencodon.config.get_missing_env_vars",
             return_value=[{"name": "MISSING_KEY", "description": "A key"}],
         ), patch(
-            "opencodon_cli.config.reconcile_config",
+            "opencodon.config.reconcile_config",
             return_value={"env_added": [], "config_added": [], "warnings": []},
         ) as mock_reconcile, patch("opencodon_cli.main.sys") as mock_sys:
             mock_sys.stdin.isatty.return_value = False
@@ -538,9 +538,9 @@ class TestCmdUpdateConfigPrompt:
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input") as mock_input, patch(
-            "opencodon_cli.config.get_missing_env_vars", return_value=[]
+            "opencodon.config.get_missing_env_vars", return_value=[]
         ), patch(
-            "opencodon_cli.config.reconcile_config",
+            "opencodon.config.reconcile_config",
             return_value={"env_added": [], "config_added": [], "warnings": []},
         ) as mock_reconcile:
             mock_run.side_effect = _make_run_side_effect(
@@ -564,9 +564,9 @@ class TestCmdUpdateConfigPrompt:
         with patch("shutil.which", return_value=None), patch(
             "subprocess.run"
         ) as mock_run, patch("builtins.input", return_value="n"), patch(
-            "opencodon_cli.config.get_missing_env_vars", return_value=env_items
+            "opencodon.config.get_missing_env_vars", return_value=env_items
         ), patch(
-            "opencodon_cli.config.reconcile_config",
+            "opencodon.config.reconcile_config",
             return_value={"env_added": [], "config_added": [], "warnings": []},
         ), patch("opencodon_cli.main.sys") as mock_sys:
             mock_sys.stdin.isatty.return_value = True
@@ -853,7 +853,7 @@ class TestCmdUpdateCheckBranchFlag:
 
         return side_effect
 
-    @patch("opencodon_cli.config.detect_install_method", return_value="git")
+    @patch("opencodon.config.detect_install_method", return_value="git")
     @patch("subprocess.run")
     def test_check_branch_compares_against_named_origin_branch(
         self, mock_run, _mock_method, capsys
@@ -876,7 +876,7 @@ class TestCmdUpdateCheckBranchFlag:
         assert any("origin/bb/gui" in c for c in rev_list_cmds), rev_list_cmds
         assert not any("origin/main" in c for c in rev_list_cmds), rev_list_cmds
 
-    @patch("opencodon_cli.config.detect_install_method", return_value="git")
+    @patch("opencodon.config.detect_install_method", return_value="git")
     @patch("subprocess.run")
     def test_check_branch_missing_on_origin_exits_cleanly(
         self, mock_run, _mock_method, capsys
@@ -907,7 +907,7 @@ class TestCmdUpdateCheckBranchFlag:
         commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
         assert not any("rev-list" in c for c in commands), commands
 
-    @patch("opencodon_cli.config.detect_install_method", return_value="git")
+    @patch("opencodon.config.detect_install_method", return_value="git")
     @patch("subprocess.run")
     def test_check_default_main_still_prefers_upstream(
         self, mock_run, _mock_method, capsys

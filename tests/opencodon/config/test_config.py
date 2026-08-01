@@ -150,7 +150,7 @@ class TestLoadConfigParseFailure:
             (tmp_path / "config.yaml").write_text("\tbroken tab indent:\n")
 
             import logging
-            with caplog.at_level(logging.WARNING, logger="opencodon_cli.config"):
+            with caplog.at_level(logging.WARNING, logger="opencodon.config"):
                 config = load_config()
 
             # Falls back to defaults — confirms the silent-fallback we're warning about

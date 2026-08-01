@@ -92,7 +92,7 @@ class TestReadManifestInfo:
 
 
 class TestDiscoverAllPlugins:
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_flat_plugins_still_discovered(self, mock_user_dir, mock_bundled_dir, tmp_path):
         from opencodon_cli.plugins_cmd import _discover_all_plugins
@@ -107,7 +107,7 @@ class TestDiscoverAllPlugins:
         keys = [e[5] for e in entries]
         assert "disk-cleanup" in keys
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_category_plugins_discovered(self, mock_user_dir, mock_bundled_dir, tmp_path):
         from opencodon_cli.plugins_cmd import _discover_all_plugins
@@ -126,7 +126,7 @@ class TestDiscoverAllPlugins:
         assert "web/tavily" in keys
         assert "image_gen/openai" in keys
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_mixed_flat_and_category(self, mock_user_dir, mock_bundled_dir, tmp_path):
         from opencodon_cli.plugins_cmd import _discover_all_plugins
@@ -150,7 +150,7 @@ class TestDiscoverAllPlugins:
         assert "web/exa" in keys
         assert len(entries) == 3
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_depth_cap_at_two(self, mock_user_dir, mock_bundled_dir, tmp_path):
         """Plugins nested 3 levels deep should NOT be discovered."""
@@ -175,7 +175,7 @@ class TestDiscoverAllPlugins:
         assert "web/tavily" in keys
         assert "a/b/c" not in keys
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_tuple_has_six_elements(self, mock_user_dir, mock_bundled_dir, tmp_path):
         from opencodon_cli.plugins_cmd import _discover_all_plugins
@@ -195,7 +195,7 @@ class TestDiscoverAllPlugins:
         assert key == "web/tavily"
         assert source == "user"
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_user_overrides_bundled_on_key_collision(self, mock_user_dir, mock_bundled_dir, tmp_path):
         """User plugin with same key as bundled should win."""
@@ -300,7 +300,7 @@ class TestFilterPluginEntries:
 
 
 class TestCmdListJson:
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_json_output_includes_category_plugins(self, mock_user_dir, mock_bundled_dir, tmp_path, capsys):
         from opencodon_cli.plugins_cmd import cmd_list
@@ -328,7 +328,7 @@ class TestCmdListJson:
         assert "web-tavily" in names
         assert "disk-cleanup" in names
 
-    @patch("opencodon_cli.plugins.get_bundled_plugins_dir")
+    @patch("opencodon.plugins_runtime.get_bundled_plugins_dir")
     @patch("opencodon_cli.plugins_cmd._plugins_dir")
     def test_json_status_uses_key(self, mock_user_dir, mock_bundled_dir, tmp_path, capsys):
         from opencodon_cli.plugins_cmd import cmd_list

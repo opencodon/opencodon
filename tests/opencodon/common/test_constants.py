@@ -777,14 +777,14 @@ class TestReasoningOverridesDefaultConfig:
 
     def test_default_config_has_reasoning_overrides_key(self):
         """DEFAULT_CONFIG['agent'] contains 'reasoning_overrides' as an empty dict."""
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
         assert "reasoning_overrides" in DEFAULT_CONFIG["agent"]
         assert DEFAULT_CONFIG["agent"]["reasoning_overrides"] == {}
 
     def test_load_config_preserves_user_reasoning_overrides(self, tmp_path, monkeypatch):
         """User-added reasoning_overrides are preserved through load_config()."""
         import yaml
-        from opencodon_cli.config import load_config, get_config_path
+        from opencodon.config import load_config, get_config_path
 
         user_config = {
             "agent": {
@@ -968,7 +968,7 @@ class TestAgentBrowserRunnable:
             captured.append((cmd, kwargs))
             return SimpleNamespace(returncode=0)
 
-        import opencodon_cli._subprocess_compat as subprocess_compat
+        import opencodon.common._subprocess_compat as subprocess_compat
         import subprocess as subprocess_mod
 
         monkeypatch.setattr(subprocess_compat, "windows_hide_flags", lambda: 0x08000000)
@@ -987,7 +987,7 @@ class TestAgentBrowserRunnable:
             captured.append((cmd, kwargs))
             return SimpleNamespace(returncode=0)
 
-        import opencodon_cli._subprocess_compat as subprocess_compat
+        import opencodon.common._subprocess_compat as subprocess_compat
         import subprocess as subprocess_mod
 
         monkeypatch.setattr(subprocess_compat, "windows_hide_flags", lambda: 0x08000000)

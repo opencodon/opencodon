@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon_cli.config import DEFAULT_CONFIG, load_config
+from opencodon.config import DEFAULT_CONFIG, load_config
 from opencodon_cli.main import (
     _AUX_TASKS,
     _format_aux_current,
@@ -146,7 +146,7 @@ def test_save_aux_choice_does_not_touch_main_model(tmp_path, monkeypatch):
     (tmp_path / ".opencodon").mkdir(exist_ok=True)
 
     # Simulate a configured main model
-    from opencodon_cli.config import save_config
+    from opencodon.config import save_config
 
     cfg = load_config()
     cfg["model"] = {
@@ -180,7 +180,7 @@ def test_save_aux_choice_creates_missing_task_entry(tmp_path, monkeypatch):
     (tmp_path / ".opencodon").mkdir(exist_ok=True)
 
     # Remove vision from config entirely
-    from opencodon_cli.config import save_config
+    from opencodon.config import save_config
 
     cfg = load_config()
     cfg.setdefault("auxiliary", {}).pop("vision", None)
@@ -204,7 +204,7 @@ def test_reset_aux_to_auto_clears_routing_preserves_timeouts(tmp_path, monkeypat
     # Configure two tasks non-auto, and bump a timeout
     _save_aux_choice("vision", provider="openrouter", model="gpt-4o")
     _save_aux_choice("compression", provider="nous", model="gemini-3-flash")
-    from opencodon_cli.config import save_config
+    from opencodon.config import save_config
 
     cfg = load_config()
     cfg["auxiliary"]["vision"]["timeout"] = 300  # user-tuned

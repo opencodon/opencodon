@@ -2189,7 +2189,7 @@ class TestAzureFoundryResolution:
         monkeypatch.delenv("AZURE_FOUNDRY_API_KEY", raising=False)
         # `get_env_value` reads from ~/.opencodon/.env — mock it to return None
         # so the resolver can't find a key there either.
-        import opencodon_cli.config as cfg_mod
+        import opencodon.config as cfg_mod
         monkeypatch.setattr(cfg_mod, "get_env_value", lambda k: None)
         monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "azure-foundry")
         monkeypatch.setattr(rp, "_get_model_config", lambda: self._make_cfg(
@@ -2465,7 +2465,7 @@ class TestProviderEntryApiKeyEnvAlias:
     use `api_key_env`) resolve correctly."""
 
     def test_snake_case_api_key_env_normalizes_to_key_env(self):
-        from opencodon_cli.config import _normalize_custom_provider_entry
+        from opencodon.config import _normalize_custom_provider_entry
         entry = {
             "name": "vendor",
             "base_url": "https://api.vendor.example.com/v1",
@@ -2476,7 +2476,7 @@ class TestProviderEntryApiKeyEnvAlias:
         assert normalized.get("key_env") == "MY_VENDOR_KEY"
 
     def test_camel_case_api_key_env_normalizes_to_key_env(self):
-        from opencodon_cli.config import _normalize_custom_provider_entry
+        from opencodon.config import _normalize_custom_provider_entry
         entry = {
             "name": "vendor",
             "base_url": "https://api.vendor.example.com/v1",
@@ -2488,7 +2488,7 @@ class TestProviderEntryApiKeyEnvAlias:
 
     def test_key_env_wins_if_both_forms_present(self):
         """If both key_env and api_key_env are set, the canonical key_env wins."""
-        from opencodon_cli.config import _normalize_custom_provider_entry
+        from opencodon.config import _normalize_custom_provider_entry
         entry = {
             "name": "vendor",
             "base_url": "https://api.vendor.example.com/v1",
@@ -2502,11 +2502,11 @@ class TestProviderEntryApiKeyEnvAlias:
     def test_valid_fields_set_lists_key_env(self):
         """The _VALID_CUSTOM_PROVIDER_FIELDS documentation set must include
         key_env so the set stays in sync with what the runtime actually reads."""
-        from opencodon_cli.config import _VALID_CUSTOM_PROVIDER_FIELDS
+        from opencodon.config import _VALID_CUSTOM_PROVIDER_FIELDS
         assert "key_env" in _VALID_CUSTOM_PROVIDER_FIELDS
 
     def test_extra_body_is_supported_schema(self):
-        from opencodon_cli.config import (
+        from opencodon.config import (
             _VALID_CUSTOM_PROVIDER_FIELDS,
             _normalize_custom_provider_entry,
         )

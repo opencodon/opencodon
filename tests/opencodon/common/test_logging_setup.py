@@ -755,7 +755,7 @@ class TestAddRotatingHandler:
 
         old_umask = os.umask(0o022)
         try:
-            with patch("opencodon_cli.config.is_managed", return_value=True):
+            with patch("opencodon.config.is_managed", return_value=True):
                 opencodon_logging._add_rotating_handler(
                     logger, log_path,
                     level=logging.INFO, max_bytes=1024, backup_count=1,
@@ -779,7 +779,7 @@ class TestAddRotatingHandler:
 
         old_umask = os.umask(0o022)
         try:
-            with patch("opencodon_cli.config.is_managed", return_value=True):
+            with patch("opencodon.config.is_managed", return_value=True):
                 opencodon_logging._add_rotating_handler(
                     logger, log_path,
                     level=logging.INFO, max_bytes=1, backup_count=1,

@@ -11,7 +11,7 @@ from opencodon_cli.dashboard_auth import clear_providers, get_provider
 from opencodon_cli.dashboard_auth.base import (
     DashboardAuthProvider, LoginStart, Session,
 )
-from opencodon_cli.plugins import PluginContext, PluginManifest
+from opencodon.plugins_runtime import PluginContext, PluginManifest
 
 
 class _Stub(DashboardAuthProvider):

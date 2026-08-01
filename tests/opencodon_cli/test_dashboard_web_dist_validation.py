@@ -49,7 +49,7 @@ def _wire_common(main_mod, monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "opencodon_cli.plugins",
+        "opencodon.plugins_runtime",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setattr(

@@ -50,7 +50,7 @@ def test_load_picker_context_full_dict():
         providers={"openrouter": {}},
         custom_providers=[{"name": "Ollama", "base_url": "http://localhost:11434/v1"}],
     )
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
     assert ctx.current_model == "anthropic/claude-sonnet-4.6"
     assert ctx.current_provider == "openrouter"
@@ -77,7 +77,7 @@ def test_load_picker_context_normalizes_list_of_dict_models():
             }
         },
     )
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
 
     assert len(ctx.custom_providers) == 1
@@ -90,7 +90,7 @@ def test_load_picker_context_normalizes_list_of_dict_models():
 
 def test_load_picker_context_falls_back_to_name_when_default_missing():
     cfg = _cfg(model={"name": "gpt-5.4", "provider": "openai"})
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
     assert ctx.current_model == "gpt-5.4"
     assert ctx.current_provider == "openai"
@@ -99,7 +99,7 @@ def test_load_picker_context_falls_back_to_name_when_default_missing():
 def test_load_picker_context_string_model_legacy_shape():
     """config.model can be a bare string in older configs."""
     cfg = {"model": "some-model", "providers": {}, "custom_providers": []}
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
     assert ctx.current_model == "some-model"
     assert ctx.current_provider == ""
@@ -108,7 +108,7 @@ def test_load_picker_context_string_model_legacy_shape():
 
 def test_load_picker_context_empty_config():
     cfg = _cfg()
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
     assert ctx.current_provider == ""
     assert ctx.current_model == ""
@@ -367,7 +367,7 @@ def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_
     ctx = _empty_ctx(provider="openai-codex", model="gpt-5.4")
     with (
         _list_auth_returning(rows),
-        patch("opencodon_cli.config.read_raw_config", return_value={}),
+        patch("opencodon.config.read_raw_config", return_value={}),
         patch(
             "opencodon_cli.auth.is_provider_explicitly_configured",
             side_effect=lambda slug: slug == "gemini",
@@ -458,8 +458,8 @@ def test_explicit_only_keeps_moa_when_raw_config_has_enabled_preset():
 
     with (
         _list_auth_returning(rows),
-        patch("opencodon_cli.config.load_config", return_value=raw_config),
-        patch("opencodon_cli.config.read_raw_config", return_value=raw_config),
+        patch("opencodon.config.load_config", return_value=raw_config),
+        patch("opencodon.config.read_raw_config", return_value=raw_config),
         patch("opencodon_cli.auth.is_provider_explicitly_configured", return_value=False),
     ):
         payload = build_models_payload(ctx, explicit_only=True)
@@ -601,7 +601,7 @@ def test_end_to_end_with_real_context_no_credentials_leak(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", canary)
     monkeypatch.setenv("ANTHROPIC_API_KEY", canary)
     cfg = _cfg(model={"provider": "openrouter"})
-    with patch("opencodon_cli.config.load_config", return_value=cfg):
+    with patch("opencodon.config.load_config", return_value=cfg):
         ctx = load_picker_context()
     payload = build_models_payload(
         ctx, include_unconfigured=True, picker_hints=True,
@@ -874,7 +874,7 @@ def test_build_models_payload_keeps_static_provider_models_from_providers_dict()
         },
     )
     with (
-        patch("opencodon_cli.config.load_config", return_value=cfg),
+        patch("opencodon.config.load_config", return_value=cfg),
         patch("agent.models_dev.fetch_models_dev", return_value={}),
         patch("opencodon_cli.providers.OPENCODON_OVERLAYS", {}),
         patch(

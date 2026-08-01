@@ -1082,7 +1082,7 @@ class TestSessionConfiguration:
                 api_mode=kwargs.get("api_mode"),
             )
 
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
@@ -1862,7 +1862,7 @@ class TestSlashCommands:
                 api_mode=kwargs.get("api_mode"),
             )
 
-        monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {
+        monkeypatch.setattr("opencodon.config.load_config", lambda: {
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(

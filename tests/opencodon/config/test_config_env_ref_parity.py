@@ -36,7 +36,7 @@ def test_empty_env_ref_stays_verbatim():
 
 def test_non_env_source_stays_verbatim_with_warning(caplog):
     import logging
-    with caplog.at_level(logging.WARNING, logger="opencodon_cli.config"):
+    with caplog.at_level(logging.WARNING, logger="opencodon.config"):
         out = _expand_env_vars("${bitwarden:MY_KEY}")
     assert out == "${bitwarden:MY_KEY}"
     assert any("env:NAME" in r.message for r in caplog.records)

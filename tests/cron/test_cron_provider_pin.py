@@ -52,8 +52,8 @@ def _run_with_current_provider(job, current_provider, tmp_path):
     fake_db = MagicMock()
     with patch("cron.scheduler._opencodon_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
-         patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
+         patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
+         patch("opencodon.config.env_loader.reset_secret_source_cache"), \
          patch("opencodon_state.SessionDB", return_value=fake_db), \
          patch(
              "opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -253,8 +253,8 @@ def _run_with_current_provider_and_model(job, current_provider, current_model, t
     with patch("cron.scheduler._opencodon_home", tmp_path), \
          patch("cron.scheduler._get_opencodon_home", return_value=tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
-         patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
+         patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
+         patch("opencodon.config.env_loader.reset_secret_source_cache"), \
          patch("opencodon_state.SessionDB", return_value=fake_db), \
          patch(
              "opencodon_cli.runtime_provider.resolve_runtime_provider",
@@ -358,8 +358,8 @@ class TestRuntimeResolutionTargetModel:
         fake_db = MagicMock()
         with patch("cron.scheduler._opencodon_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("opencodon_cli.env_loader.load_opencodon_dotenv"), \
-             patch("opencodon_cli.env_loader.reset_secret_source_cache"), \
+             patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
+             patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon_state.SessionDB", return_value=fake_db), \
              patch(
                  "opencodon_cli.runtime_provider.resolve_runtime_provider",

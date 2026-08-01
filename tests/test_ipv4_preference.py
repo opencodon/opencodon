@@ -107,6 +107,6 @@ class TestConfigDefault:
     """Verify network section exists in DEFAULT_CONFIG."""
 
     def test_network_section_in_default_config(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
         assert "network" in DEFAULT_CONFIG
         assert DEFAULT_CONFIG["network"]["force_ipv4"] is False

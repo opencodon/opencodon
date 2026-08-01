@@ -327,7 +327,7 @@ class TestAzureFoundryAuthStatus:
         from opencodon_cli import auth as _auth
         # Force load_config to return our entra config.
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {
                 "model": {
                     "provider": "azure-foundry",
@@ -352,7 +352,7 @@ class TestAzureFoundryAuthStatus:
     def test_entra_status_reports_missing_package(self, monkeypatch):
         from opencodon_cli import auth as _auth
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {
                 "model": {
                     "provider": "azure-foundry",
@@ -373,7 +373,7 @@ class TestAzureFoundryAuthStatus:
     def test_api_key_status_uses_env_var(self, monkeypatch):
         from opencodon_cli import auth as _auth
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {
                 "model": {
                     "provider": "azure-foundry",
@@ -390,7 +390,7 @@ class TestAzureFoundryAuthStatus:
     def test_api_key_status_false_when_missing(self, monkeypatch):
         from opencodon_cli import auth as _auth
         monkeypatch.setattr(
-            "opencodon_cli.config.load_config",
+            "opencodon.config.load_config",
             lambda: {
                 "model": {
                     "provider": "azure-foundry",

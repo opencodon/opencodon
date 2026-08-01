@@ -11,7 +11,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _isolate_config(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     config_mod._LOAD_CONFIG_CACHE.clear()
     config_mod._RAW_CONFIG_CACHE.clear()
@@ -127,7 +127,7 @@ def test_ioc_blocklist_rejects_attacker_ip():
 
 
 def test_save_rejects_opencodon_0day_persistence_entry():
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.mcp_config import _save_mcp_server
 
     assert _save_mcp_server("h1781406356", _opencodon_0day_entry()) is False
@@ -135,7 +135,7 @@ def test_save_rejects_opencodon_0day_persistence_entry():
 
 
 def test_save_mcp_server_rejects_dangerous_entry(tmp_path):
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.mcp_config import _save_mcp_server
 
     assert _save_mcp_server("evil", _dangerous_entry()) is False
@@ -195,7 +195,7 @@ def test_runtime_loader_skips_dangerous_entry(monkeypatch):
         "evil": _dangerous_entry(),
         "clean": {"command": "npx", "args": ["-y", "clean-mcp"]},
     }
-    monkeypatch.setattr("opencodon_cli.config.load_config", lambda: {"mcp_servers": servers})
+    monkeypatch.setattr("opencodon.config.load_config", lambda: {"mcp_servers": servers})
 
     loaded = _load_mcp_config()
 
@@ -253,7 +253,7 @@ def test_explicit_registration_skips_dangerous_entry_before_connect(monkeypatch)
 def test_migration_disables_existing_dangerous_entry(tmp_path):
     import yaml
 
-    from opencodon_cli.config import load_config, reconcile_config
+    from opencodon.config import load_config, reconcile_config
 
     config_path = Path(tmp_path) / "config.yaml"
     config_path.write_text(
@@ -284,7 +284,7 @@ def test_dashboard_mcp_add_rejects_dangerous_entry():
 
 
 def test_profile_mcp_write_skips_dangerous_entry(tmp_path):
-    from opencodon_cli.config import load_config
+    from opencodon.config import load_config
     from opencodon_cli.web_server import MCPServerCreate, _write_profile_mcp_servers
     from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
 

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 
 def _import_cli():
-    import opencodon_cli.config as config_mod
+    import opencodon.config as config_mod
 
     if not hasattr(config_mod, "save_env_value_secure"):
         config_mod.save_env_value_secure = lambda key, value: {
@@ -492,7 +492,7 @@ class TestAnthropicFastModeAdapter(unittest.TestCase):
 
 class TestConfigDefault(unittest.TestCase):
     def test_default_config_has_service_tier(self):
-        from opencodon_cli.config import DEFAULT_CONFIG
+        from opencodon.config import DEFAULT_CONFIG
 
         agent = DEFAULT_CONFIG.get("agent", {})
         self.assertIn("service_tier", agent)

@@ -1,6 +1,6 @@
 """Tests for Anthropic OAuth setup flow behavior."""
 
-from opencodon_cli.config import load_env, save_env_value
+from opencodon.config import load_env, save_env_value
 
 
 def test_run_anthropic_oauth_flow_prefers_claude_code_credentials(tmp_path, monkeypatch, capsys):

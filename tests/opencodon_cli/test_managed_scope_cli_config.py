@@ -1,7 +1,7 @@
 """Managed scope must reach cli.py's independent config loader (CLI_CONFIG).
 
 cli.py's load_cli_config() builds config separately from
-opencodon_cli.config._load_config_impl, so the managed-scope merge has to be
+opencodon.config._load_config_impl, so the managed-scope merge has to be
 applied in BOTH places or the interactive CLI/TUI surface (skin, display prefs)
 silently ignores administrator-pinned values while `opencodon config`/`doctor`
 honor them. This locks the cli.py path.
@@ -19,7 +19,7 @@ def homes(tmp_path, monkeypatch):
     managed.mkdir()
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setenv("OPENCODON_MANAGED_DIR", str(managed))
-    import opencodon_cli.config as cfg
+    import opencodon.config as cfg
     from opencodon_cli import managed_scope
 
     cfg._LOAD_CONFIG_CACHE.clear()

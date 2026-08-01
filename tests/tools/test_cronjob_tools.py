@@ -553,7 +553,7 @@ class TestResolveModelOverride:
         assert model == "gpt-5.4"
 
     def test_pins_main_provider_when_bare_custom_unresolvable(self, monkeypatch):
-        import opencodon_cli.config as cfg_mod
+        import opencodon.config as cfg_mod
         import opencodon_cli.runtime_provider as rp_mod
 
         monkeypatch.setattr(rp_mod, "has_named_custom_provider", lambda name: False)

@@ -7,7 +7,7 @@ that the setup wizard correctly syncs config from disk after the call.
 
 from __future__ import annotations
 
-from opencodon_cli.config import load_config, save_config, save_env_value
+from opencodon.config import load_config, save_config, save_env_value
 from opencodon_cli.setup import _print_setup_summary, setup_model_provider
 
 

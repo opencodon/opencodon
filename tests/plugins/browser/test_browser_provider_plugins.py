@@ -50,7 +50,7 @@ def _clear_browser_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _ensure_plugins_loaded() -> None:
     """Idempotently load plugins so the registry is populated."""
-    from opencodon_cli.plugins import _ensure_plugins_discovered
+    from opencodon.plugins_runtime import _ensure_plugins_discovered
 
     _ensure_plugins_discovered()
 

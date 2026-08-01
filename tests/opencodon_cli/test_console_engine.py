@@ -361,7 +361,7 @@ def test_config_set_requires_confirmation_then_writes(_isolate_opencodon_home):
     pending = engine.execute("config set telegram.test true")
     assert pending.status == "confirm_required"
 
-    from opencodon_cli.config import read_raw_config
+    from opencodon.config import read_raw_config
 
     assert read_raw_config() == {}
 

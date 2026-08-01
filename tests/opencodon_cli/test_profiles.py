@@ -45,7 +45,7 @@ from opencodon_cli.profiles import (
     backfill_profile_envs,
     profiles_to_serve,
 )
-from opencodon_cli.config import DEFAULT_CONFIG
+from opencodon.config import DEFAULT_CONFIG
 
 
 # ---------------------------------------------------------------------------

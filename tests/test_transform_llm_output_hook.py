@@ -19,8 +19,8 @@ from pathlib import Path
 
 import yaml
 
-import opencodon_cli.plugins as plugins_mod
-from opencodon_cli.plugins import PluginManager, VALID_HOOKS
+import opencodon.plugins_runtime as plugins_mod
+from opencodon.plugins_runtime import PluginManager, VALID_HOOKS
 
 
 def _make_enabled_plugin(opencodon_home: Path, name: str, register_body: str) -> Path:

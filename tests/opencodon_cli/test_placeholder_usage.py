@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon_cli.config import config_command, show_config
+from opencodon.config import config_command, show_config
 from opencodon_cli.setup import _print_setup_summary
 
 

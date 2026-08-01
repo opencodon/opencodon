@@ -616,7 +616,7 @@ def test_env_loader_skips_when_disabled(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    from opencodon_cli.env_loader import _apply_external_secret_sources
+    from opencodon.config.env_loader import _apply_external_secret_sources
     # Should be a no-op (returns None).
     assert _apply_external_secret_sources(home) is None
 
@@ -657,7 +657,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
 
     reg_module._reset_registry_for_tests()
 
-    from opencodon_cli.env_loader import _apply_external_secret_sources
+    from opencodon.config.env_loader import _apply_external_secret_sources
     _apply_external_secret_sources(home)
 
     assert called["n"] == 1
