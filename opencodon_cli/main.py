@@ -1558,25 +1558,22 @@ to avoid false-positive reinstalls on every launch.
 """
 
 
-#: How far above a workspace member ``_workspace_root`` will look for the
-#: root lockfile.  Two covers every member in this repo (``apps/web`` is the
-#: deepest); more would risk adopting a stray lockfile outside the checkout.
-_WORKSPACE_ROOT_MAX_DEPTH = 2
-
-
-def _workspace_root(dir: Path) -> Path:
+def _workspace_root(dir: Path, *, root_hint: Optional[Path] = None) -> Path:
     """Return the npm workspace root for *dir*.
 
     In a workspace checkout the single ``package-lock.json`` and hoisted
-    ``node_modules/`` live at the workspace root, some way above the
-    sub-package directory.  Heuristic: if *dir* has a ``package.json`` but
-    **no** ``package-lock.json``, walk up to the nearest ancestor that has
-    one, and treat that as the root.  Otherwise *dir* itself is the root
-    (standalone project or prebuilt-bundle layout).
+    ``node_modules/`` live at the workspace root.  Heuristic: if *dir* has a
+    ``package.json`` but **no** ``package-lock.json``, and a candidate root
+    has one, that candidate is the workspace root.  Otherwise *dir* itself is
+    the root (standalone project or prebuilt-bundle layout).
 
-    The walk is bounded: members sit one level down (``ui-tui/``) or two
-    (``apps/web/``), and an unbounded climb would happily adopt an unrelated
-    lockfile from a parent directory outside the checkout.
+    Candidates are *root_hint* (when given) then ``dir.parent``.  The hint
+    exists because not every member sits directly under the root — ``ui-tui``
+    does, ``apps/web`` is two levels down.  Deliberately NOT a blind walk up
+    the tree: an ancestor that merely happens to hold a ``package-lock.json``
+    (a scratch directory, a parent project, a pytest tmp root) is not this
+    package's workspace root, and adopting it would run ``npm`` against a
+    lockfile that knows nothing about us.
 
     Used by ``_tui_need_npm_install``, ``_make_tui_argv``, and
     ``_build_web_ui`` so that lockfile/node_modules resolution and
@@ -1587,17 +1584,24 @@ def _workspace_root(dir: Path) -> Path:
     """
     if not (dir / "package.json").is_file() or (dir / "package-lock.json").is_file():
         return dir
-    for ancestor in list(dir.parents)[:_WORKSPACE_ROOT_MAX_DEPTH]:
-        if (ancestor / "package-lock.json").is_file():
-            return ancestor
+    for candidate in ((root_hint,) if root_hint is not None else ()) + (dir.parent,):
+        if candidate != dir and (candidate / "package-lock.json").is_file():
+            return candidate
     return dir
 
 
 def _termux_workspace_install_context(
-    dir: Path, *, include_child_workspaces: bool = False
+    dir: Path,
+    *,
+    include_child_workspaces: bool = False,
+    root_hint: Optional[Path] = None,
 ) -> tuple[Path, tuple[str, ...]]:
-    """Return Termux-only ``(cwd, npm_args)`` for installing deps for *dir* only."""
-    ws_root = _workspace_root(dir)
+    """Return Termux-only ``(cwd, npm_args)`` for installing deps for *dir* only.
+
+    *root_hint* is forwarded to :func:`_workspace_root` for members that do
+    not sit directly under the workspace root (``apps/web``).
+    """
+    ws_root = _workspace_root(dir, root_hint=root_hint)
     if ws_root == dir:
         return dir, ()
 
@@ -5300,7 +5304,10 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
             if text:
                 _say(text)
 
-    npm_cwd = _workspace_root(web_dir)
+    # apps/web sits two levels below the workspace root, so the root has to be
+    # named rather than discovered by walking up from web_dir.
+    ws_root_hint = web_dir.parent.parent if web_dir.parent.name == "apps" else web_dir.parent
+    npm_cwd = _workspace_root(web_dir, root_hint=ws_root_hint)
     # Scope the install to the web workspace only so that the full workspace
     # graph (including apps/desktop with its Electron + node-pty deps) is never
     # resolved here.  Without --workspace the root package.json's apps/* glob
@@ -5309,7 +5316,9 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     # web_dir itself and --workspace would fail.  See #42973.
     npm_workspace_args: tuple[str, ...] = () if npm_cwd == web_dir else ("--workspace", "@opencodon/web")
     if _is_termux_startup_environment():
-        npm_cwd, npm_workspace_args = _termux_workspace_install_context(web_dir)
+        npm_cwd, npm_workspace_args = _termux_workspace_install_context(
+            web_dir, root_hint=ws_root_hint
+        )
     r1 = _run_npm_install_deterministic(
         npm,
         npm_cwd,

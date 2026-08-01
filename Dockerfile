@@ -178,8 +178,8 @@ COPY apps/web/ apps/web/
 COPY apps/client/ apps/client/
 COPY ui-tui/ ui-tui/
 COPY apps/shared/ apps/shared/
-RUN cd apps/web && npm run build && \
-    cd ../../ui-tui && npm run build
+RUN (cd apps/web && npm run build) && \
+    (cd ui-tui && npm run build)
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.
