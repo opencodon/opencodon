@@ -26,16 +26,20 @@ from pathlib import Path
 
 
 def _load_handle_enter_node() -> ast.FunctionDef:
-    """Extract the ``handle_enter`` nested function node from cli.py."""
+    """Extract the Enter-handler body from shell.py.
+
+    The logic lives in ``OpencodonCLI._repl_handle_enter`` (extracted from
+    run()'s ``handle_enter`` closure, which is now a thin delegate).
+    """
     cli_path = Path(__file__).resolve().parents[4] / "src" / "opencodon" / "frontends" / "cli" / "shell.py"
     tree = ast.parse(cli_path.read_text(encoding="utf-8"))
 
     target = None
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "handle_enter":
+        if isinstance(node, ast.FunctionDef) and node.name == "_repl_handle_enter":
             target = node
             break
-    assert target is not None, "handle_enter closure not found in cli.py"
+    assert target is not None, "_repl_handle_enter not found in shell.py"
     return target
 
 

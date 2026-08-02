@@ -3714,6 +3714,12 @@ from opencodon.frontends.cli.shell_reload import ShellReloadMixin
 from opencodon.frontends.cli.shell_tui_layout import ShellTuiLayoutMixin
 
 
+
+# Sentinel distinguishing "the original dispatch branch fell through" from an
+# explicit return value (including the preserved bare-return None paths).
+_SLASH_FALLTHROUGH = object()
+
+
 class OpencodonCLI(
     ShellChromeMixin,
     ShellStreamingMixin,
@@ -4973,14 +4979,7 @@ class OpencodonCLI(
             # Parse --delete flag: /exit --delete also removes the current
             # session's transcripts + SQLite history. Ported from
             # google-gemini/gemini-cli#19332.
-            _rest = cmd_original.split(None, 1)
-            _args = (_rest[1] if len(_rest) > 1 else "").strip().lower()
-            if _args in {"--delete", "-d"}:
-                self._delete_session_on_exit = True
-            elif _args:
-                _cprint(f"  {_DIM}✗ Unknown argument: {_escape(_args)}. Use /exit --delete to also remove session history.{_RST}")
-                return True
-            return False
+            return self._slash_exit(cmd_original, cmd_lower)
         elif canonical == "help":
             self.show_help()
         elif canonical == "profile":
@@ -4998,108 +4997,13 @@ class OpencodonCLI(
             self._force_full_redraw()
             _cprint(f"  {_DIM}✓ UI redrawn{_RST}")
         elif canonical == "clear":
-            if self._confirm_destructive_slash(
-                "clear",
-                "This clears the screen and starts a new session.\n"
-                "The current conversation history will be discarded.",
-                cmd_original=cmd_original,
-            ) is None:
-                return True  # confirmation cancelled — command handled, keep REPL alive
-            self.new_session(silent=True)
-            _clear_output_history()
-            # Clear terminal screen.  Inside the TUI, Rich's console.clear()
-            # goes through patch_stdout's StdoutProxy which swallows the
-            # screen-clear escape sequences.  Use prompt_toolkit's output
-            # object directly to actually clear the terminal.
-            if self._app:
-                out = self._app.output
-                out.erase_screen()
-                out.cursor_goto(0, 0)
-                out.flush()
-            else:
-                self.console.clear()
-            # Show fresh banner.  Inside the TUI we must route Rich output
-            # through ChatConsole (which uses prompt_toolkit's native ANSI
-            # renderer) instead of self.console (which writes raw to stdout
-            # and gets mangled by patch_stdout).
-            if self._app:
-                cc = ChatConsole()
-                term_w = shutil.get_terminal_size().columns
-                if self.compact or term_w < 80:
-                    cc.print(_build_compact_banner())
-                else:
-                    tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets, quiet_mode=True)
-                    cwd = os.getenv("TERMINAL_CWD", os.getcwd())
-                    ctx_len = None
-                    if hasattr(self, 'agent') and self.agent and hasattr(self.agent, 'context_compressor'):
-                        ctx_len = self.agent.context_compressor.context_length
-                    build_welcome_banner(
-                        console=cc,
-                        model=self.model,
-                        cwd=cwd,
-                        tools=tools,
-                        enabled_toolsets=self.enabled_toolsets,
-                        session_id=self.session_id,
-                        context_length=ctx_len,
-                        provider=self.provider,
-                    )
-                _cprint("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
-            else:
-                self.show_banner()
-                print("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
+            _r = self._slash_clear(cmd_original, cmd_lower)
+            if _r is not _SLASH_FALLTHROUGH:
+                return _r
         elif canonical == "history":
             self.show_history()
         elif canonical == "title":
-            parts = cmd_original.split(maxsplit=1)
-            if len(parts) > 1:
-                raw_title = parts[1].strip()
-                if raw_title:
-                    if self._session_db:
-                        # Sanitize the title early so feedback matches what gets stored
-                        try:
-                            from opencodon.state import SessionDB
-                            new_title = SessionDB.sanitize_title(raw_title)
-                        except ValueError as e:
-                            _cprint(f"  {e}")
-                            new_title = None
-                        if not new_title:
-                            _cprint("  Title is empty after cleanup. Please use printable characters.")
-                        elif self._session_db.get_session(self.session_id):
-                            # Session exists in DB — set title directly
-                            try:
-                                if self._session_db.set_session_title(self.session_id, new_title):
-                                    _cprint(f"  Session title set: {new_title}")
-                                else:
-                                    _cprint("  Session not found in database.")
-                            except ValueError as e:
-                                _cprint(f"  {e}")
-                        else:
-                            # Session not created yet — defer the title
-                            # Check uniqueness proactively with the sanitized title
-                            existing = self._session_db.get_session_by_title(new_title)
-                            if existing:
-                                _cprint(f"  Title '{new_title}' is already in use by session {existing['id']}")
-                            else:
-                                self._pending_title = new_title
-                                _cprint(f"  Session title queued: {new_title} (will be saved on first message)")
-                    else:
-                        from opencodon.state import format_session_db_unavailable
-                        _cprint(f"  {format_session_db_unavailable()}")
-                else:
-                    _cprint("  Usage: /title <your session title>")
-            # Show current title and session ID if no argument given
-            elif self._session_db:
-                _cprint(f"  Session ID: {self.session_id}")
-                session = self._session_db.get_session(self.session_id)
-                if session and session.get("title"):
-                    _cprint(f"  Title: {session['title']}")
-                elif self._pending_title:
-                    _cprint(f"  Title (pending): {self._pending_title}")
-                else:
-                    _cprint("  No title set. Usage: /title <your session title>")
-            else:
-                from opencodon.state import format_session_db_unavailable
-                _cprint(f"  {format_session_db_unavailable()}")
+            self._slash_title(cmd_original, cmd_lower)
         elif canonical == "handoff":
             if not self._handle_handoff_command(cmd_original):
                 return False
@@ -5107,16 +5011,9 @@ class OpencodonCLI(
             # Strip inline-skip tokens (now/--yes/-y) before deriving the title
             # so "/new now My Session" yields title="My Session" instead of
             # title="now My Session". See _split_destructive_skip.
-            _new_args, _ = self._split_destructive_skip(cmd_original)
-            title = _new_args.strip() or None
-            if self._confirm_destructive_slash(
-                "new",
-                "This starts a fresh session.\n"
-                "The current conversation history will be discarded.",
-                cmd_original=cmd_original,
-            ) is None:
-                return True  # confirmation cancelled — command handled, keep REPL alive
-            self.new_session(title=title)
+            _r = self._slash_new(cmd_original, cmd_lower)
+            if _r is not _SLASH_FALLTHROUGH:
+                return _r
         elif canonical == "resume":
             self._handle_resume_command(cmd_original)
         elif canonical == "sessions":
@@ -5136,28 +5033,9 @@ class OpencodonCLI(
             self._handle_prompt_compose_command(cmd_original)
         elif canonical == "undo":
             # Parse optional turn count: "/undo" → 1, "/undo 3" → 3.
-            _undo_n = 1
-            _undo_parts = cmd_original.split()
-            if len(_undo_parts) > 1:
-                try:
-                    _undo_n = int(_undo_parts[1])
-                except ValueError:
-                    print(f"(._.) Invalid count {_undo_parts[1]!r} — use /undo or /undo N.")
-                    return
-                if _undo_n < 1:
-                    _undo_n = 1
-            _undo_desc = (
-                "This removes the last user/assistant exchange from history."
-                if _undo_n == 1
-                else f"This removes the last {_undo_n} user turns from history."
-            )
-            if self._confirm_destructive_slash(
-                "undo",
-                _undo_desc,
-                cmd_original=cmd_original,
-            ) is None:
-                return True  # confirmation cancelled — command handled, keep REPL alive
-            self.undo_last(_undo_n)
+            _r = self._slash_undo(cmd_original, cmd_lower)
+            if _r is not _SLASH_FALLTHROUGH:
+                return _r
         elif canonical == "branch":
             self._handle_branch_command(cmd_original)
         elif canonical == "save":
@@ -5237,69 +5115,7 @@ class OpencodonCLI(
         elif canonical == "browser":
             self._handle_browser_command(cmd_original)
         elif canonical == "plugins":
-            try:
-                # Discover from disk (bundled + user), matching `opencodon plugins
-                # list` — so installed-but-not-enabled plugins are visible here
-                # too. The plugin manager only knows about *loaded* plugins, so
-                # using it alone made freshly-installed, not-yet-enabled plugins
-                # look like "nothing installed".
-                from opencodon.frontends.cli.plugins_cmd import (
-                    _discover_all_plugins,
-                    _get_disabled_set,
-                    _get_enabled_set,
-                    _plugin_status,
-                )
-
-                entries = _discover_all_plugins()
-                enabled = _get_enabled_set()
-                disabled = _get_disabled_set()
-
-                # `/plugins` is a quick glance — default to user-installed
-                # plugins (what the user actually added). Bundled provider/
-                # platform plugins are summarized on one line; the full
-                # catalog lives behind `opencodon plugins list`.
-                user_entries = [e for e in entries if e[3] != "bundled"]
-                bundled_count = len(entries) - len(user_entries)
-
-                if not user_entries:
-                    print("No user plugins installed.")
-                    print("  Install one: opencodon plugins install owner/repo")
-                    print(f"  Or drop a plugin directory into {display_opencodon_home()}/plugins/")
-                    if bundled_count:
-                        print(f"  ({bundled_count} bundled plugins available — see: opencodon plugins list)")
-                else:
-                    # Loaded-plugin details (tools/hooks/commands counts, errors)
-                    # keyed by name, when available.
-                    loaded: dict = {}
-                    try:
-                        from opencodon.plugins_runtime import get_plugin_manager
-                        for p in get_plugin_manager().list_plugins():
-                            loaded[p["name"]] = p
-                    except Exception:
-                        loaded = {}
-
-                    print(f"User plugins ({len(user_entries)}):")
-                    for name, version, _desc, source, _dir, key in sorted(user_entries):
-                        state = _plugin_status(name, enabled, disabled, key=key)
-                        glyph = {"enabled": "✓", "disabled": "✗"}.get(state, "○")
-                        ver = f" v{version}" if version else ""
-                        info = loaded.get(name) or {}
-                        bits = []
-                        if info.get("tools"):
-                            bits.append(f"{info['tools']} tools")
-                        if info.get("hooks"):
-                            bits.append(f"{info['hooks']} hooks")
-                        if info.get("commands"):
-                            bits.append(f"{info['commands']} commands")
-                        detail = f" ({', '.join(bits)})" if bits else ""
-                        label = "" if state == "enabled" else f" [{state}]"
-                        error = f" — {info['error']}" if info.get("error") else ""
-                        print(f"  {glyph} {name}{ver}{label}{detail}{error}")
-                    if bundled_count:
-                        print(f"  (+{bundled_count} bundled — see: opencodon plugins list)")
-                    print("  Enable/disable: opencodon plugins enable/disable <name>")
-            except Exception as e:
-                print(f"Plugin system error: {e}")
+            self._slash_plugins(cmd_original, cmd_lower)
         elif canonical == "rollback":
             self._handle_rollback_command(cmd_original)
         elif canonical == "snapshot":
@@ -5312,40 +5128,14 @@ class OpencodonCLI(
             self._handle_background_command(cmd_original)
         elif canonical == "queue":
             # Extract prompt after "/queue " or "/q "
-            parts = cmd_original.split(None, 1)
-            payload = parts[1].strip() if len(parts) > 1 else ""
-            if not payload:
-                _cprint("  Usage: /queue <prompt>")
-            else:
-                self._pending_input.put(payload)
-                if self._agent_running:
-                    _cprint(f"  Queued for the next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
-                else:
-                    _cprint(f"  Queued: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+            self._slash_queue(cmd_original, cmd_lower)
         elif canonical == "steer":
             # Inject a message after the next tool call without interrupting.
             # If the agent is actively running, push the text into the agent's
             # pending_steer slot — the drain hook in _execute_tool_calls_*
             # will append it to the next tool result's content. If no agent
             # is running, fall back to queue semantics (same as /queue).
-            parts = cmd_original.split(None, 1)
-            payload = parts[1].strip() if len(parts) > 1 else ""
-            if not payload:
-                _cprint("  Usage: /steer <prompt>")
-            elif self._agent_running and self.agent is not None and hasattr(self.agent, "steer"):
-                try:
-                    accepted = self.agent.steer(payload)
-                except Exception as exc:
-                    _cprint(f"  Steer failed: {exc}")
-                else:
-                    if accepted:
-                        _cprint(f"  ⏩ Steer queued — arrives after the next tool call: {payload[:80]}{'...' if len(payload) > 80 else ''}")
-                    else:
-                        _cprint("  Steer rejected (empty payload).")
-            else:
-                # No active run — treat as a normal next-turn message.
-                self._pending_input.put(payload)
-                _cprint(f"  No agent running; queued as next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+            self._slash_steer(cmd_original, cmd_lower)
         elif canonical == "goal":
             self._handle_goal_command(cmd_original)
         elif canonical == "moa":
@@ -5353,37 +5143,9 @@ class OpencodonCLI(
             # default MoA preset, then restore the prior model. To *switch* to a
             # MoA preset for the session, pick it from the model picker (MoA
             # presets surface as a virtual "Mixture of Agents" provider).
-            from opencodon.config.moa_config import (
-                moa_usage,
-                normalize_moa_config,
-            )
-
-            parts = cmd_original.split(None, 1)
-            payload = parts[1].strip() if len(parts) > 1 else ""
-            if not payload:
-                _cprint(f"  {moa_usage()}")
-                return True
-            moa_cfg = self.config.get("moa") if isinstance(self.config, dict) else {}
-            normalized = normalize_moa_config(moa_cfg)
-            preset = normalized["default_preset"]
-            self._pending_moa_restore_model = {
-                "requested_provider": getattr(self, "requested_provider", None),
-                "provider": getattr(self, "provider", None),
-                "model": getattr(self, "model", None),
-                "api_key": getattr(self, "api_key", None),
-                "base_url": getattr(self, "base_url", None),
-                "api_mode": getattr(self, "api_mode", None),
-            }
-            self.requested_provider = "moa"
-            self.provider = "moa"
-            self.model = preset
-            self.api_key = "moa-virtual-provider"
-            self.base_url = "moa://local"
-            self.api_mode = "chat_completions"
-            self.agent = None
-            self._pending_moa_disable_after_turn = True
-            self._pending_agent_seed = payload
-            _cprint(f"  MoA one-shot queued with preset {preset}; previous model will be restored after this turn.")
+            _r = self._slash_moa(cmd_original, cmd_lower)
+            if _r is not _SLASH_FALLTHROUGH:
+                return _r
         elif canonical == "subgoal":
             self._handle_subgoal_command(cmd_original)
         elif canonical == "skin":
@@ -5394,82 +5156,123 @@ class OpencodonCLI(
             self._handle_busy_command(cmd_original)
         else:
             # Check for user-defined quick commands (bypass agent loop, no LLM call)
-            base_cmd = cmd_lower.split()[0]
-            skill_commands = _ensure_skill_commands()
-            skill_bundles = get_skill_bundles()
-            quick_commands = self.config.get("quick_commands", {})
-            if base_cmd.lstrip("/") in quick_commands:
-                qcmd = quick_commands[base_cmd.lstrip("/")]
-                if qcmd.get("type") == "exec":
-                    import subprocess
-                    exec_cmd = qcmd.get("command", "")
-                    if exec_cmd:
-                        try:
-                            # shell=True is intentional: quick_commands are user-defined
-                            # shell snippets from config.yaml — not agent/LLM controlled.
-                            # Sanitize env to prevent credential leakage —
-                            # quick commands run in the CLI process which
-                            # has all API keys in os.environ.
-                            from opencodon.tools.environments.local import _sanitize_subprocess_env
-                            sanitized_env = _sanitize_subprocess_env(os.environ.copy())
-                            result = subprocess.run(
-                                exec_cmd, shell=True, capture_output=True,
-                                text=True, timeout=30, env=sanitized_env
-                            )
-                            output = result.stdout.strip() or result.stderr.strip()
-                            if output:
-                                from opencodon.core.redact import redact_sensitive_text
-                                output = redact_sensitive_text(output)
-                                self._console_print(_rich_text_from_ansi(output))
-                            else:
-                                self._console_print("[dim]Command returned no output[/]")
-                        except subprocess.TimeoutExpired:
-                            self._console_print("[bold red]Quick command timed out (30s)[/]")
-                        except Exception as e:
-                            self._console_print(f"[bold red]Quick command error: {e}[/]")
-                    else:
-                        self._console_print(f"[bold red]Quick command '{base_cmd}' has no command defined[/]")
-                elif qcmd.get("type") == "alias":
-                    target = qcmd.get("target", "").strip()
-                    if target:
-                        target = target if target.startswith("/") else f"/{target}"
-                        user_args = cmd_original[len(base_cmd):].strip()
-                        aliased_command = f"{target} {user_args}".strip()
-                        return self.process_command(aliased_command)
-                    else:
-                        self._console_print(f"[bold red]Quick command '{base_cmd}' has no target defined[/]")
-                else:
-                    self._console_print(f"[bold red]Quick command '{base_cmd}' has unsupported type (supported: 'exec', 'alias')[/]")
-            # Check for plugin-registered slash commands
-            elif base_cmd.lstrip("/") in _get_plugin_cmd_handler_names():
-                from opencodon.plugins_runtime import (
-                    get_plugin_command_handler,
-                    resolve_plugin_command_result,
-                )
-                plugin_handler = get_plugin_command_handler(base_cmd.lstrip("/"))
-                if plugin_handler:
-                    user_args = cmd_original[len(base_cmd):].strip()
+            _r = self._slash_fallback(cmd_original, cmd_lower)
+            if _r is not _SLASH_FALLTHROUGH:
+                return _r
+        
+        return True
+
+    def _slash_fallback(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Returns _SLASH_FALLTHROUGH when the original branch fell through."""
+        base_cmd = cmd_lower.split()[0]
+        skill_commands = _ensure_skill_commands()
+        skill_bundles = get_skill_bundles()
+        quick_commands = self.config.get("quick_commands", {})
+        if base_cmd.lstrip("/") in quick_commands:
+            qcmd = quick_commands[base_cmd.lstrip("/")]
+            if qcmd.get("type") == "exec":
+                import subprocess
+                exec_cmd = qcmd.get("command", "")
+                if exec_cmd:
                     try:
-                        result = resolve_plugin_command_result(
-                            plugin_handler(user_args)
+                        # shell=True is intentional: quick_commands are user-defined
+                        # shell snippets from config.yaml — not agent/LLM controlled.
+                        # Sanitize env to prevent credential leakage —
+                        # quick commands run in the CLI process which
+                        # has all API keys in os.environ.
+                        from opencodon.tools.environments.local import _sanitize_subprocess_env
+                        sanitized_env = _sanitize_subprocess_env(os.environ.copy())
+                        result = subprocess.run(
+                            exec_cmd, shell=True, capture_output=True,
+                            text=True, timeout=30, env=sanitized_env
                         )
-                        if result:
-                            _cprint(str(result))
+                        output = result.stdout.strip() or result.stderr.strip()
+                        if output:
+                            from opencodon.core.redact import redact_sensitive_text
+                            output = redact_sensitive_text(output)
+                            self._console_print(_rich_text_from_ansi(output))
+                        else:
+                            self._console_print("[dim]Command returned no output[/]")
+                    except subprocess.TimeoutExpired:
+                        self._console_print("[bold red]Quick command timed out (30s)[/]")
                     except Exception as e:
-                        _cprint(f"\033[1;31mPlugin command error: {e}{_RST}")
-            # Skill bundles take precedence over individual skills — /<bundle>
-            # loads multiple skills at once. Rescans cheaply when files change.
-            elif base_cmd in skill_bundles:
-                user_instruction = cmd_original[len(base_cmd):].strip()
-                bundle_result = build_bundle_invocation_message(
-                    base_cmd, user_instruction, task_id=self.session_id
+                        self._console_print(f"[bold red]Quick command error: {e}[/]")
+                else:
+                    self._console_print(f"[bold red]Quick command '{base_cmd}' has no command defined[/]")
+            elif qcmd.get("type") == "alias":
+                target = qcmd.get("target", "").strip()
+                if target:
+                    target = target if target.startswith("/") else f"/{target}"
+                    user_args = cmd_original[len(base_cmd):].strip()
+                    aliased_command = f"{target} {user_args}".strip()
+                    return self.process_command(aliased_command)
+                else:
+                    self._console_print(f"[bold red]Quick command '{base_cmd}' has no target defined[/]")
+            else:
+                self._console_print(f"[bold red]Quick command '{base_cmd}' has unsupported type (supported: 'exec', 'alias')[/]")
+        # Check for plugin-registered slash commands
+        elif base_cmd.lstrip("/") in _get_plugin_cmd_handler_names():
+            from opencodon.plugins_runtime import (
+                get_plugin_command_handler,
+                resolve_plugin_command_result,
+            )
+            plugin_handler = get_plugin_command_handler(base_cmd.lstrip("/"))
+            if plugin_handler:
+                user_args = cmd_original[len(base_cmd):].strip()
+                try:
+                    result = resolve_plugin_command_result(
+                        plugin_handler(user_args)
+                    )
+                    if result:
+                        _cprint(str(result))
+                except Exception as e:
+                    _cprint(f"\033[1;31mPlugin command error: {e}{_RST}")
+        # Skill bundles take precedence over individual skills — /<bundle>
+        # loads multiple skills at once. Rescans cheaply when files change.
+        elif base_cmd in skill_bundles:
+            user_instruction = cmd_original[len(base_cmd):].strip()
+            bundle_result = build_bundle_invocation_message(
+                base_cmd, user_instruction, task_id=self.session_id
+            )
+            if bundle_result:
+                msg, loaded_names, missing = bundle_result
+                bundle_info = skill_bundles[base_cmd]
+                print(
+                    f"\n⚡ Loading bundle: {bundle_info['name']} "
+                    f"({len(loaded_names)} skills)"
                 )
-                if bundle_result:
-                    msg, loaded_names, missing = bundle_result
-                    bundle_info = skill_bundles[base_cmd]
+                if missing:
+                    ChatConsole().print(
+                        f"[yellow]Skipped missing skills: {', '.join(missing)}[/]"
+                    )
+                if hasattr(self, '_pending_input'):
+                    self._pending_input.put(msg)
+            else:
+                ChatConsole().print(
+                    f"[bold red]Failed to load bundle for {base_cmd}[/]"
+                )
+        # Check for skill slash commands (/gif-search, /axolotl, etc.)
+        elif base_cmd in skill_commands:
+            rest = cmd_original[len(base_cmd):].strip()
+            # Stacked slash-skill invocations: `/skill-a /skill-b do XYZ`
+            # loads every leading skill (up to 5), not just the first.
+            # Inspired by Claude Code v2.1.199.
+            from opencodon.core.skills.skill_commands import (
+                build_stacked_skill_invocation_message,
+                split_stacked_skill_commands,
+            )
+            extra_keys, user_instruction = split_stacked_skill_commands(rest)
+            if extra_keys:
+                stacked_result = build_stacked_skill_invocation_message(
+                    [base_cmd, *extra_keys],
+                    user_instruction,
+                    task_id=self.session_id,
+                )
+                if stacked_result:
+                    msg, loaded_names, missing = stacked_result
                     print(
-                        f"\n⚡ Loading bundle: {bundle_info['name']} "
-                        f"({len(loaded_names)} skills)"
+                        f"\n⚡ Loading {len(loaded_names)} stacked skills: "
+                        f"{', '.join(loaded_names)}"
                     )
                     if missing:
                         ChatConsole().print(
@@ -5479,95 +5282,354 @@ class OpencodonCLI(
                         self._pending_input.put(msg)
                 else:
                     ChatConsole().print(
-                        f"[bold red]Failed to load bundle for {base_cmd}[/]"
+                        f"[bold red]Failed to load stacked skills for {base_cmd}[/]"
                     )
-            # Check for skill slash commands (/gif-search, /axolotl, etc.)
-            elif base_cmd in skill_commands:
-                rest = cmd_original[len(base_cmd):].strip()
-                # Stacked slash-skill invocations: `/skill-a /skill-b do XYZ`
-                # loads every leading skill (up to 5), not just the first.
-                # Inspired by Claude Code v2.1.199.
-                from opencodon.core.skills.skill_commands import (
-                    build_stacked_skill_invocation_message,
-                    split_stacked_skill_commands,
-                )
-                extra_keys, user_instruction = split_stacked_skill_commands(rest)
-                if extra_keys:
-                    stacked_result = build_stacked_skill_invocation_message(
-                        [base_cmd, *extra_keys],
-                        user_instruction,
-                        task_id=self.session_id,
-                    )
-                    if stacked_result:
-                        msg, loaded_names, missing = stacked_result
-                        print(
-                            f"\n⚡ Loading {len(loaded_names)} stacked skills: "
-                            f"{', '.join(loaded_names)}"
-                        )
-                        if missing:
-                            ChatConsole().print(
-                                f"[yellow]Skipped missing skills: {', '.join(missing)}[/]"
-                            )
-                        if hasattr(self, '_pending_input'):
-                            self._pending_input.put(msg)
-                    else:
-                        ChatConsole().print(
-                            f"[bold red]Failed to load stacked skills for {base_cmd}[/]"
-                        )
-                    return True
-                user_instruction = rest
-                msg = build_skill_invocation_message(
-                    base_cmd, user_instruction, task_id=self.session_id
-                )
-                if msg:
-                    skill_name = skill_commands[base_cmd]["name"]
-                    print(f"\n⚡ Loading skill: {skill_name}")
-                    if hasattr(self, '_pending_input'):
-                        self._pending_input.put(msg)
-                else:
-                    ChatConsole().print(f"[bold red]Failed to load skill for {base_cmd}[/]")
+                return True
+            user_instruction = rest
+            msg = build_skill_invocation_message(
+                base_cmd, user_instruction, task_id=self.session_id
+            )
+            if msg:
+                skill_name = skill_commands[base_cmd]["name"]
+                print(f"\n⚡ Loading skill: {skill_name}")
+                if hasattr(self, '_pending_input'):
+                    self._pending_input.put(msg)
             else:
-                # Prefix matching: if input uniquely identifies one command, execute it.
-                # Matches against both built-in COMMANDS and installed skill commands so
-                # that execution-time resolution agrees with tab-completion.
-                from opencodon.frontends.cli.commands import COMMANDS
-                typed_base = cmd_lower.split()[0]
-                all_known = set(COMMANDS) | set(skill_commands) | set(skill_bundles)
-                matches = [c for c in all_known if c.startswith(typed_base)]
-                if len(matches) > 1:
-                    # Prefer an exact match (typed the full command name)
-                    exact = [c for c in matches if c == typed_base]
-                    if len(exact) == 1:
-                        matches = exact
-                    else:
-                        # Prefer the unique shortest match:
-                        # /qui → /quit (5) wins over /quint-pipeline (15)
-                        min_len = min(len(c) for c in matches)
-                        shortest = [c for c in matches if len(c) == min_len]
-                        if len(shortest) == 1:
-                            matches = shortest
-                if len(matches) == 1:
-                    # Expand the prefix to the full command name, preserving arguments.
-                    # Guard against redispatching the same token to avoid infinite
-                    # recursion when the expanded name still doesn't hit an exact branch
-                    # (e.g. /config with extra args that are not yet handled above).
-                    full_name = matches[0]
-                    if full_name == typed_base:
-                        # Already an exact token — no expansion possible; fall through
-                        _cprint(f"\033[1;31mUnknown command: {cmd_lower}{_RST}")
-                        _cprint(f"{_DIM}{_ACCENT}Type /help for available commands{_RST}")
-                    else:
-                        remainder = cmd_original.strip()[len(typed_base):]
-                        full_cmd = full_name + remainder
-                        return self.process_command(full_cmd)
-                elif len(matches) > 1:
-                    _cprint(f"{_ACCENT}Ambiguous command: {cmd_lower}{_RST}")
-                    _cprint(f"{_DIM}Did you mean: {', '.join(sorted(matches))}?{_RST}")
+                ChatConsole().print(f"[bold red]Failed to load skill for {base_cmd}[/]")
+        else:
+            # Prefix matching: if input uniquely identifies one command, execute it.
+            # Matches against both built-in COMMANDS and installed skill commands so
+            # that execution-time resolution agrees with tab-completion.
+            from opencodon.frontends.cli.commands import COMMANDS
+            typed_base = cmd_lower.split()[0]
+            all_known = set(COMMANDS) | set(skill_commands) | set(skill_bundles)
+            matches = [c for c in all_known if c.startswith(typed_base)]
+            if len(matches) > 1:
+                # Prefer an exact match (typed the full command name)
+                exact = [c for c in matches if c == typed_base]
+                if len(exact) == 1:
+                    matches = exact
                 else:
+                    # Prefer the unique shortest match:
+                    # /qui → /quit (5) wins over /quint-pipeline (15)
+                    min_len = min(len(c) for c in matches)
+                    shortest = [c for c in matches if len(c) == min_len]
+                    if len(shortest) == 1:
+                        matches = shortest
+            if len(matches) == 1:
+                # Expand the prefix to the full command name, preserving arguments.
+                # Guard against redispatching the same token to avoid infinite
+                # recursion when the expanded name still doesn't hit an exact branch
+                # (e.g. /config with extra args that are not yet handled above).
+                full_name = matches[0]
+                if full_name == typed_base:
+                    # Already an exact token — no expansion possible; fall through
                     _cprint(f"\033[1;31mUnknown command: {cmd_lower}{_RST}")
                     _cprint(f"{_DIM}{_ACCENT}Type /help for available commands{_RST}")
-        
-        return True
+                else:
+                    remainder = cmd_original.strip()[len(typed_base):]
+                    full_cmd = full_name + remainder
+                    return self.process_command(full_cmd)
+            elif len(matches) > 1:
+                _cprint(f"{_ACCENT}Ambiguous command: {cmd_lower}{_RST}")
+                _cprint(f"{_DIM}Did you mean: {', '.join(sorted(matches))}?{_RST}")
+            else:
+                _cprint(f"\033[1;31mUnknown command: {cmd_lower}{_RST}")
+                _cprint(f"{_DIM}{_ACCENT}Type /help for available commands{_RST}")
+        return _SLASH_FALLTHROUGH
+
+    def _slash_moa(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Returns _SLASH_FALLTHROUGH when the original branch fell through."""
+        from opencodon.config.moa_config import (
+            moa_usage,
+            normalize_moa_config,
+        )
+
+        parts = cmd_original.split(None, 1)
+        payload = parts[1].strip() if len(parts) > 1 else ""
+        if not payload:
+            _cprint(f"  {moa_usage()}")
+            return True
+        moa_cfg = self.config.get("moa") if isinstance(self.config, dict) else {}
+        normalized = normalize_moa_config(moa_cfg)
+        preset = normalized["default_preset"]
+        self._pending_moa_restore_model = {
+            "requested_provider": getattr(self, "requested_provider", None),
+            "provider": getattr(self, "provider", None),
+            "model": getattr(self, "model", None),
+            "api_key": getattr(self, "api_key", None),
+            "base_url": getattr(self, "base_url", None),
+            "api_mode": getattr(self, "api_mode", None),
+        }
+        self.requested_provider = "moa"
+        self.provider = "moa"
+        self.model = preset
+        self.api_key = "moa-virtual-provider"
+        self.base_url = "moa://local"
+        self.api_mode = "chat_completions"
+        self.agent = None
+        self._pending_moa_disable_after_turn = True
+        self._pending_agent_seed = payload
+        _cprint(f"  MoA one-shot queued with preset {preset}; previous model will be restored after this turn.")
+        return _SLASH_FALLTHROUGH
+
+    def _slash_steer(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Falls through (no early return in the original branch)."""
+        parts = cmd_original.split(None, 1)
+        payload = parts[1].strip() if len(parts) > 1 else ""
+        if not payload:
+            _cprint("  Usage: /steer <prompt>")
+        elif self._agent_running and self.agent is not None and hasattr(self.agent, "steer"):
+            try:
+                accepted = self.agent.steer(payload)
+            except Exception as exc:
+                _cprint(f"  Steer failed: {exc}")
+            else:
+                if accepted:
+                    _cprint(f"  ⏩ Steer queued — arrives after the next tool call: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+                else:
+                    _cprint("  Steer rejected (empty payload).")
+        else:
+            # No active run — treat as a normal next-turn message.
+            self._pending_input.put(payload)
+            _cprint(f"  No agent running; queued as next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+
+    def _slash_queue(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Falls through (no early return in the original branch)."""
+        parts = cmd_original.split(None, 1)
+        payload = parts[1].strip() if len(parts) > 1 else ""
+        if not payload:
+            _cprint("  Usage: /queue <prompt>")
+        else:
+            self._pending_input.put(payload)
+            if self._agent_running:
+                _cprint(f"  Queued for the next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+            else:
+                _cprint(f"  Queued: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+
+    def _slash_plugins(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Falls through (no early return in the original branch)."""
+        try:
+            # Discover from disk (bundled + user), matching `opencodon plugins
+            # list` — so installed-but-not-enabled plugins are visible here
+            # too. The plugin manager only knows about *loaded* plugins, so
+            # using it alone made freshly-installed, not-yet-enabled plugins
+            # look like "nothing installed".
+            from opencodon.frontends.cli.plugins_cmd import (
+                _discover_all_plugins,
+                _get_disabled_set,
+                _get_enabled_set,
+                _plugin_status,
+            )
+
+            entries = _discover_all_plugins()
+            enabled = _get_enabled_set()
+            disabled = _get_disabled_set()
+
+            # `/plugins` is a quick glance — default to user-installed
+            # plugins (what the user actually added). Bundled provider/
+            # platform plugins are summarized on one line; the full
+            # catalog lives behind `opencodon plugins list`.
+            user_entries = [e for e in entries if e[3] != "bundled"]
+            bundled_count = len(entries) - len(user_entries)
+
+            if not user_entries:
+                print("No user plugins installed.")
+                print("  Install one: opencodon plugins install owner/repo")
+                print(f"  Or drop a plugin directory into {display_opencodon_home()}/plugins/")
+                if bundled_count:
+                    print(f"  ({bundled_count} bundled plugins available — see: opencodon plugins list)")
+            else:
+                # Loaded-plugin details (tools/hooks/commands counts, errors)
+                # keyed by name, when available.
+                loaded: dict = {}
+                try:
+                    from opencodon.plugins_runtime import get_plugin_manager
+                    for p in get_plugin_manager().list_plugins():
+                        loaded[p["name"]] = p
+                except Exception:
+                    loaded = {}
+
+                print(f"User plugins ({len(user_entries)}):")
+                for name, version, _desc, source, _dir, key in sorted(user_entries):
+                    state = _plugin_status(name, enabled, disabled, key=key)
+                    glyph = {"enabled": "✓", "disabled": "✗"}.get(state, "○")
+                    ver = f" v{version}" if version else ""
+                    info = loaded.get(name) or {}
+                    bits = []
+                    if info.get("tools"):
+                        bits.append(f"{info['tools']} tools")
+                    if info.get("hooks"):
+                        bits.append(f"{info['hooks']} hooks")
+                    if info.get("commands"):
+                        bits.append(f"{info['commands']} commands")
+                    detail = f" ({', '.join(bits)})" if bits else ""
+                    label = "" if state == "enabled" else f" [{state}]"
+                    error = f" — {info['error']}" if info.get("error") else ""
+                    print(f"  {glyph} {name}{ver}{label}{detail}{error}")
+                if bundled_count:
+                    print(f"  (+{bundled_count} bundled — see: opencodon plugins list)")
+                print("  Enable/disable: opencodon plugins enable/disable <name>")
+        except Exception as e:
+            print(f"Plugin system error: {e}")
+
+    def _slash_undo(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Returns _SLASH_FALLTHROUGH when the original branch fell through."""
+        _undo_n = 1
+        _undo_parts = cmd_original.split()
+        if len(_undo_parts) > 1:
+            try:
+                _undo_n = int(_undo_parts[1])
+            except ValueError:
+                print(f"(._.) Invalid count {_undo_parts[1]!r} — use /undo or /undo N.")
+                return
+            if _undo_n < 1:
+                _undo_n = 1
+        _undo_desc = (
+            "This removes the last user/assistant exchange from history."
+            if _undo_n == 1
+            else f"This removes the last {_undo_n} user turns from history."
+        )
+        if self._confirm_destructive_slash(
+            "undo",
+            _undo_desc,
+            cmd_original=cmd_original,
+        ) is None:
+            return True  # confirmation cancelled — command handled, keep REPL alive
+        self.undo_last(_undo_n)
+        return _SLASH_FALLTHROUGH
+
+    def _slash_new(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Returns _SLASH_FALLTHROUGH when the original branch fell through."""
+        _new_args, _ = self._split_destructive_skip(cmd_original)
+        title = _new_args.strip() or None
+        if self._confirm_destructive_slash(
+            "new",
+            "This starts a fresh session.\n"
+            "The current conversation history will be discarded.",
+            cmd_original=cmd_original,
+        ) is None:
+            return True  # confirmation cancelled — command handled, keep REPL alive
+        self.new_session(title=title)
+        return _SLASH_FALLTHROUGH
+
+    def _slash_title(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Falls through (no early return in the original branch)."""
+        parts = cmd_original.split(maxsplit=1)
+        if len(parts) > 1:
+            raw_title = parts[1].strip()
+            if raw_title:
+                if self._session_db:
+                    # Sanitize the title early so feedback matches what gets stored
+                    try:
+                        from opencodon.state import SessionDB
+                        new_title = SessionDB.sanitize_title(raw_title)
+                    except ValueError as e:
+                        _cprint(f"  {e}")
+                        new_title = None
+                    if not new_title:
+                        _cprint("  Title is empty after cleanup. Please use printable characters.")
+                    elif self._session_db.get_session(self.session_id):
+                        # Session exists in DB — set title directly
+                        try:
+                            if self._session_db.set_session_title(self.session_id, new_title):
+                                _cprint(f"  Session title set: {new_title}")
+                            else:
+                                _cprint("  Session not found in database.")
+                        except ValueError as e:
+                            _cprint(f"  {e}")
+                    else:
+                        # Session not created yet — defer the title
+                        # Check uniqueness proactively with the sanitized title
+                        existing = self._session_db.get_session_by_title(new_title)
+                        if existing:
+                            _cprint(f"  Title '{new_title}' is already in use by session {existing['id']}")
+                        else:
+                            self._pending_title = new_title
+                            _cprint(f"  Session title queued: {new_title} (will be saved on first message)")
+                else:
+                    from opencodon.state import format_session_db_unavailable
+                    _cprint(f"  {format_session_db_unavailable()}")
+            else:
+                _cprint("  Usage: /title <your session title>")
+        # Show current title and session ID if no argument given
+        elif self._session_db:
+            _cprint(f"  Session ID: {self.session_id}")
+            session = self._session_db.get_session(self.session_id)
+            if session and session.get("title"):
+                _cprint(f"  Title: {session['title']}")
+            elif self._pending_title:
+                _cprint(f"  Title (pending): {self._pending_title}")
+            else:
+                _cprint("  No title set. Usage: /title <your session title>")
+        else:
+            from opencodon.state import format_session_db_unavailable
+            _cprint(f"  {format_session_db_unavailable()}")
+
+    def _slash_clear(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Returns _SLASH_FALLTHROUGH when the original branch fell through."""
+        if self._confirm_destructive_slash(
+            "clear",
+            "This clears the screen and starts a new session.\n"
+            "The current conversation history will be discarded.",
+            cmd_original=cmd_original,
+        ) is None:
+            return True  # confirmation cancelled — command handled, keep REPL alive
+        self.new_session(silent=True)
+        _clear_output_history()
+        # Clear terminal screen.  Inside the TUI, Rich's console.clear()
+        # goes through patch_stdout's StdoutProxy which swallows the
+        # screen-clear escape sequences.  Use prompt_toolkit's output
+        # object directly to actually clear the terminal.
+        if self._app:
+            out = self._app.output
+            out.erase_screen()
+            out.cursor_goto(0, 0)
+            out.flush()
+        else:
+            self.console.clear()
+        # Show fresh banner.  Inside the TUI we must route Rich output
+        # through ChatConsole (which uses prompt_toolkit's native ANSI
+        # renderer) instead of self.console (which writes raw to stdout
+        # and gets mangled by patch_stdout).
+        if self._app:
+            cc = ChatConsole()
+            term_w = shutil.get_terminal_size().columns
+            if self.compact or term_w < 80:
+                cc.print(_build_compact_banner())
+            else:
+                tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets, quiet_mode=True)
+                cwd = os.getenv("TERMINAL_CWD", os.getcwd())
+                ctx_len = None
+                if hasattr(self, 'agent') and self.agent and hasattr(self.agent, 'context_compressor'):
+                    ctx_len = self.agent.context_compressor.context_length
+                build_welcome_banner(
+                    console=cc,
+                    model=self.model,
+                    cwd=cwd,
+                    tools=tools,
+                    enabled_toolsets=self.enabled_toolsets,
+                    session_id=self.session_id,
+                    context_length=ctx_len,
+                    provider=self.provider,
+                )
+            _cprint("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
+        else:
+            self.show_banner()
+            print("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
+        return _SLASH_FALLTHROUGH
+
+    def _slash_exit(self, cmd_original: str, cmd_lower: str):
+        """Extracted verbatim from the process_command dispatch. Always returns the REPL-continue flag."""
+        _rest = cmd_original.split(None, 1)
+        _args = (_rest[1] if len(_rest) > 1 else "").strip().lower()
+        if _args in {"--delete", "-d"}:
+            self._delete_session_on_exit = True
+        elif _args:
+            _cprint(f"  {_DIM}✗ Unknown argument: {_escape(_args)}. Use /exit --delete to also remove session history.{_RST}")
+            return True
+        return False
+
     
 
 
@@ -5889,86 +5951,11 @@ class OpencodonCLI(
         if agent is None:
             return None
 
-        # Route image attachments based on the active model's vision capability.
-        # "native" → pass pixels as OpenAI-style content parts (adapters
-        #            translate for Anthropic/Gemini/Bedrock).
-        # "text"   → pre-analyze each image with vision_analyze and prepend the
-        #            description as text — works with non-vision models.
-        # See agent/image_routing.py for the decision table.
-        if images:
-            try:
-                from opencodon.core.media.image_routing import (
-                    build_native_content_parts,
-                    decide_image_input_mode,
-                )
-                from opencodon.config import load_config
+        message = self._chat_route_images(message, images)
 
-                _img_mode = decide_image_input_mode(
-                    (self.provider or "").strip(),
-                    (self.model or "").strip(),
-                    load_config(),
-                )
-            except Exception as _img_exc:
-                logging.debug("image_routing decision failed, defaulting to text: %s", _img_exc)
-                _img_mode = "text"
-
-            if _img_mode == "native":
-                try:
-                    _text_for_parts = message if isinstance(message, str) else ""
-                    _img_str_paths = [str(p) for p in images]
-                    _parts, _skipped = build_native_content_parts(
-                        _text_for_parts,
-                        _img_str_paths,
-                    )
-                    if _skipped:
-                        _cprint(
-                            f"  {_DIM}⚠ skipped {len(_skipped)} unreadable image path(s){_RST}"
-                        )
-                    if any(p.get("type") == "image_url" for p in _parts):
-                        _img_names = ", ".join(Path(p).name for p in _img_str_paths)
-                        _cprint(
-                            f"  {_DIM}📎 attaching {len(images)} image(s) natively "
-                            f"(model supports vision): {_img_names}{_RST}"
-                        )
-                        message = _parts
-                    else:
-                        # All images unreadable — fall back to text enrichment.
-                        message = self._preprocess_images_with_vision(
-                            message if isinstance(message, str) else "", images
-                        )
-                except Exception as _img_exc:
-                    logging.warning("native image attach failed, falling back to text: %s", _img_exc)
-                    message = self._preprocess_images_with_vision(
-                        message if isinstance(message, str) else "", images
-                    )
-            else:
-                message = self._preprocess_images_with_vision(
-                    message if isinstance(message, str) else "", images
-                )
-
-        # Expand @ context references (e.g. @file:main.py, @diff, @folder:src/)
-        if isinstance(message, str) and "@" in message:
-            try:
-                from opencodon.core.context.context_references import preprocess_context_references
-                from opencodon.core.providers.model_metadata import get_model_context_length
-                _ctx_len = get_model_context_length(
-                    self.model, base_url=self.base_url or "", api_key=self.api_key or "",
-                    provider=self.provider or "",
-                    config_context_length=getattr(self.agent, "_config_context_length", None) if self.agent else None)
-                _ctx_result = preprocess_context_references(
-                    message, cwd=os.getcwd(), context_length=_ctx_len)
-                if _ctx_result.expanded or _ctx_result.blocked:
-                    if _ctx_result.references:
-                        _cprint(
-                            f"  {_DIM}[@ context: {len(_ctx_result.references)} ref(s), "
-                            f"{_ctx_result.injected_tokens} tokens]{_RST}")
-                    for w in _ctx_result.warnings:
-                        _cprint(f"  {_DIM}⚠ {w}{_RST}")
-                    if _ctx_result.blocked:
-                        return "\n".join(_ctx_result.warnings) or "Context injection refused."
-                    message = _ctx_result.message
-            except Exception as e:
-                logging.debug("@ context reference expansion failed: %s", e)
+        _ctx_blocked, message = self._chat_expand_context_refs(message)
+        if _ctx_blocked is not None:
+            return _ctx_blocked
 
         # Sanitize surrogate characters that can arrive via clipboard paste from
         # rich-text editors (Google Docs, Word, etc.).  Lone surrogates are invalid
@@ -5977,31 +5964,7 @@ class OpencodonCLI(
             from opencodon.core.run_agent import _sanitize_surrogates
             message = _sanitize_surrogates(message)
 
-        # Keep the exact CLI input dict available until turn-start persistence.
-        # Copy the completed agent transcript before appending: otherwise this
-        # UI-only staging step mutates ``agent._session_messages`` and exposes a
-        # duplicate-prone intermediate snapshot to terminal-close persistence.
-        if self.conversation_history is getattr(agent, "_session_messages", None):
-            self.conversation_history = list(self.conversation_history)
-        # The prior turn's override applies only to its own user dict. Clear it
-        # before exposing the next staged input to close persistence; otherwise
-        # a shutdown before the worker prologue can write old API-local text as
-        # this new user message (#63766).
-        persist_lock = getattr(agent, "_session_persist_lock", None)
-
-        def _stage_user_message() -> None:
-            agent._persist_user_message_idx = None
-            agent._persist_user_message_override = None
-            agent._persist_user_message_timestamp = None
-            staged_user_message = {"role": "user", "content": message}
-            agent._pending_cli_user_message = staged_user_message
-            self.conversation_history.append(staged_user_message)
-
-        if persist_lock is None:
-            _stage_user_message()
-        else:
-            with persist_lock:
-                _stage_user_message()
+        self._chat_stage_user_message(agent, message)
 
         ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
         print(flush=True)
@@ -6088,124 +6051,7 @@ class OpencodonCLI(
 
             def run_agent():
                 nonlocal result
-                # Set callbacks inside the agent thread so thread-local storage
-                # in terminal_tool is populated for this thread.  The main thread
-                # registration (run() line ~9046) is invisible here because
-                # _callback_tls is threading.local().  Matches the pattern used
-                # by acp_adapter/server.py for ACP sessions.
-                set_sudo_password_callback(self._sudo_password_callback)
-                set_approval_callback(self._approval_callback)
-                try:
-                    set_secret_capture_callback(self._secret_capture_callback)
-                except Exception:
-                    pass
-                # Bind this turn's approval session key into the contextvar so
-                # ``tools.approval.is_current_session_yolo_enabled()`` resolves
-                # against the same key that ``/yolo`` toggles under (see
-                # ``_toggle_yolo`` → ``enable_session_yolo(self.session_id)``).
-                # Mirrors ``tui_gateway/server.py`` and ``gateway/run.py`` which
-                # bind the same contextvar before invoking the agent.
-                try:
-                    from opencodon.tools.approval import (
-                        reset_current_session_key,
-                        set_current_session_key,
-                    )
-                    _approval_session_token = set_current_session_key(
-                        self.session_id or "default"
-                    )
-                except Exception:
-                    reset_current_session_key = None  # type: ignore[assignment]
-                    _approval_session_token = None
-                agent_message = _voice_prefix + message if _voice_prefix else message
-                # Prepend pending notes via _prepend_note_to_message, which
-                # handles both plain-string and multimodal content-parts list
-                # messages. Naive ``note + "\n\n" + agent_message`` crashed with
-                # TypeError when an image was attached (agent_message is a list)
-                # and a /model or /reload-skills note was queued for the turn.
-                _msn = getattr(self, '_pending_model_switch_note', None)
-                if _msn:
-                    agent_message = _prepend_note_to_message(agent_message, _msn)
-                    self._pending_model_switch_note = None
-                # Prepend pending /reload-skills note so the model sees which
-                # skills were added/removed before handling this turn. Same
-                # one-shot queue pattern as the model-switch note above.
-                _srn = getattr(self, '_pending_skills_reload_note', None)
-                if _srn:
-                    agent_message = _prepend_note_to_message(agent_message, _srn)
-                    self._pending_skills_reload_note = None
-                # Barged mid-speech (VAD or record key)? Tell the model it was
-                # cut off — same one-shot, API-local note channel as above.
-                from opencodon.tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
-                if take_speech_interrupted():
-                    agent_message = _prepend_note_to_message(agent_message, SPEECH_INTERRUPTED_NOTE)
-                _moa_cfg = getattr(self, "_pending_moa_config", None)
-                self._pending_moa_config = None
-                if _moa_cfg is None:
-                    _moa_cfg = None
-                # Model/skill notes and voice instructions are API-local. Keep
-                # the original staged input as the durable transcript value so a
-                # close-path marker follows the same dict into turn setup rather
-                # than producing a second noted user row (#63766).
-                _persist_clean_user_message = (
-                    message if (_voice_prefix or agent_message != message) else None
-                )
-                _one_turn_model_restore = getattr(
-                    self, "_pending_one_turn_model_restore", None
-                )
-                self._pending_one_turn_model_restore = None
-                try:
-                    result = self.agent.run_conversation(
-                        user_message=agent_message,
-                        conversation_history=self.conversation_history[:-1],  # Exclude the message we just added
-                        stream_callback=stream_callback,
-                        task_id=self.session_id,
-                        persist_user_message=_persist_clean_user_message,
-                        moa_config=_moa_cfg,
-                    )
-                    if getattr(self, "_pending_moa_disable_after_turn", False):
-                        _restore = getattr(self, "_pending_moa_restore_model", None) or {}
-                        for _key, _value in _restore.items():
-                            if _value is not None:
-                                setattr(self, _key, _value)
-                        self.agent = None
-                        self._pending_moa_restore_model = None
-                        self._pending_moa_disable_after_turn = False
-                except Exception as exc:
-                    logging.error("run_conversation raised: %s", exc, exc_info=True)
-                    _summary = getattr(self.agent, '_summarize_api_error', lambda e: str(e)[:300])(exc)
-                    result = {
-                        "final_response": f"Error: {_summary}",
-                        "messages": [],
-                        "api_calls": 0,
-                        "completed": False,
-                        "failed": True,
-                        "error": _summary,
-                    }
-                finally:
-                    if _one_turn_model_restore:
-                        self._restore_model_runtime_snapshot(_one_turn_model_restore)
-                    # Surface any credit notices queued during the turn (cold-start
-                    # seed / per-turn capture) now that the response is done — printing
-                    # at this boundary paints cleanly above the prompt instead of being
-                    # buried behind the streaming output.
-                    self._flush_credit_notices()
-                    # Clear thread-local callbacks so a reused thread doesn't
-                    # hold stale references to a disposed CLI instance.
-                    try:
-                        set_sudo_password_callback(None)
-                        set_approval_callback(None)
-                        set_secret_capture_callback(None)
-                    except Exception:
-                        pass
-                    # Release the per-turn approval session key. ``_session_yolo``
-                    # state itself is preserved across turns (so /yolo persists
-                    # for the whole CLI run); we just unbind the contextvar so a
-                    # reused thread doesn't see stale identity on its next run.
-                    if _approval_session_token is not None and reset_current_session_key is not None:
-                        try:
-                            reset_current_session_key(_approval_session_token)
-                        except Exception:
-                            pass
+                result = self._chat_agent_turn(message, _voice_prefix, stream_callback)
 
             # Start agent in background thread (daemon so it cannot keep the
             # process alive when the user closes the terminal tab — SIGHUP
@@ -6217,63 +6063,7 @@ class OpencodonCLI(
             agent_thread = threading.Thread(target=run_agent, daemon=True)
             agent_thread.start()
 
-            # Monitor the dedicated interrupt queue while the agent runs.
-            # _interrupt_queue is separate from _pending_input, so process_loop
-            # and chat() never compete for the same queue.
-            # When a clarify question is active, user input is handled entirely
-            # by the Enter key binding (routed to the clarify response queue),
-            # so we skip interrupt processing to avoid stealing that input.
-            interrupt_msg = None
-            while agent_thread.is_alive():
-                if hasattr(self, '_interrupt_queue'):
-                    try:
-                        interrupt_msg = self._interrupt_queue.get(timeout=0.1)
-                        if interrupt_msg:
-                            # If clarify is active, the Enter handler routes
-                            # input directly; this queue shouldn't have anything.
-                            # But if it does (race condition), don't interrupt —
-                            # and don't drop the message either: park it in
-                            # _pending_input so it runs as the next turn.
-                            if self._clarify_state or self._clarify_freetext:
-                                try:
-                                    self._pending_input.put(interrupt_msg)
-                                except Exception:
-                                    pass
-                                interrupt_msg = None
-                                continue
-                            print("\n⚡ New message detected, interrupting...")
-                            # Signal TTS to stop on interrupt
-                            if stop_event is not None:
-                                stop_event.set()
-                            self.agent.interrupt(interrupt_msg)
-                            # Clear any active overlay states the interrupted agent
-                            # left behind.  approval/clarify/sudo/secret prompts gate
-                            # input (read_only condition + keypress filter) until
-                            # explicitly reset — without this the CLI freezes after
-                            # an interrupt until the prompt's own timeout expires (#14026).
-                            self._clear_active_overlays_for_interrupt()
-                            # Debug: log to file (stdout may be devnull from redirect_stdout)
-                            try:
-                                _dbg = _opencodon_home / "interrupt_debug.log"
-                                with open(_dbg, "a", encoding="utf-8") as _f:
-                                    _f.write(f"{time.strftime('%H:%M:%S')} interrupt fired: msg={str(interrupt_msg)[:60]!r}, "
-                                             f"children={len(self.agent._active_children)}, "
-                                             f"parent._interrupt={self.agent._interrupt_requested}\n")
-                                    for _ci, _ch in enumerate(self.agent._active_children):
-                                        _f.write(f"  child[{_ci}]._interrupt={_ch._interrupt_requested}\n")
-                            except Exception:
-                                pass
-                            break
-                    except queue.Empty:
-                        # Force prompt_toolkit to flush any pending stdout
-                        # output from the agent thread.  Without this, the
-                        # StdoutProxy buffer only flushes on renderer passes
-                        # triggered by input events — on macOS this causes
-                        # the CLI to appear frozen until the user types. (#1624)
-                        self._invalidate(min_interval=0.15)
-                else:
-                    # Fallback for non-interactive mode (e.g., single-query)
-                    agent_thread.join(0.1)
+            interrupt_msg = self._chat_monitor_interrupts(agent_thread, stop_event)
 
             # Wait for the agent thread to finish.  After an interrupt the
             # agent may take a few seconds to clean up (kill subprocess, persist
@@ -6410,136 +6200,17 @@ class OpencodonCLI(
                     self._voice_continuous = False
                     _cprint(f"\n{_DIM}Continuous voice mode stopped due to error.{_RST}")
 
-            # Handle interrupt - check if we were interrupted
-            pending_message = None
-            _interrupted_this_turn = bool(result and result.get("interrupted"))
-            # Expose the flag for post-turn hooks (e.g. goal continuation)
-            # so they can skip themselves when the turn was user-cancelled.
-            self._last_turn_interrupted = _interrupted_this_turn
-            if _interrupted_this_turn:
-                pending_message = result.get("interrupt_message") or interrupt_msg
-                # Add indicator that we were interrupted
-                if response and pending_message:
-                    response = response + "\n\n---\n_[Interrupted - processing new message]_"
-            elif interrupt_msg:
-                # We fired agent.interrupt(interrupt_msg) but the turn result
-                # doesn't acknowledge it. Two ways this happens, both racy:
-                #   1. The agent thread had already passed its last interrupt
-                #      check (or finished) when the interrupt landed — the turn
-                #      completed normally and finalize_turn() never saw the flag.
-                #   2. The 10s post-interrupt wait above expired and we
-                #      abandoned the daemon thread; `result` is still None.
-                # In both cases the user's message must NOT be dropped —
-                # re-queue it as the next turn (#interrupt-vacuumed-into-void).
-                pending_message = interrupt_msg
-                # If the interrupt landed after finalize_turn()'s
-                # clear_interrupt(), the stale flag would instantly abort the
-                # NEXT turn at its first loop check. Clear it now that we've
-                # claimed the message — but ONLY if the agent thread actually
-                # exited. If it's still alive (abandoned after the 10s wait),
-                # the flag is what makes the wedged tool eventually unwind;
-                # clearing it would un-signal that thread.
-                try:
-                    if (
-                        not agent_thread.is_alive()
-                        and self.agent
-                        and getattr(self.agent, "_interrupt_requested", False)
-                    ):
-                        self.agent.clear_interrupt()
-                except Exception:
-                    pass
+            response, pending_message = self._chat_resolve_interrupt(
+                result, response, interrupt_msg, agent_thread
+            )
 
             response_previewed = result.get("response_previewed", False) if result else False
 
-            # Display reasoning (thinking) box if enabled and available.
-            # Skip when streaming already showed reasoning live.  Use the
-            # turn-persistent flag (_reasoning_shown_this_turn) instead of
-            # _reasoning_stream_started — the latter gets reset during
-            # intermediate turn boundaries (tool-calling loops), which caused
-            # the reasoning box to re-render after the final response.
-            _reasoning_already_shown = getattr(self, '_reasoning_shown_this_turn', False)
-            if self.show_reasoning and result and not _reasoning_already_shown:
-                reasoning = result.get("last_reasoning")
-                if reasoning:
-                    w = self._scrollback_box_width()
-                    r_label = " Reasoning "
-                    r_fill = w - 2 - len(r_label)
-                    r_top = f"{_DIM}┌─{r_label}{'─' * max(r_fill - 1, 0)}┐{_RST}"
-                    r_bot = f"{_DIM}└{'─' * (w - 2)}┘{_RST}"
-                    # Collapse long reasoning to the first 10 lines unless the
-                    # user opted into full display via /reasoning full.
-                    lines = reasoning.strip().splitlines()
-                    if len(lines) > 10 and not getattr(self, "reasoning_full", False):
-                        display_reasoning = "\n".join(lines[:10])
-                        display_reasoning += f"\n{_DIM}  ... ({len(lines) - 10} more lines — /reasoning full to show){_RST}"
-                    else:
-                        display_reasoning = reasoning.strip()
-                    _cprint(f"\n{r_top}\n{_DIM}{display_reasoning}{_RST}\n{r_bot}")
+            self._chat_render_reasoning(result)
 
-            if response and not response_previewed:
-                # Use skin engine for label/color with fallback
-                try:
-                    from opencodon.frontends.cli.skin_engine import get_active_skin
-                    _skin = get_active_skin()
-                    label = _skin.get_branding("response_label", "⚕ opencodon")
-                    _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
-                    _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
-                except Exception:
-                    label = "⚕ opencodon"
-                    _resp_color = _maybe_remap_for_light_mode("#CD7F32")
-                    _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
-
-                is_error_response = result and (result.get("failed") or result.get("partial"))
-                already_streamed = self._stream_started and self._stream_box_opened and not is_error_response
-                if use_streaming_tts and _streaming_box_opened and not is_error_response:
-                    # Text was already printed sentence-by-sentence; just close the box
-                    w = self._scrollback_box_width()
-                    _cprint(f"\n{_ACCENT}╰{'─' * (w - 2)}╯{_RST}")
-                elif already_streamed:
-                    # Response was already streamed token-by-token with box framing;
-                    # _flush_stream() already closed the box. Skip Rich Panel.
-                    pass
-                else:
-                    _chat_console = ChatConsole()
-                    _chat_console.print(Panel(
-                        _render_final_assistant_content(response, mode=self.final_response_markdown),
-                        title=f"[{_resp_color} bold]{label}[/]",
-                        title_align="left",
-                        border_style=_resp_color,
-                        style=_resp_text,
-                        box=rich_box.HORIZONTALS,
-                        padding=(1, 4),
-                        width=self._scrollback_box_width(),
-                    ))
-
-                # Durable, provider-agnostic billing CTA below the response. The
-                # response panel carries the full guidance; this pins the single
-                # action to take (the provider's billing page) so it stays
-                # visible instead of scrolling away as prose.
-                if result and result.get("failure_reason") == "billing":
-                    _bb = result.get("billing_block") or {}
-                    _prov_label = _bb.get("provider_label") or "your provider"
-                    _url = _bb.get("billing_url")
-                    _cta_lines = [
-                        f"Add credits with {_prov_label}"
-                        + (f": [bold]{_url}[/]" if _url else ".")
-                    ]
-                    _cta_lines.append(
-                        "Or switch providers with "
-                        "[bold]/model <model> --provider <provider>[/]."
-                    )
-                    try:
-                        ChatConsole().print(Panel(
-                            "\n".join(_cta_lines),
-                            title="[#CD7F32 bold]⚡ Out of credits[/]",
-                            title_align="left",
-                            border_style="#CD7F32",
-                            box=rich_box.HORIZONTALS,
-                            padding=(1, 4),
-                            width=self._scrollback_box_width(),
-                        ))
-                    except Exception:
-                        pass
+            self._chat_render_response(
+                response, result, use_streaming_tts, _streaming_box_opened, response_previewed
+            )
 
 
             # Play terminal bell when agent finishes (if enabled).
@@ -6565,28 +6236,7 @@ class OpencodonCLI(
                 self._voice_speak_response_async(response)
 
 
-            # Re-queue the interrupt message (and any that arrived while we were
-            # processing the first) as the next prompt for process_loop.
-            # Only reached when busy_input_mode == "interrupt" (the default).
-            # In "queue" mode Enter routes directly to _pending_input so this
-            # block is never hit.
-            if pending_message and hasattr(self, '_pending_input'):
-                all_parts = [pending_message]
-                while not self._interrupt_queue.empty():
-                    try:
-                        extra = self._interrupt_queue.get_nowait()
-                        if extra:
-                            all_parts.append(extra)
-                    except queue.Empty:
-                        break
-                combined = "\n".join(all_parts)
-                n = len(all_parts)
-                preview = combined[:50] + ("..." if len(combined) > 50 else "")
-                if n > 1:
-                    print(f"\n⚡ Sending {n} messages after interrupt: '{preview}'")
-                else:
-                    print(f"\n⚡ Sending after interrupt: '{preview}'")
-                self._pending_input.put(combined)
+            self._chat_requeue_after_interrupt(pending_message)
 
             # If a /steer was left over (agent finished before another tool
             # batch could absorb it), deliver it as the next user turn.
@@ -6615,6 +6265,469 @@ class OpencodonCLI(
                 stop_event.set()
             if tts_thread is not None and tts_thread.is_alive():
                 tts_thread.join(timeout=5)
+
+    def _chat_requeue_after_interrupt(self, pending_message):
+        """Verbatim from chat(): re-queue interrupt message(s) as the next turn."""
+        # Re-queue the interrupt message (and any that arrived while we were
+        # processing the first) as the next prompt for process_loop.
+        # Only reached when busy_input_mode == "interrupt" (the default).
+        # In "queue" mode Enter routes directly to _pending_input so this
+        # block is never hit.
+        if pending_message and hasattr(self, '_pending_input'):
+            all_parts = [pending_message]
+            while not self._interrupt_queue.empty():
+                try:
+                    extra = self._interrupt_queue.get_nowait()
+                    if extra:
+                        all_parts.append(extra)
+                except queue.Empty:
+                    break
+            combined = "\n".join(all_parts)
+            n = len(all_parts)
+            preview = combined[:50] + ("..." if len(combined) > 50 else "")
+            if n > 1:
+                print(f"\n⚡ Sending {n} messages after interrupt: '{preview}'")
+            else:
+                print(f"\n⚡ Sending after interrupt: '{preview}'")
+            self._pending_input.put(combined)
+
+    def _chat_render_response(self, response, result, use_streaming_tts, _streaming_box_opened, response_previewed):
+        """Verbatim from chat(): render the final response box + billing CTA."""
+        if response and not response_previewed:
+            # Use skin engine for label/color with fallback
+            try:
+                from opencodon.frontends.cli.skin_engine import get_active_skin
+                _skin = get_active_skin()
+                label = _skin.get_branding("response_label", "⚕ opencodon")
+                _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
+                _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
+            except Exception:
+                label = "⚕ opencodon"
+                _resp_color = _maybe_remap_for_light_mode("#CD7F32")
+                _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
+
+            is_error_response = result and (result.get("failed") or result.get("partial"))
+            already_streamed = self._stream_started and self._stream_box_opened and not is_error_response
+            if use_streaming_tts and _streaming_box_opened and not is_error_response:
+                # Text was already printed sentence-by-sentence; just close the box
+                w = self._scrollback_box_width()
+                _cprint(f"\n{_ACCENT}╰{'─' * (w - 2)}╯{_RST}")
+            elif already_streamed:
+                # Response was already streamed token-by-token with box framing;
+                # _flush_stream() already closed the box. Skip Rich Panel.
+                pass
+            else:
+                _chat_console = ChatConsole()
+                _chat_console.print(Panel(
+                    _render_final_assistant_content(response, mode=self.final_response_markdown),
+                    title=f"[{_resp_color} bold]{label}[/]",
+                    title_align="left",
+                    border_style=_resp_color,
+                    style=_resp_text,
+                    box=rich_box.HORIZONTALS,
+                    padding=(1, 4),
+                    width=self._scrollback_box_width(),
+                ))
+
+            # Durable, provider-agnostic billing CTA below the response. The
+            # response panel carries the full guidance; this pins the single
+            # action to take (the provider's billing page) so it stays
+            # visible instead of scrolling away as prose.
+            if result and result.get("failure_reason") == "billing":
+                _bb = result.get("billing_block") or {}
+                _prov_label = _bb.get("provider_label") or "your provider"
+                _url = _bb.get("billing_url")
+                _cta_lines = [
+                    f"Add credits with {_prov_label}"
+                    + (f": [bold]{_url}[/]" if _url else ".")
+                ]
+                _cta_lines.append(
+                    "Or switch providers with "
+                    "[bold]/model <model> --provider <provider>[/]."
+                )
+                try:
+                    ChatConsole().print(Panel(
+                        "\n".join(_cta_lines),
+                        title="[#CD7F32 bold]⚡ Out of credits[/]",
+                        title_align="left",
+                        border_style="#CD7F32",
+                        box=rich_box.HORIZONTALS,
+                        padding=(1, 4),
+                        width=self._scrollback_box_width(),
+                    ))
+                except Exception:
+                    pass
+
+    def _chat_render_reasoning(self, result):
+        """Verbatim from chat(): render the collapsed reasoning box."""
+        # Display reasoning (thinking) box if enabled and available.
+        # Skip when streaming already showed reasoning live.  Use the
+        # turn-persistent flag (_reasoning_shown_this_turn) instead of
+        # _reasoning_stream_started — the latter gets reset during
+        # intermediate turn boundaries (tool-calling loops), which caused
+        # the reasoning box to re-render after the final response.
+        _reasoning_already_shown = getattr(self, '_reasoning_shown_this_turn', False)
+        if self.show_reasoning and result and not _reasoning_already_shown:
+            reasoning = result.get("last_reasoning")
+            if reasoning:
+                w = self._scrollback_box_width()
+                r_label = " Reasoning "
+                r_fill = w - 2 - len(r_label)
+                r_top = f"{_DIM}┌─{r_label}{'─' * max(r_fill - 1, 0)}┐{_RST}"
+                r_bot = f"{_DIM}└{'─' * (w - 2)}┘{_RST}"
+                # Collapse long reasoning to the first 10 lines unless the
+                # user opted into full display via /reasoning full.
+                lines = reasoning.strip().splitlines()
+                if len(lines) > 10 and not getattr(self, "reasoning_full", False):
+                    display_reasoning = "\n".join(lines[:10])
+                    display_reasoning += f"\n{_DIM}  ... ({len(lines) - 10} more lines — /reasoning full to show){_RST}"
+                else:
+                    display_reasoning = reasoning.strip()
+                _cprint(f"\n{r_top}\n{_DIM}{display_reasoning}{_RST}\n{r_bot}")
+
+    def _chat_resolve_interrupt(self, result, response, interrupt_msg, agent_thread):
+        """Verbatim from chat(): compute pending_message / interrupt bookkeeping."""
+        # Handle interrupt - check if we were interrupted
+        pending_message = None
+        _interrupted_this_turn = bool(result and result.get("interrupted"))
+        # Expose the flag for post-turn hooks (e.g. goal continuation)
+        # so they can skip themselves when the turn was user-cancelled.
+        self._last_turn_interrupted = _interrupted_this_turn
+        if _interrupted_this_turn:
+            pending_message = result.get("interrupt_message") or interrupt_msg
+            # Add indicator that we were interrupted
+            if response and pending_message:
+                response = response + "\n\n---\n_[Interrupted - processing new message]_"
+        elif interrupt_msg:
+            # We fired agent.interrupt(interrupt_msg) but the turn result
+            # doesn't acknowledge it. Two ways this happens, both racy:
+            #   1. The agent thread had already passed its last interrupt
+            #      check (or finished) when the interrupt landed — the turn
+            #      completed normally and finalize_turn() never saw the flag.
+            #   2. The 10s post-interrupt wait above expired and we
+            #      abandoned the daemon thread; `result` is still None.
+            # In both cases the user's message must NOT be dropped —
+            # re-queue it as the next turn (#interrupt-vacuumed-into-void).
+            pending_message = interrupt_msg
+            # If the interrupt landed after finalize_turn()'s
+            # clear_interrupt(), the stale flag would instantly abort the
+            # NEXT turn at its first loop check. Clear it now that we've
+            # claimed the message — but ONLY if the agent thread actually
+            # exited. If it's still alive (abandoned after the 10s wait),
+            # the flag is what makes the wedged tool eventually unwind;
+            # clearing it would un-signal that thread.
+            try:
+                if (
+                    not agent_thread.is_alive()
+                    and self.agent
+                    and getattr(self.agent, "_interrupt_requested", False)
+                ):
+                    self.agent.clear_interrupt()
+            except Exception:
+                pass
+        return response, pending_message
+
+    def _chat_monitor_interrupts(self, agent_thread, stop_event):
+        """Verbatim from chat(): watch the interrupt queue while the agent runs."""
+        # Monitor the dedicated interrupt queue while the agent runs.
+        # _interrupt_queue is separate from _pending_input, so process_loop
+        # and chat() never compete for the same queue.
+        # When a clarify question is active, user input is handled entirely
+        # by the Enter key binding (routed to the clarify response queue),
+        # so we skip interrupt processing to avoid stealing that input.
+        interrupt_msg = None
+        while agent_thread.is_alive():
+            if hasattr(self, '_interrupt_queue'):
+                try:
+                    interrupt_msg = self._interrupt_queue.get(timeout=0.1)
+                    if interrupt_msg:
+                        # If clarify is active, the Enter handler routes
+                        # input directly; this queue shouldn't have anything.
+                        # But if it does (race condition), don't interrupt —
+                        # and don't drop the message either: park it in
+                        # _pending_input so it runs as the next turn.
+                        if self._clarify_state or self._clarify_freetext:
+                            try:
+                                self._pending_input.put(interrupt_msg)
+                            except Exception:
+                                pass
+                            interrupt_msg = None
+                            continue
+                        print("\n⚡ New message detected, interrupting...")
+                        # Signal TTS to stop on interrupt
+                        if stop_event is not None:
+                            stop_event.set()
+                        self.agent.interrupt(interrupt_msg)
+                        # Clear any active overlay states the interrupted agent
+                        # left behind.  approval/clarify/sudo/secret prompts gate
+                        # input (read_only condition + keypress filter) until
+                        # explicitly reset — without this the CLI freezes after
+                        # an interrupt until the prompt's own timeout expires (#14026).
+                        self._clear_active_overlays_for_interrupt()
+                        # Debug: log to file (stdout may be devnull from redirect_stdout)
+                        try:
+                            _dbg = _opencodon_home / "interrupt_debug.log"
+                            with open(_dbg, "a", encoding="utf-8") as _f:
+                                _f.write(f"{time.strftime('%H:%M:%S')} interrupt fired: msg={str(interrupt_msg)[:60]!r}, "
+                                         f"children={len(self.agent._active_children)}, "
+                                         f"parent._interrupt={self.agent._interrupt_requested}\n")
+                                for _ci, _ch in enumerate(self.agent._active_children):
+                                    _f.write(f"  child[{_ci}]._interrupt={_ch._interrupt_requested}\n")
+                        except Exception:
+                            pass
+                        break
+                except queue.Empty:
+                    # Force prompt_toolkit to flush any pending stdout
+                    # output from the agent thread.  Without this, the
+                    # StdoutProxy buffer only flushes on renderer passes
+                    # triggered by input events — on macOS this causes
+                    # the CLI to appear frozen until the user types. (#1624)
+                    self._invalidate(min_interval=0.15)
+            else:
+                # Fallback for non-interactive mode (e.g., single-query)
+                agent_thread.join(0.1)
+        return interrupt_msg
+
+    def _chat_agent_turn(self, message, _voice_prefix, stream_callback):
+        """Verbatim from chat()'s run_agent closure: one agent turn in a worker thread."""
+        result = None
+        # Set callbacks inside the agent thread so thread-local storage
+        # in terminal_tool is populated for this thread.  The main thread
+        # registration (run() line ~9046) is invisible here because
+        # _callback_tls is threading.local().  Matches the pattern used
+        # by acp_adapter/server.py for ACP sessions.
+        set_sudo_password_callback(self._sudo_password_callback)
+        set_approval_callback(self._approval_callback)
+        try:
+            set_secret_capture_callback(self._secret_capture_callback)
+        except Exception:
+            pass
+        # Bind this turn's approval session key into the contextvar so
+        # ``tools.approval.is_current_session_yolo_enabled()`` resolves
+        # against the same key that ``/yolo`` toggles under (see
+        # ``_toggle_yolo`` → ``enable_session_yolo(self.session_id)``).
+        # Mirrors ``tui_gateway/server.py`` and ``gateway/run.py`` which
+        # bind the same contextvar before invoking the agent.
+        try:
+            from opencodon.tools.approval import (
+                reset_current_session_key,
+                set_current_session_key,
+            )
+            _approval_session_token = set_current_session_key(
+                self.session_id or "default"
+            )
+        except Exception:
+            reset_current_session_key = None  # type: ignore[assignment]
+            _approval_session_token = None
+        agent_message = _voice_prefix + message if _voice_prefix else message
+        # Prepend pending notes via _prepend_note_to_message, which
+        # handles both plain-string and multimodal content-parts list
+        # messages. Naive ``note + "\n\n" + agent_message`` crashed with
+        # TypeError when an image was attached (agent_message is a list)
+        # and a /model or /reload-skills note was queued for the turn.
+        _msn = getattr(self, '_pending_model_switch_note', None)
+        if _msn:
+            agent_message = _prepend_note_to_message(agent_message, _msn)
+            self._pending_model_switch_note = None
+        # Prepend pending /reload-skills note so the model sees which
+        # skills were added/removed before handling this turn. Same
+        # one-shot queue pattern as the model-switch note above.
+        _srn = getattr(self, '_pending_skills_reload_note', None)
+        if _srn:
+            agent_message = _prepend_note_to_message(agent_message, _srn)
+            self._pending_skills_reload_note = None
+        # Barged mid-speech (VAD or record key)? Tell the model it was
+        # cut off — same one-shot, API-local note channel as above.
+        from opencodon.tools.tts_streaming import SPEECH_INTERRUPTED_NOTE, take_speech_interrupted
+        if take_speech_interrupted():
+            agent_message = _prepend_note_to_message(agent_message, SPEECH_INTERRUPTED_NOTE)
+        _moa_cfg = getattr(self, "_pending_moa_config", None)
+        self._pending_moa_config = None
+        if _moa_cfg is None:
+            _moa_cfg = None
+        # Model/skill notes and voice instructions are API-local. Keep
+        # the original staged input as the durable transcript value so a
+        # close-path marker follows the same dict into turn setup rather
+        # than producing a second noted user row (#63766).
+        _persist_clean_user_message = (
+            message if (_voice_prefix or agent_message != message) else None
+        )
+        _one_turn_model_restore = getattr(
+            self, "_pending_one_turn_model_restore", None
+        )
+        self._pending_one_turn_model_restore = None
+        try:
+            result = self.agent.run_conversation(
+                user_message=agent_message,
+                conversation_history=self.conversation_history[:-1],  # Exclude the message we just added
+                stream_callback=stream_callback,
+                task_id=self.session_id,
+                persist_user_message=_persist_clean_user_message,
+                moa_config=_moa_cfg,
+            )
+            if getattr(self, "_pending_moa_disable_after_turn", False):
+                _restore = getattr(self, "_pending_moa_restore_model", None) or {}
+                for _key, _value in _restore.items():
+                    if _value is not None:
+                        setattr(self, _key, _value)
+                self.agent = None
+                self._pending_moa_restore_model = None
+                self._pending_moa_disable_after_turn = False
+        except Exception as exc:
+            logging.error("run_conversation raised: %s", exc, exc_info=True)
+            _summary = getattr(self.agent, '_summarize_api_error', lambda e: str(e)[:300])(exc)
+            result = {
+                "final_response": f"Error: {_summary}",
+                "messages": [],
+                "api_calls": 0,
+                "completed": False,
+                "failed": True,
+                "error": _summary,
+            }
+        finally:
+            if _one_turn_model_restore:
+                self._restore_model_runtime_snapshot(_one_turn_model_restore)
+            # Surface any credit notices queued during the turn (cold-start
+            # seed / per-turn capture) now that the response is done — printing
+            # at this boundary paints cleanly above the prompt instead of being
+            # buried behind the streaming output.
+            self._flush_credit_notices()
+            # Clear thread-local callbacks so a reused thread doesn't
+            # hold stale references to a disposed CLI instance.
+            try:
+                set_sudo_password_callback(None)
+                set_approval_callback(None)
+                set_secret_capture_callback(None)
+            except Exception:
+                pass
+            # Release the per-turn approval session key. ``_session_yolo``
+            # state itself is preserved across turns (so /yolo persists
+            # for the whole CLI run); we just unbind the contextvar so a
+            # reused thread doesn't see stale identity on its next run.
+            if _approval_session_token is not None and reset_current_session_key is not None:
+                try:
+                    reset_current_session_key(_approval_session_token)
+                except Exception:
+                    pass
+        return result
+
+    def _chat_stage_user_message(self, agent, message):
+        """Verbatim from chat(): stage the user dict for turn-start persistence."""
+        # Keep the exact CLI input dict available until turn-start persistence.
+        # Copy the completed agent transcript before appending: otherwise this
+        # UI-only staging step mutates ``agent._session_messages`` and exposes a
+        # duplicate-prone intermediate snapshot to terminal-close persistence.
+        if self.conversation_history is getattr(agent, "_session_messages", None):
+            self.conversation_history = list(self.conversation_history)
+        # The prior turn's override applies only to its own user dict. Clear it
+        # before exposing the next staged input to close persistence; otherwise
+        # a shutdown before the worker prologue can write old API-local text as
+        # this new user message (#63766).
+        persist_lock = getattr(agent, "_session_persist_lock", None)
+
+        def _stage_user_message() -> None:
+            agent._persist_user_message_idx = None
+            agent._persist_user_message_override = None
+            agent._persist_user_message_timestamp = None
+            staged_user_message = {"role": "user", "content": message}
+            agent._pending_cli_user_message = staged_user_message
+            self.conversation_history.append(staged_user_message)
+
+        if persist_lock is None:
+            _stage_user_message()
+        else:
+            with persist_lock:
+                _stage_user_message()
+
+    def _chat_expand_context_refs(self, message):
+        """Verbatim from chat(): expand @file/@diff/@folder references."""
+        # Expand @ context references (e.g. @file:main.py, @diff, @folder:src/)
+        if not (isinstance(message, str) and "@" in message):
+            return None, message
+        try:
+            from opencodon.core.context.context_references import preprocess_context_references
+            from opencodon.core.providers.model_metadata import get_model_context_length
+            _ctx_len = get_model_context_length(
+                self.model, base_url=self.base_url or "", api_key=self.api_key or "",
+                provider=self.provider or "",
+                config_context_length=getattr(self.agent, "_config_context_length", None) if self.agent else None)
+            _ctx_result = preprocess_context_references(
+                message, cwd=os.getcwd(), context_length=_ctx_len)
+            if _ctx_result.expanded or _ctx_result.blocked:
+                if _ctx_result.references:
+                    _cprint(
+                        f"  {_DIM}[@ context: {len(_ctx_result.references)} ref(s), "
+                        f"{_ctx_result.injected_tokens} tokens]{_RST}")
+                for w in _ctx_result.warnings:
+                    _cprint(f"  {_DIM}⚠ {w}{_RST}")
+                if _ctx_result.blocked:
+                    return ("\n".join(_ctx_result.warnings) or "Context injection refused."), message
+                message = _ctx_result.message
+        except Exception as e:
+            logging.debug("@ context reference expansion failed: %s", e)
+        return None, message
+
+    def _chat_route_images(self, message, images):
+        """Verbatim from chat(): route image attachments by vision capability."""
+        # Route image attachments based on the active model's vision capability.
+        # "native" → pass pixels as OpenAI-style content parts (adapters
+        #            translate for Anthropic/Gemini/Bedrock).
+        # "text"   → pre-analyze each image with vision_analyze and prepend the
+        #            description as text — works with non-vision models.
+        # See agent/image_routing.py for the decision table.
+        if not images:
+            return message
+        try:
+            from opencodon.core.media.image_routing import (
+                build_native_content_parts,
+                decide_image_input_mode,
+            )
+            from opencodon.config import load_config
+
+            _img_mode = decide_image_input_mode(
+                (self.provider or "").strip(),
+                (self.model or "").strip(),
+                load_config(),
+            )
+        except Exception as _img_exc:
+            logging.debug("image_routing decision failed, defaulting to text: %s", _img_exc)
+            _img_mode = "text"
+
+        if _img_mode == "native":
+            try:
+                _text_for_parts = message if isinstance(message, str) else ""
+                _img_str_paths = [str(p) for p in images]
+                _parts, _skipped = build_native_content_parts(
+                    _text_for_parts,
+                    _img_str_paths,
+                )
+                if _skipped:
+                    _cprint(
+                        f"  {_DIM}⚠ skipped {len(_skipped)} unreadable image path(s){_RST}"
+                    )
+                if any(p.get("type") == "image_url" for p in _parts):
+                    _img_names = ", ".join(Path(p).name for p in _img_str_paths)
+                    _cprint(
+                        f"  {_DIM}📎 attaching {len(images)} image(s) natively "
+                        f"(model supports vision): {_img_names}{_RST}"
+                    )
+                    message = _parts
+                else:
+                    # All images unreadable — fall back to text enrichment.
+                    message = self._preprocess_images_with_vision(
+                        message if isinstance(message, str) else "", images
+                    )
+            except Exception as _img_exc:
+                logging.warning("native image attach failed, falling back to text: %s", _img_exc)
+                message = self._preprocess_images_with_vision(
+                    message if isinstance(message, str) else "", images
+                )
+        else:
+            message = self._preprocess_images_with_vision(
+                message if isinstance(message, str) else "", images
+            )
+        return message
+
     
 
 
@@ -6839,226 +6952,7 @@ class OpencodonCLI(
             return None
 
         def handle_enter(event):
-            """Handle Enter key - submit input.
-            
-            Routes to the correct queue based on active UI state:
-            - Sudo password prompt: password goes to sudo response queue
-            - Approval selection: selected choice goes to approval response queue
-            - Clarify freetext mode: answer goes to the clarify response queue
-            - Clarify choice mode: selected choice goes to the clarify response queue
-            - Agent running: goes to _interrupt_queue (chat() monitors this)
-            - Agent idle: goes to _pending_input (process_loop monitors this)
-            Commands (starting with /) always go to _pending_input so they're
-            handled as commands, not sent as interrupt text to the agent.
-            """
-            # --- Sudo password prompt: submit the typed password ---
-            if self._sudo_state:
-                text = event.app.current_buffer.text
-                self._sudo_state["response_queue"].put(text)
-                self._sudo_state = None
-                event.app.invalidate()
-                return
-
-            # --- Secret prompt: submit the typed secret ---
-            if self._secret_state:
-                text = event.app.current_buffer.text
-                self._submit_secret_response(text)
-                event.app.current_buffer.reset()
-                event.app.invalidate()
-                return
-
-            # --- Approval selection: confirm the highlighted choice ---
-            if self._approval_state:
-                self._handle_approval_selection()
-                event.app.invalidate()
-                return
-
-            # --- Slash-command confirmation: submit typed or highlighted choice ---
-            if self._slash_confirm_state:
-                text = event.app.current_buffer.text.strip()
-                choices = self._slash_confirm_state.get("choices") or []
-                choice = self._normalize_slash_confirm_choice(text, choices) if text else None
-                if choice is None:
-                    selected = self._slash_confirm_state.get("selected", 0)
-                    if 0 <= selected < len(choices):
-                        choice = choices[selected][0]
-                self._submit_slash_confirm_response(choice or "cancel")
-                event.app.current_buffer.reset()
-                event.app.invalidate()
-                return
-
-            # --- /model picker modal ---
-            if self._model_picker_state:
-                try:
-                    # Picker selections follow the same session-scoped default
-                    # as /model <name>; honour model.persist_switch_by_default.
-                    from opencodon.frontends.cli.model_switch import resolve_persist_behavior
-
-                    self._handle_model_picker_selection(
-                        persist_global=resolve_persist_behavior(False, False)
-                    )
-                except Exception as _exc:
-                    _cprint(f"  ✗ Model selection failed: {_exc}")
-                    self._close_model_picker()
-                event.app.current_buffer.reset()
-                event.app.invalidate()
-                return
-
-            # --- Clarify freetext mode: user typed their own answer ---
-            if self._clarify_freetext and self._clarify_state:
-                text = event.app.current_buffer.text.strip()
-                if text:
-                    self._clarify_state["response_queue"].put(text)
-                    self._clarify_state = None
-                    self._clarify_freetext = False
-                    event.app.current_buffer.reset()
-                    event.app.invalidate()
-                return
-
-            # --- Clarify choice mode: confirm the highlighted selection ---
-            if self._clarify_state and not self._clarify_freetext:
-                state = self._clarify_state
-                selected = state["selected"]
-                choices = state.get("choices") or []
-                if selected < len(choices):
-                    state["response_queue"].put(choices[selected])
-                    self._clarify_state = None
-                    event.app.invalidate()
-                else:
-                    # "Other" selected → switch to freetext
-                    self._clarify_freetext = True
-                    event.app.invalidate()
-                return
-
-            # --- Normal input routing ---
-            text = event.app.current_buffer.text.strip()
-            has_images = bool(self._attached_images)
-            if text or has_images:
-                # Handle /model directly on the UI thread so interactive pickers
-                # can safely use prompt_toolkit terminal handoff helpers.
-                if self._should_handle_model_command_inline(text, has_images=has_images):
-                    if not self.process_command(text):
-                        self._should_exit = True
-                        if event.app.is_running:
-                            event.app.exit()
-                    event.app.current_buffer.reset(append_to_history=True)
-                    # Force a repaint: process_command() prints through
-                    # patch_stdout (scrolls output above the prompt) and never
-                    # invalidates the app, so the just-cleared input area can
-                    # keep showing the submitted text until some unrelated
-                    # redraw fires. Every other early-return branch in this
-                    # handler invalidates after reset — match them.
-                    event.app.invalidate()
-                    return
-
-                # Handle /steer while the agent is running immediately on the
-                # UI thread.  Queuing through _pending_input would deadlock the
-                # steer until after the agent loop finishes (process_loop is
-                # blocked inside self.chat()), which turns /steer into a
-                # post-run next-turn message — defeating mid-run injection.
-                # agent.steer() is thread-safe (holds _pending_steer_lock).
-                if self._should_handle_steer_command_inline(text, has_images=has_images):
-                    self.process_command(text)
-                    event.app.current_buffer.reset(append_to_history=True)
-                    # Force a repaint after clearing the buffer.  /steer is
-                    # dispatched mid-run while the agent streams output through
-                    # patch_stdout; process_command() never invalidates the
-                    # app, so without this the submitted "/steer <text>" can
-                    # linger in the input area (looking unsent) and invite an
-                    # accidental re-submit. See issue #34569.
-                    event.app.invalidate()
-                    return
-
-                # Snapshot and clear attached images
-                images = list(self._attached_images)
-                self._attached_images.clear()
-                event.app.invalidate()
-                # Bundle text + images as a tuple when images are present
-                payload = (text, images) if images else text
-                if self._agent_running and not (text and _looks_like_slash_command(text)):
-                    _effective_mode = self.busy_input_mode
-                    redirected = False
-                    if _effective_mode == "steer":
-                        # Route Enter through /steer — inject mid-run after the
-                        # next tool call.  Images can't ride along (steer only
-                        # appends text), so fall back to queue when images are
-                        # attached.  If the agent lacks steer() or rejects the
-                        # payload, also fall back to queue so nothing is lost.
-                        if images or not text:
-                            _effective_mode = "queue"
-                        else:
-                            accepted = False
-                            try:
-                                if self.agent is not None and hasattr(self.agent, "steer"):
-                                    accepted = bool(self.agent.steer(text))
-                            except Exception as exc:
-                                _cprint(f"  {_DIM}Steer failed ({exc}) — queued for next turn.{_RST}")
-                                accepted = False
-                            if accepted:
-                                preview = text[:80] + ("..." if len(text) > 80 else "")
-                                _cprint(f"  {_ACCENT}⏩ Steered: '{preview}'{_RST}")
-                            else:
-                                _effective_mode = "queue"
-                    if _effective_mode == "queue":
-                        # Queue for the next turn instead of interrupting
-                        self._pending_input.put(payload)
-                        preview = text if text else f"[{len(images)} image{'s' if len(images) != 1 else ''} attached]"
-                        _cprint(f"  Queued for the next turn: {preview[:80]}{'...' if len(preview) > 80 else ''}")
-                    elif _effective_mode == "interrupt":
-                        if not images and text:
-                            try:
-                                if (
-                                    self.agent is not None
-                                    and getattr(
-                                        self.agent,
-                                        "_supports_active_turn_redirect",
-                                        False,
-                                    )
-                                    is True
-                                    and hasattr(self.agent, "redirect")
-                                ):
-                                    redirected = bool(self.agent.redirect(text))
-                            except Exception:
-                                redirected = False
-                        if redirected:
-                            preview = text[:80] + ("..." if len(text) > 80 else "")
-                            _cprint(f"  {_ACCENT}↪ Redirected current turn: '{preview}'{_RST}")
-                        else:
-                            # Compatibility path for older agents, multimodal
-                            # follow-ups, or a turn that finished in the race.
-                            self._interrupt_queue.put(payload)
-                            try:
-                                _dbg = _opencodon_home / "interrupt_debug.log"
-                                with open(_dbg, "a", encoding="utf-8") as _f:
-                                    _f.write(f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
-                                             f"agent_running={self._agent_running}\n")
-                            except Exception:
-                                pass
-                    # First-touch onboarding: on the very first busy-while-running
-                    # event for this install, print a one-line tip explaining the
-                    # /busy knob.  Flag persists to config.yaml and never fires
-                    # again.  Guarded for exceptions so onboarding can't break
-                    # the input loop.
-                    try:
-                        from opencodon.core.onboarding import (
-                            BUSY_INPUT_FLAG,
-                            busy_input_hint_cli,
-                            is_seen,
-                            mark_seen,
-                        )
-                        if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
-                            _hint_mode = "redirect" if redirected else _effective_mode
-                            _cprint(f"  {_DIM}{busy_input_hint_cli(_hint_mode)}{_RST}")
-                            mark_seen(_opencodon_home / "config.yaml", BUSY_INPUT_FLAG)
-                            CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
-                    except Exception:
-                        pass
-                else:
-                    self._pending_input.put(payload)
-                # History stores real pasted content, not the placeholder, so
-                # up-arrow recall restores the actual text.
-                self._inline_pastes(event.app.current_buffer)
-                event.app.current_buffer.reset(append_to_history=True)
+            self._repl_handle_enter(event)
 
         _bind_prompt_submit_keys(kb, handle_enter)
         
@@ -8850,81 +8744,7 @@ class OpencodonCLI(
         
         # Register signal handlers for graceful shutdown on SSH disconnect / SIGTERM
         def _signal_handler(signum, frame):
-            """Handle SIGHUP/SIGTERM by triggering graceful cleanup.
-
-            Calls ``self.agent.interrupt()`` first so the agent daemon
-            thread's poll loop sees the per-thread interrupt and kills the
-            tool's subprocess group via ``_kill_process`` (os.killpg).
-            Without this, the main thread dies from KeyboardInterrupt and
-            the daemon thread is killed with it — before it can run one
-            more poll iteration to clean up the subprocess, which was
-            spawned with ``os.setsid`` and therefore survives as an orphan
-            with PPID=1.
-
-            Grace window (``OPENCODON_SIGTERM_GRACE``, default 1.5 s) gives
-            the daemon time to: detect the interrupt (next 200 ms poll) →
-            call _kill_process (SIGTERM + 1 s wait + SIGKILL if needed) →
-            return from _wait_for_process.  ``time.sleep`` releases the
-            GIL so the daemon actually runs during the window.
-
-            Guarded ``logger.debug``: CPython's ``logging`` module is not
-            reentrant-safe.  ``Logger.isEnabledFor`` caches level results
-            in ``Logger._cache``; under shutdown races the cache can be
-            cleared (``_clear_cache``) or mid-mutation when the signal
-            fires, raising ``KeyError: <level_int>`` (e.g. ``KeyError: 10``
-            for DEBUG) inside the handler.  That KeyError then escapes
-            before ``raise KeyboardInterrupt()`` can fire, which bypasses
-            prompt_toolkit's normal interrupt unwind and surfaces as the
-            EIO cascade from issue #13710.  Wrap the log in a bare
-            ``try/except`` so the handler can never raise through it.
-            """
-            try:
-                logger.debug("Received signal %s, triggering graceful shutdown", signum)
-            except Exception:
-                pass  # never let logging raise from a signal handler (#13710 regression)
-            # Shutdown intent is now unambiguous — arm the exit backstop
-            # IMMEDIATELY, before the graceful unwind below.  If any step of
-            # that unwind wedges (main thread parked in a syscall, prompt_toolkit
-            # teardown never returning), _run_cleanup never runs and would
-            # never arm its own watchdog — leaving a "dead" CLI alive for
-            # minutes (#65998 class).  Never raises.
-            _arm_exit_watchdog_on_shutdown_signal()
-            try:
-                if getattr(self, "agent", None) and getattr(self, "_agent_running", False):
-                    self.agent.interrupt(f"received signal {signum}")
-                    try:
-                        _grace = float(os.getenv("OPENCODON_SIGTERM_GRACE", "1.5"))
-                    except (TypeError, ValueError):
-                        _grace = 1.5
-                    if _grace > 0:
-                        time.sleep(_grace)
-            except Exception:
-                pass  # never block signal handling
-            # Prefer a clean prompt_toolkit exit over `raise KeyboardInterrupt()`.
-            # Raising KBI from a signal handler unwinds into whatever Python
-            # frame the interpreter happens to be running — typically an
-            # `await asyncio.sleep()` inside prompt_toolkit's
-            # `_poll_output_size` coroutine.  The KBI becomes a Task
-            # exception, prompt_toolkit's `_handle_exception` prints
-            # "Unhandled exception in event loop" + the full traceback, and
-            # parks the terminal on "Press ENTER to continue..." (#13710
-            # variant — same root cause, different surface).
-            #
-            # `app.exit()` scheduled via `call_soon_threadsafe` lets the
-            # event loop unwind normally; `app.run()` returns and our
-            # existing `except (EOFError, KeyboardInterrupt, BrokenPipeError)`
-            # block at the bottom of the input loop handles the rest.
-            try:
-                from prompt_toolkit.application.current import get_app_or_none
-                _app = get_app_or_none()
-                if _app is not None:
-                    _loop = getattr(_app, "loop", None)
-                    if _loop is not None:
-                        _loop.call_soon_threadsafe(_app.exit)
-                        return  # clean unwind — no traceback, no ENTER pause
-            except Exception:
-                pass
-            raise KeyboardInterrupt()  # fallback for non-prompt_toolkit contexts
+            self._repl_signal_handler(signum, frame)
         
         try:
             import signal as _signal
@@ -9163,6 +8983,308 @@ class OpencodonCLI(
         if getattr(self, '_pending_relaunch', None):
             from opencodon.frontends.cli.relaunch import relaunch
             relaunch(self._pending_relaunch, preserve_inherited=False)
+
+    def _repl_signal_handler(self, signum, frame):
+        """Verbatim from run()'s _signal_handler closure: graceful shutdown on SIGHUP/SIGTERM."""
+        """Handle SIGHUP/SIGTERM by triggering graceful cleanup.
+
+        Calls ``self.agent.interrupt()`` first so the agent daemon
+        thread's poll loop sees the per-thread interrupt and kills the
+        tool's subprocess group via ``_kill_process`` (os.killpg).
+        Without this, the main thread dies from KeyboardInterrupt and
+        the daemon thread is killed with it — before it can run one
+        more poll iteration to clean up the subprocess, which was
+        spawned with ``os.setsid`` and therefore survives as an orphan
+        with PPID=1.
+
+        Grace window (``OPENCODON_SIGTERM_GRACE``, default 1.5 s) gives
+        the daemon time to: detect the interrupt (next 200 ms poll) →
+        call _kill_process (SIGTERM + 1 s wait + SIGKILL if needed) →
+        return from _wait_for_process.  ``time.sleep`` releases the
+        GIL so the daemon actually runs during the window.
+
+        Guarded ``logger.debug``: CPython's ``logging`` module is not
+        reentrant-safe.  ``Logger.isEnabledFor`` caches level results
+        in ``Logger._cache``; under shutdown races the cache can be
+        cleared (``_clear_cache``) or mid-mutation when the signal
+        fires, raising ``KeyError: <level_int>`` (e.g. ``KeyError: 10``
+        for DEBUG) inside the handler.  That KeyError then escapes
+        before ``raise KeyboardInterrupt()`` can fire, which bypasses
+        prompt_toolkit's normal interrupt unwind and surfaces as the
+        EIO cascade from issue #13710.  Wrap the log in a bare
+        ``try/except`` so the handler can never raise through it.
+        """
+        try:
+            logger.debug("Received signal %s, triggering graceful shutdown", signum)
+        except Exception:
+            pass  # never let logging raise from a signal handler (#13710 regression)
+        # Shutdown intent is now unambiguous — arm the exit backstop
+        # IMMEDIATELY, before the graceful unwind below.  If any step of
+        # that unwind wedges (main thread parked in a syscall, prompt_toolkit
+        # teardown never returning), _run_cleanup never runs and would
+        # never arm its own watchdog — leaving a "dead" CLI alive for
+        # minutes (#65998 class).  Never raises.
+        _arm_exit_watchdog_on_shutdown_signal()
+        try:
+            if getattr(self, "agent", None) and getattr(self, "_agent_running", False):
+                self.agent.interrupt(f"received signal {signum}")
+                try:
+                    _grace = float(os.getenv("OPENCODON_SIGTERM_GRACE", "1.5"))
+                except (TypeError, ValueError):
+                    _grace = 1.5
+                if _grace > 0:
+                    time.sleep(_grace)
+        except Exception:
+            pass  # never block signal handling
+        # Prefer a clean prompt_toolkit exit over `raise KeyboardInterrupt()`.
+        # Raising KBI from a signal handler unwinds into whatever Python
+        # frame the interpreter happens to be running — typically an
+        # `await asyncio.sleep()` inside prompt_toolkit's
+        # `_poll_output_size` coroutine.  The KBI becomes a Task
+        # exception, prompt_toolkit's `_handle_exception` prints
+        # "Unhandled exception in event loop" + the full traceback, and
+        # parks the terminal on "Press ENTER to continue..." (#13710
+        # variant — same root cause, different surface).
+        #
+        # `app.exit()` scheduled via `call_soon_threadsafe` lets the
+        # event loop unwind normally; `app.run()` returns and our
+        # existing `except (EOFError, KeyboardInterrupt, BrokenPipeError)`
+        # block at the bottom of the input loop handles the rest.
+        try:
+            from prompt_toolkit.application.current import get_app_or_none
+            _app = get_app_or_none()
+            if _app is not None:
+                _loop = getattr(_app, "loop", None)
+                if _loop is not None:
+                    _loop.call_soon_threadsafe(_app.exit)
+                    return  # clean unwind — no traceback, no ENTER pause
+        except Exception:
+            pass
+        raise KeyboardInterrupt()  # fallback for non-prompt_toolkit contexts
+
+    def _repl_handle_enter(self, event):
+        """Verbatim from run()'s handle_enter closure: route Enter by active UI state."""
+        """Handle Enter key - submit input.
+
+        Routes to the correct queue based on active UI state:
+        - Sudo password prompt: password goes to sudo response queue
+        - Approval selection: selected choice goes to approval response queue
+        - Clarify freetext mode: answer goes to the clarify response queue
+        - Clarify choice mode: selected choice goes to the clarify response queue
+        - Agent running: goes to _interrupt_queue (chat() monitors this)
+        - Agent idle: goes to _pending_input (process_loop monitors this)
+        Commands (starting with /) always go to _pending_input so they're
+        handled as commands, not sent as interrupt text to the agent.
+        """
+        # --- Sudo password prompt: submit the typed password ---
+        if self._sudo_state:
+            text = event.app.current_buffer.text
+            self._sudo_state["response_queue"].put(text)
+            self._sudo_state = None
+            event.app.invalidate()
+            return
+
+        # --- Secret prompt: submit the typed secret ---
+        if self._secret_state:
+            text = event.app.current_buffer.text
+            self._submit_secret_response(text)
+            event.app.current_buffer.reset()
+            event.app.invalidate()
+            return
+
+        # --- Approval selection: confirm the highlighted choice ---
+        if self._approval_state:
+            self._handle_approval_selection()
+            event.app.invalidate()
+            return
+
+        # --- Slash-command confirmation: submit typed or highlighted choice ---
+        if self._slash_confirm_state:
+            text = event.app.current_buffer.text.strip()
+            choices = self._slash_confirm_state.get("choices") or []
+            choice = self._normalize_slash_confirm_choice(text, choices) if text else None
+            if choice is None:
+                selected = self._slash_confirm_state.get("selected", 0)
+                if 0 <= selected < len(choices):
+                    choice = choices[selected][0]
+            self._submit_slash_confirm_response(choice or "cancel")
+            event.app.current_buffer.reset()
+            event.app.invalidate()
+            return
+
+        # --- /model picker modal ---
+        if self._model_picker_state:
+            try:
+                # Picker selections follow the same session-scoped default
+                # as /model <name>; honour model.persist_switch_by_default.
+                from opencodon.frontends.cli.model_switch import resolve_persist_behavior
+
+                self._handle_model_picker_selection(
+                    persist_global=resolve_persist_behavior(False, False)
+                )
+            except Exception as _exc:
+                _cprint(f"  ✗ Model selection failed: {_exc}")
+                self._close_model_picker()
+            event.app.current_buffer.reset()
+            event.app.invalidate()
+            return
+
+        # --- Clarify freetext mode: user typed their own answer ---
+        if self._clarify_freetext and self._clarify_state:
+            text = event.app.current_buffer.text.strip()
+            if text:
+                self._clarify_state["response_queue"].put(text)
+                self._clarify_state = None
+                self._clarify_freetext = False
+                event.app.current_buffer.reset()
+                event.app.invalidate()
+            return
+
+        # --- Clarify choice mode: confirm the highlighted selection ---
+        if self._clarify_state and not self._clarify_freetext:
+            state = self._clarify_state
+            selected = state["selected"]
+            choices = state.get("choices") or []
+            if selected < len(choices):
+                state["response_queue"].put(choices[selected])
+                self._clarify_state = None
+                event.app.invalidate()
+            else:
+                # "Other" selected → switch to freetext
+                self._clarify_freetext = True
+                event.app.invalidate()
+            return
+
+        # --- Normal input routing ---
+        text = event.app.current_buffer.text.strip()
+        has_images = bool(self._attached_images)
+        if text or has_images:
+            # Handle /model directly on the UI thread so interactive pickers
+            # can safely use prompt_toolkit terminal handoff helpers.
+            if self._should_handle_model_command_inline(text, has_images=has_images):
+                if not self.process_command(text):
+                    self._should_exit = True
+                    if event.app.is_running:
+                        event.app.exit()
+                event.app.current_buffer.reset(append_to_history=True)
+                # Force a repaint: process_command() prints through
+                # patch_stdout (scrolls output above the prompt) and never
+                # invalidates the app, so the just-cleared input area can
+                # keep showing the submitted text until some unrelated
+                # redraw fires. Every other early-return branch in this
+                # handler invalidates after reset — match them.
+                event.app.invalidate()
+                return
+
+            # Handle /steer while the agent is running immediately on the
+            # UI thread.  Queuing through _pending_input would deadlock the
+            # steer until after the agent loop finishes (process_loop is
+            # blocked inside self.chat()), which turns /steer into a
+            # post-run next-turn message — defeating mid-run injection.
+            # agent.steer() is thread-safe (holds _pending_steer_lock).
+            if self._should_handle_steer_command_inline(text, has_images=has_images):
+                self.process_command(text)
+                event.app.current_buffer.reset(append_to_history=True)
+                # Force a repaint after clearing the buffer.  /steer is
+                # dispatched mid-run while the agent streams output through
+                # patch_stdout; process_command() never invalidates the
+                # app, so without this the submitted "/steer <text>" can
+                # linger in the input area (looking unsent) and invite an
+                # accidental re-submit. See issue #34569.
+                event.app.invalidate()
+                return
+
+            # Snapshot and clear attached images
+            images = list(self._attached_images)
+            self._attached_images.clear()
+            event.app.invalidate()
+            # Bundle text + images as a tuple when images are present
+            payload = (text, images) if images else text
+            if self._agent_running and not (text and _looks_like_slash_command(text)):
+                _effective_mode = self.busy_input_mode
+                redirected = False
+                if _effective_mode == "steer":
+                    # Route Enter through /steer — inject mid-run after the
+                    # next tool call.  Images can't ride along (steer only
+                    # appends text), so fall back to queue when images are
+                    # attached.  If the agent lacks steer() or rejects the
+                    # payload, also fall back to queue so nothing is lost.
+                    if images or not text:
+                        _effective_mode = "queue"
+                    else:
+                        accepted = False
+                        try:
+                            if self.agent is not None and hasattr(self.agent, "steer"):
+                                accepted = bool(self.agent.steer(text))
+                        except Exception as exc:
+                            _cprint(f"  {_DIM}Steer failed ({exc}) — queued for next turn.{_RST}")
+                            accepted = False
+                        if accepted:
+                            preview = text[:80] + ("..." if len(text) > 80 else "")
+                            _cprint(f"  {_ACCENT}⏩ Steered: '{preview}'{_RST}")
+                        else:
+                            _effective_mode = "queue"
+                if _effective_mode == "queue":
+                    # Queue for the next turn instead of interrupting
+                    self._pending_input.put(payload)
+                    preview = text if text else f"[{len(images)} image{'s' if len(images) != 1 else ''} attached]"
+                    _cprint(f"  Queued for the next turn: {preview[:80]}{'...' if len(preview) > 80 else ''}")
+                elif _effective_mode == "interrupt":
+                    if not images and text:
+                        try:
+                            if (
+                                self.agent is not None
+                                and getattr(
+                                    self.agent,
+                                    "_supports_active_turn_redirect",
+                                    False,
+                                )
+                                is True
+                                and hasattr(self.agent, "redirect")
+                            ):
+                                redirected = bool(self.agent.redirect(text))
+                        except Exception:
+                            redirected = False
+                    if redirected:
+                        preview = text[:80] + ("..." if len(text) > 80 else "")
+                        _cprint(f"  {_ACCENT}↪ Redirected current turn: '{preview}'{_RST}")
+                    else:
+                        # Compatibility path for older agents, multimodal
+                        # follow-ups, or a turn that finished in the race.
+                        self._interrupt_queue.put(payload)
+                        try:
+                            _dbg = _opencodon_home / "interrupt_debug.log"
+                            with open(_dbg, "a", encoding="utf-8") as _f:
+                                _f.write(f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
+                                         f"agent_running={self._agent_running}\n")
+                        except Exception:
+                            pass
+                # First-touch onboarding: on the very first busy-while-running
+                # event for this install, print a one-line tip explaining the
+                # /busy knob.  Flag persists to config.yaml and never fires
+                # again.  Guarded for exceptions so onboarding can't break
+                # the input loop.
+                try:
+                    from opencodon.core.onboarding import (
+                        BUSY_INPUT_FLAG,
+                        busy_input_hint_cli,
+                        is_seen,
+                        mark_seen,
+                    )
+                    if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
+                        _hint_mode = "redirect" if redirected else _effective_mode
+                        _cprint(f"  {_DIM}{busy_input_hint_cli(_hint_mode)}{_RST}")
+                        mark_seen(_opencodon_home / "config.yaml", BUSY_INPUT_FLAG)
+                        CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
+                except Exception:
+                    pass
+            else:
+                self._pending_input.put(payload)
+            # History stores real pasted content, not the placeholder, so
+            # up-arrow recall restores the actual text.
+            self._inline_pastes(event.app.current_buffer)
+            event.app.current_buffer.reset(append_to_history=True)
+
 
 
 # ============================================================================
