@@ -17,6 +17,7 @@ import { isSecondaryWindow } from '@/store/windows'
 
 import {
   allPaneIds,
+  clearLoneGroupHeaderOverrides,
   type DropPosition,
   findGroup,
   findGroupOfPane,
@@ -53,7 +54,7 @@ function loadPersisted(): LayoutNode | null {
 
   // Canonicalize on load: strips stale attributes older code persisted
   // (e.g. explicit headerHidden on lone-pane zones) and re-flattens.
-  return isLayoutNode(parsed) ? normalize(parsed) : null
+  return isLayoutNode(parsed) ? normalize(clearLoneGroupHeaderOverrides(parsed)) : null
 }
 
 function persist(tree: LayoutNode | null) {
@@ -866,12 +867,14 @@ function adoptContributedPanes(): void {
       // Silent adoption: don't front over the zone's active tab — a reveal does.
       next = insertAtGroup(next, target, pane.id, dock?.pos ?? 'center', dock?.before, false) ?? next
 
-      // An adopted pane ARRIVES with its chip showing — a surprise zone with
-      // zero chrome has no obvious handle to drag or close. (Explicit reveal;
-      // the next structural op returns lone panes to the auto-hide default.)
+      // An adopted pane that STACKED onto someone else's zone arrives with its
+      // chip showing — a hidden tab in a shared zone has no handle to drag or
+      // close. A pane that landed alone keeps the lone-pane default instead:
+      // revealing there pinned a permanent one-tab strip on the sidebar and the
+      // main zone (nothing clears it, and the strip is pure chrome).
       const landed = findGroupOfPane(next, pane.id)
 
-      if (landed) {
+      if (landed && landed.panes.length > 1) {
         next = setGroupHeaderHiddenOp(next, landed.id, false)
       }
     }
