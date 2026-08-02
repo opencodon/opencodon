@@ -19,6 +19,10 @@ remain (CPU count, xdist worker count) are addressed by the canonical
 test runner at ``scripts/run_tests.sh``.
 """
 
+# Installs the legacy-alias meta-path finder before any test imports a
+# pre-restructure module name (agent.*, cli, opencodon_cli.*, ...).
+import opencodon  # noqa: F401
+
 import asyncio
 import os
 import sys
@@ -649,7 +653,9 @@ def _live_system_guard(request, monkeypatch):
         "opencodon-gateway",
         "opencodon.service",
         "opencodon_cli.main gateway",
+        "opencodon.frontends.cli.main gateway",
         "src/opencodon_cli/main.py gateway",
+        "src/opencodon/frontends/cli/main.py gateway",
         "src/opencodon/frontends/gateway/run.py",
         "opencodon gateway",
     )

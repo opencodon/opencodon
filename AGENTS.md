@@ -63,7 +63,7 @@ conservative at the waist.
   (`opencodon tools`, `opencodon setup`, auto-install) rather than bolting on a raw
   env var.
 - **Refactor god-files into clean modules.** Extracting a multi-thousand-line
-  cluster out of `cli.py` / `run_agent.py` / `gateway/run.py` into a focused
+  cluster out of `shell.py` / `run_agent.py` / `gateway/run.py` into a focused
   mixin or module is wanted work, even when the diff is huge and mechanical
   (large `+N/-N` refactors merge regularly). The "every line traces to the
   request" test applies to *feature* PRs; a declared refactor's request IS the
@@ -228,45 +228,61 @@ The canonical source is the filesystem. The notes call out the load-bearing
 entry points you'll actually edit.
 
 ```
-opencodon/
-├── run_agent.py          # AIAgent class — core conversation loop (~12k LOC)
-├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
-├── toolsets.py           # Toolset definitions, _OPENCODON_CORE_TOOLS list
-├── cli.py                # OpencodonCLI class — interactive CLI orchestrator (~11k LOC)
-├── opencodon_state.py       # SessionDB — SQLite session store (FTS5 search)
-├── opencodon_constants.py   # get_opencodon_home(), display_opencodon_home() — profile-aware paths
-├── opencodon_logging.py     # setup_logging() — agent.log / errors.log / gateway.log (profile-aware)
+src/opencodon/                 # THE package — one importable namespace, strict layering
+├── common/                    # Leaf layer (imports nothing above it)
+│   ├── constants.py           #   get_opencodon_home(), display_opencodon_home() — profile-aware paths
+│   ├── logging_setup.py       #   setup_logging() — agent.log / errors.log / gateway.log
+│   ├── utils.py               #   atomic writes, env helpers, yaml fast-load
+│   └── colors.py, timeutils.py, model_normalize.py, route_identity.py
+├── config/                    # THE config loader (load_config, DEFAULT_CONFIG, OPTIONAL_ENV_VARS)
+│   └── managed_scope.py, env_loader.py, timeouts.py, moa_config.py, default_soul.py
+├── state/                     # SessionDB — SQLite session store, assembled from concern mixins
+│   └── _fts.py, _transcripts.py, _gateway_meta.py, _schema.py, ...
+├── providers/                 # Provider-profile registry (bundled profiles live in plugins/model-providers)
+├── plugins_runtime/           # PluginManager + lifecycle hooks (+ middleware.py)
+├── core/                      # The agent
+│   ├── run_agent.py           #   AIAgent — conversation loop core, assembled from agent_*.py mixins
+│   ├── agent_clients.py, agent_streaming.py, agent_message_prep.py, ...   # AIAgent mixins
+│   └── <137 modules>          #   provider adapters, compression, memory, prompt, skills, ...
+├── tools/                     # Tool implementations — auto-discovered via src/opencodon/tools/registry.py
+│   ├── model_tools.py         #   Tool orchestration, handle_function_call()
+│   └── environments/          #   Terminal backends (local, docker, ssh, modal, daytona, ...)
+├── toolsets.py                # Toolset definitions, _OPENCODON_CORE_TOOLS list
+├── cron/                      # Scheduler — jobs.py, scheduler.py
+└── frontends/                 # Delivery surfaces — they import core; NOTHING imports them
+    ├── cli/                   # `opencodon` CLI — main.py (argparse), shell.py (OpencodonCLI REPL,
+    │   │                      #   assembled from shell_*.py mixins), setup wizard, web_server.py
+    │   └── web_dist/          #   built browser UI (gitignored; vite outDir)
+    ├── gateway/               # Messaging gateway — run.py + session.py + platforms/
+    │   └── platforms/         #   Adapter per platform (telegram, discord, slack, whatsapp, ...)
+    ├── tui/                   # Python JSON-RPC backend for the Ink TUI (`opencodon --tui`)
+    ├── acp/                   # ACP server (VS Code / Zed / JetBrains integration)
+    └── mcp.py                 # `opencodon mcp-serve`
 
-├── agent/                # Agent internals (provider adapters, memory, caching, compression, etc.)
-├── opencodon_cli/           # CLI subcommands, setup wizard, plugins loader, skin engine
-├── tools/                # Tool implementations — auto-discovered via tools/registry.py
-│   └── environments/     # Terminal backends (local, docker, ssh, modal, daytona, singularity)
-├── gateway/              # Messaging gateway — run.py + session.py + platforms/
-│   ├── platforms/        # Adapter per platform (telegram, discord, slack, whatsapp,
-│   │                     #   homeassistant, signal, matrix, mattermost, email, sms,
-│   │                     #   dingtalk, wecom, weixin, feishu, qqbot, bluebubbles,
-│   │                     #   yuanbao, webhook, api_server, ...). See ADDING_A_PLATFORM.md.
-│   └── builtin_hooks/    # Extension point for always-registered gateway hooks (none shipped)
-├── plugins/              # Plugin system (see "Plugins" section below)
-│   ├── memory/           # Memory-provider plugins (none bundled; user-installed)
-│   ├── context_engine/   # Context-engine plugins
-│   ├── model-providers/  # Inference backend plugins (openrouter, anthropic, gmi, ...)
-│   ├── opencodon-achievements/  # Gamified achievement tracking
-│   ├── observability/    # Metrics / traces / logs plugin
-│   ├── image_gen/        # Image-generation providers
-│   └── <others>/         # disk-cleanup, platforms,
-│                         #   strike-freedom-cockpit, ...
-├── optional-skills/      # Heavier/niche skills shipped but NOT active by default
-├── skills/               # Built-in skills bundled with the repo
-├── apps/                 # npm workspaces — client, desktop, shared, web, tui
-│   └── tui/              # Ink (React) terminal UI — `opencodon --tui`
-│       └── src/          # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
-├── tui_gateway/          # Python JSON-RPC backend for the TUI
-├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains integration)
-├── cron/                 # Scheduler — jobs.py, scheduler.py
-├── scripts/              # run_tests.sh, auxiliary scripts
-└── tests/                # Pytest suite (~17k tests across ~900 files as of May 2026)
+# Legacy import names (agent.*, opencodon_cli.*, cli, run_agent, ...) still
+# resolve for external plugins via ONE meta-path finder
+# (src/opencodon/_legacy_aliases.py, installed from opencodon/__init__) that
+# aliases each legacy name to its canonical module — same module object, so
+# state and monkeypatching stay coherent. Requires `import opencodon` first
+# (any opencodon entry point does this; tests get it from tests/conftest.py).
+
+# Repo root (unchanged locations)
+plugins/          # Bundled plugin surfaces (memory/, context_engine/, model-providers/, ...)
+skills/           # Built-in skills;  optional-skills/ = shipped but not active by default
+apps/             # npm workspaces — client, desktop, shared, web, tui (Ink UI)
+tests/            # Pytest suite — mirrors src/opencodon under tests/opencodon/
+scripts/          # run_tests.sh, CI helpers;  bin/opencodon = dev launcher
 ```
+
+**Layering is CI-enforced** (`.importlinter`, blocking): `frontends → core/tools/cron
+→ config/state/providers/plugins_runtime → common`. Frontends must not import each
+other or `shell.py`. The grandfathered-edge lists in `.importlinter` may only
+shrink; adding a new inversion edge fails CI.
+
+**Import canonically.** New code imports `opencodon.*` paths. The shim trees exist
+for external plugin compatibility only; in-repo code and tests were fully migrated
+(2026-08-01 restructure — see `docs/plans/2026-08-01-repo-restructure-plan.md`).
+
 
 **User config:** `~/.opencodon/config.yaml` (settings), `~/.opencodon/.env` (API keys only).
 **Logs:** `~/.opencodon/logs/` — `agent.log` (INFO+), `errors.log` (WARNING+),
@@ -299,22 +315,22 @@ Applies to TypeScript across opencodon: desktop, TUI, website, and future TS pac
 ## File Dependency Chain
 
 ```
-tools/registry.py  (no deps — imported by all tool files)
+src/opencodon/tools/registry.py  (no deps — imported by all tool files)
        ↑
-tools/*.py  (each calls registry.register() at import time)
+opencodon/tools/*.py  (each calls registry.register() at import time)
        ↑
-model_tools.py  (imports tools/registry + triggers tool discovery)
+opencodon/tools/model_tools.py  (imports the registry + triggers tool discovery)
        ↑
-run_agent.py, cli.py, environments/
+opencodon/core/run_agent.py, opencodon/frontends/* (cli shell, gateway, tui, acp)
 ```
 
 ---
 
-## AIAgent Class (run_agent.py)
+## AIAgent Class (src/opencodon/core/run_agent.py)
 
 The real `AIAgent.__init__` takes ~60 parameters (credentials, routing, callbacks,
 session context, budget, credential pool, etc.). The signature below is the
-minimum subset you'll usually touch — read `run_agent.py` for the full list.
+minimum subset you'll usually touch — read `src/opencodon/core/run_agent.py` for the full list.
 
 ```python
 class AIAgent:
@@ -370,16 +386,16 @@ Reasoning content is stored in `assistant_msg["reasoning"]`.
 
 ---
 
-## CLI Architecture (cli.py)
+## CLI Architecture (src/opencodon/frontends/cli/shell.py)
 
 - **Rich** for banner/panels, **prompt_toolkit** for input with autocomplete
-- **KawaiiSpinner** (`agent/display.py`) — animated faces during API calls, `┊` activity feed for tool results
-- `load_cli_config()` in cli.py merges hardcoded defaults + user config YAML
-- **Skin engine** (`opencodon_cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
+- **KawaiiSpinner** (`src/opencodon/core/display.py`) — animated faces during API calls, `┊` activity feed for tool results
+- `load_cli_config()` in shell.py merges hardcoded defaults + user config YAML
+- **Skin engine** (`src/opencodon/frontends/cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
 - `process_command()` is a method on `OpencodonCLI` — dispatches on canonical command name resolved via `resolve_command()` from the central registry
-- Skill slash commands: `agent/skill_commands.py` scans `~/.opencodon/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
+- Skill slash commands: `src/opencodon/core/skill_commands.py` scans `~/.opencodon/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
 
-### Slash Command Registry (`opencodon_cli/commands.py`)
+### Slash Command Registry (`src/opencodon/frontends/cli/commands.py`)
 
 All slash commands are defined in a central `COMMAND_REGISTRY` list of `CommandDef` objects. Every downstream consumer derives from this registry automatically:
 
@@ -393,22 +409,22 @@ All slash commands are defined in a central `COMMAND_REGISTRY` list of `CommandD
 
 ### Adding a Slash Command
 
-1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `opencodon_cli/commands.py`:
+1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `src/opencodon/frontends/cli/commands.py`:
 ```python
 CommandDef("mycommand", "Description of what it does", "Session",
            aliases=("mc",), args_hint="[arg]"),
 ```
-2. Add handler in `OpencodonCLI.process_command()` in `cli.py`:
+2. Add handler in `OpencodonCLI.process_command()` in `shell.py`:
 ```python
 elif canonical == "mycommand":
     self._handle_mycommand(cmd_original)
 ```
-3. If the command is available in the gateway, add a handler in `gateway/run.py`:
+3. If the command is available in the gateway, add a handler in `src/opencodon/frontends/gateway/run.py`:
 ```python
 if canonical == "mycommand":
     return await self._handle_mycommand(event)
 ```
-4. For persistent settings, use `save_config_value()` in `cli.py`
+4. For persistent settings, use `save_config_value()` from `opencodon.config`
 
 **CommandDef fields:**
 - `name` — canonical name without slash (e.g. `"background"`)
@@ -441,7 +457,7 @@ TypeScript owns the screen. Python owns sessions, tools, model calls, and slash 
 
 ### Transport
 
-Newline-delimited JSON-RPC over stdio. Requests from Ink, events from Python. See `tui_gateway/server.py` for the full method/event catalog.
+Newline-delimited JSON-RPC over stdio. Requests from Ink, events from Python. See `src/opencodon/frontends/tui/server.py` for the full method/event catalog.
 
 ### Key Surfaces
 
@@ -477,7 +493,7 @@ npm test          # vitest
 
 ### TUI over the PTY bridge (`/api/pty`)
 
-The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `opencodon_cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `opencodon_cli/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
+The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `src/opencodon/frontends/cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `src/opencodon/frontends/cli/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
 
 - A client mounts xterm.js's `Terminal` with the WebGL renderer, `@xterm/addon-fit` for container-driven resize, and `@xterm/addon-unicode11` for modern wide-character widths.
 - `/api/pty?token=…` upgrades to a WebSocket; auth uses the same ephemeral `_SESSION_TOKEN` as REST, via query param (browsers can't set `Authorization` on WS upgrade).
@@ -494,7 +510,7 @@ A **separate** chat surface from both the classic CLI and the dashboard's embedd
 
 **Slash commands in the desktop app are curated client-side, then dispatched to the backend.** The pipeline:
 
-- **Backend already provides everything.** `tui_gateway/server.py` `commands.catalog` (empty-query list) and `complete.slash` (typed-query completions) both include built-in commands, user `quick_commands`, AND skill-derived commands (`scan_skill_commands()` / `get_skill_commands()`). The desktop app does not need a new RPC to see skills.
+- **Backend already provides everything.** `src/opencodon/frontends/tui/server.py` `commands.catalog` (empty-query list) and `complete.slash` (typed-query completions) both include built-in commands, user `quick_commands`, AND skill-derived commands (`scan_skill_commands()` / `get_skill_commands()`). The desktop app does not need a new RPC to see skills.
 - **The renderer curates via `apps/desktop/src/lib/desktop-slash-commands.ts`.** This is the load-bearing file. It holds `DESKTOP_COMMAND_SPECS` (the built-ins and their Desktop surfaces) plus `NO_DESKTOP_SURFACE` block-lists for terminal-only / messaging-only / picker-owned / settings-owned / advanced commands that should NOT clutter the desktop popover.
   - `isDesktopSlashCommand(name)` — gates **execution**. Returns true for built-ins AND for any non-built-in (skill / quick command), so typed extension commands run.
   - `isDesktopSlashSuggestion(name)` — gates **discovery/completion**. Used by BOTH completion paths in `app/chat/composer/hooks/use-slash-completions.ts` (empty-query catalog filter + typed-query `complete.slash` filter) and by `filterDesktopCommandsCatalog`.
@@ -513,14 +529,14 @@ be core tools. For custom or local-only tools, do **not** edit opencodon core.
 Use the plugin route instead: create `~/.opencodon/plugins/<name>/plugin.yaml`
 and `~/.opencodon/plugins/<name>/__init__.py`, then register tools with
 `ctx.register_tool(...)`. Plugin toolsets are discovered automatically and can be
-enabled or disabled without touching `tools/` or `toolsets.py`.
+enabled or disabled without touching `tools/` or `src/opencodon/toolsets.py`.
 
 Use the built-in route below only when the user is explicitly contributing a new
 core opencodon tool that should ship in the base system.
 
 Built-in/core tools require changes in **2 files**:
 
-**1. Create `tools/your_tool.py`:**
+**1. Create `src/opencodon/tools/your_tool.py`:**
 ```python
 import json, os
 from tools.registry import registry
@@ -541,7 +557,7 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** — either `_OPENCODON_CORE_TOOLS` (all platforms) or a new toolset. **This step is required:** auto-discovery imports the tool and registers its schema, but the tool is only *exposed to an agent* if its name appears in a toolset. `_OPENCODON_CORE_TOOLS` is not dead code — it's the default bundle every platform's base toolset inherits from.
+**2. Add to `src/opencodon/toolsets.py`** — either `_OPENCODON_CORE_TOOLS` (all platforms) or a new toolset. **This step is required:** auto-discovery imports the tool and registers its schema, but the tool is only *exposed to an agent* if its name appears in a toolset. `_OPENCODON_CORE_TOOLS` is not dead code — it's the default bundle every platform's base toolset inherits from.
 
 Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual import list to maintain. Wiring into a toolset is still a deliberate, manual step.
 
@@ -551,7 +567,7 @@ The registry handles schema collection, dispatch, availability checking, and err
 
 **State files**: If a tool stores persistent state (caches, logs, checkpoints), use `get_opencodon_home()` for the base directory — never `Path.home() / ".opencodon"`. This ensures each profile gets its own state.
 
-**Agent-level tools** (todo, memory): intercepted by `run_agent.py` before `handle_function_call()`. See `tools/todo_tool.py` for the pattern.
+**Agent-level tools** (todo, memory): intercepted by `src/opencodon/core/run_agent.py` before `handle_function_call()`. See `src/opencodon/tools/todo_tool.py` for the pattern.
 
 ---
 
@@ -581,7 +597,7 @@ Reference: #2810 (bounds pass), #9801 (SHA pinning + audit CI).
 ## Adding Configuration
 
 ### config.yaml options:
-1. Add to `DEFAULT_CONFIG` in `opencodon_cli/config.py`
+1. Add to `DEFAULT_CONFIG` in `src/opencodon/config/__init__.py`
 
 That is the whole procedure. There is no config schema version and no
 migration pipeline: `load_config()` deep-merges `DEFAULT_CONFIG` at read
@@ -599,14 +615,14 @@ default and the readers together.
 `auxiliary` holds per-task overrides for side-LLM work (curator, vision,
 embedding, title generation, session_search, etc.) — each task can pin
 its own provider/model/base_url/max_tokens/reasoning_effort. See
-`agent/auxiliary_client.py::_resolve_auto` for resolution order.
+`src/opencodon/core/auxiliary_client.py::_resolve_auto` for resolution order.
 
 `curator` holds the background skill-maintenance config —
 `enabled`, `interval_hours`, `min_idle_hours`, `stale_after_days`,
 `archive_after_days`, `backup` (nested).
 
 ### .env variables (SECRETS ONLY — API keys, tokens, passwords):
-1. Add to `OPTIONAL_ENV_VARS` in `opencodon_cli/config.py` with metadata:
+1. Add to `OPTIONAL_ENV_VARS` in `src/opencodon/config/__init__.py` with metadata:
 ```python
 "NEW_API_KEY": {
     "description": "What it's for",
@@ -626,9 +642,9 @@ the env var in code (see `gateway_timeout`, `terminal.cwd` → `TERMINAL_CWD`).
 
 | Loader | Used by | Location |
 |--------|---------|----------|
-| `load_cli_config()` | CLI mode | `cli.py` — merges CLI-specific defaults + user YAML |
-| `load_config()` | `opencodon tools`, `opencodon setup`, most CLI subcommands | `opencodon_cli/config.py` — merges `DEFAULT_CONFIG` + user YAML |
-| Direct YAML load | Gateway runtime | `gateway/run.py` + `gateway/config.py` — reads user YAML raw |
+| `load_cli_config()` | CLI mode | `shell.py` — merges CLI-specific defaults + user YAML |
+| `load_config()` | `opencodon tools`, `opencodon setup`, most CLI subcommands | `src/opencodon/config/__init__.py` — merges `DEFAULT_CONFIG` + user YAML |
+| Direct YAML load | Gateway runtime | `src/opencodon/frontends/gateway/run.py` + `src/opencodon/frontends/gateway/config.py` — reads user YAML raw |
 
 If you add a new key and the CLI sees it but the gateway doesn't (or vice
 versa), you're on the wrong loader. Check `DEFAULT_CONFIG` coverage.
@@ -645,12 +661,12 @@ versa), you're on the wrong loader. Check `DEFAULT_CONFIG` coverage.
 
 ## Skin/Theme System
 
-The skin engine (`opencodon_cli/skin_engine.py`) provides data-driven CLI visual customization. Skins are **pure data** — no code changes needed to add a new skin.
+The skin engine (`src/opencodon/frontends/cli/skin_engine.py`) provides data-driven CLI visual customization. Skins are **pure data** — no code changes needed to add a new skin.
 
 ### Architecture
 
 ```
-opencodon_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loader
+src/opencodon/frontends/cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loader
 ~/.opencodon/skins/*.yaml       # User-installed custom skins (drop-in)
 ```
 
@@ -669,17 +685,17 @@ opencodon_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loa
 | Banner section headers | `colors.banner_accent` | `banner.py` |
 | Banner dim text | `colors.banner_dim` | `banner.py` |
 | Banner body text | `colors.banner_text` | `banner.py` |
-| Response box border | `colors.response_border` | `cli.py` |
+| Response box border | `colors.response_border` | `shell.py` |
 | Spinner faces (waiting) | `spinner.waiting_faces` | `display.py` |
 | Spinner faces (thinking) | `spinner.thinking_faces` | `display.py` |
 | Spinner verbs | `spinner.thinking_verbs` | `display.py` |
 | Spinner wings (optional) | `spinner.wings` | `display.py` |
 | Tool output prefix | `tool_prefix` | `display.py` |
 | Per-tool emojis | `tool_emojis` | `display.py` → `get_tool_emoji()` |
-| Agent name | `branding.agent_name` | `banner.py`, `cli.py` |
-| Welcome message | `branding.welcome` | `cli.py` |
-| Response box label | `branding.response_label` | `cli.py` |
-| Prompt symbol | `branding.prompt_symbol` | `cli.py` |
+| Agent name | `branding.agent_name` | `banner.py`, `shell.py` |
+| Welcome message | `branding.welcome` | `shell.py` |
+| Response box label | `branding.response_label` | `shell.py` |
+| Prompt symbol | `branding.prompt_symbol` | `shell.py` |
 
 ### Built-in skins
 
@@ -690,7 +706,7 @@ opencodon_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loa
 
 ### Adding a built-in skin
 
-Add to `_BUILTIN_SKINS` dict in `opencodon_cli/skin_engine.py`:
+Add to `_BUILTIN_SKINS` dict in `src/opencodon/frontends/cli/skin_engine.py`:
 
 ```python
 "mytheme": {
@@ -738,7 +754,7 @@ opencodon has two plugin surfaces. Both live under `plugins/` in the repo so
 repo-shipped plugins can be discovered alongside user-installed ones in
 `~/.opencodon/plugins/` and pip-installed entry points.
 
-### General plugins (`opencodon_cli/plugins.py` + `plugins/<name>/`)
+### General plugins (`src/opencodon/plugins_runtime/__init__.py` + `plugins/<name>/`)
 
 `PluginManager` discovers plugins from `~/.opencodon/plugins/`, `./.opencodon/plugins/`,
 and pip entry points. Each plugin exposes a `register(ctx)` function that
@@ -752,10 +768,10 @@ can:
   plugin's argparse tree is wired into `opencodon` at startup so
   `opencodon <pluginname> <subcmd>` works with no change to `main.py`
 
-Hooks are invoked from `model_tools.py` (pre/post tool) and `run_agent.py`
+Hooks are invoked from `src/opencodon/tools/model_tools.py` (pre/post tool) and `src/opencodon/core/run_agent.py`
 (lifecycle). **Discovery timing pitfall:** `discover_plugins()` only runs
-as a side effect of importing `model_tools.py`. Code paths that read plugin
-state without importing `model_tools.py` first must call `discover_plugins()`
+as a side effect of importing `src/opencodon/tools/model_tools.py`. Code paths that read plugin
+state without importing `src/opencodon/tools/model_tools.py` first must call `discover_plugins()`
 explicitly (it's idempotent).
 
 ### Memory-provider plugins (`plugins/memory/<name>/`)
@@ -764,8 +780,8 @@ Separate discovery system for pluggable memory backends. **No provider is
 bundled** — the built-in file memory is not a plugin. Providers are installed
 by the user into `~/.opencodon/plugins/`.
 
-Each provider implements the `MemoryProvider` ABC (see `agent/memory_provider.py`)
-and is orchestrated by `agent/memory_manager.py`. Lifecycle hooks include
+Each provider implements the `MemoryProvider` ABC (see `src/opencodon/core/memory_provider.py`)
+and is orchestrated by `src/opencodon/core/memory_manager.py`. Lifecycle hooks include
 `sync_turn(turn_messages)`, `prefetch(query)`, `shutdown()`, and optional
 `post_setup(opencodon_home, config)` for setup-wizard integration.
 
@@ -777,7 +793,7 @@ provider (read from `memory.provider` in config.yaml), so disabled
 providers don't clutter `opencodon --help`.
 
 **Rule (Teknium, May 2026):** plugins MUST NOT modify core files
-(`run_agent.py`, `cli.py`, `gateway/run.py`, `opencodon_cli/main.py`, etc.).
+(`src/opencodon/core/run_agent.py`, `cli.py`, `src/opencodon/frontends/gateway/run.py`, `src/opencodon/frontends/cli/main.py`, etc.).
 If a plugin needs a capability the framework doesn't expose, expand the
 generic plugin surface (new hook, new ctx method) — never hardcode
 plugin-specific logic into core. PR #5295 removed 95 lines of hardcoded
@@ -841,8 +857,8 @@ Full authoring guide: `website/docs/developer-guide/model-provider-plugin.md`.
 
 `plugins/context_engine/`, `plugins/image_gen/`, etc. follow the same
 pattern (ABC + orchestrator + per-plugin directory). Context engines
-plug into `agent/context_engine.py`; image-gen providers into
-`agent/image_gen_provider.py`. Reference / docs-companion plugins
+plug into `src/opencodon/core/context_engine.py`; image-gen providers into
+`src/opencodon/core/image_gen_provider.py`. Reference / docs-companion plugins
 (`example-dashboard`, `strike-freedom-cockpit`, `plugin-llm-example`,
 `plugin-llm-async-example`) live in the
 [`opencodon-example-plugins`](https://github.com/opencodon/opencodon/tree/main/plugins)
@@ -859,7 +875,7 @@ Two parallel surfaces:
 - **`optional-skills/`** — heavier or niche skills shipped with the repo but
   NOT active by default. Installed explicitly via
   `opencodon skills install official/<category>/<skill>`. Adapter lives in
-  `tools/skills_hub.py` (`OptionalSkillSource`). Categories include
+  `src/opencodon/tools/skills_hub.py` (`OptionalSkillSource`). Categories include
   `autonomous-ai-agents`, `blockchain`, `communication`, `creative`,
   `devops`, `email`, `health`, `mcp`, `migration`, `mlops`, `productivity`,
   `research`, `security`, `web-development`.
@@ -963,7 +979,7 @@ contributor skill PRs.
 
 ## Toolsets
 
-All toolsets are defined in `toolsets.py` as a single `TOOLSETS` dict.
+All toolsets are defined in `src/opencodon/toolsets.py` as a single `TOOLSETS` dict.
 Each platform's adapter picks a base toolset (e.g. Telegram uses
 `"messaging"`); `_OPENCODON_CORE_TOOLS` is the default bundle most
 platforms inherit from.
@@ -982,7 +998,7 @@ Enable/disable per platform via `opencodon tools` (the curses UI) or the
 
 ## Delegation (`delegate_task`)
 
-`tools/delegate_tool.py` spawns a subagent with an isolated
+`src/opencodon/tools/delegate_tool.py` spawns a subagent with an isolated
 context + terminal session. By default the parent waits for the
 child's summary before continuing its own loop. With `background=true`,
 opencodon returns a delegation id immediately and the result re-enters the
@@ -1021,12 +1037,12 @@ Background skill-maintenance system that tracks usage on agent-created
 skills and auto-archives stale ones. Users never lose skills; archives
 go to `~/.opencodon/skills/.archive/` and are restorable.
 
-- **Core:** `agent/curator.py` (review loop, auto-transitions, LLM review
-  prompt) + `agent/curator_backup.py` (pre-run tar.gz snapshots).
-- **CLI:** `opencodon_cli/curator.py` wires `opencodon curator <verb>` where
+- **Core:** `src/opencodon/core/curator.py` (review loop, auto-transitions, LLM review
+  prompt) + `src/opencodon/core/curator_backup.py` (pre-run tar.gz snapshots).
+- **CLI:** `src/opencodon/frontends/cli/curator.py` wires `opencodon curator <verb>` where
   verbs are: `status`, `run`, `pause`, `resume`, `pin`, `unpin`,
   `archive`, `restore`, `prune`, `backup`, `rollback`.
-- **Telemetry:** `tools/skill_usage.py` owns the sidecar
+- **Telemetry:** `src/opencodon/tools/skill_usage.py` owns the sidecar
   `~/.opencodon/skills/.usage.json` — per-skill `use_count`, `view_count`,
   `patch_count`, `last_activity_at`, `state` (active / stale /
   archived), `pinned`.
@@ -1120,7 +1136,7 @@ in config.yaml (or `OPENCODON_BACKGROUND_NOTIFICATIONS` env var):
 opencodon supports **profiles** — multiple fully isolated instances, each with its own
 `OPENCODON_HOME` directory (config, API keys, memory, sessions, skills, gateway, etc.).
 
-The core mechanism: `_apply_profile_override()` in `opencodon_cli/main.py` sets
+The core mechanism: `_apply_profile_override()` in `src/opencodon/frontends/cli/main.py` sets
 `OPENCODON_HOME` before any module imports. All `get_opencodon_home()` references
 automatically scope to the active profile.
 
@@ -1179,26 +1195,26 @@ for user-facing print/log messages. Hardcoding `~/.opencodon` breaks profiles �
 has its own `OPENCODON_HOME` directory. This was the source of 5 bugs fixed in PR #3575.
 
 ### DO NOT introduce new `simple_term_menu` usage
-Existing call sites in `opencodon_cli/main.py` remain for legacy fallback only;
+Existing call sites in `src/opencodon/frontends/cli/main.py` remain for legacy fallback only;
 the preferred UI is curses (stdlib) because `simple_term_menu` has
 ghost-duplication rendering bugs in tmux/iTerm2 with arrow keys. New
-interactive menus must use `opencodon_cli/curses_ui.py` — see
-`opencodon_cli/tools_config.py` for the canonical pattern.
+interactive menus must use `src/opencodon/frontends/cli/curses_ui.py` — see
+`src/opencodon/frontends/cli/tools_config.py` for the canonical pattern.
 
 ### DO NOT use `\033[K` (ANSI erase-to-EOL) in spinner/display code
 Leaks as literal `?[K` text under `prompt_toolkit`'s `patch_stdout`. Use space-padding: `f"\r{line}{' ' * pad}"`.
 
-### `_last_resolved_tool_names` is a process-global in `model_tools.py`
+### `_last_resolved_tool_names` is a process-global in `src/opencodon/tools/model_tools.py`
 `_run_single_child()` in `delegate_tool.py` saves and restores this global around subagent execution. If you add new code that reads this global, be aware it may be temporarily stale during child agent runs.
 
 ### DO NOT hardcode cross-tool references in schema descriptions
-Tool schema descriptions must not mention tools from other toolsets by name (e.g., `browser_navigate` saying "prefer web_search"). Those tools may be unavailable (missing API keys, disabled toolset), causing the model to hallucinate calls to non-existent tools. If a cross-reference is needed, add it dynamically in `get_tool_definitions()` in `model_tools.py` — see the `browser_navigate` / `execute_code` post-processing blocks for the pattern.
+Tool schema descriptions must not mention tools from other toolsets by name (e.g., `browser_navigate` saying "prefer web_search"). Those tools may be unavailable (missing API keys, disabled toolset), causing the model to hallucinate calls to non-existent tools. If a cross-reference is needed, add it dynamically in `get_tool_definitions()` in `src/opencodon/tools/model_tools.py` — see the `browser_navigate` / `execute_code` post-processing blocks for the pattern.
 
 ### The gateway has TWO message guards — both must bypass approval/control commands
 When an agent is running, messages pass through two sequential guards:
-(1) **base adapter** (`gateway/platforms/base.py`) queues messages in
+(1) **base adapter** (`src/opencodon/frontends/gateway/platforms/base.py`) queues messages in
 `_pending_messages` when `session_key in self._active_sessions`, and
-(2) **gateway runner** (`gateway/run.py`) intercepts `/stop`, `/new`,
+(2) **gateway runner** (`src/opencodon/frontends/gateway/run.py`) intercepts `/stop`, `/new`,
 `/queue`, `/status`, `/approve`, `/deny` before they reach
 `running_agent.interrupt()`. Any new command that must reach the runner
 while the agent is blocked (e.g. approval prompts) MUST bypass BOTH
@@ -1223,7 +1239,7 @@ The `_isolate_opencodon_home` autouse fixture in `tests/conftest.py` redirects `
 
 **Profile tests**: When testing profile features, also mock `Path.home()` so that
 `_get_profiles_root()` and `_get_default_opencodon_home()` resolve within the temp dir.
-Use the pattern from `tests/opencodon_cli/test_profiles.py`:
+Use the pattern from `tests/opencodon/frontends/cli/test_profiles.py`:
 ```python
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
@@ -1247,8 +1263,8 @@ that have caused multiple "works locally, fails in CI" incidents (and the revers
 
 ```bash
 scripts/run_tests.sh                                  # full suite, CI-parity
-scripts/run_tests.sh tests/gateway/                   # one directory
-scripts/run_tests.sh tests/agent/test_foo.py::test_x  # one test
+scripts/run_tests.sh tests/opencodon/frontends/gateway/                   # one directory
+scripts/run_tests.sh tests/opencodon/core/test_foo.py::test_x  # one test
 scripts/run_tests.sh -v --tb=long                     # pass-through pytest flags
 ```
 
@@ -1381,5 +1397,5 @@ test('windowsHide defaults to true on Windows, is left alone elsewhere', () => {
 ```
 
 If the logic lives inline in a god-file (`main.ts`, `cli.py`,
-`gateway/run.py`) and extracting it feels disruptive: that's the actual
+`src/opencodon/frontends/gateway/run.py`) and extracting it feels disruptive: that's the actual
 signal to do the extraction, not to regex around it.

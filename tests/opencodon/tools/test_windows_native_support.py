@@ -514,7 +514,7 @@ class TestEntryPointsConfigureStdio:
 
 
 class TestSubprocessCompatHelpers:
-    """src/opencodon_cli/_subprocess_compat.py POSIX + Windows behaviour."""
+    """opencodon.common._subprocess_compat POSIX + Windows behaviour."""
 
     def test_is_windows_matches_sys_platform(self):
         from opencodon.frontends.cli import _subprocess_compat as sc
@@ -733,8 +733,8 @@ class TestNpmBareSpawnsResolved:
     @pytest.mark.parametrize(
         "relpath",
         [
-            "src/opencodon_cli/tools_config.py",
-            "src/opencodon_cli/doctor.py",
+            "src/opencodon/frontends/cli/tools_config.py",
+            "src/opencodon/frontends/cli/doctor.py",
             "plugins/platforms/whatsapp/adapter.py",
             "src/opencodon/tools/browser_tool.py",
         ],

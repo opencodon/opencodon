@@ -170,7 +170,7 @@ def test_active_session_hard_exit_is_reclaimed(tmp_path, monkeypatch):
             "-c",
             (
                 "import os\n"
-                "from opencodon_cli.active_sessions import try_acquire_active_session\n"
+                "from opencodon.frontends.cli.active_sessions import try_acquire_active_session\n"
                 "lease, message = try_acquire_active_session("
                 "session_id='crash-session', surface='cli', "
                 "config={'max_concurrent_sessions': 1})\n"
@@ -244,7 +244,7 @@ def test_cross_process_acquire_claims_only_one_last_slot(tmp_path, monkeypatch):
     script = (
         "import os, time\n"
         "from pathlib import Path\n"
-        "from opencodon_cli.active_sessions import try_acquire_active_session\n"
+        "from opencodon.frontends.cli.active_sessions import try_acquire_active_session\n"
         "idx = os.environ['WORKER_INDEX']\n"
         "worker_count = int(os.environ['WORKER_COUNT'])\n"
         "delayed_worker = os.environ.get('DELAYED_WORKER_INDEX')\n"

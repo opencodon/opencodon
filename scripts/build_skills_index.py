@@ -26,12 +26,12 @@ from datetime import datetime, timezone
 
 # Allow importing from repo root
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, REPO_ROOT)
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
-# Ensure OPENCODON_HOME is set (needed by tools/skills_hub.py imports)
+# Ensure OPENCODON_HOME is set (needed by skills_hub imports)
 os.environ.setdefault("OPENCODON_HOME", os.path.join(os.path.expanduser("~"), ".opencodon"))
 
-from tools.skills_hub import (
+from opencodon.tools.skills_hub import (
     GitHubAuth,
     GitHubSource,
     SkillsShSource,

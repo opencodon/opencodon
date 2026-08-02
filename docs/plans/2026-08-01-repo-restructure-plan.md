@@ -226,7 +226,27 @@ run_conversation; extraction of shell.py's 106 top-level functions.
 - `run_agent.py` shrinks to the `AIAgent` shell as already-extracted helpers
   in `agent/` move home under `core/`.
 
-### Phase 5 — Tests, CI, docs
+### Phase 5 — Tests, CI, docs (DONE 2026-08-02, PR #44)
+
+Shim trees were NOT deferred after all: all ~700 shim files were replaced
+by a single meta-path alias finder (`src/opencodon/_legacy_aliases.py`),
+installed on `import opencodon`, so external plugins importing legacy
+names keep working. Gotcha class: fresh interpreters (subprocess `-c`
+snippets, standalone `scripts/*.py`) don't get the finder — those sites
+were flipped to canonical imports with `src/` on sys.path.
+
+Root-test classification (same PR): all ~50 stray `tests/test_*.py` files
+and the legacy top-level dirs (`acp/`, `dashboard/`, `state/`,
+`computer_use/`, `secret_sources/`) were classified into the
+`tests/opencodon/` mirror or purpose groups (`tests/install/`,
+`tests/packaging/`, existing `ci`/`docker`/`plugins`/`scripts`).
+`tests/test_live_system_guard_self_test.py` intentionally stays at
+`tests/` root — it is the self-test of `tests/conftest.py`. Fallout
+classes hit again: anchor depths (incl. multi-line `here.parent.parent`
+the line-based scan misses), a vestigial sys.path insert that would have
+become pollution, one basename collision (`test_account_usage.py` — two
+different files; the stray was renamed `test_account_usage_snapshots.py`),
+and the `tests.secret_sources.conformance` cross-test import.
 - Re-mirror `tests/` to the new tree; update CI change classifier path rules,
   `scripts/run_tests.sh`, Dockerfile, nix, `.github/`.
 - Rewrite AGENTS.md "Project Structure" + CLAUDE.md path references.

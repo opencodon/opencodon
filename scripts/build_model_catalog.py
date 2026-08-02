@@ -27,12 +27,12 @@ import sys
 from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, REPO_ROOT)
+sys.path.insert(0, os.path.join(REPO_ROOT, "src"))
 
 # Ensure OPENCODON_HOME is set for imports that touch it at module level.
 os.environ.setdefault("OPENCODON_HOME", os.path.join(os.path.expanduser("~"), ".opencodon"))
 
-from opencodon_cli.models import (  # noqa: E402
+from opencodon.frontends.cli.models import (  # noqa: E402
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
 )

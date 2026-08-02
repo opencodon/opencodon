@@ -65,14 +65,14 @@ def test_wedged_worker_does_not_block_interpreter_exit():
     """
     script = (
         "import sys; sys.path.insert(0, %r)\n"
-        "from tools.daemon_pool import DaemonThreadPoolExecutor\n"
+        "from opencodon.tools.daemon_pool import DaemonThreadPoolExecutor\n"
         "import time\n"
         "pool = DaemonThreadPoolExecutor(max_workers=1)\n"
         "pool.submit(time.sleep, 120)\n"
         "time.sleep(0.3)\n"
         "pool.shutdown(wait=False)\n"
         "print('main-done', flush=True)\n"
-    ) % (str(_repo_root()),)
+    ) % (str(_repo_root() / "src"),)
     proc = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True,
