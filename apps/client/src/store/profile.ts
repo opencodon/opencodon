@@ -1,5 +1,6 @@
 import { atom, computed } from 'nanostores'
 
+import { PROFILES_UI_ENABLED } from '@/lib/feature-flags'
 import { getProfiles, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/opencodon'
 import { invalidateProfileScopedQueries } from '@/lib/query-client'
 import {
@@ -24,6 +25,17 @@ export function normalizeProfileKey(name: string | null | undefined): string {
   return value || 'default'
 }
 
+/**
+ * The profile the client is allowed to actually run as. Profiles off collapses
+ * every candidate to `default`, so nothing that merely *reports* a profile —
+ * the Electron stored preference, `/api/profiles/active`, a reconnect survivor
+ * — can move the client onto a context it has no UI for. Named profiles remain
+ * fully usable from the CLI.
+ */
+export function resolveProfileTarget(name: string | null | undefined): string {
+  return PROFILES_UI_ENABLED ? normalizeProfileKey(name) : 'default'
+}
+
 // The profile the running local backend is actually scoped to (mirrors
 // /api/profiles/active `current`). "default" is the root ~/.opencodon. This is the
 // display source of truth for the statusbar pill; the desktop's *stored*
@@ -35,14 +47,35 @@ export const $activeProfile = atom<string>('default')
 export const $profiles = atom<ProfileInfo[]>([])
 
 export function setActiveProfile(name: string): void {
-  $activeProfile.set(name || 'default')
+  // With the profiles UI off the client IS the default profile — the backend's
+  // `current` (which `opencodon profile use` moves) must not drag the pill, or
+  // the app reports a context it has no switcher for.
+  $activeProfile.set(PROFILES_UI_ENABLED ? name || 'default' : 'default')
+}
+
+/** The default profile alone, for the profiles-off build. Prefers the row the
+ *  backend flags, then the conventional name, then the first row — a list that
+ *  somehow carries no default must still yield one entry, never zero. */
+function onlyDefaultProfile(profiles: ProfileInfo[]): ProfileInfo[] {
+  const found =
+    profiles.find(profile => profile.is_default) ??
+    profiles.find(profile => normalizeProfileKey(profile.name) === 'default') ??
+    profiles[0]
+
+  return found ? [found] : []
 }
 
 export async function refreshProfiles(): Promise<ProfileInfo[]> {
   const { profiles } = await getProfiles()
-  $profiles.set(profiles)
+  // Named profiles keep existing on disk for CLI use; the client just never
+  // learns about them. Clamping the LIST (rather than each consumer) is what
+  // lets the surfaces documented as "self-hide when only the default profile
+  // exists" do exactly that, with no extra gates.
+  const visible = PROFILES_UI_ENABLED ? profiles : onlyDefaultProfile(profiles)
 
-  return profiles
+  $profiles.set(visible)
+
+  return visible
 }
 
 // ── Rail order ─────────────────────────────────────────────────────────────
@@ -270,6 +303,11 @@ export async function ensureGatewayProfile(profile: string | null | undefined): 
     return
   }
 
+  // NOT clamped by resolveProfileTarget: this is the swap *mechanism*, and the
+  // remote-pool path (#46651) still has to be able to activate a named backend.
+  // Profiles-off blocks the client from ever *choosing* one — nothing reaches
+  // here with a named profile once boot adoption and the profile list are
+  // pinned — rather than hollowing out the machinery.
   const target = normalizeProfileKey(profile)
 
   if (normalizeProfileKey($activeGatewayProfile.get()) === target && $gateway.get()) {
@@ -317,7 +355,12 @@ const SHOW_ALL_PROFILES_STORAGE_KEY = 'opencodon.desktop.showAllProfiles'
 
 // Opt-in unified view. When false, scope follows the live gateway profile, so
 // single-profile users (who never see the switcher) are completely unaffected.
-export const $showAllProfiles = atom<boolean>(storedBoolean(SHOW_ALL_PROFILES_STORAGE_KEY, false))
+//
+// Profiles off ignores a persisted `true`: the toggle that would clear it lives
+// in the hidden rail, so the stored value would otherwise be a one-way door.
+export const $showAllProfiles = atom<boolean>(
+  PROFILES_UI_ENABLED && storedBoolean(SHOW_ALL_PROFILES_STORAGE_KEY, false)
+)
 
 $showAllProfiles.subscribe(value => persistBoolean(SHOW_ALL_PROFILES_STORAGE_KEY, value))
 
@@ -326,8 +369,11 @@ $showAllProfiles.subscribe(value => persistBoolean(SHOW_ALL_PROFILES_STORAGE_KEY
 // gateway so opening/selecting a profile (which swaps the gateway) moves the
 // whole sidebar with it — a real context switch, not a separate filter to keep
 // in sync.
+// Profiles off pins the scope to `default` outright rather than reading the
+// gateway: the session list is scoped by this, and a backend sitting on a named
+// profile would scope it to a profile the user cannot see or leave.
 export const $profileScope = computed([$showAllProfiles, $activeGatewayProfile], (showAll, gateway) =>
-  showAll ? ALL_PROFILES : normalizeProfileKey(gateway)
+  PROFILES_UI_ENABLED ? (showAll ? ALL_PROFILES : normalizeProfileKey(gateway)) : 'default'
 )
 
 // Switch the active context to `name`: leave "All profiles" mode, point new

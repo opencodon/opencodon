@@ -20,6 +20,14 @@
  *   - the command palette's "Profiles" navigation entry
  *   - the "Profiles" category in keybind settings
  *
+ * ...and PINS the client to `default` (see store/profile.ts): the cached
+ * profile list, the session-list scope, the gateway target and the statusbar's
+ * active-profile reading. Hiding the surfaces is not enough on its own —
+ * `opencodon profile use <name>` in a terminal moves the backend's current
+ * profile, and the scope used to follow it. A named profile with no sessions
+ * then rendered an empty sidebar ("No sessions yet", count 0) with the
+ * switcher hidden, so there was no way back from inside the app.
+ *
  * Set to `true` to bring all of it back — no other change should be needed.
  *
  * Note: several surfaces (the appearance per-profile theme note, the gateway

@@ -241,9 +241,16 @@ export function insertAtGroup(
         // while dragging tabs around felt broken. Hiding is the user's call
         // (double-click / zone menu). Active moves only on a gesture; an empty
         // target has no prior tab, so the newcomer takes it regardless.
+        //
+        // ONLY for a real stack. A pane landing in an EMPTY zone is a lone
+        // pane, and the lone-pane default is headerless (forceLoneHeaderForPanes
+        // already covers the surfaces that must keep a tab). Pinning it here is
+        // how boot-time pane adoption gave every side zone a permanent one-tab
+        // strip that nothing could take back.
         const active = activate || n.panes.length === 0 ? paneId : n.active
+        const headerHidden = n.panes.length === 0 ? n.headerHidden : false
 
-        return { ...n, panes, active, headerHidden: false }
+        return { ...n, panes, active, headerHidden }
       }
 
       const orientation: Orientation = pos === 'left' || pos === 'right' ? 'row' : 'column'
@@ -513,6 +520,24 @@ export function setGroupMinimized(root: LayoutNode, groupId: string, minimized: 
 
 export function setGroupHeaderHidden(root: LayoutNode, groupId: string, headerHidden: boolean): LayoutNode {
   return mapGroups(root, g => (g.id === groupId ? { ...g, headerHidden } : g))
+}
+
+/**
+ * Drop every header override on a zone that is down to ONE pane, returning it
+ * to the contextual default (auto-hide, minus the forceLoneHeaderForPanes
+ * exceptions).
+ *
+ * Load-path only. `normalize` deliberately keeps an explicit SHOWN override
+ * within a session — that stickiness is what stops the bar flickering while
+ * tabs are dragged between zones — but an override that outlives a restart is
+ * always residue: the only thing that sets one on a lone pane is automatic
+ * pane adoption, and the strip it leaves behind reads as chrome the app just
+ * decided to grow.
+ */
+export function clearLoneGroupHeaderOverrides(root: LayoutNode): LayoutNode {
+  return mapGroups(root, g =>
+    g.panes.length <= 1 && g.headerHidden !== undefined ? { ...g, headerHidden: undefined } : g
+  )
 }
 
 function replaceNode(node: LayoutNode, id: string, make: (g: GroupNode) => LayoutNode): LayoutNode {
