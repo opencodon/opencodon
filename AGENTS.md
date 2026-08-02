@@ -261,7 +261,9 @@ src/opencodon/                 # THE package — one importable namespace, stric
 ├── cron/                      # Scheduler — jobs.py, scheduler.py
 └── frontends/                 # Delivery surfaces — they import core; NOTHING imports them
     ├── cli/                   # `opencodon` CLI — main.py (argparse), shell.py (OpencodonCLI REPL,
-    │   │                      #   assembled from shell_*.py mixins), setup wizard, web_server.py
+    │                          #   assembled from shell_*.py mixins), setup wizard
+    ├── server/                # Web/dashboard server — web_server.py (FastAPI), proxy/,
+    │   │                      #   dashboard_auth/, PTY bridges, webhook
     │   └── web_dist/          #   built browser UI (gitignored; vite outDir)
     ├── gateway/               # Messaging gateway — run.py + session.py + platforms/
     │   └── platforms/         #   Adapter per platform (telegram, discord, slack, whatsapp, ...)
@@ -503,7 +505,7 @@ npm test          # vitest
 
 ### TUI over the PTY bridge (`/api/pty`)
 
-The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `src/opencodon/frontends/cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `src/opencodon/frontends/cli/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
+The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `src/opencodon/frontends/server/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `src/opencodon/frontends/server/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
 
 - A client mounts xterm.js's `Terminal` with the WebGL renderer, `@xterm/addon-fit` for container-driven resize, and `@xterm/addon-unicode11` for modern wide-character widths.
 - `/api/pty?token=…` upgrades to a WebSocket; auth uses the same ephemeral `_SESSION_TOKEN` as REST, via query param (browsers can't set `Authorization` on WS upgrade).

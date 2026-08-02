@@ -2707,7 +2707,7 @@ def cmd_proxy(args):
     """Local OpenAI-compatible proxy to OAuth providers."""
     # Lazy import — pulls in aiohttp, which is gated behind an extras install
     # for users who don't run the proxy or the messaging gateway.
-    from opencodon.frontends.cli.proxy.cli import cmd_proxy as _cmd_proxy
+    from opencodon.frontends.server.proxy.cli import cmd_proxy as _cmd_proxy
 
     rc = _cmd_proxy(args)
     if isinstance(rc, int) and rc != 0:
@@ -4505,7 +4505,7 @@ def cmd_cron(args):
 
 def cmd_webhook(args):
     """Webhook subscription management."""
-    from opencodon.frontends.cli.webhook import webhook_command
+    from opencodon.frontends.server.webhook import webhook_command
 
     webhook_command(args)
 
@@ -4750,7 +4750,7 @@ _UPDATE_CRITICAL_FILES = (
     "src/opencodon/frontends/cli/main.py",
     "src/opencodon/frontends/cli/config.py",
     "src/opencodon/frontends/cli/__init__.py",
-    "src/opencodon/frontends/cli/web_server.py",
+    "src/opencodon/frontends/server/web_server.py",
     "src/opencodon/frontends/cli/shell.py",
     "src/opencodon/core/run_agent.py",
     "src/opencodon/tools/model_tools.py",
@@ -4876,7 +4876,7 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
     rebuild when nothing had. A content hash is stable across mtime churn.
 
     The source lives under ``apps/web/`` but Vite outputs to
-    ``src/opencodon/frontends/cli/web_dist/`` (per its vite.config.ts outDir), NOT
+    ``src/opencodon/frontends/server/web_dist/`` (per its vite.config.ts outDir), NOT
     ``apps/web/dist/``, so the dist directory is never part of the hashed
     source tree.
     """
@@ -12693,14 +12693,14 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     host = getattr(args, "host", "127.0.0.1") or "127.0.0.1"
 
     try:
-        from opencodon.frontends.cli.web_server import should_require_auth
+        from opencodon.frontends.server.web_server import should_require_auth
         if not should_require_auth(host):
             return  # loopback bind — gate never engages
     except Exception:
         return  # if we can't tell, defer to start_server's own gate
 
     try:
-        from opencodon.frontends.cli.dashboard_auth import list_providers
+        from opencodon.frontends.server.dashboard_auth import list_providers
         if list_providers():
             return  # a provider is already configured/registered
     except Exception:
@@ -13196,7 +13196,7 @@ def cmd_dashboard(args):
             exc_info=True,
         )
 
-    from opencodon.frontends.cli.web_server import start_server
+    from opencodon.frontends.server.web_server import start_server
 
     # Interactive auth setup: if this bind will engage the auth gate but no
     # provider is registered yet, offer to configure one here (TTY only)

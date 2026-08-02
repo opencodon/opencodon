@@ -220,7 +220,7 @@ class TestUnifiedDashboardRouting:
         )
         monkeypatch.setitem(
             sys.modules,
-            "opencodon.frontends.cli.web_server",
+            "opencodon.frontends.server.web_server",
             types.SimpleNamespace(start_server=lambda **_kwargs: None),
         )
 

@@ -1221,7 +1221,7 @@ def test_curator_slot_is_canonical_aux_task():
     """
     from opencodon.config import DEFAULT_CONFIG
     from opencodon.frontends.cli.main import _AUX_TASKS
-    from opencodon.frontends.cli.web_server import _AUX_TASK_SLOTS
+    from opencodon.frontends.server.web_server import _AUX_TASK_SLOTS
 
     # 1. DEFAULT_CONFIG.auxiliary — schema source
     assert "curator" in DEFAULT_CONFIG["auxiliary"], \

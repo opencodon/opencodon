@@ -63,6 +63,16 @@ ALIASES = {
     "opencodon_cli.fallback_config": "opencodon.core.providers.fallback_config",
     "opencodon_cli.memory_oauth": "opencodon.core.credentials.memory_oauth",
     "opencodon_cli.urllib_security": "opencodon.common.urllib_security",
+    # Phase 3b-3: web/dashboard server split out of the CLI frontend.
+    "opencodon_cli.web_server": "opencodon.frontends.server.web_server",
+    "opencodon_cli.web_app": "opencodon.frontends.server.web_app",
+    "opencodon_cli.web_git": "opencodon.frontends.server.web_git",
+    "opencodon_cli.webhook": "opencodon.frontends.server.webhook",
+    "opencodon_cli.pty_bridge": "opencodon.frontends.server.pty_bridge",
+    "opencodon_cli.pty_session": "opencodon.frontends.server.pty_session",
+    "opencodon_cli.win_pty_bridge": "opencodon.frontends.server.win_pty_bridge",
+    "opencodon_cli.proxy": "opencodon.frontends.server.proxy",
+    "opencodon_cli.dashboard_auth": "opencodon.frontends.server.dashboard_auth",
 }
 
 # Phase 3b-2 regrouped flat opencodon.core modules into subpackages; legacy

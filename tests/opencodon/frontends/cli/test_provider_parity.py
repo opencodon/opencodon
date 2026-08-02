@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from opencodon.core.providers.models import CANONICAL_PROVIDERS
 from opencodon.frontends.cli.provider_catalog import provider_catalog
-from opencodon.frontends.cli.web_server import _SESSION_TOKEN, app
+from opencodon.frontends.server.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
 HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}

@@ -652,7 +652,7 @@ class PluginContext:
         """Register a dashboard authentication provider.
 
         ``provider`` must be an instance of
-        :class:`opencodon_cli.dashboard_auth.DashboardAuthProvider`. Used by
+        :class:`opencodon.frontends.server.dashboard_auth.DashboardAuthProvider`. Used by
         the dashboard OAuth auth gate, which engages when the dashboard
         binds to a non-loopback host without ``--insecure``.
 
@@ -661,7 +661,7 @@ class PluginContext:
         cannot crash the host. Same convention as
         ``register_image_gen_provider``.
         """
-        from opencodon.frontends.cli.dashboard_auth import (
+        from opencodon.frontends.server.dashboard_auth import (
             DashboardAuthProvider, register_provider,
         )
 

@@ -24,7 +24,7 @@ class _FakeProc:
 
 
 def test_whatsapp_pairing_watcher_records_qr_and_connected():
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     proc = _FakeProc([
         '{"event":"started","session":"/tmp/session"}\n',
@@ -54,7 +54,7 @@ def test_whatsapp_pairing_watcher_records_qr_and_connected():
 
 
 def test_whatsapp_pairing_payload_includes_linked_account():
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     record = ws._WhatsAppOnboardingSession(
         proc=None,
@@ -77,7 +77,7 @@ def test_whatsapp_pairing_payload_includes_linked_account():
 
 
 def test_messaging_payload_includes_safe_whatsapp_setup(monkeypatch):
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     entry = {
         "id": "whatsapp",
@@ -126,7 +126,7 @@ def test_messaging_payload_includes_safe_whatsapp_setup(monkeypatch):
 
 
 def test_apply_whatsapp_onboarding_saves_pairing_policy(monkeypatch):
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     saved = {}
     removed = []
@@ -170,7 +170,7 @@ def test_apply_whatsapp_onboarding_saves_pairing_policy(monkeypatch):
 
 
 def test_apply_whatsapp_onboarding_self_chat_defaults_to_linked_account(monkeypatch):
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     saved = {}
     removed = []
@@ -213,7 +213,7 @@ def test_apply_whatsapp_onboarding_self_chat_defaults_to_linked_account(monkeypa
 
 
 def test_start_whatsapp_onboarding_existing_creds_returns_linked_account(monkeypatch, tmp_path):
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     session_dir = tmp_path / "session"
     session_dir.mkdir()
@@ -255,7 +255,7 @@ def test_start_whatsapp_onboarding_existing_creds_returns_linked_account(monkeyp
 
 
 def test_start_whatsapp_onboarding_returns_before_bridge_spawn(monkeypatch, tmp_path):
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
 
     captured = {}
 
@@ -292,7 +292,7 @@ def test_start_whatsapp_onboarding_returns_before_bridge_spawn(monkeypatch, tmp_
 
 def test_spawn_whatsapp_pairing_process_uses_json_mode(monkeypatch, tmp_path):
     from opencodon.frontends.gateway.platforms import whatsapp_common
-    from opencodon.frontends.cli import web_server as ws
+    from opencodon.frontends.server import web_server as ws
     import opencodon_constants
 
     bridge_dir = tmp_path / "bridge"

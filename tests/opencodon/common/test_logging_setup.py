@@ -384,7 +384,7 @@ class TestGuiMode:
     def test_gui_log_receives_only_gui_components(self, opencodon_home):
         opencodon_logging.setup_logging(opencodon_home=opencodon_home, mode="gui")
 
-        logging.getLogger("opencodon.frontends.cli.web_server").info("dashboard online")
+        logging.getLogger("opencodon.frontends.server.web_server").info("dashboard online")
         logging.getLogger("opencodon.frontends.tui.ws").info("ws connected")
         logging.getLogger("gateway.run").info("gateway event")
 
@@ -615,7 +615,7 @@ class TestComponentPrefixes:
 
     def test_gui_prefix(self):
         prefixes = opencodon_logging.COMPONENT_PREFIXES["gui"]
-        assert "opencodon.frontends.cli.web_server" in prefixes
+        assert "opencodon.frontends.server.web_server" in prefixes
         assert "tui_gateway" in prefixes
 
 

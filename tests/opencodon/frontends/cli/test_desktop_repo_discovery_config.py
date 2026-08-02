@@ -1,5 +1,5 @@
 from opencodon.config import DEFAULT_CONFIG
-from opencodon.frontends.cli.web_server import CONFIG_SCHEMA
+from opencodon.frontends.server.web_server import CONFIG_SCHEMA
 
 
 def test_desktop_repo_discovery_defaults_preserve_existing_behavior():

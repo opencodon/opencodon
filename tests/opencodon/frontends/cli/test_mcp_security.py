@@ -270,7 +270,7 @@ def test_migration_disables_existing_dangerous_entry(tmp_path):
 
 def test_dashboard_mcp_add_rejects_dangerous_entry():
     from fastapi.testclient import TestClient
-    from opencodon.frontends.cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from opencodon.frontends.server.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     client = TestClient(app)
     response = client.post(
@@ -285,7 +285,7 @@ def test_dashboard_mcp_add_rejects_dangerous_entry():
 
 def test_profile_mcp_write_skips_dangerous_entry(tmp_path):
     from opencodon.config import load_config
-    from opencodon.frontends.cli.web_server import MCPServerCreate, _write_profile_mcp_servers
+    from opencodon.frontends.server.web_server import MCPServerCreate, _write_profile_mcp_servers
     from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
 
     profile_dir = tmp_path / "profile"

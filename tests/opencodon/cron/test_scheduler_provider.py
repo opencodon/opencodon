@@ -75,7 +75,7 @@ def test_desktop_ticker_calls_tick_then_stops():
     """The desktop dashboard ticker loop calls opencodon.cron.scheduler.tick and exits
     once the stop_event is set. Desktop has no live adapters, so it ticks with
     no adapters/loop."""
-    from opencodon.frontends.cli.web_server import _start_desktop_cron_ticker
+    from opencodon.frontends.server.web_server import _start_desktop_cron_ticker
 
     calls = []
     stop = threading.Event()

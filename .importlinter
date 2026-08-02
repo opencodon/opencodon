@@ -156,7 +156,7 @@ ignore_imports =
     opencodon.plugins_runtime -> opencodon.core.providers.web_search_provider
     opencodon.plugins_runtime -> opencodon.core.providers.web_search_registry
     opencodon.plugins_runtime -> opencodon.frontends.cli.commands
-    opencodon.plugins_runtime -> opencodon.frontends.cli.dashboard_auth
+    opencodon.plugins_runtime -> opencodon.frontends.server.dashboard_auth
     opencodon.plugins_runtime -> opencodon.frontends.cli.main
     opencodon.plugins_runtime -> opencodon.frontends.gateway.platform_registry
     opencodon.plugins_runtime -> opencodon.tools.approval

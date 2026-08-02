@@ -74,7 +74,7 @@ ignored/
 environments/benchmarks/evals/
 
 # Browser UI build output (apps/web → npm run build -w @opencodon/web)
-opencodon_cli/web_dist/
+src/opencodon/frontends/server/web_dist/
 # Cross-process web UI build lock (flock target, always empty)
 .web_ui_build.lock
 apps/desktop/build/
@@ -171,4 +171,4 @@ native/fts5_cjk/*.so
 /.archive/
 
 # built browser UI (vite outDir) — never commit
-src/opencodon/frontends/cli/web_dist/
+src/opencodon/frontends/server/web_dist/
