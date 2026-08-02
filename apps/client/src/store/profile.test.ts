@@ -19,8 +19,18 @@ vi.mock('@/opencodon', () => ({
 vi.mock('@/lib/query-client', () => ({ invalidateProfileScopedQueries: vi.fn() }))
 vi.mock('@/store/starmap', () => ({ resetStarmapGraph }))
 
-const { $activeGatewayProfile, $profiles, ensureGatewayProfile, prewarmProfileBackend, refreshProfiles } =
-  await import('./profile')
+const {
+  $activeGatewayProfile,
+  $profileScope,
+  $profiles,
+  $showAllProfiles,
+  ensureGatewayProfile,
+  prewarmProfileBackend,
+  refreshProfiles,
+  resolveProfileTarget,
+  setActiveProfile,
+  $activeProfile
+} = await import('./profile')
 
 const { $connection } = await import('./session')
 const { invalidateProfileScopedQueries } = await import('@/lib/query-client')
@@ -170,5 +180,51 @@ describe('refreshProfiles shared rail list (#49289)', () => {
     await expect(refreshProfiles()).rejects.toThrow('backend unavailable')
 
     expect($profiles.get().map(profile => profile.name)).toEqual(['default', 'test1'])
+  })
+})
+
+// PROFILES_UI_ENABLED is false in the shipped build, so these assert the state
+// the app actually runs in. Flipping the flag on is what re-enables profiles;
+// these cases are then expected to change with it.
+describe('profiles-off: the client is pinned to default', () => {
+  it('hides named profiles the backend reports, keeping only default', async () => {
+    vi.mocked(getProfiles).mockResolvedValueOnce({
+      profiles: [profile('default', true), profile('opencodon-open'), profile('opencodon-internal')]
+    })
+
+    await expect(refreshProfiles()).resolves.toEqual([expect.objectContaining({ name: 'default' })])
+    expect($profiles.get().map(entry => entry.name)).toEqual(['default'])
+  })
+
+  it('still yields one entry when no row is flagged default', async () => {
+    vi.mocked(getProfiles).mockResolvedValueOnce({ profiles: [profile('opencodon-open')] })
+
+    // Zero profiles would read as "no backend"; the list must never be emptied
+    // by the clamp itself.
+    expect((await refreshProfiles()).map(entry => entry.name)).toEqual(['opencodon-open'])
+  })
+
+  it('scopes the session list to default even when the gateway sits on a named profile', () => {
+    // The regression: `opencodon profile use opencodon-open` moved the backend's
+    // current profile, the scope followed it, and the sidebar rendered an empty
+    // list with the switcher hidden — no way back from inside the app.
+    $activeGatewayProfile.set('opencodon-open')
+
+    expect($profileScope.get()).toBe('default')
+  })
+
+  it('ignores a persisted all-profiles view, whose only off switch is hidden', () => {
+    expect($showAllProfiles.get()).toBe(false)
+  })
+
+  it('reports default as the active profile whatever the backend says', () => {
+    setActiveProfile('opencodon-restricted')
+
+    expect($activeProfile.get()).toBe('default')
+  })
+
+  it('collapses any adoption candidate to default', () => {
+    expect(resolveProfileTarget('opencodon-open')).toBe('default')
+    expect(resolveProfileTarget(null)).toBe('default')
   })
 })

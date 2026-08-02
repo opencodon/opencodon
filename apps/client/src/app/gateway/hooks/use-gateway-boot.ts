@@ -25,7 +25,12 @@ import {
 } from '@/store/gateway'
 import { $gatewaySwitching, wipeSessionListsForGatewaySwitch } from '@/store/gateway-switch'
 import { notify, notifyError } from '@/store/notifications'
-import { $activeGatewayProfile, normalizeProfileKey, touchActiveGatewayBackend } from '@/store/profile'
+import {
+  $activeGatewayProfile,
+  normalizeProfileKey,
+  resolveProfileTarget,
+  touchActiveGatewayBackend
+} from '@/store/profile'
 import {
   $activeSessionId,
   $connection,
@@ -238,7 +243,7 @@ export function useGatewayBoot({
     async function adoptPrimaryProfile() {
       try {
         const pref = await desktop.profile?.get?.()
-        const profileKey = (pref?.profile ?? '').trim() || 'default'
+        const profileKey = resolveProfileTarget(pref?.profile)
         $activeGatewayProfile.set(profileKey)
         setPrimaryGateway(gateway, profileKey)
         void ensureGatewayForProfile(profileKey)
@@ -548,7 +553,7 @@ export function useGatewayBoot({
         publish(survivor.connection)
       }
 
-      const profile = survivor?.profile ?? $activeGatewayProfile.get()
+      const profile = resolveProfileTarget(survivor?.profile ?? $activeGatewayProfile.get())
       $activeGatewayProfile.set(profile)
       void ensureGatewayForProfile(profile)
 

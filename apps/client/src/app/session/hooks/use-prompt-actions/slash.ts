@@ -1,6 +1,5 @@
 import { type MutableRefObject, useCallback, useRef } from 'react'
 
-import { getProfiles } from '@/opencodon'
 import type { Translations } from '@/i18n'
 import { type ChatMessage, toChatMessages } from '@/lib/chat-messages'
 import { parseCommandDispatch, parseSlashCommand, sessionTitle } from '@/lib/chat-runtime'
@@ -18,7 +17,13 @@ import { setSessionYolo } from '@/lib/yolo-session'
 import { openCommandPalettePage } from '@/store/command-palette'
 import { setComposerDraft } from '@/store/composer'
 import { dismissNotification, notify, notifyError } from '@/store/notifications'
-import { $activeGatewayProfile, $newChatProfile, ensureGatewayProfile, normalizeProfileKey } from '@/store/profile'
+import {
+  $activeGatewayProfile,
+  $newChatProfile,
+  ensureGatewayProfile,
+  normalizeProfileKey,
+  refreshProfiles
+} from '@/store/profile'
 import {
   $connection,
   $sessions,
@@ -541,7 +546,11 @@ export function useSlashCommand(deps: SlashCommandDeps) {
           }
 
           try {
-            const { profiles } = await getProfiles()
+            // refreshProfiles, not the raw endpoint: it applies the same
+            // profiles-off clamp the rest of the client sees, so `/profile foo`
+            // reports "unknown profile (available: default)" instead of
+            // appearing to switch to a backend the app will never route to.
+            const profiles = await refreshProfiles()
             const match = profiles.find(profile => profile.name === target)
 
             if (!match) {
