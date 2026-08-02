@@ -22,11 +22,14 @@ only when lazy installs are disabled and the stack is absent.
 
 import json
 
+# Populates the science layer's host-service seam (science.hostinfra) —
+# must be imported before any science code path below runs.
+import opencodon.tools.science_host  # noqa: F401
 from opencodon.tools.registry import registry
 
 
 def _runtime():
-    from science.runtime import get_science_runtime
+    from opencodon.science.runtime import get_science_runtime
 
     return get_science_runtime()
 
@@ -37,7 +40,7 @@ def _session(kw) -> str:
 
 def _kernels_ready() -> bool:
     try:
-        from science.kernels import kernels_available
+        from opencodon.science.kernels import kernels_available
 
         return kernels_available()
     except Exception:
@@ -291,7 +294,7 @@ registry.register(
 
 def reproduce_artifact(version_id: str) -> str:
     try:
-        from science.reproduce import reproduce
+        from opencodon.science.reproduce import reproduce
 
         return json.dumps(reproduce(version_id, runtime=_runtime()),
                           ensure_ascii=False, default=str)

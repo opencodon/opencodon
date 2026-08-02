@@ -866,11 +866,11 @@ def _approval_key_aliases(pattern_key: str) -> set[str]:
 def _normalize_command_for_detection(command: str) -> str:
     """Normalize a command string before dangerous-pattern matching.
 
-    Strips ANSI escape sequences (full ECMA-48 via tools.ansi_strip),
+    Strips ANSI escape sequences (full ECMA-48 via common.ansi_strip),
     null bytes, and normalizes Unicode fullwidth characters so that
     obfuscation techniques cannot bypass the pattern-based detection.
     """
-    from opencodon.tools.ansi_strip import strip_ansi
+    from opencodon.common.ansi_strip import strip_ansi
 
     # Strip all ANSI escape sequences (CSI, OSC, DCS, 8-bit C1, etc.)
     command = strip_ansi(command)

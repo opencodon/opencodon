@@ -2796,7 +2796,7 @@ def terminal_tool(
 
             # Strip ANSI escape sequences so the model never sees terminal
             # formatting — prevents it from copying escapes into file writes.
-            from opencodon.tools.ansi_strip import strip_ansi
+            from opencodon.common.ansi_strip import strip_ansi
             output = strip_ansi(output)
 
             # Redact secrets from command output. For source/config dumps

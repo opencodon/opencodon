@@ -291,7 +291,7 @@ py-modules = ["opencodon_bootstrap"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["opencodon", "opencodon.*", "plugins", "plugins.*", "science", "science.*"]
+include = ["opencodon", "opencodon.*", "plugins", "plugins.*"]
 
 [tool.setuptools.package-data]
 # gateway/assets/ ships status_phrases.yaml and the Telegram BotFather

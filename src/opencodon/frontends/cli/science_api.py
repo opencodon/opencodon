@@ -26,7 +26,7 @@ Frames vs sessions: a *frame* is a root session plus its compression-chain
 descendants. ``artifacts.root_session_id`` is already keyed that way; cells
 are keyed by the individual ``session_id``, so frame-scoped cell reads expand
 the chain first. Cell and artifact rows outlive session deletion by design
-(soft references, see ``science/schema.py``), so reads never inner-join
+(soft references, see ``state/science_schema.py``), so reads never inner-join
 ``sessions`` to reach them.
 """
 
@@ -98,7 +98,7 @@ def _open_db(profile: Optional[str]):
 def _blobs():
     if _blob_opener is not None:
         return _blob_opener()
-    from science.blobstore import get_blob_store
+    from opencodon.science.blobstore import get_blob_store
 
     return get_blob_store()
 
@@ -669,7 +669,7 @@ def get_version_lineage(
     db = _open_db(profile)
     try:
         _require_version(db, version_id)
-        from science.store import ScienceStore
+        from opencodon.science.store import ScienceStore
 
         rows = ScienceStore(db).lineage(version_id, direction=direction)
         filenames = {
@@ -801,8 +801,8 @@ def export_frame(frame_id: str, profile: Optional[str] = None):
     import zipfile
     from pathlib import Path
 
-    from science.rocrate import export_rocrate
-    from science.runtime import ScienceRuntime
+    from opencodon.science.rocrate import export_rocrate
+    from opencodon.science.runtime import ScienceRuntime
 
     db = _open_db(profile)
     try:
@@ -871,8 +871,8 @@ def _reproduce_executor():
 
 
 def _run_reproduction(job_id: str, version_id: str, profile: Optional[str]) -> None:
-    from science.reproduce import reproduce
-    from science.runtime import ScienceRuntime
+    from opencodon.science.reproduce import reproduce
+    from opencodon.science.runtime import ScienceRuntime
 
     db = _open_db(profile)
     try:
@@ -955,7 +955,7 @@ def list_kernels():
     kernels: list = []
     reason = None
     try:
-        from science.kernels import get_kernel_manager, kernels_available
+        from opencodon.science.kernels import get_kernel_manager, kernels_available
 
         if kernels_available():
             kernels = get_kernel_manager().list_live()

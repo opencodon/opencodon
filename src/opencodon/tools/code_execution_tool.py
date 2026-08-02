@@ -1118,7 +1118,7 @@ def _execute_remote(
     stdout_text, stdout_metadata = _truncate_stdout_text(stdout_text)
 
     # Strip ANSI escape sequences
-    from opencodon.tools.ansi_strip import strip_ansi
+    from opencodon.common.ansi_strip import strip_ansi
     stdout_text = strip_ansi(stdout_text)
 
     # Redact secrets. code_file=True: execute_code output is code-execution
@@ -1542,7 +1542,7 @@ def execute_code(
 
         # Strip ANSI escape sequences so the model never sees terminal
         # formatting — prevents it from copying escapes into file writes.
-        from opencodon.tools.ansi_strip import strip_ansi
+        from opencodon.common.ansi_strip import strip_ansi
         stdout_text = strip_ansi(stdout_text)
         stderr_text = strip_ansi(stderr_text)
 

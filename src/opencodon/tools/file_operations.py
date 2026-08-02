@@ -1777,7 +1777,7 @@ class ShellFileOperations(FileOperations):
             # --check`` without a Cargo project).  This is a tooling gap,
             # not a real lint failure — surface it as ``skipped`` so the
             # write doesn't get flagged AND so the LSP tier still runs.
-            from opencodon.tools.ansi_strip import strip_ansi
+            from opencodon.common.ansi_strip import strip_ansi
             cleaned = strip_ansi(result.stdout).strip()
             # Collapse to a single line — the npx banner is multi-line ASCII.
             first_line = next(

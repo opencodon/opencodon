@@ -11,8 +11,8 @@ stated limitation instead of a bug report.
 
 ## What opencodon's host SDK provides
 
-Injected into the kernel by `science/bridge.py`, served by
-`science/host_bridge.py`:
+Injected into the kernel by `src/opencodon/science/bridge.py`, served by
+`src/opencodon/science/host_bridge.py`:
 
 | Call | Shape |
 |---|---|
@@ -30,7 +30,7 @@ per-item request dicts** (each with its own `prompt`, `model`, `max_tokens`
 and `images`), takes `tools` / `tool_choice` for structured output, and returns
 **dicts** carrying `tool_use` blocks rather than plain text.
 
-Closing this means implementing three things in `science/host_bridge.py`:
+Closing this means implementing three things in `src/opencodon/science/host_bridge.py`:
 
 1. **Heterogeneous batch** — a batch where each item carries its own model and
    token budget, rather than one model shared across the list.

@@ -23,7 +23,7 @@ import os
 from collections import Counter
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from opencodon.tools.ansi_strip import sanitize_display_text
+from opencodon.common.ansi_strip import sanitize_display_text
 
 # How many recent user/assistant turns we consider "recent activity".
 _RECENT_TURN_WINDOW = 20
