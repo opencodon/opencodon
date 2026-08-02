@@ -1239,7 +1239,7 @@ The `_isolate_opencodon_home` autouse fixture in `tests/conftest.py` redirects `
 
 **Profile tests**: When testing profile features, also mock `Path.home()` so that
 `_get_profiles_root()` and `_get_default_opencodon_home()` resolve within the temp dir.
-Use the pattern from `tests/src/opencodon/frontends/cli/test_profiles.py`:
+Use the pattern from `tests/opencodon/frontends/cli/test_profiles.py`:
 ```python
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
@@ -1263,7 +1263,7 @@ that have caused multiple "works locally, fails in CI" incidents (and the revers
 
 ```bash
 scripts/run_tests.sh                                  # full suite, CI-parity
-scripts/run_tests.sh tests/gateway/                   # one directory
+scripts/run_tests.sh tests/opencodon/frontends/gateway/                   # one directory
 scripts/run_tests.sh tests/opencodon/core/test_foo.py::test_x  # one test
 scripts/run_tests.sh -v --tb=long                     # pass-through pytest flags
 ```
