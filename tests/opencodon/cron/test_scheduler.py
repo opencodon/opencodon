@@ -1015,7 +1015,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1064,7 +1064,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1108,7 +1108,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1150,7 +1150,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1189,7 +1189,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1368,7 +1368,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1411,7 +1411,7 @@ class TestRunJobSessionPersistence:
             patch("opencodon.config.env_loader.reset_secret_source_cache"),
             patch("opencodon.state.SessionDB", return_value=fake_db),
             patch(
-                "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                 return_value={
                     "api_key": "test-key",
                     "base_url": "https://example.invalid/v1",
@@ -1535,7 +1535,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1612,7 +1612,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1652,7 +1652,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1695,7 +1695,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1806,7 +1806,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1865,7 +1865,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1925,7 +1925,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1975,7 +1975,7 @@ class TestRunJobSessionPersistence:
              patch("opencodon.config.env_loader.load_opencodon_dotenv", _record_load), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2035,7 +2035,7 @@ class TestRunJobSessionPersistence:
         with patch("opencodon.cron.scheduler._opencodon_home", tmp_path), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2092,7 +2092,7 @@ class TestRunJobConfigLogging:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -2127,7 +2127,7 @@ class TestRunJobConfigLogging:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -2167,7 +2167,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2201,7 +2201,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
@@ -2232,7 +2232,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2251,7 +2251,7 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_auth_fallback_switches_provider_and_model_together(self, tmp_path):
         """Codex auth failure must produce OpenRouter+GLM, never OpenRouter+GPT."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.credentials.auth import AuthError
 
         (tmp_path / "config.yaml").write_text(
             "model:\n"
@@ -2288,7 +2288,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    side_effect=resolve_runtime), \
              patch("opencodon.tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
@@ -2322,7 +2322,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2347,7 +2347,7 @@ class TestRunJobConfigEnvVarExpansion:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2392,7 +2392,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2417,7 +2417,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2450,7 +2450,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2474,7 +2474,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             success, _, _, error = run_job(job)
@@ -2504,7 +2504,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2531,7 +2531,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2562,7 +2562,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2587,7 +2587,7 @@ class TestRunJobModelResolution:
              patch("opencodon.config.env_loader.load_opencodon_dotenv"), \
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2631,7 +2631,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2692,7 +2692,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2731,7 +2731,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2778,7 +2778,7 @@ class TestRunJobSkillBacked:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -3108,7 +3108,7 @@ class TestRunJobWakeGate:
             "requested_provider": None,
         }
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ):
             yield

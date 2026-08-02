@@ -164,7 +164,7 @@ async def test_incomplete_codex_turn_stays_out_of_slack_transcript(monkeypatch, 
     monkeypatch.setattr(gateway_run, "_opencodon_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
-        "opencodon.core.model_metadata.get_model_context_length",
+        "opencodon.core.providers.model_metadata.get_model_context_length",
         lambda *_args, **_kwargs: 100,
     )
     monkeypatch.setenv("SLACK_HOME_CHANNEL", "C123")

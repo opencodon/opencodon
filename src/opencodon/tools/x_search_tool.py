@@ -145,7 +145,7 @@ def check_x_search_requirements() -> bool:
     """Return True when xAI credentials are available AND valid.
 
     ``resolve_xai_http_credentials`` calls
-    :func:`opencodon_cli.auth.resolve_xai_oauth_runtime_credentials` which
+    :func:`opencodon.core.credentials.auth.resolve_xai_oauth_runtime_credentials` which
     auto-refreshes the OAuth access token if it's expiring; a successful
     return therefore implies a usable bearer.
     """

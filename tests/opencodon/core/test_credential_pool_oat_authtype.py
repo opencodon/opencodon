@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from opencodon.core.credential_pool import (
+from opencodon.core.credentials.credential_pool import (
     AUTH_TYPE_API_KEY,
     AUTH_TYPE_OAUTH,
     CredentialPool,
@@ -77,7 +77,7 @@ def test_load_heals_legacy_row_and_exposes_it_to_resolver(tmp_path, monkeypatch)
     for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(
-        "opencodon.core.anthropic_adapter.read_claude_code_credentials",
+        "opencodon.core.providers.anthropic_adapter.read_claude_code_credentials",
         lambda: None,
     )
     token = "sk-ant-oat-legacy-manual"
@@ -96,8 +96,8 @@ def test_load_heals_legacy_row_and_exposes_it_to_resolver(tmp_path, monkeypatch)
         },
     }))
 
-    from opencodon.core.anthropic_adapter import resolve_anthropic_token
-    from opencodon.core.credential_pool import load_pool
+    from opencodon.core.providers.anthropic_adapter import resolve_anthropic_token
+    from opencodon.core.credentials.credential_pool import load_pool
 
     entry = load_pool("anthropic").entries()[0]
     persisted = json.loads(auth_file.read_text())
@@ -129,7 +129,7 @@ def test_profile_global_fallback_normalizes_in_memory_without_writing(tmp_path, 
         },
     }))
 
-    from opencodon.core.credential_pool import load_pool
+    from opencodon.core.credentials.credential_pool import load_pool
 
     entry = load_pool("anthropic").entries()[0]
     persisted = json.loads(global_auth.read_text())

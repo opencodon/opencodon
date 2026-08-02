@@ -152,7 +152,7 @@ class TestFallbackCredentialIsolation:
             "opencodon.core.auxiliary_client.resolve_provider_client",
             return_value=(fallback_client, "gpt-5.5"),
         ) as resolve_provider_client, patch(
-            "opencodon.core.credential_pool.load_pool",
+            "opencodon.core.credentials.credential_pool.load_pool",
             return_value=fallback_pool,
         ) as load_pool:
             assert try_activate_fallback(agent) is True

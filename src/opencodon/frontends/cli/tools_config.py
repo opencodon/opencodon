@@ -8,6 +8,7 @@ that need API keys, run through provider-aware configuration.
 Saves per-platform tool configuration to ~/.opencodon/config.yaml under
 the `platform_toolsets` key.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json as _json
 import logging
@@ -68,7 +69,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
 # every tool resolution for a persistently-corrupt config (#38798).
 _warned_invalid_platform_toolsets: Set[str] = set()
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────
@@ -150,7 +151,7 @@ def _xai_credentials_present() -> bool:
     "xai_grok"`` picker rows (xAI TTS, Grok OAuth x_search).
     """
     try:
-        from opencodon.frontends.cli.auth import _read_xai_oauth_tokens
+        from opencodon.core.credentials.auth import _read_xai_oauth_tokens
 
         _read_xai_oauth_tokens()
         return True
@@ -1367,7 +1368,7 @@ def _run_post_setup(post_setup_key: str):
         # console.x.ai. The picker entries declare empty env_vars so we
         # drive the full auth UX here.
         try:
-            from opencodon.frontends.cli.auth import get_xai_oauth_auth_status
+            from opencodon.core.credentials.auth import get_xai_oauth_auth_status
             oauth_logged_in = bool(get_xai_oauth_auth_status().get("logged_in"))
         except Exception:
             oauth_logged_in = False
@@ -2130,7 +2131,7 @@ def _plugin_image_gen_providers() -> list[dict]:
     this function to dedupe against (see issue #26241).
     """
     try:
-        from opencodon.core.image_gen_registry import list_providers
+        from opencodon.core.media.image_gen_registry import list_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2183,7 +2184,7 @@ def _plugin_web_search_providers() -> list[dict]:
     source of provider rows for the Web Search & Extract category.
     """
     try:
-        from opencodon.core.web_search_registry import list_providers as _list_web_providers
+        from opencodon.core.providers.web_search_registry import list_providers as _list_web_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2229,7 +2230,7 @@ def web_provider_capabilities(backend: str) -> list:
     test contexts, and firecrawl itself supports both).
     """
     try:
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         provider = get_provider(backend)
         if provider is not None:
@@ -2265,7 +2266,7 @@ def _plugin_browser_providers() -> list[dict]:
     setup / write paths can route through the registry when they want to.
     """
     try:
-        from opencodon.core.browser_registry import list_providers as _list_browser_providers
+        from opencodon.core.providers.browser_registry import list_providers as _list_browser_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2316,7 +2317,7 @@ def _plugin_tts_providers() -> list[dict]:
     through. Filtering here keeps the picker invariant.
     """
     try:
-        from opencodon.core.tts_registry import _BUILTIN_NAMES, list_providers
+        from opencodon.core.media.tts_registry import _BUILTIN_NAMES, list_providers
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -2604,7 +2605,7 @@ def _toolset_needs_configuration_prompt(
         if fal_key_is_configured():
             return False
         try:
-            from opencodon.core.image_gen_registry import list_providers
+            from opencodon.core.media.image_gen_registry import list_providers
             from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
@@ -2857,7 +2858,7 @@ def _plugin_image_gen_catalog(plugin_name: str):
     ``({}, None)`` if the provider isn't registered or has no models.
     """
     try:
-        from opencodon.core.image_gen_registry import get_provider
+        from opencodon.core.media.image_gen_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()

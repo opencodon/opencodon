@@ -209,7 +209,7 @@ class ProviderProfile:
         import json
         import urllib.request
 
-        from opencodon.frontends.cli.urllib_security import open_credentialed_url
+        from opencodon.common.urllib_security import open_credentialed_url
 
         req = urllib.request.Request(url)
         if api_key:

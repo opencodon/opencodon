@@ -137,7 +137,7 @@ class TestFlushAfterCompression:
         conversation_history=None and _flush_messages_to_session_db() appended
         the compacted dicts again, doubling live context.
         """
-        from opencodon.core.conversation_compression import conversation_history_after_compression
+        from opencodon.core.context.conversation_compression import conversation_history_after_compression
         from opencodon.state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -193,7 +193,7 @@ class TestFlushAfterCompression:
 
     def test_rotation_child_session_flushes_full_compressed_transcript_with_markers(self):
         """Regression for #57491: live cached-agent markers must not block child flush."""
-        from opencodon.core.conversation_compression import compress_context
+        from opencodon.core.context.conversation_compression import compress_context
         from opencodon.state import SessionDB
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -221,7 +221,7 @@ class TestFlushAfterCompression:
                 for i in range(12)
             ]
 
-            with patch("opencodon.core.context_compressor.call_llm", side_effect=RuntimeError("no provider")):
+            with patch("opencodon.core.context.context_compressor.call_llm", side_effect=RuntimeError("no provider")):
                 compressed, _ = compress_context(
                     agent, messages, approx_tokens=100_000, system_message="sys"
                 )

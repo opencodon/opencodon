@@ -20,7 +20,7 @@ sys.modules.setdefault("firecrawl", types.SimpleNamespace(Firecrawl=object))
 sys.modules.setdefault("fal_client", types.SimpleNamespace())
 
 from opencodon.core.run_agent import AIAgent
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _make_minimal_agent() -> AIAgent:

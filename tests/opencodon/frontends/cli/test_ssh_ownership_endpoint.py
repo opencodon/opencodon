@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from opencodon.frontends.cli import web_server
+from opencodon.frontends.server import web_server
 
 
 def test_ssh_ownership_endpoint_requires_token_and_returns_exact_nonce(monkeypatch):

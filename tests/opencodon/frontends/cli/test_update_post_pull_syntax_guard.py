@@ -117,12 +117,12 @@ def test_validate_critical_files_syntax_detects_break_in_main_py(tmp_path):
 
 
 def test_validate_critical_files_syntax_detects_break_in_web_server(tmp_path):
-    _populate_critical_tree(tmp_path, broken_file="src/opencodon/frontends/cli/web_server.py")
+    _populate_critical_tree(tmp_path, broken_file="src/opencodon/frontends/server/web_server.py")
 
     ok, failing_path, _ = opencodon_main._validate_critical_files_syntax(tmp_path)
 
     assert ok is False
-    assert failing_path is not None and failing_path.endswith("src/opencodon/frontends/cli/web_server.py")
+    assert failing_path is not None and failing_path.endswith("src/opencodon/frontends/server/web_server.py")
 
 
 def test_validate_critical_files_syntax_tolerates_missing_files(tmp_path):

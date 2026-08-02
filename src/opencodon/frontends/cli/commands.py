@@ -809,16 +809,16 @@ def _collect_gateway_skill_entries(
     # --- Tier 2: Built-in skill commands (trimmed at cap) -----------------
     _platform_disabled: set[str] = set()
     try:
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         _platform_disabled = get_disabled_skill_names(platform=platform)
     except Exception:
         pass
 
     skill_triples: list[tuple[str, str, str]] = []
     try:
-        from opencodon.core.skill_commands import get_skill_commands
+        from opencodon.core.skills.skill_commands import get_skill_commands
         from opencodon.tools.skills_tool import SKILLS_DIR
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
         _skills_dir = str(SKILLS_DIR.resolve())
         _hub_dir = str((SKILLS_DIR / ".hub").resolve()).rstrip("/") + "/"
         # Build set of allowed directory prefixes: local skills dir + any
@@ -979,7 +979,7 @@ def discord_skill_commands_by_category(
 
     _platform_disabled: set[str] = set()
     try:
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         _platform_disabled = get_disabled_skill_names(platform="discord")
     except Exception:
         pass
@@ -996,8 +996,8 @@ def discord_skill_commands_by_category(
     hidden = 0
 
     try:
-        from opencodon.core.skill_commands import get_skill_commands
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_commands import get_skill_commands
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
         from opencodon.tools.skills_tool import SKILLS_DIR
 
         _skills_dir = SKILLS_DIR.resolve()
@@ -1362,7 +1362,7 @@ class SlashCommandCompleter(Completer):
         with skill suggestions.
         """
         try:
-            from opencodon.core.skill_commands import _MAX_STACKED_SKILLS as _cap
+            from opencodon.core.skills.skill_commands import _MAX_STACKED_SKILLS as _cap
         except Exception:
             _cap = 5
 

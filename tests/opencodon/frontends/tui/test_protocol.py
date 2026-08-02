@@ -1397,7 +1397,7 @@ def test_make_agent_accepts_list_system_prompt(server, monkeypatch):
     monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", types.SimpleNamespace(AIAgent=_Agent))
     monkeypatch.setitem(
         sys.modules,
-        "opencodon.frontends.cli.runtime_provider",
+        "opencodon.core.providers.runtime_provider",
         types.SimpleNamespace(
             resolve_runtime_provider=lambda **_kwargs: {
                 "provider": "test",
@@ -1464,7 +1464,7 @@ def test_slash_exec_rejects_skill_commands(server):
     # Mock scan_skill_commands to return a known skill
     fake_skills = {"/opencodon-dev": {"name": "opencodon-dev", "description": "Dev workflow"}}
 
-    with patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_skills):
+    with patch("opencodon.core.skills.skill_commands.get_skill_commands", return_value=fake_skills):
         resp = server.handle_request({
             "id": "r1",
             "method": "slash.exec",
@@ -1506,9 +1506,9 @@ def test_slash_exec_routes_custom_skill_bundle_away_from_worker(server):
         "User instruction: compare vector databases"
     )
 
-    with patch("opencodon.core.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
+    with patch("opencodon.core.skills.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
          patch(
-             "opencodon.core.skill_bundles.build_bundle_invocation_message",
+             "opencodon.core.skills.skill_bundles.build_bundle_invocation_message",
              return_value=(fake_msg, ["source-check", "claim-audit"], []),
          ):
         resp = server.handle_request({
@@ -1692,8 +1692,8 @@ def test_command_dispatch_builtin_queue_wins_over_colliding_bundle(server):
         }
     }
 
-    with patch("opencodon.core.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
-         patch("opencodon.core.skill_bundles.build_bundle_invocation_message") as build_bundle:
+    with patch("opencodon.core.skills.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
+         patch("opencodon.core.skills.skill_bundles.build_bundle_invocation_message") as build_bundle:
         resp = server.handle_request({
             "id": "r-queue-collision",
             "method": "command.dispatch",
@@ -1734,7 +1734,7 @@ def test_command_dispatch_learn_sends_built_prompt(server):
     prompt was silently dropped after the ack. Routing through command.dispatch
     injects the standards-guided prompt as a normal turn instead.
     """
-    from opencodon.core.learn_prompt import build_learn_prompt
+    from opencodon.core.memory.learn_prompt import build_learn_prompt
 
     sid = "test-session"
     server._sessions[sid] = {"session_key": sid}
@@ -1898,8 +1898,8 @@ def test_command_dispatch_returns_skill_payload(server):
     fake_skills = {"/opencodon-dev": {"name": "opencodon-dev", "description": "Dev workflow"}}
     fake_msg = "Loaded skill content here"
 
-    with patch("opencodon.core.skill_commands.scan_skill_commands", return_value=fake_skills), \
-         patch("opencodon.core.skill_commands.build_skill_invocation_message", return_value=fake_msg):
+    with patch("opencodon.core.skills.skill_commands.scan_skill_commands", return_value=fake_skills), \
+         patch("opencodon.core.skills.skill_commands.build_skill_invocation_message", return_value=fake_msg):
         resp = server.handle_request({
             "id": "r2",
             "method": "command.dispatch",
@@ -1929,16 +1929,16 @@ def test_command_dispatch_returns_custom_bundle_payload(server):
         f"User instruction: {arg}"
     )
 
-    with patch("opencodon.core.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
+    with patch("opencodon.core.skills.skill_bundles.get_skill_bundles", return_value=fake_bundles), \
          patch(
-             "opencodon.core.skill_bundles.build_bundle_invocation_message",
+             "opencodon.core.skills.skill_bundles.build_bundle_invocation_message",
              return_value=(
                  fake_msg,
                  ["source-check", "claim-audit", "enough-research"],
                  [],
              ),
          ) as build_bundle, \
-         patch("opencodon.core.skill_commands.build_skill_invocation_message") as build_skill, \
+         patch("opencodon.core.skills.skill_commands.build_skill_invocation_message") as build_skill, \
          patch.object(server, "_resolve_session_platform", return_value="tui"):
         resp = server.handle_request({
             "id": "r-bundle-dispatch",

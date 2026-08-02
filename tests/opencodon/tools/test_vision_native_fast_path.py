@@ -196,7 +196,7 @@ class TestHandleVisionAnalyzeFastPath:
             # Mock decide_image_input_mode to always return "native" so the
             # fast path fires regardless of model-catalog state in CI.
             with patch(
-                "opencodon.core.image_routing.decide_image_input_mode",
+                "opencodon.core.media.image_routing.decide_image_input_mode",
                 return_value="native",
             ):
                 coro = _handle_vision_analyze({"image_url": str(img), "question": "?"})

@@ -55,7 +55,7 @@ def test_dashboard_schema_exposes_per_platform_streaming():
     per-platform streaming toggles surface in the dashboard automatically."""
     import pytest
     pytest.importorskip("fastapi")  # web_server requires fastapi/uvicorn
-    from opencodon.frontends.cli.web_server import CONFIG_SCHEMA
+    from opencodon.frontends.server.web_server import CONFIG_SCHEMA
 
     assert "display.platforms.telegram.streaming" in CONFIG_SCHEMA
     assert "display.platforms.discord.streaming" in CONFIG_SCHEMA

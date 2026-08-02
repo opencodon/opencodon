@@ -9,7 +9,7 @@ creative workflows that iterate on images across many turns.
 from __future__ import annotations
 
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     _CHARS_PER_TOKEN,
     _IMAGE_CHAR_EQUIVALENT,
     _IMAGE_TOKEN_ESTIMATE,
@@ -104,7 +104,7 @@ class TestTokenBudgetWithImages:
 
     def test_image_heavy_turns_count_toward_budget(self):
         """A tail with 5 image-bearing turns should blow past a 5K token budget."""
-        from opencodon.core.context_compressor import ContextCompressor
+        from opencodon.core.context.context_compressor import ContextCompressor
 
         # Minimal compressor fixture — just enough to call _find_tail_cut_by_tokens
         cc = object.__new__(ContextCompressor)

@@ -59,9 +59,9 @@ class TestResolutionOrder:
         """source.profile should be used even if routing would match."""
         discord_source.profile = "from-source"
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=True):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
+                with patch("opencodon.core.profiles.profile_exists", return_value=True):
                     mock_get_dir.return_value = Path("/opencodon/profiles/from-source")
                     result = mock_runner._resolve_profile_home_for_source(discord_source)
                     
@@ -73,9 +73,9 @@ class TestResolutionOrder:
         discord_source.profile = None
         
         # Mock routing to return a profile
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=True):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
+                with patch("opencodon.core.profiles.profile_exists", return_value=True):
                     mock_get_dir.return_value = Path("/opencodon/profiles/routed")
                     
                     # Manually set routing to return a profile
@@ -90,8 +90,8 @@ class TestResolutionOrder:
         """When source.profile and routing both return None, active profile is used."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/active")
                 
                 # No routing match
@@ -106,8 +106,8 @@ class TestResolutionOrder:
         """When even active profile is None, 'default' is used."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value=None):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value=None):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value=None)
@@ -125,10 +125,10 @@ class TestMissingProfileWarning:
         """When source.profile points to a nonexistent profile, log a WARNING."""
         discord_source.profile = "nonexistent"
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/nonexistent")
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=False):
+                with patch("opencodon.core.profiles.profile_exists", return_value=False):
                     with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                         with caplog.at_level(logging.WARNING):
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
@@ -148,10 +148,10 @@ class TestMissingProfileWarning:
         """When routing returns a nonexistent profile, log a WARNING."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/routed")
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=False):
+                with patch("opencodon.core.profiles.profile_exists", return_value=False):
                     with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                         # Routing returns a profile that doesn't exist
                         mock_runner._profile_name_for_source = MagicMock(return_value="routed")
@@ -170,10 +170,10 @@ class TestMissingProfileWarning:
         """When source.profile is empty, silent fallback to active profile (no warning)."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/active")
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=True):
+                with patch("opencodon.core.profiles.profile_exists", return_value=True):
                     with caplog.at_level(logging.WARNING):
                         mock_runner._profile_name_for_source = MagicMock(return_value=None)
                         
@@ -189,10 +189,10 @@ class TestMissingProfileWarning:
         """When the profile exists, no warning should be logged."""
         discord_source.profile = "existing"
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/existing")
-                with patch("opencodon.frontends.cli.profiles.profile_exists", return_value=True):
+                with patch("opencodon.core.profiles.profile_exists", return_value=True):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
@@ -209,8 +209,8 @@ class TestExceptionHandling:
         """When get_profile_dir raises an exception, log a WARNING with context."""
         discord_source.profile = "bad-profile"
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
                 with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
@@ -228,8 +228,8 @@ class TestExceptionHandling:
         """Exception when no profile was set should still log a warning."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value=None):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir", side_effect=RuntimeError("Filesystem error")):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value=None):
+            with patch("opencodon.core.profiles.get_profile_dir", side_effect=RuntimeError("Filesystem error")):
                 with patch("opencodon_constants.get_opencodon_home", return_value=Path("/opencodon")):
                     mock_runner._profile_name_for_source = MagicMock(return_value=None)
                     
@@ -249,8 +249,8 @@ class TestRoutingConsultation:
         """_profile_name_for_source should be called when source.profile is empty."""
         discord_source.profile = None
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/routed")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value="routed")
@@ -264,8 +264,8 @@ class TestRoutingConsultation:
         """_profile_name_for_source should NOT be called when source.profile is set."""
         discord_source.profile = "from-source"
         
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("opencodon.frontends.cli.profiles.get_profile_dir") as mock_get_dir:
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="active"):
+            with patch("opencodon.core.profiles.get_profile_dir") as mock_get_dir:
                 mock_get_dir.return_value = Path("/opencodon/profiles/from-source")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value="routed")

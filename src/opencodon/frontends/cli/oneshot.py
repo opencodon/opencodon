@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Optional
 
 from opencodon.frontends.gateway.session_context import declare_stateless_channel
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 
 
 def _normalize_toolsets(toolsets: object = None) -> list[str] | None:
@@ -322,8 +322,8 @@ def _run_agent(
     # Imports are local so they don't run when opencodon is invoked for
     # other commands (keeps top-level CLI startup cheap).
     from opencodon.config import load_config
-    from opencodon.frontends.cli.models import detect_provider_for_model
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.providers.models import detect_provider_for_model
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
     from opencodon.frontends.cli.tools_config import _get_platform_tools
     from opencodon.core.run_agent import AIAgent
 

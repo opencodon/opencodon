@@ -1545,7 +1545,7 @@ def _mark_verification_stale(
     if not paths:
         return
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
         from opencodon.core.verification_evidence import mark_workspace_edited
 
         cwd = None

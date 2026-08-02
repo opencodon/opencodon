@@ -13,7 +13,7 @@ def _build_agent(model_cfg, custom_providers=None, model=None):
 
     with (
         patch("opencodon.config.load_config", return_value=cfg),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),

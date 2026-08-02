@@ -32,7 +32,7 @@ Two subtleties this pins:
 """
 import pytest
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _compressor(threshold_tokens: int) -> ContextCompressor:
@@ -172,7 +172,7 @@ class TestFutilityGuard:
         as incompressible overhead and disables compaction on a healthy session.
         The check must compare the caller's own measure on both sides.
         """
-        from opencodon.core.context_compressor import estimate_messages_tokens_rough
+        from opencodon.core.context.context_compressor import estimate_messages_tokens_rough
 
         skew, floor = 1.6, 30_000
         cc = _compressor(threshold_tokens=150_000)

@@ -38,10 +38,10 @@ class TestResolveActiveContextLengthProviderAware:
             return 272_000
 
         with patch("opencodon.config.load_config", return_value=_model_cfg()), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value={"base_url": "https://chatgpt.com/backend-api/codex",
                                  "api_key": "tok-live"}) as mock_rt, \
-             patch("opencodon.core.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
+             patch("opencodon.core.providers.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
             ctx = model_tools._resolve_active_context_length()
 
         assert ctx == 272_000
@@ -66,9 +66,9 @@ class TestResolveActiveContextLengthProviderAware:
 
         with patch("opencodon.config.load_config",
                    return_value=_model_cfg(base_url="https://chatgpt.com/backend-api/codex")), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    side_effect=RuntimeError("no credentials")), \
-             patch("opencodon.core.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
+             patch("opencodon.core.providers.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
             ctx = model_tools._resolve_active_context_length()
 
         assert ctx == 272_000
@@ -89,8 +89,8 @@ class TestResolveActiveContextLengthProviderAware:
 
         with patch("opencodon.config.load_config",
                    return_value={"model": {"model": "some-model"}}), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider") as mock_rt, \
-             patch("opencodon.core.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider") as mock_rt, \
+             patch("opencodon.core.providers.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
             ctx = model_tools._resolve_active_context_length()
 
         assert ctx == 200_000
@@ -109,10 +109,10 @@ class TestResolveActiveContextLengthProviderAware:
 
         with patch("opencodon.config.load_config",
                    return_value=_model_cfg(context_length=150_000)), \
-             patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                    return_value={"base_url": "https://chatgpt.com/backend-api/codex",
                                  "api_key": "tok"}), \
-             patch("opencodon.core.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
+             patch("opencodon.core.providers.model_metadata.get_model_context_length", side_effect=fake_get_ctx):
             ctx = model_tools._resolve_active_context_length()
 
         assert ctx == 150_000

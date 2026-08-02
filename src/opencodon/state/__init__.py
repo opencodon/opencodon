@@ -26,7 +26,7 @@ import threading
 import time
 from pathlib import Path
 
-from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.memory.memory_manager import sanitize_context
 from opencodon.core.message_sanitization import _sanitize_surrogates
 from opencodon_constants import get_opencodon_home
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar

@@ -263,7 +263,7 @@ COPY --chmod=0755 docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-su
 COPY --chmod=0755 docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles
 
 # ---------- Runtime ----------
-ENV OPENCODON_WEB_DIST=/opt/opencodon/src/opencodon/frontends/cli/web_dist
+ENV OPENCODON_WEB_DIST=/opt/opencodon/src/opencodon/frontends/server/web_dist
 # Point the TUI launcher at the prebuilt bundle baked at build time (Layer 8:
 # `apps/tui && npm run build`). This makes _make_tui_argv take the prebuilt-bundle
 # fast path (`node --expose-gc /opt/opencodon/apps/tui/dist/entry.js`) and skip the

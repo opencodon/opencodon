@@ -24,7 +24,7 @@ def curator_env(tmp_path, monkeypatch):
 
     import opencodon.tools.skill_usage as usage
     importlib.reload(usage)
-    import opencodon.core.curator as curator
+    import opencodon.core.memory.curator as curator
     importlib.reload(curator)
 
     # Neutralize the real LLM pass by default — tests opt in per-case.
@@ -857,7 +857,7 @@ def test_state_preserves_last_report_path(curator_env):
 
 def test_curator_review_prompt_has_invariants():
     """Core invariants must be in the review prompt text."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
     assert "MUST NOT" in CURATOR_REVIEW_PROMPT or "DO NOT" in CURATOR_REVIEW_PROMPT
     assert "bundled" in CURATOR_REVIEW_PROMPT.lower()
     assert "delete" in CURATOR_REVIEW_PROMPT.lower()
@@ -877,7 +877,7 @@ def test_curator_review_prompt_points_at_existing_tools_only():
     """The review prompt must rely on existing tools (skill_manage + terminal)
     and must NOT reference bespoke curator tools that are not registered
     model tools."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
     assert "skill_manage" in CURATOR_REVIEW_PROMPT
     assert "skills_list" in CURATOR_REVIEW_PROMPT
     assert "skill_view" in CURATOR_REVIEW_PROMPT
@@ -891,7 +891,7 @@ def test_curator_review_prompt_points_at_existing_tools_only():
 def test_curator_does_not_instruct_model_to_pin():
     """Pinning is a user opt-out, not a model decision. The prompt should
     not tell the reviewer to pin skills autonomously."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
     # "pinned" appears in the invariant ("skip pinned skills"), but "pin"
     # as a decision verb should not.
     lines = CURATOR_REVIEW_PROMPT.split("\n")
@@ -908,7 +908,7 @@ def test_curator_does_not_instruct_model_to_pin():
 def test_curator_review_prompt_is_umbrella_first():
     """The curator prompt must push umbrella-building / class-level thinking,
     not pair-level 'are these two the same?' analysis."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
     lower = CURATOR_REVIEW_PROMPT.lower()
     # Must frame the task as active umbrella-building, not a passive audit.
     assert "umbrella" in lower, (
@@ -932,7 +932,7 @@ def test_curator_review_prompt_is_umbrella_first():
 
 def test_curator_review_prompt_preserves_skill_package_integrity():
     """Consolidation must not flatten package skills and break linked files."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
 
     lower = CURATOR_REVIEW_PROMPT.lower()
     assert "complete" in lower and "directory package" in lower
@@ -949,7 +949,7 @@ def test_curator_review_prompt_offers_support_file_actions():
     """Support-file demotion (references/templates/scripts) must be one of
     the three consolidation methods, alongside merge-into-existing and
     create-new-umbrella."""
-    from opencodon.core.curator import CURATOR_REVIEW_PROMPT
+    from opencodon.core.memory.curator import CURATOR_REVIEW_PROMPT
     # skill_manage action=write_file is how references/ are added to an
     # existing skill — this is the create-adjacent action the curator needs
     # to demote narrow siblings without touching their SKILL.md.
@@ -1127,7 +1127,7 @@ def test_review_runtime_legacy_auxiliary_carry_credentials(curator_env, caplog):
         },
     }
     import logging
-    with caplog.at_level(logging.INFO, logger="opencodon.core.curator"):
+    with caplog.at_level(logging.INFO, logger="opencodon.core.memory.curator"):
         binding = curator._resolve_review_runtime(cfg)
     assert binding.explicit_api_key == "legacy-key"
     assert binding.explicit_base_url == "http://legacy/v1"
@@ -1176,7 +1176,7 @@ def test_review_model_legacy_curator_auxiliary_still_works(curator_env, caplog):
         },
     }
     import logging
-    with caplog.at_level(logging.INFO, logger="opencodon.core.curator"):
+    with caplog.at_level(logging.INFO, logger="opencodon.core.memory.curator"):
         result = curator._resolve_review_model(cfg)
     assert result == ("openrouter", "openai/gpt-5.4-mini")
     assert any(
@@ -1221,7 +1221,7 @@ def test_curator_slot_is_canonical_aux_task():
     """
     from opencodon.config import DEFAULT_CONFIG
     from opencodon.frontends.cli.main import _AUX_TASKS
-    from opencodon.frontends.cli.web_server import _AUX_TASK_SLOTS
+    from opencodon.frontends.server.web_server import _AUX_TASK_SLOTS
 
     # 1. DEFAULT_CONFIG.auxiliary — schema source
     assert "curator" in DEFAULT_CONFIG["auxiliary"], \
@@ -1333,7 +1333,7 @@ def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatc
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         _fake_resolve_runtime_provider,
     )
     monkeypatch.setattr("opencodon.core.run_agent.AIAgent", _StubAgent)
@@ -1356,7 +1356,7 @@ def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch)
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "model": "real-model-id",
@@ -1405,7 +1405,7 @@ def test_review_fork_merges_slot_extra_body_over_runtime(curator_env, monkeypatc
         },
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "api_key": "test-key",

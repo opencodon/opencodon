@@ -61,7 +61,7 @@ class TestRegisterTTSProvider:
     def test_accepts_valid_provider(self):
         from opencodon.plugins_runtime import PluginManager
 
-        from opencodon.core import tts_registry
+        from opencodon.core.media import tts_registry
         tts_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])
@@ -94,7 +94,7 @@ class TestRegisterTTSProvider:
         """A plugin that passes a non-TTSProvider gets a warning, no exception."""
         from opencodon.plugins_runtime import PluginManager
 
-        from opencodon.core import tts_registry
+        from opencodon.core.media import tts_registry
         tts_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])
@@ -124,7 +124,7 @@ class TestRegisterTTSProvider:
         """
         from opencodon.plugins_runtime import PluginManager
 
-        from opencodon.core import tts_registry
+        from opencodon.core.media import tts_registry
         tts_registry._reset_for_tests()
 
         opencodon_home = Path(os.environ["OPENCODON_HOME"])

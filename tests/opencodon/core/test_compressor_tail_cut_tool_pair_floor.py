@@ -28,7 +28,7 @@ import pytest
 
 @pytest.fixture()
 def compressor():
-    from opencodon.core.context_compressor import ContextCompressor
+    from opencodon.core.context.context_compressor import ContextCompressor
 
     return ContextCompressor(model="main-model", quiet_mode=True)
 

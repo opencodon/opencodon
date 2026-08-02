@@ -10,7 +10,7 @@ do not depend on the richer ``project`` fixture from
 ``test_subdirectory_hints.py`` so the file is runnable standalone.
 """
 
-from opencodon.core.subdirectory_hints import SubdirectoryHintTracker
+from opencodon.core.context.subdirectory_hints import SubdirectoryHintTracker
 
 
 class TestSubdirectoryHintTrackerTildeRobustness:

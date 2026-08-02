@@ -7,7 +7,7 @@ def test_xai_model_flow_reauth_uses_standard_radio_prompt(monkeypatch):
     captured = {"login_calls": 0}
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.get_xai_oauth_auth_status",
+        "opencodon.core.credentials.auth.get_xai_oauth_auth_status",
         lambda: {"logged_in": True},
     )
     monkeypatch.setattr(
@@ -20,13 +20,13 @@ def test_xai_model_flow_reauth_uses_standard_radio_prompt(monkeypatch):
         captured["force_new_login"] = force_new_login
         captured["args"] = args
 
-    monkeypatch.setattr("opencodon.frontends.cli.auth._login_xai_oauth", _fake_login)
+    monkeypatch.setattr("opencodon.core.credentials.auth._login_xai_oauth", _fake_login)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.resolve_xai_oauth_runtime_credentials",
+        "opencodon.core.credentials.auth.resolve_xai_oauth_runtime_credentials",
         lambda *args, **kwargs: {"base_url": "https://api.x.ai/v1"},
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda model_ids, current_model="": None,
     )
 
@@ -46,7 +46,7 @@ def test_xai_model_flow_cancel_skips_reauth(monkeypatch):
     from opencodon.frontends.cli import main as main_mod
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.get_xai_oauth_auth_status",
+        "opencodon.core.credentials.auth.get_xai_oauth_auth_status",
         lambda: {"logged_in": True},
     )
     monkeypatch.setattr(
@@ -54,11 +54,11 @@ def test_xai_model_flow_cancel_skips_reauth(monkeypatch):
         lambda title, choices, default, description=None: 2,
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._login_xai_oauth",
+        "opencodon.core.credentials.auth._login_xai_oauth",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not reauthenticate")),
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not pick a model")),
     )
 

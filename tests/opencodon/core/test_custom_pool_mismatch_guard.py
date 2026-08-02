@@ -44,7 +44,7 @@ class TestCustomPoolMismatchGuard:
         # which a MagicMock would answer truthily).
         pool.current.return_value = None
         with patch(
-            "opencodon.core.credential_pool.get_custom_provider_pool_key",
+            "opencodon.core.credentials.credential_pool.get_custom_provider_pool_key",
             return_value="custom:fireworks",
         ):
             recover_with_credential_pool(
@@ -65,7 +65,7 @@ class TestCustomPoolMismatchGuard:
             "custom", "https://other-endpoint.example/v1", "custom:fireworks"
         )
         with patch(
-            "opencodon.core.credential_pool.get_custom_provider_pool_key",
+            "opencodon.core.credentials.credential_pool.get_custom_provider_pool_key",
             return_value="custom:other",
         ):
             recovered, _ = recover_with_credential_pool(

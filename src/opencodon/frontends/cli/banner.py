@@ -2,6 +2,7 @@
 
 Pure display functions with no OpencodonCLI state dependency.
 """
+from opencodon.common.repo import REPO_ROOT
 import json
 import logging
 import os
@@ -289,7 +290,7 @@ def check_for_updates() -> Optional[int]:
         # Prefer the running code's location over the profile-scoped path.
         # $OPENCODON_HOME/opencodon/ may be a stale copy from --clone-all;
         # Path(__file__) always resolves to the actual installed checkout.
-        repo_dir = Path(__file__).resolve().parents[4]
+        repo_dir = REPO_ROOT
         if not (repo_dir / ".git").exists():
             repo_dir = opencodon_home / "opencodon"
         if not (repo_dir / ".git").exists():
@@ -317,7 +318,7 @@ def _resolve_repo_dir() -> Optional[Path]:
     because ``$OPENCODON_HOME/opencodon/`` may be a stale copy carried
     over by ``--clone-all``.
     """
-    repo_dir = Path(__file__).resolve().parents[4]
+    repo_dir = REPO_ROOT
     if not (repo_dir / ".git").exists():
         opencodon_home = get_opencodon_home()
         repo_dir = opencodon_home / "opencodon"
@@ -776,7 +777,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     summary_parts.append("/help for commands")
     # Show active profile name when not 'default'
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
         _profile_name = get_active_profile_name()
         if _profile_name and _profile_name != "default":
             right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")

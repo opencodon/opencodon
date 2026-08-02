@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     COMPRESSED_SUMMARY_METADATA_KEY,
     SUMMARY_PREFIX,
     ContextCompressor,
@@ -16,7 +16,7 @@ from opencodon.core.context_compressor import (
 @pytest.fixture()
 def compressor() -> ContextCompressor:
     with patch(
-        "opencodon.core.context_compressor.get_model_context_length",
+        "opencodon.core.context.context_compressor.get_model_context_length",
         return_value=100_000,
     ):
         instance = ContextCompressor(

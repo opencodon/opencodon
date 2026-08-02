@@ -5,7 +5,7 @@ columns and Free/Pro badges, the same way the `opencodon model` CLI picker does.
 """
 
 import opencodon.frontends.cli.inventory as inv
-import opencodon.frontends.cli.models as models_mod
+import opencodon.core.providers.models as models_mod
 
 
 def _patch_pricing(monkeypatch, *, pricing):

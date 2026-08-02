@@ -28,7 +28,7 @@ class TestAnthropicPoolExhaustedFallsBackToEnv:
         with patch(
             "opencodon.core.auxiliary_client._select_pool_entry", return_value=(True, None)
         ), patch(
-            "opencodon.core.anthropic_adapter.build_anthropic_client"
+            "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
         ) as mock_build:
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic, AnthropicAuxiliaryClient
@@ -53,7 +53,7 @@ class TestAnthropicPoolExhaustedFallsBackToEnv:
         with patch(
             "opencodon.core.auxiliary_client._select_pool_entry", return_value=(True, None)
         ), patch(
-            "opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value=None
+            "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value=None
         ):
             from opencodon.core.auxiliary_client import _try_anthropic
 
@@ -75,7 +75,7 @@ class TestAnthropicPoolExhaustedFallsBackToEnv:
         with patch(
             "opencodon.core.auxiliary_client._select_pool_entry", return_value=(True, None)
         ), patch(
-            "opencodon.core.anthropic_adapter.build_anthropic_client", side_effect=_fake_build
+            "opencodon.core.providers.anthropic_adapter.build_anthropic_client", side_effect=_fake_build
         ):
             from opencodon.core.auxiliary_client import _try_anthropic
 

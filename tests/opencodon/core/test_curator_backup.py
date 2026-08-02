@@ -25,7 +25,7 @@ def backup_env(monkeypatch, tmp_path):
     # Reload so get_opencodon_home picks up the env var fresh.
     import opencodon_constants
     importlib.reload(opencodon_constants)
-    from opencodon.core import curator_backup
+    from opencodon.core.memory import curator_backup
     importlib.reload(curator_backup)
     return {"home": home, "skills": home / "skills", "cb": curator_backup}
 
@@ -271,7 +271,7 @@ def test_real_run_takes_pre_snapshot(backup_env, monkeypatch):
     _write_skill(skills, "alpha")
 
     # Reload curator module against the freshly-env'd opencodon_constants
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     importlib.reload(curator)
 
     # Stub out LLM review and auto transitions — we only care about the
@@ -301,7 +301,7 @@ def test_dry_run_skips_snapshot(backup_env, monkeypatch):
     skills = backup_env["skills"]
     _write_skill(skills, "alpha")
 
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     importlib.reload(curator)
     monkeypatch.setattr(
         curator, "_run_llm_review",

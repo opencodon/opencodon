@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon.frontends.cli import profiles as profiles_mod
+from opencodon.core import profiles as profiles_mod
 from opencodon.frontends.cli import profile_describer as describer
 
 

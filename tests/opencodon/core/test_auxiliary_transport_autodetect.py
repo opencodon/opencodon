@@ -68,7 +68,7 @@ def test_maybe_wrap_anthropic_rewraps_kimi_coding_url():
     fake_anthropic = MagicMock(name="anthropic_sdk_client")
 
     with patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         return_value=fake_anthropic,
     ):
         result = _maybe_wrap_anthropic(
@@ -86,7 +86,7 @@ def test_maybe_wrap_anthropic_rewraps_slash_anthropic_url():
     fake_anthropic = MagicMock(name="anthropic_sdk_client")
 
     with patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         return_value=fake_anthropic,
     ):
         result = _maybe_wrap_anthropic(
@@ -133,7 +133,7 @@ def test_maybe_wrap_anthropic_honors_explicit_anthropic_messages():
     fake_anthropic = MagicMock(name="anthropic_sdk_client")
 
     with patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         return_value=fake_anthropic,
     ):
         result = _maybe_wrap_anthropic(
@@ -183,7 +183,7 @@ def test_maybe_wrap_anthropic_sdk_missing_falls_back():
         raise ImportError("no anthropic SDK")
 
     with patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         side_effect=_raise_import,
     ):
         # The ImportError is caught on the `from ... import` line inside
@@ -191,8 +191,8 @@ def test_maybe_wrap_anthropic_sdk_missing_falls_back():
         # called. To exercise the ImportError path we need to patch the
         # module lookup itself.
         import sys as _sys
-        saved = _sys.modules.get("opencodon.core.anthropic_adapter")
-        _sys.modules["opencodon.core.anthropic_adapter"] = None  # force ImportError
+        saved = _sys.modules.get("opencodon.core.providers.anthropic_adapter")
+        _sys.modules["opencodon.core.providers.anthropic_adapter"] = None  # force ImportError
         try:
             result = _maybe_wrap_anthropic(
                 plain_client, "kimi-for-coding", "sk-kimi-test",
@@ -200,9 +200,9 @@ def test_maybe_wrap_anthropic_sdk_missing_falls_back():
             )
         finally:
             if saved is not None:
-                _sys.modules["opencodon.core.anthropic_adapter"] = saved
+                _sys.modules["opencodon.core.providers.anthropic_adapter"] = saved
             else:
-                _sys.modules.pop("opencodon.core.anthropic_adapter", None)
+                _sys.modules.pop("opencodon.core.providers.anthropic_adapter", None)
 
     assert result is plain_client
     assert not isinstance(result, AnthropicAuxiliaryClient)

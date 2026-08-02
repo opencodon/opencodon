@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 from opencodon.core.run_agent import AIAgent
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _make_agent_with_compressor() -> AIAgent:
@@ -43,7 +43,7 @@ def _make_agent_with_compressor() -> AIAgent:
 
 
 @patch("opencodon.core.auxiliary_client.resolve_provider_client")
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128_000)
 def test_compressor_updated_on_fallback(mock_ctx_len, mock_resolve):
     """After fallback activation, the compressor must reflect the fallback model."""
     agent = _make_agent_with_compressor()
@@ -73,7 +73,7 @@ def test_compressor_updated_on_fallback(mock_ctx_len, mock_resolve):
 
 
 @patch("opencodon.core.auxiliary_client.resolve_provider_client")
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128_000)
 def test_compressor_not_present_does_not_crash(mock_ctx_len, mock_resolve):
     """If the agent has no compressor, fallback should still succeed."""
     agent = _make_agent_with_compressor()

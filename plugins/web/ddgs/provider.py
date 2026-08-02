@@ -27,7 +27,7 @@ import sys
 import time
 from typing import Any, Dict, Optional
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 

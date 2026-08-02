@@ -79,7 +79,7 @@ class ResponsesApiTransport(ProviderTransport):
 
     def _resolve_issuer_kind(self, params: Dict[str, Any]) -> str:
         """Classify the current Responses endpoint from transport params."""
-        from opencodon.core.codex_responses_adapter import _classify_responses_issuer
+        from opencodon.core.providers.codex_responses_adapter import _classify_responses_issuer
         return _classify_responses_issuer(
             is_xai_responses=params.get("is_xai_responses") is True,
             is_github_responses=params.get("is_github_responses") is True,
@@ -89,7 +89,7 @@ class ResponsesApiTransport(ProviderTransport):
 
     def convert_messages(self, messages: List[Dict[str, Any]], **kwargs) -> Any:
         """Convert OpenAI chat messages to Responses API input items."""
-        from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+        from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
         issuer = self._resolve_issuer_kind(kwargs)
         self._last_issuer_kind = issuer
         return _chat_messages_to_responses_input(
@@ -104,7 +104,7 @@ class ResponsesApiTransport(ProviderTransport):
 
     def convert_tools(self, tools: List[Dict[str, Any]]) -> Any:
         """Convert OpenAI tool schemas to Responses API function definitions."""
-        from opencodon.core.codex_responses_adapter import _responses_tools
+        from opencodon.core.providers.codex_responses_adapter import _responses_tools
         return _responses_tools(tools)
 
     def build_kwargs(
@@ -136,7 +136,7 @@ class ResponsesApiTransport(ProviderTransport):
             is_xai_responses: bool — xAI/Grok backend
             github_reasoning_extra: dict | None — Copilot reasoning params
         """
-        from opencodon.core.codex_responses_adapter import (
+        from opencodon.core.providers.codex_responses_adapter import (
             _chat_messages_to_responses_input,
             _responses_tools,
         )
@@ -285,7 +285,7 @@ class ResponsesApiTransport(ProviderTransport):
             kwargs["prompt_cache_key"] = cache_key
 
         if reasoning_enabled and is_xai_responses:
-            from opencodon.core.model_metadata import grok_supports_reasoning_effort
+            from opencodon.core.providers.model_metadata import grok_supports_reasoning_effort
 
             # Ask xAI to echo back encrypted reasoning items so we can
             # replay them on subsequent turns for cross-turn coherence.
@@ -415,7 +415,7 @@ class ResponsesApiTransport(ProviderTransport):
 
     def normalize_response(self, response: Any, **kwargs) -> NormalizedResponse:
         """Normalize Codex Responses API response to NormalizedResponse."""
-        from opencodon.core.codex_responses_adapter import (
+        from opencodon.core.providers.codex_responses_adapter import (
             _normalize_codex_response,
         )
 
@@ -498,7 +498,7 @@ class ResponsesApiTransport(ProviderTransport):
 
         Normalizes input items, strips unsupported fields, validates structure.
         """
-        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.providers.codex_responses_adapter import _preflight_codex_api_kwargs
 
         normalized = _preflight_codex_api_kwargs(
             api_kwargs,

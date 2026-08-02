@@ -79,7 +79,7 @@ async def test_compress_command_reports_noop_without_success_banner():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -122,7 +122,7 @@ async def test_compress_command_works_when_auto_compaction_disabled():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -161,7 +161,7 @@ async def test_compress_command_explains_when_token_estimate_rises():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -211,7 +211,7 @@ async def test_compress_command_appends_warning_when_compression_aborts():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -273,7 +273,7 @@ async def test_compress_command_surfaces_aux_model_failure_even_when_recovered()
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -331,7 +331,7 @@ async def test_compress_command_passes_session_db_and_persists_rotated_session()
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance) as mock_agent_cls,
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -393,7 +393,7 @@ async def test_compress_command_does_not_repoint_session_when_transcript_write_f
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -452,7 +452,7 @@ async def test_compress_command_in_place_skips_destructive_rewrite():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "***"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", side_effect=_estimate),
     ):
         result = await runner._handle_compress_command(_make_event())
 
@@ -487,7 +487,7 @@ async def test_compress_command_preserves_platform_and_gateway_session_key():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance) as mock_agent,
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100),
     ):
         await runner._handle_compress_command(_make_event())
 
@@ -524,7 +524,7 @@ async def test_compress_command_overrides_stale_resolver_identity():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value=runtime),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance) as mock_agent,
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100),
     ):
         await runner._handle_compress_command(_make_event())  # must not raise
 
@@ -570,7 +570,7 @@ async def test_compress_command_passes_tool_messages_to_compressor():
         patch("opencodon.frontends.gateway.run._resolve_runtime_agent_kwargs", return_value={"api_key": "test-key"}),
         patch("opencodon.frontends.gateway.run._resolve_gateway_model", return_value="test-model"),
         patch("opencodon.core.run_agent.AIAgent", return_value=agent_instance),
-        patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100),
+        patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100),
     ):
         await runner._handle_compress_command(_make_event())
 

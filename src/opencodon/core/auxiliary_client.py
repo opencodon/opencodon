@@ -102,8 +102,8 @@ class _OpenAIProxy:
 
 OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 
-from opencodon.core.credential_pool import load_pool
-from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
+from opencodon.core.credentials.credential_pool import load_pool
+from opencodon.core.providers.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
 from opencodon.config import get_opencodon_home
 from opencodon_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
@@ -884,7 +884,7 @@ class _CodexCompletionsAdapter:
         # assistant tool calls as `function_call` items and tool results as
         # `function_call_output` items with a valid call_id, so every
         # Responses path normalizes tool history identically and cannot drift.
-        from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+        from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
         from utils import base_url_host_matches
 
         instructions = "You are a helpful assistant."
@@ -1095,7 +1095,7 @@ class _CodexCompletionsAdapter:
             # Consuming raw events and assembling the final response
             # ourselves from ``response.output_item.done`` makes us
             # structurally immune to that drift.
-            from opencodon.core.codex_runtime import _consume_codex_event_stream
+            from opencodon.core.providers.codex_runtime import _consume_codex_event_stream
 
             stream_kwargs = dict(resp_kwargs)
             stream_kwargs["stream"] = True
@@ -1261,7 +1261,7 @@ class _AnthropicCompletionsAdapter:
         self._is_oauth = is_oauth
 
     def create(self, **kwargs) -> Any:
-        from opencodon.core.anthropic_adapter import build_anthropic_kwargs, create_anthropic_message
+        from opencodon.core.providers.anthropic_adapter import build_anthropic_kwargs, create_anthropic_message
         from opencodon.core.transports import get_transport
 
         messages = kwargs.get("messages", [])
@@ -1315,7 +1315,7 @@ class _AnthropicCompletionsAdapter:
         # temperature for models that still accept it. build_anthropic_kwargs
         # additionally strips these keys as a safety net — keep both layers.
         if temperature is not None:
-            from opencodon.core.anthropic_adapter import _forbids_sampling_params
+            from opencodon.core.providers.anthropic_adapter import _forbids_sampling_params
             if not _forbids_sampling_params(model):
                 anthropic_kwargs["temperature"] = temperature
 
@@ -1437,7 +1437,7 @@ class _BedrockCompletionsAdapter:
         self._model = model
 
     def create(self, **kwargs) -> Any:
-        from opencodon.core.bedrock_adapter import call_converse
+        from opencodon.core.providers.bedrock_adapter import call_converse
 
         messages = kwargs.get("messages", [])
         model = kwargs.get("model", self._model)
@@ -1523,7 +1523,7 @@ def _endpoint_speaks_anthropic_messages(base_url: str) -> bool:
     """True if the endpoint at ``base_url`` speaks the Anthropic Messages
     protocol instead of OpenAI chat.completions.
 
-    Mirrors ``opencodon_cli.runtime_provider._detect_api_mode_for_url`` so the
+    Mirrors ``opencodon.core.providers.runtime_provider._detect_api_mode_for_url`` so the
     auxiliary client and the main agent stay in sync on transport selection.
     Covers:
 
@@ -1580,13 +1580,13 @@ def _maybe_wrap_anthropic(
     if _safe_isinstance(client_obj, CodexAuxiliaryClient):
         return client_obj
     try:
-        from opencodon.core.gemini_native_adapter import GeminiNativeClient
+        from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient
         if _safe_isinstance(client_obj, GeminiNativeClient):
             return client_obj
     except ImportError:
         pass
     try:
-        from opencodon.core.copilot_acp_client import CopilotACPClient
+        from opencodon.core.providers.copilot_acp_client import CopilotACPClient
         if _safe_isinstance(client_obj, CopilotACPClient):
             return client_obj
     except ImportError:
@@ -1604,7 +1604,7 @@ def _maybe_wrap_anthropic(
         return client_obj
 
     try:
-        from opencodon.core.anthropic_adapter import build_anthropic_client
+        from opencodon.core.providers.anthropic_adapter import build_anthropic_client
     except ImportError:
         logger.warning(
             "Endpoint %s speaks Anthropic Messages but the anthropic SDK is "
@@ -1651,12 +1651,12 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
     compression report "no provider configured" even though ``opencodon auth
     status`` shows xAI OAuth as logged in.
 
-    Falls back to ``opencodon_cli.auth``'s singleton runtime resolver for older
+    Falls back to ``opencodon.core.credentials.auth``'s singleton runtime resolver for older
     auth-store-only logins. Returns ``None`` if the user is not authenticated
     with xAI Grok OAuth.
     """
     try:
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.credentials.auth import (
             DEFAULT_XAI_OAUTH_BASE_URL,
             _xai_validate_inference_base_url,
         )
@@ -1683,7 +1683,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
         logger.debug("Auxiliary xAI OAuth pool credential resolution failed: %s", exc)
 
     try:
-        from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+        from opencodon.core.credentials.auth import resolve_xai_oauth_runtime_credentials
 
         creds = resolve_xai_oauth_runtime_credentials()
     except Exception as exc:
@@ -1713,7 +1713,7 @@ def _read_codex_access_token() -> Optional[str]:
             return token
 
     try:
-        from opencodon.frontends.cli.auth import _read_codex_tokens
+        from opencodon.core.credentials.auth import _read_codex_tokens
         data = _read_codex_tokens()
         tokens = data.get("tokens", {})
         access_token = tokens.get("access_token")
@@ -1747,7 +1747,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
     credentials, or (None, None) if none are configured.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
     except ImportError:
         logger.debug("Could not import PROVIDER_REGISTRY for API-key fallback")
         return None, None
@@ -1763,7 +1763,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             # Without this gate, Claude Code credentials get silently used
             # as auxiliary fallback when the user's primary provider fails.
             try:
-                from opencodon.frontends.cli.auth import is_provider_explicitly_configured
+                from opencodon.core.credentials.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("anthropic"):
                     continue
             except ImportError:
@@ -1783,7 +1783,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
                 continue  # skip provider if we don't know a valid aux model
             logger.debug("Auxiliary text client: %s (%s) via pool", pconfig.name, model)
             if provider_id == "gemini":
-                from opencodon.core.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
+                from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
 
                 if is_native_gemini_base_url(base_url):
                     return GeminiNativeClient(api_key=api_key, base_url=base_url), model
@@ -1791,7 +1791,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             if base_url_host_matches(base_url, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(base_url, "githubcopilot.com"):
-                from opencodon.frontends.cli.models import copilot_default_headers
+                from opencodon.core.providers.models import copilot_default_headers
 
                 extra["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1823,7 +1823,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             continue  # skip provider if we don't know a valid aux model
         logger.debug("Auxiliary text client: %s (%s)", pconfig.name, model)
         if provider_id == "gemini":
-            from opencodon.core.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
+            from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
 
             if is_native_gemini_base_url(base_url):
                 return GeminiNativeClient(api_key=api_key, base_url=base_url), model
@@ -1831,7 +1831,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if base_url_host_matches(base_url, "api.kimi.com"):
             extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.models import copilot_default_headers
+            from opencodon.core.providers.models import copilot_default_headers
 
             extra["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -2167,7 +2167,7 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     environment.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="custom")
     except Exception as exc:
@@ -2291,7 +2291,7 @@ def _try_custom_endpoint() -> Tuple[Optional[Any], Optional[str]]:
         # LiteLLM proxies, etc.).  Must NEVER be treated as OAuth —
         # Anthropic OAuth claims only apply to api.anthropic.com.
         try:
-            from opencodon.core.anthropic_adapter import build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client
             real_client = build_anthropic_client(custom_key, custom_base)
         except ImportError:
             logger.warning(
@@ -2389,7 +2389,7 @@ def _try_azure_foundry(
     """Resolve an Azure Foundry auxiliary client via the runtime resolver.
 
     Mirrors the ``_try_anthropic`` shape but delegates to
-    :func:`opencodon_cli.runtime_provider._resolve_azure_foundry_runtime` —
+    :func:`opencodon.core.providers.runtime_provider._resolve_azure_foundry_runtime` —
     the same resolver the main agent uses — so:
 
     * ``auth_mode: api_key`` (default) gets the static
@@ -2409,8 +2409,8 @@ def _try_azure_foundry(
     Returns ``(client, model)`` or ``(None, None)`` on failure.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import _resolve_azure_foundry_runtime
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.providers.runtime_provider import _resolve_azure_foundry_runtime
+        from opencodon.core.credentials.auth import AuthError
         from opencodon.config import load_config
     except ImportError:
         return None, None
@@ -2495,7 +2495,7 @@ def _try_azure_foundry(
 
 def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optional[str]]:
     try:
-        from opencodon.core.anthropic_adapter import build_anthropic_client, resolve_anthropic_token
+        from opencodon.core.providers.anthropic_adapter import build_anthropic_client, resolve_anthropic_token
     except ImportError:
         return None, None
 
@@ -2542,7 +2542,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
     except Exception:
         pass
 
-    from opencodon.core.anthropic_adapter import _is_oauth_token
+    from opencodon.core.providers.anthropic_adapter import _is_oauth_token
     is_oauth = _is_oauth_token(token)
     model = _get_aux_model_for_provider("anthropic") or "claude-haiku-4-5-20251001"
     logger.debug("Auxiliary client: Anthropic native (%s) at %s (oauth=%s)", model, base_url, is_oauth)
@@ -3193,7 +3193,7 @@ def _recoverable_pool_provider(
         rt_provider = rt.get("provider", "")
         if rt_provider and rt_provider not in {"", "auto", "custom"}:
             try:
-                from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+                from opencodon.core.credentials.auth import PROVIDER_REGISTRY
                 pconfig = PROVIDER_REGISTRY.get(rt_provider)
                 if pconfig and getattr(pconfig, "auth_type", None) == "api_key":
                     rt_base = str(getattr(pconfig, "inference_base_url", "") or "").rstrip("/")
@@ -3377,7 +3377,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
     normalized = _normalize_aux_provider(provider)
     try:
         if normalized == "copilot":
-            from opencodon.frontends.cli.copilot_auth import (
+            from opencodon.core.credentials.copilot_auth import (
                 _jwt_cache,
                 _token_fingerprint,
                 exchange_copilot_token,
@@ -3392,7 +3392,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
             _evict_cached_clients(normalized)
             return True
         if normalized == "openai-codex":
-            from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+            from opencodon.core.credentials.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -3400,7 +3400,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
             _evict_cached_clients(normalized)
             return True
         if normalized == "anthropic":
-            from opencodon.core.anthropic_adapter import read_claude_code_credentials, _refresh_oauth_token, resolve_anthropic_token
+            from opencodon.core.providers.anthropic_adapter import read_claude_code_credentials, _refresh_oauth_token, resolve_anthropic_token
 
             creds = read_claude_code_credentials()
             token = _refresh_oauth_token(creds) if isinstance(creds, dict) and creds.get("refreshToken") else None
@@ -3421,7 +3421,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
                 if refreshed is not None and str(getattr(refreshed, "runtime_api_key", "") or "").strip():
                     _evict_cached_clients(normalized)
                     return True
-            from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+            from opencodon.core.credentials.auth import resolve_xai_oauth_runtime_credentials
 
             creds = resolve_xai_oauth_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -3437,7 +3437,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
             # client is never evicted from _client_cache (whose cache key
             # ignores the rotating bearer token), so every subsequent
             # auxiliary Vertex call keeps 401ing until process restart.
-            from opencodon.core.vertex_adapter import get_vertex_config
+            from opencodon.core.providers.vertex_adapter import get_vertex_config
 
             token, base_url = get_vertex_config()
             if not isinstance(token, str) or not token.strip():
@@ -3976,7 +3976,7 @@ def _try_main_fallback_chain(
     """
     try:
         from opencodon.config import load_config
-        from opencodon.frontends.cli.fallback_config import get_fallback_chain
+        from opencodon.core.providers.fallback_config import get_fallback_chain
 
         chain = get_fallback_chain(load_config())
     except Exception as exc:
@@ -4163,7 +4163,7 @@ def _resolve_auto(
             # Named custom provider (custom_providers / providers dict entry).
             _has_named_entry = False
             try:
-                from opencodon.frontends.cli.runtime_provider import _get_named_custom_provider
+                from opencodon.core.providers.runtime_provider import _get_named_custom_provider
                 _has_named_entry = _get_named_custom_provider(main_provider) is not None
             except ImportError:
                 pass
@@ -4280,14 +4280,14 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if isinstance(sync_client, BedrockAuxiliaryClient):
         return AsyncBedrockAuxiliaryClient(sync_client), model
     try:
-        from opencodon.core.gemini_native_adapter import GeminiNativeClient, AsyncGeminiNativeClient
+        from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient, AsyncGeminiNativeClient
 
         if isinstance(sync_client, GeminiNativeClient):
             return AsyncGeminiNativeClient(sync_client), model
     except ImportError:
         pass
     try:
-        from opencodon.core.copilot_acp_client import CopilotACPClient
+        from opencodon.core.providers.copilot_acp_client import CopilotACPClient
         if isinstance(sync_client, CopilotACPClient):
             return sync_client, model
     except ImportError:
@@ -4301,7 +4301,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if base_url_host_matches(sync_base_url, "openrouter.ai"):
         async_kwargs["default_headers"] = build_or_headers()
     elif base_url_host_matches(sync_base_url, "githubcopilot.com"):
-        from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+        from opencodon.core.credentials.copilot_auth import copilot_request_headers
 
         async_kwargs["default_headers"] = copilot_request_headers(
             is_agent_turn=True, is_vision=is_vision
@@ -4315,7 +4315,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         # client-level headers on their ProviderProfile (e.g. attribution
         # User-Agent strings). Provider is inferred from the hostname.
         try:
-            from opencodon.core.model_metadata import _infer_provider_from_url
+            from opencodon.core.providers.model_metadata import _infer_provider_from_url
             from opencodon.providers import get_provider_profile as _gpf_async
             _inferred = _infer_provider_from_url(sync_base_url)
             if _inferred:
@@ -4615,7 +4615,7 @@ def resolve_provider_client(
             if base_url_host_matches(custom_base, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(custom_base, "githubcopilot.com"):
-                from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+                from opencodon.core.credentials.copilot_auth import copilot_request_headers
                 extra["default_headers"] = copilot_request_headers(
                     is_agent_turn=True, is_vision=is_vision
                 )
@@ -4659,7 +4659,7 @@ def resolve_provider_client(
 
     # ── Named custom providers (config.yaml providers dict / custom_providers list) ───
     try:
-        from opencodon.frontends.cli.runtime_provider import _get_named_custom_provider
+        from opencodon.core.providers.runtime_provider import _get_named_custom_provider
         # When the raw requested name is an alias (``kimi`` → ``kimi-coding``)
         # and the user defined a ``custom_providers`` entry under that alias
         # name, the custom entry is the intended target — the built-in alias
@@ -4721,7 +4721,7 @@ def resolve_provider_client(
                 # branch in _try_custom_endpoint(). See #15033.
                 if entry_api_mode == "anthropic_messages":
                     try:
-                        from opencodon.core.anthropic_adapter import build_anthropic_client
+                        from opencodon.core.providers.anthropic_adapter import build_anthropic_client
                         real_client = build_anthropic_client(custom_key, custom_base)
                     except ImportError:
                         logger.warning(
@@ -4803,13 +4803,13 @@ def resolve_provider_client(
 
     # ── API-key providers from PROVIDER_REGISTRY ─────────────────────
     try:
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.credentials.auth import (
             PROVIDER_REGISTRY,
             resolve_api_key_provider_credentials,
             resolve_external_process_provider_credentials,
         )
     except ImportError:
-        logger.debug("opencodon_cli.auth not available for provider %s", provider)
+        logger.debug("opencodon.core.credentials.auth not available for provider %s", provider)
         return None, None
 
     pconfig = PROVIDER_REGISTRY.get(provider)
@@ -4859,7 +4859,7 @@ def resolve_provider_client(
         final_model = _normalize_resolved_model(model or default_model, provider)
 
         if provider == "gemini":
-            from opencodon.core.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
+            from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
 
             if is_native_gemini_base_url(base_url):
                 client = GeminiNativeClient(api_key=api_key, base_url=base_url)
@@ -4872,7 +4872,7 @@ def resolve_provider_client(
         if base_url_host_matches(base_url, "api.kimi.com"):
             headers["User-Agent"] = "claude-code/0.1.0"
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+            from opencodon.core.credentials.copilot_auth import copilot_request_headers
 
             headers.update(copilot_request_headers(
                 is_agent_turn=True, is_vision=is_vision
@@ -4902,7 +4902,7 @@ def resolve_provider_client(
         # routes through responses.stream().
         if provider == "copilot" and final_model and not raw_codex:
             try:
-                from opencodon.frontends.cli.models import _should_use_copilot_responses_api
+                from opencodon.core.providers.models import _should_use_copilot_responses_api
                 if _should_use_copilot_responses_api(final_model):
                     logger.debug(
                         "resolve_provider_client: copilot model %s needs "
@@ -4949,7 +4949,7 @@ def resolve_provider_client(
                     "process credentials are incomplete"
                 )
                 return None, None
-            from opencodon.core.copilot_acp_client import CopilotACPClient
+            from opencodon.core.providers.copilot_acp_client import CopilotACPClient
 
             client = CopilotACPClient(
                 api_key=api_key,
@@ -4972,7 +4972,7 @@ def resolve_provider_client(
         # client pointed at the runtime-computed Vertex base_url with a fresh
         # token; no custom SDK or message translation needed.
         try:
-            from opencodon.core.vertex_adapter import get_vertex_config, has_vertex_credentials
+            from opencodon.core.providers.vertex_adapter import get_vertex_config, has_vertex_credentials
         except ImportError:
             logger.warning("resolve_provider_client: vertex requested but "
                            "google-auth not installed")
@@ -5006,12 +5006,12 @@ def resolve_provider_client(
         # AWS SDK providers (Bedrock) — Claude models use the Anthropic Bedrock
         # SDK (prompt caching, thinking); non-Claude models use Converse API.
         try:
-            from opencodon.core.bedrock_adapter import (
+            from opencodon.core.providers.bedrock_adapter import (
                 has_aws_credentials,
                 is_anthropic_bedrock_model,
                 resolve_bedrock_region,
             )
-            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_bedrock_client
         except ImportError:
             logger.warning("resolve_provider_client: bedrock requested but "
                            "boto3 or anthropic SDK not installed")
@@ -5139,7 +5139,7 @@ def _main_model_supports_vision(provider: str, model: Optional[str]) -> bool:
     don't silently regress to text-only.
     """
     try:
-        from opencodon.core.image_routing import _lookup_supports_vision
+        from opencodon.core.media.image_routing import _lookup_supports_vision
         from opencodon.config import load_config
     except ImportError:
         return True
@@ -5900,7 +5900,7 @@ def _resolve_task_provider_model(
         if normalized in {"", "auto", "custom"} or normalized.startswith("custom:"):
             return False
         try:
-            from opencodon.frontends.cli.providers import get_provider
+            from opencodon.core.providers import get_provider
 
             return get_provider(normalized) is not None
         except Exception:
@@ -6255,7 +6255,7 @@ def _build_call_kwargs(
     # structured-JSON extraction) don't 400 the moment
     # the aux model is flipped to 4.7.
     if temperature is not None:
-        from opencodon.core.anthropic_adapter import _forbids_sampling_params
+        from opencodon.core.providers.anthropic_adapter import _forbids_sampling_params
         if _forbids_sampling_params(model):
             temperature = None
 

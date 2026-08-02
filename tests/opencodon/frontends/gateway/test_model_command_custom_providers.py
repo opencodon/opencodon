@@ -53,7 +53,7 @@ async def test_handle_model_command_lists_saved_custom_provider(tmp_path, monkey
     import opencodon.frontends.gateway.run as gateway_run
 
     monkeypatch.setattr(gateway_run, "_opencodon_home", opencodon_home)
-    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.providers.models_dev.fetch_models_dev", lambda: {})
 
     result = await _make_runner()._handle_model_command(_make_event())
 

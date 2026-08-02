@@ -97,9 +97,9 @@ def test_acp_real_agent_gets_session_db_for_recall(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "opencodon.frontends.cli.runtime_provider",
+        "opencodon.core.providers.runtime_provider",
         mod(
-            "opencodon.frontends.cli.runtime_provider",
+            "opencodon.core.providers.runtime_provider",
             resolve_runtime_provider=lambda **_kwargs: {
                 "provider": "p",
                 "api_mode": "chat_completions",

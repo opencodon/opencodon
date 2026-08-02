@@ -14,8 +14,8 @@ Covers the July 2026 compression tuning pass:
 
 from unittest.mock import patch
 
-import opencodon.core.context_compressor as cc
-from opencodon.core.context_compressor import ContextCompressor
+import opencodon.core.context.context_compressor as cc
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _make(ctx: int, pct: float = 0.50) -> ContextCompressor:

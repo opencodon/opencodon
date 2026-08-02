@@ -18,7 +18,7 @@ def detect_provider() -> Optional[str]:
     handshake rejects the legitimate provider.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         api_key = runtime.get("api_key")
         provider = runtime.get("provider")

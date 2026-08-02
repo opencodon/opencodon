@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, List, Optional
 
-from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
+from opencodon.core.providers.model_metadata import MINIMUM_CONTEXT_LENGTH
 from opencodon.frontends.cli.model_switch import ModelSwitchResult, resolve_display_context_length
 
 
@@ -41,7 +41,7 @@ def _estimate_tokens(agent: Any, messages: Optional[List[dict]]) -> Optional[int
         if len(messages) <= protect:
             return None
         try:
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             system_prompt = getattr(agent, "_cached_system_prompt", None) or ""
             tools = getattr(agent, "tools", None)

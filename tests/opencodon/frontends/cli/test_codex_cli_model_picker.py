@@ -89,7 +89,7 @@ def test_codex_picker_uses_live_codex_catalog(opencodon_auth_only_env, tmp_path,
     # 10s HTTP probe to chatgpt.com/backend-api/codex/models which is both
     # slow and non-deterministic in CI/sandboxed environments.
     monkeypatch.setattr(
-        "opencodon.frontends.cli.codex_models._fetch_models_from_api",
+        "opencodon.core.providers.codex_models._fetch_models_from_api",
         lambda access_token: [],
     )
 

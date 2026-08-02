@@ -162,7 +162,7 @@ def test_lift_helper_accepts_alias_and_rejects_garbage(isolated_home):
     for mod in list(sys.modules.keys()):
         if mod.startswith("opencodon_cli"):
             del sys.modules[mod]
-    rp = importlib.import_module("opencodon.frontends.cli.runtime_provider")
+    rp = importlib.import_module("opencodon.core.providers.runtime_provider")
 
     out: dict = {}
     rp._lift_max_output_tokens({"max_output_tokens": 8192}, out)

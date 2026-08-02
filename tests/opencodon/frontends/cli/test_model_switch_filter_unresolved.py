@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from opencodon.frontends.cli.auth import is_runtime_provider_routable
+from opencodon.core.credentials.auth import is_runtime_provider_routable
 from opencodon.frontends.cli.model_switch import list_authenticated_providers
 
 
@@ -10,15 +10,15 @@ def _rows_with_env(monkeypatch, env_name: str, provider: str) -> list[dict]:
     monkeypatch.setenv(env_name, "test-key")
     with (
         patch(
-            "opencodon.core.models_dev.fetch_models_dev",
+            "opencodon.core.providers.models_dev.fetch_models_dev",
             return_value={provider: {"env": [env_name], "name": provider.title()}},
         ),
         patch(
-            "opencodon.core.models_dev.PROVIDER_TO_MODELS_DEV",
+            "opencodon.core.providers.models_dev.PROVIDER_TO_MODELS_DEV",
             {provider: provider},
         ),
-        patch("opencodon.frontends.cli.models.cached_provider_model_ids", return_value=["model-a"]),
-        patch("opencodon.frontends.cli.providers.OPENCODON_OVERLAYS", {}),
+        patch("opencodon.core.providers.models.cached_provider_model_ids", return_value=["model-a"]),
+        patch("opencodon.core.providers.OPENCODON_OVERLAYS", {}),
     ):
         return list_authenticated_providers(max_models=5)
 

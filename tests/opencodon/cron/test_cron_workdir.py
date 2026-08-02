@@ -292,7 +292,7 @@ class TestRunJobTerminalCwd:
         monkeypatch.setitem(sys.modules, "opencodon.core.run_agent", fake_mod)
 
         # Bypass the real provider resolver — it reads ~/.opencodon and credentials.
-        from opencodon.frontends.cli import runtime_provider as _rtp
+        from opencodon.core.providers import runtime_provider as _rtp
         monkeypatch.setattr(
             _rtp,
             "resolve_runtime_provider",

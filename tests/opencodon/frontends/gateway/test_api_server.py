@@ -991,12 +991,12 @@ class TestModelsEndpoint:
 
     def test_resolve_model_name_default_profile(self):
         """Default profile falls back to 'opencodon'."""
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="default"):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="default"):
             assert APIServerAdapter._resolve_model_name("") == "opencodon"
 
     def test_resolve_model_name_named_profile(self):
         """Named profile uses the profile name as model name."""
-        with patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="lucas"):
+        with patch("opencodon.core.profiles.get_active_profile_name", return_value="lucas"):
             assert APIServerAdapter._resolve_model_name("") == "lucas"
 
     @pytest.mark.asyncio

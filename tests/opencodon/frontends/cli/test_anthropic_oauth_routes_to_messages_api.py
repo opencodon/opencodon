@@ -8,9 +8,9 @@ with "You're out of extra usage" the moment the gateway starts.
 
 The root cause was an inconsistency between two URL→api_mode helpers:
 
-* ``opencodon_cli.providers.determine_api_mode`` correctly mapped
+* ``opencodon.core.providers.determine_api_mode`` correctly mapped
   ``api.anthropic.com`` to ``anthropic_messages``.
-* ``opencodon_cli.runtime_provider._detect_api_mode_for_url`` did NOT, so
+* ``opencodon.core.providers.runtime_provider._detect_api_mode_for_url`` did NOT, so
   every code path that fell back to URL-only detection (named custom
   providers, direct-alias resolution, the api-key fallback inside
   ``resolve_runtime_provider``) returned ``None`` for that host and
@@ -26,7 +26,7 @@ single branch cannot silently revert #32243.
 
 from __future__ import annotations
 
-from opencodon.frontends.cli import runtime_provider as rp
+from opencodon.core.providers import runtime_provider as rp
 
 
 class TestExplicitRuntimeForAnthropic:

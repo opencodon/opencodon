@@ -76,7 +76,7 @@ def _isolated_config(tmp_path, monkeypatch):
     opencodon_home.mkdir()
     (opencodon_home / "config.yaml").write_text("model:\n  default: gpt-x\n  provider: openrouter\nproviders: {}\n", encoding="utf-8")
     monkeypatch.setattr(gateway_run, "_opencodon_home", opencodon_home)
-    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.providers.models_dev.fetch_models_dev", lambda: {})
     return opencodon_home
 
 

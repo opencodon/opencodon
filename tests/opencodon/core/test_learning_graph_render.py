@@ -7,7 +7,7 @@ change-detector against layout tuning.
 
 from __future__ import annotations
 
-from opencodon.core import learning_graph_render as render
+from opencodon.core.memory import learning_graph_render as render
 
 LEAD_IN = render.LEAD_IN
 

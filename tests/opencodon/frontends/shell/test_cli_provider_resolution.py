@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from opencodon.frontends.cli.auth import AuthError
+from opencodon.core.credentials.auth import AuthError
 from opencodon.frontends.cli import main as opencodon_main
 
 
@@ -131,8 +131,8 @@ def test_opencodon_cli_init_does_not_eagerly_resolve_runtime_provider(monkeypatc
         calls["count"] += 1
         raise AssertionError("resolve_runtime_provider should not be called in OpencodonCLI.__init__")
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _unexpected_runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _unexpected_runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     shell = cli.OpencodonCLI(model="gpt-5", compact=True, max_turns=1)
 
@@ -160,8 +160,8 @@ def test_runtime_resolution_failure_is_not_sticky(monkeypatch):
         def __init__(self, *args, **kwargs):
             self.kwargs = kwargs
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
     monkeypatch.setattr(cli, "AIAgent", _DummyAgent)
 
     shell = cli.OpencodonCLI(model="gpt-5", compact=True, max_turns=1)
@@ -184,8 +184,8 @@ def test_runtime_resolution_rebuilds_agent_on_routing_change(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     shell = cli.OpencodonCLI(model="gpt-5", compact=True, max_turns=1)
     shell.provider = "openrouter"
@@ -253,10 +253,10 @@ def test_codex_provider_replaces_incompatible_default_model(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
     monkeypatch.setattr(
-        "opencodon.frontends.cli.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.2-codex", "gpt-5.1-codex-mini"],
     )
 
@@ -310,15 +310,15 @@ def test_model_flow_openrouter_clears_stale_custom_key(tmp_path, monkeypatch):
         lambda *args, **kwargs: ("sk-openrouter", False),
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.model_ids",
+        "opencodon.core.providers.models.model_ids",
         lambda **kwargs: ["anthropic/claude-sonnet-4.6"],
     )
-    monkeypatch.setattr("opencodon.frontends.cli.models.get_pricing_for_provider", lambda *a, **k: {})
+    monkeypatch.setattr("opencodon.core.providers.models.get_pricing_for_provider", lambda *a, **k: {})
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda *args, **kwargs: "anthropic/claude-sonnet-4.6",
     )
-    monkeypatch.setattr("opencodon.frontends.cli.auth.deactivate_provider", lambda: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth.deactivate_provider", lambda: None)
 
     opencodon_main._model_flow_openrouter({}, current_model="glm-5.2")
 
@@ -336,13 +336,13 @@ def test_model_flow_anthropic_clears_stale_custom_key_and_mode(tmp_path, monkeyp
 
     config_path = _seed_stale_custom_model(tmp_path, monkeypatch)
 
-    monkeypatch.setattr("opencodon.frontends.cli.auth.get_anthropic_key", lambda: "sk-ant-api03-test")
+    monkeypatch.setattr("opencodon.core.credentials.auth.get_anthropic_key", lambda: "sk-ant-api03-test")
     monkeypatch.setattr(
-        "opencodon.core.anthropic_adapter.read_claude_code_credentials",
+        "opencodon.core.providers.anthropic_adapter.read_claude_code_credentials",
         lambda: None,
     )
     monkeypatch.setattr(
-        "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
+        "opencodon.core.providers.anthropic_adapter.is_claude_code_token_valid",
         lambda creds: False,
     )
     monkeypatch.setattr(
@@ -350,10 +350,10 @@ def test_model_flow_anthropic_clears_stale_custom_key_and_mode(tmp_path, monkeyp
         lambda title: "use",
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda *args, **kwargs: "claude-sonnet-4-6",
     )
-    monkeypatch.setattr("opencodon.frontends.cli.auth.deactivate_provider", lambda: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth.deactivate_provider", lambda: None)
 
     opencodon_main._model_flow_anthropic({}, current_model="glm-5.2")
 
@@ -394,11 +394,11 @@ def test_codex_provider_uses_config_model(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
     # Prevent live API call from overriding the config model
     monkeypatch.setattr(
-        "opencodon.frontends.cli.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.2-codex"],
     )
 
@@ -437,11 +437,11 @@ def test_codex_config_model_not_replaced_by_normalization(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
     # API returns a DIFFERENT model than what the user configured
     monkeypatch.setattr(
-        "opencodon.frontends.cli.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.4", "gpt-5.3-codex"],
     )
 
@@ -472,8 +472,8 @@ def test_codex_provider_preserves_explicit_codex_model(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     shell = cli.OpencodonCLI(model="gpt-5.1-codex-mini", compact=True, max_turns=1)
 
@@ -499,8 +499,8 @@ def test_codex_provider_strips_provider_prefix_from_model(monkeypatch):
             "source": "env/config",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    monkeypatch.setattr("opencodon.core.providers.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     shell = cli.OpencodonCLI(model="openai/gpt-5.3-codex", compact=True, max_turns=1)
 
@@ -522,7 +522,7 @@ def test_cmd_model_falls_back_to_auto_on_invalid_provider(monkeypatch, capsys):
             raise AuthError("Unknown provider 'invalid-provider'.", code="invalid_provider")
         return "openrouter"
 
-    monkeypatch.setattr("opencodon.frontends.cli.auth.resolve_provider", _resolve_provider)
+    monkeypatch.setattr("opencodon.core.credentials.auth.resolve_provider", _resolve_provider)
     monkeypatch.setattr(opencodon_main, "_prompt_provider_choice", lambda choices, **kwargs: len(choices) - 1)
     monkeypatch.setattr("sys.stdin", type("FakeTTY", (), {"isatty": lambda self: True})())
 
@@ -541,11 +541,11 @@ def test_model_flow_custom_saves_verified_v1_base_url(monkeypatch, capsys):
     )
     saved_env = {}
     monkeypatch.setattr("opencodon.config.save_env_value", lambda key, value: saved_env.__setitem__(key, value))
-    monkeypatch.setattr("opencodon.frontends.cli.auth._save_model_choice", lambda model: saved_env.__setitem__("MODEL", model))
-    monkeypatch.setattr("opencodon.frontends.cli.auth.deactivate_provider", lambda: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth._save_model_choice", lambda model: saved_env.__setitem__("MODEL", model))
+    monkeypatch.setattr("opencodon.core.credentials.auth.deactivate_provider", lambda: None)
     monkeypatch.setattr("opencodon.frontends.cli.main._save_custom_provider", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.probe_api_models",
+        "opencodon.core.providers.models.probe_api_models",
         lambda api_key, base_url: {
             "models": ["llm"],
             "probed_url": "http://localhost:8000/v1/models",
@@ -585,10 +585,10 @@ def test_model_flow_custom_persists_selected_api_mode(monkeypatch):
         "opencodon.config.get_env_value",
         lambda key: "" if key in {"OPENAI_BASE_URL", "OPENAI_API_KEY"} else "",
     )
-    monkeypatch.setattr("opencodon.frontends.cli.auth._save_model_choice", lambda model: None)
-    monkeypatch.setattr("opencodon.frontends.cli.auth.deactivate_provider", lambda: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth._save_model_choice", lambda model: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth.deactivate_provider", lambda: None)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.probe_api_models",
+        "opencodon.core.providers.models.probe_api_models",
         lambda api_key, base_url: {
             "models": [],
             "probed_url": f"{base_url.rstrip('/')}/models",

@@ -1,7 +1,7 @@
 """Tests for auxiliary client routing of the ``azure-foundry`` provider.
 
 Covers the dedicated branch in ``agent.auxiliary_client.resolve_provider_client``
-that delegates to :func:`opencodon_cli.runtime_provider._resolve_azure_foundry_runtime`
+that delegates to :func:`opencodon.core.providers.runtime_provider._resolve_azure_foundry_runtime`
 instead of falling into the generic ``resolve_api_key_provider_credentials``
 path (which only knows about ``AZURE_FOUNDRY_API_KEY`` and would 401 for
 Entra ID users and miss ``model.base_url`` overrides for api-key users
@@ -33,7 +33,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _reset_credential_cache():
-    from opencodon.core.azure_identity_adapter import reset_credential_cache
+    from opencodon.core.providers.azure_identity_adapter import reset_credential_cache
     reset_credential_cache()
     yield
     reset_credential_cache()
@@ -43,7 +43,7 @@ def _reset_credential_cache():
 def fake_azure_identity(monkeypatch):
     """Stand-in for azure.identity (keeps CI hermetic when the SDK is
     not installed)."""
-    from opencodon.core import azure_identity_adapter as _adapter
+    from opencodon.core.providers import azure_identity_adapter as _adapter
 
     last = {"scope": None}
 
@@ -241,7 +241,7 @@ class TestAuxAzureFoundryEntra:
         event hook on a custom ``httpx.Client`` passed to the
         Anthropic SDK via ``http_client=``."""
         from opencodon.core import auxiliary_client as _aux
-        from opencodon.core import anthropic_adapter as _anthropic
+        from opencodon.core.providers import anthropic_adapter as _anthropic
 
         received = {}
 

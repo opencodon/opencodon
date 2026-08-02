@@ -26,6 +26,7 @@ See references/mcp-catalog.md (this repo's skill) for the manifest schema.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import re
 import shutil
@@ -137,7 +138,7 @@ def _catalog_root() -> Path:
     """Return the optional-mcps/ directory shipped with this opencodon install."""
     # Prefer the env-var override / packaged location; fall back to the repo's
     # optional-mcps/ next to the package (source checkout).
-    return get_optional_mcps_dir(Path(__file__).resolve().parents[4] / "optional-mcps")
+    return get_optional_mcps_dir(REPO_ROOT / "optional-mcps")
 
 
 def _parse_env_spec(raw: Any) -> EnvVarSpec:

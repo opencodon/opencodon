@@ -355,7 +355,7 @@ def test_agent_created_excludes_external_dir_even_with_stale_agent_record(skills
     save_usage({"external-skill": {"created_by": "agent"}})
 
     monkeypatch.setattr(
-        "opencodon.core.skill_utils.get_external_skills_dirs",
+        "opencodon.core.skills.skill_utils.get_external_skills_dirs",
         lambda: [external.resolve()],
     )
 
@@ -414,7 +414,7 @@ def test_archive_refuses_external_skill(skills_home, monkeypatch):
     external = skills_dir / "shared-vault"
     skill_dir = _write_skill(external, "external-skill")
     monkeypatch.setattr(
-        "opencodon.core.skill_utils.get_external_skills_dirs",
+        "opencodon.core.skills.skill_utils.get_external_skills_dirs",
         lambda: [external.resolve()],
     )
 

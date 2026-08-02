@@ -13,6 +13,7 @@ This module provides:
 - opencodon config unset    - Remove a user configuration value
 - opencodon config wizard   - Re-run setup wizard
 """
+from opencodon.common.repo import REPO_ROOT
 
 import copy
 import json
@@ -364,7 +365,7 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
     """
     if project_root is not None:
         return project_root
-    return Path(__file__).resolve().parents[3]
+    return REPO_ROOT
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
@@ -661,7 +662,7 @@ def get_env_path() -> Path:
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
-    return Path(__file__).resolve().parents[3]
+    return REPO_ROOT
 
 def _resolve_opencodon_uid_gid() -> tuple[Optional[int], Optional[int]]:
     """Read the OPENCODON_UID / OPENCODON_GID env vars set by Docker deployments.
@@ -4414,7 +4415,7 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     config.yaml.  Returns a list of dicts suitable for prompting.
     """
     try:
-        from opencodon.core.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
+        from opencodon.core.skills.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
     except Exception:
         return []
 
@@ -5357,7 +5358,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
             print()
             config = read_raw_config()
             try:
-                from opencodon.core.skill_utils import SKILL_CONFIG_PREFIX
+                from opencodon.core.skills.skill_utils import SKILL_CONFIG_PREFIX
             except Exception:
                 SKILL_CONFIG_PREFIX = "skills.config"
             for var in missing_skill_config:
@@ -7061,7 +7062,7 @@ def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
     if val:
         return val
     try:
-        from opencodon.core.secret_scope import (
+        from opencodon.core.credentials.secret_scope import (
             UnscopedSecretError,
             get_secret as _get_secret,
         )
@@ -7205,7 +7206,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from opencodon.frontends.cli.auth import get_anthropic_key
+    from opencodon.core.credentials.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -7336,7 +7337,7 @@ def show_config():
     
     # Skill config
     try:
-        from opencodon.core.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
+        from opencodon.core.skills.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
         skill_vars = discover_all_skill_config_vars()
         if skill_vars:
             resolved = resolve_skill_config_values(skill_vars)
@@ -8065,7 +8066,7 @@ def _inject_platform_plugin_env_vars() -> None:
 
         # Resolve the bundled plugins dir from this file's location so the
         # injector works regardless of CWD.
-        repo_root = Path(__file__).resolve().parents[3]
+        repo_root = REPO_ROOT
         platforms_dir = repo_root / "plugins" / "platforms"
         if not platforms_dir.is_dir():
             return

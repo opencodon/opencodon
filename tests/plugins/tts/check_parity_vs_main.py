@@ -106,8 +106,8 @@ for name in list(sys.modules):
 # Try importing tts_registry — only exists on PR side.
 have_plugin_hook = False
 try:
-    from opencodon.core import tts_registry
-    from opencodon.core.tts_provider import TTSProvider
+    from opencodon.core.media import tts_registry
+    from opencodon.core.media.tts_provider import TTSProvider
     have_plugin_hook = True
 
     if plugin_register == "yes":

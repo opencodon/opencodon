@@ -48,6 +48,7 @@ Usage:
     # Click an element
     browser_click("@e5", task_id="task_123")
 """
+from opencodon.common.repo import REPO_ROOT
 
 import atexit
 import functools
@@ -126,8 +127,8 @@ except Exception:
 # and into ``plugins/browser/<vendor>/``. The dispatcher consults the
 # registry; the legacy class names are re-exported below as backward-compat
 # shims for callers that import them from this module.
-from opencodon.core.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
-from opencodon.core.browser_registry import (  # noqa: F401  (test-patchable surface)
+from opencodon.core.providers.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
+from opencodon.core.providers.browser_registry import (  # noqa: F401  (test-patchable surface)
     get_provider as _registry_get_browser_provider,
 )
 from plugins.browser.browserbase.provider import (  # noqa: F401  (legacy import surface)
@@ -2221,7 +2222,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     # WinError 193 "%1 is not a valid Win32 application". We must resolve to the
     # `.cmd` shim instead. `shutil.which` consults PATHEXT, so we delegate to it
     # with an explicit path so POSIX hosts still pick the extensionless shim.
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = REPO_ROOT
     local_bin_dir = repo_root / "node_modules" / ".bin"
     if local_bin_dir.is_dir():
         local_which = shutil.which("agent-browser", path=str(local_bin_dir))

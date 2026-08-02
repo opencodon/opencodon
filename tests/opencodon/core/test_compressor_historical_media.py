@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     ContextCompressor,
     _content_has_images,
     _is_image_part,
@@ -223,7 +223,7 @@ class TestCompressIntegration:
 
     @pytest.fixture
     def compressor(self):
-        with patch("opencodon.core.context_compressor.get_model_context_length", return_value=100_000):
+        with patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=100_000):
             c = ContextCompressor(
                 model="test/model",
                 threshold_percent=0.50,

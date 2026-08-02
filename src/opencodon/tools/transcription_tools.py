@@ -96,7 +96,7 @@ GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 OPENAI_BASE_URL = os.getenv("STT_OPENAI_BASE_URL", "https://api.openai.com/v1")
 XAI_STT_BASE_URL = os.getenv("XAI_STT_BASE_URL", "https://api.x.ai/v1")
 ELEVENLABS_STT_BASE_URL = os.getenv("ELEVENLABS_STT_BASE_URL", "https://api.elevenlabs.io/v1")
-# DeepInfra STT base URL now resolved via opencodon_cli.models.deepinfra_base_url (shared).
+# DeepInfra STT base URL now resolved via opencodon.core.providers.models.deepinfra_base_url (shared).
 
 SUPPORTED_FORMATS = {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg", ".aac", ".flac"}
 LOCAL_NATIVE_AUDIO_FORMATS = {".wav", ".aiff", ".aif"}
@@ -944,7 +944,7 @@ def _dispatch_to_plugin_provider(
     ):
         return None
     try:
-        from opencodon.core.transcription_registry import get_provider
+        from opencodon.core.media.transcription_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -1661,14 +1661,14 @@ def _transcribe_deepinfra(file_path: str, model_name: str) -> Dict[str, Any]:
     DeepInfra's STT endpoint is OpenAI-compatible, so the actual SDK
     call lives in :func:`_transcribe_openai` — this wrapper only owns
     DeepInfra-specific credential and model resolution, using the shared
-    ``opencodon_cli.models`` helpers so every DeepInfra surface resolves the
+    ``opencodon.core.providers.models`` helpers so every DeepInfra surface resolves the
     base URL and model ids identically.
     """
     api_key = (get_env_value("DEEPINFRA_API_KEY") or "").strip()
     if not api_key:
         return {"success": False, "transcript": "", "error": "DEEPINFRA_API_KEY not set"}
 
-    from opencodon.frontends.cli.models import deepinfra_base_url, deepinfra_model_ids
+    from opencodon.core.providers.models import deepinfra_base_url, deepinfra_model_ids
 
     stt_config = _load_stt_config()
     # ``stt.deepinfra: null`` in YAML yields None, not {} — coalesce so the

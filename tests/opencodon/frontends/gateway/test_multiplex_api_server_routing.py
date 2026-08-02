@@ -43,7 +43,7 @@ class TestApiServerProfileResolution:
     def test_known_profile_accepted(self, monkeypatch):
         adapter = _make_adapter(multiplex=True)
         monkeypatch.setattr(
-            "opencodon.frontends.cli.profiles.profiles_to_serve",
+            "opencodon.core.profiles.profiles_to_serve",
             lambda multiplex: [("default", None), ("coder", None)],
         )
         assert adapter._resolve_request_profile(_FakeReq("coder")) == "coder"
@@ -51,7 +51,7 @@ class TestApiServerProfileResolution:
     def test_unknown_profile_rejected(self, monkeypatch):
         adapter = _make_adapter(multiplex=True)
         monkeypatch.setattr(
-            "opencodon.frontends.cli.profiles.profiles_to_serve",
+            "opencodon.core.profiles.profiles_to_serve",
             lambda multiplex: [("default", None), ("coder", None)],
         )
         assert adapter._resolve_request_profile(_FakeReq("ghost")) is _PROFILE_REJECTED
@@ -76,7 +76,7 @@ class TestApiServerModelsUnderProfile:
         adapter = _make_adapter(multiplex=True)
         adapter._model_name = "opencodon"
         monkeypatch.setattr(
-            "opencodon.frontends.cli.profiles.get_active_profile_name",
+            "opencodon.core.profiles.get_active_profile_name",
             lambda: "coder",
         )
         token_prof = _api_request_profile.set("coder")

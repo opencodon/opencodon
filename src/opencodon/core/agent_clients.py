@@ -23,6 +23,7 @@ Usage:
     agent = AIAgent(base_url="http://localhost:30000/v1", model="claude-opus-4-20250514")
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
+from opencodon.common.repo import REPO_ROOT
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
@@ -127,7 +128,7 @@ from opencodon.config.timeouts import (
 )
 
 _opencodon_home = get_opencodon_home()
-_project_env = Path(__file__).resolve().parents[3] / '.env'
+_project_env = REPO_ROOT / '.env'
 _loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
@@ -149,22 +150,22 @@ from opencodon.tools.browser_tool import cleanup_browser
 
 
 # Agent internals extracted to agent/ package for modularity
-from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.memory.memory_manager import sanitize_context
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.redact import redact_sensitive_text
 from opencodon.core.message_content import flatten_message_text
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("opencodon.core.run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
-from opencodon.core.usage_pricing import normalize_usage
+from opencodon.core.providers.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from opencodon.core.context_compressor import (  # noqa: F401
+from opencodon.core.context.context_compressor import (  # noqa: F401
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
 from opencodon.core.retry_utils import jittered_backoff  # noqa: F401
-from opencodon.core.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
+from opencodon.core.prompt.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
     build_skills_system_prompt,
     build_context_files_prompt,
@@ -185,7 +186,7 @@ from opencodon.core.message_sanitization import (  # noqa: F401
     _strip_images_from_messages,
     _sanitize_structure_non_ascii,
 )
-from opencodon.core.codex_responses_adapter import (
+from opencodon.core.providers.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
     _split_responses_tool_id as _codex_split_responses_tool_id,
@@ -468,7 +469,7 @@ class AgentClientsMixin:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+        from opencodon.core.credentials.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -557,11 +558,11 @@ class AgentClientsMixin:
             self._try_refresh_anthropic_client_credentials()
         _drop_1m = bool(getattr(self, "_oauth_1m_beta_disabled", False))
         if getattr(self, "provider", None) == "bedrock":
-            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_bedrock_client
             region = getattr(self, "_bedrock_region", "us-east-1") or "us-east-1"
             client = build_anthropic_bedrock_client(region)
         else:
-            from opencodon.core.anthropic_adapter import build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client
             client = build_anthropic_client(
                 self._anthropic_api_key,
                 getattr(self, "_anthropic_base_url", None),
@@ -635,12 +636,12 @@ class AgentClientsMixin:
 
     def _run_codex_stream(self, api_kwargs: dict, client: Any = None, on_first_delta: callable = None):
         """Forwarder — see ``agent.codex_runtime.run_codex_stream``."""
-        from opencodon.core.codex_runtime import run_codex_stream
+        from opencodon.core.providers.codex_runtime import run_codex_stream
         return run_codex_stream(self, api_kwargs, client, on_first_delta)
 
     def _run_codex_create_stream_fallback(self, api_kwargs: dict, client: Any = None):
         """Forwarder — see ``agent.codex_runtime.run_codex_create_stream_fallback``."""
-        from opencodon.core.codex_runtime import run_codex_create_stream_fallback
+        from opencodon.core.providers.codex_runtime import run_codex_create_stream_fallback
         return run_codex_create_stream_fallback(self, api_kwargs, client)
 
     def _try_refresh_codex_client_credentials(self, *, force: bool = True) -> bool:
@@ -661,13 +662,13 @@ class AgentClientsMixin:
         # MUST only fire when the agent really is on singleton tokens.
         try:
             if self.provider == "openai-codex":
-                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+                from opencodon.core.credentials.auth import resolve_codex_runtime_credentials
 
                 singleton_now = resolve_codex_runtime_credentials(
                     refresh_if_expiring=False,
                 )
             else:
-                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.core.credentials.auth import resolve_xai_oauth_runtime_credentials
 
                 singleton_now = resolve_xai_oauth_runtime_credentials(
                     refresh_if_expiring=False,
@@ -689,11 +690,11 @@ class AgentClientsMixin:
 
         try:
             if self.provider == "openai-codex":
-                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+                from opencodon.core.credentials.auth import resolve_codex_runtime_credentials
 
                 creds = resolve_codex_runtime_credentials(force_refresh=force)
             else:
-                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.core.credentials.auth import resolve_xai_oauth_runtime_credentials
 
                 creds = resolve_xai_oauth_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -731,7 +732,7 @@ class AgentClientsMixin:
             return False
 
         try:
-            from opencodon.core.vertex_adapter import get_vertex_config
+            from opencodon.core.providers.vertex_adapter import get_vertex_config
 
             token, base_url = get_vertex_config()
         except Exception as exc:
@@ -766,7 +767,7 @@ class AgentClientsMixin:
             return False
 
         try:
-            from opencodon.frontends.cli.copilot_auth import resolve_copilot_token
+            from opencodon.core.credentials.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -803,7 +804,7 @@ class AgentClientsMixin:
             return False
 
         try:
-            from opencodon.core.anthropic_adapter import resolve_anthropic_token, build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import resolve_anthropic_token, build_anthropic_client
 
             new_token = resolve_anthropic_token()
         except Exception as exc:
@@ -836,7 +837,7 @@ class AgentClientsMixin:
         # Only treat as OAuth on native Anthropic; third-party endpoints using
         # the Anthropic protocol must not trip OAuth paths (#1739 & third-party
         # identity-injection guard).
-        from opencodon.core.anthropic_adapter import _is_oauth_token
+        from opencodon.core.providers.anthropic_adapter import _is_oauth_token
         self._is_anthropic_oauth = _is_oauth_token(new_token) if self.provider == "anthropic" else False
         return True
 
@@ -858,7 +859,7 @@ class AgentClientsMixin:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _ra._routermint_headers()
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.models import copilot_default_headers
+            from opencodon.core.providers.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -946,7 +947,7 @@ class AgentClientsMixin:
         )
 
         if self.api_mode == "anthropic_messages":
-            from opencodon.core.anthropic_adapter import build_anthropic_client, _is_oauth_token
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client, _is_oauth_token
 
             try:
                 self._anthropic_client.close()
@@ -1021,7 +1022,7 @@ class AgentClientsMixin:
         # Defensive: strip Responses-only kwargs that can leak in under an
         # api_mode-flip race (the Anthropic SDK raises a non-retryable
         # TypeError on them). See #31673.
-        from opencodon.core.anthropic_adapter import create_anthropic_message
+        from opencodon.core.providers.anthropic_adapter import create_anthropic_message
         return create_anthropic_message(
             client or self._anthropic_client,
             api_kwargs,
@@ -1043,11 +1044,11 @@ class AgentClientsMixin:
         """
         _drop_1m = bool(getattr(self, "_oauth_1m_beta_disabled", False))
         if getattr(self, "provider", None) == "bedrock":
-            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_bedrock_client
             region = getattr(self, "_bedrock_region", "us-east-1") or "us-east-1"
             self._anthropic_client = build_anthropic_bedrock_client(region)
         else:
-            from opencodon.core.anthropic_adapter import build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client
             self._anthropic_client = build_anthropic_client(
                 self._anthropic_api_key,
                 getattr(self, "_anthropic_base_url", None),

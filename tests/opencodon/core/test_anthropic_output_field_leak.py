@@ -14,7 +14,7 @@ import sys, os
 sys.path.insert(0, os.path.expanduser("~/.opencodon/opencodon"))
 
 import pytest
-from opencodon.core.anthropic_adapter import (
+from opencodon.core.providers.anthropic_adapter import (
     _sanitize_replay_block,
     _convert_content_part_to_anthropic,
     _convert_assistant_message,

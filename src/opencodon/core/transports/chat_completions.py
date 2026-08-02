@@ -11,9 +11,9 @@ reasoning configuration, temperature handling, and extra_body assembly.
 
 from typing import Any, Dict
 
-from opencodon.core.lmstudio_reasoning import resolve_lmstudio_effort
-from opencodon.core.moonshot_schema import is_moonshot_model, sanitize_moonshot_tools
-from opencodon.core.prompt_builder import DEVELOPER_ROLE_MODELS
+from opencodon.core.providers.lmstudio_reasoning import resolve_lmstudio_effort
+from opencodon.core.providers.moonshot_schema import is_moonshot_model, sanitize_moonshot_tools
+from opencodon.core.prompt.prompt_builder import DEVELOPER_ROLE_MODELS
 from opencodon.core.transports.base import ProviderTransport
 from opencodon.core.transports.types import NormalizedResponse, ToolCall, Usage
 
@@ -637,7 +637,7 @@ class ChatCompletionsTransport(ProviderTransport):
             # a fallback/aux call lands on Gemini. The native client only reads
             # thinking_config from extra_body, so drop everything else here.
             try:
-                from opencodon.core.gemini_native_adapter import is_native_gemini_base_url
+                from opencodon.core.providers.gemini_native_adapter import is_native_gemini_base_url
                 _native_gemini = is_native_gemini_base_url(params.get("base_url"))
             except Exception:
                 _native_gemini = False

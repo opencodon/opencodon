@@ -10,7 +10,7 @@ import os
 import pytest
 from unittest.mock import patch
 
-from opencodon.core.model_metadata import is_local_endpoint
+from opencodon.core.providers.model_metadata import is_local_endpoint
 
 
 class TestLocalStreamReadTimeout:

@@ -73,7 +73,7 @@ async def test_prepare_image_routing_uses_session_vision_model_override(monkeypa
     def fake_supports(provider, model, config):
         return provider == "openai-codex" and model == "gpt-5.5"
 
-    monkeypatch.setattr("opencodon.core.image_routing._lookup_supports_vision", fake_supports)
+    monkeypatch.setattr("opencodon.core.media.image_routing._lookup_supports_vision", fake_supports)
 
     async def fail_enrich(*_args, **_kwargs):
         pytest.fail("vision-capable session override should use native image routing")
@@ -120,7 +120,7 @@ async def test_prepare_image_routing_falls_back_to_text_for_text_only_session_ov
     def fake_supports(provider, model, config):
         return provider == "openai-codex" and model == "gpt-5.5"
 
-    monkeypatch.setattr("opencodon.core.image_routing._lookup_supports_vision", fake_supports)
+    monkeypatch.setattr("opencodon.core.media.image_routing._lookup_supports_vision", fake_supports)
 
     async def fake_enrich(user_text, image_paths):
         from opencodon.core import auxiliary_client as aux
@@ -179,7 +179,7 @@ async def test_prepare_image_routing_runs_off_the_event_loop(monkeypatch):
         seen["thread"] = threading.current_thread()
         return True  # vision-capable → native routing (skips _enrich_message_with_vision)
 
-    monkeypatch.setattr("opencodon.core.image_routing._lookup_supports_vision", recording_supports)
+    monkeypatch.setattr("opencodon.core.media.image_routing._lookup_supports_vision", recording_supports)
 
     await runner._prepare_inbound_message_text(event=event, source=source, history=[])
 

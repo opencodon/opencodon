@@ -212,8 +212,8 @@ def test_http_get_json_on_http_error_returns_code_none():
 def test_lookup_context_length_returns_known():
     """When model_metadata returns a non-fallback value, we pass it through."""
     fake = MagicMock(return_value=400000)
-    with patch("opencodon.core.model_metadata.get_model_context_length", fake), \
-         patch("opencodon.core.model_metadata.DEFAULT_FALLBACK_CONTEXT", 128000):
+    with patch("opencodon.core.providers.model_metadata.get_model_context_length", fake), \
+         patch("opencodon.core.providers.model_metadata.DEFAULT_FALLBACK_CONTEXT", 128000):
         n = azure_detect.lookup_context_length(
             "gpt-5.4", "https://x.openai.azure.com/openai/v1", "k",
         )
@@ -222,8 +222,8 @@ def test_lookup_context_length_returns_known():
 
 def test_lookup_context_length_returns_none_on_fallback():
     """When resolver falls through to DEFAULT_FALLBACK_CONTEXT, we return None."""
-    with patch("opencodon.core.model_metadata.get_model_context_length", return_value=128000), \
-         patch("opencodon.core.model_metadata.DEFAULT_FALLBACK_CONTEXT", 128000):
+    with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128000), \
+         patch("opencodon.core.providers.model_metadata.DEFAULT_FALLBACK_CONTEXT", 128000):
         n = azure_detect.lookup_context_length(
             "totally-unknown-model", "https://x.openai.azure.com/openai/v1", "k",
         )
@@ -232,6 +232,6 @@ def test_lookup_context_length_returns_none_on_fallback():
 
 def test_lookup_context_length_swallows_exceptions():
     """Resolver raising must not crash the wizard."""
-    with patch("opencodon.core.model_metadata.get_model_context_length",
+    with patch("opencodon.core.providers.model_metadata.get_model_context_length",
                side_effect=RuntimeError("boom")):
         assert azure_detect.lookup_context_length("m", "https://x/", "k") is None

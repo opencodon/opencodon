@@ -1388,7 +1388,7 @@ class TestProviderEnabledRuntimeGate:
         from opencodon import config as cfg_mod
         cfg_mod._cached_config = None  # type: ignore[attr-defined]
 
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         with pytest.raises(ValueError, match="disabled"):
             resolve_runtime_provider(requested="my-fork")
 
@@ -1411,7 +1411,7 @@ class TestProviderEnabledRuntimeGate:
         from opencodon import config as cfg_mod
         cfg_mod._cached_config = None  # type: ignore[attr-defined]
 
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         with pytest.raises(ValueError, match="disabled"):
             resolve_runtime_provider(requested="openrouter")
 
@@ -1435,7 +1435,7 @@ class TestProviderEnabledRuntimeGate:
 
         # Don't assert success — built-in resolution needs more state.
         # We only assert this path doesn't hit the disabled-gate.
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         try:
             resolve_runtime_provider(requested="claude-agent-sdk")
         except ValueError as e:

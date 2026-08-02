@@ -37,7 +37,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 from opencodon.tools.xai_http import (
     has_xai_credentials,
     opencodon_xai_user_agent,

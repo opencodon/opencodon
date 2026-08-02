@@ -10,9 +10,9 @@ See: agent.skill_commands.extract_user_instruction_from_skill_message and
 MemoryManager._strip_skill_scaffolding.
 """
 
-from opencodon.core.memory_manager import MemoryManager
-from opencodon.core.memory_provider import MemoryProvider
-from opencodon.core.skill_commands import extract_user_instruction_from_skill_message
+from opencodon.core.memory.memory_manager import MemoryManager
+from opencodon.core.memory.memory_provider import MemoryProvider
+from opencodon.core.skills.skill_commands import extract_user_instruction_from_skill_message
 
 
 _SINGLE_SKILL_TURN = (

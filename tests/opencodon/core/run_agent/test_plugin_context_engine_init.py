@@ -6,7 +6,7 @@ context_length, causing the CLI status bar to show 'ctx --'.
 
 from unittest.mock import MagicMock, patch
 
-from opencodon.core.context_engine import ContextEngine
+from opencodon.core.context.context_engine import ContextEngine
 
 
 class _StubEngine(ContextEngine):
@@ -47,7 +47,7 @@ def test_plugin_engine_gets_context_length_on_init():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=204_800),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=204_800),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -84,7 +84,7 @@ def test_active_context_engine_tools_survive_explicit_platform_toolsets():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=204_800),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=204_800),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -117,7 +117,7 @@ def test_plugin_engine_update_model_args():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=131_072),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -170,7 +170,7 @@ def test_codex_gpt55_autoraise_suppressed_for_plugin_engine():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=272_000),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=272_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -195,7 +195,7 @@ def test_codex_gpt55_autoraise_still_applies_to_builtin_compressor():
 
     with (
         patch("opencodon.config.load_config", return_value=cfg),
-        patch("opencodon.core.context_compressor.get_model_context_length", return_value=272_000),
+        patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=272_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -226,7 +226,7 @@ def test_codex_gpt55_autoraise_applies_when_plugin_engine_missing():
             side_effect=ValueError("not found"),
         ),
         patch("opencodon.plugins_runtime.get_plugin_context_engine", return_value=None),
-        patch("opencodon.core.context_compressor.get_model_context_length", return_value=272_000),
+        patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=272_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),

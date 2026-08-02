@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon.core.model_metadata import _resolve_requests_verify
+from opencodon.core.providers.model_metadata import _resolve_requests_verify
 
 
 _CA_ENV_VARS = ("OPENCODON_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")

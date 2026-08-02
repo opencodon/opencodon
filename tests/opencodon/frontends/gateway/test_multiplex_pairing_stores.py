@@ -44,9 +44,9 @@ def test_secondary_profile_pairing_stores_created(tmp_path, monkeypatch):
     runner._start_one_profile_adapters = _no_secondary
     runner._adapter_credential_fingerprint = lambda adapter: None
 
-    with patch("opencodon.frontends.cli.profiles.profiles_to_serve", return_value=[
+    with patch("opencodon.core.profiles.profiles_to_serve", return_value=[
         ("coder", tmp_path / ".opencodon" / "profiles" / "coder"),
-    ]), patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="default"):
+    ]), patch("opencodon.core.profiles.get_active_profile_name", return_value="default"):
         runner._profile_adapters["coder"] = {}
         asyncio.run(runner._start_secondary_profile_adapters())
 
@@ -72,9 +72,9 @@ def test_pairing_store_scoped_to_profile_dir(tmp_path, monkeypatch):
     runner._start_one_profile_adapters = _no_secondary
     runner._adapter_credential_fingerprint = lambda adapter: None
 
-    with patch("opencodon.frontends.cli.profiles.profiles_to_serve", return_value=[
+    with patch("opencodon.core.profiles.profiles_to_serve", return_value=[
         ("ops", tmp_path / ".opencodon" / "profiles" / "ops"),
-    ]), patch("opencodon.frontends.cli.profiles.get_active_profile_name", return_value="default"):
+    ]), patch("opencodon.core.profiles.get_active_profile_name", return_value="default"):
         runner._profile_adapters["ops"] = {}
         asyncio.run(runner._start_secondary_profile_adapters())
 

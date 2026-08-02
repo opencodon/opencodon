@@ -11,7 +11,7 @@ import threading
 
 import pytest
 
-from opencodon.core.prompt_builder import STEER_MARKER_OPEN, format_steer_marker
+from opencodon.core.prompt.prompt_builder import STEER_MARKER_OPEN, format_steer_marker
 from opencodon.core.run_agent import AIAgent
 
 
@@ -432,7 +432,7 @@ class TestSteerMarkerContract:
         """The system-prompt note tells the model which marker to trust; it
         must reference the exact open/close the injector emits, or the model
         trusts a marker that never appears (and vice-versa)."""
-        from opencodon.core.prompt_builder import STEER_CHANNEL_NOTE, STEER_MARKER_CLOSE
+        from opencodon.core.prompt.prompt_builder import STEER_CHANNEL_NOTE, STEER_MARKER_CLOSE
 
         emitted = format_steer_marker("hi")
         assert STEER_MARKER_OPEN in emitted and STEER_MARKER_CLOSE in emitted

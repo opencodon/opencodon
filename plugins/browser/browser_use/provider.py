@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from opencodon.core.browser_provider import BrowserProvider
+from opencodon.core.providers.browser_provider import BrowserProvider
 
 logger = logging.getLogger(__name__)
 

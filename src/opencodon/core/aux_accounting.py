@@ -99,7 +99,7 @@ def record_aux_usage(
         if raw_usage is None:
             return
 
-        from opencodon.core.usage_pricing import estimate_usage_cost, normalize_usage
+        from opencodon.core.providers.usage_pricing import estimate_usage_cost, normalize_usage
 
         usage = normalize_usage(raw_usage, provider=provider)
         if not (

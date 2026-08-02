@@ -7,6 +7,7 @@ not contend with the serving process' event loop for the same GIL.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import logging
@@ -63,7 +64,7 @@ def append_log_record(path: str | Path, record: str) -> None:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[4]
+    return REPO_ROOT
 
 
 def _build_sha() -> str:

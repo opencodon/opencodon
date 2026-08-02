@@ -512,7 +512,7 @@ class WebhookAdapter(BasePlatformAdapter):
             # the single-profile gateway (don't 404 a would-be valid route).
             return None
         try:
-            from opencodon.frontends.cli.profiles import profiles_to_serve
+            from opencodon.core.profiles import profiles_to_serve
             served = {name for name, _ in profiles_to_serve(multiplex=True)}
         except Exception:
             return _PROFILE_REJECTED
@@ -694,7 +694,7 @@ class WebhookAdapter(BasePlatformAdapter):
         skills = route_config.get("skills", [])
         if skills:
             try:
-                from opencodon.core.skill_commands import (
+                from opencodon.core.skills.skill_commands import (
                     build_skill_invocation_message,
                     get_skill_commands,
                 )

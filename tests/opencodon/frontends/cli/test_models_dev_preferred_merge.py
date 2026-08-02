@@ -20,7 +20,7 @@ appear in ``/model`` without a opencodon release.
 from unittest.mock import patch
 
 
-from opencodon.frontends.cli.models import (
+from opencodon.core.providers.models import (
     _MODELS_DEV_PREFERRED,
     _PROVIDER_MODELS,
     _merge_with_models_dev,
@@ -31,7 +31,7 @@ from opencodon.frontends.cli.models import (
 class TestMergeHelper:
     def test_merge_empty_mdev_returns_curated(self):
         """When models.dev returns nothing, curated list is preserved verbatim."""
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=[]):
             out = _merge_with_models_dev("opencode-go", ["mimo-v2-pro", "kimi-k2.6"])
         assert out == ["mimo-v2-pro", "kimi-k2.6"]
 
@@ -40,7 +40,7 @@ class TestMergeHelper:
         def boom(_provider):
             raise RuntimeError("network down")
 
-        with patch("opencodon.core.models_dev.list_agentic_models", side_effect=boom):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", side_effect=boom):
             out = _merge_with_models_dev("opencode-go", ["mimo-v2-pro"])
         assert out == ["mimo-v2-pro"]
 
@@ -48,7 +48,7 @@ class TestMergeHelper:
         """models.dev entries come first; curated-only entries are appended."""
         mdev = ["mimo-v2.5-pro", "mimo-v2-pro", "kimi-k2.6"]
         curated = ["kimi-k2.6", "kimi-k2.5", "mimo-v2-pro"]  # kimi-k2.5 is curated-only
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=mdev):
             out = _merge_with_models_dev("opencode-go", curated)
         # models.dev entries first (in order), then curated-only entries
         assert out == ["mimo-v2.5-pro", "mimo-v2-pro", "kimi-k2.6", "kimi-k2.5"]
@@ -57,7 +57,7 @@ class TestMergeHelper:
         """Dedup is case-insensitive but preserves the first occurrence's casing."""
         mdev = ["MiniMax-M2.7"]
         curated = ["minimax-m2.7", "minimax-m2.5"]
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=mdev):
             out = _merge_with_models_dev("minimax", curated)
         # models.dev casing wins since it came first
         assert out == ["MiniMax-M2.7", "minimax-m2.5"]
@@ -70,7 +70,7 @@ class TestProviderModelIdsPreferred:
     def test_opencode_go_includes_fresh_models_dev_entries(self):
         """provider_model_ids('opencode-go') adds models.dev entries on top."""
         mdev = ["mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "kimi-k2.6"]
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=mdev):
             out = provider_model_ids("opencode-go")
         # Fresh models must surface (this is exactly the reported bug fix:
         # mimo-v2.5-pro should be pickable on opencode-go).
@@ -82,7 +82,7 @@ class TestProviderModelIdsPreferred:
 
     def test_opencode_go_offline_falls_back_to_curated(self):
         """Offline models.dev → curated-only list, no crash."""
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=[]):
             out = provider_model_ids("opencode-go")
         # Curated floor (see opencodon_cli/models.py _PROVIDER_MODELS["opencode-go"])
         assert "mimo-v2-pro" in out
@@ -92,7 +92,7 @@ class TestProviderModelIdsPreferred:
         """opencode-zen follows the same pattern as opencode-go."""
         assert "opencode-zen" in _MODELS_DEV_PREFERRED
         mdev = ["claude-opus-4-7", "kimi-k2.6", "glm-5.1"]
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=mdev):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=mdev):
             out = provider_model_ids("opencode-zen")
         assert "claude-opus-4-7" in out
         assert "kimi-k2.6" in out
@@ -100,7 +100,7 @@ class TestProviderModelIdsPreferred:
     def test_kimi_coding_offline_catalog_includes_k3(self):
         """Native Kimi users must see the newest models without live catalog help."""
         assert "kimi-coding" not in _MODELS_DEV_PREFERRED
-        with patch("opencodon.core.models_dev.list_agentic_models", return_value=[]):
+        with patch("opencodon.core.providers.models_dev.list_agentic_models", return_value=[]):
             out = provider_model_ids("kimi-coding")
         assert "kimi-k3" in out
         assert "kimi-k2.7-code" in out
@@ -109,7 +109,7 @@ class TestProviderModelIdsPreferred:
         """Kimi /models can lag inference; live results must not replace curated."""
         with (
             patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
                 return_value={"api_key": "sk-test", "base_url": "https://api.moonshot.ai/v1"},
             ),
             patch("opencodon.providers.base.ProviderProfile.fetch_models", return_value=["kimi-k2.6"]),
@@ -143,9 +143,9 @@ class TestProviderModelIdsPreferred:
                 return Response(b'{"data":[{"id":"k3"},{"id":"kimi-k2.6"}]}')
             raise AssertionError(f"unexpected Kimi models URL: {req.full_url}")
 
-        with patch("opencodon.frontends.cli.urllib_security.open_credentialed_url", side_effect=fake_open):
+        with patch("opencodon.common.urllib_security.open_credentialed_url", side_effect=fake_open):
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "sk-kimi-test",
                     "base_url": "https://api.kimi.com/coding",
@@ -154,7 +154,7 @@ class TestProviderModelIdsPreferred:
                 coding_models = provider_model_ids("kimi-coding")
 
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "legacy-test",
                     "base_url": "https://api.moonshot.ai/v1",
@@ -163,7 +163,7 @@ class TestProviderModelIdsPreferred:
                 legacy_models = provider_model_ids("kimi-coding")
 
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "custom-test",
                     "base_url": "https://example.invalid/v1",
@@ -188,7 +188,7 @@ class TestProviderModelIdsPreferred:
 
         with (
             patch("opencodon.frontends.cli.main._prompt_api_key", return_value=("sk-kimi-test", False)),
-            patch("opencodon.frontends.cli.auth._prompt_model_selection", side_effect=fake_select),
+            patch("opencodon.core.credentials.auth._prompt_model_selection", side_effect=fake_select),
             patch("opencodon.config.get_env_value", return_value=""),
             patch("opencodon.config.save_env_value"),
         ):
@@ -210,7 +210,7 @@ class TestOpenRouterAndNousUnchanged:
     def test_openrouter_does_not_call_merge(self):
         """openrouter takes its own live path — merge helper must NOT run."""
         with patch(
-            "opencodon.frontends.cli.models._merge_with_models_dev",
+            "opencodon.core.providers.models._merge_with_models_dev",
             side_effect=AssertionError("merge should not be called for openrouter"),
         ):
             # Even if model_ids() fails for some other reason, we just care

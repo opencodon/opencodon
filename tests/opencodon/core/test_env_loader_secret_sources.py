@@ -252,7 +252,7 @@ def test_apply_external_secret_sources_status_line_suppresses_secret_names(
 
 def test_external_secret_values_are_isolated_between_homes(tmp_path, monkeypatch):
     """A later apply for the same key must not mutate an earlier home snapshot."""
-    from opencodon.core.secret_scope import build_profile_secret_scope
+    from opencodon.core.credentials.secret_scope import build_profile_secret_scope
     from opencodon.core.secret_sources.base import FetchResult
     from opencodon.core.secret_sources.registry import (
         AppliedVar,

@@ -88,7 +88,7 @@ class TestSwitchModelReloadsCredentialPool:
         agent = _make_agent("opencode-go", "qwen-coder", old_pool)
 
         with patch(
-            "opencodon.core.credential_pool.load_pool",
+            "opencodon.core.credentials.credential_pool.load_pool",
             return_value=new_pool,
         ) as load_pool_mock:
             switch_model(
@@ -117,7 +117,7 @@ class TestSwitchModelReloadsCredentialPool:
 
         load_pool_mock = MagicMock(name="load_pool")
 
-        with patch("opencodon.core.credential_pool.load_pool", load_pool_mock):
+        with patch("opencodon.core.credentials.credential_pool.load_pool", load_pool_mock):
             switch_model(
                 agent,
                 new_model="qwen-coder",
@@ -136,7 +136,7 @@ class TestSwitchModelReloadsCredentialPool:
         new_pool = _make_pool("groq")
         agent = _make_agent("opencode-go", "qwen-coder", None)
 
-        with patch("opencodon.core.credential_pool.load_pool", return_value=new_pool):
+        with patch("opencodon.core.credentials.credential_pool.load_pool", return_value=new_pool):
             switch_model(
                 agent,
                 new_model="llama-3.3-70b",
@@ -166,7 +166,7 @@ class TestSwitchModelReloadsCredentialPool:
         new_pool.mark_exhausted_and_rotate.return_value = None
         agent = _make_agent("opencode-go", "qwen-coder", old_pool)
 
-        with patch("opencodon.core.credential_pool.load_pool", return_value=new_pool):
+        with patch("opencodon.core.credentials.credential_pool.load_pool", return_value=new_pool):
             switch_model(
                 agent,
                 new_model="llama-3.3-70b",
@@ -199,7 +199,7 @@ class TestSwitchModelReloadsCredentialPool:
         agent = _make_agent("opencode-go", "qwen-coder", _make_pool("opencode-go"))
 
         with patch(
-            "opencodon.core.credential_pool.load_pool",
+            "opencodon.core.credentials.credential_pool.load_pool",
             side_effect=RuntimeError("simulated corrupt auth.json"),
         ):
             # Should NOT raise — pool reload failure is logged+swallowed.

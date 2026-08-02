@@ -32,6 +32,7 @@ so plugin-defined tools appear alongside the built-in tools.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import importlib.metadata
@@ -62,7 +63,7 @@ def get_bundled_plugins_dir() -> Path:
     env_override = os.getenv("OPENCODON_BUNDLED_PLUGINS")
     if env_override:
         return Path(env_override)
-    return Path(__file__).resolve().parents[3] / "plugins"
+    return REPO_ROOT / "plugins"
 
 try:
     import yaml
@@ -334,7 +335,7 @@ class PluginContext:
 
         See :mod:`agent.plugin_llm` for the full surface."""
         if self._llm is None:
-            from opencodon.core.plugin_llm import PluginLlm
+            from opencodon.core.providers.plugin_llm import PluginLlm
             plugin_id = self.manifest.key or self.manifest.name
             self._llm = PluginLlm(plugin_id=plugin_id)
         return self._llm
@@ -346,7 +347,7 @@ class PluginContext:
         """Return the active opencodon profile name (e.g. ``"default"``).
 
         Derived from ``OPENCODON_HOME`` via
-        :func:`opencodon_cli.profiles.get_active_profile_name`, so it works in
+        :func:`opencodon.core.profiles.get_active_profile_name`, so it works in
         every execution context — interactive CLI, gateway, and
         spawned worker sessions alike — without depending on
         ``_cli_ref`` (which is ``None`` outside an interactive CLI run).
@@ -356,7 +357,7 @@ class PluginContext:
         ``OPENCODON_HOME`` points somewhere unrecognized.
         """
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             return get_active_profile_name()
         except Exception:
             return "default"
@@ -604,7 +605,7 @@ class PluginContext:
             )
             return
         # Defer the import to avoid circular deps at module level
-        from opencodon.core.context_engine import ContextEngine
+        from opencodon.core.context.context_engine import ContextEngine
         if not isinstance(engine, ContextEngine):
             logger.warning(
                 "Plugin '%s' tried to register a context engine that does not "
@@ -629,8 +630,8 @@ class PluginContext:
         ``config.yaml`` matches against when routing ``image_generate``
         tool calls.
         """
-        from opencodon.core.image_gen_provider import ImageGenProvider
-        from opencodon.core.image_gen_registry import register_provider
+        from opencodon.core.media.image_gen_provider import ImageGenProvider
+        from opencodon.core.media.image_gen_registry import register_provider
 
         if not isinstance(provider, ImageGenProvider):
             logger.warning(
@@ -651,7 +652,7 @@ class PluginContext:
         """Register a dashboard authentication provider.
 
         ``provider`` must be an instance of
-        :class:`opencodon_cli.dashboard_auth.DashboardAuthProvider`. Used by
+        :class:`opencodon.frontends.server.dashboard_auth.DashboardAuthProvider`. Used by
         the dashboard OAuth auth gate, which engages when the dashboard
         binds to a non-loopback host without ``--insecure``.
 
@@ -660,7 +661,7 @@ class PluginContext:
         cannot crash the host. Same convention as
         ``register_image_gen_provider``.
         """
-        from opencodon.frontends.cli.dashboard_auth import (
+        from opencodon.frontends.server.dashboard_auth import (
             DashboardAuthProvider, register_provider,
         )
 
@@ -697,8 +698,8 @@ class PluginContext:
         matches against when routing ``web_search`` / ``web_extract``
         tool calls.
         """
-        from opencodon.core.web_search_provider import WebSearchProvider
-        from opencodon.core.web_search_registry import register_provider as _register_web_provider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_registry import register_provider as _register_web_provider
 
         if not isinstance(provider, WebSearchProvider):
             logger.warning(
@@ -729,8 +730,8 @@ class PluginContext:
         subsystem's dispatcher (:func:`tools.browser_tool._get_cloud_provider`)
         consults the registry built up by these calls.
         """
-        from opencodon.core.browser_provider import BrowserProvider
-        from opencodon.core.browser_registry import register_provider as _register_browser_provider
+        from opencodon.core.providers.browser_provider import BrowserProvider
+        from opencodon.core.providers.browser_registry import register_provider as _register_browser_provider
 
         if not isinstance(provider, BrowserProvider):
             logger.warning(
@@ -814,8 +815,8 @@ class PluginContext:
         Coexists with the command-provider registry rather than
         replacing it — see issue #30398 for the full design rationale.
         """
-        from opencodon.core.tts_provider import TTSProvider
-        from opencodon.core.tts_registry import register_provider as _register_tts_provider
+        from opencodon.core.media.tts_provider import TTSProvider
+        from opencodon.core.media.tts_registry import register_provider as _register_tts_provider
 
         if not isinstance(provider, TTSProvider):
             logger.warning(
@@ -858,8 +859,8 @@ class PluginContext:
         engines (OpenRouter, SenseAudio, Gemini-STT, custom proprietary
         backends).
         """
-        from opencodon.core.transcription_provider import TranscriptionProvider
-        from opencodon.core.transcription_registry import register_provider as _register_stt_provider
+        from opencodon.core.media.transcription_provider import TranscriptionProvider
+        from opencodon.core.media.transcription_registry import register_provider as _register_stt_provider
 
         if not isinstance(provider, TranscriptionProvider):
             logger.warning(
@@ -1161,7 +1162,7 @@ class PluginContext:
             ValueError: if *name* contains ``':'`` or invalid characters.
             FileNotFoundError: if *path* does not exist.
         """
-        from opencodon.core.skill_utils import _NAMESPACE_RE
+        from opencodon.core.skills.skill_utils import _NAMESPACE_RE
 
         if ":" in name:
             raise ValueError(

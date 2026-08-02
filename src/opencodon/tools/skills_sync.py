@@ -20,6 +20,7 @@ Update logic:
 
 The manifest lives at ~/.opencodon/skills/.bundled_manifest.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import hashlib
 import json
@@ -29,7 +30,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from opencodon_constants import get_bundled_skills_dir, get_opencodon_home, get_optional_skills_dir
-from opencodon.core.skill_utils import is_excluded_skill_path
+from opencodon.core.skills.skill_utils import is_excluded_skill_path
 from typing import Dict, List, Optional, Set, Tuple
 from utils import atomic_replace
 
@@ -45,7 +46,7 @@ MANIFEST_FILE = SKILLS_DIR / ".bundled_manifest"
 # When present in OPENCODON_HOME, sync_skills() is a no-op so neither the
 # installer, `opencodon update`, nor a direct sync re-injects bundled skills.
 # Delete the file to opt back in. Mirrors
-# opencodon_cli.profiles.NO_BUNDLED_SKILLS_MARKER (kept as a literal here to
+# opencodon.core.profiles.NO_BUNDLED_SKILLS_MARKER (kept as a literal here to
 # avoid importing the CLI layer into this low-level sync module).
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
@@ -56,12 +57,12 @@ def _get_bundled_dir() -> Path:
     Checks OPENCODON_BUNDLED_SKILLS env var first (set by Nix wrapper),
     then falls back to the relative path from this source file.
     """
-    return get_bundled_skills_dir(Path(__file__).resolve().parents[3] / "skills")
+    return get_bundled_skills_dir(REPO_ROOT / "skills")
 
 
 def _get_optional_dir() -> Path:
     """Locate the official optional-skills/ directory."""
-    return get_optional_skills_dir(Path(__file__).resolve().parents[3] / "optional-skills")
+    return get_optional_skills_dir(REPO_ROOT / "optional-skills")
 
 
 def _build_external_skill_index() -> Set[str]:
@@ -71,7 +72,7 @@ def _build_external_skill_index() -> Set[str]:
     Used to prevent sync_skills from shadowing externally-delegated skills.
     """
     try:
-        from opencodon.core.skill_utils import get_external_skills_dirs, _external_dirs_cache_clear
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs, _external_dirs_cache_clear
     except ImportError:
         return set()
 

@@ -661,7 +661,7 @@ class S6ServiceManager:
         its ``.env``. Previously this method took a ``port`` parameter
         that was passed in but never substituted into the rendered
         script (carried for "API parity" with a deterministic SHA-256
-        allocator in ``opencodon_cli.profiles._allocate_gateway_port``).
+        allocator in ``opencodon.core.profiles._allocate_gateway_port``).
         PR #30136 review item I5 retired both the allocator and the
         parameter because they were dead code through the entire stack.
         """

@@ -101,7 +101,7 @@ class TestUsageCachedAgent:
         event = MagicMock()
 
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.usage_pricing.estimate_usage_cost") as mock_cost:
+             patch("opencodon.core.providers.usage_pricing.estimate_usage_cost") as mock_cost:
             mock_cost.return_value = MagicMock(amount_usd=None, status="unknown")
             result = await runner._handle_usage_command(event)
 
@@ -119,7 +119,7 @@ class TestUsageCachedAgent:
         event = MagicMock()
 
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.usage_pricing.estimate_usage_cost") as mock_cost:
+             patch("opencodon.core.providers.usage_pricing.estimate_usage_cost") as mock_cost:
             mock_cost.return_value = MagicMock(amount_usd=None, status="unknown")
             result = await runner._handle_usage_command(event)
 
@@ -140,7 +140,7 @@ class TestUsageCachedAgent:
             {"role": "assistant", "content": "hi there"},
         ]
 
-        with patch("opencodon.core.model_metadata.estimate_messages_tokens_rough", return_value=500):
+        with patch("opencodon.core.providers.model_metadata.estimate_messages_tokens_rough", return_value=500):
             result = await runner._handle_usage_command(event)
 
         assert "Session Info" in result
@@ -155,7 +155,7 @@ class TestUsageCachedAgent:
         event = MagicMock()
 
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.usage_pricing.estimate_usage_cost") as mock_cost:
+             patch("opencodon.core.providers.usage_pricing.estimate_usage_cost") as mock_cost:
             mock_cost.return_value = MagicMock(amount_usd=None, status="unknown")
             result = await runner._handle_usage_command(event)
 
@@ -187,7 +187,7 @@ class TestUsageAccountSection:
             ],
         )
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.usage_pricing.estimate_usage_cost") as mock_cost:
+             patch("opencodon.core.providers.usage_pricing.estimate_usage_cost") as mock_cost:
             mock_cost.return_value = MagicMock(amount_usd=None, status="included")
             result = await runner._handle_usage_command(event)
 
@@ -262,10 +262,10 @@ class TestUsageReset:
 
         def fake_redeem(*, base_url=None, api_key=None, force=False):
             seen.update(base_url=base_url, api_key=api_key, force=force)
-            from opencodon.core.account_usage import CodexResetRedeemResult
+            from opencodon.core.providers.account_usage import CodexResetRedeemResult
             return CodexResetRedeemResult(status="reset", message="✅ redeemed", available_count=1)
 
-        monkeypatch.setattr("opencodon.core.account_usage.redeem_codex_reset_credit", fake_redeem)
+        monkeypatch.setattr("opencodon.core.providers.account_usage.redeem_codex_reset_credit", fake_redeem)
 
         result = await runner._handle_usage_command(self._event("reset"))
 
@@ -282,10 +282,10 @@ class TestUsageReset:
 
         def fake_redeem(*, base_url=None, api_key=None, force=False):
             seen["force"] = force
-            from opencodon.core.account_usage import CodexResetRedeemResult
+            from opencodon.core.providers.account_usage import CodexResetRedeemResult
             return CodexResetRedeemResult(status="reset", message="ok")
 
-        monkeypatch.setattr("opencodon.core.account_usage.redeem_codex_reset_credit", fake_redeem)
+        monkeypatch.setattr("opencodon.core.providers.account_usage.redeem_codex_reset_credit", fake_redeem)
 
         await runner._handle_usage_command(self._event("reset --force"))
 
@@ -296,7 +296,7 @@ class TestUsageReset:
         agent = _make_mock_agent(provider="openrouter")
         runner = _make_runner(SK, cached_agent=agent)
         monkeypatch.setattr(
-            "opencodon.core.account_usage.redeem_codex_reset_credit",
+            "opencodon.core.providers.account_usage.redeem_codex_reset_credit",
             lambda **kw: (_ for _ in ()).throw(AssertionError("must not redeem")),
         )
 
@@ -343,7 +343,7 @@ class TestUsageContextBreakdown:
         }
 
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.context_breakdown.compute_session_context_breakdown", return_value=fake_payload):
+             patch("opencodon.core.context.context_breakdown.compute_session_context_breakdown", return_value=fake_payload):
             result = await runner._handle_usage_command(event)
 
         # Localized header + at least the two non-zero category labels appear,
@@ -366,7 +366,7 @@ class TestUsageContextBreakdown:
         event = MagicMock()
 
         with patch("opencodon.core.rate_limit_tracker.format_rate_limit_compact", return_value="RPM: 50/60"), \
-             patch("opencodon.core.context_breakdown.compute_session_context_breakdown",
+             patch("opencodon.core.context.context_breakdown.compute_session_context_breakdown",
                    side_effect=RuntimeError("engine down")):
             result = await runner._handle_usage_command(event)
 

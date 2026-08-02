@@ -243,7 +243,17 @@ src/opencodon/                 # THE package — one importable namespace, stric
 ├── core/                      # The agent
 │   ├── run_agent.py           #   AIAgent — conversation loop core, assembled from agent_*.py mixins
 │   ├── agent_clients.py, agent_streaming.py, agent_message_prep.py, ...   # AIAgent mixins
-│   └── <137 modules>          #   provider adapters, compression, memory, prompt, skills, ...
+│   ├── providers/             #   LLM adapters (anthropic/bedrock/vertex/gemini/codex/...),
+│   │                          #     model identity (models.py, models_dev, model_catalog),
+│   │                          #     runtime_provider resolution; registry in __init__.py
+│   ├── credentials/           #   auth store, oauth flows, credential pools, secret scoping
+│   ├── context/               #   compression, context engine/references/breakdown
+│   ├── prompt/                #   system prompt assembly, prompt caching
+│   ├── memory/                #   memory manager/providers, learning graph, curator
+│   ├── media/                 #   tts / transcription / image-gen providers + registries
+│   ├── skills/                #   skill bundles, commands, preprocessing, utils
+│   ├── lsp/, transports/, secret_sources/   # pre-existing subpackages
+│   └── <~65 flat modules>     #   agent loop plumbing (tool_executor, turn_*, stream_*, errors, ...)
 ├── tools/                     # Tool implementations — auto-discovered via src/opencodon/tools/registry.py
 │   ├── model_tools.py         #   Tool orchestration, handle_function_call()
 │   └── environments/          #   Terminal backends (local, docker, ssh, modal, daytona, ...)
@@ -251,7 +261,9 @@ src/opencodon/                 # THE package — one importable namespace, stric
 ├── cron/                      # Scheduler — jobs.py, scheduler.py
 └── frontends/                 # Delivery surfaces — they import core; NOTHING imports them
     ├── cli/                   # `opencodon` CLI — main.py (argparse), shell.py (OpencodonCLI REPL,
-    │   │                      #   assembled from shell_*.py mixins), setup wizard, web_server.py
+    │                          #   assembled from shell_*.py mixins), setup wizard
+    ├── server/                # Web/dashboard server — web_server.py (FastAPI), proxy/,
+    │   │                      #   dashboard_auth/, PTY bridges, webhook
     │   └── web_dist/          #   built browser UI (gitignored; vite outDir)
     ├── gateway/               # Messaging gateway — run.py + session.py + platforms/
     │   └── platforms/         #   Adapter per platform (telegram, discord, slack, whatsapp, ...)
@@ -393,7 +405,7 @@ Reasoning content is stored in `assistant_msg["reasoning"]`.
 - `load_cli_config()` in shell.py merges hardcoded defaults + user config YAML
 - **Skin engine** (`src/opencodon/frontends/cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
 - `process_command()` is a method on `OpencodonCLI` — dispatches on canonical command name resolved via `resolve_command()` from the central registry
-- Skill slash commands: `src/opencodon/core/skill_commands.py` scans `~/.opencodon/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
+- Skill slash commands: `src/opencodon/core/skills/skill_commands.py` scans `~/.opencodon/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
 
 ### Slash Command Registry (`src/opencodon/frontends/cli/commands.py`)
 
@@ -493,7 +505,7 @@ npm test          # vitest
 
 ### TUI over the PTY bridge (`/api/pty`)
 
-The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `src/opencodon/frontends/cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `src/opencodon/frontends/cli/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
+The server can hand a browser the real `opencodon --tui` — **not** a rewrite.  See `src/opencodon/frontends/server/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `src/opencodon/frontends/server/web_server.py`.  (The dashboard SPA that used to consume it, `web/`, is gone; the browser UI is now `apps/web`, which drives sessions over the JSON-RPC gateway at `/api/ws` instead.)
 
 - A client mounts xterm.js's `Terminal` with the WebGL renderer, `@xterm/addon-fit` for container-driven resize, and `@xterm/addon-unicode11` for modern wide-character widths.
 - `/api/pty?token=…` upgrades to a WebSocket; auth uses the same ephemeral `_SESSION_TOKEN` as REST, via query param (browsers can't set `Authorization` on WS upgrade).
@@ -780,8 +792,8 @@ Separate discovery system for pluggable memory backends. **No provider is
 bundled** — the built-in file memory is not a plugin. Providers are installed
 by the user into `~/.opencodon/plugins/`.
 
-Each provider implements the `MemoryProvider` ABC (see `src/opencodon/core/memory_provider.py`)
-and is orchestrated by `src/opencodon/core/memory_manager.py`. Lifecycle hooks include
+Each provider implements the `MemoryProvider` ABC (see `src/opencodon/core/memory/memory_provider.py`)
+and is orchestrated by `src/opencodon/core/memory/memory_manager.py`. Lifecycle hooks include
 `sync_turn(turn_messages)`, `prefetch(query)`, `shutdown()`, and optional
 `post_setup(opencodon_home, config)` for setup-wizard integration.
 
@@ -857,8 +869,8 @@ Full authoring guide: `website/docs/developer-guide/model-provider-plugin.md`.
 
 `plugins/context_engine/`, `plugins/image_gen/`, etc. follow the same
 pattern (ABC + orchestrator + per-plugin directory). Context engines
-plug into `src/opencodon/core/context_engine.py`; image-gen providers into
-`src/opencodon/core/image_gen_provider.py`. Reference / docs-companion plugins
+plug into `src/opencodon/core/context/context_engine.py`; image-gen providers into
+`src/opencodon/core/media/image_gen_provider.py`. Reference / docs-companion plugins
 (`example-dashboard`, `strike-freedom-cockpit`, `plugin-llm-example`,
 `plugin-llm-async-example`) live in the
 [`opencodon-example-plugins`](https://github.com/opencodon/opencodon/tree/main/plugins)
@@ -1037,8 +1049,8 @@ Background skill-maintenance system that tracks usage on agent-created
 skills and auto-archives stale ones. Users never lose skills; archives
 go to `~/.opencodon/skills/.archive/` and are restorable.
 
-- **Core:** `src/opencodon/core/curator.py` (review loop, auto-transitions, LLM review
-  prompt) + `src/opencodon/core/curator_backup.py` (pre-run tar.gz snapshots).
+- **Core:** `src/opencodon/core/memory/curator.py` (review loop, auto-transitions, LLM review
+  prompt) + `src/opencodon/core/memory/curator_backup.py` (pre-run tar.gz snapshots).
 - **CLI:** `src/opencodon/frontends/cli/curator.py` wires `opencodon curator <verb>` where
   verbs are: `status`, `run`, `pause`, `resume`, `pin`, `unpin`,
   `archive`, `restore`, `prune`, `backup`, `rollback`.
@@ -1239,7 +1251,7 @@ The `_isolate_opencodon_home` autouse fixture in `tests/conftest.py` redirects `
 
 **Profile tests**: When testing profile features, also mock `Path.home()` so that
 `_get_profiles_root()` and `_get_default_opencodon_home()` resolve within the temp dir.
-Use the pattern from `tests/opencodon/frontends/cli/test_profiles.py`:
+Use the pattern from `tests/opencodon/core/test_profiles.py`:
 ```python
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):

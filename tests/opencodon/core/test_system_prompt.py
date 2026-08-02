@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from opencodon.core.system_prompt import build_system_prompt_parts
+from opencodon.core.prompt.system_prompt import build_system_prompt_parts
 
 
 def _make_agent(**overrides):
@@ -91,7 +91,7 @@ class TestCodingContextBlock:
         monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
         agent = _make_agent(valid_tool_names=["read_file"], platform="cli")
         # Drive the real path: force the resolved mode to "off" via config.
-        with patch("opencodon.core.coding_context._coding_mode", return_value="off"):
+        with patch("opencodon.core.context.coding_context._coding_mode", return_value="off"):
             stable = _stable_prompt(agent)
         assert "coding agent" not in stable
 

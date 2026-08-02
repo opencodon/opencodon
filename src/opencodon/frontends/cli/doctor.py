@@ -24,7 +24,7 @@ _env_path = get_env_path()
 load_opencodon_dotenv(opencodon_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
 
 from opencodon.common.colors import Colors, color
-from opencodon.frontends.cli.models import _OPENCODON_USER_AGENT
+from opencodon.core.providers.models import _OPENCODON_USER_AGENT
 from opencodon_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
@@ -114,13 +114,13 @@ def _has_healthy_oauth_fallback_for_apikey_provider(provider_label: str) -> bool
     normalized = (provider_label or "").strip().lower()
     if normalized == "minimax":
         try:
-            from opencodon.frontends.cli.auth import get_minimax_oauth_auth_status
+            from opencodon.core.credentials.auth import get_minimax_oauth_auth_status
             return bool((get_minimax_oauth_auth_status() or {}).get("logged_in"))
         except Exception:
             return False
     if normalized == "xai":
         try:
-            from opencodon.frontends.cli.auth import get_xai_oauth_auth_status
+            from opencodon.core.credentials.auth import get_xai_oauth_auth_status
             return bool((get_xai_oauth_auth_status() or {}).get("logged_in"))
         except Exception:
             return False
@@ -489,7 +489,7 @@ def _build_apikey_providers_list() -> list:
         from opencodon.providers import list_providers
         from opencodon.providers.base import ProviderProfile as _PP
         try:
-            from opencodon.frontends.cli.providers import normalize_provider as _normalize_provider
+            from opencodon.core.providers import normalize_provider as _normalize_provider
         except Exception:  # pragma: no cover - normalization is best-effort
             def _normalize_provider(_name: str) -> str:
                 return (_name or "").strip().lower()
@@ -790,7 +790,7 @@ def run_doctor(args):
 
             known_providers: set = set()
             try:
-                from opencodon.frontends.cli.auth import (
+                from opencodon.core.credentials.auth import (
                     PROVIDER_REGISTRY,
                     resolve_provider as _resolve_auth_provider,
                 )
@@ -800,7 +800,7 @@ def run_doctor(args):
                 pass
             try:
                 from opencodon.config import get_compatible_custom_providers as _compatible_custom_providers
-                from opencodon.frontends.cli.providers import (
+                from opencodon.core.providers import (
                     normalize_provider as _normalize_catalog_provider,
                     resolve_provider_full as _resolve_provider_full,
                 )
@@ -939,7 +939,7 @@ def run_doctor(args):
                             or str(get_env_value("OPENAI_API_KEY") or "").strip()
                         )
                     else:
-                        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY, get_auth_status
+                        from opencodon.core.credentials.auth import PROVIDER_REGISTRY, get_auth_status
 
                         pconfig = PROVIDER_REGISTRY.get(runtime_provider)
                         configured = True
@@ -1148,7 +1148,7 @@ def run_doctor(args):
     _section("Auth Providers")
 
     try:
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.credentials.auth import (
             get_codex_auth_status,
             get_minimax_oauth_auth_status,
         )
@@ -1183,7 +1183,7 @@ def run_doctor(args):
     # xAI OAuth — separate try/except so an import failure here cannot
     # disrupt the already-printed Codex/Gemini/MiniMax rows above.
     try:
-        from opencodon.frontends.cli.auth import get_xai_oauth_auth_status
+        from opencodon.core.credentials.auth import get_xai_oauth_auth_status
         xai_oauth_status = get_xai_oauth_auth_status() or {}
         if xai_oauth_status.get("logged_in"):
             check_ok("xAI OAuth", "(logged in)")
@@ -1864,13 +1864,13 @@ def run_doctor(args):
             )
 
     def _probe_anthropic() -> _ConnectivityResult:
-        from opencodon.frontends.cli.auth import get_anthropic_key
+        from opencodon.core.credentials.auth import get_anthropic_key
         key = get_anthropic_key()
         if not key:
             return _ConnectivityResult("Anthropic API", [], [])
         try:
             import httpx
-            from opencodon.core.anthropic_adapter import (
+            from opencodon.core.providers.anthropic_adapter import (
                 _is_oauth_token,
                 _COMMON_BETAS,
                 _OAUTH_ONLY_BETAS,
@@ -2019,7 +2019,7 @@ def run_doctor(args):
 
     def _probe_bedrock() -> _ConnectivityResult:
         try:
-            from opencodon.core.bedrock_adapter import (
+            from opencodon.core.providers.bedrock_adapter import (
                 has_aws_credentials,
                 resolve_aws_auth_env_var,
                 resolve_bedrock_region,
@@ -2094,7 +2094,7 @@ def run_doctor(args):
             return _ConnectivityResult("Azure Foundry (Entra ID)", [], [])
 
         try:
-            from opencodon.core.azure_identity_adapter import (
+            from opencodon.core.providers.azure_identity_adapter import (
                 EntraIdentityConfig,
                 SCOPE_AI_AZURE_DEFAULT,
                 describe_active_credential,
@@ -2316,7 +2316,7 @@ def run_doctor(args):
             check_warn(f"{_active_memory_provider} check failed", str(_e))
 
     try:
-        from opencodon.frontends.cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
+        from opencodon.core.profiles import list_profiles, _get_wrapper_dir, profile_exists
         import re as _re
 
         named_profiles = [p for p in list_profiles() if not p.is_default]

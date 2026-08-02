@@ -10,7 +10,7 @@ self-hosted identity provider:
     Authentik · Keycloak · Zitadel · Authelia · Auth0 · Okta · Google · …
 
 It is a pure drop-in plugin: it implements the five
-:class:`~opencodon_cli.dashboard_auth.DashboardAuthProvider` methods and touches
+:class:`~opencodon.frontends.server.dashboard_auth.DashboardAuthProvider` methods and touches
 nothing in core auth/runtime/login. The HTTP round trip, cookies, CSRF
 ``state`` check and ``redirect_uri`` reconstruction are all owned by
 ``opencodon_cli/dashboard_auth/routes.py``; this provider only:
@@ -22,7 +22,7 @@ nothing in core auth/runtime/login. The HTTP round trip, cookies, CSRF
   4. verifies the **ID token** (RS256/ES256) against the discovered
      ``jwks_uri`` with ``iss`` / ``aud`` pinned to the configured issuer /
      client id, and maps standard OIDC claims (``sub``, ``email``, ``name``)
-     onto a :class:`~opencodon_cli.dashboard_auth.Session`.
+     onto a :class:`~opencodon.frontends.server.dashboard_auth.Session`.
 
 Why the ID token (not the access token)? OIDC guarantees the ID token is a
 signed JWT carrying identity claims — that is its entire purpose. The access
@@ -87,7 +87,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from opencodon.frontends.cli.dashboard_auth import (
+from opencodon.frontends.server.dashboard_auth import (
     DashboardAuthProvider,
     InvalidCodeError,
     LoginStart,

@@ -204,7 +204,7 @@ def build_models_payload(
     # aggregator rows honest: they only show models the user can't get
     # from a more-specific provider.  (#45954)
     try:
-        from opencodon.frontends.cli.providers import is_routing_aggregator as _is_routing_aggregator
+        from opencodon.core.providers import is_routing_aggregator as _is_routing_aggregator
     except Exception:
         _is_routing_aggregator = None  # type: ignore[assignment]
 
@@ -266,10 +266,10 @@ def _apply_capabilities(rows: list[dict]) -> None:
     no-op on models that ignore it, whereas hiding it from a capable-but-
     uncatalogued model is the worse failure.
     """
-    from opencodon.frontends.cli.models import model_supports_fast_mode
+    from opencodon.core.providers.models import model_supports_fast_mode
 
     try:
-        from opencodon.core.models_dev import get_model_capabilities
+        from opencodon.core.providers.models_dev import get_model_capabilities
     except Exception:
         get_model_capabilities = None  # type: ignore[assignment]
 
@@ -311,8 +311,8 @@ def _append_unconfigured_rows(
     at it but credentials are presently unavailable, keep a visible row carrying
     the saved model so GUI pickers don't silently snap to some other provider.
     """
-    from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
-    from opencodon.frontends.cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
+    from opencodon.core.providers.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
 
     seen = {r["slug"].lower() for r in rows}
     cur = (ctx.current_provider or "").lower()
@@ -375,7 +375,7 @@ def _filter_explicit_provider_rows(rows: list[dict], ctx: ConfigContext) -> list
     seeded credentials (for example GitHub CLI -> Copilot). Desktop chat model
     pickers want the narrower subset the user explicitly configured for opencodon.
     """
-    from opencodon.frontends.cli.auth import is_provider_explicitly_configured
+    from opencodon.core.credentials.auth import is_provider_explicitly_configured
 
     current_slug = str(ctx.current_provider or "").strip().lower()
     kept: list[dict] = []
@@ -455,7 +455,7 @@ def _apply_picker_hints(rows: list[dict]) -> None:
     the unconfigured skeleton rows from ``_append_unconfigured_rows`` get
     the picker's setup-hint shape.
     """
-    from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
     for row in rows:
         if "authenticated" in row:
@@ -495,7 +495,7 @@ def _reorder_canonical(rows: list[dict]) -> list[dict]:
     canonical. Keying on the flag would silently demote canonical
     providers configured via the new keyed schema.
     """
-    from opencodon.frontends.cli.models import CANONICAL_PROVIDERS
+    from opencodon.core.providers.models import CANONICAL_PROVIDERS
 
     order = {e.slug: i for i, e in enumerate(CANONICAL_PROVIDERS)}
     canon = sorted(
@@ -519,7 +519,7 @@ def _apply_pricing(rows: list[dict]) -> None:
     renders strings — identical formatting to the CLI picker. All failures
     are swallowed (best-effort): a row simply gets no ``pricing`` key.
     """
-    from opencodon.frontends.cli.models import (
+    from opencodon.core.providers.models import (
         _format_price_per_mtok,
         get_pricing_for_provider,
     )

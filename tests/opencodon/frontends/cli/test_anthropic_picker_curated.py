@@ -13,7 +13,7 @@ Bug — newly-routed curated aliases vanished on a native Anthropic setup
 
 from unittest.mock import patch
 
-from opencodon.frontends.cli import models as M
+from opencodon.core.providers import models as M
 
 
 def test_anthropic_curated_alias_survives_when_live_omits_it():

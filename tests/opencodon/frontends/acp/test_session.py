@@ -107,7 +107,7 @@ class TestCreateSession:
             },
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             lambda requested=None: {
                 "provider": requested,
                 "api_mode": "codex_responses",
@@ -429,7 +429,7 @@ class TestPersistence:
             },
         })
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")
@@ -707,7 +707,7 @@ class TestPersistence:
             "model": {"provider": runtime_choice["provider"], "default": "test-model"}
         })
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")
@@ -747,7 +747,7 @@ class TestPersistence:
             "model": {"provider": "openrouter", "default": "test-model"}
         })
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = SessionDB(tmp_path / "state.db")

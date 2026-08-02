@@ -408,7 +408,7 @@ class TestSkillView:
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
             patch(
-                "opencodon.core.skill_preprocessing.load_skills_config",
+                "opencodon.core.skills.skill_preprocessing.load_skills_config",
                 return_value={"template_vars": True, "inline_shell": False},
             ),
         ):
@@ -428,7 +428,7 @@ class TestSkillView:
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
             patch(
-                "opencodon.core.skill_preprocessing.load_skills_config",
+                "opencodon.core.skills.skill_preprocessing.load_skills_config",
                 return_value={
                     "template_vars": True,
                     "inline_shell": True,
@@ -452,7 +452,7 @@ class TestSkillView:
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
             patch(
-                "opencodon.core.skill_preprocessing.load_skills_config",
+                "opencodon.core.skills.skill_preprocessing.load_skills_config",
                 return_value={"template_vars": True, "inline_shell": False},
             ),
         ):
@@ -696,38 +696,38 @@ class TestSkillMatchesPlatform:
         assert skill_matches_platform({"platforms": None}) is True
 
     def test_macos_on_darwin(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert skill_matches_platform({"platforms": ["macos"]}) is True
 
     def test_macos_on_linux(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "linux"
             assert skill_matches_platform({"platforms": ["macos"]}) is False
 
     def test_linux_on_linux(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "linux"
             assert skill_matches_platform({"platforms": ["linux"]}) is True
 
     def test_linux_on_darwin(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert skill_matches_platform({"platforms": ["linux"]}) is False
 
     def test_windows_on_win32(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "win32"
             assert skill_matches_platform({"platforms": ["windows"]}) is True
 
     def test_windows_on_linux(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "linux"
             assert skill_matches_platform({"platforms": ["windows"]}) is False
 
     def test_multi_platform_match(self):
         """Skills listing multiple platforms should match any of them."""
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert skill_matches_platform({"platforms": ["macos", "linux"]}) is True
             mock_sys.platform = "linux"
@@ -737,20 +737,20 @@ class TestSkillMatchesPlatform:
 
     def test_string_instead_of_list(self):
         """A single string value should be treated as a one-element list."""
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert skill_matches_platform({"platforms": "macos"}) is True
             mock_sys.platform = "linux"
             assert skill_matches_platform({"platforms": "macos"}) is False
 
     def test_case_insensitive(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert skill_matches_platform({"platforms": ["MacOS"]}) is True
             assert skill_matches_platform({"platforms": ["MACOS"]}) is True
 
     def test_unknown_platform_no_match(self):
-        with patch("opencodon.core.skill_utils.sys") as mock_sys:
+        with patch("opencodon.core.skills.skill_utils.sys") as mock_sys:
             mock_sys.platform = "linux"
             assert skill_matches_platform({"platforms": ["freebsd"]}) is False
 
@@ -766,7 +766,7 @@ class TestFindAllSkillsPlatformFiltering:
     def test_excludes_incompatible_platform(self, tmp_path):
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
-            patch("opencodon.core.skill_utils.sys") as mock_sys,
+            patch("opencodon.core.skills.skill_utils.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
             _make_skill(tmp_path, "universal-skill")
@@ -779,7 +779,7 @@ class TestFindAllSkillsPlatformFiltering:
     def test_includes_matching_platform(self, tmp_path):
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
-            patch("opencodon.core.skill_utils.sys") as mock_sys,
+            patch("opencodon.core.skills.skill_utils.sys") as mock_sys,
         ):
             mock_sys.platform = "darwin"
             _make_skill(tmp_path, "mac-only", frontmatter_extra="platforms: [macos]\n")
@@ -791,7 +791,7 @@ class TestFindAllSkillsPlatformFiltering:
         """Skills without platforms field should appear on any platform."""
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
-            patch("opencodon.core.skill_utils.sys") as mock_sys,
+            patch("opencodon.core.skills.skill_utils.sys") as mock_sys,
         ):
             mock_sys.platform = "win32"
             _make_skill(tmp_path, "generic-skill")
@@ -802,7 +802,7 @@ class TestFindAllSkillsPlatformFiltering:
     def test_multi_platform_skill(self, tmp_path):
         with (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", tmp_path),
-            patch("opencodon.core.skill_utils.sys") as mock_sys,
+            patch("opencodon.core.skills.skill_utils.sys") as mock_sys,
         ):
             _make_skill(
                 tmp_path, "cross-plat", frontmatter_extra="platforms: [macos, linux]\n"
@@ -1157,7 +1157,7 @@ class TestSkillViewCollisionDetection:
         return (
             patch("opencodon.tools.skills_tool.SKILLS_DIR", local_dir),
             patch(
-                "opencodon.core.skill_utils.get_external_skills_dirs",
+                "opencodon.core.skills.skill_utils.get_external_skills_dirs",
                 return_value=list(external_dirs),
             ),
         )

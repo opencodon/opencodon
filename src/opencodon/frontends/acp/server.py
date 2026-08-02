@@ -74,7 +74,7 @@ from opencodon.frontends.acp.permissions import make_approval_callback
 from opencodon.frontends.acp.provenance import session_provenance_meta
 from opencodon.frontends.acp.session import SessionManager, SessionState, _expand_acp_enabled_toolsets
 from opencodon.frontends.acp.tools import build_tool_complete, build_tool_start
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
@@ -590,7 +590,7 @@ class OpencodonACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from opencodon.frontends.cli.models import curated_models_for_provider, normalize_provider, provider_label
+            from opencodon.core.providers.models import curated_models_for_provider, normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             provider_name = provider_label(normalized_provider)
@@ -653,7 +653,7 @@ class OpencodonACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from opencodon.frontends.cli.models import detect_provider_for_model, parse_model_input
+            from opencodon.core.providers.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:
@@ -682,7 +682,7 @@ class OpencodonACPAgent(acp.Agent):
             return None
 
         try:
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             used = estimate_request_tokens_rough(
                 state.history,
@@ -832,7 +832,7 @@ class OpencodonACPAgent(acp.Agent):
 
         try:
             from opencodon.tools.model_tools import get_tool_definitions
-            from opencodon.core.memory_manager import inject_memory_provider_tools
+            from opencodon.core.memory.memory_manager import inject_memory_provider_tools
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
                 getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"],
@@ -1914,7 +1914,7 @@ class OpencodonACPAgent(acp.Agent):
         try:
             from opencodon.tools.model_tools import get_tool_definitions
             from types import SimpleNamespace
-            from opencodon.core.memory_manager import inject_memory_provider_tools
+            from opencodon.core.memory.memory_manager import inject_memory_provider_tools
 
             toolsets = _expand_acp_enabled_toolsets(
                 getattr(state.agent, "enabled_toolsets", None) or ["opencodon-acp"]
@@ -1964,7 +1964,7 @@ class OpencodonACPAgent(acp.Agent):
         threshold_tokens = int(getattr(compressor, "threshold_tokens", 0) or 0)
 
         try:
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             system_prompt = getattr(agent, "_cached_system_prompt", "") or ""
             tools = getattr(agent, "tools", None) or None
@@ -2057,7 +2057,7 @@ class OpencodonACPAgent(acp.Agent):
             if not hasattr(agent, "_compress_context"):
                 return "Context compression not available for this agent."
 
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             original_count = len(state.history)
             # Include system prompt + tool schemas so the figure reflects real

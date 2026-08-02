@@ -56,7 +56,7 @@ def test_routing_to_different_model_marks_routed_and_resolves_credentials():
         "max_output_tokens": 2048,
     }
     with patch("opencodon.config.load_config", return_value=cfg), \
-         patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", return_value=fake_rp):
+         patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider", return_value=fake_rp):
         rt = br._resolve_review_runtime(agent)
     assert rt["routed"] is True
     assert rt["provider"] == "openrouter"
@@ -95,7 +95,7 @@ def test_routing_resolution_failure_falls_back_to_parent():
         "provider": "openrouter", "model": "google/gemini-3-flash-preview",
     }}}
     with patch("opencodon.config.load_config", return_value=cfg), \
-         patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+         patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                side_effect=RuntimeError("boom")):
         rt = br._resolve_review_runtime(agent)
     assert rt["routed"] is False

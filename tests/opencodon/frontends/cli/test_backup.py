@@ -1374,7 +1374,7 @@ class TestProfileRestoration:
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
         def fake_import(name, *a, **kw):
-            if name == "opencodon.frontends.cli.profiles":
+            if name == "opencodon.core.profiles":
                 raise ImportError("no profiles module")
             return original_import(name, *a, **kw)
 
@@ -2505,7 +2505,7 @@ class TestMemoryProviderExternalPaths:
 
     def test_abc_backup_paths_defaults_empty(self):
         """The ABC default returns [] so providers opt in explicitly."""
-        from opencodon.core.memory_provider import MemoryProvider
+        from opencodon.core.memory.memory_provider import MemoryProvider
 
         class _Dummy(MemoryProvider):
             @property

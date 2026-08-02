@@ -1,5 +1,5 @@
 import pytest
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     is_output_cap_error,
     parse_available_output_tokens_from_error,
 )

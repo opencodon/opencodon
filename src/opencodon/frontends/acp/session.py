@@ -602,7 +602,7 @@ class SessionManager:
 
         from opencodon.core.run_agent import AIAgent
         from opencodon.config import load_config
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
         config = load_config()
         model_cfg = config.get("model")

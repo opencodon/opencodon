@@ -75,7 +75,7 @@ def test_desktop_ticker_calls_tick_then_stops():
     """The desktop dashboard ticker loop calls opencodon.cron.scheduler.tick and exits
     once the stop_event is set. Desktop has no live adapters, so it ticks with
     no adapters/loop."""
-    from opencodon.frontends.cli.web_server import _start_desktop_cron_ticker
+    from opencodon.frontends.server.web_server import _start_desktop_cron_ticker
 
     calls = []
     stop = threading.Event()
@@ -630,7 +630,7 @@ class TestGuardJobCredentialExfil:
 
     def test_named_custom_offhost_is_blocked(self, monkeypatch):
         import pytest
-        import opencodon.frontends.cli.runtime_provider as rp
+        import opencodon.core.providers.runtime_provider as rp
         from opencodon.cron.scheduler import _guard_job_credential_exfil
 
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)
@@ -645,7 +645,7 @@ class TestGuardJobCredentialExfil:
             _guard_job_credential_exfil(job)
 
     def test_named_custom_matching_host_is_allowed(self, monkeypatch):
-        import opencodon.frontends.cli.runtime_provider as rp
+        import opencodon.core.providers.runtime_provider as rp
         from opencodon.cron.scheduler import _guard_job_credential_exfil
 
         monkeypatch.setattr(rp, "has_named_custom_provider", lambda n: True)

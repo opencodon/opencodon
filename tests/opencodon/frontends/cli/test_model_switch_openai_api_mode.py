@@ -40,7 +40,7 @@ def _run_openai_switch(
         patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None),
         patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]),
         patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value={
                 "api_key": "sk-test",
                 "base_url": runtime_base_url,
@@ -48,12 +48,12 @@ def _run_openai_switch(
             },
         ),
         patch(
-            "opencodon.frontends.cli.models.validate_requested_model",
+            "opencodon.core.providers.models.validate_requested_model",
             return_value=_MOCK_VALIDATION,
         ),
         patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None),
         patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None),
-        patch("opencodon.frontends.cli.models.detect_provider_for_model", return_value=None),
+        patch("opencodon.core.providers.models.detect_provider_for_model", return_value=None),
     ):
         return switch_model(
             raw_input=raw_input,
@@ -102,7 +102,7 @@ def test_generic_endpoint_keeps_explicit_api_mode():
     generic OpenAI-compatible relay returns None from host_mandated_api_mode,
     so the switch path leaves the resolver's api_mode untouched.
     """
-    from opencodon.frontends.cli.providers import host_mandated_api_mode
+    from opencodon.core.providers import host_mandated_api_mode
 
     assert host_mandated_api_mode("https://generic.example.com/v1") is None
     # Lookalike / path-spoof hosts must also NOT be treated as mandated (#32243).

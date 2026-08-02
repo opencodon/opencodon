@@ -19,7 +19,7 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 
-from opencodon.frontends.cli import web_server
+from opencodon.frontends.server import web_server
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def test_client(monkeypatch, tmp_path):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    from opencodon.frontends.cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    from opencodon.frontends.server.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
     # Isolate OPENCODON_HOME so config reads go to our tmp.
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "home"))

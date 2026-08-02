@@ -116,7 +116,7 @@ class TestEndToEnd:
         with patch("opencodon.tools.web_tools._ensure_web_plugins_loaded"), \
              patch("opencodon.tools.web_tools._get_extract_backend", return_value="fake"), \
              patch("opencodon.tools.web_tools.async_is_safe_url", new=_AsyncTrue()), \
-             patch("opencodon.core.web_search_registry.get_provider", return_value=FakeProvider()):
+             patch("opencodon.core.providers.web_search_registry.get_provider", return_value=FakeProvider()):
             result = json.loads(asyncio.new_event_loop().run_until_complete(
                 wt.web_extract_tool(["https://example.com/big"], char_limit=5000)
             ))

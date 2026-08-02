@@ -2,7 +2,7 @@
 
 import pytest
 
-from opencodon.core.conversation_compression import ROUTINE_COMPRESSION_STATUS_SAMPLES
+from opencodon.core.context.conversation_compression import ROUTINE_COMPRESSION_STATUS_SAMPLES
 from opencodon.frontends.gateway.config import Platform
 from opencodon.frontends.gateway.run import (
     _prepare_gateway_status_message,

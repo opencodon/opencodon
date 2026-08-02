@@ -264,7 +264,7 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     """
     from opencodon.tools.mcp_tool import _interpolate_env_vars
 
-    from opencodon.core.secret_scope import current_secret_scope
+    from opencodon.core.credentials.secret_scope import current_secret_scope
 
     if current_secret_scope() is None:
         try:

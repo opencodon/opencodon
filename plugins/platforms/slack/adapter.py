@@ -38,7 +38,7 @@ from pathlib import Path as _Path
 
 sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
 
-from opencodon.core.secret_scope import UnscopedSecretError, get_secret
+from opencodon.core.credentials.secret_scope import UnscopedSecretError, get_secret
 from opencodon.frontends.gateway.config import Platform, PlatformConfig
 from opencodon.frontends.gateway.platforms.helpers import MessageDeduplicator
 from opencodon.frontends.gateway.platforms.base import (
@@ -5558,7 +5558,7 @@ class SlackAdapter(BasePlatformAdapter):
         def _env(name: str) -> str:
             # Multiplex: profile .env is in secret_scope, not process environ.
             try:
-                from opencodon.core.secret_scope import get_secret
+                from opencodon.core.credentials.secret_scope import get_secret
 
                 val = get_secret(name)
                 if val is not None and str(val).strip():

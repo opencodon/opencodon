@@ -10,8 +10,8 @@ NOT mislabelled custom.
 
 from fastapi.testclient import TestClient
 
-import opencodon.frontends.cli.web_server as web_server
-from opencodon.frontends.cli.web_server import _SESSION_TOKEN, app
+import opencodon.frontends.server.web_server as web_server
+from opencodon.frontends.server.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
 HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}

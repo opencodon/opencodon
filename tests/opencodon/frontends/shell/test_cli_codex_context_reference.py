@@ -33,8 +33,8 @@ def test_at_context_resolution_passes_active_provider():
         injected_tokens=0,
         warnings=["blocked for test"],
     )
-    with patch("opencodon.core.context_references.preprocess_context_references", return_value=blocked_result), \
-         patch("opencodon.core.model_metadata.get_model_context_length", return_value=372_000) as mock_context, \
+    with patch("opencodon.core.context.context_references.preprocess_context_references", return_value=blocked_result), \
+         patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=372_000) as mock_context, \
          patch("cli._cprint"):
         result = cli.chat("inspect @file:example.py")
 

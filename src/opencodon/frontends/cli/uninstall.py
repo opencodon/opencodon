@@ -5,6 +5,7 @@ Provides options for:
 - Full uninstall: Remove everything including configs and data
 - Keep data: Remove code but keep ~/.opencodon/ (configs, sessions, logs)
 """
+from opencodon.common.repo import REPO_ROOT
 
 import os
 import shutil
@@ -27,7 +28,7 @@ def log_warn(msg: str):
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
-    return Path(__file__).resolve().parents[4]
+    return REPO_ROOT
 
 
 def find_shell_configs() -> list:
@@ -432,7 +433,7 @@ def _discover_named_profiles():
     if profile support is unavailable or nothing is installed beyond the
     default root."""
     try:
-        from opencodon.frontends.cli.profiles import list_profiles
+        from opencodon.core.profiles import list_profiles
     except Exception:
         return []
     try:

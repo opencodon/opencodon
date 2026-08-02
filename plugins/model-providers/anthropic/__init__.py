@@ -4,7 +4,7 @@ import json
 import logging
 import urllib.request
 
-from opencodon.frontends.cli.urllib_security import open_credentialed_url
+from opencodon.common.urllib_security import open_credentialed_url
 from opencodon.providers import register_provider
 from opencodon.providers.base import ProviderProfile
 

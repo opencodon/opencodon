@@ -15,7 +15,7 @@ import time
 from email.utils import formatdate
 
 from opencodon.core.redact import redact_sensitive_text
-from opencodon.core.secret_scope import get_secret
+from opencodon.core.credentials.secret_scope import get_secret
 
 logger = logging.getLogger(__name__)
 

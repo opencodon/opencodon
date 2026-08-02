@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core import secret_scope as ss
+from opencodon.core.credentials import secret_scope as ss
 from opencodon.frontends.gateway.config import PlatformConfig
 from opencodon.frontends.gateway.platforms.api_server import APIServerAdapter
 
@@ -72,7 +72,7 @@ class TestProfileScopeDefaultFallback:
             "OPENROUTER_BASE_URL=https://worker.example/v1\n", encoding="utf-8"
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.profiles.get_profile_dir", lambda name: profile_home
+            "opencodon.core.profiles.get_profile_dir", lambda name: profile_home
         )
         ss.set_multiplex_active(True)
 

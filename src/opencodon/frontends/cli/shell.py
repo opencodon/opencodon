@@ -52,7 +52,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -92,13 +92,13 @@ import threading
 import queue
 
 def CanonicalUsage(*args, **kwargs):
-    from opencodon.core.usage_pricing import CanonicalUsage as _CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage as _CanonicalUsage
 
     return _CanonicalUsage(*args, **kwargs)
 
 
 def estimate_usage_cost(*args, **kwargs):
-    from opencodon.core.usage_pricing import estimate_usage_cost as _estimate_usage_cost
+    from opencodon.core.providers.usage_pricing import estimate_usage_cost as _estimate_usage_cost
 
     return _estimate_usage_cost(*args, **kwargs)
 
@@ -3623,7 +3623,7 @@ _skill_bundles = None
 def _ensure_skill_commands() -> dict:
     global _skill_commands
     if _skill_commands is None:
-        from opencodon.core.skill_commands import scan_skill_commands
+        from opencodon.core.skills.skill_commands import scan_skill_commands
 
         _skill_commands = scan_skill_commands()
     return _skill_commands
@@ -3634,13 +3634,13 @@ def get_skill_commands() -> dict:
 
 
 def build_skill_invocation_message(*args, **kwargs):
-    from opencodon.core.skill_commands import build_skill_invocation_message as _impl
+    from opencodon.core.skills.skill_commands import build_skill_invocation_message as _impl
 
     return _impl(*args, **kwargs)
 
 
 def build_preloaded_skills_prompt(*args, **kwargs):
-    from opencodon.core.skill_commands import build_preloaded_skills_prompt as _impl
+    from opencodon.core.skills.skill_commands import build_preloaded_skills_prompt as _impl
 
     return _impl(*args, **kwargs)
 
@@ -3648,14 +3648,14 @@ def build_preloaded_skills_prompt(*args, **kwargs):
 def get_skill_bundles() -> dict:
     global _skill_bundles
     if _skill_bundles is None:
-        from opencodon.core.skill_bundles import get_skill_bundles as _impl
+        from opencodon.core.skills.skill_bundles import get_skill_bundles as _impl
 
         _skill_bundles = _impl()
     return _skill_bundles
 
 
 def build_bundle_invocation_message(*args, **kwargs):
-    from opencodon.core.skill_bundles import build_bundle_invocation_message as _impl
+    from opencodon.core.skills.skill_bundles import build_bundle_invocation_message as _impl
 
     return _impl(*args, **kwargs)
 
@@ -3873,7 +3873,7 @@ class OpencodonCLI(
         if self.model == _DEFAULT_CONFIG_MODEL:
             _base_url = (_model_config.get("base_url") or "") if isinstance(_model_config, dict) else ""
             if "localhost" in _base_url or "127.0.0.1" in _base_url:
-                from opencodon.frontends.cli.runtime_provider import _auto_detect_local_model
+                from opencodon.core.providers.runtime_provider import _auto_detect_local_model
                 _detected = _auto_detect_local_model(_base_url)
                 if _detected:
                     self.model = _detected
@@ -4631,7 +4631,7 @@ class OpencodonCLI(
             parse_model_flags_detailed,
             resolve_persist_behavior,
         )
-        from opencodon.frontends.cli.providers import get_label
+        from opencodon.core.providers import get_label
 
         # Parse args from the original command
         parts = cmd_original.split(None, 1)  # split off '/model'
@@ -4665,7 +4665,7 @@ class OpencodonCLI(
         # /v1/models endpoint on this open.
         if force_refresh:
             try:
-                from opencodon.frontends.cli.models import clear_provider_models_cache
+                from opencodon.core.providers.models import clear_provider_models_cache
                 clear_provider_models_cache()
                 _cprint("  Cleared model picker cache. Refreshing...")
             except Exception:
@@ -5487,7 +5487,7 @@ class OpencodonCLI(
                 # Stacked slash-skill invocations: `/skill-a /skill-b do XYZ`
                 # loads every leading skill (up to 5), not just the first.
                 # Inspired by Claude Code v2.1.199.
-                from opencodon.core.skill_commands import (
+                from opencodon.core.skills.skill_commands import (
                     build_stacked_skill_invocation_message,
                     split_stacked_skill_commands,
                 )
@@ -5751,7 +5751,7 @@ class OpencodonCLI(
         base_url = (getattr(self.agent, "base_url", None) if self.agent else None) or getattr(self, "base_url", None)
         api_key = (getattr(self.agent, "api_key", None) if self.agent else None) or getattr(self, "api_key", None)
 
-        from opencodon.core.account_usage import redeem_codex_reset_credit
+        from opencodon.core.providers.account_usage import redeem_codex_reset_credit
 
         print("  ⏳ Checking banked reset credits...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
@@ -5897,7 +5897,7 @@ class OpencodonCLI(
         # See agent/image_routing.py for the decision table.
         if images:
             try:
-                from opencodon.core.image_routing import (
+                from opencodon.core.media.image_routing import (
                     build_native_content_parts,
                     decide_image_input_mode,
                 )
@@ -5949,8 +5949,8 @@ class OpencodonCLI(
         # Expand @ context references (e.g. @file:main.py, @diff, @folder:src/)
         if isinstance(message, str) and "@" in message:
             try:
-                from opencodon.core.context_references import preprocess_context_references
-                from opencodon.core.model_metadata import get_model_context_length
+                from opencodon.core.context.context_references import preprocess_context_references
+                from opencodon.core.providers.model_metadata import get_model_context_length
                 _ctx_len = get_model_context_length(
                     self.model, base_url=self.base_url or "", api_key=self.api_key or "",
                     provider=self.provider or "",
@@ -6728,7 +6728,7 @@ class OpencodonCLI(
         # never blocks the interactive loop.  Best-effort; any failure is
         # swallowed to avoid breaking session startup.
         try:
-            from opencodon.core.curator import maybe_run_curator
+            from opencodon.core.memory.curator import maybe_run_curator
             maybe_run_curator(
                 idle_for_seconds=float("inf"),  # CLI startup = fully idle
                 on_summary=lambda msg: self._console_print(
@@ -9300,7 +9300,7 @@ def main(
         # workspace. See agent/coding_context.py.
         _coding = None
         try:
-            from opencodon.core.coding_context import coding_selection
+            from opencodon.core.context.coding_context import coding_selection
             _coding = coding_selection(platform="cli", config=CLI_CONFIG)
         except Exception:
             _coding = None
@@ -9447,10 +9447,10 @@ def main(
                         _img_mode = "text"
                         _build_parts = None
                         try:
-                            from opencodon.core.image_routing import (
+                            from opencodon.core.media.image_routing import (
                                 build_native_content_parts as _build_parts,  # noqa: F811
                             )
-                            from opencodon.core.image_routing import decide_image_input_mode
+                            from opencodon.core.media.image_routing import decide_image_input_mode
                             from opencodon.config import load_config
 
                             _img_mode = decide_image_input_mode(

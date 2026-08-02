@@ -274,7 +274,7 @@ class TestFallbackChainResetOnTransportRecovery:
                 "opencodon.common.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
-            patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000),
+            patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200000),
         ):
             result = agent.run_conversation("hello")
 

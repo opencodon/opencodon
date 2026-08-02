@@ -5,7 +5,7 @@ explicitly NOT restricting tool use — the strong wording was observed bleeding
 into general tool-use suppression (narration-only turns after compression).
 """
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     _HISTORICAL_SUMMARY_PREFIXES,
     LEGACY_SUMMARY_PREFIX,
     SUMMARY_PREFIX,
@@ -44,7 +44,7 @@ class TestSummaryPrefixToolUseClause:
     def test_strip_recognizes_current_and_frozen_prefixes(self):
         """Re-compaction normalization must strip both the live prefix and the
         newly frozen one (the incident generation)."""
-        from opencodon.core.context_compressor import ContextCompressor
+        from opencodon.core.context.context_compressor import ContextCompressor
 
         for prefix in (SUMMARY_PREFIX, _HISTORICAL_SUMMARY_PREFIXES[0]):
             text = f"{prefix}\nsummary body here"

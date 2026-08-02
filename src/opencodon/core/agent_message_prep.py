@@ -23,6 +23,7 @@ Usage:
     agent = AIAgent(base_url="http://localhost:30000/v1", model="claude-opus-4-20250514")
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
+from opencodon.common.repo import REPO_ROOT
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
@@ -127,7 +128,7 @@ from opencodon.config.timeouts import (
 )
 
 _opencodon_home = get_opencodon_home()
-_project_env = Path(__file__).resolve().parents[3] / '.env'
+_project_env = REPO_ROOT / '.env'
 _loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
@@ -149,22 +150,22 @@ from opencodon.tools.browser_tool import cleanup_browser
 
 
 # Agent internals extracted to agent/ package for modularity
-from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.memory.memory_manager import sanitize_context
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.redact import redact_sensitive_text
 from opencodon.core.message_content import flatten_message_text
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("opencodon.core.run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
-from opencodon.core.usage_pricing import normalize_usage
+from opencodon.core.providers.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from opencodon.core.context_compressor import (  # noqa: F401
+from opencodon.core.context.context_compressor import (  # noqa: F401
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
 from opencodon.core.retry_utils import jittered_backoff  # noqa: F401
-from opencodon.core.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
+from opencodon.core.prompt.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
     build_skills_system_prompt,
     build_context_files_prompt,
@@ -185,7 +186,7 @@ from opencodon.core.message_sanitization import (  # noqa: F401
     _strip_images_from_messages,
     _sanitize_structure_non_ascii,
 )
-from opencodon.core.codex_responses_adapter import (
+from opencodon.core.providers.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
     _split_responses_tool_id as _codex_split_responses_tool_id,
@@ -451,7 +452,7 @@ class AgentMessagePrepMixin:
         """
         try:
             from opencodon.config import load_config
-            from opencodon.core.image_routing import _lookup_supports_vision
+            from opencodon.core.media.image_routing import _lookup_supports_vision
             cfg = load_config()
             provider = (getattr(self, "provider", "") or "").strip()
             model = (getattr(self, "model", "") or "").strip()
@@ -668,7 +669,7 @@ class AgentMessagePrepMixin:
         max_dimension: int = 8000,
     ) -> bool:
         """Forwarder — see ``agent.conversation_compression.try_shrink_image_parts_in_messages``."""
-        from opencodon.core.conversation_compression import try_shrink_image_parts_in_messages
+        from opencodon.core.context.conversation_compression import try_shrink_image_parts_in_messages
         return try_shrink_image_parts_in_messages(
             api_messages,
             max_dimension=max_dimension,
@@ -878,7 +879,7 @@ class AgentMessagePrepMixin:
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
         ):
             try:
-                from opencodon.frontends.cli.models import github_model_reasoning_efforts
+                from opencodon.core.providers.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -937,7 +938,7 @@ class AgentMessagePrepMixin:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from opencodon.frontends.cli.models import lmstudio_model_reasoning_options
+            from opencodon.core.providers.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -968,7 +969,7 @@ class AgentMessagePrepMixin:
             if supported is not None or (_time.monotonic() - ts) < 60:
                 return bool(supported)
         try:
-            from opencodon.frontends.cli.models import ollama_model_supports_thinking
+            from opencodon.core.providers.models import ollama_model_supports_thinking
             supported = ollama_model_supports_thinking(
                 self.model, self.base_url, getattr(self, "api_key", "")
             )
@@ -984,7 +985,7 @@ class AgentMessagePrepMixin:
         directly, bypassing the transport. Share the helper so the two paths
         can't drift on effort resolution and clamping.
         """
-        from opencodon.core.lmstudio_reasoning import resolve_lmstudio_effort
+        from opencodon.core.providers.lmstudio_reasoning import resolve_lmstudio_effort
         return resolve_lmstudio_effort(
             self.reasoning_config,
             self._lmstudio_reasoning_options_cached(),
@@ -993,7 +994,7 @@ class AgentMessagePrepMixin:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from opencodon.frontends.cli.models import github_model_reasoning_efforts
+            from opencodon.core.providers.models import github_model_reasoning_efforts
         except Exception:
             return None
 

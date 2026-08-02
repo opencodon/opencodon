@@ -28,7 +28,7 @@ import logging
 import os
 from typing import Any, Dict, List
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def _get_exa_client() -> Any:
     if cached is not None:
         return cached
 
-    from opencodon.core.web_search_provider import get_provider_env
+    from opencodon.core.providers.web_search_provider import get_provider_env
 
     api_key = get_provider_env("EXA_API_KEY")
     if not api_key:
@@ -102,7 +102,7 @@ class ExaWebSearchProvider(WebSearchProvider):
 
     def is_available(self) -> bool:
         """Return True when ``EXA_API_KEY`` is set to a non-empty value."""
-        from opencodon.core.web_search_provider import get_provider_env
+        from opencodon.core.providers.web_search_provider import get_provider_env
 
         return bool(get_provider_env("EXA_API_KEY"))
 

@@ -29,6 +29,7 @@ Usage::
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import importlib
 import importlib.util
@@ -46,7 +47,7 @@ _discovered = False
 
 # Repo-root ``plugins/model-providers/`` — populated at discovery time.
 _BUNDLED_PLUGINS_DIR = (
-    Path(__file__).resolve().parents[3] / "plugins" / "model-providers"
+    REPO_ROOT / "plugins" / "model-providers"
 )
 
 

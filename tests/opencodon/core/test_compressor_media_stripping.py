@@ -6,12 +6,12 @@ directives on the next turn.
 """
 import pytest
 from unittest.mock import patch
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 @pytest.fixture()
 def compressor():
-    with patch("opencodon.core.context_compressor.get_model_context_length", return_value=100000):
+    with patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=100000):
         return ContextCompressor(
             model="test/model",
             threshold_percent=0.85,

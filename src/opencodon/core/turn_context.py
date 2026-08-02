@@ -31,14 +31,14 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional
 
-from opencodon.core.conversation_compression import (
+from opencodon.core.context.conversation_compression import (
     IDLE_COMPACTION_STATUS_TEMPLATE,
     PREFLIGHT_COMPRESSION_STATUS_TEMPLATE,
     conversation_history_after_compression,
 )
 from opencodon.core.iteration_budget import IterationBudget
-from opencodon.core.memory_manager import build_memory_context_block
-from opencodon.core.model_metadata import (
+from opencodon.core.memory.memory_manager import build_memory_context_block
+from opencodon.core.providers.model_metadata import (
     estimate_messages_tokens_rough,
     estimate_request_tokens_rough,
 )

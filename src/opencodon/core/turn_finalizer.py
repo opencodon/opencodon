@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import os
 
-from opencodon.core.codex_responses_adapter import _summarize_user_message_for_log
+from opencodon.core.providers.codex_responses_adapter import _summarize_user_message_for_log
 from opencodon.core.message_content import flatten_message_text
 
 

@@ -8,8 +8,8 @@ import json
 import os
 from unittest.mock import MagicMock, patch
 
-from opencodon.core.memory_provider import MemoryProvider
-from opencodon.core.memory_manager import MemoryManager
+from opencodon.core.memory.memory_provider import MemoryProvider
+from opencodon.core.memory.memory_manager import MemoryManager
 
 
 # ---------------------------------------------------------------------------

@@ -17,8 +17,8 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core.prompt_builder import PLATFORM_HINTS, build_environment_hints
-from opencodon.core.system_prompt import (
+from opencodon.core.prompt.prompt_builder import PLATFORM_HINTS, build_environment_hints
+from opencodon.core.prompt.system_prompt import (
     _tui_embedded_pane_clarifier,
     build_system_prompt_parts,
 )
@@ -112,7 +112,7 @@ class TestDesktopHintBlockRemoved:
     def test_build_environment_hints_has_no_runtime_surface_line(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_DESKTOP", "1")
         monkeypatch.delenv("OPENCODON_DESKTOP_TERMINAL", raising=False)
-        from opencodon.core.prompt_builder import _clear_backend_probe_cache
+        from opencodon.core.prompt.prompt_builder import _clear_backend_probe_cache
         _clear_backend_probe_cache()
         hints = build_environment_hints()
         assert "Runtime surface:" not in hints
@@ -123,7 +123,7 @@ class TestDesktopHintBlockRemoved:
         resolution site (system_prompt.py), not build_environment_hints()."""
         monkeypatch.setenv("OPENCODON_DESKTOP", "1")
         monkeypatch.setenv("OPENCODON_DESKTOP_TERMINAL", "1")
-        from opencodon.core.prompt_builder import _clear_backend_probe_cache
+        from opencodon.core.prompt.prompt_builder import _clear_backend_probe_cache
         _clear_backend_probe_cache()
         hints = build_environment_hints()
         assert "embedded terminal pane" not in hints

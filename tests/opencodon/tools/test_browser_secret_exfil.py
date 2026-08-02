@@ -150,8 +150,8 @@ class TestWebExtractSecretExfil:
 
     @pytest.mark.asyncio
     async def test_normalizes_non_ascii_url_before_extract_provider(self, monkeypatch):
-        from opencodon.core.web_search_provider import WebSearchProvider
-        from opencodon.core import web_search_registry
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
+        from opencodon.core.providers import web_search_registry
         from opencodon.tools import web_tools
 
         class FakeExtractProvider(WebSearchProvider):

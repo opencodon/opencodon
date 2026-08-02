@@ -30,7 +30,7 @@ class CopilotProfile(ProviderProfile):
         extra_body: dict[str, Any] = {}
         if supports_reasoning and model:
             try:
-                from opencodon.frontends.cli.models import github_model_reasoning_efforts
+                from opencodon.core.providers.models import github_model_reasoning_efforts
 
                 supported_efforts = github_model_reasoning_efforts(model)
                 if supported_efforts and reasoning_config:

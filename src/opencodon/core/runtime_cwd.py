@@ -9,6 +9,7 @@ tool surfaces, and context-file discovery agreeing on where the agent lives.
 Multi-session gateways can pin a logical cwd via the `_SESSION_CWD`
 contextvar; CLI/cron fall through to `TERMINAL_CWD`/launch cwd.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import logging
 import os
@@ -27,7 +28,7 @@ _SESSION_CWD: ContextVar = ContextVar("OPENCODON_SESSION_CWD", default=_UNSET)
 # app default), an os.getcwd() fallback would inject this repo's contributor
 # AGENTS.md as authoritative project context. Context discovery must never
 # resolve here.
-_PACKAGE_ROOT = Path(__file__).resolve().parents[3]
+_PACKAGE_ROOT = REPO_ROOT
 
 
 def _is_install_tree(p: Path) -> bool:

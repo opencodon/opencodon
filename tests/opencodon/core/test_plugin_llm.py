@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from opencodon.core.plugin_llm import (
+from opencodon.core.providers.plugin_llm import (
     PluginLlm,
     PluginLlmCompleteResult,
     PluginLlmImageInput,
@@ -721,7 +721,7 @@ class TestAsyncSurface:
 
 class TestConfigDrivenPolicy:
     def test_policy_loaded_from_yaml(self, tmp_path, monkeypatch):
-        from opencodon.core.plugin_llm import _resolve_trust_policy
+        from opencodon.core.providers.plugin_llm import _resolve_trust_policy
 
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
@@ -755,7 +755,7 @@ plugins:
         })
 
     def test_missing_plugin_entry_yields_default_deny(self, tmp_path, monkeypatch):
-        from opencodon.core.plugin_llm import _resolve_trust_policy
+        from opencodon.core.providers.plugin_llm import _resolve_trust_policy
 
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
@@ -811,7 +811,7 @@ class TestAttribution:
     fallbacks ('auto', 'default') from earlier drafts."""
 
     def test_explicit_overrides_recorded_when_no_response_model(self):
-        from opencodon.core.plugin_llm import _resolve_attribution
+        from opencodon.core.providers.plugin_llm import _resolve_attribution
 
         # Response with no .model attribute — overrides win.
         response = SimpleNamespace(choices=[], usage=None)
@@ -827,7 +827,7 @@ class TestAttribution:
         """Providers often canonicalise the model name (e.g. ``gpt-4o``
         → ``gpt-4o-2024-08-06``). Whatever they actually returned wins
         for the recorded model so the audit log reflects reality."""
-        from opencodon.core.plugin_llm import _resolve_attribution
+        from opencodon.core.providers.plugin_llm import _resolve_attribution
 
         response = SimpleNamespace(model="gpt-4o-2024-08-06", choices=[])
         provider, model = _resolve_attribution(
@@ -843,7 +843,7 @@ class TestAttribution:
         """When the plugin doesn't override anything, attribution
         reflects the user's active main provider/model rather than
         misleading placeholders."""
-        from opencodon.core import plugin_llm
+        from opencodon.core.providers import plugin_llm
         import opencodon.core.auxiliary_client as ac
 
         monkeypatch.setattr(ac, "_read_main_provider", lambda: "openrouter")
@@ -861,7 +861,7 @@ class TestAttribution:
     def test_response_model_used_even_when_no_overrides(self, monkeypatch):
         """The provider's canonical model name should still flow through
         when no overrides are set."""
-        from opencodon.core import plugin_llm
+        from opencodon.core.providers import plugin_llm
         import opencodon.core.auxiliary_client as ac
 
         monkeypatch.setattr(ac, "_read_main_provider", lambda: "openrouter")
@@ -880,7 +880,7 @@ class TestAttribution:
         """If main_provider/main_model are unset AND there's no override
         AND the response has no .model, fall through to the safety
         placeholders so the result object never has empty strings."""
-        from opencodon.core import plugin_llm
+        from opencodon.core.providers import plugin_llm
         import opencodon.core.auxiliary_client as ac
 
         monkeypatch.setattr(ac, "_read_main_provider", lambda: "")

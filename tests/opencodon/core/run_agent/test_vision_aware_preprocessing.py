@@ -152,20 +152,20 @@ class TestModelSupportsVision:
         agent = _make_agent()
         fake_caps = MagicMock()
         fake_caps.supports_vision = True
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=fake_caps):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=fake_caps):
             assert agent._model_supports_vision() is True
         fake_caps.supports_vision = False
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=fake_caps):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=fake_caps):
             assert agent._model_supports_vision() is False
 
     def test_none_caps_returns_false(self):
         agent = _make_agent()
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert agent._model_supports_vision() is False
 
     def test_exception_returns_false(self):
         agent = _make_agent()
-        with patch("opencodon.core.models_dev.get_model_capabilities", side_effect=RuntimeError("boom")):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", side_effect=RuntimeError("boom")):
             assert agent._model_supports_vision() is False
 
     def test_top_level_model_override_wins(self):
@@ -173,7 +173,7 @@ class TestModelSupportsVision:
         agent.provider = "custom"
         agent.model = "my-llava"
         with patch("opencodon.config.load_config", return_value={"model": {"supports_vision": True}}), \
-             patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+             patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert agent._model_supports_vision() is True
 
     def test_per_provider_per_model_override_wins(self):
@@ -182,7 +182,7 @@ class TestModelSupportsVision:
         agent.model = "my-llava"
         cfg = {"providers": {"custom": {"models": {"my-llava": {"supports_vision": True}}}}}
         with patch("opencodon.config.load_config", return_value=cfg), \
-             patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+             patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert agent._model_supports_vision() is True
 
     def test_named_custom_provider_resolved_via_config_provider(self):
@@ -197,7 +197,7 @@ class TestModelSupportsVision:
             "providers": {"my-vllm": {"models": {"my-llava": {"supports_vision": True}}}},
         }
         with patch("opencodon.config.load_config", return_value=cfg), \
-             patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+             patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert agent._model_supports_vision() is True
 
     def test_override_false_disables_vision_for_models_dev_models(self):
@@ -205,5 +205,5 @@ class TestModelSupportsVision:
         fake_caps = MagicMock()
         fake_caps.supports_vision = True
         with patch("opencodon.config.load_config", return_value={"model": {"supports_vision": False}}), \
-             patch("opencodon.core.models_dev.get_model_capabilities", return_value=fake_caps):
+             patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=fake_caps):
             assert agent._model_supports_vision() is False

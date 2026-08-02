@@ -2,11 +2,11 @@
 
 from unittest.mock import patch
 
-from opencodon.frontends.cli.web_server import _normalize_main_model_assignment
+from opencodon.frontends.server.web_server import _normalize_main_model_assignment
 
 
 def _normalize(config, provider, model="vendor/model-a"):
-    with patch("opencodon.frontends.cli.web_server.load_config", return_value=config):
+    with patch("opencodon.frontends.server.web_server.load_config", return_value=config):
         return _normalize_main_model_assignment(provider, model)
 
 

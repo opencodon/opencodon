@@ -178,19 +178,19 @@ def test_skill_command_that_would_start_agent_is_blocked_at_limit(monkeypatch):
     _occupy_session(runner, "busy")
 
     monkeypatch.setattr(
-        "opencodon.core.skill_commands.get_skill_commands",
+        "opencodon.core.skills.skill_commands.get_skill_commands",
         lambda: {"demo": {"name": "demo-skill"}},
     )
     monkeypatch.setattr(
-        "opencodon.core.skill_commands.resolve_skill_command_key",
+        "opencodon.core.skills.skill_commands.resolve_skill_command_key",
         lambda command: "demo" if command == "demo" else None,
     )
     monkeypatch.setattr(
-        "opencodon.core.skill_commands.build_skill_invocation_message",
+        "opencodon.core.skills.skill_commands.build_skill_invocation_message",
         lambda *args, **kwargs: "invoke demo skill",
     )
     monkeypatch.setattr(
-        "opencodon.core.skill_utils.get_disabled_skill_names",
+        "opencodon.core.skills.skill_utils.get_disabled_skill_names",
         lambda *args, **kwargs: [],
     )
 

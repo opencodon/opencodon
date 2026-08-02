@@ -3,8 +3,8 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from opencodon.core.credential_pool import credential_pool_matches_provider
-from opencodon.frontends.cli import runtime_provider as rp
+from opencodon.core.credentials.credential_pool import credential_pool_matches_provider
+from opencodon.core.providers import runtime_provider as rp
 
 
 def test_provider_match_requires_exact_non_custom_identity():
@@ -15,7 +15,7 @@ def test_provider_match_requires_exact_non_custom_identity():
 
 def test_custom_pool_match_is_scoped_by_endpoint():
     with patch(
-        "opencodon.core.credential_pool.get_custom_provider_pool_key",
+        "opencodon.core.credentials.credential_pool.get_custom_provider_pool_key",
         return_value="custom:lab",
     ):
         assert credential_pool_matches_provider(

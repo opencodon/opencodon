@@ -146,7 +146,7 @@ class TestCodexSingleWriter:
         return SimpleNamespace(type=event_type, **fields)
 
     def test_codex_stream_claims_writer_and_stops_when_superseded(self):
-        from opencodon.core.codex_runtime import run_codex_stream
+        from opencodon.core.providers.codex_runtime import run_codex_stream
 
         agent = _make_agent()
         agent.api_mode = "codex_responses"
@@ -179,7 +179,7 @@ class TestCodexSingleWriter:
         assert "-stale-tail" not in "".join(delivered)
 
     def test_codex_stream_undisturbed_when_sole_writer(self):
-        from opencodon.core.codex_runtime import run_codex_stream
+        from opencodon.core.providers.codex_runtime import run_codex_stream
 
         agent = _make_agent()
         agent.api_mode = "codex_responses"

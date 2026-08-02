@@ -46,7 +46,7 @@ from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
-from opencodon.frontends.cli.urllib_security import open_credentialed_url
+from opencodon.common.urllib_security import open_credentialed_url
 
 logger = logging.getLogger(__name__)
 
@@ -382,7 +382,7 @@ def lookup_context_length(model: str,
     if not model_id:
         return None
     try:
-        from opencodon.core.model_metadata import (
+        from opencodon.core.providers.model_metadata import (
             DEFAULT_FALLBACK_CONTEXT,
             get_model_context_length,
         )

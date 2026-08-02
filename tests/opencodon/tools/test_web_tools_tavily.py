@@ -171,7 +171,7 @@ class TestWebSearchTavily:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from opencodon.core.web_search_registry import _reset_for_tests
+        from opencodon.core.providers.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     def test_search_dispatches_to_tavily(self):
@@ -203,7 +203,7 @@ class TestWebExtractTavily:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from opencodon.core.web_search_registry import _reset_for_tests
+        from opencodon.core.providers.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     def test_extract_dispatches_to_tavily(self):

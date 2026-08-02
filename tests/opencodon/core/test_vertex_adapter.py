@@ -73,7 +73,7 @@ def vertex_adapter(monkeypatch):
                 "VERTEX_PROJECT_ID", "VERTEX_REGION", "GOOGLE_CLOUD_PROJECT"):
         monkeypatch.delenv(var, raising=False)
     _install_fake_google_auth(monkeypatch)
-    import opencodon.core.vertex_adapter as va
+    import opencodon.core.providers.vertex_adapter as va
     va = importlib.reload(va)
     va._creds_cache.clear()
     # Neutralize config.yaml by default; individual tests re-patch _vertex_config.
@@ -142,7 +142,7 @@ def test_missing_google_auth_returns_none(monkeypatch):
     for var in ("VERTEX_CREDENTIALS_PATH", "GOOGLE_APPLICATION_CREDENTIALS",
                 "VERTEX_PROJECT_ID", "VERTEX_REGION"):
         monkeypatch.delenv(var, raising=False)
-    import opencodon.core.vertex_adapter as va
+    import opencodon.core.providers.vertex_adapter as va
     va = importlib.reload(va)
     monkeypatch.setattr(va, "google", None)
     va._creds_cache.clear()
@@ -154,7 +154,7 @@ def test_multiplex_scope_takes_precedence_over_raw_environ(vertex_adapter, monke
     stale value in process os.environ left behind by another profile's
     dotenv load at boot — otherwise Profile B's turn could resolve Profile
     A's Vertex project (or worse, its credentials file path)."""
-    from opencodon.core import secret_scope
+    from opencodon.core.credentials import secret_scope
 
     monkeypatch.setenv("VERTEX_PROJECT_ID", "other-profile-project")
 
@@ -171,7 +171,7 @@ def test_multiplex_unscoped_read_fails_closed(vertex_adapter, monkeypatch):
     """A credential read with no profile scope installed while multiplexing
     is active must raise rather than silently fall back to (possibly another
     profile's) raw os.environ value."""
-    from opencodon.core import secret_scope
+    from opencodon.core.credentials import secret_scope
 
     monkeypatch.setenv("VERTEX_PROJECT_ID", "leaked-project")
     secret_scope.set_multiplex_active(True)
@@ -189,7 +189,7 @@ def test_adc_refuses_foreign_profile_google_application_credentials(
     still carries a *different* profile's GOOGLE_APPLICATION_CREDENTIALS (left
     there by python-dotenv at gateway boot), ADC must not silently mint a
     token under that foreign service account."""
-    from opencodon.core import secret_scope
+    from opencodon.core.credentials import secret_scope
 
     sa_file = tmp_path / "other_profile_sa.json"
     sa_file.write_text('{"project_id": "other-profile"}')
@@ -221,7 +221,7 @@ def test_adc_failure_falls_back_to_service_account(monkeypatch, tmp_path):
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(sa_file))
     monkeypatch.delenv("VERTEX_CREDENTIALS_PATH", raising=False)
     _install_fake_google_auth(monkeypatch, adc_ok=False)
-    import opencodon.core.vertex_adapter as va
+    import opencodon.core.providers.vertex_adapter as va
     va = importlib.reload(va)
     va._creds_cache.clear()
     monkeypatch.setattr(va, "_vertex_config", lambda: {})

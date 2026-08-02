@@ -3,6 +3,7 @@ Gateway subcommand for opencodon CLI.
 
 Handles: opencodon gateway [run|start|stop|restart|status|install|uninstall|setup]
 """
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import json
@@ -27,7 +28,7 @@ if os.name == "posix":
     if _missing:
         os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + os.pathsep.join(sorted(_missing))
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 
 from opencodon.frontends.gateway.config import coerce_systemd_watchdog_seconds, load_gateway_config
 from opencodon.frontends.gateway.status import terminate_pid
@@ -633,7 +634,7 @@ def find_profile_gateway_processes(
     processes: list[ProfileGatewayProcess] = []
     try:
         from opencodon.frontends.gateway.status import get_running_pid
-        from opencodon.frontends.cli.profiles import list_profiles
+        from opencodon.core.profiles import list_profiles
     except Exception:
         return processes
 
@@ -1416,7 +1417,7 @@ def _print_other_profiles_gateway_status() -> None:
     avoid confusing another profile's process with the current one.
     """
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         current = get_active_profile_name()
         other_processes = [
@@ -1441,7 +1442,7 @@ def _gateway_list() -> None:
     check each profile individually.
     """
     try:
-        from opencodon.frontends.cli.profiles import list_profiles, get_active_profile_name
+        from opencodon.core.profiles import list_profiles, get_active_profile_name
     except Exception:
         print("Unable to list profiles.")
         return

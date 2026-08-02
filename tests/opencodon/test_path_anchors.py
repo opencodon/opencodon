@@ -10,6 +10,16 @@ instead of in production.
 from pathlib import Path
 
 
+def test_repo_helper_resolves_to_the_checkout():
+    # Phase 3b consolidated ~45 per-module parents[N] anchors onto this
+    # helper; if it drifts, every consumer drifts with it.
+    from opencodon.common.repo import REPO_ROOT, SRC_ROOT
+
+    assert (REPO_ROOT / "pyproject.toml").is_file()
+    assert SRC_ROOT == REPO_ROOT / "src"
+    assert (SRC_ROOT / "opencodon" / "common" / "repo.py").is_file()
+
+
 def test_get_project_root_is_the_repo_checkout():
     from opencodon.config import get_project_root
 

@@ -4,7 +4,7 @@ import base64
 import json
 import time
 
-from opencodon.frontends.cli import auth
+from opencodon.core.credentials import auth
 
 
 def _jwt_with_exp(exp: int) -> str:

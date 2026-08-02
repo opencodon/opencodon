@@ -8,7 +8,7 @@ platforms). See HA Core ticket: configurable per-platform prompt hints.
 
 import types
 
-from opencodon.core.system_prompt import _resolve_platform_hint
+from opencodon.core.prompt.system_prompt import _resolve_platform_hint
 
 
 def _agent(overrides):

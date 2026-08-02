@@ -9,7 +9,7 @@ Without the strip, the SDK prepends its own ``/v1/messages`` path and
 requests hit ``https://opencode.ai/zen/go/v1/v1/messages`` — a double
 ``/v1`` that returns OpenCode's website 404 page with HTML body.
 
-``opencodon_cli.runtime_provider.resolve_runtime_provider`` already strips
+``opencodon.core.providers.runtime_provider.resolve_runtime_provider`` already strips
 ``/v1`` at fresh agent init (PR #4918), but the ``/model`` mid-session
 switch path in ``opencodon_cli.model_switch.switch_model`` was missing the
 same logic — these tests guard against that regression.
@@ -49,7 +49,7 @@ def _run_opencode_switch(
         patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None),
         patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]),
         patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value={
                 "api_key": "sk-opencode-fake",
                 "base_url": effective_runtime_base,
@@ -57,12 +57,12 @@ def _run_opencode_switch(
             },
         ),
         patch(
-            "opencodon.frontends.cli.models.validate_requested_model",
+            "opencodon.core.providers.models.validate_requested_model",
             return_value=_MOCK_VALIDATION,
         ),
         patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None),
         patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None),
-        patch("opencodon.frontends.cli.models.detect_provider_for_model", return_value=None),
+        patch("opencodon.core.providers.models.detect_provider_for_model", return_value=None),
     ):
         return switch_model(
             raw_input=raw_input,
@@ -232,10 +232,10 @@ class TestAgentSwitchModelDefenseInDepth:
             raise _Sentinel("strip verified")
 
         with patch(
-            "opencodon.core.anthropic_adapter.build_anthropic_client",
+            "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
             side_effect=_raise_after_capture,
-        ), patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value=""), patch(
-            "opencodon.core.anthropic_adapter._is_oauth_token", return_value=False
+        ), patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value=""), patch(
+            "opencodon.core.providers.anthropic_adapter._is_oauth_token", return_value=False
         ):
             with pytest.raises(_Sentinel):
                 agent.switch_model(
@@ -283,7 +283,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
         # Re-import with the new OPENCODON_HOME so config cache is fresh.
         import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import opencodon.frontends.cli.runtime_provider as _rp_mod
+        import opencodon.core.providers.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
         import opencodon.frontends.cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)
@@ -319,7 +319,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
 
         import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import opencodon.frontends.cli.runtime_provider as _rp_mod
+        import opencodon.core.providers.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
         import opencodon.frontends.cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)
@@ -355,7 +355,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
 
         import opencodon.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import opencodon.frontends.cli.runtime_provider as _rp_mod
+        import opencodon.core.providers.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
         import opencodon.frontends.cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)

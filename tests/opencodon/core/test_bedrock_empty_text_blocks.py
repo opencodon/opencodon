@@ -17,7 +17,7 @@ placeholder (a lone space would be rejected by the same validation).
 """
 import pytest
 
-from opencodon.core.bedrock_adapter import (
+from opencodon.core.providers.bedrock_adapter import (
     convert_messages_to_converse,
     _convert_content_to_converse,
     _safe_text,

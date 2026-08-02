@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core.secret_scope import (
+from opencodon.core.credentials.secret_scope import (
     reset_secret_scope,
     set_multiplex_active,
     set_secret_scope,

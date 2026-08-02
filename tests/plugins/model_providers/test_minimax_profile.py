@@ -43,7 +43,7 @@ class TestMinimaxAuxModelM3:
     """MiniMax profile aux model is the new frontier M3, not the stale M2.7.
 
     The catalog top entry is ``MiniMax-M3`` in
-    ``opencodon_cli.models._PROVIDER_MODELS['minimax']`` and the
+    ``opencodon.core.providers.models._PROVIDER_MODELS['minimax']`` and the
     user-facing ``model.default`` for a Token-Plan install is M3,
     so pinning the aux default to the same model keeps the runtime
     consistent (same auth, same billing pool, same rate limits, no

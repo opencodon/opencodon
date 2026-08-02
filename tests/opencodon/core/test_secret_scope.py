@@ -1,7 +1,7 @@
 """Tests for the profile-scoped credential primitive (Workstream A / Phase 2)."""
 import pytest
 
-from opencodon.core import secret_scope as ss
+from opencodon.core.credentials import secret_scope as ss
 
 
 @pytest.fixture(autouse=True)

@@ -21,7 +21,7 @@ _EXPECTED_PATHS = {"google_token.json", "google_client_secret.json"}
 
 
 def _parse_frontmatter(content: str) -> dict:
-    from opencodon.core.skill_utils import parse_frontmatter
+    from opencodon.core.skills.skill_utils import parse_frontmatter
 
     fm, _ = parse_frontmatter(content)
     return fm

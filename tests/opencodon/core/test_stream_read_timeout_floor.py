@@ -19,7 +19,7 @@ import os
 
 import pytest
 
-from opencodon.core.model_metadata import is_local_endpoint
+from opencodon.core.providers.model_metadata import is_local_endpoint
 
 
 def _resolve_stale_timeout(base_url, est_tokens, stale_base=180.0):

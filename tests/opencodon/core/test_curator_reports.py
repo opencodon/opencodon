@@ -26,7 +26,7 @@ def curator_env(tmp_path, monkeypatch):
     import importlib
     import opencodon_constants
     importlib.reload(opencodon_constants)
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     importlib.reload(curator)
     from opencodon.tools import skill_usage
     importlib.reload(skill_usage)

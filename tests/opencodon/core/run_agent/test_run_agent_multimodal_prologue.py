@@ -14,7 +14,7 @@ function contracts at module scope.
 """
 
 from opencodon.core.run_agent import _summarize_user_message_for_log
-from opencodon.core.codex_responses_adapter import _chat_content_to_responses_parts
+from opencodon.core.providers.codex_responses_adapter import _chat_content_to_responses_parts
 
 
 class TestSummarizeUserMessageForLog:

@@ -152,7 +152,7 @@ class TestLifecycleFlagsTakePrecedence:
 
         with patch("opencodon.frontends.cli.main._find_stale_dashboard_pids",
                    return_value=[]), \
-             patch.dict(sys.modules, {"opencodon.frontends.cli.web_server": fake_ws}), \
+             patch.dict(sys.modules, {"opencodon.frontends.server.web_server": fake_ws}), \
              pytest.raises(SystemExit):
             cmd_dashboard(_ns(stop=True))
         assert called["start"] is False

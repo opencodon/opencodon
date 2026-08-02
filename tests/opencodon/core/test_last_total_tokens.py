@@ -1,6 +1,6 @@
 """Test that last_total_tokens is correctly set by ContextCompressor."""
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def test_update_from_response_sets_total_tokens():

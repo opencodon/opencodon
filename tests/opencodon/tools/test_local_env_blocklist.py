@@ -327,7 +327,7 @@ class TestBlocklistCoverage:
         CLAUDE_CODE_OAUTH_TOKEN is the one deliberate exemption: it is owned
         by the user's Claude Code install, not opencodon (#55878).
         """
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
         exempt = {"CLAUDE_CODE_OAUTH_TOKEN"}
         for pconfig in PROVIDER_REGISTRY.values():

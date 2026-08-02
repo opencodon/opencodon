@@ -23,7 +23,7 @@ import logging
 import os
 from typing import Any, Dict
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class BraveFreeWebSearchProvider(WebSearchProvider):
 
     def is_available(self) -> bool:
         """Return True when ``BRAVE_SEARCH_API_KEY`` is set to a non-empty value."""
-        from opencodon.core.web_search_provider import get_provider_env
+        from opencodon.core.providers.web_search_provider import get_provider_env
 
         return bool(get_provider_env("BRAVE_SEARCH_API_KEY"))
 
@@ -67,7 +67,7 @@ class BraveFreeWebSearchProvider(WebSearchProvider):
         """
         import httpx
 
-        from opencodon.core.web_search_provider import get_provider_env
+        from opencodon.core.providers.web_search_provider import get_provider_env
 
         api_key = get_provider_env("BRAVE_SEARCH_API_KEY")
         if not api_key:

@@ -750,7 +750,7 @@ class TestCuaCaptureImageDimensions:
 
 class TestAnthropicAdapterMultimodal:
     def test_multimodal_envelope_becomes_tool_result_with_image_block(self):
-        from opencodon.core.anthropic_adapter import convert_messages_to_anthropic
+        from opencodon.core.providers.anthropic_adapter import convert_messages_to_anthropic
 
         fake_png = "iVBORw0KGgo="
         messages = [
@@ -790,7 +790,7 @@ class TestAnthropicAdapterMultimodal:
 
     def test_old_screenshots_are_evicted_beyond_max_keep(self):
         """Image blocks in old tool_results get replaced with placeholders."""
-        from opencodon.core.anthropic_adapter import convert_messages_to_anthropic
+        from opencodon.core.providers.anthropic_adapter import convert_messages_to_anthropic
 
         fake_png = "iVBORw0KGgo="
 
@@ -854,7 +854,7 @@ class TestAnthropicAdapterMultimodal:
         assert len(placeholders) == 2
 
     def test_content_parts_helper_filters_to_text_and_image(self):
-        from opencodon.core.anthropic_adapter import _content_parts_to_anthropic_blocks
+        from opencodon.core.providers.anthropic_adapter import _content_parts_to_anthropic_blocks
 
         fake_png = "iVBORw0KGgo="
         blocks = _content_parts_to_anthropic_blocks([
@@ -874,7 +874,7 @@ class TestAnthropicAdapterMultimodal:
 
 class TestCompressorScreenshotPruning:
     def _make_compressor(self):
-        from opencodon.core.context_compressor import ContextCompressor
+        from opencodon.core.context.context_compressor import ContextCompressor
         # Minimal constructor — _prune_old_tool_results doesn't need a real client.
         c = ContextCompressor.__new__(ContextCompressor)
         return c
@@ -937,7 +937,7 @@ class TestCompressorScreenshotPruning:
 
 class TestImageAwareTokenEstimator:
     def test_image_block_counts_as_flat_1500_tokens(self):
-        from opencodon.core.model_metadata import estimate_messages_tokens_rough
+        from opencodon.core.providers.model_metadata import estimate_messages_tokens_rough
         huge_b64 = "A" * (1024 * 1024)  # 1MB of base64 text
         messages = [
             {"role": "user", "content": "hi"},
@@ -952,7 +952,7 @@ class TestImageAwareTokenEstimator:
         assert tokens < 5000, f"image-aware counter returned {tokens} tokens — too high"
 
     def test_multimodal_envelope_counts_images(self):
-        from opencodon.core.model_metadata import estimate_messages_tokens_rough
+        from opencodon.core.providers.model_metadata import estimate_messages_tokens_rough
         messages = [
             {"role": "tool", "tool_call_id": "c1", "content": {
                 "_multimodal": True,
@@ -974,7 +974,7 @@ class TestImageAwareTokenEstimator:
 
 class TestPromptGuidance:
     def test_computer_use_guidance_constant_exists(self):
-        from opencodon.core.prompt_builder import COMPUTER_USE_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import COMPUTER_USE_GUIDANCE
         assert "background" in COMPUTER_USE_GUIDANCE.lower()
         assert "element" in COMPUTER_USE_GUIDANCE.lower()
         # Security callouts must remain

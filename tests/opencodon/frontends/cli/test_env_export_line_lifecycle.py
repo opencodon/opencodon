@@ -14,7 +14,7 @@ Fake tokens are constructed at runtime — no key-shaped literals on disk.
 import pytest
 from fastapi.testclient import TestClient
 
-from opencodon.frontends.cli.web_server import _SESSION_TOKEN, app
+from opencodon.frontends.server.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
 HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}

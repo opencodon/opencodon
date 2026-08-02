@@ -324,7 +324,7 @@ class TestApiKeyHintRealPool:
             )
         )
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
-        from opencodon.core.credential_pool import load_pool
+        from opencodon.core.credentials.credential_pool import load_pool
 
         return load_pool("openrouter")
 
@@ -380,7 +380,7 @@ class TestFailureAttribution:
         (opencodon_home / "auth.json").write_text(
             json.dumps({"version": 1, "credential_pool": {"anthropic": entries}})
         )
-        from opencodon.core.credential_pool import load_pool
+        from opencodon.core.credentials.credential_pool import load_pool
 
         return load_pool("anthropic")
 

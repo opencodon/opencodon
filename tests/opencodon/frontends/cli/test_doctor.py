@@ -155,7 +155,7 @@ class TestDoctorMemoryProviderSection:
 
         # Stub auth checks to avoid real API calls
         try:
-            from opencodon.frontends.cli import auth as _auth_mod
+            from opencodon.core.credentials import auth as _auth_mod
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
         except Exception:
@@ -239,7 +239,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -276,7 +276,7 @@ def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -314,7 +314,7 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
 
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {})
@@ -363,7 +363,7 @@ def test_run_doctor_accepts_opencodon_provider_ids_that_catalog_aliases(
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -409,7 +409,7 @@ def test_run_doctor_accepts_vendor_slugs_for_named_custom_provider(monkeypatch, 
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -455,7 +455,7 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_auth_status", lambda provider: {"logged_in": True})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
@@ -494,7 +494,7 @@ def test_run_doctor_termux_does_not_mark_browser_available_without_agent_browser
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -533,7 +533,7 @@ def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, 
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -581,7 +581,7 @@ def test_run_doctor_dashscope_retries_china_endpoint_after_intl_unauthorized(mon
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except ImportError:
@@ -639,7 +639,7 @@ def test_run_doctor_opencode_go_skips_invalid_models_probe(monkeypatch, tmp_path
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
     try:
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except ImportError:
@@ -797,7 +797,7 @@ def _run_doctor_with_healthy_oauth_fallback(
     )
     monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
-    from opencodon.frontends.cli import auth as _auth_mod
+    from opencodon.core.credentials import auth as _auth_mod
 
     monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
     monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: minimax_oauth_status)
@@ -870,19 +870,19 @@ def test_has_healthy_oauth_fallback_returns_false_for_unknown_provider():
 
 class TestHasHealthyOauthFallbackForXai:
     def test_returns_true_when_xai_oauth_healthy(self, monkeypatch):
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {"logged_in": True})
         from opencodon.frontends.cli.doctor import _has_healthy_oauth_fallback_for_apikey_provider
         assert _has_healthy_oauth_fallback_for_apikey_provider("xai") is True
 
     def test_returns_false_when_xai_oauth_not_logged_in(self, monkeypatch):
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {"logged_in": False})
         from opencodon.frontends.cli.doctor import _has_healthy_oauth_fallback_for_apikey_provider
         assert _has_healthy_oauth_fallback_for_apikey_provider("xai") is False
 
     def test_returns_false_when_xai_oauth_returns_none(self, monkeypatch):
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: None)
         from opencodon.frontends.cli.doctor import _has_healthy_oauth_fallback_for_apikey_provider
         assert _has_healthy_oauth_fallback_for_apikey_provider("xai") is False
@@ -890,7 +890,7 @@ class TestHasHealthyOauthFallbackForXai:
     def test_returns_false_when_xai_import_unavailable(self, monkeypatch):
         import sys
         # Simulate get_xai_oauth_auth_status missing from auth module
-        monkeypatch.delattr("opencodon.frontends.cli.auth.get_xai_oauth_auth_status", raising=False)
+        monkeypatch.delattr("opencodon.core.credentials.auth.get_xai_oauth_auth_status", raising=False)
         # Force doctor module to re-import the function
         monkeypatch.delitem(sys.modules, "opencodon.frontends.cli.doctor", raising=False)
         from opencodon.frontends.cli.doctor import _has_healthy_oauth_fallback_for_apikey_provider
@@ -928,7 +928,7 @@ class TestDoctorXaiOAuthStatus:
         )
         monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", xai_auth_fn)
@@ -1001,7 +1001,7 @@ class TestDoctorXaiOAuthStatus:
         )
         monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.delattr(_auth_mod, "get_xai_oauth_auth_status", raising=False)
@@ -1031,7 +1031,7 @@ class TestDoctorXaiOAuthStatus:
         )
         monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.delattr(_auth_mod, "get_xai_oauth_auth_status", raising=False)
@@ -1091,7 +1091,7 @@ class TestDoctorCodexCliHintPlacement:
         )
         monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
-        from opencodon.frontends.cli import auth as _auth_mod
+        from opencodon.core.credentials import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": codex_logged_in})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {"logged_in": False})

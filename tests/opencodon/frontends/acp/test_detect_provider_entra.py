@@ -30,7 +30,7 @@ class TestDetectProviderEntra:
             }
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=_fake_runtime,
         ):
             assert _acp_auth.detect_provider() == "azure-foundry"
@@ -46,7 +46,7 @@ class TestDetectProviderEntra:
             }
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=_fake_runtime,
         ):
             assert _acp_auth.detect_provider() == "openrouter"
@@ -58,7 +58,7 @@ class TestDetectProviderEntra:
             return {"provider": "openrouter", "api_key": ""}
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=_fake_runtime,
         ):
             assert _acp_auth.detect_provider() is None
@@ -72,7 +72,7 @@ class TestDetectProviderEntra:
             return {"api_key": lambda: "jwt-fresh", "provider": ""}
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=_fake_runtime,
         ):
             assert _acp_auth.detect_provider() is None
@@ -81,7 +81,7 @@ class TestDetectProviderEntra:
         from opencodon.frontends.acp import auth as _acp_auth
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=RuntimeError("simulated"),
         ):
             assert _acp_auth.detect_provider() is None

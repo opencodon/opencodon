@@ -4,12 +4,12 @@ import time
 import pytest
 
 from opencodon.state import SessionDB
-from opencodon.core.insights import (
+from opencodon.core.memory.insights import (
     InsightsEngine,
     _estimate_cost,
     _bar_chart,
 )
-from opencodon.core.usage_pricing import (
+from opencodon.core.providers.usage_pricing import (
     format_duration_compact as _format_duration,
     has_known_pricing as _has_known_pricing,
 )

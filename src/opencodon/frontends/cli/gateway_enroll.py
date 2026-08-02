@@ -159,7 +159,7 @@ def _post_enroll(
 
 def cmd_gateway_enroll(args) -> None:
     """Enroll this gateway with a relay connector; persist the auth creds to .env."""
-    from opencodon.frontends.cli.auth import AuthError, resolve_nous_access_token
+    from opencodon.core.credentials.auth import AuthError, resolve_nous_access_token
     from opencodon.config import is_managed, save_env_value
 
     # Managed installs get GATEWAY_RELAY_* stamped in by the orchestrator (NAS

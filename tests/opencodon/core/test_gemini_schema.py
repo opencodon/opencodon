@@ -1,6 +1,6 @@
 """Tests for agent.gemini_schema — OpenAI→Gemini tool parameter translation."""
 
-from opencodon.core.gemini_schema import (
+from opencodon.core.providers.gemini_schema import (
     sanitize_gemini_schema,
     sanitize_gemini_tool_parameters,
 )

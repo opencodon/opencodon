@@ -1,3 +1,4 @@
+from opencodon.common.repo import REPO_ROOT
 import atexit
 import concurrent.futures
 import contextlib
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 _opencodon_home = get_opencodon_home()
 load_opencodon_dotenv(
-    opencodon_home=_opencodon_home, project_env=Path(__file__).resolve().parents[4] / ".env"
+    opencodon_home=_opencodon_home, project_env=REPO_ROOT / ".env"
 )
 
 
@@ -1068,7 +1069,7 @@ def _profile_home(profile: str | None) -> Path | None:
     if not name:
         return None
     try:
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         home = Path(profiles_mod.get_profile_dir(name))
     except Exception:
@@ -1440,7 +1441,7 @@ def _status_update(sid: str, kind: str, text: str | None = None):
     # drivers (desktop app) can show an explicit "Summarizing…" indicator —
     # otherwise a mid-turn compaction looks like the transcript reset itself.
     if out_kind == "lifecycle":
-        from opencodon.core.conversation_compression import COMPACTION_STATUS_MARKER
+        from opencodon.core.context.conversation_compression import COMPACTION_STATUS_MARKER
 
         if COMPACTION_STATUS_MARKER in body:
             out_kind = "compacting"
@@ -2017,7 +2018,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # start (matches _runtime_model_config's normalization).
     if str(model_config.get("provider") or "").strip().lower() == "custom":
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.providers.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(
                 base_url=model_config.get("base_url") or None
@@ -2605,7 +2606,7 @@ def _resolve_model() -> str:
     # default (catalog-labeled, cache-only read), never an expensive Anthropic
     # flagship the user didn't pick.
     try:
-        from opencodon.frontends.cli.models import get_preferred_silent_default_model
+        from opencodon.core.providers.models import get_preferred_silent_default_model
 
         return get_preferred_silent_default_model()
     except Exception:
@@ -2701,7 +2702,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
         return model, None
 
     try:
-        from opencodon.frontends.cli.models import detect_static_provider_for_model
+        from opencodon.core.providers.models import detect_static_provider_for_model
 
         cfg = _load_cfg().get("model") or {}
         current_provider = (
@@ -2783,7 +2784,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     if provider.strip().lower() == "custom":
         healed = None
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.providers.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(base_url=base_url or None)
         except Exception:
@@ -2844,7 +2845,7 @@ def _runtime_model_config(agent, existing: dict | None = None) -> dict:
             # bare "custom" with no base_url was persisted verbatim and routed
             # to OpenRouter with no key on the next resume).
             try:
-                from opencodon.frontends.cli.runtime_provider import (
+                from opencodon.core.providers.runtime_provider import (
                     canonical_custom_identity,
                 )
 
@@ -3156,7 +3157,7 @@ def _load_enabled_toolsets() -> list[str] | None:
     # CLI_CONFIG instead, purely to avoid a redundant read).
     if not explicit:
         try:
-            from opencodon.core.coding_context import coding_selection
+            from opencodon.core.context.coding_context import coding_selection
 
             selection = coding_selection(platform=_resolve_session_platform())
             if selection is not None:
@@ -3406,7 +3407,7 @@ def _apply_model_switch(
         resolve_persist_behavior,
         switch_model,
     )
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
     if parsed_flags is None:
         parsed_flags = parse_model_flags_detailed(raw_input)
@@ -3513,7 +3514,7 @@ def _apply_model_switch(
 
     if not confirm_expensive_model:
         try:
-            from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+            from opencodon.core.providers.model_cost_guard import expensive_model_warning
 
             warning = expensive_model_warning(
                 result.new_model,
@@ -3654,10 +3655,10 @@ def _compress_session_history(
     before_messages: list | None = None,
     history_version: int | None = None,
 ) -> tuple[int, dict]:
-    from opencodon.core.conversation_compression import (
+    from opencodon.core.context.conversation_compression import (
         finalize_context_engine_compression_notification,
     )
-    from opencodon.core.model_metadata import estimate_request_tokens_rough
+    from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
     agent = session["agent"]
     # Snapshot history under the lock so the LLM-bound compression call
@@ -3912,7 +3913,7 @@ def _probe_config_health(cfg: dict) -> str:
 
 def _current_profile_name() -> str:
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -4844,7 +4845,7 @@ def _load_fallback_model():
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
     """
-    from opencodon.frontends.cli.fallback_config import get_fallback_chain
+    from opencodon.core.providers.fallback_config import get_fallback_chain
 
     return get_fallback_chain(_load_cfg())
 
@@ -5153,8 +5154,8 @@ def _resolve_runtime_with_fallback(
     into a different runtime. ``used_fallback`` remains explicit rather than
     overloading a nullable model as control flow.
     """
-    from opencodon.frontends.cli.auth import AuthError
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.credentials.auth import AuthError
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
     kwargs = resolve_kwargs or {}
     try:
@@ -5173,7 +5174,7 @@ def _resolve_runtime_with_fallback(
             if not fb_provider or not fb_model:
                 continue
             try:
-                from opencodon.frontends.cli.fallback_config import resolve_entry_api_key
+                from opencodon.core.providers.fallback_config import resolve_entry_api_key
 
                 fb_kwargs: dict = {
                     "requested": fb_provider,
@@ -5245,7 +5246,7 @@ def _make_agent(
     system_prompt = _prompt_text(agent_cfg.get("system_prompt", ""))
     startup_skills = _parse_tui_skills_env()
     if startup_skills:
-        from opencodon.core.skill_commands import build_preloaded_skills_prompt
+        from opencodon.core.skills.skill_commands import build_preloaded_skills_prompt
 
         skills_prompt, loaded_skills, missing_skills = build_preloaded_skills_prompt(
             startup_skills,
@@ -5292,7 +5293,7 @@ def _make_agent(
             # the entry identity from the persisted base_url, falling back to
             # the configured provider when the override carries no base_url
             # (the recurring Desktop/TUI regression vector).
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.providers.runtime_provider import canonical_custom_identity
 
             recovered = canonical_custom_identity(base_url=override_base_url or None)
             if recovered:
@@ -6328,7 +6329,7 @@ def _(rid, params: dict) -> dict:
     re-sniffing. ``{"facts": null}`` means the cwd isn't a code workspace.
     """
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
 
         return _ok(rid, {"facts": project_facts_for(params.get("cwd"))})
     except Exception:
@@ -7535,7 +7536,7 @@ def _(rid, params: dict) -> dict:
     with session["history_lock"]:
         history = list(session.get("history", []))
     try:
-        from opencodon.core.context_breakdown import compute_session_context_breakdown
+        from opencodon.core.context.context_breakdown import compute_session_context_breakdown
 
         payload = compute_session_context_breakdown(agent, history)
     except Exception as exc:
@@ -7710,15 +7711,15 @@ def _(rid, params: dict) -> dict:
         return _err(
             rid, 4009, "session busy — /interrupt the current turn before /compress"
         )
-    from opencodon.core.conversation_compression import (
+    from opencodon.core.context.conversation_compression import (
         finalize_context_engine_compression_notification,
     )
 
     sid = params.get("session_id", "")
     focus_topic = str(params.get("focus_topic", "") or "").strip()
     try:
-        from opencodon.core.manual_compression_feedback import summarize_manual_compression
-        from opencodon.core.model_metadata import estimate_request_tokens_rough
+        from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
+        from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
         with session["history_lock"]:
             before_messages = list(session.get("history", []))
@@ -8968,8 +8969,8 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             prompt = text
 
             if isinstance(prompt, str) and "@" in prompt:
-                from opencodon.core.context_references import preprocess_context_references
-                from opencodon.core.model_metadata import get_model_context_length
+                from opencodon.core.context.context_references import preprocess_context_references
+                from opencodon.core.providers.model_metadata import get_model_context_length
 
                 ctx_len = get_model_context_length(
                     getattr(agent, "model", "") or _resolve_model(),
@@ -9006,7 +9007,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             run_message: Any = prompt
             if images:
                 try:
-                    from opencodon.core.image_routing import (
+                    from opencodon.core.media.image_routing import (
                         decide_image_input_mode,
                         build_native_content_parts,
                     )
@@ -10450,7 +10451,7 @@ def _(rid, params: dict) -> dict:
 
         overrides = None
         if nv == "fast":
-            from opencodon.frontends.cli.models import resolve_fast_mode_overrides
+            from opencodon.core.providers.models import resolve_fast_mode_overrides
 
             if agent is not None:
                 target_model = getattr(agent, "model", None)
@@ -11597,7 +11598,7 @@ def _(rid, params: dict) -> dict:
     key = params.get("key", "")
     if key == "provider":
         try:
-            from opencodon.frontends.cli.models import list_available_providers, normalize_provider
+            from opencodon.core.providers.models import list_available_providers, normalize_provider
 
             model = _resolve_model()
             parts = model.split("/", 1)
@@ -11786,8 +11787,8 @@ def _(rid, params: dict) -> dict:
     surface onboarding before the user submits a doomed prompt.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
-        from opencodon.frontends.cli.auth import has_usable_secret
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
+        from opencodon.core.credentials.auth import has_usable_secret
         from opencodon.frontends.cli.main import _has_any_provider_configured
 
         requested = str(params.get("provider") or "").strip() or None
@@ -12291,7 +12292,7 @@ def _(rid, params: dict) -> dict:
 
         skill_count = 0
         try:
-            from opencodon.core.skill_commands import scan_skill_commands
+            from opencodon.core.skills.skill_commands import scan_skill_commands
 
             for k, info in sorted(scan_skill_commands().items()):
                 d = str(info.get("description", "Skill"))
@@ -12455,7 +12456,7 @@ def _(rid, params: dict) -> dict:
         pass
 
     try:
-        from opencodon.core.skill_bundles import (
+        from opencodon.core.skills.skill_bundles import (
             build_bundle_invocation_message,
             get_skill_bundles,
             resolve_bundle_command_key,
@@ -12501,7 +12502,7 @@ def _(rid, params: dict) -> dict:
         )
 
     try:
-        from opencodon.core.skill_commands import (
+        from opencodon.core.skills.skill_commands import (
             scan_skill_commands,
             build_skill_invocation_message,
         )
@@ -12538,7 +12539,7 @@ def _(rid, params: dict) -> dict:
         # normal agent turn. The live agent gathers whatever the user
         # described (dirs, URLs, this conversation, pasted text) with its own
         # tools and authors the skill via skill_manage. Works on any backend.
-        from opencodon.core.learn_prompt import build_learn_prompt
+        from opencodon.core.memory.learn_prompt import build_learn_prompt
 
         return _ok(rid, {"type": "send", "message": build_learn_prompt(arg)})
     if name == "moa":
@@ -12856,7 +12857,7 @@ def _(rid, params: dict) -> dict:
             return _err(
                 rid, 4009, "session busy — /interrupt the current turn before /compress"
             )
-        from opencodon.core.conversation_compression import (
+        from opencodon.core.context.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
 
@@ -12884,8 +12885,8 @@ def _(rid, params: dict) -> dict:
                 {"type": "exec", "output": str(ack.get("output") or "")},
             )
         try:
-            from opencodon.core.manual_compression_feedback import summarize_manual_compression
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             with session["history_lock"]:
                 before_messages = list(session.get("history", []))
@@ -13399,8 +13400,8 @@ def _(rid, params: dict) -> dict:
         from prompt_toolkit.document import Document
         from prompt_toolkit.formatted_text import to_plain_text
 
-        from opencodon.core.skill_commands import get_skill_commands
-        from opencodon.core.skill_bundles import get_skill_bundles
+        from opencodon.core.skills.skill_commands import get_skill_commands
+        from opencodon.core.skills.skill_bundles import get_skill_bundles
 
         completer = SlashCommandCompleter(
             skill_commands_provider=lambda: get_skill_commands(),
@@ -13476,7 +13477,7 @@ def _model_picker_context(agent):
     base_url = getattr(agent, "base_url", "") if agent else ""
     if str(provider or "").strip().lower() == "custom":
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.providers.runtime_provider import canonical_custom_identity
 
             provider = (
                 canonical_custom_identity(
@@ -13548,7 +13549,7 @@ def _(rid, params: dict) -> dict:
     model.options entries) on success.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
         from opencodon.config import is_managed
         from opencodon.frontends.cli.inventory import build_models_payload
 
@@ -13626,7 +13627,7 @@ def _(rid, params: dict) -> dict:
     Returns success status and the provider's slug.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY, clear_provider_auth
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY, clear_provider_auth
         from opencodon.frontends.cli.credential_lifecycle import remove_provider_env_credential
 
         slug = (params.get("slug") or "").strip()
@@ -13981,9 +13982,9 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
             # compressed + emitted session.info and returned "", so the TUI
             # showed no "compressed N → M messages / ~X → ~Y tokens" stats
             # while CLI and gateway both did.
-            from opencodon.core.manual_compression_feedback import summarize_manual_compression
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
-            from opencodon.core.conversation_compression import (
+            from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.context.conversation_compression import (
                 finalize_context_engine_compression_notification,
             )
 
@@ -14045,7 +14046,7 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
             process_registry.kill_all()
     except Exception as e:
         if name == "compress" and agent:
-            from opencodon.core.conversation_compression import (
+            from opencodon.core.context.conversation_compression import (
                 finalize_context_engine_compression_notification,
             )
 
@@ -14106,7 +14107,7 @@ def _(rid, params: dict) -> dict:
             )
 
     try:
-        from opencodon.core.skill_bundles import resolve_bundle_command_key
+        from opencodon.core.skills.skill_bundles import resolve_bundle_command_key
         from opencodon.frontends.cli.commands import resolve_command
 
         _bundle_key = (
@@ -14127,7 +14128,7 @@ def _(rid, params: dict) -> dict:
         pass
 
     try:
-        from opencodon.core.skill_commands import get_skill_commands
+        from opencodon.core.skills.skill_commands import get_skill_commands
 
         _cmd_key = f"/{_cmd_base}"
         if _cmd_key in get_skill_commands():
@@ -15258,8 +15259,8 @@ def _(rid, params: dict) -> dict:
     except (TypeError, ValueError):
         cols, rows, frames = 80, 24, 48
     try:
-        from opencodon.core.learning_graph import build_learning_graph
-        from opencodon.core.learning_graph_render import render_frames
+        from opencodon.core.memory.learning_graph import build_learning_graph
+        from opencodon.core.memory.learning_graph_render import render_frames
 
         payload = build_learning_graph()
         return _ok(rid, render_frames(payload, cols=max(20, cols), rows=max(10, rows), frames=frames))
@@ -15271,7 +15272,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Current content of a journey node, for an edit prefill."""
     try:
-        from opencodon.core.learning_mutations import node_detail
+        from opencodon.core.memory.learning_mutations import node_detail
 
         return _ok(rid, node_detail(str(params.get("id", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15282,7 +15283,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Delete a journey node — skills are archived (restorable), memories removed."""
     try:
-        from opencodon.core.learning_mutations import delete_node
+        from opencodon.core.memory.learning_mutations import delete_node
 
         return _ok(rid, delete_node(str(params.get("id", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15293,7 +15294,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Rewrite a journey node's content (SKILL.md or memory chunk)."""
     try:
-        from opencodon.core.learning_mutations import edit_node
+        from opencodon.core.memory.learning_mutations import edit_node
 
         return _ok(rid, edit_node(str(params.get("id", "")), str(params.get("content", ""))))
     except Exception as exc:  # noqa: BLE001
@@ -15362,7 +15363,7 @@ def _(rid, params: dict) -> dict:
 @method("skills.reload")
 def _(rid, params: dict) -> dict:
     try:
-        from opencodon.core.skill_commands import reload_skills
+        from opencodon.core.skills.skill_commands import reload_skills
 
         result = reload_skills()
         added = result.get("added") or []

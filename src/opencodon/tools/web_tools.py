@@ -168,7 +168,7 @@ def _registered_web_provider(backend: str):
     if not backend:
         return None
     try:
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         return get_provider(backend)
     except Exception as exc:  # noqa: BLE001 — registry optional; never fatal
@@ -196,7 +196,7 @@ def _registered_web_provider_available(backend: str):
 def _list_registered_web_providers():
     """Return all plugin-registered web providers (empty list on failure)."""
     try:
-        from opencodon.core.web_search_registry import list_providers
+        from opencodon.core.providers.web_search_registry import list_providers
 
         return list_providers()
     except Exception as exc:  # noqa: BLE001 — registry optional; never fatal
@@ -654,7 +654,7 @@ def web_search_tool(query: str, limit: int = 5) -> str:
         # now live as plugins; the dispatcher is just a registry lookup +
         # delegation. Sync only — every provider's search() is sync.
         _ensure_web_plugins_loaded()
-        from opencodon.core.web_search_registry import (
+        from opencodon.core.providers.web_search_registry import (
             get_active_search_provider,
             get_provider as _wsp_get_provider,
             _disabled_web_plugin_for,
@@ -842,7 +842,7 @@ async def web_extract_tool(
             # inline (the policy gate, SSRF re-check, etc. live inside the
             # provider itself for the firecrawl per-URL loop).
             _ensure_web_plugins_loaded()
-            from opencodon.core.web_search_registry import (
+            from opencodon.core.providers.web_search_registry import (
                 get_active_extract_provider,
                 get_provider as _wsp_get_provider,
                 _disabled_web_plugin_for,
@@ -1048,7 +1048,7 @@ def check_web_api_key() -> bool:
     # resolvers keeps a single authority for "is a custom provider usable"
     # rather than re-implementing the walk here.
     try:
-        from opencodon.core.web_search_registry import (
+        from opencodon.core.providers.web_search_registry import (
             get_active_search_provider,
             get_active_extract_provider,
         )

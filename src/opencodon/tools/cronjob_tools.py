@@ -4,6 +4,7 @@ Cron job management tools for opencodon.
 Expose a single compressed action-oriented tool to avoid schema/context bloat.
 Compatibility wrappers remain for direct Python callers and legacy tests.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import logging
@@ -17,7 +18,7 @@ from opencodon_constants import display_opencodon_home
 logger = logging.getLogger(__name__)
 
 # Import from cron module (will be available when properly installed)
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(REPO_ROOT))
 
 from opencodon.cron.jobs import (
     AmbiguousJobReference,
@@ -397,7 +398,7 @@ def _resolve_model_override(model_obj: Optional[Dict[str, Any]]) -> tuple:
     # silently hijacks a job that meant to use the configured custom endpoint.
     if provider_name == "custom":
         try:
-            from opencodon.frontends.cli.runtime_provider import has_named_custom_provider
+            from opencodon.core.providers.runtime_provider import has_named_custom_provider
             if not has_named_custom_provider("custom"):
                 provider_name = None
         except Exception:
@@ -473,12 +474,12 @@ def _validate_cron_base_url(
             "configured custom provider to use a custom endpoint."
         )
     try:
-        from opencodon.frontends.cli.runtime_provider import (
+        from opencodon.core.providers.runtime_provider import (
             has_named_custom_provider,
             resolve_requested_provider,
             _get_named_custom_provider,
         )
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
         from utils import base_url_host_matches, base_url_hostname
     except Exception:
         # Can't resolve provider metadata -> fail closed.

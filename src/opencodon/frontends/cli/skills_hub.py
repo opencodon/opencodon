@@ -23,7 +23,7 @@ from rich.table import Table
 # Lazy imports to avoid circular dependencies and slow startup.
 # tools.skills_hub and tools.skills_guard are imported inside functions.
 from opencodon_constants import display_opencodon_home
-from opencodon.core.skill_utils import is_excluded_skill_path
+from opencodon.core.skills.skill_utils import is_excluded_skill_path
 
 _console = Console()
 
@@ -775,7 +775,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
     if invalidate_cache:
         # Invalidate the skills prompt cache so the new skill appears immediately
         try:
-            from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+            from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
             clear_skills_system_prompt_cache(clear_snapshot=True)
         except Exception:
             pass
@@ -938,7 +938,7 @@ def do_list(source_filter: str = "all",
     from opencodon.tools.skills_hub import HubLockFile, ensure_hub_dirs
     from opencodon.tools.skills_sync import _read_manifest
     from opencodon.tools.skills_tool import _find_all_skills
-    from opencodon.core.skill_utils import get_disabled_skill_names
+    from opencodon.core.skills.skill_utils import get_disabled_skill_names
 
     c = console or _console
     ensure_hub_dirs()
@@ -1133,7 +1133,7 @@ def do_uninstall(name: str, console: Optional[Console] = None,
         c.print(f"[bold green]{msg}[/]\n")
         if invalidate_cache:
             try:
-                from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+                from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
                 clear_skills_system_prompt_cache(clear_snapshot=True)
             except Exception:
                 pass
@@ -1180,7 +1180,7 @@ def do_reset(name: str, restore: bool = False,
 
     if invalidate_cache:
         try:
-            from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+            from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
             clear_skills_system_prompt_cache(clear_snapshot=True)
         except Exception:
             pass
@@ -1320,7 +1320,7 @@ def do_opt_out(remove: bool = False,
 
     if invalidate_cache:
         try:
-            from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+            from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
             clear_skills_system_prompt_cache(clear_snapshot=True)
         except Exception:
             pass
@@ -1350,7 +1350,7 @@ def do_opt_in(sync: bool = False,
         c.print(f"[dim]Re-seeded {copied} bundled skill(s).[/]")
         if invalidate_cache:
             try:
-                from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+                from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
                 clear_skills_system_prompt_cache(clear_snapshot=True)
             except Exception:
                 pass
@@ -1393,7 +1393,7 @@ def do_repair_official(name: str, restore: bool = False,
 
     if invalidate_cache:
         try:
-            from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+            from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
             clear_skills_system_prompt_cache(clear_snapshot=True)
         except Exception:
             pass

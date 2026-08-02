@@ -6,7 +6,7 @@ builds a standards-guided prompt that the live agent runs as a normal turn, so
 these are the load-bearing behavior contracts.
 """
 
-from opencodon.core.learn_prompt import build_learn_prompt, _AUTHORING_STANDARDS
+from opencodon.core.memory.learn_prompt import build_learn_prompt, _AUTHORING_STANDARDS
 
 
 class TestBuildLearnPrompt:

@@ -201,7 +201,7 @@ DEFAULT_GEMINI_TTS_VOICE = "Kore"
 DEFAULT_GEMINI_TTS_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 DEFAULT_GEMINI_AUDIO_TAGS = False
 GEMINI_AUDIO_TAG_REWRITE_TASK = "tts_audio_tags"
-# Base URL now resolved via opencodon_cli.models.deepinfra_base_url (shared).
+# Base URL now resolved via opencodon.core.providers.models.deepinfra_base_url (shared).
 DEFAULT_DEEPINFRA_TTS_VOICE = "default"
 # PCM output specs for Gemini TTS (fixed by the API)
 GEMINI_TTS_SAMPLE_RATE = 24000
@@ -515,7 +515,7 @@ def _dispatch_to_plugin_provider(
     if _is_command_provider_config(_get_named_provider_config(tts_config, key)):
         return None
     try:
-        from opencodon.core.tts_registry import get_provider
+        from opencodon.core.media.tts_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -577,7 +577,7 @@ def _plugin_provider_is_voice_compatible(provider: str) -> bool:
     if key in BUILTIN_TTS_PROVIDERS:
         return False
     try:
-        from opencodon.core.tts_registry import get_provider
+        from opencodon.core.media.tts_registry import get_provider
 
         plugin_provider = get_provider(key)
         if plugin_provider is None:
@@ -1148,7 +1148,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     DeepInfra's audio endpoint is OpenAI-compatible, so there's no need
     to duplicate the SDK call — we just pass an explicit api_key /
     base_url / model / voice through. Model ids and the base URL come from
-    the shared ``opencodon_cli.models`` helpers so every DeepInfra surface
+    the shared ``opencodon.core.providers.models`` helpers so every DeepInfra surface
     resolves them identically.
     """
     api_key = (get_env_value("DEEPINFRA_API_KEY") or "").strip()
@@ -1165,7 +1165,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     if not isinstance(di_config, dict):
         di_config = {}
 
-    from opencodon.frontends.cli.models import deepinfra_base_url, deepinfra_model_ids
+    from opencodon.core.providers.models import deepinfra_base_url, deepinfra_model_ids
 
     model = di_config.get("model")
     if not isinstance(model, str) or not model.strip():
@@ -2665,7 +2665,7 @@ def check_tts_requirements() -> bool:
         return _check_piper_available()
 
     try:
-        from opencodon.core.tts_registry import get_provider
+        from opencodon.core.media.tts_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()

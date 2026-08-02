@@ -12,7 +12,6 @@ Usage::
     # or
     opencodon-acp
 """
-
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
 try:
@@ -28,6 +27,8 @@ else:
     # shadowing opencodon's own modules — ``opencodon acp`` can be started from any
     # cwd, including a project that has same-named packages on its path.
     opencodon_bootstrap.harden_import_path()
+
+from opencodon.common.repo import REPO_ROOT
 
 import argparse
 import asyncio
@@ -239,7 +240,7 @@ def main(argv: list[str] | None = None) -> None:
     logger.info("Starting opencodon ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
-    project_root = str(Path(__file__).resolve().parents[4])
+    project_root = str(REPO_ROOT)
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 

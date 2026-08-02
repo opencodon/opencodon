@@ -574,7 +574,7 @@ class TestProbeEnvResolution:
     def test_active_secret_scope_does_not_load_dotenv_into_process_env(
         self, tmp_path, monkeypatch
     ):
-        from opencodon.core.secret_scope import reset_secret_scope, set_secret_scope
+        from opencodon.core.credentials.secret_scope import reset_secret_scope, set_secret_scope
         from opencodon.frontends.cli.mcp_config import _resolve_mcp_server_config
 
         monkeypatch.setenv("MCP_SHARED_API_KEY", "default-secret")

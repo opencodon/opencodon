@@ -29,7 +29,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon.core.memory_manager import build_memory_context_block
+from opencodon.core.memory.memory_manager import build_memory_context_block
 from opencodon.core.turn_context import build_turn_context, compose_user_api_content
 from opencodon.state import SessionDB
 
@@ -739,7 +739,7 @@ class TestFlushCompressedSummaryOverrideGuard:
         """The #48677 override must not replace a compression-merged user
         message: that would silently drop the compaction summary from the
         durable clean transcript."""
-        from opencodon.core.context_compressor import COMPRESSED_SUMMARY_METADATA_KEY
+        from opencodon.core.context.context_compressor import COMPRESSED_SUMMARY_METADATA_KEY
 
         db = SessionDB(db_path=tmp_path / "state.db")
         sid = "sess-merged"
@@ -786,7 +786,7 @@ class TestFlushSanitizeDivergenceCapture:
         """get_messages_as_conversation strips <memory-context> fences on
         load; the sent bytes must survive in the sidecar so a reloaded
         session replays what was actually on the wire."""
-        from opencodon.core.memory_manager import sanitize_context
+        from opencodon.core.memory.memory_manager import sanitize_context
 
         db = SessionDB(db_path=tmp_path / "state.db")
         sid = "sess-fence"

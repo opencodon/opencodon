@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 
 from opencodon.core.transports import get_transport
-from opencodon.core.anthropic_adapter import convert_messages_to_anthropic
+from opencodon.core.providers.anthropic_adapter import convert_messages_to_anthropic
 
 SIG = "sig-k3"
 

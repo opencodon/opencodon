@@ -12,8 +12,8 @@ import threading
 import time
 from typing import Any, Dict, List
 
-from opencodon.core.memory_manager import MemoryManager
-from opencodon.core.memory_provider import MemoryProvider
+from opencodon.core.memory.memory_manager import MemoryManager
+from opencodon.core.memory.memory_provider import MemoryProvider
 
 
 class _RecordingProvider(MemoryProvider):

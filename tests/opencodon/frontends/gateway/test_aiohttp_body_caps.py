@@ -11,7 +11,7 @@ import inspect
 
 
 def test_proxy_app_sets_client_max_size():
-    import opencodon.frontends.cli.proxy.server as proxy_server
+    import opencodon.frontends.server.proxy.server as proxy_server
 
     # Mirrors api_server's MAX_REQUEST_BYTES: chat payloads can be large,
     # but the cap must exist so chunked bodies stay bounded.

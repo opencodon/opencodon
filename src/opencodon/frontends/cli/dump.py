@@ -16,7 +16,7 @@ from pathlib import Path
 from opencodon.config import get_opencodon_home, get_env_path, get_project_root, load_config
 from opencodon.config.env_loader import load_opencodon_dotenv
 from opencodon_constants import display_opencodon_home
-from opencodon.core.skill_utils import is_excluded_skill_path
+from opencodon.core.skills.skill_utils import is_excluded_skill_path
 
 
 def _dotenv_key_names() -> set[str]:
@@ -293,7 +293,7 @@ def run_dump(args):
 
     # Profile
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
         profile = get_active_profile_name() or "(default)"
     except Exception:
         profile = "(default)"
@@ -396,7 +396,7 @@ def run_dump(args):
         # misleadingly read "not set" while `opencodon auth list` shows it (#42130).
         if not val and label == "openrouter":
             try:
-                from opencodon.core.credential_pool import load_pool as _load_pool
+                from opencodon.core.credentials.credential_pool import load_pool as _load_pool
 
                 if _load_pool("openrouter").has_credentials():
                     display = "set (auth pool)"

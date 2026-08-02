@@ -17,7 +17,7 @@ def _mock_runtime_provider(monkeypatch):
     auto-detection (~4s of socket timeouts in hermetic CI). Mock it out
     since these tests don't care about provider resolution — the agent
     is mocked too."""
-    import opencodon.frontends.cli.runtime_provider as rp
+    import opencodon.core.providers.runtime_provider as rp
     def _fake_resolve(*args, **kwargs):
         return {
             "provider": "openrouter",

@@ -23,6 +23,7 @@ Usage:
     agent = AIAgent(base_url="http://localhost:30000/v1", model="claude-opus-4-20250514")
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
+from opencodon.common.repo import REPO_ROOT
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
@@ -127,7 +128,7 @@ from opencodon.config.timeouts import (
 )
 
 _opencodon_home = get_opencodon_home()
-_project_env = Path(__file__).resolve().parents[3] / '.env'
+_project_env = REPO_ROOT / '.env'
 _loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
@@ -149,22 +150,22 @@ from opencodon.tools.browser_tool import cleanup_browser
 
 
 # Agent internals extracted to agent/ package for modularity
-from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.memory.memory_manager import sanitize_context
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.redact import redact_sensitive_text
 from opencodon.core.message_content import flatten_message_text
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("opencodon.core.run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
-from opencodon.core.usage_pricing import normalize_usage
+from opencodon.core.providers.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from opencodon.core.context_compressor import (  # noqa: F401
+from opencodon.core.context.context_compressor import (  # noqa: F401
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
 from opencodon.core.retry_utils import jittered_backoff  # noqa: F401
-from opencodon.core.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
+from opencodon.core.prompt.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
     build_skills_system_prompt,
     build_context_files_prompt,
@@ -185,7 +186,7 @@ from opencodon.core.message_sanitization import (  # noqa: F401
     _strip_images_from_messages,
     _sanitize_structure_non_ascii,
 )
-from opencodon.core.codex_responses_adapter import (
+from opencodon.core.providers.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
     _split_responses_tool_id as _codex_split_responses_tool_id,
@@ -388,8 +389,8 @@ class AgentLifecycleMixin:
             _ra.logger.debug("LM Studio explicit preload skipped: lmstudio_load_mode=jit")
             return
         try:
-            from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
-            from opencodon.frontends.cli.models import ensure_lmstudio_model_loaded
+            from opencodon.core.providers.model_metadata import MINIMUM_CONTEXT_LENGTH
+            from opencodon.core.providers.models import ensure_lmstudio_model_loaded
             if config_context_length is None:
                 config_context_length = getattr(self, "_config_context_length", None)
             target_ctx = max(config_context_length or 0, MINIMUM_CONTEXT_LENGTH)
@@ -427,12 +428,12 @@ class AgentLifecycleMixin:
 
     def _check_compression_model_feasibility(self) -> None:
         """Forwarder — see ``agent.conversation_compression.check_compression_model_feasibility``."""
-        from opencodon.core.conversation_compression import check_compression_model_feasibility
+        from opencodon.core.context.conversation_compression import check_compression_model_feasibility
         check_compression_model_feasibility(self)
 
     def _replay_compression_warning(self) -> None:
         """Forwarder — see ``agent.conversation_compression.replay_compression_warning``."""
-        from opencodon.core.conversation_compression import replay_compression_warning
+        from opencodon.core.context.conversation_compression import replay_compression_warning
         replay_compression_warning(self)
 
     def _is_direct_openai_url(self, base_url: str = None) -> bool:
