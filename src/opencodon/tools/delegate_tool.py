@@ -35,7 +35,7 @@ from toolsets import TOOLSETS
 
 # Sentinel value used by the runtime provider system for providers that are
 # not natively known (named custom providers, third-party aggregators, etc.).
-# Must match opencodon_cli.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
+# Must match opencodon.core.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
 _RUNTIME_PROVIDER_CUSTOM = "custom"
 from opencodon.tools import file_state
 from opencodon.tools.terminal_tool import set_approval_callback as _set_subagent_approval_cb
@@ -3209,7 +3209,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
         # proxies — pick the right transport automatically. Without this,
         # subagents would default to chat_completions and hit 404s on endpoints
         # that only speak the Anthropic Messages protocol. Fixes #10213.
-        from opencodon.frontends.cli.runtime_provider import _detect_api_mode_for_url
+        from opencodon.core.runtime_provider import _detect_api_mode_for_url
 
         base_lower = configured_base_url.lower()
         provider = "custom"
@@ -3254,7 +3254,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
     # Provider is configured — resolve full credentials
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested=configured_provider, target_model=configured_model)
     except Exception as exc:

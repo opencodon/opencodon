@@ -46,7 +46,7 @@ def test_copilot_no_duplicate_entries():
 
 def test_kimi_for_coding_alias():
     """resolve_provider('kimi-for-coding') should return 'kimi-coding'."""
-    from opencodon.frontends.cli.auth import resolve_provider
+    from opencodon.core.auth import resolve_provider
 
     result = resolve_provider("kimi-for-coding")
     assert result == "kimi-coding"
@@ -87,7 +87,7 @@ def test_mapped_provider_credential_pool_visibility(monkeypatch):
     monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {"google-ai-studio": {"env": ["GEMINI_API_KEY"]}})
     monkeypatch.setattr("opencodon.core.models_dev.PROVIDER_TO_MODELS_DEV", {"gemini": "google-ai-studio"})
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._load_auth_store",
+        "opencodon.core.auth._load_auth_store",
         lambda: {"providers": {}, "credential_pool": {"gemini": {"token": "fake"}}},
     )
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)

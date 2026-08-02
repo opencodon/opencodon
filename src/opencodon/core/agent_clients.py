@@ -469,7 +469,7 @@ class AgentClientsMixin:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+        from opencodon.core.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -662,13 +662,13 @@ class AgentClientsMixin:
         # MUST only fire when the agent really is on singleton tokens.
         try:
             if self.provider == "openai-codex":
-                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+                from opencodon.core.auth import resolve_codex_runtime_credentials
 
                 singleton_now = resolve_codex_runtime_credentials(
                     refresh_if_expiring=False,
                 )
             else:
-                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.core.auth import resolve_xai_oauth_runtime_credentials
 
                 singleton_now = resolve_xai_oauth_runtime_credentials(
                     refresh_if_expiring=False,
@@ -690,11 +690,11 @@ class AgentClientsMixin:
 
         try:
             if self.provider == "openai-codex":
-                from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+                from opencodon.core.auth import resolve_codex_runtime_credentials
 
                 creds = resolve_codex_runtime_credentials(force_refresh=force)
             else:
-                from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+                from opencodon.core.auth import resolve_xai_oauth_runtime_credentials
 
                 creds = resolve_xai_oauth_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -767,7 +767,7 @@ class AgentClientsMixin:
             return False
 
         try:
-            from opencodon.frontends.cli.copilot_auth import resolve_copilot_token
+            from opencodon.core.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -859,7 +859,7 @@ class AgentClientsMixin:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _ra._routermint_headers()
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.models import copilot_default_headers
+            from opencodon.core.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):

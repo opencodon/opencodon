@@ -65,7 +65,7 @@ class TestProviderModelIdsBedrock:
 
     def test_returns_live_discovered_model_ids(self, monkeypatch):
         """Live discovery result is returned as a flat list of model ID strings."""
-        from opencodon.frontends.cli.models import provider_model_ids
+        from opencodon.core.models import provider_model_ids
 
         monkeypatch.setenv("AWS_REGION", "eu-central-1")
 
@@ -79,7 +79,7 @@ class TestProviderModelIdsBedrock:
 
     def test_region_determines_model_ids(self, monkeypatch):
         """Different regions produce different model ID prefixes (eu.* vs us.*)."""
-        from opencodon.frontends.cli.models import provider_model_ids
+        from opencodon.core.models import provider_model_ids
 
         with patch("opencodon.core.bedrock_adapter.discover_bedrock_models", side_effect=_mock_discover):
             with patch("opencodon.core.bedrock_adapter.resolve_bedrock_region", return_value="eu-central-1"):
@@ -93,7 +93,7 @@ class TestProviderModelIdsBedrock:
 
     def test_falls_back_to_static_list_when_discovery_empty(self, monkeypatch):
         """When discover_bedrock_models() returns [], fall back to curated static list."""
-        from opencodon.frontends.cli.models import provider_model_ids
+        from opencodon.core.models import provider_model_ids
 
         with patch("opencodon.core.bedrock_adapter.discover_bedrock_models", return_value=[]), \
              patch("opencodon.core.bedrock_adapter.resolve_bedrock_region", return_value="eu-central-1"):
@@ -105,7 +105,7 @@ class TestProviderModelIdsBedrock:
 
     def test_falls_back_to_static_list_on_exception(self, monkeypatch):
         """When discover_bedrock_models() raises, fall back gracefully."""
-        from opencodon.frontends.cli.models import provider_model_ids
+        from opencodon.core.models import provider_model_ids
 
         with patch("opencodon.core.bedrock_adapter.discover_bedrock_models",
                    side_effect=Exception("boto3 not installed")), \
@@ -116,7 +116,7 @@ class TestProviderModelIdsBedrock:
 
     def test_accepts_bedrock_aliases(self, monkeypatch):
         """Provider aliases (aws, aws-bedrock, amazon) should also trigger live discovery."""
-        from opencodon.frontends.cli.models import provider_model_ids
+        from opencodon.core.models import provider_model_ids
 
         _expected_ids = [m["id"] for m in _US_MODELS]
 
@@ -337,25 +337,25 @@ class TestBedrockOverlayRegistration:
     """bedrock entry in OPENCODON_OVERLAYS is correctly configured."""
 
     def test_bedrock_overlay_exists(self):
-        from opencodon.frontends.cli.providers import OPENCODON_OVERLAYS
+        from opencodon.core.providers import OPENCODON_OVERLAYS
         assert "bedrock" in OPENCODON_OVERLAYS
 
     def test_bedrock_overlay_transport(self):
-        from opencodon.frontends.cli.providers import OPENCODON_OVERLAYS
+        from opencodon.core.providers import OPENCODON_OVERLAYS
         assert OPENCODON_OVERLAYS["bedrock"].transport == "bedrock_converse"
 
     def test_bedrock_overlay_auth_type(self):
-        from opencodon.frontends.cli.providers import OPENCODON_OVERLAYS
+        from opencodon.core.providers import OPENCODON_OVERLAYS
         assert OPENCODON_OVERLAYS["bedrock"].auth_type == "aws_sdk"
 
     def test_bedrock_label(self):
-        from opencodon.frontends.cli.providers import get_label
+        from opencodon.core.providers import get_label
         label = get_label("bedrock")
         assert label  # non-empty
         assert "bedrock" in label.lower() or "aws" in label.lower()
 
     def test_bedrock_aliases_resolve(self):
-        from opencodon.frontends.cli.providers import normalize_provider
+        from opencodon.core.providers import normalize_provider
         for alias in ("aws", "aws-bedrock", "amazon-bedrock", "amazon"):
             assert normalize_provider(alias) == "bedrock", \
                 f"alias {alias!r} should normalize to 'bedrock'"

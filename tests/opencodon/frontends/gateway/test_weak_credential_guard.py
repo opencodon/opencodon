@@ -164,7 +164,7 @@ class TestAPIServerPlaceholderKeyGuard:
         port/runner setup is environment-dependent — only that the weak-key
         guard does not reject it."""
         from opencodon.frontends.gateway.platforms.api_server import APIServerAdapter
-        from opencodon.frontends.cli.auth import has_usable_secret
+        from opencodon.core.auth import has_usable_secret
 
         strong = "0123456789abcdef0123456789abcdef"
         assert has_usable_secret(strong, min_length=16) is True

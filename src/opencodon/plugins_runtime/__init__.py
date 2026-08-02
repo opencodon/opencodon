@@ -347,7 +347,7 @@ class PluginContext:
         """Return the active opencodon profile name (e.g. ``"default"``).
 
         Derived from ``OPENCODON_HOME`` via
-        :func:`opencodon_cli.profiles.get_active_profile_name`, so it works in
+        :func:`opencodon.core.profiles.get_active_profile_name`, so it works in
         every execution context — interactive CLI, gateway, and
         spawned worker sessions alike — without depending on
         ``_cli_ref`` (which is ``None`` outside an interactive CLI run).
@@ -357,7 +357,7 @@ class PluginContext:
         ``OPENCODON_HOME`` points somewhere unrecognized.
         """
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             return get_active_profile_name()
         except Exception:
             return "default"

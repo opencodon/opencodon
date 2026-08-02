@@ -188,7 +188,7 @@ def _slot_runtime(slot: dict[str, Any]) -> dict[str, Any]:
     model = str(slot.get("model") or "").strip()
     out: dict[str, Any] = {"provider": provider, "model": model}
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
 
         rt = resolve_runtime_provider(requested=provider, target_model=model)
         # Forward the resolved endpoint through to call_llm unconditionally.

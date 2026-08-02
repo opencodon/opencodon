@@ -46,7 +46,7 @@ from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
-from opencodon.frontends.cli.urllib_security import open_credentialed_url
+from opencodon.common.urllib_security import open_credentialed_url
 
 logger = logging.getLogger(__name__)
 

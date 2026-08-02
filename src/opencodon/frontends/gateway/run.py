@@ -50,7 +50,7 @@ from opencodon.core.async_utils import consume_detached_task_result, safe_schedu
 from opencodon.core.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 from opencodon.core.i18n import t
 from opencodon.config import cfg_get
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 
 # --- Agent cache tuning ---------------------------------------------------
 # Bounds the per-session AIAgent cache to prevent unbounded growth in
@@ -2040,12 +2040,12 @@ def _resolve_runtime_agent_kwargs() -> dict:
     resolve credentials using the fallback provider chain from config.yaml
     before giving up.
     """
-    from opencodon.frontends.cli.runtime_provider import (
+    from opencodon.core.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
         _get_model_config,
     )
-    from opencodon.frontends.cli.auth import AuthError, is_rate_limited_auth_error
+    from opencodon.core.auth import AuthError, is_rate_limited_auth_error
 
     try:
         runtime = resolve_runtime_provider()
@@ -2099,7 +2099,7 @@ def _resolve_runtime_agent_kwargs() -> dict:
 
 def _resolve_runtime_agent_kwargs_for_provider(provider: str) -> dict:
     """Resolve runtime credentials for a specific provider (e.g. from channel override)."""
-    from opencodon.frontends.cli.runtime_provider import (
+    from opencodon.core.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
     )
@@ -2137,7 +2137,7 @@ def _credential_pool_for_provider(provider: Optional[str]):
 
 def _try_resolve_fallback_provider() -> dict | None:
     """Attempt to resolve credentials from the fallback_model/fallback_providers config."""
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.runtime_provider import resolve_runtime_provider
     try:
         import yaml as _y
         cfg_path = _opencodon_home / "config.yaml"
@@ -2150,7 +2150,7 @@ def _try_resolve_fallback_provider() -> dict | None:
             return None
         for entry in fb_list:
             try:
-                from opencodon.frontends.cli.fallback_config import resolve_entry_api_key
+                from opencodon.core.fallback_config import resolve_entry_api_key
 
                 runtime = resolve_runtime_provider(
                     requested=entry.get("provider"),
@@ -3824,7 +3824,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 _profile = source.profile
             else:
                 try:
-                    from opencodon.frontends.cli.profiles import get_active_profile_name
+                    from opencodon.core.profiles import get_active_profile_name
                     _profile = get_active_profile_name() or "default"
                 except Exception:
                     _profile = None
@@ -4169,7 +4169,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # doesn't fail with "model must be a non-empty string".
         if not model and runtime_kwargs.get("provider"):
             try:
-                from opencodon.frontends.cli.models import get_default_model_for_provider
+                from opencodon.core.models import get_default_model_for_provider
                 model = get_default_model_for_provider(runtime_kwargs["provider"])
                 if model:
                     logger.info(
@@ -4215,7 +4215,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         mode, attach `request_overrides` so the API call is marked
         accordingly.
         """
-        from opencodon.frontends.cli.models import resolve_fast_mode_overrides
+        from opencodon.core.models import resolve_fast_mode_overrides
 
         runtime = {
             "api_key": runtime_kwargs.get("api_key"),
@@ -7421,7 +7421,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         except Exception:
             pass
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             _profile = get_active_profile_name()
             if _profile and _profile != "default":
                 logger.info("Active profile: %s", _profile)
@@ -8586,7 +8586,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
     def _active_profile_name(self) -> str:
         """Return the profile name this gateway represents."""
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             return get_active_profile_name() or "default"
         except Exception:
             return "default"
@@ -9367,7 +9367,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             return 0
 
         try:
-            from opencodon.frontends.cli.profiles import profiles_to_serve, get_active_profile_name
+            from opencodon.core.profiles import profiles_to_serve, get_active_profile_name
         except Exception:
             return 0
 
@@ -9552,7 +9552,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             while self._running:
                 adapter = None
                 try:
-                    from opencodon.frontends.cli.profiles import get_profile_dir
+                    from opencodon.core.profiles import get_profile_dir
                     from opencodon.frontends.gateway.config import load_gateway_config
 
                     profile_home = get_profile_dir(profile_name)
@@ -9717,7 +9717,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         handler in ``_profile_runtime_scope`` so allowlists/tokens from that
         profile's ``.env`` are visible to ``get_secret`` / authz.
         """
-        from opencodon.frontends.cli.profiles import get_profile_dir
+        from opencodon.core.profiles import get_profile_dir
 
         try:
             profile_home = get_profile_dir(profile_name)
@@ -19013,7 +19013,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
              fallback for sources that bypass ``build_source``.
           3. The active profile (the multiplexer's own home).
         """
-        from opencodon.frontends.cli.profiles import (
+        from opencodon.core.profiles import (
             get_active_profile_name,
             get_profile_dir,
             profile_exists,

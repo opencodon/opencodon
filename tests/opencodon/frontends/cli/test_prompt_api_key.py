@@ -23,7 +23,7 @@ def profile_env(tmp_path, monkeypatch):
 
 
 def _pconfig(name="deepseek"):
-    from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+    from opencodon.core.auth import PROVIDER_REGISTRY
     return PROVIDER_REGISTRY[name]
 
 
@@ -129,7 +129,7 @@ def test_ctrl_c_at_choice_prompt_keeps(profile_env):
 # LM Studio no-auth placeholder ────────────────────────────────────────────────
 
 def test_lmstudio_first_time_empty_uses_placeholder(profile_env):
-    from opencodon.frontends.cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
+    from opencodon.core.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
     from opencodon.config import get_env_value
 
     key, abort = _run_prompt(

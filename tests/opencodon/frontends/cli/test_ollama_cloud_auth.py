@@ -34,11 +34,11 @@ class TestOllamaCloudCredentials:
             }
         }
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider._get_model_config",
+            "opencodon.core.runtime_provider._get_model_config",
             lambda: mock_config.get("model", {}),
         )
 
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider(requested="custom")
 
         assert runtime["base_url"] == "https://ollama.com/v1"
@@ -58,11 +58,11 @@ class TestOllamaCloudCredentials:
             }
         }
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider._get_model_config",
+            "opencodon.core.runtime_provider._get_model_config",
             lambda: mock_config.get("model", {}),
         )
 
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider(requested="custom")
 
         # Should fall through to no-key-required for local endpoints
@@ -449,13 +449,13 @@ class TestSwitchModelDirectAliasOverride:
             lambda raw, prov: ("custom", "qwen3.5:397b", "qwen"))
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             lambda **kwargs: {"api_key": "", "base_url": "", "api_mode": "openai_compat", "provider": "custom"},
         )
 
-        monkeypatch.setattr("opencodon.frontends.cli.models.validate_requested_model",
+        monkeypatch.setattr("opencodon.core.models.validate_requested_model",
             lambda *a, **kw: {"accepted": True, "persist": True, "recognized": True, "message": None})
-        monkeypatch.setattr("opencodon.frontends.cli.models.opencode_model_api_mode",
+        monkeypatch.setattr("opencodon.core.models.opencode_model_api_mode",
             lambda *a, **kw: "openai_compat")
 
         result = ms.switch_model("qwen", "openrouter", "old-model")
@@ -475,12 +475,12 @@ class TestSwitchModelDirectAliasOverride:
         monkeypatch.setattr(ms, "resolve_alias",
             lambda raw, prov: ("custom", "local-model", "local"))
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             lambda **kwargs: {"api_key": "", "base_url": "", "api_mode": "openai_compat", "provider": "custom"},
         )
-        monkeypatch.setattr("opencodon.frontends.cli.models.validate_requested_model",
+        monkeypatch.setattr("opencodon.core.models.validate_requested_model",
             lambda *a, **kw: {"accepted": True, "persist": True, "recognized": True, "message": None})
-        monkeypatch.setattr("opencodon.frontends.cli.models.opencode_model_api_mode",
+        monkeypatch.setattr("opencodon.core.models.opencode_model_api_mode",
             lambda *a, **kw: "openai_compat")
 
         result = ms.switch_model("local", "openrouter", "old-model")

@@ -245,7 +245,7 @@ class TestSessionOps:
         acp_agent = OpencodonACPAgent(session_manager=manager)
 
         with patch(
-            "opencodon.frontends.cli.models.curated_models_for_provider",
+            "opencodon.core.models.curated_models_for_provider",
             return_value=[("gpt-5.4", "recommended"), ("gpt-5.4-mini", "")],
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
@@ -1086,7 +1086,7 @@ class TestSessionConfiguration:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the parser so this test doesn't depend on live
@@ -1094,11 +1094,11 @@ class TestSessionConfiguration:
         # (sibling of the same hardening on
         # ``test_model_switch_uses_requested_provider``).
         monkeypatch.setattr(
-            "opencodon.frontends.cli.models.parse_model_input",
+            "opencodon.core.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.models.detect_provider_for_model",
+            "opencodon.core.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))
@@ -1866,7 +1866,7 @@ class TestSlashCommands:
             "model": {"provider": "openrouter", "default": "openrouter/gpt-5"}
         })
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         # Pin the model-string parser independently of the live
@@ -1876,11 +1876,11 @@ class TestSlashCommands:
         # ``anthropic``) flakes this one — observed once in CI as
         # ``'custom' == 'anthropic'``.
         monkeypatch.setattr(
-            "opencodon.frontends.cli.models.parse_model_input",
+            "opencodon.core.models.parse_model_input",
             lambda raw, current: ("anthropic", "claude-sonnet-4-6"),
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.models.detect_provider_for_model",
+            "opencodon.core.models.detect_provider_for_model",
             lambda model, current: None,
         )
         manager = SessionManager(db=SessionDB(tmp_path / "state.db"))

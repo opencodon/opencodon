@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from opencodon.frontends.cli import profiles as profiles_mod
+from opencodon.core import profiles as profiles_mod
 from opencodon.core.skill_utils import is_excluded_skill_path
 
 logger = logging.getLogger(__name__)

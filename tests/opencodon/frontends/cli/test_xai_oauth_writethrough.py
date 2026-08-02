@@ -17,7 +17,7 @@ import json
 
 import pytest
 
-from opencodon.frontends.cli import auth
+from opencodon.core import auth
 
 
 def _write_store(path, store):

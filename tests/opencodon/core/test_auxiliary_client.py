@@ -377,7 +377,7 @@ class TestReadCodexAccessToken:
 
         valid_jwt = "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig"
         with patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(True, None)), \
-             patch("opencodon.frontends.cli.auth._read_codex_tokens", return_value={
+             patch("opencodon.core.auth._read_codex_tokens", return_value={
                  "tokens": {"access_token": valid_jwt, "refresh_token": "refresh"}
              }):
             result = _read_codex_access_token()
@@ -501,7 +501,7 @@ class TestResolveXaiOAuthForAux:
         because the singleton auth-store entry is absent.
         """
         from opencodon.core.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from opencodon.frontends.cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from opencodon.core.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -533,7 +533,7 @@ class TestResolveXaiOAuthForAux:
 
     def test_pool_backed_credentials_honor_base_url_env_override(self, tmp_path, monkeypatch):
         from opencodon.core.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from opencodon.frontends.cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from opencodon.core.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -1105,7 +1105,7 @@ class TestGetTextAuxiliaryClient:
         with (
             patch("opencodon.core.auxiliary_client.load_pool", return_value=_Pool()),
             patch("opencodon.core.auxiliary_client.OpenAI"),
-            patch("opencodon.frontends.cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
+            patch("opencodon.core.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
         ):
             from opencodon.core.auxiliary_client import _build_codex_client
 
@@ -2296,7 +2296,7 @@ class TestTryMainAgentModelFallback:
 def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
     """_resolve_api_key_provider must not try anthropic when user never configured it."""
     from collections import OrderedDict
-    from opencodon.frontends.cli.auth import ProviderConfig
+    from opencodon.core.auth import ProviderConfig
 
     # Build a minimal registry with only "anthropic" so the loop is guaranteed
     # to reach it without being short-circuited by earlier providers.
@@ -2317,9 +2317,9 @@ def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
         return None, None
 
     monkeypatch.setattr("opencodon.core.auxiliary_client._try_anthropic", mock_try_anthropic)
-    monkeypatch.setattr("opencodon.frontends.cli.auth.PROVIDER_REGISTRY", fake_registry)
+    monkeypatch.setattr("opencodon.core.auth.PROVIDER_REGISTRY", fake_registry)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.is_provider_explicitly_configured",
+        "opencodon.core.auth.is_provider_explicitly_configured",
         lambda pid: False,
     )
 
@@ -5384,7 +5384,7 @@ class TestCompressionFallbackContextFilter:
             return {"tiny-16k": 16_384, "huge-1m": 1_048_576}.get(model, 256_000)
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.fallback_config.get_fallback_chain",
+            "opencodon.core.fallback_config.get_fallback_chain",
             lambda cfg: chain,
         )
 

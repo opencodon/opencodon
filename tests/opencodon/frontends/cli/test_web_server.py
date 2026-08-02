@@ -772,7 +772,7 @@ class TestWebServerEndpoints:
         assert target.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 
     def test_chat_image_upload_writes_to_requested_profile_images(self):
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
         worker_home.mkdir(parents=True)
@@ -1289,7 +1289,7 @@ class TestWebServerEndpoints:
         """The machine dashboard's global profile switcher must retarget
         the Sessions page, not just config/skills/model pages."""
         from opencodon.state import SessionDB
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
         worker_home.mkdir(parents=True)
@@ -1328,7 +1328,7 @@ class TestWebServerEndpoints:
     def test_latest_descendant_reads_requested_profile(self):
         """Chat resume must resolve compression tips in the chat profile DB."""
         from opencodon.state import SessionDB
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
         worker_home.mkdir(parents=True)
@@ -1385,7 +1385,7 @@ class TestWebServerEndpoints:
 
     def test_analytics_endpoints_read_requested_profile(self):
         from opencodon.state import SessionDB
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
         worker_home.mkdir(parents=True)
@@ -2263,7 +2263,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_requires_confirmation_for_expensive_model(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+            "opencodon.core.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: SimpleNamespace(message="EXPENSIVE MODEL WARNING"),
         )
 
@@ -2300,7 +2300,7 @@ class TestWebServerEndpoints:
         persist the vendor-prefixed slug verbatim (it 400s against the native
         API and reads as "changing models does nothing")."""
         monkeypatch.setattr(
-            "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+            "opencodon.core.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         resp = self.client.post(
@@ -2328,7 +2328,7 @@ class TestWebServerEndpoints:
         a opencodon provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
-            "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+            "opencodon.core.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         from opencodon.config import load_config, save_config
@@ -2353,7 +2353,7 @@ class TestWebServerEndpoints:
     def test_model_set_keeps_aggregator_slug_unchanged(self, monkeypatch):
         """The happy path (picker → openrouter + vendor/model) is untouched."""
         monkeypatch.setattr(
-            "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+            "opencodon.core.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         resp = self.client.post(
@@ -3537,7 +3537,7 @@ class TestWebServerEndpoints:
 
     def test_recommended_default_handles_failure_gracefully(self, monkeypatch):
         """Endpoint never 500s — returns empty model on internal error."""
-        import opencodon.frontends.cli.models as models_mod
+        import opencodon.core.models as models_mod
 
         def boom():
             raise RuntimeError("portal down")
@@ -3996,7 +3996,7 @@ class TestNewEndpoints:
 
     def test_profiles_list_falls_back_when_profile_listing_fails(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         opencodon_home = get_opencodon_home()
         opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -4028,7 +4028,7 @@ class TestNewEndpoints:
     def test_profiles_create_rename_delete_round_trip(self, monkeypatch):
         # Stub gateway service teardown so the test doesn't shell out to
         # launchctl/systemctl on the host.
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "_cleanup_gateway_service", lambda *a, **kw: None)
 
         created = self.client.post("/api/profiles", json={"name": "test-prof"})
@@ -4070,7 +4070,7 @@ class TestNewEndpoints:
         assert resp.json()["command"] == "opencodon setup"
 
     def test_profiles_create_creates_wrapper_alias_when_safe(self, monkeypatch, tmp_path):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         wrapper_dir = tmp_path / "bin"
         wrapper_dir.mkdir()
@@ -4094,7 +4094,7 @@ class TestNewEndpoints:
 
     def test_profiles_create_with_clone_from_copies_source_skills(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
         (get_opencodon_home() / "config.yaml").write_text(
@@ -4119,7 +4119,7 @@ class TestNewEndpoints:
 
     def test_profiles_create_with_clone_from_duplicates_source(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
@@ -4143,7 +4143,7 @@ class TestNewEndpoints:
 
     def test_profiles_create_clone_all_from_named_source(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
@@ -4165,7 +4165,7 @@ class TestNewEndpoints:
 
     def test_profiles_create_without_clone_seeds_bundled_skills(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
@@ -4199,7 +4199,7 @@ class TestNewEndpoints:
         )
         from opencodon.config import load_config
         from opencodon.frontends.cli.skills_config import get_disabled_skills
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         import opencodon.frontends.cli.web_server as web_server
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
@@ -4274,7 +4274,7 @@ class TestNewEndpoints:
         self, monkeypatch
     ):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
@@ -4396,7 +4396,7 @@ class TestNewEndpoints:
         assert resp.status_code == 404
 
     def test_profile_soul_round_trip(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "_cleanup_gateway_service", lambda *a, **kw: None)
 
         self.client.post("/api/profiles", json={"name": "soul-prof"})
@@ -4432,7 +4432,7 @@ class TestNewEndpoints:
         assert data["current"] == "default"
 
     def test_profiles_set_active_round_trip(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "router"})
@@ -4447,7 +4447,7 @@ class TestNewEndpoints:
         assert resp.status_code == 404
 
     def test_profile_description_round_trip(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "desc-prof"})
@@ -4473,7 +4473,7 @@ class TestNewEndpoints:
 
     def test_profile_model_round_trip(self, monkeypatch):
         from opencodon_constants import get_opencodon_home
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "model-prof"})
@@ -4492,7 +4492,7 @@ class TestNewEndpoints:
         assert cfg["model"]["default"] == "anthropic/claude-sonnet-4.6"
 
     def test_profile_model_requires_provider_and_model(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "model-prof2"})
@@ -4503,7 +4503,7 @@ class TestNewEndpoints:
         assert resp.status_code == 400
 
     def test_profile_describe_auto_success(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "auto-prof"})
@@ -4525,7 +4525,7 @@ class TestNewEndpoints:
         assert body["description_auto"] is True
 
     def test_profile_describe_auto_failure_is_not_auto(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
 
         self.client.post("/api/profiles", json={"name": "auto-fail"})

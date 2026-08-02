@@ -272,7 +272,7 @@ def _get_pty_active_session_files(app: "FastAPI") -> dict[str, Path]:
 app = FastAPI(title="opencodon", version=__version__, lifespan=_lifespan)
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
-from opencodon.frontends.cli.memory_oauth import router as _memory_oauth_router  # noqa: E402
+from opencodon.core.memory_oauth import router as _memory_oauth_router  # noqa: E402
 
 app.include_router(_memory_oauth_router)
 
@@ -1413,9 +1413,9 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
        on native anthropic → ``claude-opus-4-6``).
     """
     from opencodon.config import get_compatible_custom_providers
-    from opencodon.frontends.cli.models import _KNOWN_PROVIDER_NAMES, normalize_provider
+    from opencodon.core.models import _KNOWN_PROVIDER_NAMES, normalize_provider
     from opencodon.common.model_normalize import normalize_model_for_provider
-    from opencodon.frontends.cli.providers import resolve_custom_provider, resolve_user_provider
+    from opencodon.core.providers import resolve_custom_provider, resolve_user_provider
 
     prov_in = (provider or "").strip()
     model_in = (model or "").strip()
@@ -1454,7 +1454,7 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
             )
         except Exception:
             cur_provider = ""
-        from opencodon.frontends.cli.models import _AGGREGATOR_PROVIDERS
+        from opencodon.core.models import _AGGREGATOR_PROVIDERS
         if cur_provider and normalize_provider(cur_provider) in _AGGREGATOR_PROVIDERS:
             canonical = normalize_provider(cur_provider)
             prov_in = cur_provider
@@ -2918,7 +2918,7 @@ def _collect_profile_gateway_topology() -> Dict[str, Any]:
       ``"none"`` when nothing is running.
     """
     try:
-        from opencodon.frontends.cli.profiles import _check_gateway_running, profiles_to_serve
+        from opencodon.core.profiles import _check_gateway_running, profiles_to_serve
         from opencodon.frontends.gateway.status import read_runtime_status
         homes = profiles_to_serve(True)
     except Exception:
@@ -4752,7 +4752,7 @@ def get_profiles_sessions(
         raise HTTPException(status_code=400, detail="order must be one of: created, recent")
 
     from opencodon.state import SessionDB
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
 
     targets: List[Tuple[str, Path]] = []
     if profile and profile != "all":
@@ -4876,7 +4876,7 @@ def get_profiles_sessions_sidebar(
     desktop's per-slice calls.
     """
     from opencodon.state import SessionDB
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
 
     # cron + messaging are cross-profile; recents is scoped to recents_profile.
     # Scan every profile once regardless (each DB opened a single time).
@@ -6451,7 +6451,7 @@ def get_recommended_default_model(provider: str = ""):
     # model a user lands on without explicitly picking it.
     try:
         from opencodon.frontends.cli.inventory import build_models_payload, load_picker_context
-        from opencodon.frontends.cli.models import pick_silent_default_model
+        from opencodon.core.models import pick_silent_default_model
 
         payload = build_models_payload(load_picker_context())
         for row in payload.get("providers", []):
@@ -6624,7 +6624,7 @@ async def set_model_assignment(body: ModelAssignment, profile: Optional[str] = N
         # event-loop thread could cross-restore the module globals).
         if model and not body.confirm_expensive_model:
             try:
-                from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+                from opencodon.core.model_cost_guard import expensive_model_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -6832,7 +6832,7 @@ def _infer_provider_on_model_change(model_val: str, prev_provider: str) -> tuple
     if not name:
         return "", name
     try:
-        from opencodon.frontends.cli.models import (
+        from opencodon.core.models import (
             _AGGREGATOR_PROVIDERS,
             detect_provider_for_model,
             normalize_provider,
@@ -8545,7 +8545,7 @@ def _multiplex_port_binding_conflict(
 
     requested = (requested_profile or "").strip()
     if not requested or requested.lower() == "current":
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         # The dashboard's own profile. "custom" (an unrecognized OPENCODON_HOME)
         # is outside the profiles tree, so a multiplexed gateway never serves
@@ -8775,7 +8775,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     # environment first (where Bitwarden-sourced secrets land) then .env.
     env_var_order: tuple = ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+        from opencodon.core.auth import PROVIDER_REGISTRY
         env_var_order = PROVIDER_REGISTRY["anthropic"].api_key_env_vars
     except (ImportError, KeyError):
         pass
@@ -8937,7 +8937,7 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
         except Exception as e:
             return {"logged_in": False, "error": str(e)}
     try:
-        from opencodon.frontends.cli import auth as hauth
+        from opencodon.core import auth as hauth
         if provider_id == "openai-codex":
             raw = hauth.get_codex_auth_status()
             return {
@@ -9193,7 +9193,7 @@ async def disconnect_oauth_provider(
                 pass
             # Also clear the credential pool entry if present.
             try:
-                from opencodon.frontends.cli.auth import clear_provider_auth
+                from opencodon.core.auth import clear_provider_auth
                 cleared = clear_provider_auth("anthropic") or cleared
             except Exception:
                 pass
@@ -9201,7 +9201,7 @@ async def disconnect_oauth_provider(
             return {"ok": bool(cleared), "provider": provider_id}
 
         try:
-            from opencodon.frontends.cli.auth import clear_provider_auth
+            from opencodon.core.auth import clear_provider_auth
             cleared = clear_provider_auth(provider_id)
             _log.info("oauth/disconnect: %s (cleared=%s)", provider_id, cleared)
             return {"ok": bool(cleared), "provider": provider_id}
@@ -9539,7 +9539,7 @@ async def _start_device_code_flow(
         # flow; the PKCE bit (verifier + challenge from
         # _minimax_pkce_pair) is a security extension that binds the
         # token exchange to the original session.
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.auth import (
             _minimax_pkce_pair,
             _minimax_request_user_code,
             MINIMAX_OAUTH_CLIENT_ID,
@@ -9609,7 +9609,7 @@ async def _start_device_code_flow(
         }
 
     if provider_id == "xai-oauth":
-        from opencodon.frontends.cli.auth import _xai_oauth_request_device_code
+        from opencodon.core.auth import _xai_oauth_request_device_code
         import httpx
 
         def _do_xai_device_request():
@@ -9658,7 +9658,7 @@ def _minimax_poller(session_id: str) -> None:
     path leaves the system in the same state as
     ``opencodon auth add minimax-oauth``.
     """
-    from opencodon.frontends.cli.auth import (
+    from opencodon.core.auth import (
         _minimax_poll_token,
         _minimax_resolve_token_expiry_unix,
         _minimax_save_auth_state,
@@ -9734,7 +9734,7 @@ def _minimax_poller(session_id: str) -> None:
 def _xai_device_poller(session_id: str) -> None:
     """Background poller for xAI's OAuth device-code flow."""
     import httpx
-    from opencodon.frontends.cli.auth import (
+    from opencodon.core.auth import (
         _save_xai_oauth_tokens,
         _xai_oauth_discovery,
         _xai_oauth_poll_device_token,
@@ -9860,7 +9860,7 @@ def _codex_full_login_worker(session_id: str) -> None:
     """
     try:
         import httpx
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.auth import (
             CODEX_OAUTH_CLIENT_ID,
             CODEX_OAUTH_TOKEN_URL,
             DEFAULT_CODEX_BASE_URL,
@@ -9943,7 +9943,7 @@ def _codex_full_login_worker(session_id: str) -> None:
         if not access_token:
             raise RuntimeError("token exchange did not return access_token")
 
-        from opencodon.frontends.cli.auth import _save_codex_tokens
+        from opencodon.core.auth import _save_codex_tokens
 
         with _profile_scope(_oauth_session_profile(session_id)):
             _save_codex_tokens({
@@ -10843,7 +10843,7 @@ def _validate_dashboard_cron_context_from(
 
 def _cron_profile_dicts() -> List[Dict[str, Any]]:
     """Return dashboard profile records, falling back to a directory scan."""
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         return [_profile_to_dict(p) for p in profiles_mod.list_profiles()]
     except Exception:
@@ -10863,7 +10863,7 @@ def _cron_default_profile() -> str:
     it keeps the legacy ``default`` fallback.
     """
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         name = get_active_profile_name()
     except Exception:
@@ -10873,7 +10873,7 @@ def _cron_default_profile() -> str:
 
 def _cron_profile_home(profile: Optional[str]) -> Tuple[str, Path]:
     """Resolve a profile query value to (profile_name, OPENCODON_HOME)."""
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
 
     raw = (profile or _cron_default_profile()).strip() or "default"
     try:
@@ -12337,7 +12337,7 @@ def _pool_entry_summary(entry: Any, index: int) -> Dict[str, Any]:
 @app.get("/api/credentials/pool")
 async def list_credential_pool():
     from opencodon.core.credential_pool import load_pool
-    from opencodon.frontends.cli.auth import read_credential_pool
+    from opencodon.core.auth import read_credential_pool
 
     providers = []
     # read_credential_pool(None) lists every provider that has pooled entries;
@@ -12396,7 +12396,7 @@ async def add_credential_pool_entry(body: CredentialPoolAdd):
         # Mirrors the `opencodon auth add` behaviour in auth_commands.py.
         if not provider.startswith(CUSTOM_POOL_PREFIX):
             try:
-                from opencodon.frontends.cli.auth import (
+                from opencodon.core.auth import (
                     _load_auth_store,
                     unsuppress_credential_source,
                 )
@@ -12428,7 +12428,7 @@ async def remove_credential_pool_entry(provider: str, index: int):
     """
     from opencodon.core.credential_pool import load_pool
     from opencodon.core.credential_sources import find_removal_step
-    from opencodon.frontends.cli.auth import suppress_credential_source
+    from opencodon.core.auth import suppress_credential_source
 
     provider = (provider or "").strip().lower()
     try:
@@ -12993,7 +12993,7 @@ def _profile_cli_args(profile: Optional[str]) -> List[str]:
     requested = (profile or "").strip()
     if not requested or requested.lower() in {"current", "default"}:
         return []
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     _resolve_profile_dir(requested)
     return ["-p", profiles_mod.normalize_profile_name(requested)]
 
@@ -13561,7 +13561,7 @@ def _fallback_profile_dicts(profiles_mod) -> List[Dict[str, Any]]:
 
 def _resolve_profile_dir(name: str) -> Path:
     """Validate ``name`` and resolve to its directory or raise an HTTPException."""
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         profiles_mod.validate_profile_name(name)
     except ValueError as e:
@@ -13683,7 +13683,7 @@ def _disable_unselected_skills(profile_dir: Path, keep: List[str]) -> int:
 
 @app.get("/api/profiles")
 async def list_profiles_endpoint():
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         loop = asyncio.get_running_loop()
         profiles = await loop.run_in_executor(None, profiles_mod.list_profiles)
@@ -13695,7 +13695,7 @@ async def list_profiles_endpoint():
 
 @app.post("/api/profiles")
 async def create_profile_endpoint(body: ProfileCreate):
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     explicit_source = (body.clone_from or "").strip()
     if explicit_source:
         # Duplicating a specific profile: clone its config/skills/SOUL (or full
@@ -13815,7 +13815,7 @@ async def get_active_profile_endpoint():
     the profile new CLI invocations pick up. ``current`` is the profile
     the running dashboard/gateway is scoped to (derived from OPENCODON_HOME).
     """
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         active = profiles_mod.get_active_profile() or "default"
     except Exception:
@@ -13834,7 +13834,7 @@ async def set_active_profile_endpoint(body: ProfileActiveUpdate):
     Note: this does not retarget the already-running dashboard process —
     it changes which profile subsequent CLI commands and gateways use.
     """
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         profiles_mod.set_active_profile(body.name)
     except FileNotFoundError as e:
@@ -13908,7 +13908,7 @@ async def open_profile_terminal_endpoint(name: str):
 
 @app.patch("/api/profiles/{name}")
 async def rename_profile_endpoint(name: str, body: ProfileRename):
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         path = profiles_mod.rename_profile(name, body.new_name)
     except FileNotFoundError as e:
@@ -13926,7 +13926,7 @@ async def delete_profile_endpoint(name: str):
     """Delete a profile. The dashboard collects the user's confirmation in
     its own dialog before this request, so we always pass ``yes=True`` to
     skip the CLI's interactive prompt."""
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     try:
         path = profiles_mod.delete_profile(name, yes=True)
     except FileNotFoundError as e:
@@ -13969,7 +13969,7 @@ async def update_profile_description_endpoint(name: str, body: ProfileDescriptio
     user-authored description (``description_auto: false``) so the
     auto-describer won't overwrite it on a sweep.
     """
-    from opencodon.frontends.cli import profiles as profiles_mod
+    from opencodon.core import profiles as profiles_mod
     profile_dir = _resolve_profile_dir(name)
     text = (body.description or "").strip()
     try:

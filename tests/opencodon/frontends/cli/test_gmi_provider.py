@@ -16,9 +16,9 @@ if "dotenv" not in sys.modules:
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     sys.modules["dotenv"] = fake_dotenv
 
-from opencodon.frontends.cli.auth import resolve_provider
+from opencodon.core.auth import resolve_provider
 from opencodon.config import load_config
-from opencodon.frontends.cli.models import (
+from opencodon.core.models import (
     CANONICAL_PROVIDERS,
     _PROVIDER_LABELS,
     _PROVIDER_MODELS,
@@ -56,7 +56,7 @@ class TestGmiAliases:
         assert normalize_provider("gmicloud") == "gmi"
 
     def test_providers_normalize_provider(self):
-        from opencodon.frontends.cli.providers import normalize_provider as normalize_provider_in_providers
+        from opencodon.core.providers import normalize_provider as normalize_provider_in_providers
 
         assert normalize_provider_in_providers("gmi-cloud") == "gmi"
         assert normalize_provider_in_providers("gmicloud") == "gmi"
@@ -84,7 +84,7 @@ class TestGmiModelCatalog:
 
     def test_provider_model_ids_prefers_live_api(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.auth.resolve_api_key_provider_credentials",
             lambda provider_id: {
                 "provider": provider_id,
                 "api_key": "gmi-live-key",
@@ -93,7 +93,7 @@ class TestGmiModelCatalog:
             },
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.models.fetch_api_models",
+            "opencodon.core.models.fetch_api_models",
             lambda api_key, base_url: [
                 "openai/gpt-5.4-mini",
                 "zai-org/GLM-5.1-FP8",
@@ -107,7 +107,7 @@ class TestGmiModelCatalog:
 
     def test_provider_model_ids_falls_back_to_static_models(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.auth.resolve_api_key_provider_credentials",
             lambda provider_id: {
                 "provider": provider_id,
                 "api_key": "gmi-live-key",
@@ -115,7 +115,7 @@ class TestGmiModelCatalog:
                 "source": "GMI_API_KEY",
             },
         )
-        monkeypatch.setattr("opencodon.frontends.cli.models.fetch_api_models", lambda api_key, base_url: None)
+        monkeypatch.setattr("opencodon.core.models.fetch_api_models", lambda api_key, base_url: None)
         # Generic profile path uses ProviderProfile.fetch_models (urllib), not
         # fetch_api_models — must stub it or CI can hit the real endpoint.
         monkeypatch.setattr(
@@ -128,7 +128,7 @@ class TestGmiModelCatalog:
 
 class TestGmiProvidersModule:
     def test_overlay_exists(self):
-        from opencodon.frontends.cli.providers import OPENCODON_OVERLAYS
+        from opencodon.core.providers import OPENCODON_OVERLAYS
 
         assert "gmi" in OPENCODON_OVERLAYS
         overlay = OPENCODON_OVERLAYS["gmi"]
@@ -193,7 +193,7 @@ class TestGmiDoctor:
         monkeypatch.setitem(sys.modules, "opencodon.tools.model_tools", fake_model_tools)
 
         try:
-            from opencodon.frontends.cli import auth as _auth_mod
+            from opencodon.core import auth as _auth_mod
 
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         except Exception:
@@ -321,7 +321,7 @@ class TestGmiMainFlow:
     def test_select_provider_and_model_routes_gmi_to_generic_flow(self, monkeypatch):
         recorded: dict[str, str] = {}
 
-        monkeypatch.setattr("opencodon.frontends.cli.auth.resolve_provider", lambda *args, **kwargs: None)
+        monkeypatch.setattr("opencodon.core.auth.resolve_provider", lambda *args, **kwargs: None)
 
         def fake_prompt_provider_choice(choices, default=0):
             return next(i for i, label in enumerate(choices) if label.startswith("GMI Cloud"))
@@ -342,13 +342,13 @@ class TestGmiMainFlow:
         monkeypatch.setenv("GMI_API_KEY", "gmi-test-key")
 
         with patch(
-            "opencodon.frontends.cli.models.fetch_api_models",
+            "opencodon.core.models.fetch_api_models",
             return_value=["zai-org/GLM-5.1-FP8", "openai/gpt-5.4-mini"],
         ), patch(
-            "opencodon.frontends.cli.auth._prompt_model_selection",
+            "opencodon.core.auth._prompt_model_selection",
             return_value="openai/gpt-5.4-mini",
         ), patch(
-            "opencodon.frontends.cli.auth.deactivate_provider",
+            "opencodon.core.auth.deactivate_provider",
         ), patch(
             "builtins.input",
             return_value="",

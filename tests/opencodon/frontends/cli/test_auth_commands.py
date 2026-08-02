@@ -147,7 +147,7 @@ def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
         "auth_file": "/home/user/.qwen/oauth_creds.json",
     }
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.resolve_qwen_runtime_credentials",
+        "opencodon.core.auth.resolve_qwen_runtime_credentials",
         lambda **kw: _fake_creds,
     )
     # Prevent _seed_from_singletons from calling the real Qwen CLI file path
@@ -185,7 +185,7 @@ def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, m
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("minimax@example.com")
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._minimax_oauth_login",
+        "opencodon.core.auth._minimax_oauth_login",
         lambda **kwargs: {
             "provider": "minimax-oauth",
             "region": "global",
@@ -231,7 +231,7 @@ def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("codex@example.com")
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._codex_device_code_login",
+        "opencodon.core.auth._codex_device_code_login",
         lambda: {
             "tokens": {
                 "access_token": token,
@@ -302,7 +302,7 @@ def test_auth_add_codex_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch
             },
         ]
     )
-    monkeypatch.setattr("opencodon.frontends.cli.auth._codex_device_code_login", lambda: next(logins))
+    monkeypatch.setattr("opencodon.core.auth._codex_device_code_login", lambda: next(logins))
 
     from opencodon.frontends.cli.auth_commands import auth_add_command
     from opencodon.core.credential_pool import load_pool
@@ -344,7 +344,7 @@ def test_codex_auth_status_reports_pool_only_credential(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, _codex_pool_only_store())
 
-    from opencodon.frontends.cli.auth import get_codex_auth_status
+    from opencodon.core.auth import get_codex_auth_status
 
     status = get_codex_auth_status()
 
@@ -356,7 +356,7 @@ def test_codex_auth_status_reports_pool_only_rate_limit(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, _codex_pool_only_store(exhausted=True))
 
-    from opencodon.frontends.cli.auth import get_codex_auth_status
+    from opencodon.core.auth import get_codex_auth_status
 
     status = get_codex_auth_status()
 
@@ -369,7 +369,7 @@ def test_codex_runtime_pool_only_rate_limit_is_not_missing_auth(tmp_path, monkey
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, _codex_pool_only_store(exhausted=True))
 
-    from opencodon.frontends.cli.auth import AuthError, CODEX_RATE_LIMITED_CODE, resolve_codex_runtime_credentials
+    from opencodon.core.auth import AuthError, CODEX_RATE_LIMITED_CODE, resolve_codex_runtime_credentials
 
     with pytest.raises(AuthError) as exc_info:
         resolve_codex_runtime_credentials()
@@ -393,7 +393,7 @@ def test_auth_add_xai_oauth_sets_active_provider(tmp_path, monkeypatch):
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     access_token = "xai-test-access-token"
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._xai_oauth_device_code_login",
+        "opencodon.core.auth._xai_oauth_device_code_login",
         lambda **kwargs: {
             "tokens": {
                 "access_token": access_token,
@@ -476,7 +476,7 @@ def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
         ]
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._xai_oauth_device_code_login",
+        "opencodon.core.auth._xai_oauth_device_code_login",
         lambda **kwargs: next(logins),
     )
 
@@ -751,7 +751,7 @@ def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch
         },
     )
 
-    from opencodon.frontends.cli.auth import clear_provider_auth
+    from opencodon.core.auth import clear_provider_auth
 
     assert clear_provider_auth("anthropic") is True
 
@@ -780,7 +780,7 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import logout_command
+    from opencodon.core.auth import logout_command
 
     logout_command(SimpleNamespace(provider="openai-codex"))
 
@@ -804,7 +804,7 @@ def test_logout_defaults_to_configured_codex_when_no_active_provider(tmp_path, m
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import logout_command
+    from opencodon.core.auth import logout_command
 
     logout_command(SimpleNamespace(provider=None))
 
@@ -835,7 +835,7 @@ def test_logout_clears_stale_active_codex_without_provider_credentials(tmp_path,
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import logout_command
+    from opencodon.core.auth import logout_command
 
     logout_command(SimpleNamespace(provider=None))
 
@@ -863,7 +863,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
     config_path.write_text(yaml.safe_dump(original, sort_keys=False), encoding="utf-8")
     original_text = config_path.read_text(encoding="utf-8")
 
-    from opencodon.frontends.cli.auth import _reset_config_provider
+    from opencodon.core.auth import _reset_config_provider
 
     def _boom(path, data, **kwargs):
         assert path == config_path
@@ -872,7 +872,7 @@ def test_reset_config_provider_uses_atomic_yaml_write(tmp_path, monkeypatch):
         assert kwargs["sort_keys"] is False
         raise OSError("simulated atomic write failure")
 
-    with patch("opencodon.frontends.cli.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
+    with patch("opencodon.core.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
         with pytest.raises(OSError, match="simulated atomic write failure"):
             _reset_config_provider()
 
@@ -1201,7 +1201,7 @@ def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from opencodon.frontends.cli.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
+    from opencodon.core.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
 
     suppress_credential_source("openai-codex", "device_code")
     assert is_source_suppressed("openai-codex", "device_code") is True
@@ -1220,7 +1220,7 @@ def test_unsuppress_credential_source_returns_false_when_absent(tmp_path, monkey
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from opencodon.frontends.cli.auth import unsuppress_credential_source
+    from opencodon.core.auth import unsuppress_credential_source
 
     assert unsuppress_credential_source("openai-codex", "device_code") is False
     assert unsuppress_credential_source("nonexistent", "whatever") is False
@@ -1231,7 +1231,7 @@ def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypa
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path / "opencodon"))
     _write_auth_store(tmp_path, {"version": 1})
 
-    from opencodon.frontends.cli.auth import (
+    from opencodon.core.auth import (
         suppress_credential_source,
         unsuppress_credential_source,
         is_source_suppressed,
@@ -1353,7 +1353,7 @@ def test_auth_add_codex_clears_suppression_marker(tmp_path, monkeypatch):
 
     token = _jwt_with_email("codex@example.com")
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth._codex_device_code_login",
+        "opencodon.core.auth._codex_device_code_login",
         lambda: {
             "tokens": {
                 "access_token": token,
@@ -1404,7 +1404,7 @@ def test_seed_from_singletons_respects_codex_suppression(tmp_path, monkeypatch):
             "refresh_token": "would-be-reimported",
         }
 
-    monkeypatch.setattr("opencodon.frontends.cli.auth._import_codex_cli_tokens", _fake_import)
+    monkeypatch.setattr("opencodon.core.auth._import_codex_cli_tokens", _fake_import)
 
     from opencodon.core.credential_pool import _seed_from_singletons
 
@@ -1535,7 +1535,7 @@ def test_auth_add_clears_env_suppression_for_provider(tmp_path, monkeypatch):
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import is_source_suppressed
+    from opencodon.core.auth import is_source_suppressed
     from opencodon.frontends.cli.auth_commands import auth_add_command
 
     assert is_source_suppressed("xai", "env:XAI_API_KEY") is True
@@ -1618,7 +1618,7 @@ def test_seed_from_singletons_respects_copilot_suppression(tmp_path, monkeypatch
     }))
 
     # Stub resolve_copilot_token to return a live token
-    import opencodon.frontends.cli.copilot_auth as ca
+    import opencodon.core.copilot_auth as ca
     monkeypatch.setattr(ca, "resolve_copilot_token", lambda: ("ghp_fake", "gh auth token"))
 
     from opencodon.core.credential_pool import _seed_from_singletons
@@ -1641,7 +1641,7 @@ def test_seed_from_singletons_respects_qwen_suppression(tmp_path, monkeypatch):
         "suppressed_sources": {"qwen-oauth": ["qwen-cli"]},
     }))
 
-    import opencodon.frontends.cli.auth as ha
+    import opencodon.core.auth as ha
     monkeypatch.setattr(ha, "resolve_qwen_runtime_credentials", lambda **kw: {
         "api_key": "tok", "source": "qwen-cli", "base_url": "https://q",
     })
@@ -1794,14 +1794,14 @@ def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import is_source_suppressed
+    from opencodon.core.auth import is_source_suppressed
     from opencodon.frontends.cli.auth_commands import auth_remove_command
 
     with patch(
-        "opencodon.frontends.cli.copilot_auth.resolve_copilot_token",
+        "opencodon.core.copilot_auth.resolve_copilot_token",
         return_value=("ghp_fake", "gh"),
     ), patch(
-        "opencodon.frontends.cli.copilot_auth.get_copilot_api_token",
+        "opencodon.core.copilot_auth.get_copilot_api_token",
         return_value=("ghu_fake_api", None),
     ):
         auth_remove_command(SimpleNamespace(provider="copilot", target="1"))
@@ -1833,7 +1833,7 @@ def test_auth_add_clears_all_suppressions_including_non_env(tmp_path, monkeypatc
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import is_source_suppressed
+    from opencodon.core.auth import is_source_suppressed
     from opencodon.frontends.cli.auth_commands import auth_add_command
 
     auth_add_command(SimpleNamespace(
@@ -1874,7 +1874,7 @@ def test_auth_remove_codex_manual_device_code_suppresses_canonical(tmp_path, mon
     )
 
     from types import SimpleNamespace
-    from opencodon.frontends.cli.auth import is_source_suppressed
+    from opencodon.core.auth import is_source_suppressed
     from opencodon.frontends.cli.auth_commands import auth_remove_command
 
     auth_remove_command(SimpleNamespace(provider="openai-codex", target="1"))

@@ -490,7 +490,7 @@ def plan_install(
     override_name: Optional[str] = None,
 ) -> InstallPlan:
     """Stage *source* and produce a plan describing what install would do."""
-    from opencodon.frontends.cli.profiles import (
+    from opencodon.core.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
@@ -614,7 +614,7 @@ def install_distribution(
     Returns the resolved :class:`InstallPlan`.  Use :func:`plan_install`
     first if you want to preview + prompt the user before calling this.
     """
-    from opencodon.frontends.cli.profiles import (
+    from opencodon.core.profiles import (
         check_alias_collision,
         create_wrapper_script,
     )
@@ -657,7 +657,7 @@ def update_distribution(
     data (memories, sessions, auth) is never touched.  ``config.yaml`` is
     preserved unless ``force_config`` is True.
     """
-    from opencodon.frontends.cli.profiles import (
+    from opencodon.core.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
@@ -709,7 +709,7 @@ def describe_distribution(profile_name: str) -> Dict[str, Any]:
     Returns an empty dict if the profile exists but has no manifest.
     Raises DistributionError if the profile itself doesn't exist.
     """
-    from opencodon.frontends.cli.profiles import (
+    from opencodon.core.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,

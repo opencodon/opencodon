@@ -21,7 +21,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, List, Optional
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +78,7 @@ def _extract_fallback_from_model_cfg(model_cfg: Any) -> Optional[Dict[str, Any]]
 def _snapshot_auth_active_provider() -> Any:
     """Return the current ``active_provider`` in auth.json, or a sentinel if unavailable."""
     try:
-        from opencodon.frontends.cli.auth import _load_auth_store
+        from opencodon.core.auth import _load_auth_store
         store = _load_auth_store()
         return store.get("active_provider")
     except Exception:
@@ -88,7 +88,7 @@ def _snapshot_auth_active_provider() -> Any:
 def _restore_auth_active_provider(value: Any) -> None:
     """Write back a previously snapshotted ``active_provider`` value."""
     try:
-        from opencodon.frontends.cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+        from opencodon.core.auth import _auth_store_lock, _load_auth_store, _save_auth_store
         with _auth_store_lock():
             store = _load_auth_store()
             store["active_provider"] = value

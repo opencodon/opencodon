@@ -8,7 +8,7 @@ tests — grouping identity, header-routed separation, list-of-dict model
 declarations, and display-only RID stripping.
 """
 
-import opencodon.frontends.cli.providers as providers_mod
+import opencodon.core.providers as providers_mod
 from opencodon.frontends.cli.model_switch import (
     format_model_for_display,
     list_authenticated_providers,
@@ -18,7 +18,7 @@ from opencodon.frontends.cli.model_switch import (
 def _providers(monkeypatch, user_providers):
     monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(providers_mod, "OPENCODON_OVERLAYS", {})
-    monkeypatch.setattr("opencodon.frontends.cli.models.fetch_api_models", lambda *a, **k: [])
+    monkeypatch.setattr("opencodon.core.models.fetch_api_models", lambda *a, **k: [])
     return list_authenticated_providers(
         user_providers=user_providers,
         custom_providers=[],

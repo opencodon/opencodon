@@ -1187,7 +1187,7 @@ class APIServerAdapter(BasePlatformAdapter):
         if explicit and explicit.strip():
             return explicit.strip()
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile and profile not in {"default", "custom"}:
                 return profile
@@ -1463,7 +1463,7 @@ class APIServerAdapter(BasePlatformAdapter):
             # the single-profile gateway (don't 404 a would-be valid route).
             return None
         try:
-            from opencodon.frontends.cli.profiles import profiles_to_serve
+            from opencodon.core.profiles import profiles_to_serve
 
             served = {name for name, _ in profiles_to_serve(multiplex=True)}
         except Exception:
@@ -1497,7 +1497,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 pass
             return nullcontext()
         from opencodon.frontends.gateway.run import _profile_runtime_scope
-        from opencodon.frontends.cli.profiles import get_profile_dir
+        from opencodon.core.profiles import get_profile_dir
 
         return _profile_runtime_scope(get_profile_dir(profile))
 
@@ -5392,7 +5392,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return False
 
         try:
-            from opencodon.frontends.cli.auth import has_usable_secret
+            from opencodon.core.auth import has_usable_secret
             if not has_usable_secret(self._api_key, min_length=16):
                 logger.error(
                     "[%s] Refusing to start: API_SERVER_KEY is a "

@@ -46,7 +46,7 @@ MANIFEST_FILE = SKILLS_DIR / ".bundled_manifest"
 # When present in OPENCODON_HOME, sync_skills() is a no-op so neither the
 # installer, `opencodon update`, nor a direct sync re-injects bundled skills.
 # Delete the file to opt back in. Mirrors
-# opencodon_cli.profiles.NO_BUNDLED_SKILLS_MARKER (kept as a literal here to
+# opencodon.core.profiles.NO_BUNDLED_SKILLS_MARKER (kept as a literal here to
 # avoid importing the CLI layer into this low-level sync module).
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 

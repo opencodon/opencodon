@@ -19,7 +19,7 @@ _VALID_BODY_BOT_TOKEN = "987654321:ZYXWVUTSRQPONMLKJIHGFEDCBA_4321"
 def isolated_profiles(tmp_path, monkeypatch, _isolate_opencodon_home):
     """Isolated default home + one named profile, each with its own .env."""
     from opencodon_constants import get_opencodon_home
-    from opencodon.frontends.cli import profiles
+    from opencodon.core import profiles
 
     default_home = get_opencodon_home()
     profiles_root = default_home / "profiles"

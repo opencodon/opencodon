@@ -50,6 +50,19 @@ ALIASES = {
     "opencodon_cli.moa_config": "opencodon.config.moa_config",
     "opencodon_cli.plugins": "opencodon.plugins_runtime",
     "opencodon_cli.middleware": "opencodon.plugins_runtime.middleware",
+    # Phase 3b-1: auth/model/profile stack relocated out of the CLI frontend.
+    "opencodon_cli.auth": "opencodon.core.auth",
+    "opencodon_cli.models": "opencodon.core.models",
+    "opencodon_cli.runtime_provider": "opencodon.core.runtime_provider",
+    "opencodon_cli.profiles": "opencodon.core.profiles",
+    "opencodon_cli.providers": "opencodon.core.providers",
+    "opencodon_cli.codex_models": "opencodon.core.codex_models",
+    "opencodon_cli.copilot_auth": "opencodon.core.copilot_auth",
+    "opencodon_cli.model_catalog": "opencodon.core.model_catalog",
+    "opencodon_cli.model_cost_guard": "opencodon.core.model_cost_guard",
+    "opencodon_cli.fallback_config": "opencodon.core.fallback_config",
+    "opencodon_cli.memory_oauth": "opencodon.core.memory_oauth",
+    "opencodon_cli.urllib_security": "opencodon.common.urllib_security",
 }
 
 

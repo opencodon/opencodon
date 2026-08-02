@@ -125,7 +125,7 @@ def parse_profile_routes(raw: Optional[List[Dict[str, Any]]]) -> List[ProfileRou
         # Validate profile name to prevent path traversal. Lazy import avoids a
         # circular dependency at module load time.
         try:
-            from opencodon.frontends.cli.profiles import (
+            from opencodon.core.profiles import (
                 normalize_profile_name,
                 validate_profile_name,
             )

@@ -551,7 +551,7 @@ def _apply_profile_override() -> None:
 
     # 1b. Reject values that can't be valid profile names (e.g. pytest's
     # "-p no:xdist" would be misread as profile "no:xdist" otherwise).
-    # Mirrors opencodon_cli.profiles._PROFILE_ID_RE so we never call
+    # Mirrors opencodon.core.profiles._PROFILE_ID_RE so we never call
     # resolve_profile_env() with a value it must reject + sys.exit on.
     if profile_name is not None and consume == 2:
         import re as _re
@@ -603,7 +603,7 @@ def _apply_profile_override() -> None:
     # 3. If we found a profile, resolve and set OPENCODON_HOME
     if profile_name is not None:
         try:
-            from opencodon.frontends.cli.profiles import resolve_profile_env
+            from opencodon.core.profiles import resolve_profile_env
 
             opencodon_home = resolve_profile_env(profile_name)
         except FileNotFoundError as exc:
@@ -950,7 +950,7 @@ def _has_model_configured(cfg: Optional[dict] = None) -> bool:
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
     from opencodon.config import get_env_path, get_opencodon_home, load_config
-    from opencodon.frontends.cli.auth import get_auth_status
+    from opencodon.core.auth import get_auth_status
 
     # Determine whether opencodon itself has been explicitly configured (model
     # in config that isn't the hardcoded default). Used below to gate external
@@ -972,7 +972,7 @@ def _has_any_provider_configured() -> bool:
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
     # often don't require an API key.
-    from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+    from opencodon.core.auth import PROVIDER_REGISTRY
 
     # Collect all provider env vars
     provider_env_vars = {
@@ -2978,7 +2978,7 @@ def cmd_model(args):
     _require_tty("model")
     if getattr(args, "refresh", False):
         try:
-            from opencodon.frontends.cli.models import clear_provider_models_cache
+            from opencodon.core.models import clear_provider_models_cache
             clear_provider_models_cache()
             print("  Cleared model picker cache.")
         except Exception:
@@ -3009,7 +3009,7 @@ def select_provider_and_model(args=None):
     provider picker, credential prompting, model selection, and config
     persistence.
     """
-    from opencodon.frontends.cli.auth import (
+    from opencodon.core.auth import (
         resolve_provider,
         AuthError,
         format_auth_error,
@@ -3019,7 +3019,7 @@ def select_provider_and_model(args=None):
         load_config,
         get_env_value,
     )
-    from opencodon.frontends.cli.providers import resolve_provider_full
+    from opencodon.core.providers import resolve_provider_full
 
     config = load_config()
     current_model = config.get("model")
@@ -3215,7 +3215,7 @@ def select_provider_and_model(args=None):
     if active == "openrouter" and get_env_value("OPENAI_BASE_URL"):
         active = "custom"
 
-    from opencodon.frontends.cli.models import (
+    from opencodon.core.models import (
         CANONICAL_PROVIDERS,
         _PROVIDER_LABELS,
         _PROVIDER_ALIASES,
@@ -3746,8 +3746,8 @@ def _aux_flow_provider_model(
     current_model: str = "",
 ) -> None:
     """Prompt for a model under an already-authenticated provider, save to aux."""
-    from opencodon.frontends.cli.auth import _prompt_model_selection
-    from opencodon.frontends.cli.models import get_pricing_for_provider
+    from opencodon.core.auth import _prompt_model_selection
+    from opencodon.core.models import get_pricing_for_provider
 
     display_name = next((name for key, name, _ in _all_aux_tasks() if key == task), task)
 
@@ -3904,7 +3904,7 @@ def _prompt_custom_api_mode_selection(base_url: str, current_api_mode: str = "")
 
     Returns an explicit mode string, or None to keep auto-detect behavior.
     """
-    from opencodon.frontends.cli.runtime_provider import _detect_api_mode_for_url
+    from opencodon.core.runtime_provider import _detect_api_mode_for_url
 
     detected_mode = _detect_api_mode_for_url(base_url)
     normalized_current = str(current_api_mode or "").strip().lower()
@@ -4153,7 +4153,7 @@ _LAZY_MODEL_EXPORTS = ("_PROVIDER_MODELS",)
 def __getattr__(name):
     """Defer the model-catalog import until something actually reads it."""
     if name in _LAZY_MODEL_EXPORTS:
-        from opencodon.frontends.cli.models import _PROVIDER_MODELS
+        from opencodon.core.models import _PROVIDER_MODELS
         # Cache on the module so subsequent accesses skip the import machinery.
         globals()[name] = _PROVIDER_MODELS
         return _PROVIDER_MODELS
@@ -4270,7 +4270,7 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
     ``return`` immediately — the user cancelled entry, declined to replace, or
     cleared the key and is now unconfigured.
     """
-    from opencodon.frontends.cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
+    from opencodon.core.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
     from opencodon.config import save_env_value
     from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
@@ -4353,7 +4353,7 @@ def _infer_stepfun_region(base_url: str) -> str:
 
 
 def _stepfun_base_url_for_region(region: str) -> str:
-    from opencodon.frontends.cli.auth import (
+    from opencodon.core.auth import (
         STEPFUN_STEP_PLAN_CN_BASE_URL,
         STEPFUN_STEP_PLAN_INTL_BASE_URL,
     )
@@ -4470,14 +4470,14 @@ def _run_anthropic_oauth_flow(save_env_value):
 
 def cmd_login(args):
     """Authenticate opencodon CLI with a provider."""
-    from opencodon.frontends.cli.auth import login_command
+    from opencodon.core.auth import login_command
 
     login_command(args)
 
 
 def cmd_logout(args):
     """Clear provider authentication."""
-    from opencodon.frontends.cli.auth import logout_command
+    from opencodon.core.auth import logout_command
 
     logout_command(args)
 
@@ -7069,7 +7069,7 @@ def _update_via_zip(args):
     # Seed the model-catalog disk cache from the freshly-unpacked checkout
     # (same rationale as the git-pull path in _cmd_update_impl). Non-fatal.
     try:
-        from opencodon.frontends.cli.model_catalog import seed_cache_from_checkout
+        from opencodon.core.model_catalog import seed_cache_from_checkout
 
         if seed_cache_from_checkout(PROJECT_ROOT):
             print("  ✓ Model catalog cache refreshed from checkout")
@@ -10897,7 +10897,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # with the version the user just installed. Non-fatal on failure: the
         # normal network refresh still applies on the next picker open.
         try:
-            from opencodon.frontends.cli.model_catalog import seed_cache_from_checkout
+            from opencodon.core.model_catalog import seed_cache_from_checkout
 
             if seed_cache_from_checkout(PROJECT_ROOT):
                 print("  ✓ Model catalog cache refreshed from checkout")
@@ -10948,7 +10948,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # which means the active profile is reliably synced regardless of whether
         # the caller's OPENCODON_HOME env var points at the default or a named profile.
         try:
-            from opencodon.frontends.cli.profiles import (
+            from opencodon.core.profiles import (
                 list_profiles,
                 seed_profile_skills,
             )
@@ -10986,7 +10986,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # .env-seeding fix (#44792). Copies the default install's .env so
         # those profiles keep the credentials they were effectively using.
         try:
-            from opencodon.frontends.cli.profiles import backfill_profile_envs
+            from opencodon.core.profiles import backfill_profile_envs
 
             backfilled = backfill_profile_envs(quiet=True)
             if backfilled:
@@ -11987,7 +11987,7 @@ def _coalesce_session_name_args(argv: list) -> list:
 
 def cmd_profile(args):
     """Profile management — create, delete, list, switch, alias."""
-    from opencodon.frontends.cli.profiles import (
+    from opencodon.core.profiles import (
         list_profiles,
         create_profile,
         delete_profile,
@@ -12194,7 +12194,7 @@ def cmd_profile(args):
     elif action == "describe":
         # Read or write a profile's description. The description lets
         # other surfaces route work by role instead of name alone.
-        from opencodon.frontends.cli import profiles as _profiles_mod
+        from opencodon.core import profiles as _profiles_mod
 
         all_flag = bool(getattr(args, "all_missing", False))
         auto_flag = bool(getattr(args, "auto", False))
@@ -12293,7 +12293,7 @@ def cmd_profile(args):
 
     elif action == "show":
         name = args.profile_name
-        from opencodon.frontends.cli.profiles import (
+        from opencodon.core.profiles import (
             get_profile_dir,
             profile_exists,
             _read_config_model,
@@ -12342,7 +12342,7 @@ def cmd_profile(args):
         remove = getattr(args, "remove", False)
         custom_name = getattr(args, "alias_name", None)
 
-        from opencodon.frontends.cli.profiles import profile_exists, validate_alias_name
+        from opencodon.core.profiles import profile_exists, validate_alias_name
 
         if not profile_exists(name):
             print(f"Error: Profile '{name}' does not exist.")
@@ -12375,7 +12375,7 @@ def cmd_profile(args):
                     print(f"⚠ {_get_wrapper_dir()} is not in your PATH.")
 
     elif action == "rename":
-        from opencodon.frontends.cli.profiles import rename_profile
+        from opencodon.core.profiles import rename_profile
 
         try:
             new_dir = rename_profile(args.old_name, args.new_name)
@@ -12386,7 +12386,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "export":
-        from opencodon.frontends.cli.profiles import export_profile
+        from opencodon.core.profiles import export_profile
 
         name = args.profile_name
         output = args.output or f"{name}.tar.gz"
@@ -12398,7 +12398,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "import":
-        from opencodon.frontends.cli.profiles import import_profile
+        from opencodon.core.profiles import import_profile
 
         try:
             profile_dir = import_profile(
@@ -12476,7 +12476,7 @@ def cmd_profile(args):
             read_manifest,
             DistributionError,
         )
-        from opencodon.frontends.cli.profiles import get_profile_dir, normalize_profile_name
+        from opencodon.core.profiles import get_profile_dir, normalize_profile_name
 
         name = args.profile_name
         try:
@@ -12979,7 +12979,7 @@ def cmd_dashboard(args):
     #     preselected in the UI's switcher.
     # `--isolated` opts out and preserves the old per-profile behavior.
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
         _launch_profile = get_active_profile_name()
     except Exception:
         _launch_profile = "default"
@@ -13278,7 +13278,7 @@ def cmd_console(args):
 def _build_provider_choices() -> list[str]:
     """Build the --provider choices list from CANONICAL_PROVIDERS + 'auto'."""
     try:
-        from opencodon.frontends.cli.models import CANONICAL_PROVIDERS as _cp
+        from opencodon.core.models import CANONICAL_PROVIDERS as _cp
         return ["auto"] + [p.slug for p in _cp]
     except Exception:
         # Fallback: static list guarantees the CLI always works

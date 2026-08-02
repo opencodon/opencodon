@@ -32,7 +32,7 @@ def _run_copilot_switch(
         patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None),
         patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]),
         patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             return_value={
                 "api_key": "ghu_test_token",
                 "base_url": "https://api.githubcopilot.com",
@@ -40,12 +40,12 @@ def _run_copilot_switch(
             },
         ),
         patch(
-            "opencodon.frontends.cli.models.validate_requested_model",
+            "opencodon.core.models.validate_requested_model",
             return_value=_MOCK_VALIDATION,
         ),
         patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None),
         patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None),
-        patch("opencodon.frontends.cli.models.detect_provider_for_model", return_value=None),
+        patch("opencodon.core.models.detect_provider_for_model", return_value=None),
     ):
         return switch_model(
             raw_input=raw_input,

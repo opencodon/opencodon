@@ -3,7 +3,7 @@
 import os
 from unittest.mock import patch
 
-import opencodon.frontends.cli.providers as providers_mod
+import opencodon.core.providers as providers_mod
 from opencodon.frontends.cli.model_switch import list_authenticated_providers
 
 
@@ -25,7 +25,7 @@ def test_opencode_zen_lists_all_models_while_other_providers_remain_capped(monke
     )
     monkeypatch.setattr(providers_mod, "OPENCODON_OVERLAYS", {})
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.cached_provider_model_ids",
+        "opencodon.core.models.cached_provider_model_ids",
         lambda provider: {
             "opencode-zen": zen_models,
             "deepseek": deepseek_models,

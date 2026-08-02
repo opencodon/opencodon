@@ -270,7 +270,7 @@ class AgentPersistenceMixin:
         source = _ra._session_source_for_agent(self.platform)
         try:
             try:
-                from opencodon.frontends.cli.profiles import get_active_profile_name
+                from opencodon.core.profiles import get_active_profile_name
                 _profile_for_session = get_active_profile_name()
                 if _profile_for_session == "default":
                     _profile_for_session = None

@@ -590,7 +590,7 @@ class OpencodonACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from opencodon.frontends.cli.models import curated_models_for_provider, normalize_provider, provider_label
+            from opencodon.core.models import curated_models_for_provider, normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             provider_name = provider_label(normalized_provider)
@@ -653,7 +653,7 @@ class OpencodonACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from opencodon.frontends.cli.models import detect_provider_for_model, parse_model_input
+            from opencodon.core.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:

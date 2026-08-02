@@ -14,7 +14,7 @@ def _raise_menu(*args, **kwargs):
 
 
 def test_prompt_model_selection_falls_back_on_menu_runtime_error(monkeypatch):
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
 
     monkeypatch.setattr("opencodon.frontends.cli.curses_ui.curses_radiolist", _raise_menu)
     responses = iter(["2"])
@@ -26,11 +26,11 @@ def test_prompt_model_selection_falls_back_on_menu_runtime_error(monkeypatch):
 
 
 def test_prompt_model_selection_requires_expensive_confirmation(monkeypatch, capsys):
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
 
     monkeypatch.setattr("opencodon.frontends.cli.curses_ui.curses_radiolist", _raise_menu)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+        "opencodon.core.model_cost_guard.expensive_model_warning",
         lambda *_args, **_kwargs: SimpleNamespace(message="EXPENSIVE MODEL WARNING"),
     )
     responses = iter(["1", "n"])
@@ -47,11 +47,11 @@ def test_prompt_model_selection_requires_expensive_confirmation(monkeypatch, cap
 
 
 def test_prompt_model_selection_allows_confirmed_expensive_model(monkeypatch):
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
 
     monkeypatch.setattr("opencodon.frontends.cli.curses_ui.curses_radiolist", _raise_menu)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+        "opencodon.core.model_cost_guard.expensive_model_warning",
         lambda *_args, **_kwargs: SimpleNamespace(message="EXPENSIVE MODEL WARNING"),
     )
     responses = iter(["1", "y"])
@@ -106,8 +106,8 @@ def test_named_custom_provider_model_picker_falls_back_on_menu_runtime_error(tmp
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.setattr("opencodon.frontends.cli.curses_ui.curses_radiolist", _raise_menu)
-    monkeypatch.setattr("opencodon.frontends.cli.models.fetch_api_models", lambda *args, **kwargs: ["model-a", "model-b"])
-    monkeypatch.setattr("opencodon.frontends.cli.auth.deactivate_provider", lambda: None)
+    monkeypatch.setattr("opencodon.core.models.fetch_api_models", lambda *args, **kwargs: ["model-a", "model-b"])
+    monkeypatch.setattr("opencodon.core.auth.deactivate_provider", lambda: None)
 
     cfg = load_config()
     save_config(cfg)

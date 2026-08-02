@@ -36,7 +36,7 @@ def test_dump_cron_summary_bomless_regression(tmp_path):
 def test_status_scheduled_jobs_accepts_utf8_bom(monkeypatch, capsys, tmp_path):
     """opencodon status must not print '(error reading jobs file)' under BOM."""
     from opencodon.frontends.cli import status as status_mod
-    import opencodon.frontends.cli.auth as auth_mod
+    import opencodon.core.auth as auth_mod
     import opencodon.frontends.cli.gateway as gateway_mod
 
     cron = tmp_path / "cron"

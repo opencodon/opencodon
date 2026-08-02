@@ -408,7 +408,7 @@ def test_context_reference_git_and_rg_hide_windows(monkeypatch):
 
 
 def test_copilot_gh_cli_probe_hides_gh_windows(monkeypatch):
-    from opencodon.frontends.cli import copilot_auth
+    from opencodon.core import copilot_auth
 
     captured = []
 

@@ -879,7 +879,7 @@ class AgentMessagePrepMixin:
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
         ):
             try:
-                from opencodon.frontends.cli.models import github_model_reasoning_efforts
+                from opencodon.core.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -938,7 +938,7 @@ class AgentMessagePrepMixin:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from opencodon.frontends.cli.models import lmstudio_model_reasoning_options
+            from opencodon.core.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -969,7 +969,7 @@ class AgentMessagePrepMixin:
             if supported is not None or (_time.monotonic() - ts) < 60:
                 return bool(supported)
         try:
-            from opencodon.frontends.cli.models import ollama_model_supports_thinking
+            from opencodon.core.models import ollama_model_supports_thinking
             supported = ollama_model_supports_thinking(
                 self.model, self.base_url, getattr(self, "api_key", "")
             )
@@ -994,7 +994,7 @@ class AgentMessagePrepMixin:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from opencodon.frontends.cli.models import github_model_reasoning_efforts
+            from opencodon.core.models import github_model_reasoning_efforts
         except Exception:
             return None
 

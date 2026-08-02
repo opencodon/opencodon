@@ -201,7 +201,7 @@ DEFAULT_GEMINI_TTS_VOICE = "Kore"
 DEFAULT_GEMINI_TTS_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 DEFAULT_GEMINI_AUDIO_TAGS = False
 GEMINI_AUDIO_TAG_REWRITE_TASK = "tts_audio_tags"
-# Base URL now resolved via opencodon_cli.models.deepinfra_base_url (shared).
+# Base URL now resolved via opencodon.core.models.deepinfra_base_url (shared).
 DEFAULT_DEEPINFRA_TTS_VOICE = "default"
 # PCM output specs for Gemini TTS (fixed by the API)
 GEMINI_TTS_SAMPLE_RATE = 24000
@@ -1148,7 +1148,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     DeepInfra's audio endpoint is OpenAI-compatible, so there's no need
     to duplicate the SDK call — we just pass an explicit api_key /
     base_url / model / voice through. Model ids and the base URL come from
-    the shared ``opencodon_cli.models`` helpers so every DeepInfra surface
+    the shared ``opencodon.core.models`` helpers so every DeepInfra surface
     resolves them identically.
     """
     api_key = (get_env_value("DEEPINFRA_API_KEY") or "").strip()
@@ -1165,7 +1165,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     if not isinstance(di_config, dict):
         di_config = {}
 
-    from opencodon.frontends.cli.models import deepinfra_base_url, deepinfra_model_ids
+    from opencodon.core.models import deepinfra_base_url, deepinfra_model_ids
 
     model = di_config.get("model")
     if not isinstance(model, str) or not model.strip():

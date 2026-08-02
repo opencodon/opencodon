@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -463,7 +463,7 @@ class ShellShowMixin:
 
     def _fast_command_available(self) -> bool:
         try:
-            from opencodon.frontends.cli.models import model_supports_fast_mode
+            from opencodon.core.models import model_supports_fast_mode
         except Exception:
             return False
         agent = getattr(self, "agent", None)
@@ -1046,7 +1046,7 @@ class ShellShowMixin:
             # session on the next invocation. The "default" and "custom"
             # profile names use the standard OPENCODON_HOME, so no -p needed.
             try:
-                from opencodon.frontends.cli.profiles import get_active_profile_name
+                from opencodon.core.profiles import get_active_profile_name
                 _active_profile = get_active_profile_name()
             except Exception:
                 _active_profile = "default"

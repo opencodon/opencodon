@@ -6843,7 +6843,7 @@ class DiscordAdapter(BasePlatformAdapter):
                 channel = await self._client.fetch_channel(int(target_id))
 
             try:
-                from opencodon.frontends.cli.providers import get_label
+                from opencodon.core.providers import get_label
                 provider_label = get_label(current_provider)
             except Exception:
                 provider_label = current_provider
@@ -8344,7 +8344,7 @@ def _define_discord_view_classes() -> None:
 
         async def _expensive_warning_for(self, model_id: str):
             try:
-                from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+                from opencodon.core.model_cost_guard import expensive_model_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -8484,7 +8484,7 @@ def _define_discord_view_classes() -> None:
             self._build_provider_select()
 
             try:
-                from opencodon.frontends.cli.providers import get_label
+                from opencodon.core.providers import get_label
                 provider_label = get_label(self.current_provider)
             except Exception:
                 provider_label = self.current_provider

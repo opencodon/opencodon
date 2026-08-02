@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 
 def test_prompt_model_selection_uses_curses_radiolist():
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
     from opencodon.frontends.cli.curses_ui import radio_item_plain
 
     seen = {}
@@ -33,7 +33,7 @@ def test_prompt_model_selection_uses_curses_radiolist():
 
 
 def test_prompt_model_selection_esc_cancels():
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
 
     # curses_radiolist returns the cancel sentinel (-1) on ESC.
     with patch("opencodon.frontends.cli.curses_ui.curses_radiolist", return_value=-1), \
@@ -66,7 +66,7 @@ def test_reasoning_effort_esc_cancels():
 def test_model_selection_with_pricing_passes_description():
     """When pricing is supplied, the aligned header is passed as the curses
     description (multi-line text above the list), not lost."""
-    from opencodon.frontends.cli.auth import _prompt_model_selection
+    from opencodon.core.auth import _prompt_model_selection
 
     seen = {}
 

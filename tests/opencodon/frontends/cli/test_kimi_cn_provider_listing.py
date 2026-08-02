@@ -19,7 +19,7 @@ from opencodon.frontends.cli.model_switch import (
     parse_model_flags,
     switch_model,
 )
-from opencodon.frontends.cli.providers import resolve_provider_full
+from opencodon.core.providers import resolve_provider_full
 
 
 # -- Only KIMI_CN_API_KEY set ------------------------------------------------

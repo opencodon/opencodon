@@ -18,7 +18,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from opencodon.frontends.cli.model_switch import list_authenticated_providers
-from opencodon.frontends.cli.models import _PROVIDER_MODELS
+from opencodon.core.models import _PROVIDER_MODELS
 
 
 def test_vertex_has_curated_model_list():

@@ -2,7 +2,7 @@ import sys
 
 import opencodon.frontends.cli.model_switch as ms
 from opencodon.frontends.cli.model_switch import DirectAlias
-from opencodon.frontends.cli.runtime_provider import _resolve_named_custom_runtime
+from opencodon.core.runtime_provider import _resolve_named_custom_runtime
 
 def test_ensure_direct_aliases_mutates_in_place(monkeypatch):
     """_ensure_direct_aliases mutates DIRECT_ALIASES in place (guards against rebinding regression)."""
@@ -40,7 +40,7 @@ def test_chat_provider_argparse_acceptance(monkeypatch):
 def test_resolve_named_custom_runtime_honors_explicit_base_url(monkeypatch):
     """_resolve_named_custom_runtime honors (provider='custom', explicit_base_url=...)."""
     # Mock has_usable_secret to recognize our test key
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.has_usable_secret", lambda x: x == "test-api-key")
+    monkeypatch.setattr("opencodon.core.runtime_provider.has_usable_secret", lambda x: x == "test-api-key")
     
     result = _resolve_named_custom_runtime(
         requested_provider="custom",

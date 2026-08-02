@@ -1239,7 +1239,7 @@ The `_isolate_opencodon_home` autouse fixture in `tests/conftest.py` redirects `
 
 **Profile tests**: When testing profile features, also mock `Path.home()` so that
 `_get_profiles_root()` and `_get_default_opencodon_home()` resolve within the temp dir.
-Use the pattern from `tests/opencodon/frontends/cli/test_profiles.py`:
+Use the pattern from `tests/opencodon/core/test_profiles.py`:
 ```python
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):

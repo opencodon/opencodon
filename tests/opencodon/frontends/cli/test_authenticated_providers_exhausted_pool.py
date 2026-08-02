@@ -26,7 +26,7 @@ class _FakePool:
 def _patch_opencode_pool(monkeypatch, *, available: bool):
     """Make the opencode-go aggregator look configured but with a pool whose
     only credential is (un)available, depending on ``available``."""
-    import opencodon.frontends.cli.auth as auth
+    import opencodon.core.auth as auth
     import opencodon.core.credential_pool as cp
 
     monkeypatch.setattr(

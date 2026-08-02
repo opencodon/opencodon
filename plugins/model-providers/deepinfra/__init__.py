@@ -34,7 +34,7 @@ class _DeepInfraProfile(ProviderProfile):
         if not (os.environ.get("DEEPINFRA_API_KEY") or "").strip():
             return None
         try:
-            from opencodon.frontends.cli.models import _fetch_deepinfra_models_by_tag
+            from opencodon.core.models import _fetch_deepinfra_models_by_tag
             items = _fetch_deepinfra_models_by_tag("chat")
         except Exception:
             return None

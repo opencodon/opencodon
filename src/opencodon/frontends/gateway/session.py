@@ -1343,7 +1343,7 @@ class SessionStore:
         if source is not None and source.profile:
             return source.profile
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             return get_active_profile_name() or "default"
         except Exception:
             return None
@@ -1362,7 +1362,7 @@ class SessionStore:
     @staticmethod
     def _active_profile_name() -> str:
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             return get_active_profile_name() or "default"
         except Exception:
             return "default"

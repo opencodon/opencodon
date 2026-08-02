@@ -86,7 +86,7 @@ def _setup_isolated_home(tmp_path, monkeypatch, *, warn):
     monkeypatch.setattr("opencodon_constants.get_opencodon_home", lambda: opencodon_home)
     monkeypatch.setattr("opencodon.config.get_opencodon_home", lambda: opencodon_home)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+        "opencodon.core.model_cost_guard.expensive_model_warning",
         (lambda *a, **kw: _fake_warning()) if warn else (lambda *a, **kw: None),
     )
     return cfg_path

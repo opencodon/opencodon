@@ -322,7 +322,7 @@ class GatewaySlashCommandsMixin:
         reports the active profile and default home, byte-identical to before.
         """
         from opencodon_constants import display_opencodon_home
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         multiplexed = getattr(
             getattr(self, "config", None), "multiplex_profiles", False
@@ -1296,7 +1296,7 @@ class GatewaySlashCommandsMixin:
             list_authenticated_providers,
             list_picker_providers,
         )
-        from opencodon.frontends.cli.providers import get_label
+        from opencodon.core.providers import get_label
 
         raw_args = event.get_command_args().strip()
         source = event.source
@@ -1328,7 +1328,7 @@ class GatewaySlashCommandsMixin:
         # --refresh: bust the disk cache so the picker shows live data.
         if force_refresh:
             try:
-                from opencodon.frontends.cli.models import clear_provider_models_cache
+                from opencodon.core.models import clear_provider_models_cache
                 clear_provider_models_cache()
             except Exception:
                 pass
@@ -2008,7 +2008,7 @@ class GatewaySlashCommandsMixin:
         # on a cache miss, so run it off the event loop.
         _cost_warning = None
         try:
-            from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+            from opencodon.core.model_cost_guard import expensive_model_warning
 
             _cost_warning = await asyncio.to_thread(
                 expensive_model_warning,
@@ -2948,7 +2948,7 @@ class GatewaySlashCommandsMixin:
         to config.yaml (parity with /model and /reasoning).
         """
         from opencodon.frontends.gateway.run import _load_gateway_config, _resolve_gateway_model
-        from opencodon.frontends.cli.models import model_supports_fast_mode
+        from opencodon.core.models import model_supports_fast_mode
 
         raw_args = event.get_command_args().strip().lower()
         # Reuse the /reasoning arg parser: strips --global (any position),

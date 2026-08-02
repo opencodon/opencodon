@@ -52,7 +52,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -3873,7 +3873,7 @@ class OpencodonCLI(
         if self.model == _DEFAULT_CONFIG_MODEL:
             _base_url = (_model_config.get("base_url") or "") if isinstance(_model_config, dict) else ""
             if "localhost" in _base_url or "127.0.0.1" in _base_url:
-                from opencodon.frontends.cli.runtime_provider import _auto_detect_local_model
+                from opencodon.core.runtime_provider import _auto_detect_local_model
                 _detected = _auto_detect_local_model(_base_url)
                 if _detected:
                     self.model = _detected
@@ -4631,7 +4631,7 @@ class OpencodonCLI(
             parse_model_flags_detailed,
             resolve_persist_behavior,
         )
-        from opencodon.frontends.cli.providers import get_label
+        from opencodon.core.providers import get_label
 
         # Parse args from the original command
         parts = cmd_original.split(None, 1)  # split off '/model'
@@ -4665,7 +4665,7 @@ class OpencodonCLI(
         # /v1/models endpoint on this open.
         if force_refresh:
             try:
-                from opencodon.frontends.cli.models import clear_provider_models_cache
+                from opencodon.core.models import clear_provider_models_cache
                 clear_provider_models_cache()
                 _cprint("  Cleared model picker cache. Refreshing...")
             except Exception:

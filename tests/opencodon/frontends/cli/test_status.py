@@ -17,7 +17,7 @@ def test_show_status_all_does_not_print_tavily_key_value(monkeypatch, capsys, tm
 
 def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys, tmp_path):
     from opencodon.frontends.cli import status as status_mod
-    import opencodon.frontends.cli.auth as auth_mod
+    import opencodon.core.auth as auth_mod
     import opencodon.frontends.cli.gateway as gateway_mod
 
     monkeypatch.setenv("TERMUX_VERSION", "0.118.3")
@@ -56,7 +56,7 @@ def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys,
 def _base_xai_mocks(monkeypatch, tmp_path):
     """Set up the minimal environment for show_status, returning status_mod."""
     from opencodon.frontends.cli import status as status_mod
-    import opencodon.frontends.cli.auth as auth_mod
+    import opencodon.core.auth as auth_mod
     import opencodon.frontends.cli.gateway as gateway_mod
 
     monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env", raising=False)
@@ -80,7 +80,7 @@ class TestShowStatusXaiOAuth:
     # ------------------------------------------------------------------
 
     def test_logged_in_shows_check_mark_and_label(self, monkeypatch, capsys, tmp_path):
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": True, "auth_store": "/a/auth.json"},
@@ -95,7 +95,7 @@ class TestShowStatusXaiOAuth:
         assert "not logged in" not in out.split("xAI OAuth", 1)[1].split("\n")[0]
 
     def test_logged_in_shows_auth_store(self, monkeypatch, capsys, tmp_path):
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": True, "auth_store": "/home/u/.opencodon/auth.json"},
@@ -107,7 +107,7 @@ class TestShowStatusXaiOAuth:
         assert "Auth file:  /home/u/.opencodon/auth.json" in out
 
     def test_logged_in_shows_last_refresh(self, monkeypatch, capsys, tmp_path):
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {
@@ -124,7 +124,7 @@ class TestShowStatusXaiOAuth:
 
     def test_logged_in_does_not_show_error_line(self, monkeypatch, capsys, tmp_path):
         """Error field must be suppressed when logged_in is True."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {
@@ -142,7 +142,7 @@ class TestShowStatusXaiOAuth:
 
     def test_no_auth_store_line_when_field_absent(self, monkeypatch, capsys, tmp_path):
         """Auth file line must not appear when auth_store is missing."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": True},
@@ -156,7 +156,7 @@ class TestShowStatusXaiOAuth:
 
     def test_no_refreshed_line_when_last_refresh_absent(self, monkeypatch, capsys, tmp_path):
         """Refreshed line must not appear when last_refresh is not present."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": True, "auth_store": "/a/auth.json"},
@@ -173,7 +173,7 @@ class TestShowStatusXaiOAuth:
     # ------------------------------------------------------------------
 
     def test_not_logged_in_shows_login_command(self, monkeypatch, capsys, tmp_path):
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": False, "error": "no credentials"},
@@ -185,7 +185,7 @@ class TestShowStatusXaiOAuth:
         assert "not logged in (run: opencodon auth add xai-oauth)" in out
 
     def test_not_logged_in_shows_error(self, monkeypatch, capsys, tmp_path):
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": False, "error": "Token has expired"},
@@ -198,7 +198,7 @@ class TestShowStatusXaiOAuth:
 
     def test_not_logged_in_omits_error_line_when_error_absent(self, monkeypatch, capsys, tmp_path):
         """No Error: line when not logged in but error key is missing."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: {"logged_in": False},
@@ -216,7 +216,7 @@ class TestShowStatusXaiOAuth:
 
     def test_import_failure_does_not_crash_show_status(self, monkeypatch, capsys, tmp_path):
         """show_status must complete even when get_xai_oauth_auth_status cannot be imported."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.delattr(auth_mod, "get_xai_oauth_auth_status", raising=False)
 
@@ -227,7 +227,7 @@ class TestShowStatusXaiOAuth:
 
     def test_import_failure_does_not_break_other_oauth_providers(self, monkeypatch, capsys, tmp_path):
         """Codex/MiniMax rows must still appear when xAI import fails."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.delattr(auth_mod, "get_xai_oauth_auth_status", raising=False)
 
@@ -239,7 +239,7 @@ class TestShowStatusXaiOAuth:
 
     def test_status_function_exception_does_not_crash(self, monkeypatch, capsys, tmp_path):
         """show_status must not propagate an exception raised by get_xai_oauth_auth_status."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
 
         def _raises():
@@ -254,7 +254,7 @@ class TestShowStatusXaiOAuth:
 
     def test_status_function_returns_none_does_not_crash(self, monkeypatch, capsys, tmp_path):
         """get_xai_oauth_auth_status returning None must be handled gracefully."""
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
         status_mod = _base_xai_mocks(monkeypatch, tmp_path)
         monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status",
                             lambda: None, raising=False)

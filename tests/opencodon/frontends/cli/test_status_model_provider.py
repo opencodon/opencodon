@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 
 def _patch_common_status_deps(monkeypatch, status_mod, tmp_path, *, openai_base_url=""):
-    import opencodon.frontends.cli.auth as auth_mod
+    import opencodon.core.auth as auth_mod
 
     monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env", raising=False)
     monkeypatch.setattr(status_mod, "get_opencodon_home", lambda: tmp_path, raising=False)
@@ -87,7 +87,7 @@ def test_show_status_reports_empty_lmstudio_listing_as_reachable(monkeypatch, ca
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "lmstudio", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "LM Studio", raising=False)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.probe_lmstudio_models",
+        "opencodon.core.models.probe_lmstudio_models",
         lambda api_key=None, base_url=None, timeout=5.0: [],
     )
 

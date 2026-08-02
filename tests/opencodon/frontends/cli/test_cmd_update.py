@@ -615,8 +615,8 @@ class TestCmdUpdateProfileSkillSync:
         empty_sync = {"copied": [], "updated": [], "user_modified": [], "cleaned": []}
 
         with (
-            patch("opencodon.frontends.cli.profiles.list_profiles", return_value=all_profiles),
-            patch("opencodon.frontends.cli.profiles.seed_profile_skills", side_effect=fake_seed),
+            patch("opencodon.core.profiles.list_profiles", return_value=all_profiles),
+            patch("opencodon.core.profiles.seed_profile_skills", side_effect=fake_seed),
             patch("opencodon.tools.skills_sync.sync_skills", return_value=empty_sync),
         ):
             cmd_update(mock_args)
@@ -649,8 +649,8 @@ class TestCmdUpdateProfileSkillSync:
         empty_sync = {"copied": [], "updated": [], "user_modified": [], "cleaned": []}
 
         with (
-            patch("opencodon.frontends.cli.profiles.list_profiles", return_value=[default_p]),
-            patch("opencodon.frontends.cli.profiles.seed_profile_skills", side_effect=fake_seed),
+            patch("opencodon.core.profiles.list_profiles", return_value=[default_p]),
+            patch("opencodon.core.profiles.seed_profile_skills", side_effect=fake_seed),
             patch("opencodon.tools.skills_sync.sync_skills", return_value=empty_sync),
         ):
             cmd_update(mock_args)

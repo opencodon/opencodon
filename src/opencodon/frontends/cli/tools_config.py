@@ -151,7 +151,7 @@ def _xai_credentials_present() -> bool:
     "xai_grok"`` picker rows (xAI TTS, Grok OAuth x_search).
     """
     try:
-        from opencodon.frontends.cli.auth import _read_xai_oauth_tokens
+        from opencodon.core.auth import _read_xai_oauth_tokens
 
         _read_xai_oauth_tokens()
         return True
@@ -1368,7 +1368,7 @@ def _run_post_setup(post_setup_key: str):
         # console.x.ai. The picker entries declare empty env_vars so we
         # drive the full auth UX here.
         try:
-            from opencodon.frontends.cli.auth import get_xai_oauth_auth_status
+            from opencodon.core.auth import get_xai_oauth_auth_status
             oauth_logged_in = bool(get_xai_oauth_auth_status().get("logged_in"))
         except Exception:
             oauth_logged_in = False

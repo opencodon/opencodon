@@ -433,7 +433,7 @@ def _discover_named_profiles():
     if profile support is unavailable or nothing is installed beyond the
     default root."""
     try:
-        from opencodon.frontends.cli.profiles import list_profiles
+        from opencodon.core.profiles import list_profiles
     except Exception:
         return []
     try:

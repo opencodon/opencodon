@@ -1069,7 +1069,7 @@ def _profile_home(profile: str | None) -> Path | None:
     if not name:
         return None
     try:
-        from opencodon.frontends.cli import profiles as profiles_mod
+        from opencodon.core import profiles as profiles_mod
 
         home = Path(profiles_mod.get_profile_dir(name))
     except Exception:
@@ -2018,7 +2018,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # start (matches _runtime_model_config's normalization).
     if str(model_config.get("provider") or "").strip().lower() == "custom":
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(
                 base_url=model_config.get("base_url") or None
@@ -2606,7 +2606,7 @@ def _resolve_model() -> str:
     # default (catalog-labeled, cache-only read), never an expensive Anthropic
     # flagship the user didn't pick.
     try:
-        from opencodon.frontends.cli.models import get_preferred_silent_default_model
+        from opencodon.core.models import get_preferred_silent_default_model
 
         return get_preferred_silent_default_model()
     except Exception:
@@ -2702,7 +2702,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
         return model, None
 
     try:
-        from opencodon.frontends.cli.models import detect_static_provider_for_model
+        from opencodon.core.models import detect_static_provider_for_model
 
         cfg = _load_cfg().get("model") or {}
         current_provider = (
@@ -2784,7 +2784,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     if provider.strip().lower() == "custom":
         healed = None
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(base_url=base_url or None)
         except Exception:
@@ -2845,7 +2845,7 @@ def _runtime_model_config(agent, existing: dict | None = None) -> dict:
             # bare "custom" with no base_url was persisted verbatim and routed
             # to OpenRouter with no key on the next resume).
             try:
-                from opencodon.frontends.cli.runtime_provider import (
+                from opencodon.core.runtime_provider import (
                     canonical_custom_identity,
                 )
 
@@ -3407,7 +3407,7 @@ def _apply_model_switch(
         resolve_persist_behavior,
         switch_model,
     )
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.runtime_provider import resolve_runtime_provider
 
     if parsed_flags is None:
         parsed_flags = parse_model_flags_detailed(raw_input)
@@ -3514,7 +3514,7 @@ def _apply_model_switch(
 
     if not confirm_expensive_model:
         try:
-            from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+            from opencodon.core.model_cost_guard import expensive_model_warning
 
             warning = expensive_model_warning(
                 result.new_model,
@@ -3913,7 +3913,7 @@ def _probe_config_health(cfg: dict) -> str:
 
 def _current_profile_name() -> str:
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -4845,7 +4845,7 @@ def _load_fallback_model():
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
     """
-    from opencodon.frontends.cli.fallback_config import get_fallback_chain
+    from opencodon.core.fallback_config import get_fallback_chain
 
     return get_fallback_chain(_load_cfg())
 
@@ -5154,8 +5154,8 @@ def _resolve_runtime_with_fallback(
     into a different runtime. ``used_fallback`` remains explicit rather than
     overloading a nullable model as control flow.
     """
-    from opencodon.frontends.cli.auth import AuthError
-    from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+    from opencodon.core.auth import AuthError
+    from opencodon.core.runtime_provider import resolve_runtime_provider
 
     kwargs = resolve_kwargs or {}
     try:
@@ -5174,7 +5174,7 @@ def _resolve_runtime_with_fallback(
             if not fb_provider or not fb_model:
                 continue
             try:
-                from opencodon.frontends.cli.fallback_config import resolve_entry_api_key
+                from opencodon.core.fallback_config import resolve_entry_api_key
 
                 fb_kwargs: dict = {
                     "requested": fb_provider,
@@ -5293,7 +5293,7 @@ def _make_agent(
             # the entry identity from the persisted base_url, falling back to
             # the configured provider when the override carries no base_url
             # (the recurring Desktop/TUI regression vector).
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.runtime_provider import canonical_custom_identity
 
             recovered = canonical_custom_identity(base_url=override_base_url or None)
             if recovered:
@@ -10451,7 +10451,7 @@ def _(rid, params: dict) -> dict:
 
         overrides = None
         if nv == "fast":
-            from opencodon.frontends.cli.models import resolve_fast_mode_overrides
+            from opencodon.core.models import resolve_fast_mode_overrides
 
             if agent is not None:
                 target_model = getattr(agent, "model", None)
@@ -11598,7 +11598,7 @@ def _(rid, params: dict) -> dict:
     key = params.get("key", "")
     if key == "provider":
         try:
-            from opencodon.frontends.cli.models import list_available_providers, normalize_provider
+            from opencodon.core.models import list_available_providers, normalize_provider
 
             model = _resolve_model()
             parts = model.split("/", 1)
@@ -11787,8 +11787,8 @@ def _(rid, params: dict) -> dict:
     surface onboarding before the user submits a doomed prompt.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
-        from opencodon.frontends.cli.auth import has_usable_secret
+        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.auth import has_usable_secret
         from opencodon.frontends.cli.main import _has_any_provider_configured
 
         requested = str(params.get("provider") or "").strip() or None
@@ -13477,7 +13477,7 @@ def _model_picker_context(agent):
     base_url = getattr(agent, "base_url", "") if agent else ""
     if str(provider or "").strip().lower() == "custom":
         try:
-            from opencodon.frontends.cli.runtime_provider import canonical_custom_identity
+            from opencodon.core.runtime_provider import canonical_custom_identity
 
             provider = (
                 canonical_custom_identity(
@@ -13549,7 +13549,7 @@ def _(rid, params: dict) -> dict:
     model.options entries) on success.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+        from opencodon.core.auth import PROVIDER_REGISTRY
         from opencodon.config import is_managed
         from opencodon.frontends.cli.inventory import build_models_payload
 
@@ -13627,7 +13627,7 @@ def _(rid, params: dict) -> dict:
     Returns success status and the provider's slug.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY, clear_provider_auth
+        from opencodon.core.auth import PROVIDER_REGISTRY, clear_provider_auth
         from opencodon.frontends.cli.credential_lifecycle import remove_provider_env_credential
 
         slug = (params.get("slug") or "").strip()

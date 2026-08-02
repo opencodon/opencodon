@@ -78,7 +78,7 @@ def _provider_default_routes(provider: str) -> set[str]:
     """Return known exact default routes for a canonical provider id."""
     routes: set[str] = set()
     try:
-        from opencodon.frontends.cli.providers import OPENCODON_OVERLAYS, get_provider
+        from opencodon.core.providers import OPENCODON_OVERLAYS, get_provider
 
         overlay = OPENCODON_OVERLAYS.get(provider)
         provider_def = get_provider(provider)
@@ -105,9 +105,9 @@ def _provider_default_routes(provider: str) -> set[str]:
         pass
 
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
-        from opencodon.frontends.cli.models import normalize_provider as normalize_model_provider
-        from opencodon.frontends.cli.providers import normalize_provider as normalize_registry_provider
+        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.models import normalize_provider as normalize_model_provider
+        from opencodon.core.providers import normalize_provider as normalize_registry_provider
 
         for provider_id, config in PROVIDER_REGISTRY.items():
             canonical_id = normalize_registry_provider(
@@ -154,7 +154,7 @@ def _context_route_mismatch(
     if not configured_provider:
         return False
     try:
-        from opencodon.frontends.cli.models import normalize_provider as normalize_model_provider
+        from opencodon.core.models import normalize_provider as normalize_model_provider
 
         configured_provider = normalize_model_provider(configured_provider)
         active_provider = normalize_model_provider(active_provider)
@@ -162,7 +162,7 @@ def _context_route_mismatch(
         configured_provider = configured_provider.lower()
         active_provider = active_provider.lower()
     try:
-        from opencodon.frontends.cli.providers import normalize_provider as normalize_registry_provider
+        from opencodon.core.providers import normalize_provider as normalize_registry_provider
 
         configured_provider = normalize_registry_provider(configured_provider)
         active_provider = normalize_registry_provider(active_provider)
@@ -975,7 +975,7 @@ def init_agent(
             # state cost is one file read + one timestamp compare per request.
             if agent.provider == "minimax-oauth" and isinstance(effective_key, str) and effective_key:
                 try:
-                    from opencodon.frontends.cli.auth import build_minimax_oauth_token_provider
+                    from opencodon.core.auth import build_minimax_oauth_token_provider
                     effective_key = build_minimax_oauth_token_provider()
                 except Exception as _mm_exc:  # noqa: BLE001 — never block startup on this
                     import logging as _logging
@@ -1124,7 +1124,7 @@ def init_agent(
             elif base_url_host_matches(effective_base, "api.routermint.com"):
                 client_kwargs["default_headers"] = _ra()._routermint_headers()
             elif base_url_host_matches(effective_base, "githubcopilot.com"):
-                from opencodon.frontends.cli.models import copilot_default_headers
+                from opencodon.core.models import copilot_default_headers
 
                 client_kwargs["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(effective_base, "api.kimi.com"):
@@ -1181,7 +1181,7 @@ def init_agent(
                     # (e.g. alibaba → DASHSCOPE_API_KEY, not ALIBABA_API_KEY).
                     _env_hint = f"{_explicit.upper()}_API_KEY"
                     try:
-                        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+                        from opencodon.core.auth import PROVIDER_REGISTRY
                         _pcfg = PROVIDER_REGISTRY.get(_explicit)
                         if _pcfg and _pcfg.api_key_env_vars:
                             _env_hint = _pcfg.api_key_env_vars[0]
@@ -1640,7 +1640,7 @@ def init_agent(
                         _init_kwargs["gateway_session_key"] = agent._gateway_session_key
                     # Profile identity for per-profile provider scoping
                     try:
-                        from opencodon.frontends.cli.profiles import get_active_profile_name
+                        from opencodon.core.profiles import get_active_profile_name
                         _profile = get_active_profile_name()
                         _init_kwargs["agent_identity"] = _profile
                         _init_kwargs["agent_workspace"] = "opencodon"
@@ -1995,7 +1995,7 @@ def init_agent(
             and not _configured_provider_norm.startswith("custom:")
         ):
             try:
-                from opencodon.frontends.cli.auth import resolve_provider as resolve_auth_provider
+                from opencodon.core.auth import resolve_provider as resolve_auth_provider
 
                 _resolved_auth_provider = resolve_auth_provider(
                     _configured_provider_norm

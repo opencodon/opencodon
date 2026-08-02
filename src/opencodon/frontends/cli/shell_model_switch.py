@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -276,7 +276,7 @@ class ShellModelSwitchMixin:
 
         if resolved_provider == "copilot":
             try:
-                from opencodon.frontends.cli.models import copilot_model_api_mode, normalize_copilot_model_id
+                from opencodon.core.models import copilot_model_api_mode, normalize_copilot_model_id
 
                 canonical = normalize_copilot_model_id(current_model, api_key=self.api_key)
                 if canonical and canonical != current_model:
@@ -298,7 +298,7 @@ class ShellModelSwitchMixin:
 
         if resolved_provider in {"opencode-zen", "opencode-go"}:
             try:
-                from opencodon.frontends.cli.models import normalize_opencode_model_id, opencode_model_api_mode
+                from opencodon.core.models import normalize_opencode_model_id, opencode_model_api_mode
 
                 canonical = normalize_opencode_model_id(resolved_provider, current_model)
                 if canonical and canonical != current_model:
@@ -337,7 +337,7 @@ class ShellModelSwitchMixin:
         if self._model_is_default:
             fallback_model = "gpt-5.3-codex"
             try:
-                from opencodon.frontends.cli.codex_models import get_codex_model_ids
+                from opencodon.core.codex_models import get_codex_model_ids
 
                 available = get_codex_model_ids(
                     access_token=self.api_key if self.api_key else None,
@@ -373,7 +373,7 @@ class ShellModelSwitchMixin:
         if not getattr(result, "success", False):
             return True
         try:
-            from opencodon.frontends.cli.model_cost_guard import expensive_model_warning
+            from opencodon.core.model_cost_guard import expensive_model_warning
 
             warning = expensive_model_warning(
                 result.new_model,
@@ -548,7 +548,7 @@ class ShellModelSwitchMixin:
             model_list = provider_data.get("models", [])
             if not model_list:
                 try:
-                    from opencodon.frontends.cli.models import provider_model_ids
+                    from opencodon.core.models import provider_model_ids
                     live = provider_model_ids(provider_data["slug"])
                     if live:
                         model_list = live

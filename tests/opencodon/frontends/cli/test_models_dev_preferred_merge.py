@@ -20,7 +20,7 @@ appear in ``/model`` without a opencodon release.
 from unittest.mock import patch
 
 
-from opencodon.frontends.cli.models import (
+from opencodon.core.models import (
     _MODELS_DEV_PREFERRED,
     _PROVIDER_MODELS,
     _merge_with_models_dev,
@@ -109,7 +109,7 @@ class TestProviderModelIdsPreferred:
         """Kimi /models can lag inference; live results must not replace curated."""
         with (
             patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.auth.resolve_api_key_provider_credentials",
                 return_value={"api_key": "sk-test", "base_url": "https://api.moonshot.ai/v1"},
             ),
             patch("opencodon.providers.base.ProviderProfile.fetch_models", return_value=["kimi-k2.6"]),
@@ -143,9 +143,9 @@ class TestProviderModelIdsPreferred:
                 return Response(b'{"data":[{"id":"k3"},{"id":"kimi-k2.6"}]}')
             raise AssertionError(f"unexpected Kimi models URL: {req.full_url}")
 
-        with patch("opencodon.frontends.cli.urllib_security.open_credentialed_url", side_effect=fake_open):
+        with patch("opencodon.common.urllib_security.open_credentialed_url", side_effect=fake_open):
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "sk-kimi-test",
                     "base_url": "https://api.kimi.com/coding",
@@ -154,7 +154,7 @@ class TestProviderModelIdsPreferred:
                 coding_models = provider_model_ids("kimi-coding")
 
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "legacy-test",
                     "base_url": "https://api.moonshot.ai/v1",
@@ -163,7 +163,7 @@ class TestProviderModelIdsPreferred:
                 legacy_models = provider_model_ids("kimi-coding")
 
             with patch(
-                "opencodon.frontends.cli.auth.resolve_api_key_provider_credentials",
+                "opencodon.core.auth.resolve_api_key_provider_credentials",
                 return_value={
                     "api_key": "custom-test",
                     "base_url": "https://example.invalid/v1",
@@ -188,7 +188,7 @@ class TestProviderModelIdsPreferred:
 
         with (
             patch("opencodon.frontends.cli.main._prompt_api_key", return_value=("sk-kimi-test", False)),
-            patch("opencodon.frontends.cli.auth._prompt_model_selection", side_effect=fake_select),
+            patch("opencodon.core.auth._prompt_model_selection", side_effect=fake_select),
             patch("opencodon.config.get_env_value", return_value=""),
             patch("opencodon.config.save_env_value"),
         ):
@@ -210,7 +210,7 @@ class TestOpenRouterAndNousUnchanged:
     def test_openrouter_does_not_call_merge(self):
         """openrouter takes its own live path — merge helper must NOT run."""
         with patch(
-            "opencodon.frontends.cli.models._merge_with_models_dev",
+            "opencodon.core.models._merge_with_models_dev",
             side_effect=AssertionError("merge should not be called for openrouter"),
         ):
             # Even if model_ids() fails for some other reason, we just care

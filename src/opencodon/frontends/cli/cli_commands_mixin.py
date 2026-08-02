@@ -472,7 +472,7 @@ class CLICommandsMixin:
     def _handle_profile_command(self):
         """Display active profile name and home directory."""
         from opencodon_constants import display_opencodon_home
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
 
         display = display_opencodon_home()
         profile_name = get_active_profile_name()
@@ -2484,7 +2484,7 @@ class CLICommandsMixin:
 
         # Determine the branding for the current model
         try:
-            from opencodon.frontends.cli.models import _is_anthropic_fast_model
+            from opencodon.core.models import _is_anthropic_fast_model
             agent = getattr(self, "agent", None)
             model = getattr(agent, "model", None) or getattr(self, "model", None)
             feature_name = "Anthropic Fast Mode" if _is_anthropic_fast_model(model) else "Priority Processing"

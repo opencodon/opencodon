@@ -10,7 +10,7 @@ a single tagged catalog at
 ``https://api.deepinfra.com/v1/openai/models?filter=true&sort_by=opencodon``
 where each entry's ``metadata.tags`` declares its surface (``image-gen``
 here). ``list_models()`` filters that catalog via
-:func:`opencodon_cli.models._fetch_deepinfra_models_by_tag` so newly added
+:func:`opencodon.core.models._fetch_deepinfra_models_by_tag` so newly added
 models show up in ``opencodon tools`` automatically. No model ids are
 hardcoded in this file — if a model is retired upstream, it disappears
 from opencodon the next time the catalog is fetched, no patch required.
@@ -71,7 +71,7 @@ def _load_deepinfra_image_config() -> Dict[str, Any]:
 def _live_models() -> Optional[List[Dict[str, Any]]]:
     """Fetch ``image-gen``-tagged models from the DeepInfra catalog."""
     try:
-        from opencodon.frontends.cli.models import _fetch_deepinfra_models_by_tag
+        from opencodon.core.models import _fetch_deepinfra_models_by_tag
     except Exception as exc:
         logger.debug("Cannot import _fetch_deepinfra_models_by_tag: %s", exc)
         return None
@@ -229,7 +229,7 @@ class DeepInfraImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
         size = _SIZES.get(aspect, _SIZES["square"])
-        from opencodon.frontends.cli.models import deepinfra_base_url
+        from opencodon.core.models import deepinfra_base_url
         base_url = deepinfra_base_url(di_cfg)
 
         # DeepInfra's /images/generations is OpenAI-compatible — use the

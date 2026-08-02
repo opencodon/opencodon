@@ -14,10 +14,10 @@ Provides subcommands for:
 import os
 import sys
 
-# Opencodon's own version line — independent of the upstream fork point.
-# Keep in sync with `version` in pyproject.toml.
-__version__ = "0.1.0"
-__release_date__ = "2026.7.25"
+# Re-exported for the many existing ``from opencodon.frontends.cli import
+# __version__`` consumers; the source of truth lives in common (core modules
+# must not import the frontend for it).
+from opencodon.common.version import __release_date__, __version__  # noqa: F401
 
 
 def _ensure_utf8():

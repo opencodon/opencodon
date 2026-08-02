@@ -1523,7 +1523,7 @@ def _endpoint_speaks_anthropic_messages(base_url: str) -> bool:
     """True if the endpoint at ``base_url`` speaks the Anthropic Messages
     protocol instead of OpenAI chat.completions.
 
-    Mirrors ``opencodon_cli.runtime_provider._detect_api_mode_for_url`` so the
+    Mirrors ``opencodon.core.runtime_provider._detect_api_mode_for_url`` so the
     auxiliary client and the main agent stay in sync on transport selection.
     Covers:
 
@@ -1651,12 +1651,12 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
     compression report "no provider configured" even though ``opencodon auth
     status`` shows xAI OAuth as logged in.
 
-    Falls back to ``opencodon_cli.auth``'s singleton runtime resolver for older
+    Falls back to ``opencodon.core.auth``'s singleton runtime resolver for older
     auth-store-only logins. Returns ``None`` if the user is not authenticated
     with xAI Grok OAuth.
     """
     try:
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.auth import (
             DEFAULT_XAI_OAUTH_BASE_URL,
             _xai_validate_inference_base_url,
         )
@@ -1683,7 +1683,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
         logger.debug("Auxiliary xAI OAuth pool credential resolution failed: %s", exc)
 
     try:
-        from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+        from opencodon.core.auth import resolve_xai_oauth_runtime_credentials
 
         creds = resolve_xai_oauth_runtime_credentials()
     except Exception as exc:
@@ -1713,7 +1713,7 @@ def _read_codex_access_token() -> Optional[str]:
             return token
 
     try:
-        from opencodon.frontends.cli.auth import _read_codex_tokens
+        from opencodon.core.auth import _read_codex_tokens
         data = _read_codex_tokens()
         tokens = data.get("tokens", {})
         access_token = tokens.get("access_token")
@@ -1747,7 +1747,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
     credentials, or (None, None) if none are configured.
     """
     try:
-        from opencodon.frontends.cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+        from opencodon.core.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
     except ImportError:
         logger.debug("Could not import PROVIDER_REGISTRY for API-key fallback")
         return None, None
@@ -1763,7 +1763,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             # Without this gate, Claude Code credentials get silently used
             # as auxiliary fallback when the user's primary provider fails.
             try:
-                from opencodon.frontends.cli.auth import is_provider_explicitly_configured
+                from opencodon.core.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("anthropic"):
                     continue
             except ImportError:
@@ -1791,7 +1791,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             if base_url_host_matches(base_url, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(base_url, "githubcopilot.com"):
-                from opencodon.frontends.cli.models import copilot_default_headers
+                from opencodon.core.models import copilot_default_headers
 
                 extra["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1831,7 +1831,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if base_url_host_matches(base_url, "api.kimi.com"):
             extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.models import copilot_default_headers
+            from opencodon.core.models import copilot_default_headers
 
             extra["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -2167,7 +2167,7 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     environment.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="custom")
     except Exception as exc:
@@ -2389,7 +2389,7 @@ def _try_azure_foundry(
     """Resolve an Azure Foundry auxiliary client via the runtime resolver.
 
     Mirrors the ``_try_anthropic`` shape but delegates to
-    :func:`opencodon_cli.runtime_provider._resolve_azure_foundry_runtime` —
+    :func:`opencodon.core.runtime_provider._resolve_azure_foundry_runtime` —
     the same resolver the main agent uses — so:
 
     * ``auth_mode: api_key`` (default) gets the static
@@ -2409,8 +2409,8 @@ def _try_azure_foundry(
     Returns ``(client, model)`` or ``(None, None)`` on failure.
     """
     try:
-        from opencodon.frontends.cli.runtime_provider import _resolve_azure_foundry_runtime
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.runtime_provider import _resolve_azure_foundry_runtime
+        from opencodon.core.auth import AuthError
         from opencodon.config import load_config
     except ImportError:
         return None, None
@@ -3193,7 +3193,7 @@ def _recoverable_pool_provider(
         rt_provider = rt.get("provider", "")
         if rt_provider and rt_provider not in {"", "auto", "custom"}:
             try:
-                from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+                from opencodon.core.auth import PROVIDER_REGISTRY
                 pconfig = PROVIDER_REGISTRY.get(rt_provider)
                 if pconfig and getattr(pconfig, "auth_type", None) == "api_key":
                     rt_base = str(getattr(pconfig, "inference_base_url", "") or "").rstrip("/")
@@ -3377,7 +3377,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
     normalized = _normalize_aux_provider(provider)
     try:
         if normalized == "copilot":
-            from opencodon.frontends.cli.copilot_auth import (
+            from opencodon.core.copilot_auth import (
                 _jwt_cache,
                 _token_fingerprint,
                 exchange_copilot_token,
@@ -3392,7 +3392,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
             _evict_cached_clients(normalized)
             return True
         if normalized == "openai-codex":
-            from opencodon.frontends.cli.auth import resolve_codex_runtime_credentials
+            from opencodon.core.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -3421,7 +3421,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
                 if refreshed is not None and str(getattr(refreshed, "runtime_api_key", "") or "").strip():
                     _evict_cached_clients(normalized)
                     return True
-            from opencodon.frontends.cli.auth import resolve_xai_oauth_runtime_credentials
+            from opencodon.core.auth import resolve_xai_oauth_runtime_credentials
 
             creds = resolve_xai_oauth_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -3976,7 +3976,7 @@ def _try_main_fallback_chain(
     """
     try:
         from opencodon.config import load_config
-        from opencodon.frontends.cli.fallback_config import get_fallback_chain
+        from opencodon.core.fallback_config import get_fallback_chain
 
         chain = get_fallback_chain(load_config())
     except Exception as exc:
@@ -4163,7 +4163,7 @@ def _resolve_auto(
             # Named custom provider (custom_providers / providers dict entry).
             _has_named_entry = False
             try:
-                from opencodon.frontends.cli.runtime_provider import _get_named_custom_provider
+                from opencodon.core.runtime_provider import _get_named_custom_provider
                 _has_named_entry = _get_named_custom_provider(main_provider) is not None
             except ImportError:
                 pass
@@ -4301,7 +4301,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if base_url_host_matches(sync_base_url, "openrouter.ai"):
         async_kwargs["default_headers"] = build_or_headers()
     elif base_url_host_matches(sync_base_url, "githubcopilot.com"):
-        from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+        from opencodon.core.copilot_auth import copilot_request_headers
 
         async_kwargs["default_headers"] = copilot_request_headers(
             is_agent_turn=True, is_vision=is_vision
@@ -4615,7 +4615,7 @@ def resolve_provider_client(
             if base_url_host_matches(custom_base, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(custom_base, "githubcopilot.com"):
-                from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+                from opencodon.core.copilot_auth import copilot_request_headers
                 extra["default_headers"] = copilot_request_headers(
                     is_agent_turn=True, is_vision=is_vision
                 )
@@ -4659,7 +4659,7 @@ def resolve_provider_client(
 
     # ── Named custom providers (config.yaml providers dict / custom_providers list) ───
     try:
-        from opencodon.frontends.cli.runtime_provider import _get_named_custom_provider
+        from opencodon.core.runtime_provider import _get_named_custom_provider
         # When the raw requested name is an alias (``kimi`` → ``kimi-coding``)
         # and the user defined a ``custom_providers`` entry under that alias
         # name, the custom entry is the intended target — the built-in alias
@@ -4803,13 +4803,13 @@ def resolve_provider_client(
 
     # ── API-key providers from PROVIDER_REGISTRY ─────────────────────
     try:
-        from opencodon.frontends.cli.auth import (
+        from opencodon.core.auth import (
             PROVIDER_REGISTRY,
             resolve_api_key_provider_credentials,
             resolve_external_process_provider_credentials,
         )
     except ImportError:
-        logger.debug("opencodon_cli.auth not available for provider %s", provider)
+        logger.debug("opencodon.core.auth not available for provider %s", provider)
         return None, None
 
     pconfig = PROVIDER_REGISTRY.get(provider)
@@ -4872,7 +4872,7 @@ def resolve_provider_client(
         if base_url_host_matches(base_url, "api.kimi.com"):
             headers["User-Agent"] = "claude-code/0.1.0"
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from opencodon.frontends.cli.copilot_auth import copilot_request_headers
+            from opencodon.core.copilot_auth import copilot_request_headers
 
             headers.update(copilot_request_headers(
                 is_agent_turn=True, is_vision=is_vision
@@ -4902,7 +4902,7 @@ def resolve_provider_client(
         # routes through responses.stream().
         if provider == "copilot" and final_model and not raw_codex:
             try:
-                from opencodon.frontends.cli.models import _should_use_copilot_responses_api
+                from opencodon.core.models import _should_use_copilot_responses_api
                 if _should_use_copilot_responses_api(final_model):
                     logger.debug(
                         "resolve_provider_client: copilot model %s needs "
@@ -5900,7 +5900,7 @@ def _resolve_task_provider_model(
         if normalized in {"", "auto", "custom"} or normalized.startswith("custom:"):
             return False
         try:
-            from opencodon.frontends.cli.providers import get_provider
+            from opencodon.core.providers import get_provider
 
             return get_provider(normalized) is not None
         except Exception:

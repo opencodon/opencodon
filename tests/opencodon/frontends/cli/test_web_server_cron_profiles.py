@@ -12,7 +12,7 @@ from fastapi import HTTPException
 @pytest.fixture()
 def isolated_profiles(tmp_path, monkeypatch):
     """Give profile discovery an isolated default home with one named profile."""
-    from opencodon.frontends.cli import profiles
+    from opencodon.core import profiles
 
     default_home = tmp_path / ".opencodon"
     profiles_root = default_home / "profiles"
@@ -539,7 +539,8 @@ async def test_update_cron_job_refreshes_snapshots_when_unpinning(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.frontends.cli import runtime_provider, web_server
+    from opencodon.core import runtime_provider
+    from opencodon.frontends.cli import web_server
 
     monkeypatch.setattr(
         runtime_provider,
@@ -582,7 +583,8 @@ async def test_dashboard_cron_noop_inference_fields_keep_existing_snapshots(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.frontends.cli import runtime_provider, web_server
+    from opencodon.core import runtime_provider
+    from opencodon.frontends.cli import web_server
 
     current_provider = {"name": "initial-provider"}
     monkeypatch.setattr(
@@ -632,7 +634,8 @@ async def test_update_cron_job_clears_snapshots_for_no_agent(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.frontends.cli import runtime_provider, web_server
+    from opencodon.core import runtime_provider
+    from opencodon.frontends.cli import web_server
 
     monkeypatch.setattr(
         runtime_provider,

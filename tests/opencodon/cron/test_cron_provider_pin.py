@@ -56,7 +56,7 @@ def _run_with_current_provider(job, current_provider, tmp_path):
          patch("opencodon.config.env_loader.reset_secret_source_cache"), \
          patch("opencodon.state.SessionDB", return_value=fake_db), \
          patch(
-             "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             "opencodon.core.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -176,7 +176,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -188,7 +188,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         resolver = MagicMock(return_value={"provider": "openrouter"})
-        with patch("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", resolver):
+        with patch("opencodon.core.runtime_provider.resolve_runtime_provider", resolver):
             job = jobs.create_job(
                 prompt="do a thing", schedule="every 1 hour", provider="nous"
             )
@@ -203,7 +203,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             side_effect=RuntimeError("no creds"),
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -218,7 +218,7 @@ class TestCreateJobSnapshot:
             "opencodon.cron.jobs.get_opencodon_home", lambda: tmp_path, raising=True
         )
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -233,7 +233,7 @@ class TestCreateJobSnapshot:
             "opencodon.cron.jobs.get_opencodon_home", lambda: tmp_path, raising=True
         )
         with patch(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             job = jobs.create_job(
@@ -257,7 +257,7 @@ def _run_with_current_provider_and_model(job, current_provider, current_model, t
          patch("opencodon.config.env_loader.reset_secret_source_cache"), \
          patch("opencodon.state.SessionDB", return_value=fake_db), \
          patch(
-             "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+             "opencodon.core.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -362,7 +362,7 @@ class TestRuntimeResolutionTargetModel:
              patch("opencodon.config.env_loader.reset_secret_source_cache"), \
              patch("opencodon.state.SessionDB", return_value=fake_db), \
              patch(
-                 "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+                 "opencodon.core.runtime_provider.resolve_runtime_provider",
                  side_effect=_capture,
              ), \
              patch("opencodon.core.run_agent.AIAgent") as mock_agent_cls:

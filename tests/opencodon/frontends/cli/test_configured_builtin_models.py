@@ -16,10 +16,10 @@ def _provider_row(configured_models, *, max_models=None):
             {"deepseek": "deepseek"},
         ),
         patch(
-            "opencodon.frontends.cli.models.cached_provider_model_ids",
+            "opencodon.core.models.cached_provider_model_ids",
             return_value=["live-a", "shared"],
         ),
-        patch("opencodon.frontends.cli.providers.OPENCODON_OVERLAYS", {}),
+        patch("opencodon.core.providers.OPENCODON_OVERLAYS", {}),
         patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test-key"}),
     ):
         rows = list_authenticated_providers(

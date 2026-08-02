@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -270,7 +270,7 @@ class ShellTuiLayoutMixin:
 
         # Prepend profile name when not default
         try:
-            from opencodon.frontends.cli.profiles import get_active_profile_name
+            from opencodon.core.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile not in {"default", "custom"}:
                 symbol = f"{profile} {symbol}"

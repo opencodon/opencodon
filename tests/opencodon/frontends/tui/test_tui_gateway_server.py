@@ -2484,7 +2484,7 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
         lambda _r: pytest.fail("persist_override=False must not persist"),
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.model_cost_guard.expensive_model_warning",
+        "opencodon.core.model_cost_guard.expensive_model_warning",
         lambda *a, **k: None,
     )
     session = {"agent": None}
@@ -2510,7 +2510,7 @@ def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypat
     monkeypatch.delenv("OPENCODON_TUI_PROVIDER", raising=False)
     monkeypatch.setenv("OPENCODON_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.detect_static_provider_for_model",
+        "opencodon.core.models.detect_static_provider_for_model",
         lambda model, provider: None,
     )
 
@@ -2529,7 +2529,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
         return "anthropic", "anthropic/claude-sonnet-4.6"
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.detect_static_provider_for_model", fake_detect
+        "opencodon.core.models.detect_static_provider_for_model", fake_detect
     )
 
     assert server._resolve_startup_runtime() == (
@@ -2586,7 +2586,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": "openai-codex",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -2655,7 +2655,7 @@ def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.fetch_openrouter_models",
+        "opencodon.core.models.fetch_openrouter_models",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network lookup should not run")
         ),
@@ -2673,7 +2673,7 @@ def test_startup_runtime_does_not_call_network_detector(monkeypatch):
     monkeypatch.delenv("OPENCODON_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.detect_provider_for_model",
+        "opencodon.core.models.detect_provider_for_model",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network detector called")
         ),
@@ -4570,7 +4570,7 @@ def test_config_set_fast_updates_live_agent_session_scoped(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, *a: {"model": "x"})
     monkeypatch.setattr(server, "_emit", lambda *args: emits.append(args))
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.resolve_fast_mode_overrides",
+        "opencodon.core.models.resolve_fast_mode_overrides",
         lambda _model_id: {"service_tier": "priority"},
     )
 
@@ -4649,7 +4649,7 @@ def test_config_set_fast_rejects_unsupported_model(monkeypatch):
         server, "_write_config_key", lambda path, value: writes.append((path, value))
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.resolve_fast_mode_overrides",
+        "opencodon.core.models.resolve_fast_mode_overrides",
         lambda _model_id: None,
     )
 
@@ -4994,7 +4994,7 @@ def test_probe_credentials_allows_keyless_custom_runtime():
 def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
     monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "openrouter",
             "api_key": "",
@@ -5016,7 +5016,7 @@ def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
 def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
     monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "custom",
             "api_key": "no-key-required",
@@ -5033,7 +5033,7 @@ def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
 def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypatch):
     monkeypatch.setattr("opencodon.frontends.cli.main._has_any_provider_configured", lambda: False)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "bedrock",
             "api_key": "aws-sdk",
@@ -5065,7 +5065,7 @@ def test_setup_runtime_check_honors_requested_provider(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         fake_resolve,
     )
 
@@ -5516,7 +5516,7 @@ def test_config_set_model_explicit_provider_skips_broken_default_init(monkeypatc
             }
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("opencodon.core.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -5557,7 +5557,7 @@ def test_config_set_model_explicit_provider_surfaces_selected_provider_errors(mo
             raise RuntimeError("missing anthropic API key")
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("opencodon.frontends.cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("opencodon.core.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -8608,7 +8608,7 @@ def test_model_options_does_not_overwrite_curated_models(monkeypatch):
         # If provider_model_ids gets called at all, the handler is still
         # overwriting curated with live — that's the regression we're
         # guarding against.
-        with patch("opencodon.frontends.cli.models.provider_model_ids") as live_fetch:
+        with patch("opencodon.core.models.provider_model_ids") as live_fetch:
             resp = server._methods["model.options"](99, {"session_id": ""})
 
     assert "result" in resp, resp
@@ -8714,7 +8714,7 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
     )
     canonical = Mock(return_value="custom:local-ollama")
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.canonical_custom_identity",
+        "opencodon.core.runtime_provider.canonical_custom_identity",
         canonical,
     )
     monkeypatch.setattr(
@@ -8739,7 +8739,7 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
         ],
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.is_provider_explicitly_configured",
+        "opencodon.core.auth.is_provider_explicitly_configured",
         lambda _slug: False,
     )
     monkeypatch.setattr("opencodon.frontends.cli.inventory._apply_pricing", lambda *_args, **_kwargs: None)
@@ -8773,7 +8773,7 @@ def test_model_save_key_uses_credential_lifecycle_and_picker_context(monkeypatch
     }
     server._sessions["save-key-session"] = _session(agent=agent)
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.PROVIDER_REGISTRY",
+        "opencodon.core.auth.PROVIDER_REGISTRY",
         {
             "test-provider": types.SimpleNamespace(
                 name="Test Provider",
@@ -10311,7 +10311,7 @@ def _setup_make_agent_mocks(monkeypatch, cfg):
         server, "_resolve_startup_runtime", lambda: ("test-model", None)
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": None,
             "base_url": None,
@@ -10395,7 +10395,7 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         fake_resolve_runtime_provider,
     )
 
@@ -11668,7 +11668,7 @@ class TestResolveRuntimeWithFallback:
         """When primary resolve succeeds, return its result directly."""
         expected = {"provider": "openai", "api_key": "tok"}
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             lambda **kw: expected,
         )
         resolution = server._resolve_runtime_with_fallback(
@@ -11680,7 +11680,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_tries_fallback_chain(self, monkeypatch):
         """On AuthError from primary, walk fallback_providers chain."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         fallback_runtime = {"provider": "deepseek", "api_key": "fb-tok"}
 
@@ -11690,7 +11690,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11707,7 +11707,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_skips_provider_only_fallback(self, monkeypatch):
         """Auth fallback requires one complete provider/model pair."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         requested = []
         fallback_runtime = {"provider": "openrouter", "api_key": "fb-tok"}
@@ -11719,7 +11719,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11743,7 +11743,7 @@ class TestResolveRuntimeWithFallback:
     def test_fallback_entry_key_env_resolves_api_key(self, monkeypatch):
         """A fallback entry naming its key via key_env passes the resolved
         env value as explicit_api_key (#43861, @VrtxOmega)."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         monkeypatch.setenv("FB_TEST_KEY", "env-resolved-key")
         captured = {}
@@ -11756,7 +11756,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11778,13 +11778,13 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_all_fallbacks_fail_raises(self, monkeypatch):
         """When all fallbacks also fail, re-raise the original AuthError."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         def fake_resolve(**kwargs):
             raise AuthError("No credentials for " + str(kwargs.get("requested")))
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11801,7 +11801,7 @@ class TestResolveRuntimeWithFallback:
 
     def test_auth_error_skips_non_dict_entries(self, monkeypatch):
         """Fallback chain entries that are not dicts are skipped."""
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         fallback_runtime = {"provider": "anthropic", "api_key": "ant-tok"}
 
@@ -11811,7 +11811,7 @@ class TestResolveRuntimeWithFallback:
             return fallback_runtime
 
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr(
@@ -11834,7 +11834,7 @@ class TestResolveRuntimeWithFallback:
         provider when the primary provider raises AuthError."""
         import types
 
-        from opencodon.frontends.cli.auth import AuthError
+        from opencodon.core.auth import AuthError
 
         captured = {}
         fallback_runtime = {
@@ -11866,7 +11866,7 @@ class TestResolveRuntimeWithFallback:
             },
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.runtime_provider.resolve_runtime_provider",
             fake_resolve,
         )
         monkeypatch.setattr("opencodon.core.run_agent.AIAgent", fake_agent)

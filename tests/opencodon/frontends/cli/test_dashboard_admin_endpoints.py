@@ -262,7 +262,7 @@ class TestCredentialPoolEndpoints:
         source and suppress (provider, source).
         """
         from opencodon.core.credential_pool import load_pool
-        from opencodon.frontends.cli.auth import is_source_suppressed
+        from opencodon.core.auth import is_source_suppressed
         from opencodon.config import save_env_value
 
         fake_key = "sk-or-" + "x" * 20  # constructed, never a real key shape
@@ -291,7 +291,7 @@ class TestCredentialPoolEndpoints:
         silently blocked from env re-seeding.
         """
         from opencodon.core.credential_pool import load_pool
-        from opencodon.frontends.cli.auth import is_source_suppressed
+        from opencodon.core.auth import is_source_suppressed
         from opencodon.config import save_env_value
 
         fake_key = "sk-or-" + "y" * 20
@@ -315,7 +315,7 @@ class TestCredentialPoolEndpoints:
 
     def test_manual_delete_adds_no_suppression(self):
         """Manual entries aren't re-seeded — CLI parity: no suppression marker."""
-        from opencodon.frontends.cli.auth import _load_auth_store
+        from opencodon.core.auth import _load_auth_store
 
         self.client.post(
             "/api/credentials/pool",
@@ -335,7 +335,7 @@ class TestCredentialPoolEndpoints:
     def test_delete_does_not_clobber_other_providers(self):
         """Deleting one provider's env entry leaves other providers' rows alone."""
         from opencodon.core.credential_pool import load_pool
-        from opencodon.frontends.cli.auth import _load_auth_store, read_credential_pool
+        from opencodon.core.auth import _load_auth_store, read_credential_pool
         from opencodon.config import save_env_value
 
         self.client.post(

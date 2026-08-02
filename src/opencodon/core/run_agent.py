@@ -666,7 +666,7 @@ class AIAgent(
             return False
         if normalized_provider == "copilot":
             try:
-                from opencodon.frontends.cli.models import _should_use_copilot_responses_api
+                from opencodon.core.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific

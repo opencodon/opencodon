@@ -1874,7 +1874,7 @@ def _run_llm_review(prompt: str) -> Dict[str, Any]:
     _model_name = ""
     try:
         from opencodon.config import load_config
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
         _cfg = load_config()
         _binding = _resolve_review_runtime(_cfg)
         _provider, _model_name = _binding.provider, _binding.model

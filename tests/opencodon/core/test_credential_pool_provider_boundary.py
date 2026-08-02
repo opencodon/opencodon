@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from opencodon.core.credential_pool import credential_pool_matches_provider
-from opencodon.frontends.cli import runtime_provider as rp
+from opencodon.core import runtime_provider as rp
 
 
 def test_provider_match_requires_exact_non_custom_identity():

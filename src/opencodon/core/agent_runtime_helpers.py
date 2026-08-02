@@ -1774,7 +1774,7 @@ def anthropic_prompt_cache_policy(
         try:
             from opencodon.config import load_config as _load_moa_cfg
             from opencodon.config.moa_config import resolve_moa_preset
-            from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+            from opencodon.core.runtime_provider import resolve_runtime_provider
 
             _preset = resolve_moa_preset(
                 _load_moa_cfg().get("moa") or {}, eff_model or None
@@ -1979,7 +1979,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
     change persists across turns (unlike fallback which is
     turn-scoped).
     """
-    from opencodon.frontends.cli.providers import determine_api_mode
+    from opencodon.core.providers import determine_api_mode
 
     # ── Determine api_mode if not provided ──
     if not api_mode:
@@ -2138,7 +2138,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
             # the matching block in agent_init.py for the full rationale.
             if new_provider == "minimax-oauth" and isinstance(effective_key, str) and effective_key:
                 try:
-                    from opencodon.frontends.cli.auth import build_minimax_oauth_token_provider
+                    from opencodon.core.auth import build_minimax_oauth_token_provider
                     effective_key = build_minimax_oauth_token_provider()
                 except Exception as _mm_exc:  # noqa: BLE001
                     import logging as _logging

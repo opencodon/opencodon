@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.frontends.cli.fallback_config import get_fallback_chain
+from opencodon.core.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 

@@ -72,7 +72,7 @@ class TestProfileScopeDefaultFallback:
             "OPENROUTER_BASE_URL=https://worker.example/v1\n", encoding="utf-8"
         )
         monkeypatch.setattr(
-            "opencodon.frontends.cli.profiles.get_profile_dir", lambda name: profile_home
+            "opencodon.core.profiles.get_profile_dir", lambda name: profile_home
         )
         ss.set_multiplex_active(True)
 

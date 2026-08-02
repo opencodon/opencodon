@@ -121,7 +121,7 @@ def _seed_openrouter_token(monkeypatch, dotenv_value, environ_value):
         monkeypatch.setenv("OPENROUTER_API_KEY", environ_value)
     # Never treat the synthetic source as suppressed.
     monkeypatch.setattr(
-        "opencodon.frontends.cli.auth.is_source_suppressed", lambda _p, _s: False
+        "opencodon.core.auth.is_source_suppressed", lambda _p, _s: False
     )
 
     entries: list = []

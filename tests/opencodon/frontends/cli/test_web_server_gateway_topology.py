@@ -91,7 +91,7 @@ def _patch_topology(monkeypatch, homes, running, runtimes):
     ``homes``: list of (name, Path); ``running``: set of profile names with a
     live gateway; ``runtimes``: {name: runtime dict}.
     """
-    import opencodon.frontends.cli.profiles as profiles_mod
+    import opencodon.core.profiles as profiles_mod
     import opencodon.frontends.gateway.status as status_mod
 
     monkeypatch.setattr(profiles_mod, "profiles_to_serve", lambda multiplex: homes)
@@ -159,7 +159,7 @@ class TestCollectProfileGatewayTopology:
         assert ports == {"default": {"webhook": 8644}, "coder": {"webhook": 9644}}
 
     def test_enumeration_failure_degrades_gracefully(self, monkeypatch):
-        import opencodon.frontends.cli.profiles as profiles_mod
+        import opencodon.core.profiles as profiles_mod
 
         def _boom(multiplex):
             raise RuntimeError("no profiles root")

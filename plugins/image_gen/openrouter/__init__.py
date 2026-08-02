@@ -7,7 +7,7 @@ OpenAI-style ``/chat/completions`` image-generation protocol: send
 content parts for grounding, and read the generated images back from
 ``choices[0].message.images[].image_url.url`` (a ``data:image/...;base64`` URI).
 
-Credentials are resolved through the agent's existing :func:`~opencodon_cli.runtime_provider.resolve_runtime_provider`,
+Credentials are resolved through the agent's existing :func:`~opencodon.core.runtime_provider.resolve_runtime_provider`,
 which already understands OpenRouter's key pool and the OAuth device-code
 token, so this plugin never reinvents auth.
 
@@ -204,7 +204,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
 
     def _resolve_runtime(self) -> Dict[str, Any]:
         """Resolve ``(base_url, api_key)`` via the shared runtime resolver."""
-        from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+        from opencodon.core.runtime_provider import resolve_runtime_provider
 
         return resolve_runtime_provider(requested=self._runtime_name)
 

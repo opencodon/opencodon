@@ -7,7 +7,7 @@ import threading
 from typing import FrozenSet, Optional
 
 from opencodon.core.credential_pool import CredentialPool, PooledCredential, load_pool
-from opencodon.frontends.cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+from opencodon.core.auth import DEFAULT_XAI_OAUTH_BASE_URL
 from opencodon.frontends.cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 
 logger = logging.getLogger(__name__)

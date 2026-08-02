@@ -16,10 +16,10 @@ def test_copilot_runtime_api_mode_uses_target_model_over_stale_config_default(mo
     codex_responses for the Claude slot, causing Copilot to reject it with
     "model ... does not support Responses API".
     """
-    from opencodon.frontends.cli import runtime_provider as rp
+    from opencodon.core import runtime_provider as rp
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.copilot_model_api_mode",
+        "opencodon.core.models.copilot_model_api_mode",
         lambda model, api_key=None: "codex_responses" if str(model).startswith("gpt-5") else "chat_completions",
     )
 
@@ -31,10 +31,10 @@ def test_copilot_runtime_api_mode_uses_target_model_over_stale_config_default(mo
 
 
 def test_copilot_runtime_api_mode_still_uses_default_without_target(monkeypatch):
-    from opencodon.frontends.cli import runtime_provider as rp
+    from opencodon.core import runtime_provider as rp
 
     monkeypatch.setattr(
-        "opencodon.frontends.cli.models.copilot_model_api_mode",
+        "opencodon.core.models.copilot_model_api_mode",
         lambda model, api_key=None: "codex_responses" if str(model).startswith("gpt-5") else "chat_completions",
     )
 
@@ -61,8 +61,8 @@ def test_resolver_routes_copilot_by_target_model_for_every_credential_path(
     expected_mode,
 ):
     """The public resolver must propagate the target through every auth path."""
-    from opencodon.frontends.cli import models
-    from opencodon.frontends.cli import runtime_provider as rp
+    from opencodon.core import models
+    from opencodon.core import runtime_provider as rp
 
     model_cfg = {"provider": "copilot", "default": configured_model}
     monkeypatch.setattr(rp, "_get_model_config", lambda: model_cfg)

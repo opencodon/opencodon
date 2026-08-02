@@ -293,7 +293,7 @@ def run_dump(args):
 
     # Profile
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
         profile = get_active_profile_name() or "(default)"
     except Exception:
         profile = "(default)"

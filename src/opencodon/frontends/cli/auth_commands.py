@@ -27,8 +27,8 @@ from opencodon.core.credential_pool import (
     list_custom_pool_providers,
     load_pool,
 )
-import opencodon.frontends.cli.auth as auth_mod
-from opencodon.frontends.cli.auth import PROVIDER_REGISTRY
+import opencodon.core.auth as auth_mod
+from opencodon.core.auth import PROVIDER_REGISTRY
 from opencodon_constants import OPENROUTER_BASE_URL
 from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
@@ -184,7 +184,7 @@ def auth_add_command(args) -> None:
     # Matches the Codex device_code re-link pattern that predates this.
     if not provider.startswith(CUSTOM_POOL_PREFIX):
         try:
-            from opencodon.frontends.cli.auth import (
+            from opencodon.core.auth import (
                 _load_auth_store,
                 unsuppress_credential_source,
             )
@@ -422,7 +422,7 @@ def auth_remove_command(args) -> None:
     # user-facing output here so every source behaves identically from
     # the user's perspective.
     from opencodon.core.credential_sources import find_removal_step
-    from opencodon.frontends.cli.auth import suppress_credential_source
+    from opencodon.core.auth import suppress_credential_source
 
     step = find_removal_step(provider, removed.source)
     if step is None:

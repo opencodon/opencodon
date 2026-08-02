@@ -7206,7 +7206,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from opencodon.frontends.cli.auth import get_anthropic_key
+    from opencodon.core.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     

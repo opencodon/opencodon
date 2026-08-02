@@ -1333,7 +1333,7 @@ def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatc
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         _fake_resolve_runtime_provider,
     )
     monkeypatch.setattr("opencodon.core.run_agent.AIAgent", _StubAgent)
@@ -1356,7 +1356,7 @@ def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch)
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "model": "real-model-id",
@@ -1405,7 +1405,7 @@ def test_review_fork_merges_slot_extra_body_over_runtime(curator_env, monkeypatc
         },
     )
     monkeypatch.setattr(
-        "opencodon.frontends.cli.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "api_key": "test-key",

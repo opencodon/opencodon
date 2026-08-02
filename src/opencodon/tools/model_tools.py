@@ -593,7 +593,7 @@ def _resolve_active_context_length() -> int:
         api_key = ""
         if provider:
             try:
-                from opencodon.frontends.cli.runtime_provider import resolve_runtime_provider
+                from opencodon.core.runtime_provider import resolve_runtime_provider
                 rt = resolve_runtime_provider(
                     requested=provider, target_model=model_id
                 ) or {}

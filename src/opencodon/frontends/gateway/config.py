@@ -1570,7 +1570,7 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
     # without changing placeholder values get a clear startup error instead
     # of a confusing "auth failed" from the platform API.
     try:
-        from opencodon.frontends.cli.auth import has_usable_secret
+        from opencodon.core.auth import has_usable_secret
     except ImportError:
         has_usable_secret = None  # type: ignore[assignment]
 

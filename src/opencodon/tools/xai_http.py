@@ -261,7 +261,7 @@ def resolve_xai_http_credentials(
     """
     try:
         from opencodon.core.credential_pool import load_pool
-        import opencodon.frontends.cli.auth as auth_mod
+        import opencodon.core.auth as auth_mod
 
         pool = load_pool("xai-oauth")
         entry = (

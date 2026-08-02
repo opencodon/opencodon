@@ -777,7 +777,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     summary_parts.append("/help for commands")
     # Show active profile name when not 'default'
     try:
-        from opencodon.frontends.cli.profiles import get_active_profile_name
+        from opencodon.core.profiles import get_active_profile_name
         _profile_name = get_active_profile_name()
         if _profile_name and _profile_name != "default":
             right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")
