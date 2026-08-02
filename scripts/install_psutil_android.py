@@ -34,10 +34,10 @@ from pathlib import Path
 # Keep sibling imports working when invoked as
 # ``python scripts/install_psutil_android.py`` from the repo checkout.
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from opencodon_cli.psutil_android import (
+from opencodon.frontends.cli.psutil_android import (
     PSUTIL_URL,
     PsutilAndroidInstallError,
     prepare_patched_psutil_sdist,

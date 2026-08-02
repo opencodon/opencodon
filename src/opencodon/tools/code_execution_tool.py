@@ -1363,11 +1363,16 @@ def execute_code(
         # with a C/POSIX locale (containers, minimal base images).
         child_env["PYTHONIOENCODING"] = "utf-8"
         child_env["PYTHONUTF8"] = "1"
-        # Ensure the opencodon root is importable in the sandbox so
-        # repo-root modules are available to child scripts.  We also prepend
-        # the staging tmpdir so ``from opencodon_tools import ...`` resolves even
-        # when the subprocess CWD is not tmpdir (project mode).
-        _opencodon_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Ensure the ``opencodon`` package is importable in the sandbox so
+        # child scripts can use canonical imports.  Must point at src/ (the
+        # package *parent*) — pointing inside the package would expose its
+        # subpackages as top-level names (``import tools``), bypassing the
+        # canonical namespace.  We also prepend the staging tmpdir so ``from
+        # opencodon_tools import ...`` resolves even when the subprocess CWD
+        # is not tmpdir (project mode).
+        _opencodon_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
         _existing_pp = child_env.get("PYTHONPATH", "")
         _pp_parts = [tmpdir, _opencodon_root]
         if _existing_pp:

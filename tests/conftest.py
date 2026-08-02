@@ -653,7 +653,9 @@ def _live_system_guard(request, monkeypatch):
         "opencodon-gateway",
         "opencodon.service",
         "opencodon_cli.main gateway",
+        "opencodon.frontends.cli.main gateway",
         "src/opencodon_cli/main.py gateway",
+        "src/opencodon/frontends/cli/main.py gateway",
         "src/opencodon/frontends/gateway/run.py",
         "opencodon gateway",
     )

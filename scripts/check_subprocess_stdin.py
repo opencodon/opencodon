@@ -7,8 +7,8 @@ inherit this fd can cause the gateway to exit with stdin EOF during tool
 execution (issue #14036, PR #39257).
 
 This script checks that all subprocess.run() and subprocess.Popen() calls
-in TUI-context files (agent/, tools/, plugins/, tui_gateway/) explicitly
-set stdin= to prevent fd inheritance.
+in TUI-context files (src/opencodon/core/, src/opencodon/tools/, plugins/,
+src/opencodon/frontends/tui/) explicitly set stdin= to prevent fd inheritance.
 
 Exit codes:
   0 — all calls are safe
@@ -31,16 +31,16 @@ from pathlib import Path
 
 # Directories that run inside the TUI gateway child process.
 TUI_CONTEXT_DIRS = [
-    "agent/",
-    "tools/",
+    "src/opencodon/core/",
+    "src/opencodon/tools/",
     "plugins/",
-    "tui_gateway/",
+    "src/opencodon/frontends/tui/",
 ]
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
 # ``get_opencodon_home() / "plugins"`` (user) and ``./.opencodon/plugins/`` (project,
 # gated behind ``OPENCODON_ENABLE_PROJECT_PLUGINS``) — see
-# ``opencodon_cli/plugins.py:10-12``.  The guard only checked the bundled
+# ``opencodon/frontends/cli/plugins.py``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
 #
@@ -61,7 +61,7 @@ _SUBPROCESS_PATTERNS = [
 # Files with intentional stdin= override (e.g. input= creates a pipe).
 # Format: "filepath:line" or just "filepath" to skip the whole file.
 KNOWN_SAFE = {
-    "agent/shell_hooks.py",  # uses input=stdin_json, creates a pipe
+    "src/opencodon/core/shell_hooks.py",  # uses input=stdin_json, creates a pipe
     "plugins/security-guidance/patterns.py",  # subprocess mentions are in reminder strings, not calls
 }
 
@@ -78,9 +78,6 @@ SKIP_DIRS = {
     "scripts/",
     "skills/",
     "optional-skills/",
-    "opencodon_cli/",
-    "gateway/",
-    "cron/",
 }
 
 
@@ -157,10 +154,10 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     os.chdir(repo_root)
 
-    # Add repo root to sys.path so we can import opencodon_constants (this script
+    # Add src/ to sys.path so we can import the canonical package (this script
     # runs as a standalone subprocess, not as a module).
-    sys.path.insert(0, str(repo_root))
-    from opencodon_constants import get_opencodon_home
+    sys.path.insert(0, str(repo_root / "src"))
+    from opencodon.common.constants import get_opencodon_home
 
     all_violations = []
 

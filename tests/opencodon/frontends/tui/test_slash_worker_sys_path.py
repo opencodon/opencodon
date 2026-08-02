@@ -1,6 +1,6 @@
 """Regression tests for tui_gateway/slash_worker.py sys.path hardening (issue #51286).
 
-The slash-command worker is spawned as ``-m tui_gateway.slash_worker`` and
+The slash-command worker is spawned as ``-m opencodon.frontends.tui.slash_worker`` and
 inherits the user's CWD. A local package (e.g. ``utils/``) in that CWD shadows
 the installed opencodon ``utils`` module and crashes the worker on ``import cli``
 (``ImportError: cannot import name 'atomic_replace' from 'utils'``).
@@ -31,10 +31,10 @@ def test_slash_worker_imports_from_cwd_with_colliding_utils(tmp_path):
     env = {k: v for k, v in os.environ.items() if k != "OPENCODON_PYTHON_SRC_ROOT"}
     # Keep the source importable via PYTHONPATH; CWD ('') still precedes it on
     # sys.path for ``-c``, so the shadow (and thus the guard) is still exercised.
-    env["PYTHONPATH"] = str(PROJECT_ROOT)
+    env["PYTHONPATH"] = str(PROJECT_ROOT / "src")
 
     result = subprocess.run(
-        [sys.executable, "-c", "import tui_gateway.slash_worker"],
+        [sys.executable, "-c", "import opencodon.frontends.tui.slash_worker"],
         cwd=tmp_path,
         env=env,
         capture_output=True,
