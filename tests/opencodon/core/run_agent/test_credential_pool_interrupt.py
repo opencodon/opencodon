@@ -5,7 +5,7 @@ still rotate if the current credential is already marked exhausted.
 """
 from unittest.mock import MagicMock, patch
 
-from opencodon.core.credential_pool import PooledCredential, STATUS_EXHAUSTED
+from opencodon.core.credentials.credential_pool import PooledCredential, STATUS_EXHAUSTED
 from opencodon.core.error_classifier import FailoverReason
 
 

@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from opencodon.core.context_references import preprocess_context_references_async
+from opencodon.core.context.context_references import preprocess_context_references_async
 
 
 async def _slow_fetcher(url: str) -> str:

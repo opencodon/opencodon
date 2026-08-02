@@ -31,8 +31,8 @@ from opencodon_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.errors import EmptyStreamError
 from opencodon.core.turn_context import substitute_api_content
-from opencodon.core.gemini_native_adapter import is_native_gemini_base_url
-from opencodon.core.model_metadata import is_local_endpoint
+from opencodon.core.providers.gemini_native_adapter import is_native_gemini_base_url
+from opencodon.core.providers.model_metadata import is_local_endpoint
 from opencodon.core.message_content import flatten_message_text
 from opencodon.core.message_sanitization import (
     _sanitize_surrogates,
@@ -405,7 +405,7 @@ def _dispatch_nonstreaming_api_request(agent, api_kwargs: dict, *, make_client):
         # normalize_converse_response produces an OpenAI-compatible
         # SimpleNamespace so the rest of the agent loop can treat
         # bedrock responses like chat_completions responses.
-        from opencodon.core.bedrock_adapter import (
+        from opencodon.core.providers.bedrock_adapter import (
             _get_bedrock_runtime_client,
             invalidate_runtime_client,
             is_stale_connection_error,
@@ -1132,7 +1132,7 @@ def build_api_kwargs(agent, api_messages: list) -> dict:
     # before; gating on _ANTHROPIC_OUTPUT_LIMITS membership covers them all.
     _ant_max = None
     try:
-        from opencodon.core.anthropic_adapter import (
+        from opencodon.core.providers.anthropic_adapter import (
             _get_anthropic_max_output,
             _ANTHROPIC_OUTPUT_LIMITS,
         )
@@ -1706,7 +1706,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
                 agent._credential_pool = None
         if getattr(agent, "_credential_pool", None) is None:
             try:
-                from opencodon.core.credential_pool import load_pool
+                from opencodon.core.credentials.credential_pool import load_pool
 
                 fallback_pool = load_pool(fb_provider)
                 if fallback_pool and fallback_pool.has_credentials():
@@ -1728,7 +1728,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
 
         if fb_api_mode == "anthropic_messages":
             # Build native Anthropic client instead of using OpenAI client
-            from opencodon.core.anthropic_adapter import build_anthropic_client, resolve_anthropic_token, _is_oauth_token
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client, resolve_anthropic_token, _is_oauth_token
             effective_key = (fb_client.api_key or resolve_anthropic_token() or "") if fb_provider == "anthropic" else (fb_client.api_key or "")
             agent.api_key = effective_key
             agent._anthropic_api_key = effective_key
@@ -1787,7 +1787,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
         # (model.context_length in config.yaml) is respected — without this,
         # the fallback activation drops to 128K even when config says 204800.
         if hasattr(agent, 'context_compressor') and agent.context_compressor:
-            from opencodon.core.model_metadata import get_model_context_length
+            from opencodon.core.providers.model_metadata import get_model_context_length
             # ``agent.api_key`` may be callable (Entra ID); the
             # context-length resolver expects a string for live
             # probes. Foundry typically resolves via config/static
@@ -2265,7 +2265,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
 
         def _bedrock_call():
             try:
-                from opencodon.core.bedrock_adapter import (
+                from opencodon.core.providers.bedrock_adapter import (
                     _get_bedrock_runtime_client,
                     invalidate_runtime_client,
                     is_stale_connection_error,
@@ -2369,7 +2369,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
                 # ultimately errors.  We therefore end THIS call by raising
                 # below and let the streak+give-up breaker escalate across turns.
                 try:
-                    from opencodon.core.bedrock_adapter import invalidate_runtime_client
+                    from opencodon.core.providers.bedrock_adapter import invalidate_runtime_client
                     invalidate_runtime_client(_bedrock_region)
                 except Exception as _inval_exc:
                     logger.debug(
@@ -3055,7 +3055,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
         # that can leak in under an api_mode-flip race. The Anthropic SDK
         # raises a non-retryable TypeError on them, killing the turn. See
         # #31673 / sanitize_anthropic_kwargs().
-        from opencodon.core.anthropic_adapter import sanitize_anthropic_kwargs
+        from opencodon.core.providers.anthropic_adapter import sanitize_anthropic_kwargs
         sanitize_anthropic_kwargs(
             api_kwargs, log_prefix=getattr(agent, "log_prefix", "")
         )
@@ -3471,7 +3471,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
                             # adapter — bedrock_adapter triggers a lazy boto3
                             # install at import time, which must not run for
                             # unrelated providers' stream errors.
-                            from opencodon.core.bedrock_adapter import (
+                            from opencodon.core.providers.bedrock_adapter import (
                                 is_streaming_access_denied_error,
                             )
                             _is_bedrock_stream_denied = (

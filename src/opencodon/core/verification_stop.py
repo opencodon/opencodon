@@ -194,7 +194,7 @@ def _verification_snapshot(
 ) -> tuple[dict[str, Any], dict[str, Any]] | None:
     """Return ``(status, facts)`` for the first edited workspace needing proof."""
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
         from opencodon.core.verification_evidence import verification_status
     except Exception:
         return None

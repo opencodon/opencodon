@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from opencodon.core.auth import (
+from opencodon.core.credentials.auth import (
     PROVIDER_REGISTRY,
     resolve_provider,
     get_api_key_provider_status,
@@ -70,7 +70,7 @@ class TestTencentTokenhubAliases:
         assert resolve_provider(alias) == "tencent-tokenhub"
 
     def test_normalize_provider_models_py(self):
-        from opencodon.core.models import normalize_provider
+        from opencodon.core.providers.models import normalize_provider
         assert normalize_provider("tencent") == "tencent-tokenhub"
         assert normalize_provider("tokenhub") == "tencent-tokenhub"
         assert normalize_provider("tencent-cloud") == "tencent-tokenhub"
@@ -148,16 +148,16 @@ class TestTencentTokenhubModelCatalog:
     """Tencent TokenHub static model list."""
 
     def test_static_model_list_exists(self):
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "tencent-tokenhub" in _PROVIDER_MODELS
         assert len(_PROVIDER_MODELS["tencent-tokenhub"]) >= 1
 
     def test_hy3_preview_in_model_list(self):
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "hy3-preview" in _PROVIDER_MODELS["tencent-tokenhub"]
 
     def test_default_model(self):
-        from opencodon.core.models import get_default_model_for_provider
+        from opencodon.core.providers.models import get_default_model_for_provider
         assert get_default_model_for_provider("tencent-tokenhub") == "hy3-preview"
 
 
@@ -170,17 +170,17 @@ class TestTencentTokenhubCanonicalProvider:
     """Tencent TokenHub appears in the interactive model picker."""
 
     def test_in_canonical_providers(self):
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
         slugs = [p.slug for p in CANONICAL_PROVIDERS]
         assert "tencent-tokenhub" in slugs
 
     def test_label(self):
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
         entry = next(p for p in CANONICAL_PROVIDERS if p.slug == "tencent-tokenhub")
         assert entry.label == "Tencent TokenHub"
 
     def test_description_contains_hy3(self):
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
         entry = next(p for p in CANONICAL_PROVIDERS if p.slug == "tencent-tokenhub")
         assert "Hy3 Preview" in entry.tui_desc
 
@@ -194,13 +194,13 @@ class TestTencentInOpenRouterAndNous:
     """tencent/hy3:free and tencent/hy3 should appear in OpenRouter and Nous curated lists."""
 
     def test_in_openrouter_fallback(self):
-        from opencodon.core.models import OPENROUTER_MODELS
+        from opencodon.core.providers.models import OPENROUTER_MODELS
         ids = [mid for mid, _ in OPENROUTER_MODELS]
         assert "tencent/hy3:free" in ids
 
     def test_paid_in_openrouter_fallback(self):
         """tencent/hy3 (paid, no :free suffix) should also be in OpenRouter list."""
-        from opencodon.core.models import OPENROUTER_MODELS
+        from opencodon.core.providers.models import OPENROUTER_MODELS
         ids = [mid for mid, _ in OPENROUTER_MODELS]
         assert "tencent/hy3" in ids
 
@@ -258,15 +258,15 @@ class TestTencentTokenhubProviderLabel:
     """Test provider_label() from models.py for tencent-tokenhub."""
 
     def test_label_from_provider_labels_dict(self):
-        from opencodon.core.models import _PROVIDER_LABELS
+        from opencodon.core.providers.models import _PROVIDER_LABELS
         assert _PROVIDER_LABELS["tencent-tokenhub"] == "Tencent TokenHub"
 
     def test_provider_label_function(self):
-        from opencodon.core.models import provider_label
+        from opencodon.core.providers.models import provider_label
         assert provider_label("tencent-tokenhub") == "Tencent TokenHub"
 
     def test_provider_label_via_alias(self):
-        from opencodon.core.models import provider_label
+        from opencodon.core.providers.models import provider_label
         assert provider_label("tencent") == "Tencent TokenHub"
         assert provider_label("tokenhub") == "Tencent TokenHub"
 
@@ -280,17 +280,17 @@ class TestTencentTokenhubURLMapping:
     """Test URL → provider inference for Tencent TokenHub endpoints."""
 
     def test_url_to_provider(self):
-        from opencodon.core.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.providers.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("tokenhub.tencentmaas.com") == "tencent-tokenhub"
 
     def test_provider_prefixes(self):
-        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.providers.model_metadata import _PROVIDER_PREFIXES
         assert "tencent-tokenhub" in _PROVIDER_PREFIXES
         assert "tencent" in _PROVIDER_PREFIXES
         assert "tokenhub" in _PROVIDER_PREFIXES
 
     def test_infer_from_url(self):
-        from opencodon.core.model_metadata import _infer_provider_from_url
+        from opencodon.core.providers.model_metadata import _infer_provider_from_url
         assert _infer_provider_from_url("https://tokenhub.tencentmaas.com/v1") == "tencent-tokenhub"
 
 
@@ -310,7 +310,7 @@ class TestTencentTokenhubContextLength:
     """
 
     def test_hy3_preview_has_registered_context_length(self):
-        from opencodon.core.model_metadata import get_model_context_length
+        from opencodon.core.providers.model_metadata import get_model_context_length
         ctx = get_model_context_length("hy3-preview")
         assert isinstance(ctx, int)
         assert ctx >= 4096, f"hy3-preview context length looks unset/wrong: {ctx}"
@@ -493,13 +493,13 @@ class TestTencentTokenhubKnownProviderNames:
     """
 
     def test_canonical_id_known(self):
-        from opencodon.core.models import _KNOWN_PROVIDER_NAMES
+        from opencodon.core.providers.models import _KNOWN_PROVIDER_NAMES
         assert "tencent-tokenhub" in _KNOWN_PROVIDER_NAMES
 
     @pytest.mark.parametrize("alias", [
         "tencent", "tokenhub", "tencent-cloud", "tencentmaas",
     ])
     def test_alias_known(self, alias):
-        from opencodon.core.models import _KNOWN_PROVIDER_NAMES
+        from opencodon.core.providers.models import _KNOWN_PROVIDER_NAMES
         assert alias in _KNOWN_PROVIDER_NAMES
 

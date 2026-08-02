@@ -6,7 +6,7 @@ import pytest
 
 from opencodon.core.run_agent import AIAgent
 from opencodon.core.agent_init import _normalize_route_base_url
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 class _StubStartupCompressor:
@@ -149,7 +149,7 @@ def _make_agent_with_compressor(config_context_length=None) -> AIAgent:
     return agent
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_model_clears_previous_config_context_length(mock_ctx_len):
     """Switching models must not reuse the previous model.context_length override."""
     agent = _make_agent_with_compressor(config_context_length=32_768)
@@ -174,7 +174,7 @@ def test_switch_model_without_config_context_length():
     """When switching models without config override, config_context_length should be None."""
     agent = _make_agent_with_compressor(config_context_length=None)
 
-    with patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000) as mock_ctx_len:
+    with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128_000) as mock_ctx_len:
         # Switch model
         agent.switch_model("new-model", "openrouter", api_key="sk-new", base_url="https://openrouter.ai/api/v1")
 

@@ -1,4 +1,4 @@
-"""Tests for opencodon.core.auth._update_config_for_provider clearing stale fields.
+"""Tests for opencodon.core.credentials.auth._update_config_for_provider clearing stale fields.
 
 When the user switches from a custom provider (e.g. MiniMax with
 ``api_mode: anthropic_messages``, ``api_key: mxp-...``) to a built-in
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import yaml
 
-from opencodon.core.auth import _update_config_for_provider
+from opencodon.core.credentials.auth import _update_config_for_provider
 from opencodon.config import clear_model_endpoint_credentials, get_config_path
 
 

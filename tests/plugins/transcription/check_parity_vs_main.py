@@ -96,8 +96,8 @@ for name in list(sys.modules):
 # Try importing transcription_registry — only exists on PR side.
 have_plugin_hook = False
 try:
-    from opencodon.core import transcription_registry
-    from opencodon.core.transcription_provider import TranscriptionProvider
+    from opencodon.core.media import transcription_registry
+    from opencodon.core.media.transcription_provider import TranscriptionProvider
     have_plugin_hook = True
 
     if plugin_register == "yes":

@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.core.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -96,13 +96,13 @@ import threading
 import queue
 
 def CanonicalUsage(*args, **kwargs):
-    from opencodon.core.usage_pricing import CanonicalUsage as _CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage as _CanonicalUsage
 
     return _CanonicalUsage(*args, **kwargs)
 
 
 def estimate_usage_cost(*args, **kwargs):
-    from opencodon.core.usage_pricing import estimate_usage_cost as _estimate_usage_cost
+    from opencodon.core.providers.usage_pricing import estimate_usage_cost as _estimate_usage_cost
 
     return _estimate_usage_cost(*args, **kwargs)
 
@@ -907,7 +907,7 @@ class ShellSessionUXMixin:
             split_history_for_partial_compress,
             summarize_compress_preview,
         )
-        from opencodon.core.conversation_compression import (
+        from opencodon.core.context.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
 
@@ -935,7 +935,7 @@ class ShellSessionUXMixin:
                 return
 
         if preview:
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
             _sys_prompt = getattr(self.agent, "_cached_system_prompt", "") or ""
             _tools = getattr(self.agent, "tools", None) or None
             approx_tokens = estimate_request_tokens_rough(
@@ -957,8 +957,8 @@ class ShellSessionUXMixin:
         original_count = len(self.conversation_history)
         with self._busy_command("Compressing context..."):
             try:
-                from opencodon.core.model_metadata import estimate_request_tokens_rough
-                from opencodon.core.manual_compression_feedback import summarize_manual_compression
+                from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
+                from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
                 original_history = list(self.conversation_history)
 
                 # Boundary-aware split: only the head is summarized; the

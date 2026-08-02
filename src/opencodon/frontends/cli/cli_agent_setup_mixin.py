@@ -30,7 +30,7 @@ class CLIAgentSetupMixin:
         Returns True if credentials are ready, False on auth failure.
         """
         from opencodon.frontends.cli.shell import ChatConsole, _cprint, logger
-        from opencodon.core.runtime_provider import (
+        from opencodon.core.providers.runtime_provider import (
             resolve_runtime_provider,
             format_runtime_provider_error,
         )
@@ -48,7 +48,7 @@ class CLIAgentSetupMixin:
 
         # Primary provider auth failed — try fallback providers before giving up.
         if runtime is None and _primary_exc is not None:
-            from opencodon.core.auth import AuthError
+            from opencodon.core.credentials.auth import AuthError
             if isinstance(_primary_exc, AuthError):
                 _fb_chain = self._fallback_model if isinstance(self._fallback_model, list) else []
                 for _fb in _fb_chain:
@@ -57,7 +57,7 @@ class CLIAgentSetupMixin:
                     if not _fb_provider or not _fb_model:
                         continue
                     try:
-                        from opencodon.core.fallback_config import resolve_entry_api_key
+                        from opencodon.core.providers.fallback_config import resolve_entry_api_key
 
                         _fb_kwargs = {"requested": _fb_provider}
                         if _fb.get("base_url"):
@@ -156,7 +156,7 @@ class CLIAgentSetupMixin:
         # model so the API call doesn't fail with "model must be non-empty".
         if not self.model and resolved_provider:
             try:
-                from opencodon.core.models import get_default_model_for_provider
+                from opencodon.core.providers.models import get_default_model_for_provider
                 _default = get_default_model_for_provider(resolved_provider)
                 if _default:
                     self.model = _default
@@ -187,7 +187,7 @@ class CLIAgentSetupMixin:
         Processing / Anthropic fast mode, attach `request_overrides` so the
         API call is marked accordingly.
         """
-        from opencodon.core.models import resolve_fast_mode_overrides
+        from opencodon.core.providers.models import resolve_fast_mode_overrides
 
         runtime = {
             "api_key": self.api_key,

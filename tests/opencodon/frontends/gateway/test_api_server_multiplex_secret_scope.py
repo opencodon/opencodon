@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core import secret_scope as ss
+from opencodon.core.credentials import secret_scope as ss
 from opencodon.frontends.gateway.config import PlatformConfig
 from opencodon.frontends.gateway.platforms.api_server import APIServerAdapter
 

@@ -20,13 +20,13 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from opencodon.core.codex_responses_adapter import _normalize_codex_response
+from opencodon.core.providers.codex_responses_adapter import _normalize_codex_response
 
 from opencodon.core import run_agent
 from opencodon.core.run_agent import AIAgent
 from opencodon.core.error_classifier import FailoverReason
-from opencodon.core.memory_manager import MemoryManager
-from opencodon.core.prompt_builder import DEFAULT_AGENT_IDENTITY
+from opencodon.core.memory.memory_manager import MemoryManager
+from opencodon.core.prompt.prompt_builder import DEFAULT_AGENT_IDENTITY
 
 
 # ---------------------------------------------------------------------------
@@ -966,7 +966,7 @@ class TestInit:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter._anthropic_sdk") as mock_anthropic,
+            patch("opencodon.core.providers.anthropic_adapter._anthropic_sdk") as mock_anthropic,
         ):
             agent = AIAgent(
                 api_key="test-key-1234567890",
@@ -1034,7 +1034,7 @@ class TestInit:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter._anthropic_sdk"),
+            patch("opencodon.core.providers.anthropic_adapter._anthropic_sdk"),
         ):
             a = AIAgent(
                 api_key="test-key-1234567890",
@@ -1386,13 +1386,13 @@ class TestBuildSystemPrompt:
         assert "Custom instruction" in prompt
 
     def test_memory_guidance_when_memory_tool_loaded(self, agent_with_memory_tool):
-        from opencodon.core.prompt_builder import MEMORY_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import MEMORY_GUIDANCE
 
         prompt = agent_with_memory_tool._build_system_prompt()
         assert MEMORY_GUIDANCE in prompt
 
     def test_no_memory_guidance_without_tool(self, agent):
-        from opencodon.core.prompt_builder import MEMORY_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import MEMORY_GUIDANCE
 
         prompt = agent._build_system_prompt()
         assert MEMORY_GUIDANCE not in prompt
@@ -1488,40 +1488,40 @@ class TestToolUseEnforcementConfig:
             return a
 
     def test_auto_injects_for_gpt(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="openai/gpt-4.1", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_auto_injects_for_codex(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="openai/codex-mini", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_auto_skips_for_claude(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="anthropic/claude-sonnet-4", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE not in prompt
 
     def test_auto_injects_for_grok(self):
         """xAI Grok / xai-oauth models hit the same enforcement path as GPT."""
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="x-ai/grok-4.3", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_auto_injects_for_qwen(self):
         """Qwen models default to chatty/hallucinatory tool use without enforcement."""
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="qwen/qwen-plus", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_auto_injects_for_deepseek(self):
         """DeepSeek models default to chatty/hallucinatory tool use without enforcement."""
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="deepseek/deepseek-r1", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
@@ -1532,21 +1532,21 @@ class TestToolUseEnforcementConfig:
         practice — claims completion without tool calls, suggests workarounds
         instead of using existing tools.
         """
-        from opencodon.core.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
         agent = self._make_agent(model="x-ai/grok-4.3", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert OPENAI_MODEL_EXECUTION_GUIDANCE in prompt
 
     def test_auto_injects_execution_guidance_for_xai_oauth_model(self):
         """xai-oauth bare model names (no slash) also match the grok pattern."""
-        from opencodon.core.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
         agent = self._make_agent(model="grok-4.3", tool_use_enforcement="auto")
         prompt = agent._build_system_prompt()
         assert OPENAI_MODEL_EXECUTION_GUIDANCE in prompt
 
     def test_auto_does_not_inject_execution_guidance_for_claude(self):
         """Sanity: execution guidance stays off for non-targeted families."""
-        from opencodon.core.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import OPENAI_MODEL_EXECUTION_GUIDANCE
         agent = self._make_agent(
             model="anthropic/claude-sonnet-4", tool_use_enforcement="auto"
         )
@@ -1554,37 +1554,37 @@ class TestToolUseEnforcementConfig:
         assert OPENAI_MODEL_EXECUTION_GUIDANCE not in prompt
 
     def test_true_forces_for_all_models(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="anthropic/claude-sonnet-4", tool_use_enforcement=True)
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_string_true_forces_for_all_models(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="anthropic/claude-sonnet-4", tool_use_enforcement="true")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_always_forces_for_all_models(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="deepseek/deepseek-r1", tool_use_enforcement="always")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_false_disables_for_gpt(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="openai/gpt-4.1", tool_use_enforcement=False)
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE not in prompt
 
     def test_string_false_disables(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(model="openai/gpt-4.1", tool_use_enforcement="off")
         prompt = agent._build_system_prompt()
         assert TOOL_USE_ENFORCEMENT_GUIDANCE not in prompt
 
     def test_custom_list_matches(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(
             model="deepseek/deepseek-r1",
             tool_use_enforcement=["deepseek", "gemini"],
@@ -1593,7 +1593,7 @@ class TestToolUseEnforcementConfig:
         assert TOOL_USE_ENFORCEMENT_GUIDANCE in prompt
 
     def test_custom_list_no_match(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(
             model="anthropic/claude-sonnet-4",
             tool_use_enforcement=["deepseek", "gemini"],
@@ -1602,7 +1602,7 @@ class TestToolUseEnforcementConfig:
         assert TOOL_USE_ENFORCEMENT_GUIDANCE not in prompt
 
     def test_custom_list_case_insensitive(self):
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         agent = self._make_agent(
             model="openai/GPT-4.1",
             tool_use_enforcement=["GPT", "Codex"],
@@ -1612,7 +1612,7 @@ class TestToolUseEnforcementConfig:
 
     def test_no_tools_never_injects(self):
         """Even with enforcement=true, no injection when agent has no tools."""
-        from opencodon.core.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TOOL_USE_ENFORCEMENT_GUIDANCE
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
@@ -1673,7 +1673,7 @@ class TestTaskCompletionGuidance:
     def test_default_injects_for_claude(self):
         """The block must reach Claude by default — that's the
         primary motivating model family."""
-        from opencodon.core.prompt_builder import TASK_COMPLETION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TASK_COMPLETION_GUIDANCE
         agent = self._make_agent(model="anthropic/claude-opus-4.8")
         prompt = agent._build_system_prompt()
         assert TASK_COMPLETION_GUIDANCE in prompt
@@ -1681,7 +1681,7 @@ class TestTaskCompletionGuidance:
     def test_default_injects_for_deepseek(self):
         """And for DeepSeek — the other model that failed the Sarasota
         real-estate task by fabricating output."""
-        from opencodon.core.prompt_builder import TASK_COMPLETION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TASK_COMPLETION_GUIDANCE
         agent = self._make_agent(model="deepseek/deepseek-v4-flash")
         prompt = agent._build_system_prompt()
         assert TASK_COMPLETION_GUIDANCE in prompt
@@ -1689,13 +1689,13 @@ class TestTaskCompletionGuidance:
     def test_default_injects_for_gpt(self):
         """Also reaches model families that already get enforcement —
         it's additive, not exclusive."""
-        from opencodon.core.prompt_builder import TASK_COMPLETION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TASK_COMPLETION_GUIDANCE
         agent = self._make_agent(model="openai/gpt-5.4")
         prompt = agent._build_system_prompt()
         assert TASK_COMPLETION_GUIDANCE in prompt
 
     def test_false_disables(self):
-        from opencodon.core.prompt_builder import TASK_COMPLETION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TASK_COMPLETION_GUIDANCE
         agent = self._make_agent(
             model="anthropic/claude-opus-4.8", task_completion_guidance=False
         )
@@ -1706,7 +1706,7 @@ class TestTaskCompletionGuidance:
         """Same gate as tool_use_enforcement — no tools means no guidance.
         The guidance refers to ``tool calls`` and ``tool output``; without
         tools it would be advice for a capability the agent doesn't have."""
-        from opencodon.core.prompt_builder import TASK_COMPLETION_GUIDANCE
+        from opencodon.core.prompt.prompt_builder import TASK_COMPLETION_GUIDANCE
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
@@ -2025,7 +2025,7 @@ class TestBuildApiKwargs:
         from opencodon.providers import get_provider_profile
 
         monkeypatch.setattr(
-            "opencodon.core.models.github_model_reasoning_efforts",
+            "opencodon.core.providers.models.github_model_reasoning_efforts",
             lambda _model: ["none", "low", "medium", "high", "xhigh"],
         )
         transport = get_transport("chat_completions")
@@ -2044,7 +2044,7 @@ class TestBuildApiKwargs:
     def test_core_responses_preserves_supported_xhigh(self, agent, monkeypatch):
         """The core GitHub Responses path must preserve a supported xhigh."""
         monkeypatch.setattr(
-            "opencodon.core.models.github_model_reasoning_efforts",
+            "opencodon.core.providers.models.github_model_reasoning_efforts",
             lambda _model: ["none", "low", "medium", "high", "xhigh"],
         )
         agent.model = "gpt-5.5"
@@ -5721,7 +5721,7 @@ class TestRunConversation:
         assert result["completed"] is True
 
         # Verify the local estimate is actually the lower bound.
-        from opencodon.core.model_metadata import estimate_request_tokens_rough
+        from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
         estimated_request = estimate_request_tokens_rough(
             first_call["messages"], tools=agent.tools or None,
         )
@@ -6750,7 +6750,7 @@ class TestBuildApiKwargsAnthropicMaxTokens:
         agent.max_tokens = 4096
         agent.reasoning_config = None
 
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs") as mock_build:
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs") as mock_build:
             mock_build.return_value = {"model": "claude-sonnet-4-20250514", "messages": [], "max_tokens": 4096}
             agent._build_api_kwargs([{"role": "user", "content": "test"}])
             _, kwargs = mock_build.call_args
@@ -6766,7 +6766,7 @@ class TestBuildApiKwargsAnthropicMaxTokens:
         agent.max_tokens = None
         agent.reasoning_config = None
 
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs") as mock_build:
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs") as mock_build:
             mock_build.return_value = {"model": "claude-sonnet-4-20250514", "messages": [], "max_tokens": 16384}
             agent._build_api_kwargs([{"role": "user", "content": "test"}])
             call_args = mock_build.call_args
@@ -6792,7 +6792,7 @@ class TestAnthropicImageFallback:
 
         with (
             patch("opencodon.tools.vision_tools.vision_analyze_tool", new=AsyncMock(return_value=json.dumps({"success": True, "analysis": "A cat sitting on a chair."}))),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs") as mock_build,
         ):
             mock_build.return_value = {"model": "claude-sonnet-4-20250514", "messages": [], "max_tokens": 4096}
             agent._build_api_kwargs(api_messages)
@@ -6832,7 +6832,7 @@ class TestAnthropicImageFallback:
         mock_vision = AsyncMock(return_value=json.dumps({"success": True, "analysis": "A small test image."}))
         with (
             patch("opencodon.tools.vision_tools.vision_analyze_tool", new=mock_vision),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs") as mock_build,
         ):
             mock_build.return_value = {"model": "claude-sonnet-4-20250514", "messages": [], "max_tokens": 4096}
             agent._build_api_kwargs(api_messages)
@@ -6855,8 +6855,8 @@ class TestFallbackAnthropicProvider:
 
         with (
             patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build,
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value=None),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value=None),
         ):
             mock_build.return_value = MagicMock()
             result = agent._try_activate_fallback()
@@ -6878,8 +6878,8 @@ class TestFallbackAnthropicProvider:
 
         with (
             patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(mock_client, None)),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value=None),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value=None),
         ):
             agent._try_activate_fallback()
 
@@ -6908,7 +6908,7 @@ def test_aiagent_uses_copilot_acp_client():
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI") as mock_openai,
-        patch("opencodon.core.copilot_acp_client.CopilotACPClient") as mock_acp_client,
+        patch("opencodon.core.providers.copilot_acp_client.CopilotACPClient") as mock_acp_client,
     ):
         acp_client = MagicMock()
         mock_acp_client.return_value = acp_client
@@ -7003,7 +7003,7 @@ class TestAnthropicBaseUrlPassthrough:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build,
         ):
             mock_build.return_value = MagicMock()
             a = AIAgent(
@@ -7022,7 +7022,7 @@ class TestAnthropicBaseUrlPassthrough:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build,
         ):
             mock_build.return_value = MagicMock()
             a = AIAgent(
@@ -7043,7 +7043,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build,
         ):
             old_client = MagicMock()
             new_client = MagicMock()
@@ -7063,8 +7063,8 @@ class TestAnthropicCredentialRefresh:
         agent.provider = "anthropic"
 
         with (
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat01-fresh-token"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=new_client) as rebuild,
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat01-fresh-token"),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=new_client) as rebuild,
         ):
             assert agent._try_refresh_anthropic_client_credentials() is True
 
@@ -7079,7 +7079,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-same-token",
@@ -7095,8 +7095,8 @@ class TestAnthropicCredentialRefresh:
         agent._anthropic_api_key = "sk-ant-oat01-same-token"
 
         with (
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat01-same-token"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client") as rebuild,
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat01-same-token"),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as rebuild,
         ):
             assert agent._try_refresh_anthropic_client_credentials() is False
 
@@ -7107,7 +7107,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-current-token",
@@ -7136,7 +7136,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-current-token",
@@ -7165,7 +7165,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-current-token",
@@ -7192,7 +7192,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-current-token",
@@ -7219,7 +7219,7 @@ class TestAnthropicCredentialRefresh:
         with (
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-oat01-current-token",
@@ -7956,9 +7956,9 @@ class TestOAuthFlagAfterCredentialRefresh:
         agent._is_anthropic_oauth = False
 
         with (
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token",
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                   return_value="sk-ant-setup-oauth-token"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client",
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client",
                   return_value=MagicMock()),
         ):
             result = agent._try_refresh_anthropic_client_credentials()
@@ -7975,9 +7975,9 @@ class TestOAuthFlagAfterCredentialRefresh:
         agent._is_anthropic_oauth = True
 
         with (
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token",
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                   return_value="sk-ant-api03-new-key"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client",
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client",
                   return_value=MagicMock()),
         ):
             result = agent._try_refresh_anthropic_client_credentials()
@@ -8002,9 +8002,9 @@ class TestFallbackSetsOAuthFlag:
         with (
             patch("opencodon.core.auxiliary_client.resolve_provider_client",
                   return_value=(mock_client, None)),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client",
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client",
                   return_value=MagicMock()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token",
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                   return_value=None),
         ):
             result = agent._try_activate_fallback()
@@ -8025,9 +8025,9 @@ class TestFallbackSetsOAuthFlag:
         with (
             patch("opencodon.core.auxiliary_client.resolve_provider_client",
                   return_value=(mock_client, None)),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client",
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client",
                   return_value=MagicMock()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token",
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                   return_value=None),
         ):
             result = agent._try_activate_fallback()
@@ -8121,7 +8121,7 @@ class TestMemoryContextSanitization:
         """Helper-level: a string with an embedded memory-context block is
         cleaned to just the surrounding text.  Used by build_memory_context_block
         (input-validation) and by plugins on their own backend boundary."""
-        from opencodon.core.memory_manager import sanitize_context
+        from opencodon.core.memory.memory_manager import sanitize_context
         user_text = "how is the widget working"
         injected = (
             user_text + "\n\n"

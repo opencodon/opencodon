@@ -950,7 +950,7 @@ def _has_model_configured(cfg: Optional[dict] = None) -> bool:
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
     from opencodon.config import get_env_path, get_opencodon_home, load_config
-    from opencodon.core.auth import get_auth_status
+    from opencodon.core.credentials.auth import get_auth_status
 
     # Determine whether opencodon itself has been explicitly configured (model
     # in config that isn't the hardcoded default). Used below to gate external
@@ -972,7 +972,7 @@ def _has_any_provider_configured() -> bool:
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
     # often don't require an API key.
-    from opencodon.core.auth import PROVIDER_REGISTRY
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
     # Collect all provider env vars
     provider_env_vars = {
@@ -1047,7 +1047,7 @@ def _has_any_provider_configured() -> bool:
     # being installed doesn't mean the user wants opencodon to use their tokens.
     if _has_opencodon_config:
         try:
-            from opencodon.core.anthropic_adapter import (
+            from opencodon.core.providers.anthropic_adapter import (
                 read_claude_code_credentials,
                 is_claude_code_token_valid,
             )
@@ -2978,7 +2978,7 @@ def cmd_model(args):
     _require_tty("model")
     if getattr(args, "refresh", False):
         try:
-            from opencodon.core.models import clear_provider_models_cache
+            from opencodon.core.providers.models import clear_provider_models_cache
             clear_provider_models_cache()
             print("  Cleared model picker cache.")
         except Exception:
@@ -3009,7 +3009,7 @@ def select_provider_and_model(args=None):
     provider picker, credential prompting, model selection, and config
     persistence.
     """
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         resolve_provider,
         AuthError,
         format_auth_error,
@@ -3215,7 +3215,7 @@ def select_provider_and_model(args=None):
     if active == "openrouter" and get_env_value("OPENAI_BASE_URL"):
         active = "custom"
 
-    from opencodon.core.models import (
+    from opencodon.core.providers.models import (
         CANONICAL_PROVIDERS,
         _PROVIDER_LABELS,
         _PROVIDER_ALIASES,
@@ -3746,8 +3746,8 @@ def _aux_flow_provider_model(
     current_model: str = "",
 ) -> None:
     """Prompt for a model under an already-authenticated provider, save to aux."""
-    from opencodon.core.auth import _prompt_model_selection
-    from opencodon.core.models import get_pricing_for_provider
+    from opencodon.core.credentials.auth import _prompt_model_selection
+    from opencodon.core.providers.models import get_pricing_for_provider
 
     display_name = next((name for key, name, _ in _all_aux_tasks() if key == task), task)
 
@@ -3904,7 +3904,7 @@ def _prompt_custom_api_mode_selection(base_url: str, current_api_mode: str = "")
 
     Returns an explicit mode string, or None to keep auto-detect behavior.
     """
-    from opencodon.core.runtime_provider import _detect_api_mode_for_url
+    from opencodon.core.providers.runtime_provider import _detect_api_mode_for_url
 
     detected_mode = _detect_api_mode_for_url(base_url)
     normalized_current = str(current_api_mode or "").strip().lower()
@@ -4153,7 +4153,7 @@ _LAZY_MODEL_EXPORTS = ("_PROVIDER_MODELS",)
 def __getattr__(name):
     """Defer the model-catalog import until something actually reads it."""
     if name in _LAZY_MODEL_EXPORTS:
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         # Cache on the module so subsequent accesses skip the import machinery.
         globals()[name] = _PROVIDER_MODELS
         return _PROVIDER_MODELS
@@ -4270,7 +4270,7 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
     ``return`` immediately — the user cancelled entry, declined to replace, or
     cleared the key and is now unconfigured.
     """
-    from opencodon.core.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
+    from opencodon.core.credentials.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
     from opencodon.config import save_env_value
     from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
@@ -4353,7 +4353,7 @@ def _infer_stepfun_region(base_url: str) -> str:
 
 
 def _stepfun_base_url_for_region(region: str) -> str:
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         STEPFUN_STEP_PLAN_CN_BASE_URL,
         STEPFUN_STEP_PLAN_INTL_BASE_URL,
     )
@@ -4375,7 +4375,7 @@ def _stepfun_base_url_for_region(region: str) -> str:
 
 def _run_anthropic_oauth_flow(save_env_value):
     """Run the Claude OAuth setup-token flow. Returns True if credentials were saved."""
-    from opencodon.core.anthropic_adapter import (
+    from opencodon.core.providers.anthropic_adapter import (
         run_oauth_setup_token,
         read_claude_code_credentials,
         is_claude_code_token_valid,
@@ -4470,14 +4470,14 @@ def _run_anthropic_oauth_flow(save_env_value):
 
 def cmd_login(args):
     """Authenticate opencodon CLI with a provider."""
-    from opencodon.core.auth import login_command
+    from opencodon.core.credentials.auth import login_command
 
     login_command(args)
 
 
 def cmd_logout(args):
     """Clear provider authentication."""
-    from opencodon.core.auth import logout_command
+    from opencodon.core.credentials.auth import logout_command
 
     logout_command(args)
 
@@ -6380,7 +6380,7 @@ def _print_curator_first_run_notice() -> None:
     to preview or disable before then. Silent on steady state.
     """
     try:
-        from opencodon.core import curator
+        from opencodon.core.memory import curator
     except Exception:
         return
     try:
@@ -6540,7 +6540,7 @@ def _print_curator_recent_run_notice() -> None:
     no rename information to display (no archives).
     """
     try:
-        from opencodon.core import curator
+        from opencodon.core.memory import curator
     except Exception:
         return
     try:
@@ -7069,7 +7069,7 @@ def _update_via_zip(args):
     # Seed the model-catalog disk cache from the freshly-unpacked checkout
     # (same rationale as the git-pull path in _cmd_update_impl). Non-fatal.
     try:
-        from opencodon.core.model_catalog import seed_cache_from_checkout
+        from opencodon.core.providers.model_catalog import seed_cache_from_checkout
 
         if seed_cache_from_checkout(PROJECT_ROOT):
             print("  ✓ Model catalog cache refreshed from checkout")
@@ -10897,7 +10897,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # with the version the user just installed. Non-fatal on failure: the
         # normal network refresh still applies on the next picker open.
         try:
-            from opencodon.core.model_catalog import seed_cache_from_checkout
+            from opencodon.core.providers.model_catalog import seed_cache_from_checkout
 
             if seed_cache_from_checkout(PROJECT_ROOT):
                 print("  ✓ Model catalog cache refreshed from checkout")
@@ -13278,7 +13278,7 @@ def cmd_console(args):
 def _build_provider_choices() -> list[str]:
     """Build the --provider choices list from CANONICAL_PROVIDERS + 'auto'."""
     try:
-        from opencodon.core.models import CANONICAL_PROVIDERS as _cp
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS as _cp
         return ["auto"] + [p.slug for p in _cp]
     except Exception:
         # Fallback: static list guarantees the CLI always works
@@ -13749,7 +13749,7 @@ def cmd_tools(args):
 def cmd_insights(args):
     try:
         from opencodon.state import SessionDB
-        from opencodon.core.insights import InsightsEngine
+        from opencodon.core.memory.insights import InsightsEngine
 
         db = SessionDB()
         engine = InsightsEngine(db)

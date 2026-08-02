@@ -12,11 +12,11 @@ from pathlib import Path
 
 PROJECT_ROOT = REPO_ROOT
 
-from opencodon.core.auth import AuthError, resolve_provider
+from opencodon.core.credentials.auth import AuthError, resolve_provider
 from opencodon.common.colors import Colors, color
 from opencodon.config import get_env_path, get_env_value, get_opencodon_home, load_config
-from opencodon.core.models import provider_label
-from opencodon.core.runtime_provider import resolve_requested_provider
+from opencodon.core.providers.models import provider_label
+from opencodon.core.providers.runtime_provider import resolve_requested_provider
 from opencodon_constants import OPENROUTER_MODELS_URL
 
 def check_mark(ok: bool) -> str:
@@ -176,7 +176,7 @@ def show_status(args):
         display = redact_key(value)
         print(f"  {name:<12}  {check_mark(has_key)} {display}")
 
-    from opencodon.core.auth import get_anthropic_key
+    from opencodon.core.credentials.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     anthropic_display = redact_key(anthropic_value)
     print(f"  {'Anthropic':<12}  {check_mark(bool(anthropic_value))} {anthropic_display}")
@@ -188,7 +188,7 @@ def show_status(args):
     print(color("◆ Auth Providers", Colors.CYAN, Colors.BOLD))
 
     try:
-        from opencodon.core.auth import (
+        from opencodon.core.credentials.auth import (
             get_codex_auth_status,
             get_qwen_auth_status,
             get_minimax_oauth_auth_status,
@@ -247,7 +247,7 @@ def show_status(args):
     # xAI OAuth — separate try/except so an import failure here cannot
     # disrupt the already-printed Codex/Qwen/MiniMax rows above.
     try:
-        from opencodon.core.auth import get_xai_oauth_auth_status
+        from opencodon.core.credentials.auth import get_xai_oauth_auth_status
         xai_oauth_status = get_xai_oauth_auth_status() or {}
     except Exception:
         xai_oauth_status = {}
@@ -293,7 +293,7 @@ def show_status(args):
     # users with foreign configs don't see noise. Auth rejection vs. silent
     # empty list is the most common LM Studio support case.
     if _effective_provider_label() == "LM Studio":
-        from opencodon.core.models import probe_lmstudio_models
+        from opencodon.core.providers.models import probe_lmstudio_models
         model_cfg = config.get("model")
         base = (model_cfg.get("base_url") if isinstance(model_cfg, dict) else None) or get_env_value("LM_BASE_URL") or "http://127.0.0.1:1234/v1"
         try:

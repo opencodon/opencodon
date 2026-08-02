@@ -29,22 +29,22 @@ def test_vertex_aliases_resolve(alias):
 
 @pytest.mark.parametrize("alias", ["google-vertex", "vertex-ai", "gcp-vertex", "vertexai"])
 def test_alias_canonicalizes_to_vertex(alias):
-    from opencodon.core.models import _PROVIDER_ALIASES
+    from opencodon.core.providers.models import _PROVIDER_ALIASES
 
     assert _PROVIDER_ALIASES[alias] == "vertex"
 
 
 def test_google_vertex_not_confused_with_gemini():
     """`google-vertex` must map to vertex, not the AI-Studio `gemini` provider."""
-    from opencodon.core.models import _PROVIDER_ALIASES
+    from opencodon.core.providers.models import _PROVIDER_ALIASES
 
     assert _PROVIDER_ALIASES["google-vertex"] == "vertex"
     assert _PROVIDER_ALIASES["google-gemini"] == "gemini"
 
 
 def test_resolve_runtime_provider_mints_token(monkeypatch):
-    import opencodon.core.vertex_adapter as va
-    from opencodon.core import runtime_provider as rp
+    import opencodon.core.providers.vertex_adapter as va
+    from opencodon.core.providers import runtime_provider as rp
 
     monkeypatch.setattr(
         va, "get_vertex_config",
@@ -59,8 +59,8 @@ def test_resolve_runtime_provider_mints_token(monkeypatch):
 
 
 def test_resolve_runtime_provider_alias(monkeypatch):
-    import opencodon.core.vertex_adapter as va
-    from opencodon.core import runtime_provider as rp
+    import opencodon.core.providers.vertex_adapter as va
+    from opencodon.core.providers import runtime_provider as rp
 
     monkeypatch.setattr(va, "get_vertex_config", lambda: ("t", "https://aiplatform.googleapis.com/v1beta1/projects/p/locations/global/endpoints/openapi"))
     rt = rp.resolve_runtime_provider(requested="google-vertex")
@@ -68,9 +68,9 @@ def test_resolve_runtime_provider_alias(monkeypatch):
 
 
 def test_resolve_runtime_provider_raises_autherror_when_unresolved(monkeypatch):
-    import opencodon.core.vertex_adapter as va
-    from opencodon.core import runtime_provider as rp
-    from opencodon.core.auth import AuthError
+    import opencodon.core.providers.vertex_adapter as va
+    from opencodon.core.providers import runtime_provider as rp
+    from opencodon.core.credentials.auth import AuthError
 
     monkeypatch.setattr(va, "get_vertex_config", lambda: (None, None))
     with pytest.raises(AuthError) as exc:
@@ -101,13 +101,13 @@ def test_vertex_extra_body_empty_without_reasoning():
 
 
 def test_vertex_registered_in_provider_registry():
-    """PROVIDER_REGISTRY (opencodon.core.auth) is what agent/auxiliary_client.py's
+    """PROVIDER_REGISTRY (opencodon.core.credentials.auth) is what agent/auxiliary_client.py's
     resolve_provider_client() looks up before dispatching on auth_type. Without
     an entry here, the ``elif pconfig.auth_type == "vertex":`` branch there is
     unreachable dead code — every auxiliary Vertex call (vision, title
     generation, MoA reference/aggregator slots, ...) fails at the
     ``pconfig is None`` guard before ever reaching it."""
-    from opencodon.core.auth import PROVIDER_REGISTRY
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
     cfg = PROVIDER_REGISTRY.get("vertex")
     assert cfg is not None

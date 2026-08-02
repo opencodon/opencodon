@@ -156,7 +156,7 @@ def test_idle_compaction_respects_anti_thrash_breaker(tmp_path: Path) -> None:
     The idle path is an automatic entrypoint, so two prior ineffective
     compactions must silence it too.
     """
-    from opencodon.core.context_compressor import ContextCompressor
+    from opencodon.core.context.context_compressor import ContextCompressor
 
     db = SessionDB(db_path=tmp_path / "state.db")
     sid = "IDLE_THRASH"
@@ -164,7 +164,7 @@ def test_idle_compaction_respects_anti_thrash_breaker(tmp_path: Path) -> None:
     agent = _prep_idle_agent(db, sid)
 
     with patch(
-        "opencodon.core.context_compressor.get_model_context_length", return_value=100_000
+        "opencodon.core.context.context_compressor.get_model_context_length", return_value=100_000
     ):
         compressor = ContextCompressor(
             model="test/model",
@@ -194,7 +194,7 @@ def test_idle_compaction_respects_persisted_failure_cooldown(
     ``get_active_compression_failure_cooldown`` — with a persisted cooldown in
     state.db the trigger must not even reach ``_compress_context``.
     """
-    from opencodon.core.context_compressor import ContextCompressor
+    from opencodon.core.context.context_compressor import ContextCompressor
 
     db = SessionDB(db_path=tmp_path / "state.db")
     sid = "IDLE_COOLDOWN"
@@ -203,7 +203,7 @@ def test_idle_compaction_respects_persisted_failure_cooldown(
 
     agent = _prep_idle_agent(db, sid)
     with patch(
-        "opencodon.core.context_compressor.get_model_context_length", return_value=100_000
+        "opencodon.core.context.context_compressor.get_model_context_length", return_value=100_000
     ):
         compressor = ContextCompressor(
             model="test/model",

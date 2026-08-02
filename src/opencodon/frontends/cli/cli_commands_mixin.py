@@ -1386,7 +1386,7 @@ class CLICommandsMixin:
         authors the skill via ``skill_manage``. No engine, no model-tool
         footprint, works on any terminal backend.
         """
-        from opencodon.core.learn_prompt import build_learn_prompt
+        from opencodon.core.memory.learn_prompt import build_learn_prompt
 
         # Everything after the command word is the open-ended request.
         parts = cmd.strip().split(None, 1)
@@ -1599,7 +1599,7 @@ class CLICommandsMixin:
         """
         from opencodon.frontends.cli.shell import ChatConsole, _BOLD, _DIM, _RST, _accent_hex, _cprint
         try:
-            from opencodon.core.skill_bundles import list_bundles, _bundles_dir
+            from opencodon.core.skills.skill_bundles import list_bundles, _bundles_dir
         except Exception as exc:
             _cprint(f"\033[1;31mBundle subsystem unavailable: {exc}{_RST}")
             return
@@ -2484,7 +2484,7 @@ class CLICommandsMixin:
 
         # Determine the branding for the current model
         try:
-            from opencodon.core.models import _is_anthropic_fast_model
+            from opencodon.core.providers.models import _is_anthropic_fast_model
             agent = getattr(self, "agent", None)
             model = getattr(agent, "model", None) or getattr(self, "model", None)
             feature_name = "Anthropic Fast Mode" if _is_anthropic_fast_model(model) else "Priority Processing"

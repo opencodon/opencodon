@@ -42,7 +42,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 from opencodon.tools.url_safety import is_safe_url
 from opencodon.tools.website_policy import check_website_access
 

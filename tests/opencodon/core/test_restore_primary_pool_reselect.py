@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon.core.credential_pool import (
+from opencodon.core.credentials.credential_pool import (
     AUTH_TYPE_OAUTH,
     PooledCredential,
 )
@@ -47,7 +47,7 @@ def _make_entry(
 
 def _build_mock_pool(entries: list[dict], *, strategy: str = "round_robin"):
     """Build a mock CredentialPool with the given entries."""
-    from opencodon.core.credential_pool import CredentialPool
+    from opencodon.core.credentials.credential_pool import CredentialPool
 
     pool = CredentialPool(
         provider="openai-codex",

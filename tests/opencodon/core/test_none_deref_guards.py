@@ -6,7 +6,7 @@ a present-but-null value sails through as None and crashes any chained
 method call.
 """
 
-from opencodon.core.anthropic_adapter import _convert_user_message
+from opencodon.core.providers.anthropic_adapter import _convert_user_message
 from opencodon.core.moa_loop import _slot_label
 
 

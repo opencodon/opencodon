@@ -8,7 +8,7 @@ import time
 from types import SimpleNamespace
 import uuid
 
-from opencodon.core.credential_pool import (
+from opencodon.core.credentials.credential_pool import (
     AUTH_TYPE_API_KEY,
     AUTH_TYPE_OAUTH,
     CUSTOM_POOL_PREFIX,
@@ -27,8 +27,8 @@ from opencodon.core.credential_pool import (
     list_custom_pool_providers,
     load_pool,
 )
-import opencodon.core.auth as auth_mod
-from opencodon.core.auth import PROVIDER_REGISTRY
+import opencodon.core.credentials.auth as auth_mod
+from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 from opencodon_constants import OPENROUTER_BASE_URL
 from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
@@ -91,7 +91,7 @@ def _provider_base_url(provider: str) -> str:
     if provider == "openrouter":
         return OPENROUTER_BASE_URL
     if provider.startswith(CUSTOM_POOL_PREFIX):
-        from opencodon.core.credential_pool import _get_custom_provider_config
+        from opencodon.core.credentials.credential_pool import _get_custom_provider_config
 
         cp_config = _get_custom_provider_config(provider)
         if cp_config:
@@ -184,7 +184,7 @@ def auth_add_command(args) -> None:
     # Matches the Codex device_code re-link pattern that predates this.
     if not provider.startswith(CUSTOM_POOL_PREFIX):
         try:
-            from opencodon.core.auth import (
+            from opencodon.core.credentials.auth import (
                 _load_auth_store,
                 unsuppress_credential_source,
             )
@@ -222,7 +222,7 @@ def auth_add_command(args) -> None:
         return
 
     if provider == "anthropic":
-        from opencodon.core import anthropic_adapter as anthropic_mod
+        from opencodon.core.providers import anthropic_adapter as anthropic_mod
 
         creds = anthropic_mod.run_opencodon_oauth_login_pure()
         if not creds:
@@ -421,8 +421,8 @@ def auth_remove_command(args) -> None:
     # handles its source-specific cleanup and we centralise suppression +
     # user-facing output here so every source behaves identically from
     # the user's perspective.
-    from opencodon.core.credential_sources import find_removal_step
-    from opencodon.core.auth import suppress_credential_source
+    from opencodon.core.credentials.credential_sources import find_removal_step
+    from opencodon.core.credentials.auth import suppress_credential_source
 
     step = find_removal_step(provider, removed.source)
     if step is None:
@@ -480,7 +480,7 @@ def _interactive_auth() -> None:
 
     # Show AWS Bedrock credential status (not in the pool — uses boto3 chain)
     try:
-        from opencodon.core.bedrock_adapter import has_aws_credentials, resolve_aws_auth_env_var, resolve_bedrock_region
+        from opencodon.core.providers.bedrock_adapter import has_aws_credentials, resolve_aws_auth_env_var, resolve_bedrock_region
         if has_aws_credentials():
             auth_source = resolve_aws_auth_env_var() or "unknown"
             region = resolve_bedrock_region()
@@ -508,7 +508,7 @@ def _interactive_auth() -> None:
             _cfg_provider = str(_model_cfg.get("provider") or "").strip().lower()
             _cfg_auth_mode = str(_model_cfg.get("auth_mode") or "").strip().lower()
             if _cfg_provider == "azure-foundry" and _cfg_auth_mode == "entra_id":
-                from opencodon.core.azure_identity_adapter import (
+                from opencodon.core.providers.azure_identity_adapter import (
                     EntraIdentityConfig,
                     SCOPE_AI_AZURE_DEFAULT,
                     describe_active_credential,

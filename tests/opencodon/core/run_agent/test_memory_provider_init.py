@@ -32,7 +32,7 @@ def test_aiagent_forwards_user_id_alt_to_memory_provider():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.memory.load_memory_provider", return_value=provider),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=204_800),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=204_800),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -80,7 +80,7 @@ def test_core_tool_names_rejected_from_memory_routing_table():
     table nor be advertised via get_all_tool_schemas, so it can never hijack
     dispatch. The non-conflicting tool is preserved.
     """
-    from opencodon.core.memory_manager import MemoryManager
+    from opencodon.core.memory.memory_manager import MemoryManager
 
     mm = MemoryManager()
     mm.add_provider(CoreShadowProvider())
@@ -109,7 +109,7 @@ def test_aiagent_forwards_warning_callback_to_cli_memory_provider():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.memory.load_memory_provider", return_value=provider),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=204_800),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=204_800),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),

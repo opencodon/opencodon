@@ -89,7 +89,7 @@ class TestPrimaryRuntimeSnapshot:
             patch("opencodon.core.run_agent.get_tool_definitions", return_value=_make_tool_defs("web_search")),
             patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
             patch("opencodon.core.run_agent.OpenAI"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
         ):
             agent = AIAgent(
                 api_key="sk-ant-test-12345678",
@@ -291,7 +291,7 @@ class TestRestorePrimaryRuntime:
         primary_pool.has_available.return_value = False
         with (
             patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()),
-            patch("opencodon.core.credential_pool.load_pool", return_value=primary_pool) as load_pool,
+            patch("opencodon.core.credentials.credential_pool.load_pool", return_value=primary_pool) as load_pool,
         ):
             result = agent._restore_primary_runtime()
 
@@ -317,7 +317,7 @@ class TestRestorePrimaryRuntime:
         with (
             patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()),
             patch(
-                "opencodon.core.credential_pool.load_pool",
+                "opencodon.core.credentials.credential_pool.load_pool",
                 side_effect=RuntimeError("auth store unavailable"),
             ),
         ):
@@ -355,7 +355,7 @@ class TestRestorePrimaryRuntime:
 
         with (
             patch(
-                "opencodon.core.credential_pool.get_custom_provider_pool_key",
+                "opencodon.core.credentials.credential_pool.get_custom_provider_pool_key",
                 return_value="custom:myllm",
             ),
             patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()),
@@ -395,7 +395,7 @@ class TestRestorePrimaryRuntime:
 
         with (
             patch(
-                "opencodon.core.credential_pool.get_custom_provider_pool_key",
+                "opencodon.core.credentials.credential_pool.get_custom_provider_pool_key",
                 return_value="custom:myllm",  # primary resolves to a DIFFERENT key
             ),
             patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()),

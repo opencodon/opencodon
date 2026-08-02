@@ -13,7 +13,7 @@ can never silently drift again when a provider plugin is added.
 
 from fastapi.testclient import TestClient
 
-from opencodon.core.models import CANONICAL_PROVIDERS
+from opencodon.core.providers.models import CANONICAL_PROVIDERS
 from opencodon.frontends.cli.provider_catalog import provider_catalog
 from opencodon.frontends.cli.web_server import _SESSION_TOKEN, app
 

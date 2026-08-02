@@ -215,7 +215,7 @@ def _normalize_provider_alias(provider_name: str) -> str:
     if not raw:
         return raw
     try:
-        from opencodon.core.models import normalize_provider
+        from opencodon.core.providers.models import normalize_provider
 
         return normalize_provider(raw)
     except Exception:
@@ -338,7 +338,7 @@ def normalize_model_for_provider(model_input: str, target_provider: str) -> str:
         target_provider: The canonical opencodon provider id, e.g.
             ``"openrouter"``, ``"anthropic"``, ``"copilot"``,
             ``"deepseek"``, ``"custom"``.  Should already be normalised
-            via ``opencodon.core.models.normalize_provider()``.
+            via ``opencodon.core.providers.models.normalize_provider()``.
 
     Returns:
         The model identifier string that the target provider's API
@@ -423,7 +423,7 @@ def normalize_model_for_provider(model_input: str, target_provider: str) -> str:
     #     HTTP 400 "model_not_supported".  See issue #6879.
     if provider in {"copilot", "copilot-acp"}:
         try:
-            from opencodon.core.models import normalize_copilot_model_id
+            from opencodon.core.providers.models import normalize_copilot_model_id
 
             normalized = normalize_copilot_model_id(name)
             if normalized:

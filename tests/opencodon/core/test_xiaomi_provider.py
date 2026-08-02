@@ -3,7 +3,7 @@
 
 import pytest
 
-from opencodon.core.auth import (
+from opencodon.core.credentials.auth import (
     PROVIDER_REGISTRY,
     resolve_provider,
     get_api_key_provider_status,
@@ -57,7 +57,7 @@ class TestXiaomiAliases:
         assert resolve_provider(alias) == "xiaomi"
 
     def test_normalize_provider_models_py(self):
-        from opencodon.core.models import normalize_provider
+        from opencodon.core.providers.models import normalize_provider
         assert normalize_provider("mimo") == "xiaomi"
         assert normalize_provider("xiaomi-mimo") == "xiaomi"
 
@@ -125,7 +125,7 @@ class TestXiaomiCredentials:
         self, tmp_path, monkeypatch
     ):
         """BWS-injected keys belong in the profile scope that loaded them."""
-        from opencodon.core import secret_scope as ss
+        from opencodon.core.credentials import secret_scope as ss
         from opencodon.frontends.cli import config as config_module
         from opencodon.frontends.cli import env_loader
 
@@ -156,7 +156,7 @@ class TestXiaomiCredentials:
     def test_scoped_missing_key_does_not_fall_through_to_raw_env(
         self, tmp_path, monkeypatch
     ):
-        from opencodon.core import secret_scope as ss
+        from opencodon.core.credentials import secret_scope as ss
         from opencodon.frontends.cli import config as config_module
 
         home = tmp_path / "opencodon"
@@ -179,7 +179,7 @@ class TestXiaomiCredentials:
         assert creds["api_key"] == ""
 
     def test_unscoped_multiplex_read_fails_closed(self, tmp_path, monkeypatch):
-        from opencodon.core import secret_scope as ss
+        from opencodon.core.credentials import secret_scope as ss
         from opencodon.frontends.cli import config as config_module
 
         home = tmp_path / "opencodon"
@@ -208,7 +208,7 @@ class TestXiaomiModelCatalog:
     """Xiaomi uses dynamic model discovery via models.dev."""
 
     def test_models_dev_mapping(self):
-        from opencodon.core.models_dev import PROVIDER_TO_MODELS_DEV
+        from opencodon.core.providers.models_dev import PROVIDER_TO_MODELS_DEV
         assert PROVIDER_TO_MODELS_DEV["xiaomi"] == "xiaomi"
 
     def test_static_model_list_fallback(self):
@@ -218,13 +218,13 @@ class TestXiaomiModelCatalog:
         names are data that changes with upstream releases and doesn't
         belong in tests.
         """
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "xiaomi" in _PROVIDER_MODELS
         assert len(_PROVIDER_MODELS["xiaomi"]) >= 1
 
     def test_list_agentic_models_mock(self, monkeypatch):
         """When models.dev returns Xiaomi data, list_agentic_models should return models."""
-        from opencodon.core import models_dev as md
+        from opencodon.core.providers import models_dev as md
 
         fake_data = {
             "xiaomi": {
@@ -345,22 +345,22 @@ class TestXiaomiURLMapping:
     """Test URL → provider inference for Xiaomi endpoints."""
 
     def test_url_to_provider(self):
-        from opencodon.core.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.providers.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("api.xiaomimimo.com") == "xiaomi"
 
     def test_provider_prefixes(self):
-        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.providers.model_metadata import _PROVIDER_PREFIXES
         assert "xiaomi" in _PROVIDER_PREFIXES
         assert "mimo" in _PROVIDER_PREFIXES
         assert "xiaomi-mimo" in _PROVIDER_PREFIXES
 
     def test_infer_from_url(self):
-        from opencodon.core.model_metadata import _infer_provider_from_url
+        from opencodon.core.providers.model_metadata import _infer_provider_from_url
         assert _infer_provider_from_url("https://api.xiaomimimo.com/v1") == "xiaomi"
 
     def test_infer_from_regional_urls(self):
         """Regional token-plan endpoints should also resolve to xiaomi."""
-        from opencodon.core.model_metadata import _infer_provider_from_url
+        from opencodon.core.providers.model_metadata import _infer_provider_from_url
         assert _infer_provider_from_url("https://token-plan-ams.xiaomimimo.com/v1") == "xiaomi"
         assert _infer_provider_from_url("https://token-plan-cn.xiaomimimo.com/v1") == "xiaomi"
         assert _infer_provider_from_url("https://token-plan-sgp.xiaomimimo.com/v1") == "xiaomi"

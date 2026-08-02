@@ -27,7 +27,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from opencodon.core.image_gen_provider import (
+from opencodon.core.media.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     error_response,
@@ -194,7 +194,7 @@ def _sniff_image_mime(raw: bytes) -> Optional[str]:
     also recognizes) are rejected here so they fail locally with a clear
     error instead of an opaque server-side HTTP 400.
     """
-    from opencodon.core.image_routing import _sniff_mime_from_bytes
+    from opencodon.core.media.image_routing import _sniff_mime_from_bytes
 
     mime = _sniff_mime_from_bytes(raw)
     if mime in _ACCEPTED_INPUT_MIME:

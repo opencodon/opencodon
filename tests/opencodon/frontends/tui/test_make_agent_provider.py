@@ -36,7 +36,7 @@ def test_make_agent_passes_resolved_provider():
         patch("opencodon.frontends.tui.server._load_service_tier", return_value=None),
         patch("opencodon.frontends.tui.server._load_enabled_toolsets", return_value=None),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ) as mock_resolve,
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -99,7 +99,7 @@ def test_make_agent_forwards_provider_routing():
         patch("opencodon.frontends.tui.server._load_service_tier", return_value=None),
         patch("opencodon.frontends.tui.server._load_enabled_toolsets", return_value=None),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -139,7 +139,7 @@ def test_make_agent_provider_routing_defaults_when_unset():
         patch("opencodon.frontends.tui.server._load_service_tier", return_value=None),
         patch("opencodon.frontends.tui.server._load_enabled_toolsets", return_value=None),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -183,7 +183,7 @@ def test_make_agent_ignores_display_personality_without_system_prompt():
         patch("opencodon.frontends.tui.server._load_cfg", return_value=fake_cfg),
         patch("opencodon.frontends.tui.server._get_db", return_value=MagicMock()),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -220,7 +220,7 @@ def test_make_agent_honors_tui_launch_env_flags():
         patch("opencodon.frontends.tui.server._load_cfg", return_value=fake_cfg),
         patch("opencodon.frontends.tui.server._get_db", return_value=MagicMock()),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -285,7 +285,7 @@ def test_make_agent_tolerates_null_config_sections():
         patch("opencodon.frontends.tui.server._load_cfg", return_value=null_cfg),
         patch("opencodon.frontends.tui.server._get_db", return_value=MagicMock()),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -319,7 +319,7 @@ def test_make_agent_tolerates_null_personalities_with_active_personality():
         patch("opencodon.frontends.tui.server._get_db", return_value=MagicMock()),
         patch("cli.load_cli_config", return_value={"agent": {"personalities": None}}),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,
@@ -375,7 +375,7 @@ def test_make_agent_honors_per_session_model_override():
         patch("opencodon.frontends.tui.server._load_service_tier", return_value=None),
         patch("opencodon.frontends.tui.server._load_enabled_toolsets", return_value=None),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             side_effect=echo_runtime,
         ),
         patch("opencodon.core.run_agent.AIAgent") as mock_agent,

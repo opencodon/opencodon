@@ -198,7 +198,7 @@ def test_build_models_payload_does_not_call_provider_model_ids():
              "source": "built-in"}]
     ctx = _empty_ctx()
     with _list_auth_returning(rows), \
-         patch("opencodon.core.models.provider_model_ids") as mock_pm:
+         patch("opencodon.core.providers.models.provider_model_ids") as mock_pm:
         build_models_payload(ctx)
     mock_pm.assert_not_called()
 
@@ -315,7 +315,7 @@ def test_include_unconfigured_appends_canonical_skeletons():
         payload = build_models_payload(ctx, include_unconfigured=True)
     # All canonical providers other than openrouter should appear as
     # skeleton rows.
-    from opencodon.core.models import CANONICAL_PROVIDERS
+    from opencodon.core.providers.models import CANONICAL_PROVIDERS
 
     seen_slugs = {r["slug"] for r in payload["providers"]}
     for entry in CANONICAL_PROVIDERS:
@@ -369,7 +369,7 @@ def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_
         _list_auth_returning(rows),
         patch("opencodon.config.read_raw_config", return_value={}),
         patch(
-            "opencodon.core.auth.is_provider_explicitly_configured",
+            "opencodon.core.credentials.auth.is_provider_explicitly_configured",
             side_effect=lambda slug: slug == "gemini",
         ),
     ):
@@ -460,7 +460,7 @@ def test_explicit_only_keeps_moa_when_raw_config_has_enabled_preset():
         _list_auth_returning(rows),
         patch("opencodon.config.load_config", return_value=raw_config),
         patch("opencodon.config.read_raw_config", return_value=raw_config),
-        patch("opencodon.core.auth.is_provider_explicitly_configured", return_value=False),
+        patch("opencodon.core.credentials.auth.is_provider_explicitly_configured", return_value=False),
     ):
         payload = build_models_payload(ctx, explicit_only=True)
 
@@ -534,7 +534,7 @@ def test_canonical_order_uses_slug_not_is_user_defined_flag():
     canonical providers configured via the keyed schema get demoted to
     the tail.
     """
-    from opencodon.core.models import CANONICAL_PROVIDERS
+    from opencodon.core.providers.models import CANONICAL_PROVIDERS
 
     canonical_slug = CANONICAL_PROVIDERS[2].slug  # any canonical
     rows = [
@@ -568,7 +568,7 @@ def test_canonical_order_with_unconfigured_preserves_full_universe():
     has CANONICAL_PROVIDERS in declaration order, hints applied,
     custom rows trailing.
     """
-    from opencodon.core.models import CANONICAL_PROVIDERS
+    from opencodon.core.providers.models import CANONICAL_PROVIDERS
 
     rows = [
         {"slug": "custom:Ollama", "name": "Ollama", "models": [],
@@ -875,10 +875,10 @@ def test_build_models_payload_keeps_static_provider_models_from_providers_dict()
     )
     with (
         patch("opencodon.config.load_config", return_value=cfg),
-        patch("opencodon.core.models_dev.fetch_models_dev", return_value={}),
+        patch("opencodon.core.providers.models_dev.fetch_models_dev", return_value={}),
         patch("opencodon.core.providers.OPENCODON_OVERLAYS", {}),
         patch(
-            "opencodon.core.models.fetch_api_models",
+            "opencodon.core.providers.models.fetch_api_models",
             side_effect=AssertionError("fetch_api_models must not be called"),
         ),
     ):
@@ -954,7 +954,7 @@ def test_list_authenticated_providers_refresh_busts_cache():
     refresh=False leaves it untouched (so normal picker opens stay snappy)."""
     from opencodon.frontends.cli import model_switch
 
-    with patch("opencodon.core.models.clear_provider_models_cache") as clear:
+    with patch("opencodon.core.providers.models.clear_provider_models_cache") as clear:
         model_switch.list_authenticated_providers(refresh=False)
         assert clear.call_count == 0
         model_switch.list_authenticated_providers(refresh=True)

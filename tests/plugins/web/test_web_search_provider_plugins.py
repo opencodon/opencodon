@@ -72,7 +72,7 @@ class TestBundledPluginsRegister:
 
     def test_all_seven_plugins_present_in_registry(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import list_providers
+        from opencodon.core.providers.web_search_registry import list_providers
 
         names = sorted(p.name for p in list_providers())
         assert names == [
@@ -107,7 +107,7 @@ class TestBundledPluginsRegister:
         expected_extract: bool,
     ) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None, f"plugin {plugin_name!r} not registered"
@@ -120,7 +120,7 @@ class TestBundledPluginsRegister:
     )
     def test_each_plugin_has_name_and_display_name(self, plugin_name: str) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None
@@ -134,7 +134,7 @@ class TestBundledPluginsRegister:
     def test_each_plugin_has_setup_schema(self, plugin_name: str) -> None:
         """``get_setup_schema()`` returns a dict the picker can consume."""
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         provider = get_provider(plugin_name)
         assert provider is not None
@@ -154,7 +154,7 @@ class TestIsAvailable:
 
     def test_brave_free_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("brave-free")
         assert p is not None
@@ -164,7 +164,7 @@ class TestIsAvailable:
 
     def test_searxng_requires_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("searxng")
         assert p is not None
@@ -174,7 +174,7 @@ class TestIsAvailable:
 
     def test_tavily_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("tavily")
         assert p is not None
@@ -184,7 +184,7 @@ class TestIsAvailable:
 
     def test_exa_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("exa")
         assert p is not None
@@ -194,7 +194,7 @@ class TestIsAvailable:
 
     def test_parallel_requires_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("parallel")
         assert p is not None
@@ -206,7 +206,7 @@ class TestIsAvailable:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("firecrawl")
         assert p is not None
@@ -228,7 +228,7 @@ class TestIsAvailable:
         is_available() doesn't raise.
         """
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("ddgs")
         assert p is not None
@@ -238,7 +238,7 @@ class TestIsAvailable:
     def test_xai_requires_api_key_or_oauth(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """xAI needs XAI_API_KEY or OAuth tokens in auth.json."""
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("xai")
         assert p is not None
@@ -265,7 +265,7 @@ class TestRegistryResolution:
         surfaces a precise "FOO_API_KEY is not set" error instead.
         """
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import _resolve
+        from opencodon.core.providers.web_search_registry import _resolve
 
         # No BRAVE_SEARCH_API_KEY (fixture cleared it).
         result = _resolve("brave-free", capability="search")
@@ -280,7 +280,7 @@ class TestRegistryResolution:
     ) -> None:
         """Typo / uninstalled plugin → walk legacy preference, pick available."""
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import _resolve
+        from opencodon.core.providers.web_search_registry import _resolve
 
         monkeypatch.setenv("EXA_API_KEY", "real")
         result = _resolve("not-a-real-provider", capability="search")
@@ -301,7 +301,7 @@ class TestRegistryResolution:
         and the fallback walk picks an extract-capable provider.
         """
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import _resolve
+        from opencodon.core.providers.web_search_registry import _resolve
 
         monkeypatch.setenv("EXA_API_KEY", "real")
         result = _resolve("brave-free", capability="extract")
@@ -320,7 +320,7 @@ class TestRegistryResolution:
         Otherwise the resolver returns None. Either outcome is correct.
         """
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import _resolve
+        from opencodon.core.providers.web_search_registry import _resolve
 
         result = _resolve(None, capability="search")
         if result is not None:
@@ -339,7 +339,7 @@ class TestAsyncExtractDispatch:
 
     def test_parallel_extract_is_async(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("parallel")
         assert p is not None
@@ -347,7 +347,7 @@ class TestAsyncExtractDispatch:
 
     def test_firecrawl_extract_is_async(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("firecrawl")
         assert p is not None
@@ -355,7 +355,7 @@ class TestAsyncExtractDispatch:
 
     def test_exa_extract_is_sync(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("exa")
         assert p is not None
@@ -363,7 +363,7 @@ class TestAsyncExtractDispatch:
 
     def test_tavily_extract_is_sync(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("tavily")
         assert p is not None
@@ -380,7 +380,7 @@ class TestErrorResponseShapes:
 
     def test_brave_free_returns_error_dict_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("brave-free")
         assert p is not None
@@ -391,7 +391,7 @@ class TestErrorResponseShapes:
 
     def test_searxng_returns_error_dict_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("searxng")
         assert p is not None
@@ -402,7 +402,7 @@ class TestErrorResponseShapes:
 
     def test_exa_returns_error_dict_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("exa")
         assert p is not None
@@ -413,7 +413,7 @@ class TestErrorResponseShapes:
 
     def test_tavily_returns_error_dict_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("tavily")
         assert p is not None
@@ -424,7 +424,7 @@ class TestErrorResponseShapes:
 
     def test_parallel_extract_returns_per_url_errors_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("parallel")
         assert p is not None
@@ -436,7 +436,7 @@ class TestErrorResponseShapes:
 
     def test_firecrawl_extract_returns_per_url_errors_when_unconfigured(self) -> None:
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("firecrawl")
         assert p is not None
@@ -452,7 +452,7 @@ class TestErrorResponseShapes:
     def test_xai_search_returns_error_dict_when_unconfigured(self) -> None:
         """xAI returns a typed error dict (no XAI_API_KEY)."""
         _ensure_plugins_loaded()
-        from opencodon.core.web_search_registry import get_provider
+        from opencodon.core.providers.web_search_registry import get_provider
 
         p = get_provider("xai")
         assert p is not None

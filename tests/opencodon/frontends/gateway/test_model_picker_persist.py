@@ -82,7 +82,7 @@ def _fake_switch_result():
 
 
 def _stub_picker_dependencies(monkeypatch):
-    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.providers.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
         "opencodon.frontends.cli.model_switch.list_picker_providers",
         lambda **kw: [{"slug": "openrouter", "name": "OpenRouter", "models": ["gpt-5.5"]}],
@@ -261,7 +261,7 @@ async def test_multiplex_picker_keeps_profile_adapter_and_callback_scope(
     tmp_path, monkeypatch
 ):
     """A named profile must present and execute its picker under one identity."""
-    from opencodon.core.secret_scope import get_secret, set_multiplex_active
+    from opencodon.core.credentials.secret_scope import get_secret, set_multiplex_active
 
     default_adapter = _FakePickerAdapter()
     named_adapter = _FakePickerAdapter()
@@ -308,7 +308,7 @@ async def test_multiplex_picker_global_persists_only_named_profile(
 ):
     """A named picker must not seed its global write from the default profile."""
     import opencodon.frontends.gateway.run as gateway_run
-    from opencodon.core.secret_scope import set_multiplex_active
+    from opencodon.core.credentials.secret_scope import set_multiplex_active
 
     default_home = tmp_path / "default"
     named_home = tmp_path / "profiles" / "named"

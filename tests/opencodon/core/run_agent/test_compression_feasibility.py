@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from opencodon.core.run_agent import AIAgent
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +69,7 @@ def _make_agent(
 # ── Core warning logic ──────────────────────────────────────────────
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_auto_corrects_threshold_when_aux_context_below_threshold(mock_get_client, mock_ctx_len):
     """Auto-correction: aux >= 64K floor but < threshold → lower threshold
@@ -112,7 +112,7 @@ def test_auto_corrects_threshold_when_aux_context_below_threshold(mock_get_clien
     assert agent.context_compressor.tail_token_budget == 16_000
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=32_768)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=32_768)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_rejects_aux_below_minimum_context(mock_get_client, mock_ctx_len):
     """Hard floor: aux context < MINIMUM_CONTEXT_LENGTH (64K) → session
@@ -135,7 +135,7 @@ def test_rejects_aux_below_minimum_context(mock_get_client, mock_ctx_len):
     assert "below the minimum" in err
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=200_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_no_warning_when_aux_context_sufficient(mock_get_client, mock_ctx_len):
     """No warning when aux model context >= main model threshold."""
@@ -169,7 +169,7 @@ def test_feasibility_check_passes_live_main_runtime():
     mock_client.api_key = "codex-token"
 
     with patch("opencodon.core.auxiliary_client.get_text_auxiliary_client", return_value=(mock_client, "gpt-5.4")) as mock_get_client, \
-         patch("opencodon.core.model_metadata.get_model_context_length", return_value=200_000):
+         patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200_000):
         agent._emit_status = lambda msg: None
         agent._check_compression_model_feasibility()
 
@@ -186,7 +186,7 @@ def test_feasibility_check_passes_live_main_runtime():
     )
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=1_000_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=1_000_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_feasibility_check_passes_config_context_length(mock_get_client, mock_ctx_len):
     """auxiliary.compression.context_length from config is forwarded to
@@ -212,7 +212,7 @@ def test_feasibility_check_passes_config_context_length(mock_get_client, mock_ct
     )
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=128_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=128_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_feasibility_check_ignores_invalid_context_length(mock_get_client, mock_ctx_len):
     """Non-integer context_length in config is silently ignored."""
@@ -276,7 +276,7 @@ def test_init_feasibility_check_uses_aux_context_override_from_config():
         patch("opencodon.core.run_agent.OpenAI"),
         patch("opencodon.core.run_agent.ContextCompressor", new=_StubCompressor),
         patch("opencodon.core.auxiliary_client.get_text_auxiliary_client", return_value=(mock_client, "custom/big-model")),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=1_000_000) as mock_ctx_len,
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=1_000_000) as mock_ctx_len,
     ):
         agent = AIAgent(
             api_key="test-key-1234567890",
@@ -341,7 +341,7 @@ def test_no_unavailable_warning_when_configured_fallback_chain_resolves():
         "opencodon.core.auxiliary_client._try_configured_fallback_for_unavailable_client",
         return_value=(fallback_client, "gpt-5.4-mini", "fallback_chain[0](openai-codex)"),
     ) as mock_fallback, patch(
-        "opencodon.core.model_metadata.get_model_context_length",
+        "opencodon.core.providers.model_metadata.get_model_context_length",
         return_value=200_000,
     ) as mock_ctx_len:
         agent._check_compression_model_feasibility()
@@ -383,7 +383,7 @@ def test_exception_does_not_crash(mock_get_client):
     assert len(messages) == 0
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=100_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=100_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_exact_threshold_boundary_no_warning(mock_get_client, mock_ctx_len):
     """No warning when aux context exactly equals the threshold."""
@@ -401,7 +401,7 @@ def test_exact_threshold_boundary_no_warning(mock_get_client, mock_ctx_len):
     assert len(messages) == 0
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=99_999)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=99_999)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_just_below_threshold_auto_corrects(mock_get_client, mock_ctx_len):
     """Auto-correct fires when aux context is one token below the threshold
@@ -426,7 +426,7 @@ def test_just_below_threshold_auto_corrects(mock_get_client, mock_ctx_len):
 # ── Two-phase: __init__ + run_conversation replay ───────────────────
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_warning_stored_for_gateway_replay(mock_get_client, mock_ctx_len):
     """__init__ stores the warning; _replay sends it through status_callback."""
@@ -455,7 +455,7 @@ def test_warning_stored_for_gateway_replay(mock_get_client, mock_ctx_len):
     )
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=200_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_no_replay_when_no_warning(mock_get_client, mock_ctx_len):
     """_replay_compression_warning is a no-op when there's no stored warning."""
@@ -487,7 +487,7 @@ def test_replay_without_callback_is_noop():
     agent._replay_compression_warning()
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_run_conversation_clears_warning_after_replay(mock_get_client, mock_ctx_len):
     """After replay in run_conversation, _compression_warning is cleared
@@ -524,7 +524,7 @@ def test_run_conversation_clears_warning_after_replay(mock_get_client, mock_ctx_
 # ── #67422: threshold suggestion must survive the small-context floor ────────
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_threshold_suggestion_kept_when_at_or_above_floor(mock_get_client, mock_ctx_len):
     """Small-context main, but aux/main = 80% >= the 75% floor — the
@@ -545,7 +545,7 @@ def test_threshold_suggestion_kept_when_at_or_above_floor(mock_get_client, mock_
     assert "threshold: 0.80" in messages[0]
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=300_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=300_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_threshold_suggestion_kept_for_large_context_main(mock_get_client, mock_ctx_len):
     """Main window >= 512K has no floor — any suggestion is honored, so the
@@ -566,7 +566,7 @@ def test_threshold_suggestion_kept_for_large_context_main(mock_get_client, mock_
     assert "threshold: 0.30" in messages[0]
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_threshold_suggestion_kept_when_reservation_shrinks_trigger(mock_get_client, mock_ctx_len):
     """Output-token reservation can make a floored suggestion viable again:
@@ -590,7 +590,7 @@ def test_threshold_suggestion_kept_when_reservation_shrinks_trigger(mock_get_cli
     assert "threshold: 0.40" in messages[0]
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=80_000)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=80_000)
 @patch("opencodon.core.auxiliary_client.get_text_auxiliary_client")
 def test_plugin_engine_keeps_plain_suggestion(mock_get_client, mock_ctx_len):
     """External context engines own compaction policy (#44439) — the built-in

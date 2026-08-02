@@ -239,7 +239,7 @@ class TestSystemPromptActiveProfile:
         assert _resolve_active_profile_name() == "default"
         # Build the line manually to pin the contract — the prompt builder
         # is too heavy to instantiate end-to-end in a unit test.
-        # See agent/system_prompt.py for the exact wording.
+        # See core/prompt/system_prompt.py for the exact wording.
 
     def test_named_profile_line_in_prompt_text(self, fake_opencodon):
         """When active profile is 'opencodon-security', the prompt warns
@@ -249,7 +249,7 @@ class TestSystemPromptActiveProfile:
         # paths, (3) says "do not modify another profile's" without
         # explicit user direction.
         from pathlib import Path
-        src = Path("src/opencodon/core/system_prompt.py").read_text()
+        src = Path("src/opencodon/core/prompt/system_prompt.py").read_text()
         assert "Active opencodon profile" in src
         assert "cross_profile=True" in src
         assert "~/.opencodon/profiles/" in src

@@ -19,8 +19,8 @@ from typing import Any, Dict, List, Optional
 import pytest
 import yaml
 
-from opencodon.core import image_gen_registry
-from opencodon.core.image_gen_provider import ImageGenProvider
+from opencodon.core.media import image_gen_registry
+from opencodon.core.media.image_gen_provider import ImageGenProvider
 
 
 @pytest.fixture(autouse=True)
@@ -260,7 +260,7 @@ class TestPluginDispatchImageToImage:
     def test_dispatch_forwards_image_url(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
         from opencodon.frontends.cli import plugins as plugins_module
-        from opencodon.core import image_gen_registry as reg
+        from opencodon.core.media import image_gen_registry as reg
 
         provider = _EditCapableProvider()
         reg.register_provider(provider)
@@ -282,7 +282,7 @@ class TestPluginDispatchImageToImage:
     def test_dispatch_text_only_when_no_image(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
         from opencodon.frontends.cli import plugins as plugins_module
-        from opencodon.core import image_gen_registry as reg
+        from opencodon.core.media import image_gen_registry as reg
 
         provider = _EditCapableProvider()
         reg.register_provider(provider)
@@ -299,7 +299,7 @@ class TestPluginDispatchImageToImage:
     def test_legacy_provider_edit_request_surfaces_clear_error(self, cfg_home, monkeypatch):
         import opencodon.tools.image_generation_tool as image_tool
         from opencodon.frontends.cli import plugins as plugins_module
-        from opencodon.core import image_gen_registry as reg
+        from opencodon.core.media import image_gen_registry as reg
 
         provider = _LegacyProvider()
         reg.register_provider(provider)
@@ -362,7 +362,7 @@ class TestDynamicSchema:
 
     def test_plugin_both_provider_advertises_refs(self, cfg_home, monkeypatch):
         from opencodon.tools.image_generation_tool import _build_dynamic_image_schema
-        from opencodon.core import image_gen_registry as reg
+        from opencodon.core.media import image_gen_registry as reg
 
         _write_cfg(cfg_home, {"image_gen": {"provider": "both"}})
         reg.register_provider(_PluginBothProvider())

@@ -72,7 +72,7 @@ moa:
 
 
 def test_moa_runtime_provider_uses_virtual_endpoint():
-    from opencodon.core.runtime_provider import resolve_runtime_provider
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
     runtime = resolve_runtime_provider(requested="moa", target_model="review")
 
@@ -163,7 +163,7 @@ def test_moa_slots_routed_through_resolve_runtime_provider(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider", fake_resolve
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": "minimax", "model": "MiniMax-M2"})
@@ -195,7 +195,7 @@ def test_moa_codex_slot_preserves_provider_identity(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider", fake_resolve
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": "openai-codex", "model": "gpt-5.5"})
@@ -244,7 +244,7 @@ def test_moa_provider_backed_slot_survives_aux_resolution(monkeypatch, provider)
         }
 
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider", fake_resolve
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     rt = moa_loop._slot_runtime({"provider": provider, "model": "test-model"})
@@ -270,7 +270,7 @@ def test_moa_slot_runtime_falls_back_on_resolution_error(monkeypatch):
         raise RuntimeError("unknown provider")
 
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider", boom
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider", boom
     )
 
     rt = moa_loop._slot_runtime({"provider": "mystery", "model": "x"})
@@ -762,7 +762,7 @@ def test_slot_runtime_anthropic_oauth_routes_through_provider_branch(monkeypatch
         }
 
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider", fake_resolve
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider", fake_resolve
     )
 
     # _slot_runtime forwards the resolved endpoint for anthropic like any slot.
@@ -814,7 +814,7 @@ def test_run_reference_captures_usage_and_cost(monkeypatch):
     advisor fan-out was invisible to cost tracking.
     """
     from opencodon.core.moa_loop import _RefAccounting, _run_reference
-    from opencodon.core.usage_pricing import CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage
 
     monkeypatch.setattr(
         "opencodon.core.moa_loop.call_llm",
@@ -826,7 +826,7 @@ def test_run_reference_captures_usage_and_cost(monkeypatch):
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "opencodon.core.usage_pricing.estimate_usage_cost",
+        "opencodon.core.providers.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.0123, status="estimated", source="table"),
     )
 
@@ -884,7 +884,7 @@ moa:
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "opencodon.core.usage_pricing.estimate_usage_cost",
+        "opencodon.core.providers.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.01, status="estimated", source="table"),
     )
 
@@ -915,7 +915,7 @@ moa:
 
 def test_canonical_usage_add():
     """CanonicalUsage sums per bucket (used to fold advisor tokens in)."""
-    from opencodon.core.usage_pricing import CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage
 
     a = CanonicalUsage(input_tokens=100, output_tokens=20, cache_read_tokens=5)
     b = CanonicalUsage(input_tokens=50, output_tokens=10, cache_write_tokens=3)
@@ -971,7 +971,7 @@ moa:
         lambda slot: {"provider": "openrouter", "model": slot.get("model")},
     )
     monkeypatch.setattr(
-        "opencodon.core.usage_pricing.estimate_usage_cost",
+        "opencodon.core.providers.usage_pricing.estimate_usage_cost",
         lambda *a, **k: SimpleNamespace(amount_usd=0.001, status="estimated", source="table"),
     )
 
@@ -1112,7 +1112,7 @@ def test_reference_messages_flattens_cache_decorated_content():
     preset "closed", session 20260714_001520_28157b).
     """
     from opencodon.core.moa_loop import _reference_messages
-    from opencodon.core.prompt_caching import apply_anthropic_cache_control
+    from opencodon.core.prompt.prompt_caching import apply_anthropic_cache_control
 
     plain = [
         {"role": "system", "content": "opencodon system prompt"},

@@ -845,7 +845,7 @@ def _should_use_native_vision_fast_path() -> bool:
     """
     try:
         from opencodon.core.auxiliary_client import _read_main_provider, _read_main_model
-        from opencodon.core.image_routing import decide_image_input_mode, _lookup_supports_vision
+        from opencodon.core.media.image_routing import decide_image_input_mode, _lookup_supports_vision
         from opencodon.config import load_config
 
         provider = _read_main_provider()

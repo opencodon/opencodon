@@ -1047,7 +1047,7 @@ class TestPreflightSlashEnumStrip:
     def test_grok_model_strips_slash_enum_values(self):
         """When the model name is Grok-family, slash-containing enum
         values are stripped so xAI doesn't 400 on the tool schema."""
-        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.providers.codex_responses_adapter import _preflight_codex_api_kwargs
         kwargs = self._make_kwargs(
             "grok-4.3",
             ["Qwen/Qwen3.5-0.8B", "openai/gpt-oss-20b", "plain-id"],
@@ -1063,7 +1063,7 @@ class TestPreflightSlashEnumStrip:
 
     def test_aggregator_prefixed_grok_also_strips(self):
         """Aggregator-prefixed (x-ai/grok-*) names hit the same path."""
-        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.providers.codex_responses_adapter import _preflight_codex_api_kwargs
         kwargs = self._make_kwargs(
             "x-ai/grok-4.3",
             ["Qwen/Qwen3.5-0.8B"],
@@ -1076,7 +1076,7 @@ class TestPreflightSlashEnumStrip:
         enums.  The safety-net must NOT strip there or we silently
         degrade tool-schema constraints on every codex_responses
         provider that isn't xAI."""
-        from opencodon.core.codex_responses_adapter import _preflight_codex_api_kwargs
+        from opencodon.core.providers.codex_responses_adapter import _preflight_codex_api_kwargs
         kwargs = self._make_kwargs(
             "gpt-5.5",
             ["Qwen/Qwen3.5-0.8B", "plain-id"],

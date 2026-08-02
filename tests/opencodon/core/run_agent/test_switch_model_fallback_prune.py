@@ -39,9 +39,9 @@ def _make_agent(chain):
 
 def _switch_to_anthropic(agent):
     with (
-        patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
-        patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-xyz"),
-        patch("opencodon.core.anthropic_adapter._is_oauth_token", return_value=False),
+        patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+        patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-xyz"),
+        patch("opencodon.core.providers.anthropic_adapter._is_oauth_token", return_value=False),
         patch("opencodon.config.timeouts.get_provider_request_timeout", return_value=None),
     ):
         agent.switch_model(

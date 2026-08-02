@@ -17,7 +17,7 @@ import json
 
 import pytest
 
-from opencodon.core import auth
+from opencodon.core.credentials import auth
 
 
 def _write_store(path, store):

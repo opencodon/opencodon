@@ -37,7 +37,7 @@ from opencodon.core.providers import (
 from opencodon.common.model_normalize import (
     normalize_model_for_provider,
 )
-from opencodon.core.models_dev import (
+from opencodon.core.providers.models_dev import (
     ModelCapabilities,
     ModelInfo,
     get_model_capabilities,
@@ -711,7 +711,7 @@ def resolve_alias(
     # yet synced to the registry).
     catalog = list_provider_models(current_provider)
     try:
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         static = _PROVIDER_MODELS.get(current_provider, [])
         if static:
             seen = {m.lower() for m in catalog}
@@ -833,7 +833,7 @@ def resolve_display_context_length(
             config_context_length = None
 
     try:
-        from opencodon.core.model_metadata import get_model_context_length
+        from opencodon.core.providers.model_metadata import get_model_context_length
         ctx = get_model_context_length(
             model,
             base_url=base_url or "",
@@ -972,13 +972,13 @@ def switch_model(
     Returns:
         ModelSwitchResult with all information the caller needs.
     """
-    from opencodon.core.models import (
+    from opencodon.core.providers.models import (
         copilot_model_api_mode,
         detect_provider_for_model,
         validate_requested_model,
         opencode_model_api_mode,
     )
-    from opencodon.core.runtime_provider import resolve_runtime_provider
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
     resolved_alias = ""
     new_model = raw_input.strip()
@@ -1035,7 +1035,7 @@ def switch_model(
         # routes to has no credentials, do NOT silently switch them onto an
         # unauthed endpoint (the classic HTTP 401 "Missing Authentication
         # header"). Point them at the real direct provider instead.
-        from opencodon.core.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
+        from opencodon.core.providers.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
         from opencodon.core.providers import ALIASES as _PROVIDER_ALIAS_TABLE
         _explicit_norm = explicit_provider.strip().lower()
         _alias_target = _PROVIDER_ALIAS_TABLE.get(_explicit_norm)
@@ -1074,7 +1074,7 @@ def switch_model(
         # If no model specified, try auto-detect from endpoint
         if not new_model:
             if pdef.base_url:
-                from opencodon.core.runtime_provider import _auto_detect_local_model
+                from opencodon.core.providers.runtime_provider import _auto_detect_local_model
                 detected = _auto_detect_local_model(pdef.base_url)
                 if detected:
                     new_model = detected
@@ -1488,7 +1488,7 @@ def switch_model(
     # Anthropic SDK prepends its own /v1/messages to the base_url.  Normalize
     # symmetrically (strip /v1 for anthropic_messages, re-append it for
     # chat_completions / codex_responses).  Mirrors the same logic in
-    # opencodon.core.runtime_provider.resolve_runtime_provider; without the strip,
+    # opencodon.core.providers.runtime_provider.resolve_runtime_provider; without the strip,
     # /model switches into an anthropic_messages-routed OpenCode model
     # (e.g. `/model minimax-m2.7` on opencode-go, `/model claude-sonnet-4-6`
     # on opencode-zen) hit a double /v1 and returned OpenCode's website 404
@@ -1496,7 +1496,7 @@ def switch_model(
     # model.base_url broke every later chat_completions model (glm, deepseek,
     # kimi) the same way.
     if target_provider in {"opencode-zen", "opencode-go"} and isinstance(base_url, str):
-        from opencodon.core.models import normalize_opencode_base_url
+        from opencodon.core.providers.models import normalize_opencode_base_url
         base_url = normalize_opencode_base_url(target_provider, api_mode, base_url)
 
     # --- Get capabilities (legacy) ---
@@ -1549,7 +1549,7 @@ def _credential_pool_is_usable(provider: str, *, raw_pool_present: bool = False)
     authoritative: an all-exhausted/dead pool is not authenticated.
     """
     try:
-        from opencodon.core.credential_pool import load_pool
+        from opencodon.core.credentials.credential_pool import load_pool
 
         pool = load_pool(provider)
         if pool.has_credentials():
@@ -1662,13 +1662,13 @@ def list_authenticated_providers(
     endpoint.
     """
     import os
-    from opencodon.core.models_dev import (
+    from opencodon.core.providers.models_dev import (
         PROVIDER_TO_MODELS_DEV,
         fetch_models_dev,
         get_provider_info as _mdev_pinfo,
     )
-    from opencodon.core.auth import PROVIDER_REGISTRY
-    from opencodon.core.models import (
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
+    from opencodon.core.providers.models import (
         OPENROUTER_MODELS, _PROVIDER_MODELS,
         _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids,
         clear_provider_models_cache,
@@ -1716,7 +1716,7 @@ def list_authenticated_providers(
         static inference_base_url so the dedup matches what a user typing
         that URL into custom_providers would actually hit."""
         try:
-            from opencodon.core.auth import PROVIDER_REGISTRY as _reg
+            from opencodon.core.credentials.auth import PROVIDER_REGISTRY as _reg
         except Exception:
             return
         pcfg = _reg.get(slug)
@@ -1765,7 +1765,7 @@ def list_authenticated_providers(
         if slug_norm != current_norm:
             return False
         try:
-            from opencodon.core.bedrock_adapter import has_aws_credentials
+            from opencodon.core.providers.bedrock_adapter import has_aws_credentials
             return bool(has_aws_credentials())
         except Exception:
             return False
@@ -1777,7 +1777,7 @@ def list_authenticated_providers(
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # Ollama Cloud uses dynamic discovery (no static curated list)
     if "ollama-cloud" not in curated:
-        from opencodon.core.models import fetch_ollama_cloud_models
+        from opencodon.core.providers.models import fetch_ollama_cloud_models
         curated["ollama-cloud"] = fetch_ollama_cloud_models()
     # LM Studio has no static catalog — probe its native /api/v1/models
     # endpoint live so the picker reflects whatever the user has loaded.
@@ -1788,8 +1788,8 @@ def list_authenticated_providers(
     if "lmstudio" not in curated and (
         os.environ.get("LM_API_KEY") or os.environ.get("LM_BASE_URL") or current_provider.strip().lower() == "lmstudio"
     ):
-        from opencodon.core.models import fetch_lmstudio_models
-        from opencodon.core.auth import AuthError
+        from opencodon.core.providers.models import fetch_lmstudio_models
+        from opencodon.core.credentials.auth import AuthError
         is_current_lmstudio = current_provider.strip().lower() == "lmstudio"
         lm_base = (
             os.environ.get("LM_BASE_URL")
@@ -1809,8 +1809,8 @@ def list_authenticated_providers(
         curated["lmstudio"] = live
 
     # --- 1. Check opencodon-mapped providers ---
-    from opencodon.core.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
-    from opencodon.core.models import _PROVIDER_ALIASES as _CANON_ALIASES
+    from opencodon.core.providers.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
+    from opencodon.core.providers.models import _PROVIDER_ALIASES as _CANON_ALIASES
     from opencodon.core.providers import ALIASES as _PROVIDER_ALIAS_TABLE
     for opencodon_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         # Skip vendor names that are merely aliases routing through an
@@ -1870,7 +1870,7 @@ def list_authenticated_providers(
         # models.dev catalogs include providers opencodon may not route yet.
         # Gate on runtime capability rather than registry membership: special
         # providers and plugin aliases can be routable without a registry row.
-        from opencodon.core.auth import is_runtime_provider_routable
+        from opencodon.core.credentials.auth import is_runtime_provider_routable
         if not is_runtime_provider_routable(opencodon_id):
             continue
         if pconfig and pconfig.api_key_env_vars:
@@ -1884,7 +1884,7 @@ def list_authenticated_providers(
         has_creds = any(os.environ.get(ev) for ev in env_vars)
         if not has_creds:
             try:
-                from opencodon.core.auth import _load_auth_store
+                from opencodon.core.credentials.auth import _load_auth_store
                 store = _load_auth_store()
                 raw_pool_present = bool(
                     store and store.get("credential_pool", {}).get(opencodon_id)
@@ -1943,7 +1943,7 @@ def list_authenticated_providers(
 
     # --- 2. Check agent-only providers (openai-codex, copilot, opencode-go) ---
     from opencodon.core.providers import OPENCODON_OVERLAYS
-    from opencodon.core.auth import PROVIDER_REGISTRY as _auth_registry
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY as _auth_registry
 
     # Build reverse mapping: models.dev ID → opencodon provider ID.
     # OPENCODON_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
@@ -1971,7 +1971,7 @@ def list_authenticated_providers(
             # provider is silently hidden from the /model picker even when
             # fully configured.
             try:
-                from opencodon.core.vertex_adapter import has_vertex_credentials
+                from opencodon.core.providers.vertex_adapter import has_vertex_credentials
                 has_creds = has_vertex_credentials()
             except Exception as exc:
                 logger.debug("Vertex credential check failed: %s", exc)
@@ -1991,7 +1991,7 @@ def list_authenticated_providers(
         # OAuth via external credential files).
         if not has_creds:
             try:
-                from opencodon.core.auth import _load_auth_store
+                from opencodon.core.credentials.auth import _load_auth_store
                 store = _load_auth_store()
                 providers_store = store.get("providers", {})
                 if store and (pid in providers_store or opencodon_slug in providers_store):
@@ -2014,7 +2014,7 @@ def list_authenticated_providers(
                     # model under the same provider may work even when all keys
                     # are in cooldown.
                     try:
-                        from opencodon.core.credential_pool import load_pool
+                        from opencodon.core.credentials.credential_pool import load_pool
                         _pool = load_pool(opencodon_slug)
                         if _pool.has_credentials():
                             has_creds = True
@@ -2031,7 +2031,7 @@ def list_authenticated_providers(
         # configured.
         if not has_creds and opencodon_slug == "anthropic":
             try:
-                from opencodon.core.anthropic_adapter import (
+                from opencodon.core.providers.anthropic_adapter import (
                     read_claude_code_credentials,
                     read_opencodon_oauth_credentials,
                 )
@@ -2095,7 +2095,7 @@ def list_authenticated_providers(
     # in PROVIDER_TO_MODELS_DEV or OPENCODON_OVERLAYS (keeps /model in sync
     # with `opencodon model`).
     try:
-        from opencodon.core.models import CANONICAL_PROVIDERS as _canon_provs
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
         _canon_provs = []
 
@@ -2113,7 +2113,7 @@ def list_authenticated_providers(
         # Also check auth store and credential pool
         if not _cp_has_creds:
             try:
-                from opencodon.core.auth import _load_auth_store
+                from opencodon.core.credentials.auth import _load_auth_store
                 _cp_store = _load_auth_store()
                 _cp_providers_store = _cp_store.get("providers", {})
                 if _cp_store and _cp.slug in _cp_providers_store:
@@ -2332,7 +2332,7 @@ def list_authenticated_providers(
             )
             if should_probe:
                 try:
-                    from opencodon.core.models import fetch_api_models
+                    from opencodon.core.providers.models import fetch_api_models
                     live_models = fetch_api_models(
                         api_key,
                         api_url,
@@ -2401,7 +2401,7 @@ def list_authenticated_providers(
         _models = [current_model] if current_model else []
         if refresh or probe_current_custom_provider:
             try:
-                from opencodon.core.models import fetch_api_models
+                from opencodon.core.providers.models import fetch_api_models
 
                 _live_models = fetch_api_models("", str(current_base_url).strip().rstrip("/"))
                 if _live_models:
@@ -2627,7 +2627,7 @@ def list_authenticated_providers(
             )
             if should_probe:
                 try:
-                    from opencodon.core.models import fetch_api_models
+                    from opencodon.core.providers.models import fetch_api_models
 
                     live_models = fetch_api_models(
                         api_key,
@@ -2741,7 +2741,7 @@ def list_picker_providers(
     current install:
 
     - OpenRouter's model list is replaced with the output of
-      :func:`opencodon.core.models.fetch_openrouter_models`, which filters the
+      :func:`opencodon.core.providers.models.fetch_openrouter_models`, which filters the
       curated ``OPENROUTER_MODELS`` snapshot against the live OpenRouter
       catalog.  IDs the live catalog no longer carries drop out, so the
       picker never offers a model the user can't call.
@@ -2753,7 +2753,7 @@ def list_picker_providers(
     The typed ``/model <name>`` path is unaffected -- only the interactive
     picker payload is narrowed.
     """
-    from opencodon.core.models import fetch_openrouter_models
+    from opencodon.core.providers.models import fetch_openrouter_models
 
     providers = list_authenticated_providers(
         current_provider=current_provider,

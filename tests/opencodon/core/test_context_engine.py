@@ -4,8 +4,8 @@ import json
 import pytest
 from typing import Any, Dict, List
 
-from opencodon.core.context_engine import ContextEngine
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_engine import ContextEngine
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 # ---------------------------------------------------------------------------

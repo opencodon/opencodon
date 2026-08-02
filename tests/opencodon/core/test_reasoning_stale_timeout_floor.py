@@ -307,7 +307,7 @@ def _resolve_stream_stale_timeout(
     agent/chat_completion_helpers.py.  When that block changes, this
     mirror must change too — the failing-test signal is the divergence.
     """
-    from opencodon.core.model_metadata import is_local_endpoint
+    from opencodon.core.providers.model_metadata import is_local_endpoint
     from opencodon.core.reasoning_timeouts import get_reasoning_stale_timeout_floor
 
     # Provider-configured stale timeout wins (mirrors get_provider_stale_timeout).

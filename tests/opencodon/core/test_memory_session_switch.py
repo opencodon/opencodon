@@ -10,8 +10,8 @@ for scoped writes) keep writing into the old session's record.
 
 import pytest
 
-from opencodon.core.memory_manager import MemoryManager
-from opencodon.core.memory_provider import MemoryProvider
+from opencodon.core.memory.memory_manager import MemoryManager
+from opencodon.core.memory.memory_provider import MemoryProvider
 
 
 class _RecordingProvider(MemoryProvider):

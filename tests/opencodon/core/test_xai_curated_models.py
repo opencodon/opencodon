@@ -1,6 +1,6 @@
 """Regression tests for xAI curated model list (OAuth picker)."""
 
-from opencodon.core.models import _PROVIDER_MODELS, provider_model_ids
+from opencodon.core.providers.models import _PROVIDER_MODELS, provider_model_ids
 
 
 def test_xai_oauth_includes_grok_composer_2_5_fast():

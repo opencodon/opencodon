@@ -127,8 +127,8 @@ except Exception:
 # and into ``plugins/browser/<vendor>/``. The dispatcher consults the
 # registry; the legacy class names are re-exported below as backward-compat
 # shims for callers that import them from this module.
-from opencodon.core.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
-from opencodon.core.browser_registry import (  # noqa: F401  (test-patchable surface)
+from opencodon.core.providers.browser_provider import BrowserProvider as CloudBrowserProvider  # noqa: F401  (legacy alias)
+from opencodon.core.providers.browser_registry import (  # noqa: F401  (test-patchable surface)
     get_provider as _registry_get_browser_provider,
 )
 from plugins.browser.browserbase.provider import (  # noqa: F401  (legacy import surface)

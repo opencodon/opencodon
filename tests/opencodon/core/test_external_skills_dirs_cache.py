@@ -16,8 +16,8 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core import skill_utils
-from opencodon.core.skill_utils import (
+from opencodon.core.skills import skill_utils
+from opencodon.core.skills.skill_utils import (
     _external_dirs_cache_clear,
     get_external_skills_dirs,
 )

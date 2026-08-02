@@ -21,8 +21,8 @@ if "dotenv" not in sys.modules:
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     sys.modules["dotenv"] = fake_dotenv
 
-from opencodon.core.auth import resolve_api_key_provider_credentials
-from opencodon.core.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS, normalize_provider
+from opencodon.core.credentials.auth import resolve_api_key_provider_credentials
+from opencodon.core.providers.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS, normalize_provider
 
 
 @pytest.fixture(autouse=True)
@@ -121,7 +121,7 @@ class TestFireworksDoctor:
             types.SimpleNamespace(check_tool_availability=lambda *a, **k: ([], []), TOOLSET_REQUIREMENTS={}),
         )
         with contextlib.suppress(Exception):
-            from opencodon.core import auth as _auth_mod
+            from opencodon.core.credentials import auth as _auth_mod
 
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
 
@@ -178,6 +178,6 @@ class TestFireworksAuxiliary:
 
 class TestFireworksModelMetadata:
     def test_url_infers_fireworks(self):
-        from opencodon.core.model_metadata import _infer_provider_from_url
+        from opencodon.core.providers.model_metadata import _infer_provider_from_url
 
         assert _infer_provider_from_url("https://api.fireworks.ai/inference/v1") == "fireworks"

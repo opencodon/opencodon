@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from opencodon.core.auth import (
+from opencodon.core.credentials.auth import (
     PROVIDER_REGISTRY,
     resolve_provider,
     get_api_key_provider_status,
@@ -19,7 +19,7 @@ from opencodon.core.auth import (
     STEPFUN_STEP_PLAN_CN_BASE_URL,
     _resolve_kimi_base_url,
 )
-from opencodon.core.copilot_auth import _try_gh_cli_token
+from opencodon.core.credentials.copilot_auth import _try_gh_cli_token
 
 
 # =============================================================================
@@ -149,7 +149,7 @@ class TestProviderRegistry:
 # new provider (and its env var) is added — a hand-maintained tuple here was
 # missing HF_TOKEN/DEEPINFRA_API_KEY, which made the auto-detection tests
 # env-dependent (they failed on any machine with HF_TOKEN exported).
-from opencodon.core.auth import PROVIDER_REGISTRY as _REGISTRY
+from opencodon.core.credentials.auth import PROVIDER_REGISTRY as _REGISTRY
 
 _EXTRA_ENV_VARS = (
     # Checked directly in resolve_provider("auto"), not via the registry.
@@ -173,7 +173,7 @@ PROVIDER_ENV_VARS = tuple(
 def _clear_provider_env(monkeypatch):
     for key in PROVIDER_ENV_VARS:
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setattr("opencodon.core.auth._load_auth_store", lambda: {})
+    monkeypatch.setattr("opencodon.core.credentials.auth._load_auth_store", lambda: {})
 
 
 class TestResolveProvider:
@@ -328,7 +328,7 @@ class TestResolveProvider:
         # the specific "GitHub token alone shouldn't auto-pick copilot"
         # behavior, not the Bedrock fallback.
         monkeypatch.setattr(
-            "opencodon.core.bedrock_adapter.has_aws_credentials",
+            "opencodon.core.providers.bedrock_adapter.has_aws_credentials",
             lambda env=None: False,
         )
         monkeypatch.setenv("GITHUB_TOKEN", "gh-test-token")
@@ -376,7 +376,7 @@ class TestApiKeyProviderStatus:
         assert status["base_url"] == STEPFUN_STEP_PLAN_CN_BASE_URL
 
     def test_copilot_status_uses_gh_cli_token(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.copilot_auth._try_gh_cli_token", lambda: "gho_gh_cli_token")
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth._try_gh_cli_token", lambda: "gho_gh_cli_token")
         status = get_api_key_provider_status("copilot")
         assert status["configured"] is True
         assert status["logged_in"] is True
@@ -391,7 +391,7 @@ class TestApiKeyProviderStatus:
 
     def test_copilot_acp_status_detects_local_cli(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio --debug")
-        monkeypatch.setattr("opencodon.core.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
+        monkeypatch.setattr("opencodon.core.credentials.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
 
         status = get_external_process_provider_status("copilot-acp")
 
@@ -403,7 +403,7 @@ class TestApiKeyProviderStatus:
         assert status["base_url"] == "acp://copilot"
 
     def test_get_auth_status_dispatches_to_external_process(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.auth.shutil.which", lambda command: f"/opt/bin/{command}")
+        monkeypatch.setattr("opencodon.core.credentials.auth.shutil.which", lambda command: f"/opt/bin/{command}")
 
         status = get_auth_status("copilot-acp")
 
@@ -423,7 +423,7 @@ class TestResolveApiKeyProviderCredentials:
 
     def test_resolve_zai_with_key(self, monkeypatch):
         monkeypatch.setenv("GLM_API_KEY", "glm-secret-key")
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["provider"] == "zai"
         assert creds["api_key"] == "glm-secret-key"
@@ -439,7 +439,7 @@ class TestResolveApiKeyProviderCredentials:
         assert creds["source"] == "GITHUB_TOKEN"
 
     def test_resolve_copilot_with_gh_cli_fallback(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
         creds = resolve_api_key_provider_credentials("copilot")
         assert creds["provider"] == "copilot"
         assert creds["api_key"] == "gho_cli_secret"
@@ -479,13 +479,13 @@ class TestResolveApiKeyProviderCredentials:
         assert creds["base_url"] == "http://127.0.0.1:1234/v1"
 
     def test_try_gh_cli_token_uses_homebrew_path_when_not_on_path(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.copilot_auth.shutil.which", lambda command: None)
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth.shutil.which", lambda command: None)
         monkeypatch.setattr(
-            "opencodon.core.copilot_auth.os.path.isfile",
+            "opencodon.core.credentials.copilot_auth.os.path.isfile",
             lambda path: path == "/opt/homebrew/bin/gh",
         )
         monkeypatch.setattr(
-            "opencodon.core.copilot_auth.os.access",
+            "opencodon.core.credentials.copilot_auth.os.access",
             lambda path, mode: path == "/opt/homebrew/bin/gh" and mode == os.X_OK,
         )
 
@@ -499,14 +499,14 @@ class TestResolveApiKeyProviderCredentials:
             calls.append(cmd)
             return _Result()
 
-        monkeypatch.setattr("opencodon.core.copilot_auth.subprocess.run", _fake_run)
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth.subprocess.run", _fake_run)
 
         assert _try_gh_cli_token() == "gh-cli-secret"
         assert calls == [["/opt/homebrew/bin/gh", "auth", "token"]]
 
     def test_resolve_copilot_acp_with_local_cli(self, monkeypatch):
         monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio")
-        monkeypatch.setattr("opencodon.core.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
+        monkeypatch.setattr("opencodon.core.credentials.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
 
         creds = resolve_external_process_provider_credentials("copilot-acp")
 
@@ -596,7 +596,7 @@ class TestResolveApiKeyProviderCredentials:
         """GLM_API_KEY takes priority over ZAI_API_KEY."""
         monkeypatch.setenv("GLM_API_KEY", "primary")
         monkeypatch.setenv("ZAI_API_KEY", "secondary")
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["api_key"] == "primary"
         assert creds["source"] == "GLM_API_KEY"
@@ -604,7 +604,7 @@ class TestResolveApiKeyProviderCredentials:
     def test_zai_key_fallback(self, monkeypatch):
         """ZAI_API_KEY used when GLM_API_KEY not set."""
         monkeypatch.setenv("ZAI_API_KEY", "secondary")
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["api_key"] == "secondary"
         assert creds["source"] == "ZAI_API_KEY"
@@ -618,7 +618,7 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_zai(self, monkeypatch):
         monkeypatch.setenv("GLM_API_KEY", "glm-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="zai")
         assert result["provider"] == "zai"
         assert result["api_mode"] == "chat_completions"
@@ -627,7 +627,7 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_kimi(self, monkeypatch):
         monkeypatch.setenv("KIMI_API_KEY", "kimi-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="kimi-coding")
         assert result["provider"] == "kimi-coding"
         assert result["api_mode"] == "chat_completions"
@@ -636,7 +636,7 @@ class TestRuntimeProviderResolution:
     def test_runtime_stepfun(self, monkeypatch):
         monkeypatch.setenv("STEPFUN_API_KEY", "stepfun-key")
         monkeypatch.setenv("STEPFUN_BASE_URL", STEPFUN_STEP_PLAN_CN_BASE_URL)
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="stepfun")
         assert result["provider"] == "stepfun"
         assert result["api_mode"] == "chat_completions"
@@ -645,14 +645,14 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_minimax(self, monkeypatch):
         monkeypatch.setenv("MINIMAX_API_KEY", "mm-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="minimax")
         assert result["provider"] == "minimax"
         assert result["api_key"] == "mm-key"
 
     def test_runtime_kilocode(self, monkeypatch):
         monkeypatch.setenv("KILOCODE_API_KEY", "kilo-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="kilocode")
         assert result["provider"] == "kilocode"
         assert result["api_mode"] == "chat_completions"
@@ -661,7 +661,7 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_gmi(self, monkeypatch):
         monkeypatch.setenv("GMI_API_KEY", "gmi-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="gmi")
         assert result["provider"] == "gmi"
         assert result["api_mode"] == "chat_completions"
@@ -670,14 +670,14 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_auto_detects_api_key_provider(self, monkeypatch):
         monkeypatch.setenv("KIMI_API_KEY", "auto-kimi-key")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="auto")
         assert result["provider"] == "kimi-coding"
         assert result["api_key"] == "auto-kimi-key"
 
     def test_runtime_copilot_uses_gh_cli_token(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         result = resolve_runtime_provider(requested="copilot")
         assert result["provider"] == "copilot"
         assert result["api_mode"] == "chat_completions"
@@ -685,13 +685,13 @@ class TestRuntimeProviderResolution:
         assert result["base_url"] == "https://api.githubcopilot.com"
 
     def test_runtime_copilot_uses_responses_for_gpt_5_4(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
         monkeypatch.setattr(
-            "opencodon.core.runtime_provider._get_model_config",
+            "opencodon.core.providers.runtime_provider._get_model_config",
             lambda: {"provider": "copilot", "default": "gpt-5.4"},
         )
         monkeypatch.setattr(
-            "opencodon.core.models.fetch_github_model_catalog",
+            "opencodon.core.providers.models.fetch_github_model_catalog",
             lambda api_key=None, timeout=5.0: [
                 {
                     "id": "gpt-5.4",
@@ -700,7 +700,7 @@ class TestRuntimeProviderResolution:
                 }
             ],
         )
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
         result = resolve_runtime_provider(requested="copilot")
 
@@ -708,10 +708,10 @@ class TestRuntimeProviderResolution:
         assert result["api_mode"] == "codex_responses"
 
     def test_runtime_copilot_acp_uses_process_runtime(self, monkeypatch):
-        monkeypatch.setattr("opencodon.core.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
+        monkeypatch.setattr("opencodon.core.credentials.auth.shutil.which", lambda command: f"/usr/local/bin/{command}")
         monkeypatch.setenv("OPENCODON_COPILOT_ACP_ARGS", "--acp --stdio --debug")
 
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
         result = resolve_runtime_provider(requested="copilot-acp")
 
@@ -751,7 +751,7 @@ class TestHasAnyProviderConfigured:
 
     def test_gh_cli_token_counts(self, monkeypatch, tmp_path):
         from opencodon.frontends.cli import config as config_module
-        monkeypatch.setattr("opencodon.core.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth._try_gh_cli_token", lambda: "gho_cli_secret")
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
@@ -762,12 +762,12 @@ class TestHasAnyProviderConfigured:
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
         """Claude Code credentials should NOT skip the wizard when opencodon is unconfigured."""
         from opencodon.frontends.cli import config as config_module
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
         monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
-        monkeypatch.setattr("opencodon.core.copilot_auth.resolve_copilot_token", lambda: ("", ""))
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth.resolve_copilot_token", lambda: ("", ""))
         # Clear all provider env vars so earlier checks don't short-circuit
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                       "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"}
@@ -777,14 +777,14 @@ class TestHasAnyProviderConfigured:
         for var in _all_vars:
             monkeypatch.delenv(var, raising=False)
         # Prevent gh-cli / copilot auth fallback from leaking in
-        monkeypatch.setattr("opencodon.core.auth.get_auth_status", lambda _pid: {})
+        monkeypatch.setattr("opencodon.core.credentials.auth.get_auth_status", lambda _pid: {})
         # Simulate valid Claude Code credentials
         monkeypatch.setattr(
-            "opencodon.core.anthropic_adapter.read_claude_code_credentials",
+            "opencodon.core.providers.anthropic_adapter.read_claude_code_credentials",
             lambda: {"accessToken": "sk-ant-test", "refreshToken": "ref-tok"},
         )
         monkeypatch.setattr(
-            "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
+            "opencodon.core.providers.anthropic_adapter.is_claude_code_token_valid",
             lambda creds: True,
         )
         from opencodon.frontends.cli.main import _has_any_provider_configured
@@ -852,7 +852,7 @@ class TestHasAnyProviderConfigured:
         """config.yaml model dict with empty default and no creds stays false."""
         import yaml
         from opencodon.frontends.cli import config as config_module
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
         opencodon_home = tmp_path / ".opencodon"
         opencodon_home.mkdir()
         config_file = opencodon_home / "config.yaml"
@@ -862,7 +862,7 @@ class TestHasAnyProviderConfigured:
         monkeypatch.setattr(config_module, "get_env_path", lambda: opencodon_home / ".env")
         monkeypatch.setattr(config_module, "get_opencodon_home", lambda: opencodon_home)
         monkeypatch.setenv("OPENCODON_HOME", str(opencodon_home))
-        monkeypatch.setattr("opencodon.core.copilot_auth.resolve_copilot_token", lambda: ("", ""))
+        monkeypatch.setattr("opencodon.core.credentials.copilot_auth.resolve_copilot_token", lambda: ("", ""))
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                       "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"}
         for pconfig in PROVIDER_REGISTRY.values():
@@ -871,7 +871,7 @@ class TestHasAnyProviderConfigured:
         for var in _all_vars:
             monkeypatch.delenv(var, raising=False)
         # Prevent gh-cli / copilot auth fallback from leaking in
-        monkeypatch.setattr("opencodon.core.auth.get_auth_status", lambda _pid: {})
+        monkeypatch.setattr("opencodon.core.credentials.auth.get_auth_status", lambda _pid: {})
         from opencodon.frontends.cli.main import _has_any_provider_configured
         assert _has_any_provider_configured() is False
 
@@ -893,11 +893,11 @@ class TestHasAnyProviderConfigured:
             monkeypatch.delenv(var, raising=False)
         # Simulate valid Claude Code credentials
         monkeypatch.setattr(
-            "opencodon.core.anthropic_adapter.read_claude_code_credentials",
+            "opencodon.core.providers.anthropic_adapter.read_claude_code_credentials",
             lambda: {"accessToken": "sk-ant-test", "refreshToken": "ref-tok"},
         )
         monkeypatch.setattr(
-            "opencodon.core.anthropic_adapter.is_claude_code_token_valid",
+            "opencodon.core.providers.anthropic_adapter.is_claude_code_token_valid",
             lambda creds: True,
         )
         from opencodon.frontends.cli.main import _has_any_provider_configured
@@ -984,7 +984,7 @@ class TestKimiCodeCredentialAutoDetect:
     def test_non_kimi_providers_unaffected(self, monkeypatch):
         """Ensure the auto-detect logic doesn't leak to other providers."""
         monkeypatch.setenv("GLM_API_KEY", "sk-kim...isnt")
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["base_url"] == "https://api.z.ai/api/paas/v4"
 
@@ -995,7 +995,7 @@ class TestZaiEndpointAutoDetect:
     def test_probe_success_returns_detected_url(self, monkeypatch):
         monkeypatch.setenv("GLM_API_KEY", "glm-coding-key")
         monkeypatch.setattr(
-            "opencodon.core.auth.detect_zai_endpoint",
+            "opencodon.core.credentials.auth.detect_zai_endpoint",
             lambda *a, **kw: {
                 "id": "coding-global",
                 "base_url": "https://api.z.ai/api/coding/paas/v4",
@@ -1008,7 +1008,7 @@ class TestZaiEndpointAutoDetect:
 
     def test_probe_failure_falls_back_to_default(self, monkeypatch):
         monkeypatch.setenv("GLM_API_KEY", "glm-key")
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["base_url"] == "https://api.z.ai/api/paas/v4"
 
@@ -1023,14 +1023,14 @@ class TestZaiEndpointAutoDetect:
             probe_called = True
             return None
 
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", _never_called)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", _never_called)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["base_url"] == "https://custom.example/v4"
         assert not probe_called
 
     def test_no_key_skips_probe(self, monkeypatch):
         """Without an API key, no probe should occur."""
-        monkeypatch.setattr("opencodon.core.auth.detect_zai_endpoint", lambda *a, **kw: None)
+        monkeypatch.setattr("opencodon.core.credentials.auth.detect_zai_endpoint", lambda *a, **kw: None)
         creds = resolve_api_key_provider_credentials("zai")
         assert creds["api_key"] == ""
 
@@ -1071,20 +1071,20 @@ class TestHuggingFaceModels:
         assert len(_PROVIDER_MODELS["huggingface"]) >= 1
 
     def test_models_py_has_huggingface(self):
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "huggingface" in _PROVIDER_MODELS
         assert len(_PROVIDER_MODELS["huggingface"]) >= 1
 
     def test_model_lists_match(self):
         """Model lists in main.py and models.py should be identical."""
         from opencodon.frontends.cli.main import _PROVIDER_MODELS as main_models
-        from opencodon.core.models import _PROVIDER_MODELS as models_models
+        from opencodon.core.providers.models import _PROVIDER_MODELS as models_models
         assert main_models["huggingface"] == models_models["huggingface"]
 
     def test_model_metadata_has_context_lengths(self):
         """Every HF model should have a context length entry."""
-        from opencodon.core.models import _PROVIDER_MODELS
-        from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
+        from opencodon.core.providers.model_metadata import DEFAULT_CONTEXT_LENGTHS
         lower_keys = {k.lower() for k in DEFAULT_CONTEXT_LENGTHS}
         hf_models = _PROVIDER_MODELS["huggingface"]
         for model in hf_models:
@@ -1094,17 +1094,17 @@ class TestHuggingFaceModels:
 
     def test_models_use_org_name_format(self):
         """HF models should use org/name format (e.g. Qwen/Qwen3-235B)."""
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         for model in _PROVIDER_MODELS["huggingface"]:
             assert "/" in model, f"HF model {model!r} missing org/ prefix"
 
     def test_provider_aliases_in_models_py(self):
-        from opencodon.core.models import _PROVIDER_ALIASES
+        from opencodon.core.providers.models import _PROVIDER_ALIASES
         assert _PROVIDER_ALIASES.get("hf") == "huggingface"
         assert _PROVIDER_ALIASES.get("hugging-face") == "huggingface"
 
     def test_provider_label(self):
-        from opencodon.core.models import _PROVIDER_LABELS
+        from opencodon.core.providers.models import _PROVIDER_LABELS
         assert "huggingface" in _PROVIDER_LABELS
         assert _PROVIDER_LABELS["huggingface"] == "Hugging Face"
 
@@ -1155,48 +1155,48 @@ class TestNovitaProvider:
         assert len(_PROVIDER_MODELS["novita"]) >= 1
 
     def test_models_py_has_novita(self):
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "novita" in _PROVIDER_MODELS
         assert len(_PROVIDER_MODELS["novita"]) >= 1
 
     def test_novita_model_lists_match(self):
         """Model lists in main.py and models.py should be identical."""
         from opencodon.frontends.cli.main import _PROVIDER_MODELS as main_models
-        from opencodon.core.models import _PROVIDER_MODELS as models_models
+        from opencodon.core.providers.models import _PROVIDER_MODELS as models_models
         assert main_models["novita"] == models_models["novita"]
 
     def test_novita_models_use_org_name_format(self):
         """Novita models should use org/name format."""
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         for model in _PROVIDER_MODELS["novita"]:
             assert "/" in model, f"Novita model {model!r} missing org/ prefix"
 
     def test_novita_aliases_in_models_py(self):
-        from opencodon.core.models import _PROVIDER_ALIASES
+        from opencodon.core.providers.models import _PROVIDER_ALIASES
         assert _PROVIDER_ALIASES.get("novita-ai") == "novita"
         assert _PROVIDER_ALIASES.get("novitaai") == "novita"
 
     def test_novita_label(self):
-        from opencodon.core.models import _PROVIDER_LABELS
+        from opencodon.core.providers.models import _PROVIDER_LABELS
         assert "novita" in _PROVIDER_LABELS
         assert _PROVIDER_LABELS["novita"] == "NovitaAI"
 
     def test_novita_in_provider_prefixes(self):
-        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.providers.model_metadata import _PROVIDER_PREFIXES
         assert "novita" in _PROVIDER_PREFIXES
 
     def test_novita_url_to_provider(self):
-        from opencodon.core.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.providers.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("api.novita.ai") == "novita"
 
     def test_context_size_in_context_length_keys(self):
         """Novita /v1/models uses 'context_size' as the context length key."""
-        from opencodon.core.model_metadata import _CONTEXT_LENGTH_KEYS
+        from opencodon.core.providers.model_metadata import _CONTEXT_LENGTH_KEYS
         assert "context_size" in _CONTEXT_LENGTH_KEYS
 
     def test_novita_pricing_unit_conversion(self):
         """Novita returns prices in 0.0001 USD per Mtok; divide by 10_000 * 1_000_000."""
-        from opencodon.core.model_metadata import _extract_pricing
+        from opencodon.core.providers.model_metadata import _extract_pricing
         # Sample shape from real Novita /v1/models response
         payload = {
             "id": "deepseek/deepseek-v3-0324",
@@ -1212,7 +1212,7 @@ class TestNovitaProvider:
 
     def test_novita_pricing_cache(self, monkeypatch):
         """_fetch_novita_pricing should cache results in _pricing_cache."""
-        from opencodon.core import models as models_mod
+        from opencodon.core.providers import models as models_mod
         monkeypatch.setenv("NOVITA_API_KEY", "sk-test-key")
         monkeypatch.setenv("NOVITA_BASE_URL", "https://api.novita.ai/openai/v1")
         models_mod._pricing_cache.pop("https://api.novita.ai/openai/v1", None)
@@ -1276,7 +1276,7 @@ class TestMinimaxOAuthProvider:
         assert pconfig.id == "minimax-oauth"
 
     def test_minimax_oauth_has_correct_endpoints(self):
-        from opencodon.core.auth import (
+        from opencodon.core.credentials.auth import (
             MINIMAX_OAUTH_GLOBAL_BASE,
             MINIMAX_OAUTH_GLOBAL_INFERENCE,
             MINIMAX_OAUTH_CN_BASE,
@@ -1301,18 +1301,18 @@ class TestMinimaxOAuthProvider:
         assert result == "minimax-oauth"
 
     def test_minimax_oauth_listed_in_canonical_providers(self):
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
         slugs = [p.slug for p in CANONICAL_PROVIDERS]
         assert "minimax-oauth" in slugs
 
     def test_minimax_oauth_models_alias_in_models_py(self):
-        from opencodon.core.models import _PROVIDER_ALIASES
+        from opencodon.core.providers.models import _PROVIDER_ALIASES
         assert _PROVIDER_ALIASES.get("minimax-portal") == "minimax-oauth"
         assert _PROVIDER_ALIASES.get("minimax-global") == "minimax-oauth"
         assert _PROVIDER_ALIASES.get("minimax_oauth") == "minimax-oauth"
 
     def test_minimax_oauth_has_models(self):
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         models = _PROVIDER_MODELS.get("minimax-oauth", [])
         assert len(models) >= 1
 
@@ -1354,7 +1354,7 @@ def _deepinfra_cache_isolation(monkeypatch):
     reset too, so a test that simulates an unreachable catalog can't suppress
     a later test's fetch within the failure TTL.
     """
-    import opencodon.core.models as _models_mod
+    import opencodon.core.providers.models as _models_mod
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_cache", {})
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_neg_cache", {})
     yield
@@ -1380,11 +1380,11 @@ class TestFetchDeepInfraModels:
                     {"id": "stabilityai/stable-diffusion-xl-base-1.0", "metadata": {}},
                 ]}).encode()
 
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request", lambda *a, **kw: _Resp()
         )
-        from opencodon.core.models import _fetch_deepinfra_models
+        from opencodon.core.providers.models import _fetch_deepinfra_models
         result = _fetch_deepinfra_models()
 
         assert result is not None
@@ -1407,27 +1407,27 @@ class TestFetchDeepInfraModels:
                     {"id": "meta-llama/Llama-3-70B-Instruct", "metadata": {}},
                 ]}).encode()
 
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request", lambda *a, **kw: _Resp()
         )
-        from opencodon.core.models import _fetch_deepinfra_models
+        from opencodon.core.providers.models import _fetch_deepinfra_models
         result = _fetch_deepinfra_models()
         assert result == ["meta-llama/Llama-3-70B-Instruct"]
 
     def test_returns_none_on_network_failure(self, monkeypatch):
         monkeypatch.setenv("DEEPINFRA_API_KEY", "test-key")
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models,
             "_urlopen_model_catalog_request",
             lambda *a, **kw: (_ for _ in ()).throw(Exception("timeout")),
         )
-        from opencodon.core.models import _fetch_deepinfra_models
+        from opencodon.core.providers.models import _fetch_deepinfra_models
         assert _fetch_deepinfra_models() is None
 
     def test_catalog_uses_credential_safe_opener(self, monkeypatch):
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
 
         seen = {}
 
@@ -1455,7 +1455,7 @@ class TestFetchDeepInfraModels:
     def test_empty_filtered_catalog_never_falls_back_to_mixed_profile_catalog(
         self, monkeypatch
     ):
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         from opencodon.providers import get_provider_profile
 
         profile = get_provider_profile("deepinfra")
@@ -1473,7 +1473,7 @@ class TestFetchDeepInfraModels:
         assert models.provider_model_ids("deepinfra") == []
 
     def test_force_refresh_reaches_deepinfra_catalog(self, monkeypatch):
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
 
         seen = []
 
@@ -1508,11 +1508,11 @@ class TestFetchDeepInfraModels:
                     {"id": "nvidia/sdxl-turbo", "metadata": {}},
                 ]}).encode()
 
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request", lambda *a, **kw: _Resp()
         )
-        from opencodon.core.models import _fetch_deepinfra_models
+        from opencodon.core.providers.models import _fetch_deepinfra_models
         result = _fetch_deepinfra_models()
 
         assert result == ["Qwen/Qwen3-235B-A22B-Instruct-2507"]
@@ -1561,8 +1561,8 @@ class TestDeepInfraTagFiltering:
             # null metadata — stub model, must be skipped
             {"id": "stub-model", "metadata": None},
         ]}
-        from opencodon.core.models import _fetch_deepinfra_models_by_tag
-        import opencodon.core.models as _m
+        from opencodon.core.providers.models import _fetch_deepinfra_models_by_tag
+        import opencodon.core.providers.models as _m
 
         for surface in ("chat", "image-gen", "tts", "stt", "embed"):
             monkeypatch.setattr(
@@ -1589,12 +1589,12 @@ class TestDeepInfraTagFiltering:
                     assert surface in item["metadata"]["tags"]
 
     def test_returns_none_on_network_failure(self, monkeypatch):
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request",
             lambda *a, **kw: (_ for _ in ()).throw(Exception("timeout")),
         )
-        from opencodon.core.models import _fetch_deepinfra_models_by_tag, _fetch_deepinfra_pricing
+        from opencodon.core.providers.models import _fetch_deepinfra_models_by_tag, _fetch_deepinfra_pricing
         assert _fetch_deepinfra_models_by_tag("chat") is None
         # Pricing rides the same catalog cache — same failure mode.
         assert _fetch_deepinfra_pricing() == {}
@@ -1625,13 +1625,13 @@ class TestDeepInfraPricingFetcher:
             # non-chat — must not appear
             {"id": "vendor/model-image", "metadata": {"tags": ["image-gen"], "pricing": {"per_image_unit": 0.05}}},
         ]}
-        import opencodon.core.models as models
+        import opencodon.core.providers.models as models
         monkeypatch.setattr(
             models,
             "_urlopen_model_catalog_request",
             _make_urlopen_returning(payload),
         )
-        from opencodon.core.models import get_pricing_for_provider
+        from opencodon.core.providers.models import get_pricing_for_provider
 
         # get_pricing_for_provider → _fetch_deepinfra_pricing dispatch path
         result = get_pricing_for_provider("deepinfra")
@@ -1649,9 +1649,9 @@ class TestDeepInfraProviderProfile:
     def test_profile_registered_with_alias_and_aux(self):
         from opencodon.providers import get_provider_profile
         from opencodon.core.auxiliary_client import _get_aux_model_for_provider
-        from opencodon.core.auth import PROVIDER_REGISTRY, resolve_provider
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY, resolve_provider
         from opencodon.config import OPTIONAL_ENV_VARS
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
 
         profile = get_provider_profile("deepinfra")
         assert profile is not None

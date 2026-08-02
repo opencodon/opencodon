@@ -25,7 +25,7 @@ sys.modules.setdefault("fire", types.SimpleNamespace(Fire=lambda *a, **k: None))
 sys.modules.setdefault("firecrawl", types.SimpleNamespace(Firecrawl=object))
 sys.modules.setdefault("fal_client", types.SimpleNamespace())
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _make_compressor():
@@ -78,7 +78,7 @@ def _conversation_without_handoff(n_exchanges=12):
 
 def _conversation_with_handoff(n_exchanges=12):
     """Build message list WITH a compaction handoff in protected head."""
-    from opencodon.core.context_compressor import SUMMARY_PREFIX
+    from opencodon.core.context.context_compressor import SUMMARY_PREFIX
     msgs = [{"role": "system", "content": "You are a helpful assistant."}]
     msgs.append({"role": "user", "content": SUMMARY_PREFIX + "\nPrevious summary."})
     for i in range(n_exchanges):

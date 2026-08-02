@@ -177,7 +177,7 @@ def _containing_skills_root(skill_path: Path) -> Path:
     match is found (defensive — callers should have located the skill via
     ``_find_skill`` first).
     """
-    from opencodon.core.skill_utils import get_all_skills_dirs
+    from opencodon.core.skills.skill_utils import get_all_skills_dirs
 
     try:
         resolved = skill_path.resolve()
@@ -225,7 +225,7 @@ def _validate_delete_target(skill_dir: Path) -> Optional[str]:
 
     Returns an error string to refuse on, or ``None`` when the delete is safe.
     """
-    from opencodon.core.skill_utils import get_all_skills_dirs
+    from opencodon.core.skills.skill_utils import get_all_skills_dirs
 
     # (3) Reject symlink/junction redirects on the skill directory itself.
     if _is_path_redirect(skill_dir):
@@ -335,7 +335,7 @@ def _background_review_write_guard(
         logger.debug("pinned skill guard lookup failed for %s", name, exc_info=True)
 
     try:
-        from opencodon.core.skill_utils import is_external_skill_path
+        from opencodon.core.skills.skill_utils import is_external_skill_path
         if is_external_skill_path(skill_dir):
             return {
                 "success": False,
@@ -610,7 +610,7 @@ def _find_skill(name: str) -> Optional[Dict[str, Any]]:
     external dirs configured via skills.external_dirs.  Returns
     {"path": Path} or None.
     """
-    from opencodon.core.skill_utils import get_all_skills_dirs, is_excluded_skill_path
+    from opencodon.core.skills.skill_utils import get_all_skills_dirs, is_excluded_skill_path
     for skills_dir in get_all_skills_dirs():
         if not skills_dir.exists():
             continue
@@ -634,7 +634,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     matches: List[Tuple[str, Path]] = []
     try:
         from opencodon_constants import get_default_opencodon_root
-        from opencodon.core.skill_utils import is_excluded_skill_path
+        from opencodon.core.skills.skill_utils import is_excluded_skill_path
     except Exception:
         return matches
 
@@ -1408,7 +1408,7 @@ def skill_manage(
 
     if result.get("success"):
         try:
-            from opencodon.core.prompt_builder import clear_skills_system_prompt_cache
+            from opencodon.core.prompt.prompt_builder import clear_skills_system_prompt_cache
             clear_skills_system_prompt_cache(clear_snapshot=True)
         except Exception:
             pass

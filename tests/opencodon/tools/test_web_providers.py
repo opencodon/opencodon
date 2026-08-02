@@ -33,13 +33,13 @@ class TestWebProviderABCs:
     """
 
     def test_cannot_instantiate_abc_directly(self):
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
 
         with pytest.raises(TypeError):
             WebSearchProvider()  # type: ignore[abstract]
 
     def test_concrete_search_only_provider_works(self):
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
 
         class Dummy(WebSearchProvider):
             @property
@@ -68,7 +68,7 @@ class TestWebProviderABCs:
         assert d.search("test")["success"] is True
 
     def test_concrete_multi_capability_provider_works(self):
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
 
         class Dummy(WebSearchProvider):
             @property
@@ -101,7 +101,7 @@ class TestWebProviderABCs:
 
     def test_search_only_provider_skips_extract(self):
         """Search-only providers don't have to implement extract()."""
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
 
         class SearchOnly(WebSearchProvider):
             @property
@@ -274,7 +274,7 @@ class TestUnconfiguredErrorEnvelopeParity:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from opencodon.core.web_search_registry import _reset_for_tests
+        from opencodon.core.providers.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     def _clear_web_creds(self, monkeypatch):
@@ -316,7 +316,7 @@ class TestUnconfiguredErrorEnvelopeParity:
 class TestDispatchersTriggerPluginDiscovery:
     """Regression tests for #27580: each web_*_tool dispatcher must
     idempotently call ``_ensure_web_plugins_loaded()`` before consulting
-    ``opencodon.core.web_search_registry``.
+    ``opencodon.core.providers.web_search_registry``.
 
     Without this, a tool call from a context that hasn't already loaded
     plugins (subprocess agent runs, delegate children, standalone scripts,
@@ -334,7 +334,7 @@ class TestDispatchersTriggerPluginDiscovery:
         """Reset the web_search registry to empty and return a callback
         that restores the original contents. Used in a try/finally so the
         snapshot is restored even when the dispatcher under test raises."""
-        from opencodon.core import web_search_registry
+        from opencodon.core.providers import web_search_registry
 
         with web_search_registry._lock:
             original = dict(web_search_registry._providers)
@@ -361,8 +361,8 @@ class TestDispatchersTriggerPluginDiscovery:
         import asyncio
         import json
         from unittest.mock import MagicMock
-        from opencodon.core.web_search_provider import WebSearchProvider
-        from opencodon.core import web_search_registry
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
+        from opencodon.core.providers import web_search_registry
         from opencodon.tools import web_tools
 
         restore = self._clear_registry()
@@ -441,8 +441,8 @@ class TestDispatchersTriggerPluginDiscovery:
         """
         import json
         from unittest.mock import MagicMock
-        from opencodon.core.web_search_provider import WebSearchProvider
-        from opencodon.core import web_search_registry
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
+        from opencodon.core.providers import web_search_registry
         from opencodon.tools import web_tools
 
         restore = self._clear_registry()
@@ -502,7 +502,7 @@ class TestDisabledPluginDiagnostic:
     """
 
     def _clear_registry(self):
-        from opencodon.core import web_search_registry
+        from opencodon.core.providers import web_search_registry
 
         with web_search_registry._lock:
             original = dict(web_search_registry._providers)
@@ -532,7 +532,7 @@ class TestDisabledPluginDiagnostic:
         monkeypatch.setattr(plugins_mod, "get_plugin_manager", lambda: _StubMgr())
 
     def test_disabled_web_plugin_for_matches_by_key(self, monkeypatch):
-        from opencodon.core.web_search_registry import _disabled_web_plugin_for
+        from opencodon.core.providers.web_search_registry import _disabled_web_plugin_for
 
         self._patch_manager(monkeypatch, {
             "web/firecrawl": self._FakeLoaded(False, "disabled via config"),
@@ -545,7 +545,7 @@ class TestDisabledPluginDiagnostic:
         assert _disabled_web_plugin_for("nope") is None
 
     def test_disabled_web_plugin_for_normalizes_hyphens(self, monkeypatch):
-        from opencodon.core.web_search_registry import _disabled_web_plugin_for
+        from opencodon.core.providers.web_search_registry import _disabled_web_plugin_for
 
         self._patch_manager(monkeypatch, {
             "web/brave_free": self._FakeLoaded(False, "disabled via config"),
@@ -554,7 +554,7 @@ class TestDisabledPluginDiagnostic:
         assert _disabled_web_plugin_for("brave-free") == "web/brave_free"
 
     def test_disabled_web_plugin_for_ignores_non_disabled_errors(self, monkeypatch):
-        from opencodon.core.web_search_registry import _disabled_web_plugin_for
+        from opencodon.core.providers.web_search_registry import _disabled_web_plugin_for
 
         self._patch_manager(monkeypatch, {
             # a plugin that failed to import is NOT "disabled via config"
@@ -574,7 +574,7 @@ class TestDisabledPluginDiagnostic:
                 web_tools, "_load_web_config",
                 lambda: {"extract_backend": "firecrawl"},
             )
-            import opencodon.core.web_search_registry as wsr
+            import opencodon.core.providers.web_search_registry as wsr
             monkeypatch.setattr(
                 wsr, "_read_config_key",
                 lambda *path: "firecrawl" if path == ("web", "extract_backend") else None,
@@ -606,7 +606,7 @@ class TestDisabledPluginDiagnostic:
                 web_tools, "_load_web_config",
                 lambda: {"search_backend": "firecrawl"},
             )
-            import opencodon.core.web_search_registry as wsr
+            import opencodon.core.providers.web_search_registry as wsr
             monkeypatch.setattr(
                 wsr, "_read_config_key",
                 lambda *path: "firecrawl" if path == ("web", "search_backend") else None,

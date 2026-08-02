@@ -51,19 +51,64 @@ ALIASES = {
     "opencodon_cli.plugins": "opencodon.plugins_runtime",
     "opencodon_cli.middleware": "opencodon.plugins_runtime.middleware",
     # Phase 3b-1: auth/model/profile stack relocated out of the CLI frontend.
-    "opencodon_cli.auth": "opencodon.core.auth",
-    "opencodon_cli.models": "opencodon.core.models",
-    "opencodon_cli.runtime_provider": "opencodon.core.runtime_provider",
+    "opencodon_cli.auth": "opencodon.core.credentials.auth",
+    "opencodon_cli.models": "opencodon.core.providers.models",
+    "opencodon_cli.runtime_provider": "opencodon.core.providers.runtime_provider",
     "opencodon_cli.profiles": "opencodon.core.profiles",
     "opencodon_cli.providers": "opencodon.core.providers",
-    "opencodon_cli.codex_models": "opencodon.core.codex_models",
-    "opencodon_cli.copilot_auth": "opencodon.core.copilot_auth",
-    "opencodon_cli.model_catalog": "opencodon.core.model_catalog",
-    "opencodon_cli.model_cost_guard": "opencodon.core.model_cost_guard",
-    "opencodon_cli.fallback_config": "opencodon.core.fallback_config",
-    "opencodon_cli.memory_oauth": "opencodon.core.memory_oauth",
+    "opencodon_cli.codex_models": "opencodon.core.providers.codex_models",
+    "opencodon_cli.copilot_auth": "opencodon.core.credentials.copilot_auth",
+    "opencodon_cli.model_catalog": "opencodon.core.providers.model_catalog",
+    "opencodon_cli.model_cost_guard": "opencodon.core.providers.model_cost_guard",
+    "opencodon_cli.fallback_config": "opencodon.core.providers.fallback_config",
+    "opencodon_cli.memory_oauth": "opencodon.core.credentials.memory_oauth",
     "opencodon_cli.urllib_security": "opencodon.common.urllib_security",
 }
+
+# Phase 3b-2 regrouped flat opencodon.core modules into subpackages; legacy
+# ``agent.<module>`` names can no longer resolve through the aliased parent's
+# __path__, so each needs an explicit entry.
+_CORE_REGROUP = {
+    "providers": (
+        "anthropic_adapter", "azure_identity_adapter", "bedrock_adapter",
+        "vertex_adapter", "gemini_native_adapter", "gemini_schema",
+        "codex_responses_adapter", "codex_runtime", "moonshot_schema",
+        "lmstudio_reasoning", "copilot_acp_client", "plugin_llm",
+        "models_dev", "model_metadata", "models", "runtime_provider",
+        "codex_models", "model_catalog", "model_cost_guard",
+        "fallback_config", "account_usage", "usage_pricing", "billing_links",
+        "web_search_provider", "web_search_registry",
+        "browser_provider", "browser_registry",
+    ),
+    "credentials": (
+        "auth", "copilot_auth", "memory_oauth", "credential_pool",
+        "credential_persistence", "credential_sources", "secret_scope",
+    ),
+    "context": (
+        "context_breakdown", "context_compressor", "context_engine",
+        "context_references", "conversation_compression",
+        "manual_compression_feedback", "coding_context", "subdirectory_hints",
+    ),
+    "prompt": ("prompt_builder", "system_prompt", "prompt_caching"),
+    "memory": (
+        "memory_manager", "memory_provider", "learning_graph",
+        "learning_graph_render", "learning_mutations", "learn_prompt",
+        "insights", "curator", "curator_backup",
+    ),
+    "media": (
+        "tts_provider", "tts_registry", "transcription_provider",
+        "transcription_registry", "image_gen_provider", "image_gen_registry",
+        "image_routing",
+    ),
+    "skills": (
+        "skill_bundles", "skill_commands", "skill_preprocessing", "skill_utils",
+    ),
+}
+ALIASES.update({
+    f"agent.{mod}": f"opencodon.core.{sub}.{mod}"
+    for sub, mods in _CORE_REGROUP.items()
+    for mod in mods
+})
 
 
 def _canonical_for(name: str):

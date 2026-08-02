@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from opencodon.core.codex_responses_adapter import (
+from opencodon.core.providers.codex_responses_adapter import (
     _chat_messages_to_responses_input,
     _format_responses_error,
     _normalize_codex_response,

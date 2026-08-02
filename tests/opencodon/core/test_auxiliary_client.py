@@ -377,7 +377,7 @@ class TestReadCodexAccessToken:
 
         valid_jwt = "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig"
         with patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(True, None)), \
-             patch("opencodon.core.auth._read_codex_tokens", return_value={
+             patch("opencodon.core.credentials.auth._read_codex_tokens", return_value={
                  "tokens": {"access_token": valid_jwt, "refresh_token": "refresh"}
              }):
             result = _read_codex_access_token()
@@ -500,8 +500,8 @@ class TestResolveXaiOAuthForAux:
         should not fall through to "no auxiliary provider configured" just
         because the singleton auth-store entry is absent.
         """
-        from opencodon.core.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from opencodon.core.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from opencodon.core.credentials.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
+        from opencodon.core.credentials.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -532,8 +532,8 @@ class TestResolveXaiOAuthForAux:
         )
 
     def test_pool_backed_credentials_honor_base_url_env_override(self, tmp_path, monkeypatch):
-        from opencodon.core.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from opencodon.core.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from opencodon.core.credentials.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
+        from opencodon.core.credentials.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         opencodon_home = tmp_path / "opencodon"
         opencodon_home.mkdir(parents=True, exist_ok=True)
@@ -569,7 +569,7 @@ class TestAnthropicOAuthFlag:
     def test_oauth_token_sets_flag(self, monkeypatch):
         """OAuth tokens (sk-ant-oat01-*) should create client with is_oauth=True."""
         monkeypatch.setenv("ANTHROPIC_TOKEN", "sk-ant-oat01-test-token")
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build:
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build:
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic, AnthropicAuxiliaryClient
             client, model = _try_anthropic()
@@ -581,8 +581,8 @@ class TestAnthropicOAuthFlag:
 
     def test_api_key_no_oauth_flag(self, monkeypatch):
         """Regular API keys (sk-ant-api-*) should create client with is_oauth=False."""
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-api03-testkey1234"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-api03-testkey1234"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic, AnthropicAuxiliaryClient
@@ -606,8 +606,8 @@ class TestAnthropicOAuthFlag:
 
         with (
             patch("opencodon.core.auxiliary_client.load_pool", return_value=_Pool()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", side_effect=AssertionError("legacy path should not run")),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()) as mock_build,
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", side_effect=AssertionError("legacy path should not run")),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()) as mock_build,
         ):
             from opencodon.core.auxiliary_client import _try_anthropic
 
@@ -791,11 +791,11 @@ class TestResolveProviderClientUniversalModelFallback:
                 return_value="claude-haiku-4-5-20251001",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client",
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
                 return_value=MagicMock(),
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="sk-ant-***",
             ),
             patch.dict("os.environ", {}),
@@ -865,7 +865,7 @@ class TestExpiredCodexFallback:
 
         # Set up Anthropic as fallback
         monkeypatch.setenv("ANTHROPIC_TOKEN", "sk-ant-oat01-test-fallback")
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build:
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build:
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _resolve_auto
             client, model = _resolve_auto()
@@ -950,8 +950,8 @@ class TestExpiredCodexFallback:
     def test_opencodon_oauth_file_sets_oauth_flag(self, monkeypatch):
         """OAuth-style tokens should get is_oauth=*** (token is not sk-ant-api-*)."""
         # Mock resolve_anthropic_token to return an OAuth-style token
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-opencodon-token"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-opencodon-token"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic
@@ -1007,7 +1007,7 @@ class TestExpiredCodexFallback:
         """CLAUDE_CODE_OAUTH_TOKEN env var should get is_oauth=True."""
         monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat-cc-test-token")
         monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build:
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build:
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic
             client, model = _try_anthropic()
@@ -1021,8 +1021,8 @@ class TestExplicitProviderRouting:
 
     def test_explicit_anthropic_api_key(self, monkeypatch):
         """provider='anthropic' + regular API key should work with is_oauth=False."""
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-api-regular-key"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-api-regular-key"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             client, model = resolve_provider_client("anthropic")
@@ -1105,7 +1105,7 @@ class TestGetTextAuxiliaryClient:
         with (
             patch("opencodon.core.auxiliary_client.load_pool", return_value=_Pool()),
             patch("opencodon.core.auxiliary_client.OpenAI"),
-            patch("opencodon.core.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
+            patch("opencodon.core.credentials.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
         ):
             from opencodon.core.auxiliary_client import _build_codex_client
 
@@ -1153,8 +1153,8 @@ class TestVisionClientFallback:
             patch.dict("os.environ", {}),
             patch("opencodon.core.auxiliary_client._read_main_provider", return_value="anthropic"),
             patch("opencodon.core.auxiliary_client._read_main_model", return_value="claude-sonnet-4"),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="***"),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="***"),
         ):
             backends = get_available_vision_backends()
 
@@ -1164,8 +1164,8 @@ class TestVisionClientFallback:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "***")
         with (
             patch.dict("os.environ", {}),
-            patch("opencodon.core.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
-            patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="***"),
+            patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
+            patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="***"),
         ):
             client, model = resolve_provider_client("anthropic")
 
@@ -1228,7 +1228,7 @@ class TestVisionClientFallback:
         )
 
         with patch(
-            "opencodon.core.anthropic_adapter.create_anthropic_message",
+            "opencodon.core.providers.anthropic_adapter.create_anthropic_message",
             side_effect=fake_create_anthropic_message,
         ):
             response = client.chat.completions.create(
@@ -1241,7 +1241,7 @@ class TestVisionClientFallback:
         # via _get_anthropic_max_output) rather than the old hidden 2000 cap.
         # Asserting against the resolver keeps this test alive across
         # model-table churn while still catching a regression to `or 2000`.
-        from opencodon.core.anthropic_adapter import _get_anthropic_max_output
+        from opencodon.core.providers.anthropic_adapter import _get_anthropic_max_output
 
         expected_ceiling = _get_anthropic_max_output("claude-opus-4-8")
         assert expected_ceiling > 2000
@@ -2296,7 +2296,7 @@ class TestTryMainAgentModelFallback:
 def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
     """_resolve_api_key_provider must not try anthropic when user never configured it."""
     from collections import OrderedDict
-    from opencodon.core.auth import ProviderConfig
+    from opencodon.core.credentials.auth import ProviderConfig
 
     # Build a minimal registry with only "anthropic" so the loop is guaranteed
     # to reach it without being short-circuited by earlier providers.
@@ -2317,9 +2317,9 @@ def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
         return None, None
 
     monkeypatch.setattr("opencodon.core.auxiliary_client._try_anthropic", mock_try_anthropic)
-    monkeypatch.setattr("opencodon.core.auth.PROVIDER_REGISTRY", fake_registry)
+    monkeypatch.setattr("opencodon.core.credentials.auth.PROVIDER_REGISTRY", fake_registry)
     monkeypatch.setattr(
-        "opencodon.core.auth.is_provider_explicitly_configured",
+        "opencodon.core.credentials.auth.is_provider_explicitly_configured",
         lambda pid: False,
     )
 
@@ -2968,9 +2968,9 @@ class TestAuxiliaryTaskExtraBody:
 
         adapter = _AnthropicCompletionsAdapter(MagicMock(), "claude-sonnet-4-6", is_oauth=False)
 
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs",
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs",
                    return_value={"model": "claude-sonnet-4-6", "messages": [], "max_tokens": 64}) as mock_bak, \
-             patch("opencodon.core.anthropic_adapter.create_anthropic_message") as mock_create, \
+             patch("opencodon.core.providers.anthropic_adapter.create_anthropic_message") as mock_create, \
              patch("opencodon.core.transports.get_transport") as mock_gt:
             mock_gt.return_value.normalize_response.return_value = MagicMock(
                 content="ok", tool_calls=None, reasoning=None, finish_reason="stop",
@@ -2997,9 +2997,9 @@ class TestAuxiliaryTaskExtraBody:
         bak_result = bak_result or {
             "model": "claude-sonnet-4-6", "messages": [], "max_tokens": 64,
         }
-        with patch("opencodon.core.anthropic_adapter.build_anthropic_kwargs",
+        with patch("opencodon.core.providers.anthropic_adapter.build_anthropic_kwargs",
                    return_value=dict(bak_result)), \
-             patch("opencodon.core.anthropic_adapter.create_anthropic_message") as mock_create, \
+             patch("opencodon.core.providers.anthropic_adapter.create_anthropic_message") as mock_create, \
              patch("opencodon.core.transports.get_transport") as mock_gt:
             mock_gt.return_value.normalize_response.return_value = MagicMock(
                 content="ok", tool_calls=None, reasoning=None, finish_reason="stop",
@@ -3453,17 +3453,17 @@ class TestAuxiliaryAuthRefreshRetry:
 
         with (
             patch("opencodon.core.auxiliary_client._client_cache", {cache_key: (stale_client, "claude-haiku-4-5-20251001", None)}),
-            patch("opencodon.core.anthropic_adapter.read_claude_code_credentials", return_value={
+            patch("opencodon.core.providers.anthropic_adapter.read_claude_code_credentials", return_value={
                 "accessToken": "expired-token",
                 "refreshToken": "refresh-token",
                 "expiresAt": 0,
             }),
-            patch("opencodon.core.anthropic_adapter.refresh_anthropic_oauth_pure", return_value={
+            patch("opencodon.core.providers.anthropic_adapter.refresh_anthropic_oauth_pure", return_value={
                 "access_token": "fresh-token",
                 "refresh_token": "refresh-token-2",
                 "expires_at_ms": 9999999999999,
             }) as mock_refresh_oauth,
-            patch("opencodon.core.anthropic_adapter._write_claude_code_credentials") as mock_write,
+            patch("opencodon.core.providers.anthropic_adapter._write_claude_code_credentials") as mock_write,
         ):
             from opencodon.core.auxiliary_client import _refresh_provider_credentials
 
@@ -3488,7 +3488,7 @@ class TestAuxiliaryAuthRefreshRetry:
         with (
             patch("opencodon.core.auxiliary_client._client_cache", {cache_key: (stale_client, "google/gemini-3-flash-preview", None)}),
             patch(
-                "opencodon.core.vertex_adapter.get_vertex_config",
+                "opencodon.core.providers.vertex_adapter.get_vertex_config",
                 return_value=("ya29.FRESH", "https://aiplatform.googleapis.com/v1beta1/projects/p/locations/global/endpoints/openapi"),
             ) as mock_get_config,
         ):
@@ -3503,7 +3503,7 @@ class TestAuxiliaryAuthRefreshRetry:
         """No usable token/base_url (e.g. ADC and the service-account file
         both failed) — refresh must report failure, not silently evict and
         pretend the client is fixed."""
-        with patch("opencodon.core.vertex_adapter.get_vertex_config", return_value=(None, None)):
+        with patch("opencodon.core.providers.vertex_adapter.get_vertex_config", return_value=(None, None)):
             from opencodon.core.auxiliary_client import _refresh_provider_credentials
 
             assert _refresh_provider_credentials("vertex") is False
@@ -3515,9 +3515,9 @@ class TestAuxiliaryAuthRefreshRetry:
         leave this branch dead code — PROVIDER_REGISTRY is what
         resolve_provider_client actually gates on)."""
         with (
-            patch("opencodon.core.vertex_adapter.has_vertex_credentials", return_value=True),
+            patch("opencodon.core.providers.vertex_adapter.has_vertex_credentials", return_value=True),
             patch(
-                "opencodon.core.vertex_adapter.get_vertex_config",
+                "opencodon.core.providers.vertex_adapter.get_vertex_config",
                 return_value=("ya29.FRESH", "https://aiplatform.googleapis.com/v1beta1/projects/p/locations/global/endpoints/openapi"),
             ),
         ):
@@ -3530,7 +3530,7 @@ class TestAuxiliaryAuthRefreshRetry:
         )
 
     def test_resolve_provider_client_vertex_none_when_no_credentials(self):
-        with patch("opencodon.core.vertex_adapter.has_vertex_credentials", return_value=False):
+        with patch("opencodon.core.providers.vertex_adapter.has_vertex_credentials", return_value=False):
             client, model = resolve_provider_client("vertex", "google/gemini-3-flash-preview")
 
         assert client is None
@@ -4513,7 +4513,7 @@ class TestCodexAuxiliaryAdapterNullOutputRecovery:
 
         # Monkey-patch the consumer to return a final whose .output is None
         # (mimics third-party shim behavior the defensive guard protects against).
-        from opencodon.core import codex_runtime
+        from opencodon.core.providers import codex_runtime
         original_consume = codex_runtime._consume_codex_event_stream
 
         def _consume_returning_none_output(*args, **kwargs):
@@ -4962,8 +4962,8 @@ class TestAnthropicExplicitApiKey:
 
     def test_try_anthropic_uses_explicit_api_key_over_env(self):
         """_try_anthropic(explicit_api_key) must use the supplied key, not the env fallback."""
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="env-fallback-key"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="env-fallback-key"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic
@@ -4976,8 +4976,8 @@ class TestAnthropicExplicitApiKey:
 
     def test_try_anthropic_without_explicit_key_falls_back_to_resolve(self):
         """Without explicit_api_key, _try_anthropic falls back to resolve_anthropic_token."""
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="env-fallback-key"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="env-fallback-key"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             from opencodon.core.auxiliary_client import _try_anthropic
@@ -4987,8 +4987,8 @@ class TestAnthropicExplicitApiKey:
 
     def test_resolve_provider_client_passes_explicit_api_key_to_anthropic(self):
         """resolve_provider_client(provider='anthropic', explicit_api_key=...) must propagate the key."""
-        with patch("opencodon.core.anthropic_adapter.resolve_anthropic_token", return_value="env-key"), \
-             patch("opencodon.core.anthropic_adapter.build_anthropic_client") as mock_build, \
+        with patch("opencodon.core.providers.anthropic_adapter.resolve_anthropic_token", return_value="env-key"), \
+             patch("opencodon.core.providers.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
             client, model = resolve_provider_client(
@@ -5384,7 +5384,7 @@ class TestCompressionFallbackContextFilter:
             return {"tiny-16k": 16_384, "huge-1m": 1_048_576}.get(model, 256_000)
 
         monkeypatch.setattr(
-            "opencodon.core.fallback_config.get_fallback_chain",
+            "opencodon.core.providers.fallback_config.get_fallback_chain",
             lambda cfg: chain,
         )
 
@@ -5479,7 +5479,7 @@ class TestCompressionFallbackContextFilter:
         so the runtime fallback stays consistent with the startup feasibility
         check in agent/conversation_compression.py."""
         from opencodon.core.auxiliary_client import _task_minimum_context_length
-        from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
+        from opencodon.core.providers.model_metadata import MINIMUM_CONTEXT_LENGTH
 
         assert _task_minimum_context_length("compression") == MINIMUM_CONTEXT_LENGTH
         # Non-compression tasks have no minimum (None)

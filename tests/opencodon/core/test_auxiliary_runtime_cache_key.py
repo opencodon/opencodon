@@ -250,7 +250,7 @@ def test_explicit_vision_runtime_wins_over_stale_ambient_runtime():
 
 def test_image_routing_does_not_borrow_base_url_from_different_provider():
     """An explicit provider must not inherit another runtime's custom endpoint."""
-    from opencodon.core.image_routing import _resolve_inference_base_url
+    from opencodon.core.media.image_routing import _resolve_inference_base_url
 
     aux.set_runtime_main(**_runtime("custom-model"))
     cfg = {

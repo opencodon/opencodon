@@ -539,7 +539,7 @@ async def test_update_cron_job_refreshes_snapshots_when_unpinning(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.core import runtime_provider
+    from opencodon.core.providers import runtime_provider
     from opencodon.frontends.cli import web_server
 
     monkeypatch.setattr(
@@ -583,7 +583,7 @@ async def test_dashboard_cron_noop_inference_fields_keep_existing_snapshots(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.core import runtime_provider
+    from opencodon.core.providers import runtime_provider
     from opencodon.frontends.cli import web_server
 
     current_provider = {"name": "initial-provider"}
@@ -634,7 +634,7 @@ async def test_update_cron_job_clears_snapshots_for_no_agent(
     isolated_profiles,
     monkeypatch,
 ):
-    from opencodon.core import runtime_provider
+    from opencodon.core.providers import runtime_provider
     from opencodon.frontends.cli import web_server
 
     monkeypatch.setattr(

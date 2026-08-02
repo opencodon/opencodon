@@ -18,7 +18,7 @@ the agent repeatedly re-surfacing already-cancelled work across turns.
 These tests pin the post-fix invariants so the conflict cannot regress.
 """
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     HISTORICAL_IN_PROGRESS_HEADING,
     HISTORICAL_PENDING_ASKS_HEADING,
     HISTORICAL_REMAINING_WORK_HEADING,
@@ -96,7 +96,7 @@ def test_replaced_prefixes_are_frozen_for_renormalization():
     _HISTORICAL_SUMMARY_PREFIXES, otherwise summaries persisted by older
     builds lose detection/renormalization after an upgrade. The carveout-era
     prefix is the latest retiree."""
-    from opencodon.core.context_compressor import (
+    from opencodon.core.context.context_compressor import (
         _HISTORICAL_SUMMARY_PREFIXES,
         ContextCompressor,
     )

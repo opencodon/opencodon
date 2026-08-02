@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-from opencodon.core.image_routing import (
+from opencodon.core.media.image_routing import (
     _coerce_capability_bool,
     _coerce_mode,
     _explicit_aux_vision_override,
@@ -77,24 +77,24 @@ class TestDecideImageInputMode:
         cfg = {"agent": {"image_input_mode": "native"}}
         # Non-vision model, aux-vision explicitly configured: native still wins.
         cfg["auxiliary"] = {"vision": {"provider": "openrouter", "model": "foo"}}
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=False):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=False):
             assert decide_image_input_mode("openrouter", "some-non-vision-model", cfg) == "native"
 
     def test_explicit_text_overrides_everything(self):
         cfg = {"agent": {"image_input_mode": "text"}}
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=True):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=True):
             assert decide_image_input_mode("anthropic", "claude-sonnet-4", cfg) == "text"
 
     def test_auto_with_vision_capable_model(self):
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=True):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=True):
             assert decide_image_input_mode("anthropic", "claude-sonnet-4", {}) == "native"
 
     def test_auto_with_non_vision_model(self):
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=False):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=False):
             assert decide_image_input_mode("openrouter", "qwen/qwen3-235b", {}) == "text"
 
     def test_auto_with_unknown_model(self):
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=None):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=None):
             assert decide_image_input_mode("openrouter", "brand-new-slug", {}) == "text"
 
     def test_auto_prefers_native_for_vision_capable_main_model_even_with_aux_configured(self):
@@ -104,22 +104,22 @@ class TestDecideImageInputMode:
         not preempt native vision on a vision-capable main model.
         """
         cfg = {"auxiliary": {"vision": {"provider": "openrouter", "model": "google/gemini-2.5-flash"}}}
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=True):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=True):
             assert decide_image_input_mode("anthropic", "claude-sonnet-4", cfg) == "native"
 
     def test_auto_uses_aux_vision_fallback_for_text_only_main_model(self):
         """#29135: aux vision still acts as fallback for non-vision main models."""
         cfg = {"auxiliary": {"vision": {"provider": "openrouter", "model": "google/gemini-2.5-flash"}}}
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=False):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=False):
             assert decide_image_input_mode("deepseek", "deepseek-v4-pro", cfg) == "text"
 
     def test_none_config_is_auto(self):
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=True):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=True):
             assert decide_image_input_mode("anthropic", "claude-sonnet-4", None) == "native"
 
     def test_invalid_mode_coerces_to_auto(self):
         cfg = {"agent": {"image_input_mode": "weird-value"}}
-        with patch("opencodon.core.image_routing._lookup_supports_vision", return_value=True):
+        with patch("opencodon.core.media.image_routing._lookup_supports_vision", return_value=True):
             assert decide_image_input_mode("anthropic", "claude-sonnet-4", cfg) == "native"
 
     def test_auto_uses_text_for_text_only_modalities_even_with_attachment_flag(self):
@@ -134,7 +134,7 @@ class TestDecideImageInputMode:
                 },
             },
         }
-        with patch("opencodon.core.models_dev.fetch_models_dev", return_value=registry):
+        with patch("opencodon.core.providers.models_dev.fetch_models_dev", return_value=registry):
             assert decide_image_input_mode("xiaomi", "mimo-v2.5-pro", {}) == "text"
 
 
@@ -281,43 +281,43 @@ class TestLookupSupportsVisionOverride:
     def test_config_override_short_circuits_models_dev(self):
         # Config says True, models.dev says None — config wins.
         cfg = {"model": {"supports_vision": True}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert _lookup_supports_vision("custom", "my-llava", cfg) is True
 
     def test_config_override_false_beats_vision_capable_models_dev(self):
         # User explicitly disables vision on a models.dev-vision-capable model.
         fake_caps = type("Caps", (), {"supports_vision": True})()
         cfg = {"model": {"supports_vision": False}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=fake_caps):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=fake_caps):
             assert _lookup_supports_vision("anthropic", "claude-sonnet-4", cfg) is False
 
     def test_no_override_falls_back_to_models_dev(self):
         fake_caps = type("Caps", (), {"supports_vision": True})()
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=fake_caps):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=fake_caps):
             assert _lookup_supports_vision("anthropic", "claude-sonnet-4", {}) is True
 
     def test_no_override_no_models_dev_entry_returns_none(self):
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None), \
-             patch("opencodon.core.image_routing._should_probe_ollama_vision", return_value=False):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None), \
+             patch("opencodon.core.media.image_routing._should_probe_ollama_vision", return_value=False):
             assert _lookup_supports_vision("custom", "my-llava", {}) is None
 
     def test_ollama_probe_when_models_dev_missing(self):
         cfg = {"model": {"base_url": "http://localhost:11434/v1"}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None), \
-             patch("opencodon.core.image_routing._should_probe_ollama_vision", return_value=True), \
-             patch("opencodon.core.model_metadata.query_ollama_supports_vision", return_value=True):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None), \
+             patch("opencodon.core.media.image_routing._should_probe_ollama_vision", return_value=True), \
+             patch("opencodon.core.providers.model_metadata.query_ollama_supports_vision", return_value=True):
             assert _lookup_supports_vision("ollama", "gemma4:e2b", cfg) is True
 
     def test_ollama_probe_false_for_text_only_model(self):
         cfg = {"model": {"base_url": "http://localhost:11434/v1"}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None), \
-             patch("opencodon.core.image_routing._should_probe_ollama_vision", return_value=True), \
-             patch("opencodon.core.model_metadata.query_ollama_supports_vision", return_value=False):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None), \
+             patch("opencodon.core.media.image_routing._should_probe_ollama_vision", return_value=True), \
+             patch("opencodon.core.providers.model_metadata.query_ollama_supports_vision", return_value=False):
             assert _lookup_supports_vision("custom", "gemma4:31b", cfg) is False
 
     def test_cfg_none_falls_back_to_models_dev(self):
         # Caller didn't pass cfg at all — old call sites must still work.
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert _lookup_supports_vision("openrouter", "x", None) is None
 
 
@@ -330,7 +330,7 @@ class TestAutoModeRespectsOverride:
         # Without the override, auto falls back to text. With it, auto picks
         # native — no need to also set agent.image_input_mode: native.
         cfg = {"model": {"supports_vision": True}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert decide_image_input_mode("custom", "qwen3.6-35b", cfg) == "native"
 
     def test_auto_native_for_namespaced_runtime_custom_provider(self):
@@ -343,7 +343,7 @@ class TestAutoModeRespectsOverride:
                 },
             },
         }
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert (
                 decide_image_input_mode(
                     "custom:my-proxy",
@@ -355,12 +355,12 @@ class TestAutoModeRespectsOverride:
 
     def test_auto_text_for_custom_with_supports_vision_false(self):
         cfg = {"model": {"supports_vision": False}}
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert decide_image_input_mode("custom", "some-text-only", cfg) == "text"
 
     def test_auto_text_for_custom_with_no_override(self):
         # Unchanged baseline: unknown custom model → text.
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert decide_image_input_mode("custom", "unknown", {}) == "text"
 
     def test_explicit_aux_vision_no_longer_overrides_native_capable_main(self):
@@ -371,7 +371,7 @@ class TestAutoModeRespectsOverride:
             "model": {"supports_vision": True},
             "auxiliary": {"vision": {"provider": "openrouter", "model": "gemini-2.5-pro"}},
         }
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert decide_image_input_mode("custom", "qwen3.6-35b", cfg) == "native"
 
     def test_explicit_aux_vision_used_when_main_model_supports_vision_false(self):
@@ -380,7 +380,7 @@ class TestAutoModeRespectsOverride:
             "model": {"supports_vision": False},
             "auxiliary": {"vision": {"provider": "openrouter", "model": "gemini-2.5-pro"}},
         }
-        with patch("opencodon.core.models_dev.get_model_capabilities", return_value=None):
+        with patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=None):
             assert decide_image_input_mode("custom", "deepseek-v4", cfg) == "text"
 
 
@@ -516,7 +516,7 @@ class TestLargeImageHandling:
 
     def test_large_image_passes_through_unchanged(self, tmp_path: Path):
         """A multi-MB image is attached as-is — no resize, no skip."""
-        from opencodon.core import image_routing as _ir
+        from opencodon.core.media import image_routing as _ir
 
         img = tmp_path / "medium.png"
         # 200 KB of real bytes; not huge but enough to verify no size gate fires.
@@ -528,13 +528,13 @@ class TestLargeImageHandling:
         assert len(url) > 200_000
 
     def test_missing_file_returns_none(self, tmp_path: Path):
-        from opencodon.core import image_routing as _ir
+        from opencodon.core.media import image_routing as _ir
         missing = tmp_path / "does_not_exist.png"
         assert _ir._file_to_data_url(missing) is None
 
     def test_build_native_parts_no_provider_kwarg(self, tmp_path: Path):
         """build_native_content_parts takes text + paths, no provider kwarg."""
-        from opencodon.core import image_routing as _ir
+        from opencodon.core.media import image_routing as _ir
 
         img = tmp_path / "cat.png"
         img.write_bytes(_png_bytes())
@@ -747,26 +747,26 @@ class TestFormatCompatibility:
     """
 
     def test_avif_sniffed_correctly(self):
-        from opencodon.core.image_routing import _sniff_mime_from_bytes
+        from opencodon.core.media.image_routing import _sniff_mime_from_bytes
         avif_header = b"\x00\x00\x00\x20ftypavif\x00\x00\x00\x00"
         assert _sniff_mime_from_bytes(avif_header) == "image/avif"
 
     def test_tiff_sniffed_both_endians(self):
-        from opencodon.core.image_routing import _sniff_mime_from_bytes
+        from opencodon.core.media.image_routing import _sniff_mime_from_bytes
         assert _sniff_mime_from_bytes(b"II*\x00" + b"\x00" * 16) == "image/tiff"
         assert _sniff_mime_from_bytes(b"MM\x00*" + b"\x00" * 16) == "image/tiff"
 
     def test_ico_sniffed_correctly(self):
-        from opencodon.core.image_routing import _sniff_mime_from_bytes
+        from opencodon.core.media.image_routing import _sniff_mime_from_bytes
         assert _sniff_mime_from_bytes(b"\x00\x00\x01\x00" + b"\x00" * 16) == "image/x-icon"
 
     def test_heic_still_sniffed(self):
-        from opencodon.core.image_routing import _sniff_mime_from_bytes
+        from opencodon.core.media.image_routing import _sniff_mime_from_bytes
         heic_header = b"\x00\x00\x00\x20ftypheic\x00\x00\x00\x00"
         assert _sniff_mime_from_bytes(heic_header) == "image/heic"
 
     def test_svg_sniffed_correctly(self):
-        from opencodon.core.image_routing import _sniff_mime_from_bytes
+        from opencodon.core.media.image_routing import _sniff_mime_from_bytes
         assert _sniff_mime_from_bytes(b'<svg xmlns="http://www.w3.org/2000/svg"/>') == "image/svg+xml"
         assert _sniff_mime_from_bytes(b'<?xml version="1.0"?><svg/>') == "image/svg+xml"
 
@@ -775,7 +775,7 @@ class TestFormatCompatibility:
         because not every provider (Anthropic) accepts BMP."""
         import pytest
         Image = pytest.importorskip("PIL.Image", reason="Pillow not installed; transcode is best-effort")
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "scan.bmp"
         Image.new("RGB", (4, 4), (255, 0, 0)).save(img_path, format="BMP")
@@ -788,7 +788,7 @@ class TestFormatCompatibility:
     def test_tiff_transcoded_to_png(self, tmp_path: Path):
         import pytest
         Image = pytest.importorskip("PIL.Image", reason="Pillow not installed; transcode is best-effort")
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "scan.tiff"
         Image.new("RGB", (4, 4), (0, 255, 0)).save(img_path, format="TIFF")
@@ -798,7 +798,7 @@ class TestFormatCompatibility:
 
     def test_png_passes_through_no_transcode(self, tmp_path: Path):
         """Universal-safe formats must NOT be re-encoded — preserves bytes."""
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "ok.png"
         img_path.write_bytes(_png_bytes())
@@ -810,7 +810,7 @@ class TestFormatCompatibility:
 
     def test_file_to_data_url_blocks_read_denied_image_path(self, tmp_path: Path):
         """Native image routing must honor the shared credential read guard."""
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / ".env"
         img_path.write_bytes(_png_bytes())
@@ -818,7 +818,7 @@ class TestFormatCompatibility:
         assert _file_to_data_url(img_path) is None
 
     def test_native_content_parts_skip_read_denied_local_image(self, tmp_path: Path):
-        from opencodon.core.image_routing import build_native_content_parts
+        from opencodon.core.media.image_routing import build_native_content_parts
 
         img_path = tmp_path / ".env.local"
         img_path.write_bytes(_png_bytes())
@@ -829,7 +829,7 @@ class TestFormatCompatibility:
         assert all(part.get("type") != "image_url" for part in parts)
 
     def test_native_content_parts_blocks_image_symlink_to_read_denied_file(self, tmp_path: Path):
-        from opencodon.core.image_routing import build_native_content_parts
+        from opencodon.core.media.image_routing import build_native_content_parts
         import os
         import pytest
 
@@ -847,7 +847,7 @@ class TestFormatCompatibility:
         assert all(part.get("type") != "image_url" for part in parts)
 
     def test_jpeg_passes_through_no_transcode(self, tmp_path: Path):
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "ok.jpg"
         img_path.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xff\xd9")
@@ -858,7 +858,7 @@ class TestFormatCompatibility:
     def test_transcode_failure_is_skipped_not_crashed(self, tmp_path: Path):
         """If Pillow can't decode (corrupted bytes labeled as a rare format),
         return None so the caller skips it rather than sending broken data."""
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "corrupt.avif"
         img_path.write_bytes(b"\x00\x00\x00\x20ftypavif" + b"\x00" * 32)
@@ -868,7 +868,7 @@ class TestFormatCompatibility:
     def test_svg_skipped_not_transcoded(self, tmp_path: Path):
         """SVG is vector; Pillow can't rasterize it. It must be skipped
         (None) rather than producing an invalid data URL."""
-        from opencodon.core.image_routing import _file_to_data_url
+        from opencodon.core.media.image_routing import _file_to_data_url
 
         img_path = tmp_path / "icon.svg"
         img_path.write_bytes(b'<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>')

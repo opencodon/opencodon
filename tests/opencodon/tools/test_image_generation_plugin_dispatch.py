@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 import pytest
 
-from opencodon.core import image_gen_registry
-from opencodon.core.image_gen_provider import ImageGenProvider
+from opencodon.core.media import image_gen_registry
+from opencodon.core.media.image_gen_provider import ImageGenProvider
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +33,7 @@ class _FakeCodexProvider(ImageGenProvider):
 class TestPluginDispatch:
     def test_dispatch_routes_to_codex_provider(self, monkeypatch, tmp_path):
         from opencodon.tools import image_generation_tool
-        from opencodon.core import image_gen_registry as registry_module
+        from opencodon.core.media import image_gen_registry as registry_module
         from opencodon.frontends.cli import plugins as plugins_module
 
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -72,7 +72,7 @@ class TestPluginDispatch:
     def test_dispatch_force_refreshes_plugins_when_provider_initially_missing(self, monkeypatch, tmp_path):
         from opencodon.tools import image_generation_tool
         from opencodon.frontends.cli import plugins as plugins_module
-        from opencodon.core import image_gen_registry as registry_module
+        from opencodon.core.media import image_gen_registry as registry_module
 
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text("image_gen:\n  provider: codex\n")

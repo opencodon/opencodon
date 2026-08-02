@@ -16,9 +16,9 @@ from opencodon.frontends.cli.model_switch import (
 
 
 def _providers(monkeypatch, user_providers):
-    monkeypatch.setattr("opencodon.core.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr("opencodon.core.providers.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(providers_mod, "OPENCODON_OVERLAYS", {})
-    monkeypatch.setattr("opencodon.core.models.fetch_api_models", lambda *a, **k: [])
+    monkeypatch.setattr("opencodon.core.providers.models.fetch_api_models", lambda *a, **k: [])
     return list_authenticated_providers(
         user_providers=user_providers,
         custom_providers=[],

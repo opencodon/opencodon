@@ -22,12 +22,12 @@ def _run_switch(raw_input: str, current_provider: str = "openrouter") -> str:
     """Run switch_model with mocked dependencies, return the resolved model name."""
     with patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None), \
          patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]), \
-         patch("opencodon.core.runtime_provider.resolve_runtime_provider",
+         patch("opencodon.core.providers.runtime_provider.resolve_runtime_provider",
                return_value={"api_key": "test", "base_url": "", "api_mode": "chat_completions"}), \
-         patch("opencodon.core.models.validate_requested_model", return_value=_MOCK_VALIDATION), \
+         patch("opencodon.core.providers.models.validate_requested_model", return_value=_MOCK_VALIDATION), \
          patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None), \
          patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None), \
-         patch("opencodon.core.models.detect_provider_for_model", return_value=None):
+         patch("opencodon.core.providers.models.detect_provider_for_model", return_value=None):
         result = switch_model(
             raw_input=raw_input,
             current_provider=current_provider,

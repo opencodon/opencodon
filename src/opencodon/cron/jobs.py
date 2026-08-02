@@ -1041,7 +1041,7 @@ def _compute_provider_model_snapshots(
     model_snapshot: Optional[str] = None
     if normalized_provider is None:
         try:
-            from opencodon.core.runtime_provider import resolve_runtime_provider
+            from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
             runtime_kwargs = {"requested": None}
             if normalized_base_url:

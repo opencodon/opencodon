@@ -104,7 +104,7 @@ class TestResolveProviderClientMainAlias:
             "model": {"default": "gpt-5.4", "provider": "github-copilot"},
         })
         with (
-            patch("opencodon.core.auth.resolve_api_key_provider_credentials", return_value={
+            patch("opencodon.core.credentials.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "ghu_test_token",
                 "base_url": "https://api.githubcopilot.com",
             }),
@@ -182,7 +182,7 @@ class TestResolveProviderClientModelNormalization:
             "model": {"default": "zai/glm-5.1", "provider": "zai"},
         })
         with (
-            patch("opencodon.core.auth.resolve_api_key_provider_credentials", return_value={
+            patch("opencodon.core.credentials.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -201,7 +201,7 @@ class TestResolveProviderClientModelNormalization:
             "model": {"default": "zai/glm-5.1", "provider": "zai"},
         })
         with (
-            patch("opencodon.core.auth.resolve_api_key_provider_credentials", return_value={
+            patch("opencodon.core.credentials.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -237,7 +237,7 @@ class TestResolveVisionProviderClientModelNormalization:
             "model": {"default": "zai/glm-5.1", "provider": "zai"},
         })
         with (
-            patch("opencodon.core.auth.resolve_api_key_provider_credentials", return_value={
+            patch("opencodon.core.credentials.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -298,7 +298,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from opencodon.core.runtime_provider import _get_named_custom_provider
+        from opencodon.core.providers.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("myrelay")
         assert entry is not None
         assert entry.get("api_mode") == "anthropic_messages"
@@ -316,7 +316,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from opencodon.core.runtime_provider import _get_named_custom_provider
+        from opencodon.core.providers.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("weird")
         assert entry is not None
         assert "api_mode" not in entry
@@ -332,7 +332,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from opencodon.core.runtime_provider import _get_named_custom_provider
+        from opencodon.core.providers.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("localchat")
         assert entry is not None
         assert "api_mode" not in entry

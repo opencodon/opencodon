@@ -2263,7 +2263,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_requires_confirmation_for_expensive_model(self, monkeypatch):
         monkeypatch.setattr(
-            "opencodon.core.model_cost_guard.expensive_model_warning",
+            "opencodon.core.providers.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: SimpleNamespace(message="EXPENSIVE MODEL WARNING"),
         )
 
@@ -2300,7 +2300,7 @@ class TestWebServerEndpoints:
         persist the vendor-prefixed slug verbatim (it 400s against the native
         API and reads as "changing models does nothing")."""
         monkeypatch.setattr(
-            "opencodon.core.model_cost_guard.expensive_model_warning",
+            "opencodon.core.providers.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         resp = self.client.post(
@@ -2328,7 +2328,7 @@ class TestWebServerEndpoints:
         a opencodon provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
-            "opencodon.core.model_cost_guard.expensive_model_warning",
+            "opencodon.core.providers.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         from opencodon.config import load_config, save_config
@@ -2353,7 +2353,7 @@ class TestWebServerEndpoints:
     def test_model_set_keeps_aggregator_slug_unchanged(self, monkeypatch):
         """The happy path (picker → openrouter + vendor/model) is untouched."""
         monkeypatch.setattr(
-            "opencodon.core.model_cost_guard.expensive_model_warning",
+            "opencodon.core.providers.model_cost_guard.expensive_model_warning",
             lambda *_args, **_kwargs: None,
         )
         resp = self.client.post(
@@ -3537,7 +3537,7 @@ class TestWebServerEndpoints:
 
     def test_recommended_default_handles_failure_gracefully(self, monkeypatch):
         """Endpoint never 500s — returns empty model on internal error."""
-        import opencodon.core.models as models_mod
+        import opencodon.core.providers.models as models_mod
 
         def boom():
             raise RuntimeError("portal down")
@@ -5694,7 +5694,7 @@ class TestModelInfoEndpoint:
             }
         })
 
-        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5711,7 +5711,7 @@ class TestModelInfoEndpoint:
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"}
         })
 
-        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5736,7 +5736,7 @@ class TestModelInfoEndpoint:
             "model": "anthropic/claude-sonnet-4"
         })
 
-        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000):
+        with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200000):
             resp = self.client.get("/api/model/info")
 
         data = resp.json()
@@ -5760,8 +5760,8 @@ class TestModelInfoEndpoint:
         mock_caps.max_output_tokens = 32000
         mock_caps.model_family = "claude-opus"
 
-        with patch("opencodon.core.model_metadata.get_model_context_length", return_value=200000), \
-             patch("opencodon.core.models_dev.get_model_capabilities", return_value=mock_caps):
+        with patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=200000), \
+             patch("opencodon.core.providers.models_dev.get_model_capabilities", return_value=mock_caps):
             resp = self.client.get("/api/model/info")
 
         caps = resp.json()["capabilities"]
@@ -5779,7 +5779,7 @@ class TestModelInfoEndpoint:
             "model": "some/obscure-model"
         })
 
-        with patch("opencodon.core.model_metadata.get_model_context_length", side_effect=Exception("boom")):
+        with patch("opencodon.core.providers.model_metadata.get_model_context_length", side_effect=Exception("boom")):
             resp = self.client.get("/api/model/info")
 
         assert resp.status_code == 200

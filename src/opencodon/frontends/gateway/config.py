@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 
 from opencodon.config import get_opencodon_home
-from opencodon.core.secret_scope import current_secret_scope, get_secret as _get_secret
+from opencodon.core.credentials.secret_scope import current_secret_scope, get_secret as _get_secret
 from utils import is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -1570,7 +1570,7 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
     # without changing placeholder values get a clear startup error instead
     # of a confusing "auth failed" from the platform API.
     try:
-        from opencodon.core.auth import has_usable_secret
+        from opencodon.core.credentials.auth import has_usable_secret
     except ImportError:
         has_usable_secret = None  # type: ignore[assignment]
 

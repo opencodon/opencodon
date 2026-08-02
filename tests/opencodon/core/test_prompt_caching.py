@@ -1,7 +1,7 @@
 """Tests for agent/prompt_caching.py — Anthropic cache control injection."""
 
 
-from opencodon.core.prompt_caching import (
+from opencodon.core.prompt.prompt_caching import (
     _apply_cache_marker,
     _can_carry_marker,
     apply_anthropic_cache_control,

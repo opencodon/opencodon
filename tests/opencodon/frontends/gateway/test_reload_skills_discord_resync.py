@@ -227,7 +227,7 @@ class TestHandleReloadSkillsCallsRefreshSkillGroup:
         # Mock reload_skills itself so no disk scan runs.
         fake_result = {"added": [], "removed": [], "total": 7}
         with patch(
-            "opencodon.core.skill_commands.reload_skills", return_value=fake_result
+            "opencodon.core.skills.skill_commands.reload_skills", return_value=fake_result
         ):
             event = MagicMock()
             event.source = MagicMock()

@@ -39,8 +39,8 @@ class TestCustomProviderModelSwitch:
         """Switching custom endpoints must not leave the old model.api_key
         credential selectable from the previous endpoint's pool."""
         import yaml
-        from opencodon.core.credential_pool import load_pool
-        from opencodon.core.auth import read_credential_pool, write_credential_pool
+        from opencodon.core.credentials.credential_pool import load_pool
+        from opencodon.core.credentials.auth import read_credential_pool, write_credential_pool
         from opencodon.frontends.cli.main import _model_flow_custom
 
         config_path = config_home / "config.yaml"
@@ -79,7 +79,7 @@ class TestCustomProviderModelSwitch:
         )
 
         with patch(
-            "opencodon.core.models.probe_api_models",
+            "opencodon.core.providers.models.probe_api_models",
             return_value={
                 "models": ["new-model"],
                 "used_fallback": False,
@@ -128,7 +128,7 @@ class TestCustomProviderModelSwitch:
             "model": "model-A",  # already saved
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["model-A", "model-B"]) as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["model-A", "model-B"]) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="2"), \
              patch("builtins.print"):
@@ -153,7 +153,7 @@ class TestCustomProviderModelSwitch:
             "model": "model-A",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["model-A", "model-B"]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["model-A", "model-B"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="2"), \
              patch("builtins.print"):
@@ -177,7 +177,7 @@ class TestCustomProviderModelSwitch:
         }
 
         # fetch returns empty list (probe failed), user presses Enter (empty input)
-        with patch("opencodon.core.models.fetch_api_models", return_value=[]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=[]), \
              patch("builtins.input", return_value=""), \
              patch("builtins.print"):
             _model_flow_named_custom({}, provider_info)
@@ -199,7 +199,7 @@ class TestCustomProviderModelSwitch:
             # no "model" key
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["model-X"]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["model-X"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):
@@ -223,7 +223,7 @@ class TestCustomProviderModelSwitch:
             "api_mode": "anthropic_messages",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["claude-3"]) as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["claude-3"]) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):
@@ -256,7 +256,7 @@ class TestCustomProviderModelSwitch:
             "model": "llama-3",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["llama-3"]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["llama-3"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):
@@ -293,7 +293,7 @@ class TestCustomProviderModelSwitch:
             "model": "qwen3.6-35b-fast",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["qwen3.6-35b-fast"]) as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["qwen3.6-35b-fast"]) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):
@@ -334,7 +334,7 @@ class TestCustomProviderModelSwitch:
             "model": "qwen3.6-35b-fast",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["qwen3.6-35b-fast"]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["qwen3.6-35b-fast"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):
@@ -391,7 +391,7 @@ class TestCustomProviderModelSwitch:
 
         with patch("opencodon.frontends.cli.main._prompt_provider_choice",
                    side_effect=_pick_neuralwatt), \
-             patch("opencodon.core.models.fetch_api_models",
+             patch("opencodon.core.providers.models.fetch_api_models",
                    return_value=["qwen3.6-35b-fast"]) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
@@ -504,7 +504,7 @@ class TestCustomProviderModelSwitch:
 
         with patch("opencodon.frontends.cli.main._prompt_provider_choice",
                    side_effect=_pick_neuralwatt), \
-             patch("opencodon.core.models.fetch_api_models",
+             patch("opencodon.core.providers.models.fetch_api_models",
                    return_value=["qwen3.6-35b-fast"]) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
@@ -567,7 +567,7 @@ class TestCustomProviderModelSwitch:
         }
 
         with patch(
-            "opencodon.core.models.fetch_api_models",
+            "opencodon.core.providers.models.fetch_api_models",
             return_value=["claude-opus-4-7"],
         ) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
@@ -632,7 +632,7 @@ class TestCustomProviderModelSwitch:
         }
 
         with patch(
-            "opencodon.core.models.fetch_api_models",
+            "opencodon.core.providers.models.fetch_api_models",
             return_value=["claude-opus-4-7"],
         ), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
@@ -668,7 +668,7 @@ class TestCustomProviderDiscoverModels:
             "model": "kimi-k2.5",
         }
 
-        with patch("opencodon.core.models.fetch_api_models") as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models") as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="2"), \
              patch("builtins.print"):
@@ -691,7 +691,7 @@ class TestCustomProviderDiscoverModels:
             "model": "kimi-k2.5",
         }
 
-        with patch("opencodon.core.models.fetch_api_models") as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models") as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="2"), \
              patch("builtins.print"):
@@ -717,7 +717,7 @@ class TestCustomProviderDiscoverModels:
         }
 
         with patch(
-            "opencodon.core.models.fetch_api_models",
+            "opencodon.core.providers.models.fetch_api_models",
             return_value=["live-a", "live-b", "live-c"],
         ) as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
@@ -746,7 +746,7 @@ class TestCustomProviderDiscoverModels:
             "model": "fallback-a",
         }
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=[]), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=[]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="2"), \
              patch("builtins.print"):
@@ -770,7 +770,7 @@ class TestCustomProviderDiscoverModels:
             "model": "kimi-k2.5",
         }
 
-        with patch("opencodon.core.models.fetch_api_models") as mock_fetch, \
+        with patch("opencodon.core.providers.models.fetch_api_models") as mock_fetch, \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=ImportError), \
              patch("builtins.input", return_value="1"), \
              patch("builtins.print"):

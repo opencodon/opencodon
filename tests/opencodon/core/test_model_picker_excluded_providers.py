@@ -79,7 +79,7 @@ def test_cli_picker_hides_excluded_provider_by_alias(config_home):
     # 'openai' is an alias-style opencodon id; ensure excluding it hides the
     # canonical openai provider row if present. Use the canonical slug's
     # alias from _PROVIDER_ALIASES to stay robust to renames.
-    from opencodon.core.models import _PROVIDER_ALIASES, CANONICAL_PROVIDERS
+    from opencodon.core.providers.models import _PROVIDER_ALIASES, CANONICAL_PROVIDERS
 
     # Find a canonical provider that has at least one alias and is a leaf
     # row (not folded into a multi-member group) so its label appears
@@ -94,7 +94,7 @@ def test_cli_picker_hides_excluded_provider_by_alias(config_home):
     if target_slug is None:
         pytest.skip("no aliased canonical provider available to test")
 
-    from opencodon.core.models import _PROVIDER_LABELS
+    from opencodon.core.providers.models import _PROVIDER_LABELS
     target_label_fragment = _PROVIDER_LABELS.get(target_slug, target_slug)
 
     # Baseline: the provider appears without exclusion.

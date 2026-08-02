@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from opencodon.core.context_breakdown import compute_session_context_breakdown
+from opencodon.core.context.context_breakdown import compute_session_context_breakdown
 
 
 def _make_agent(
@@ -41,7 +41,7 @@ def test_breakdown_includes_major_categories():
     history = [{"role": "user", "content": "hello there"}]
     agent, parts = _make_agent(stable=stable, context=context, volatile=volatile)
 
-    with patch("opencodon.core.system_prompt.build_system_prompt_parts", return_value=parts):
+    with patch("opencodon.core.prompt.system_prompt.build_system_prompt_parts", return_value=parts):
         data = compute_session_context_breakdown(agent, history)
 
     ids = {item["id"] for item in data["categories"]}
@@ -53,7 +53,7 @@ def test_breakdown_includes_major_categories():
 def test_breakdown_uses_measured_context_when_available():
     agent, parts = _make_agent(last_prompt_tokens=42_000)
 
-    with patch("opencodon.core.system_prompt.build_system_prompt_parts", return_value=parts):
+    with patch("opencodon.core.prompt.system_prompt.build_system_prompt_parts", return_value=parts):
         data = compute_session_context_breakdown(agent, [])
 
     assert data["context_used"] == 42_000

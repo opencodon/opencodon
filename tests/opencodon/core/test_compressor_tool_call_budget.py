@@ -13,7 +13,7 @@ ineffective. The fix routes all three walks through
 import pytest
 from unittest.mock import patch
 
-from opencodon.core.context_compressor import (
+from opencodon.core.context.context_compressor import (
     ContextCompressor,
     _CHARS_PER_TOKEN,
     _estimate_msg_budget_tokens,
@@ -78,7 +78,7 @@ class TestToolCallEnvelopeEstimate:
 
 @pytest.fixture()
 def compressor():
-    with patch("opencodon.core.context_compressor.get_model_context_length", return_value=100000):
+    with patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=100000):
         return ContextCompressor(
             model="test/model",
             threshold_percent=0.85,

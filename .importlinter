@@ -16,18 +16,18 @@ source_modules = opencodon.core
 forbidden_modules = opencodon.frontends.cli
 allow_indirect_imports = True
 ignore_imports =
-    opencodon.core.auth -> opencodon.frontends.cli.curses_ui
-    opencodon.core.models -> opencodon.frontends.cli.model_switch
+    opencodon.core.credentials.auth -> opencodon.frontends.cli.curses_ui
+    opencodon.core.providers.models -> opencodon.frontends.cli.model_switch
     opencodon.core.profiles -> opencodon.frontends.cli.gateway
     opencodon.core.profiles -> opencodon.frontends.cli.service_manager
-    opencodon.core.gemini_native_adapter -> opencodon.frontends.cli
-    opencodon.core.coding_context -> opencodon.frontends.cli.tools_config
-    opencodon.core.conversation_compression -> opencodon.frontends.cli.goals
+    opencodon.core.providers.gemini_native_adapter -> opencodon.frontends.cli
+    opencodon.core.context.coding_context -> opencodon.frontends.cli.tools_config
+    opencodon.core.context.conversation_compression -> opencodon.frontends.cli.goals
     opencodon.core.display -> opencodon.frontends.cli.skin_engine
     opencodon.core.lsp.install -> opencodon.frontends.cli.tools_config
-    opencodon.core.prompt_builder -> opencodon.frontends.cli.projects_db
+    opencodon.core.prompt.prompt_builder -> opencodon.frontends.cli.projects_db
     opencodon.core.run_agent -> opencodon.frontends.cli
-    opencodon.core.skill_commands -> opencodon.frontends.cli.commands
+    opencodon.core.skills.skill_commands -> opencodon.frontends.cli.commands
 
 [importlinter:contract:tools-not-cli-frontend]
 name = opencodon.tools must not import the CLI frontend
@@ -55,10 +55,10 @@ ignore_imports =
     opencodon.core.agent_runtime_helpers -> opencodon.core.run_agent
     opencodon.core.background_review -> opencodon.core.run_agent
     opencodon.core.chat_completion_helpers -> opencodon.core.run_agent
-    opencodon.core.codex_runtime -> opencodon.core.run_agent
+    opencodon.core.providers.codex_runtime -> opencodon.core.run_agent
     opencodon.core.conversation_loop -> opencodon.core.run_agent
-    opencodon.core.curator -> opencodon.core.run_agent
-    opencodon.core.system_prompt -> opencodon.core.run_agent
+    opencodon.core.memory.curator -> opencodon.core.run_agent
+    opencodon.core.prompt.system_prompt -> opencodon.core.run_agent
     opencodon.core.tool_executor -> opencodon.core.run_agent
     opencodon.core.transports.codex -> opencodon.core.run_agent
 
@@ -109,52 +109,52 @@ forbidden_modules =
     opencodon.frontends
 allow_indirect_imports = True
 ignore_imports =
-    opencodon.common.model_normalize -> opencodon.core.models
-    opencodon.config -> opencodon.core.auth
+    opencodon.common.model_normalize -> opencodon.core.providers.models
+    opencodon.config -> opencodon.core.credentials.auth
     opencodon.plugins_runtime -> opencodon.core.profiles
-    opencodon.state -> opencodon.core.memory_manager
+    opencodon.state -> opencodon.core.memory.memory_manager
     opencodon.state -> opencodon.core.message_sanitization
-    opencodon.state._compression_state -> opencodon.core.memory_manager
+    opencodon.state._compression_state -> opencodon.core.memory.memory_manager
     opencodon.state._compression_state -> opencodon.core.message_sanitization
-    opencodon.state._fts -> opencodon.core.memory_manager
+    opencodon.state._fts -> opencodon.core.memory.memory_manager
     opencodon.state._fts -> opencodon.core.message_sanitization
-    opencodon.state._gateway_meta -> opencodon.core.memory_manager
+    opencodon.state._gateway_meta -> opencodon.core.memory.memory_manager
     opencodon.state._gateway_meta -> opencodon.core.message_sanitization
-    opencodon.state._handoff -> opencodon.core.memory_manager
+    opencodon.state._handoff -> opencodon.core.memory.memory_manager
     opencodon.state._handoff -> opencodon.core.message_sanitization
-    opencodon.state._porting -> opencodon.core.memory_manager
+    opencodon.state._porting -> opencodon.core.memory.memory_manager
     opencodon.state._porting -> opencodon.core.message_sanitization
-    opencodon.state._schema -> opencodon.core.memory_manager
+    opencodon.state._schema -> opencodon.core.memory.memory_manager
     opencodon.state._schema -> opencodon.core.message_sanitization
     opencodon.state._transcripts -> opencodon.core.agent_runtime_helpers
-    opencodon.state._transcripts -> opencodon.core.memory_manager
+    opencodon.state._transcripts -> opencodon.core.memory.memory_manager
     opencodon.state._transcripts -> opencodon.core.message_sanitization
     opencodon.common.logging_setup -> opencodon.core.redact
     opencodon.common.route_identity -> opencodon.core.agent_init
     opencodon.config -> opencodon.core.redact
-    opencodon.config -> opencodon.core.secret_scope
-    opencodon.config -> opencodon.core.skill_utils
+    opencodon.config -> opencodon.core.credentials.secret_scope
+    opencodon.config -> opencodon.core.skills.skill_utils
     opencodon.config -> opencodon.frontends.cli.credential_lifecycle
     opencodon.config -> opencodon.frontends.cli.mcp_security
     opencodon.config -> opencodon.frontends.cli.secret_prompt
     opencodon.config -> opencodon.frontends.cli.toolset_validation
     opencodon.config.env_loader -> opencodon.core.secret_sources.registry
     opencodon.config.moa_config -> opencodon.core.errors
-    opencodon.plugins_runtime -> opencodon.core.browser_provider
-    opencodon.plugins_runtime -> opencodon.core.browser_registry
-    opencodon.plugins_runtime -> opencodon.core.context_engine
-    opencodon.plugins_runtime -> opencodon.core.image_gen_provider
-    opencodon.plugins_runtime -> opencodon.core.image_gen_registry
-    opencodon.plugins_runtime -> opencodon.core.plugin_llm
+    opencodon.plugins_runtime -> opencodon.core.providers.browser_provider
+    opencodon.plugins_runtime -> opencodon.core.providers.browser_registry
+    opencodon.plugins_runtime -> opencodon.core.context.context_engine
+    opencodon.plugins_runtime -> opencodon.core.media.image_gen_provider
+    opencodon.plugins_runtime -> opencodon.core.media.image_gen_registry
+    opencodon.plugins_runtime -> opencodon.core.providers.plugin_llm
     opencodon.plugins_runtime -> opencodon.core.secret_sources.base
     opencodon.plugins_runtime -> opencodon.core.secret_sources.registry
-    opencodon.plugins_runtime -> opencodon.core.skill_utils
-    opencodon.plugins_runtime -> opencodon.core.transcription_provider
-    opencodon.plugins_runtime -> opencodon.core.transcription_registry
-    opencodon.plugins_runtime -> opencodon.core.tts_provider
-    opencodon.plugins_runtime -> opencodon.core.tts_registry
-    opencodon.plugins_runtime -> opencodon.core.web_search_provider
-    opencodon.plugins_runtime -> opencodon.core.web_search_registry
+    opencodon.plugins_runtime -> opencodon.core.skills.skill_utils
+    opencodon.plugins_runtime -> opencodon.core.media.transcription_provider
+    opencodon.plugins_runtime -> opencodon.core.media.transcription_registry
+    opencodon.plugins_runtime -> opencodon.core.media.tts_provider
+    opencodon.plugins_runtime -> opencodon.core.media.tts_registry
+    opencodon.plugins_runtime -> opencodon.core.providers.web_search_provider
+    opencodon.plugins_runtime -> opencodon.core.providers.web_search_registry
     opencodon.plugins_runtime -> opencodon.frontends.cli.commands
     opencodon.plugins_runtime -> opencodon.frontends.cli.dashboard_auth
     opencodon.plugins_runtime -> opencodon.frontends.cli.main

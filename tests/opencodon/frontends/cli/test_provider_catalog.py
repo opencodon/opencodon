@@ -6,7 +6,7 @@ catalog exposes, plus how each provider's ``auth_type`` maps to a desktop tab â€
 never a specific provider count or a frozen vendor list (both change over time).
 """
 
-from opencodon.core.models import CANONICAL_PROVIDERS
+from opencodon.core.providers.models import CANONICAL_PROVIDERS
 from opencodon.frontends.cli.provider_catalog import (
     ProviderDescriptor,
     provider_catalog,

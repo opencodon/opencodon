@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from opencodon.core.subdirectory_hints import SubdirectoryHintTracker
+from opencodon.core.context.subdirectory_hints import SubdirectoryHintTracker
 
 
 @pytest.fixture

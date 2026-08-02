@@ -63,7 +63,7 @@ def _write_config(home: str, text: str) -> None:
 def _fresh_modules():
     """Drop cached opencodon modules so each test reloads against current env."""
     for mod in list(sys.modules.keys()):
-        if mod.startswith(("opencodon.core.auxiliary_client", "opencodon.core.image_routing",
+        if mod.startswith(("opencodon.core.auxiliary_client", "opencodon.core.media.image_routing",
                            "opencodon.tools.vision_tools", "opencodon.tools.browser_tool",
                            "opencodon.config")):
             del sys.modules[mod]

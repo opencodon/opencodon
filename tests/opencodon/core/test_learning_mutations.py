@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core import learning_mutations as lm
+from opencodon.core.memory import learning_mutations as lm
 from opencodon_constants import get_opencodon_home
 
 _SKILL = """---

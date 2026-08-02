@@ -363,7 +363,7 @@ class TestWebToolPolicy:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from opencodon.core.web_search_registry import _reset_for_tests
+        from opencodon.core.providers.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     @pytest.mark.asyncio

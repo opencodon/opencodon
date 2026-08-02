@@ -61,7 +61,7 @@ def _enter_existing_install_patches(stack, **extra):
         ("opencodon.frontends.cli.setup.load_config", {"return_value": {}}),
         ("opencodon.frontends.cli.setup.save_config", {}),
         ("opencodon.frontends.cli.setup.get_env_value", {"return_value": None}),
-        ("opencodon.core.auth.get_active_provider", {"return_value": "openrouter"}),
+        ("opencodon.core.credentials.auth.get_active_provider", {"return_value": "openrouter"}),
         ("opencodon.frontends.cli.setup._print_setup_summary", {}),
     ]:
         stack.enter_context(patch(target, **kwargs))
@@ -80,7 +80,7 @@ def _enter_fresh_install_patches(stack, **extra):
         ("opencodon.config.is_managed", {"return_value": False}),
         ("opencodon.frontends.cli.setup.load_config", {"return_value": {}}),
         ("opencodon.frontends.cli.setup.save_config", {}),
-        ("opencodon.core.auth.get_active_provider", {"return_value": None}),
+        ("opencodon.core.credentials.auth.get_active_provider", {"return_value": None}),
         ("opencodon.frontends.cli.setup.get_env_value", {"return_value": None}),
     ]:
         stack.enter_context(patch(target, **kwargs))

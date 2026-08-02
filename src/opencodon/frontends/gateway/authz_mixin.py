@@ -33,7 +33,7 @@ def _auth_env(name: str, default: str = "") -> str:
     if not name:
         return default
     try:
-        from opencodon.core.secret_scope import get_secret
+        from opencodon.core.credentials.secret_scope import get_secret
 
         val = get_secret(name)
         if val is not None and str(val).strip():

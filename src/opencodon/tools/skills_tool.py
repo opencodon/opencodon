@@ -80,7 +80,7 @@ from typing import Dict, Any, List, Optional, Set, Tuple
 from opencodon.tools.registry import registry, tool_error
 from opencodon.config import cfg_get
 from utils import env_var_enabled
-from opencodon.core.skill_utils import (
+from opencodon.core.skills.skill_utils import (
     EXCLUDED_SKILL_DIRS as _EXCLUDED_SKILL_DIRS,
     is_skill_support_path as _is_skill_support_path,
 )
@@ -111,7 +111,7 @@ def _skills_scan_signature(dirs_to_scan, disabled) -> tuple:
     from ``agent.skill_utils``'s ``sys`` so test patches of that module
     are honored) — the scan result is platform-dependent.
     """
-    from opencodon.core import skill_utils as _skill_utils
+    from opencodon.core.skills import skill_utils as _skill_utils
 
     platform = getattr(getattr(_skill_utils, "sys", None), "platform", "")
     sig = []
@@ -252,7 +252,7 @@ def skill_matches_platform(frontmatter: Dict[str, Any]) -> bool:
     Delegates to ``agent.skill_utils.skill_matches_platform`` — kept here
     as a public re-export so existing callers don't need updating.
     """
-    from opencodon.core.skill_utils import skill_matches_platform as _impl
+    from opencodon.core.skills.skill_utils import skill_matches_platform as _impl
     return _impl(frontmatter)
 
 
@@ -264,7 +264,7 @@ def skill_matches_environment(frontmatter: Dict[str, Any]) -> bool:
     offer-time relevance gate (docker/s6), NOT a hard-compatibility gate;
     explicit skill loads bypass it.
     """
-    from opencodon.core.skill_utils import skill_matches_environment as _impl
+    from opencodon.core.skills.skill_utils import skill_matches_environment as _impl
     return _impl(frontmatter)
 
 
@@ -555,7 +555,7 @@ def _parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
     Delegates to ``agent.skill_utils.parse_frontmatter`` — kept here
     as a public re-export so existing callers don't need updating.
     """
-    from opencodon.core.skill_utils import parse_frontmatter
+    from opencodon.core.skills.skill_utils import parse_frontmatter
     return parse_frontmatter(content)
 
 
@@ -570,7 +570,7 @@ def _get_category_from_path(skill_path: Path) -> Optional[str]:
     # then fall back to external dirs from config.
     dirs_to_check = [_skills_dir()]
     try:
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
         dirs_to_check.extend(get_external_skills_dirs())
     except Exception:
         pass
@@ -622,7 +622,7 @@ def _get_disabled_skill_names() -> Set[str]:
     Delegates to ``agent.skill_utils.get_disabled_skill_names`` — kept here
     as a public re-export so existing callers don't need updating.
     """
-    from opencodon.core.skill_utils import get_disabled_skill_names
+    from opencodon.core.skills.skill_utils import get_disabled_skill_names
     return get_disabled_skill_names()
 
 
@@ -681,7 +681,7 @@ def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
     signature changes (dir/category mtimes or the disabled-set) and expires
     after a short TTL to bound staleness from in-place SKILL.md edits.
     """
-    from opencodon.core.skill_utils import get_external_skills_dirs, iter_skill_index_files
+    from opencodon.core.skills.skill_utils import get_external_skills_dirs, iter_skill_index_files
 
     cache_key = _SKILLS_CACHE_KEY_DISABLED if skip_disabled else _SKILLS_CACHE_KEY_FILTERED
 
@@ -933,7 +933,7 @@ def _serve_plugin_skill(
     rendered_content = content
     if preprocess:
         try:
-            from opencodon.core.skill_preprocessing import preprocess_skill_content
+            from opencodon.core.skills.skill_preprocessing import preprocess_skill_content
 
             rendered_content = preprocess_skill_content(
                 content,
@@ -1000,7 +1000,7 @@ def skill_view(
         # Names containing ':' are routed to the plugin skill registry.
         # Bare names fall through to the existing flat-tree scan below.
         if ":" in name:
-            from opencodon.core.skill_utils import is_valid_namespace, parse_qualified_name
+            from opencodon.core.skills.skill_utils import is_valid_namespace, parse_qualified_name
             from opencodon.plugins_runtime import discover_plugins, get_plugin_manager
 
             namespace, bare = parse_qualified_name(name)
@@ -1063,7 +1063,7 @@ def skill_view(
             if bare:
                 local_category_name = f"{namespace}/{bare}"
 
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
 
         # The categorized fall-through form (namespace/bare) joins onto each
         # search dir too; re-validate it since `bare` is not namespace-checked.
@@ -1104,7 +1104,7 @@ def skill_view(
         # the caller — silent shadowing of a local skill by a same-named
         # external skill is a real bug class (`/skills` shows one, agent
         # loaded the other) so we surface it loudly instead of guessing.
-        from opencodon.core.skill_utils import iter_skill_index_files
+        from opencodon.core.skills.skill_utils import iter_skill_index_files
 
         candidates: List[Tuple[Optional[Path], Path]] = []  # (skill_dir, skill_md)
         seen_md: set = set()
@@ -1549,7 +1549,7 @@ def skill_view(
         rendered_content = content
         if preprocess:
             try:
-                from opencodon.core.skill_preprocessing import preprocess_skill_content
+                from opencodon.core.skills.skill_preprocessing import preprocess_skill_content
 
                 rendered_content = preprocess_skill_content(
                     content,

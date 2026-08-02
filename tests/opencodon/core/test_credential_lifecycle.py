@@ -141,7 +141,7 @@ def test_delete_survives_pool_reload(opencodon_home):
     assert resp.status_code == 200
 
     # Simulate restart: reload the pool from disk the way startup does.
-    from opencodon.core.credential_pool import load_pool
+    from opencodon.core.credentials.credential_pool import load_pool
 
     entries = load_pool("zai").entries()
     assert entries == [], f"stale entries resurrected: {[e.source for e in entries]}"
@@ -315,7 +315,7 @@ def test_delete_then_resave_round_trip(opencodon_home):
     )
     assert resp.status_code == 200
 
-    from opencodon.core.auth import is_source_suppressed
+    from opencodon.core.credentials.auth import is_source_suppressed
 
     assert is_source_suppressed("zai", "env:ZAI_API_KEY"), (
         "delete must suppress the env source so a lingering shell export "

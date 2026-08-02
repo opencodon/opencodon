@@ -18,7 +18,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _clear_probe_cache():
     """Module-level caches must not leak between tests."""
-    from opencodon.core import model_metadata
+    from opencodon.core.providers import model_metadata
     model_metadata._LOCAL_CTX_PROBE_CACHE.clear()
     model_metadata._endpoint_probe_path_cache.clear()
     yield
@@ -46,7 +46,7 @@ def _client_mock(resp):
 
 class TestOllamaApiShowCaching:
     def test_positive_result_cached_within_ttl(self):
-        from opencodon.core.model_metadata import _query_ollama_api_show
+        from opencodon.core.providers.model_metadata import _query_ollama_api_show
 
         client = _client_mock(_mock_show_response(131072))
         with patch("httpx.Client", return_value=client):
@@ -58,7 +58,7 @@ class TestOllamaApiShowCaching:
 
     def test_failure_never_memoized(self):
         """A down server must be re-probed on the next call (startup race)."""
-        from opencodon.core.model_metadata import _query_ollama_api_show
+        from opencodon.core.providers.model_metadata import _query_ollama_api_show
 
         bad = MagicMock()
         bad.status_code = 404
@@ -71,8 +71,8 @@ class TestOllamaApiShowCaching:
 
     def test_ttl_expiry_reprobes(self):
         """After the 30s TTL lapses, the next call must hit the network again."""
-        from opencodon.core import model_metadata
-        from opencodon.core.model_metadata import _query_ollama_api_show
+        from opencodon.core.providers import model_metadata
+        from opencodon.core.providers.model_metadata import _query_ollama_api_show
         import time as _time
 
         client = _client_mock(_mock_show_response(131072))
@@ -89,8 +89,8 @@ class TestOllamaApiShowCaching:
 
     def test_cache_key_does_not_collide_with_local_ctx_probe(self):
         """The ollama_show namespace must not read _query_local_context_length rows."""
-        from opencodon.core import model_metadata
-        from opencodon.core.model_metadata import _query_ollama_api_show
+        from opencodon.core.providers import model_metadata
+        from opencodon.core.providers.model_metadata import _query_ollama_api_show
         import time as _time
 
         # Seed a same-(model,url) entry under the sibling probe's key shape.
@@ -129,7 +129,7 @@ class TestDetectLocalServerTypeCache:
         return client
 
     def test_second_call_served_from_cache(self):
-        from opencodon.core.model_metadata import detect_local_server_type
+        from opencodon.core.providers.model_metadata import detect_local_server_type
 
         client = self._get_client()
         with patch("httpx.Client", return_value=client):
@@ -144,8 +144,8 @@ class TestDetectLocalServerTypeCache:
         """Stopping Ollama and starting LM Studio on the same port must be
         re-detected once the TTL lapses — the cache is bounded, not
         process-lifetime."""
-        from opencodon.core import model_metadata
-        from opencodon.core.model_metadata import detect_local_server_type
+        from opencodon.core.providers import model_metadata
+        from opencodon.core.providers.model_metadata import detect_local_server_type
         import time as _time
 
         client = self._get_client()
@@ -181,7 +181,7 @@ class TestLocalhostIPv4SiblingSites:
     not just detect_local_server_type."""
 
     def test_helper_rewrites_all_forms(self):
-        from opencodon.core.model_metadata import _localhost_to_ipv4
+        from opencodon.core.providers.model_metadata import _localhost_to_ipv4
 
         assert _localhost_to_ipv4("http://localhost:1234/v1") == "http://127.0.0.1:1234/v1"
         assert _localhost_to_ipv4("http://localhost/v1") == "http://127.0.0.1/v1"
@@ -194,7 +194,7 @@ class TestLocalhostIPv4SiblingSites:
     def test_rewrite_is_host_only_not_substring(self):
         """A URL that merely EMBEDS 'http://localhost' in its path/query must
         not be corrupted — only the URL's own host is rewritten."""
-        from opencodon.core.model_metadata import _localhost_to_ipv4
+        from opencodon.core.providers.model_metadata import _localhost_to_ipv4
 
         proxied = "https://proxy.example.com/route?upstream=http://localhost:11434"
         assert _localhost_to_ipv4(proxied) == proxied
@@ -204,7 +204,7 @@ class TestLocalhostIPv4SiblingSites:
         )
 
     def test_ollama_api_show_probes_ipv4(self):
-        from opencodon.core.model_metadata import _query_ollama_api_show
+        from opencodon.core.providers.model_metadata import _query_ollama_api_show
 
         client = _client_mock(_mock_show_response(131072))
         with patch("httpx.Client", return_value=client):
@@ -213,10 +213,10 @@ class TestLocalhostIPv4SiblingSites:
         assert client.post.call_args[0][0].startswith("http://127.0.0.1:11434")
 
     def test_query_ollama_num_ctx_probes_ipv4(self):
-        from opencodon.core.model_metadata import query_ollama_num_ctx
+        from opencodon.core.providers.model_metadata import query_ollama_num_ctx
 
         client = _client_mock(_mock_show_response(131072))
-        with patch("opencodon.core.model_metadata.detect_local_server_type", return_value="ollama"), \
+        with patch("opencodon.core.providers.model_metadata.detect_local_server_type", return_value="ollama"), \
              patch("httpx.Client", return_value=client):
             query_ollama_num_ctx("llama3", "http://localhost:11434")
 
@@ -225,7 +225,7 @@ class TestLocalhostIPv4SiblingSites:
 
 class TestContextCacheKeyNormalization:
     def test_trailing_slash_variants_share_one_entry(self, tmp_path, monkeypatch):
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         monkeypatch.setattr(
             model_metadata, "_get_context_cache_path",
@@ -243,7 +243,7 @@ class TestContextCacheKeyNormalization:
     def test_legacy_unnormalized_row_still_honored(self, tmp_path, monkeypatch):
         """Rows written pre-normalization (trailing slash in key) must not force a re-probe."""
         import yaml
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         path = tmp_path / "context_lengths.yaml"
         monkeypatch.setattr(model_metadata, "_get_context_cache_path", lambda: path)
@@ -255,7 +255,7 @@ class TestContextCacheKeyNormalization:
         """Reverse migration direction: old row has the slash, current runtime
         passes the normalized no-slash URL — must still hit, not re-probe."""
         import yaml
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         path = tmp_path / "context_lengths.yaml"
         monkeypatch.setattr(model_metadata, "_get_context_cache_path", lambda: path)
@@ -265,7 +265,7 @@ class TestContextCacheKeyNormalization:
 
     def test_invalidate_clears_both_key_shapes(self, tmp_path, monkeypatch):
         import yaml
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         path = tmp_path / "context_lengths.yaml"
         monkeypatch.setattr(model_metadata, "_get_context_cache_path", lambda: path)
@@ -283,7 +283,7 @@ class TestContextCacheKeyNormalization:
         """Reverse direction: invalidating with the no-slash URL must also
         drop a legacy slashed row, or the next lookup resurrects stale data."""
         import yaml
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         path = tmp_path / "context_lengths.yaml"
         monkeypatch.setattr(model_metadata, "_get_context_cache_path", lambda: path)
@@ -297,7 +297,7 @@ class TestContextCacheKeyNormalization:
         """Disk invalidation must clear the in-memory TTL rows too, or the
         next resolution inside the TTL window re-persists the stale value."""
         import time as _time
-        from opencodon.core import model_metadata
+        from opencodon.core.providers import model_metadata
 
         path = tmp_path / "context_lengths.yaml"
         monkeypatch.setattr(model_metadata, "_get_context_cache_path", lambda: path)

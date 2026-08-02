@@ -43,7 +43,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from opencodon_constants import get_opencodon_home
 from opencodon.common._subprocess_compat import windows_hide_flags
 from opencodon.config import load_config, _expand_env_vars
-from opencodon.core.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 from opencodon_time import now as _opencodon_now
 
 logger = logging.getLogger(__name__)
@@ -2508,8 +2508,8 @@ def _build_job_prompt(job: dict, prerun_script: Optional[tuple] = None) -> str:
 
     from opencodon.tools.skills_tool import skill_view
     from opencodon.tools.skill_usage import bump_use
-    from opencodon.core.skill_bundles import build_bundle_invocation_message, resolve_bundle_command_key
-    from opencodon.core.skill_utils import normalize_skill_lookup_name
+    from opencodon.core.skills.skill_bundles import build_bundle_invocation_message, resolve_bundle_command_key
+    from opencodon.core.skills.skill_utils import normalize_skill_lookup_name
 
     parts = []
     skipped: list[str] = []
@@ -3187,11 +3187,11 @@ def run_job(
         # Provider routing
         pr = _cfg.get("provider_routing") or {}
 
-        from opencodon.core.runtime_provider import (
+        from opencodon.core.providers.runtime_provider import (
             resolve_runtime_provider,
             format_runtime_provider_error,
         )
-        from opencodon.core.auth import AuthError
+        from opencodon.core.credentials.auth import AuthError
 
         # F8 runtime backstop: never resolve a stored provider/base_url pair that
         # would ship a named provider's stored credential to an off-host endpoint
@@ -3252,7 +3252,7 @@ def run_job(
                 if not fb_provider or not fb_model:
                     continue
                 try:
-                    from opencodon.core.fallback_config import resolve_entry_api_key
+                    from opencodon.core.providers.fallback_config import resolve_entry_api_key
 
                     fb_kwargs = {
                         "requested": fb_provider,
@@ -3345,7 +3345,7 @@ def run_job(
         runtime_provider = str(runtime.get("provider") or "").strip().lower()
         if runtime_provider:
             try:
-                from opencodon.core.credential_pool import load_pool
+                from opencodon.core.credentials.credential_pool import load_pool
                 pool = load_pool(runtime_provider)
                 if pool.has_credentials():
                     credential_pool = pool
@@ -3827,7 +3827,7 @@ def run_one_job(job: dict, *, adapters=None, loop=None, verbose: bool = False) -
         # resolve_runtime_provider() raised UnscopedSecretError before model
         # selection, breaking every cron job. Mirrors the per-turn pattern in
         # gateway/run.py (_profile_runtime_scope).
-        from opencodon.core.secret_scope import (
+        from opencodon.core.credentials.secret_scope import (
             build_profile_secret_scope,
             reset_secret_scope,
             set_secret_scope,

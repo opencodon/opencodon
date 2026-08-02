@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core.lmstudio_reasoning import resolve_lmstudio_effort
+from opencodon.core.providers.lmstudio_reasoning import resolve_lmstudio_effort
 from opencodon_constants import VALID_REASONING_EFFORTS
 
 # Rank of each value LM Studio accepts, weakest to strongest. Used to assert

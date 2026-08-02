@@ -20,8 +20,8 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core import transcription_registry
-from opencodon.core.transcription_provider import TranscriptionProvider
+from opencodon.core.media import transcription_registry
+from opencodon.core.media.transcription_provider import TranscriptionProvider
 from opencodon.tools import transcription_tools
 
 

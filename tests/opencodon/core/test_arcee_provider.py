@@ -4,7 +4,7 @@ import types
 
 import pytest
 
-from opencodon.core.auth import (
+from opencodon.core.credentials.auth import (
     PROVIDER_REGISTRY,
     resolve_provider,
     get_api_key_provider_status,
@@ -61,7 +61,7 @@ class TestArceeAliases:
         assert resolve_provider(alias) == "arcee"
 
     def test_normalize_provider_models_py(self):
-        from opencodon.core.models import normalize_provider
+        from opencodon.core.providers.models import normalize_provider
         assert normalize_provider("arcee-ai") == "arcee"
         assert normalize_provider("arceeai") == "arcee"
 
@@ -118,12 +118,12 @@ class TestArceeModelCatalog:
         """Arcee has a static _PROVIDER_MODELS catalog entry. Specific model
         names change with releases and don't belong in tests.
         """
-        from opencodon.core.models import _PROVIDER_MODELS
+        from opencodon.core.providers.models import _PROVIDER_MODELS
         assert "arcee" in _PROVIDER_MODELS
         assert len(_PROVIDER_MODELS["arcee"]) >= 1
 
     def test_canonical_provider_entry(self):
-        from opencodon.core.models import CANONICAL_PROVIDERS
+        from opencodon.core.providers.models import CANONICAL_PROVIDERS
         slugs = [p.slug for p in CANONICAL_PROVIDERS]
         assert "arcee" in slugs
 
@@ -154,11 +154,11 @@ class TestArceeNormalization:
 
 class TestArceeURLMapping:
     def test_url_to_provider(self):
-        from opencodon.core.model_metadata import _URL_TO_PROVIDER
+        from opencodon.core.providers.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER.get("api.arcee.ai") == "arcee"
 
     def test_provider_prefixes(self):
-        from opencodon.core.model_metadata import _PROVIDER_PREFIXES
+        from opencodon.core.providers.model_metadata import _PROVIDER_PREFIXES
         assert "arcee" in _PROVIDER_PREFIXES
         assert "arcee-ai" in _PROVIDER_PREFIXES
         assert "arceeai" in _PROVIDER_PREFIXES
@@ -179,7 +179,7 @@ class TestArceeProvidersModule:
         assert not overlay.is_aggregator
 
     def test_label(self):
-        from opencodon.core.models import _PROVIDER_LABELS
+        from opencodon.core.providers.models import _PROVIDER_LABELS
         assert _PROVIDER_LABELS["arcee"] == "Arcee AI"
 
 

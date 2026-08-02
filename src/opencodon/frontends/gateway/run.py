@@ -50,7 +50,7 @@ from opencodon.core.async_utils import consume_detached_task_result, safe_schedu
 from opencodon.core.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 from opencodon.core.i18n import t
 from opencodon.config import cfg_get
-from opencodon.core.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 
 # --- Agent cache tuning ---------------------------------------------------
 # Bounds the per-session AIAgent cache to prevent unbounded growth in
@@ -1415,7 +1415,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
     the process-global ``os.environ`` here would defeat that isolation and leak
     the default profile's keys to every profile's turns and subprocesses.
     """
-    from opencodon.core.secret_scope import is_multiplex_active
+    from opencodon.core.credentials.secret_scope import is_multiplex_active
     if is_multiplex_active():
         # Credentials are resolved from the active profile's secret scope, not
         # os.environ. Still honor config.yaml's agent.max_turns bridge below
@@ -1524,7 +1524,7 @@ def _profile_runtime_scope(profile_home: "Path"):
     from inheriting cross-profile secrets.
     """
     from opencodon_constants import set_opencodon_home_override, reset_opencodon_home_override
-    from opencodon.core.secret_scope import (
+    from opencodon.core.credentials.secret_scope import (
         build_profile_secret_scope,
         set_secret_scope,
         reset_secret_scope,
@@ -2040,12 +2040,12 @@ def _resolve_runtime_agent_kwargs() -> dict:
     resolve credentials using the fallback provider chain from config.yaml
     before giving up.
     """
-    from opencodon.core.runtime_provider import (
+    from opencodon.core.providers.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
         _get_model_config,
     )
-    from opencodon.core.auth import AuthError, is_rate_limited_auth_error
+    from opencodon.core.credentials.auth import AuthError, is_rate_limited_auth_error
 
     try:
         runtime = resolve_runtime_provider()
@@ -2099,7 +2099,7 @@ def _resolve_runtime_agent_kwargs() -> dict:
 
 def _resolve_runtime_agent_kwargs_for_provider(provider: str) -> dict:
     """Resolve runtime credentials for a specific provider (e.g. from channel override)."""
-    from opencodon.core.runtime_provider import (
+    from opencodon.core.providers.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
     )
@@ -2137,7 +2137,7 @@ def _credential_pool_for_provider(provider: Optional[str]):
 
 def _try_resolve_fallback_provider() -> dict | None:
     """Attempt to resolve credentials from the fallback_model/fallback_providers config."""
-    from opencodon.core.runtime_provider import resolve_runtime_provider
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
     try:
         import yaml as _y
         cfg_path = _opencodon_home / "config.yaml"
@@ -2150,7 +2150,7 @@ def _try_resolve_fallback_provider() -> dict | None:
             return None
         for entry in fb_list:
             try:
-                from opencodon.core.fallback_config import resolve_entry_api_key
+                from opencodon.core.providers.fallback_config import resolve_entry_api_key
 
                 runtime = resolve_runtime_provider(
                     requested=entry.get("provider"),
@@ -2444,7 +2444,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
     normalized = command_name.lower().replace("_", "-")
     try:
         from opencodon.tools.skills_tool import _get_disabled_skill_names
-        from opencodon.core.skill_utils import get_all_skills_dirs, is_excluded_skill_path
+        from opencodon.core.skills.skill_utils import get_all_skills_dirs, is_excluded_skill_path
         disabled = _get_disabled_skill_names()
 
         # Check disabled skills across all dirs (local + external)
@@ -3083,7 +3083,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # credential read, so a missed migration crashes loudly instead of
         # leaking a cross-profile value (Workstream A). Inert when off.
         try:
-            from opencodon.core.secret_scope import set_multiplex_active
+            from opencodon.core.credentials.secret_scope import set_multiplex_active
             set_multiplex_active(bool(getattr(self.config, "multiplex_profiles", False)))
         except Exception:
             logger.debug("could not set multiplex-active flag", exc_info=True)
@@ -4169,7 +4169,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         # doesn't fail with "model must be a non-empty string".
         if not model and runtime_kwargs.get("provider"):
             try:
-                from opencodon.core.models import get_default_model_for_provider
+                from opencodon.core.providers.models import get_default_model_for_provider
                 model = get_default_model_for_provider(runtime_kwargs["provider"])
                 if model:
                     logger.info(
@@ -4215,7 +4215,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         mode, attach `request_overrides` so the API call is marked
         accordingly.
         """
-        from opencodon.core.models import resolve_fast_mode_overrides
+        from opencodon.core.providers.models import resolve_fast_mode_overrides
 
         runtime = {
             "api_key": runtime_kwargs.get("api_key"),
@@ -11043,7 +11043,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # web_extract, this conversation, pasted text) and authors the skill
             # via skill_manage. Mirrors the /blueprint fall-through so role
             # alternation is preserved. No engine, works on any backend.
-            from opencodon.core.learn_prompt import build_learn_prompt
+            from opencodon.core.memory.learn_prompt import build_learn_prompt
 
             _learn_req = event.get_command_args().strip()
             _ack = (
@@ -11352,7 +11352,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # /<bundle> loads multiple skills at once. Mirrors CLI dispatch.
             _bundle_handled = False
             try:
-                from opencodon.core.skill_bundles import (
+                from opencodon.core.skills.skill_bundles import (
                     build_bundle_invocation_message,
                     resolve_bundle_command_key,
                 )
@@ -11384,7 +11384,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if command and not locals().get("_bundle_handled", False):
             try:
-                from opencodon.core.skill_commands import (
+                from opencodon.core.skills.skill_commands import (
                     get_skill_commands,
                     build_skill_invocation_message,
                     resolve_skill_command_key,
@@ -11399,7 +11399,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     _skill_name = skill_cmds[cmd_key].get("name", "")
                     _plat = source.platform.value if source.platform else None
                     if _plat and _skill_name:
-                        from opencodon.core.skill_utils import get_disabled_skill_names as _get_plat_disabled
+                        from opencodon.core.skills.skill_utils import get_disabled_skill_names as _get_plat_disabled
                         if _skill_name in _get_plat_disabled(platform=_plat):
                             return (
                                 f"The **{_skill_name}** skill is disabled for {_plat}.\n"
@@ -11410,7 +11410,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                     # XYZ` loads every leading skill (up to 5), not just the
                     # first. Inspired by Claude Code v2.1.199. Mirrors CLI.
                     try:
-                        from opencodon.core.skill_commands import (
+                        from opencodon.core.skills.skill_commands import (
                             build_stacked_skill_invocation_message as _build_stacked,
                             split_stacked_skill_commands,
                         )
@@ -11428,7 +11428,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                         # leading one above) against the same disabled list,
                         # or a skill an operator disabled for this platform
                         # still gets its full content loaded via the stack.
-                        from opencodon.core.skill_utils import get_disabled_skill_names as _get_plat_disabled
+                        from opencodon.core.skills.skill_utils import get_disabled_skill_names as _get_plat_disabled
                         _plat_disabled = _get_plat_disabled(platform=_plat)
                         _disabled_extra = [
                             skill_cmds.get(k, {}).get("name", "")
@@ -11942,8 +11942,8 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
 
         if "@" in message_text:
             try:
-                from opencodon.core.context_references import preprocess_context_references_async
-                from opencodon.core.model_metadata import get_model_context_length_async
+                from opencodon.core.context.context_references import preprocess_context_references_async
+                from opencodon.core.providers.model_metadata import get_model_context_length_async
 
                 _msg_cwd = os.environ.get("TERMINAL_CWD", os.path.expanduser("~"))
                 _msg_config_ctx = None
@@ -12373,7 +12373,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         if _is_new_session and _auto:
             _skill_names = [_auto] if isinstance(_auto, str) else list(_auto)
             try:
-                from opencodon.core.skill_commands import _load_skill_payload, _build_skill_message
+                from opencodon.core.skills.skill_commands import _load_skill_payload, _build_skill_message
                 _combined_parts: list[str] = []
                 _loaded_names: list[str] = []
                 for _sname in _skill_names:
@@ -12447,7 +12447,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         #    means hygiene fires a bit early — safe and harmless.
         # -----------------------------------------------------------------
         if history and len(history) >= 4:
-            from opencodon.core.model_metadata import (
+            from opencodon.core.providers.model_metadata import (
                 estimate_messages_tokens_rough,
                 get_model_context_length_async,
             )
@@ -12918,7 +12918,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # scope / PlatformConfig, not process os.environ.
             home_env = ""
             try:
-                from opencodon.core.secret_scope import get_secret
+                from opencodon.core.credentials.secret_scope import get_secret
 
                 home_env = (get_secret(env_key) or "").strip() if env_key else ""
             except Exception:
@@ -13806,7 +13806,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         users can immediately see if context detection went wrong (e.g.
         local models falling to the 128K default).
         """
-        from opencodon.core.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
+        from opencodon.core.providers.model_metadata import get_model_context_length, DEFAULT_FALLBACK_CONTEXT
 
         model = _resolve_gateway_model()
         config_context_length = None
@@ -16591,7 +16591,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
         only the persisted default model.
         """
         try:
-            from opencodon.core.image_routing import decide_image_input_mode
+            from opencodon.core.media.image_routing import decide_image_input_mode
             from opencodon.core.auxiliary_client import _read_main_model, _read_main_provider
             from opencodon.config import load_config
 
@@ -16651,7 +16651,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             The enriched message string with vision descriptions prepended.
         """
         from opencodon.tools.vision_tools import vision_analyze_tool
-        from opencodon.core.memory_manager import sanitize_context
+        from opencodon.core.memory.memory_manager import sanitize_context
 
         analysis_prompt = (
             "Describe everything visible in this image in thorough detail. "
@@ -21045,7 +21045,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
                 _native_imgs = self._consume_pending_native_image_paths(session_key)
                 if _native_imgs:
                     try:
-                        from opencodon.core.image_routing import build_native_content_parts
+                        from opencodon.core.media.image_routing import build_native_content_parts
                         _parts, _skipped = build_native_content_parts(
                             message,
                             _native_imgs,
@@ -22494,7 +22494,7 @@ def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop
         # real work only fires once per config interval.
         if tick_count % CURATOR_EVERY == 0:
             try:
-                from opencodon.core.curator import maybe_run_curator
+                from opencodon.core.memory.curator import maybe_run_curator
                 maybe_run_curator(
                     idle_for_seconds=float("inf"),
                     on_summary=lambda msg: logger.info("curator: %s", msg),

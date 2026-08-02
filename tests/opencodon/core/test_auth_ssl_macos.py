@@ -1,4 +1,4 @@
-"""Tests for opencodon.core.auth._default_verify platform-aware fallback.
+"""Tests for opencodon.core.credentials.auth._default_verify platform-aware fallback.
 
 On macOS with Homebrew Python, the system OpenSSL cannot locate the
 system trust store, so we explicitly load certifi's bundle. On other
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 
-from opencodon.core.auth import _default_verify, _resolve_verify
+from opencodon.core.credentials.auth import _default_verify, _resolve_verify
 
 
 @pytest.fixture

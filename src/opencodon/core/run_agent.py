@@ -146,22 +146,22 @@ from opencodon.tools.browser_tool import cleanup_browser
 
 
 # Agent internals extracted to agent/ package for modularity
-from opencodon.core.memory_manager import sanitize_context
+from opencodon.core.memory.memory_manager import sanitize_context
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.redact import redact_sensitive_text
 from opencodon.core.message_content import flatten_message_text
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     estimate_request_tokens_rough,  # noqa: F401  # re-exported for tests that mock.patch("opencodon.core.run_agent.estimate_request_tokens_rough")
     is_local_endpoint,
 )
-from opencodon.core.usage_pricing import normalize_usage
+from opencodon.core.providers.usage_pricing import normalize_usage
 # Re-exported for tests that monkeypatch these symbols on run_agent.
-from opencodon.core.context_compressor import (  # noqa: F401
+from opencodon.core.context.context_compressor import (  # noqa: F401
     COMPRESSED_SUMMARY_METADATA_KEY,
     ContextCompressor,
 )
 from opencodon.core.retry_utils import jittered_backoff  # noqa: F401
-from opencodon.core.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
+from opencodon.core.prompt.prompt_builder import (  # noqa: F401  # re-exported via _ra() / mock.patch("opencodon.core.run_agent.<name>") / from run_agent import <name>
     DEFAULT_AGENT_IDENTITY,
     build_skills_system_prompt,
     build_context_files_prompt,
@@ -182,7 +182,7 @@ from opencodon.core.message_sanitization import (  # noqa: F401
     _strip_images_from_messages,
     _sanitize_structure_non_ascii,
 )
-from opencodon.core.codex_responses_adapter import (
+from opencodon.core.providers.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
     _split_responses_tool_id as _codex_split_responses_tool_id,
@@ -666,7 +666,7 @@ class AIAgent(
             return False
         if normalized_provider == "copilot":
             try:
-                from opencodon.core.models import _should_use_copilot_responses_api
+                from opencodon.core.providers.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -705,7 +705,7 @@ class AIAgent(
 
     def _format_tools_for_system_message(self) -> str:
         """Forwarder — see ``agent.system_prompt.format_tools_for_system_message``."""
-        from opencodon.core.system_prompt import format_tools_for_system_message
+        from opencodon.core.prompt.system_prompt import format_tools_for_system_message
         return format_tools_for_system_message(self)
 
 
@@ -881,12 +881,12 @@ class AIAgent(
 
     def _build_system_prompt_parts(self, system_message: str = None) -> Dict[str, str]:
         """Forwarder — see ``agent.system_prompt.build_system_prompt_parts``."""
-        from opencodon.core.system_prompt import build_system_prompt_parts
+        from opencodon.core.prompt.system_prompt import build_system_prompt_parts
         return build_system_prompt_parts(self, system_message=system_message)
 
     def _build_system_prompt(self, system_message: str = None) -> str:
         """Forwarder — see ``agent.system_prompt.build_system_prompt``."""
-        from opencodon.core.system_prompt import build_system_prompt
+        from opencodon.core.prompt.system_prompt import build_system_prompt
         return build_system_prompt(self, system_message=system_message)
 
 
@@ -901,7 +901,7 @@ class AIAgent(
 
     def _invalidate_system_prompt(self):
         """Forwarder — see ``agent.system_prompt.invalidate_system_prompt``."""
-        from opencodon.core.system_prompt import invalidate_system_prompt
+        from opencodon.core.prompt.system_prompt import invalidate_system_prompt
         invalidate_system_prompt(self)
 
 

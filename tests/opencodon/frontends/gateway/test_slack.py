@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-import opencodon.core.secret_scope as secret_scope
+import opencodon.core.credentials.secret_scope as secret_scope
 from opencodon.frontends.gateway.config import Platform, PlatformConfig
 from opencodon.frontends.gateway.run import GatewayRunner
 from opencodon.frontends.gateway.platforms.base import (

@@ -407,7 +407,7 @@ def test_multihop_redirects_never_resurrect_credentials():
 
 
 def test_probe_api_models_drops_custom_credentials_on_wire():
-    from opencodon.core.models import probe_api_models
+    from opencodon.core.providers.models import probe_api_models
 
     source = _server()
     sink = _server()
@@ -528,7 +528,7 @@ def test_azure_anthropic_probe_drops_api_key_and_bearer_on_redirect():
 
 
 def test_lmstudio_load_post_drops_bearer_on_redirect(monkeypatch):
-    from opencodon.core import models
+    from opencodon.core.providers import models
 
     sink = _server()
     source = ThreadingHTTPServer(("127.0.0.1", 0), _LmStudioSourceHandler)

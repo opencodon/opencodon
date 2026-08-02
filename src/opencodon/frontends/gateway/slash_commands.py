@@ -29,7 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from opencodon.core.account_usage import fetch_account_usage, render_account_usage_lines
+from opencodon.core.providers.account_usage import fetch_account_usage, render_account_usage_lines
 from opencodon.core.i18n import t
 from opencodon.core.turn_context import extract_api_content_sidecar
 from opencodon.frontends.gateway.config import HomeChannel, Platform, PlatformConfig
@@ -1203,7 +1203,7 @@ class GatewaySlashCommandsMixin:
             *gateway_help_lines(),
         ]
         try:
-            from opencodon.core.skill_commands import get_skill_commands
+            from opencodon.core.skills.skill_commands import get_skill_commands
             skill_cmds = get_skill_commands()
             if skill_cmds:
                 lines.append(t("gateway.help.skill_header", count=len(skill_cmds)))
@@ -1236,7 +1236,7 @@ class GatewaySlashCommandsMixin:
         # Build combined entry list: built-in commands + skill commands
         entries = list(gateway_help_lines())
         try:
-            from opencodon.core.skill_commands import get_skill_commands
+            from opencodon.core.skills.skill_commands import get_skill_commands
             skill_cmds = get_skill_commands()
             if skill_cmds:
                 entries.append("")
@@ -1328,7 +1328,7 @@ class GatewaySlashCommandsMixin:
         # --refresh: bust the disk cache so the picker shows live data.
         if force_refresh:
             try:
-                from opencodon.core.models import clear_provider_models_cache
+                from opencodon.core.providers.models import clear_provider_models_cache
                 clear_provider_models_cache()
             except Exception:
                 pass
@@ -2008,7 +2008,7 @@ class GatewaySlashCommandsMixin:
         # on a cache miss, so run it off the event loop.
         _cost_warning = None
         try:
-            from opencodon.core.model_cost_guard import expensive_model_warning
+            from opencodon.core.providers.model_cost_guard import expensive_model_warning
 
             _cost_warning = await asyncio.to_thread(
                 expensive_model_warning,
@@ -2948,7 +2948,7 @@ class GatewaySlashCommandsMixin:
         to config.yaml (parity with /model and /reasoning).
         """
         from opencodon.frontends.gateway.run import _load_gateway_config, _resolve_gateway_model
-        from opencodon.core.models import model_supports_fast_mode
+        from opencodon.core.providers.models import model_supports_fast_mode
 
         raw_args = event.get_command_args().strip().lower()
         # Reuse the /reasoning arg parser: strips --global (any position),
@@ -3222,7 +3222,7 @@ class GatewaySlashCommandsMixin:
             split_history_for_partial_compress,
             summarize_compress_preview,
         )
-        from opencodon.core.conversation_compression import (
+        from opencodon.core.context.conversation_compression import (
             finalize_context_engine_compression_notification,
         )
         _raw_args = (event.get_command_args() or "").strip()
@@ -3242,7 +3242,7 @@ class GatewaySlashCommandsMixin:
 
         if _preview:
             # Report what WOULD be compressed — no agent, no writes.
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
             _pv_msgs = [
                 {"role": m.get("role"), "content": m.get("content")}
                 for m in history
@@ -3259,8 +3259,8 @@ class GatewaySlashCommandsMixin:
 
         try:
             from opencodon.core.run_agent import AIAgent
-            from opencodon.core.manual_compression_feedback import summarize_manual_compression
-            from opencodon.core.model_metadata import estimate_request_tokens_rough
+            from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
+            from opencodon.core.providers.model_metadata import estimate_request_tokens_rough
 
             session_key = self._session_key_for_source(source)
             # Preserve the same platform + stable gateway session identity that a
@@ -3971,7 +3971,7 @@ class GatewaySlashCommandsMixin:
         empty list and never raises on failure so /usage stays robust.
         """
         try:
-            from opencodon.core.context_breakdown import compute_session_context_breakdown
+            from opencodon.core.context.context_breakdown import compute_session_context_breakdown
 
             history: list[dict] = []
             try:
@@ -4057,7 +4057,7 @@ class GatewaySlashCommandsMixin:
             if normalized_provider != "openai-codex":
                 return t("gateway.usage.reset_wrong_provider")
             force = "--force" in args[1:]
-            from opencodon.core.account_usage import redeem_codex_reset_credit
+            from opencodon.core.providers.account_usage import redeem_codex_reset_credit
 
             result = await asyncio.to_thread(
                 redeem_codex_reset_credit,
@@ -4134,7 +4134,7 @@ class GatewaySlashCommandsMixin:
         session_entry = await self.async_session_store.get_or_create_session(source)
         history = await self.async_session_store.load_transcript(session_entry.session_id)
         if history:
-            from opencodon.core.model_metadata import estimate_messages_tokens_rough
+            from opencodon.core.providers.model_metadata import estimate_messages_tokens_rough
             msgs = [m for m in history if m.get("role") in {"user", "assistant"} and m.get("content")]
             approx = estimate_messages_tokens_rough(msgs)
             lines = [
@@ -4183,7 +4183,7 @@ class GatewaySlashCommandsMixin:
 
         try:
             from opencodon.state import SessionDB
-            from opencodon.core.insights import InsightsEngine
+            from opencodon.core.memory.insights import InsightsEngine
 
             loop = asyncio.get_running_loop()
 
@@ -4280,7 +4280,7 @@ class GatewaySlashCommandsMixin:
         """
         loop = asyncio.get_running_loop()
         try:
-            from opencodon.core.skill_commands import reload_skills
+            from opencodon.core.skills.skill_commands import reload_skills
 
             result = await loop.run_in_executor(None, reload_skills)
             added = result.get("added", [])      # [{"name", "description"}, ...]
@@ -4371,7 +4371,7 @@ class GatewaySlashCommandsMixin:
         invoking the bundle's own ``/<slug>`` command, not by this one.
         """
         try:
-            from opencodon.core.skill_bundles import list_bundles, _bundles_dir
+            from opencodon.core.skills.skill_bundles import list_bundles, _bundles_dir
         except Exception as exc:
             logger.warning("Bundles command unavailable: %s", exc)
             return f"Bundles subsystem unavailable: {exc}"

@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-from opencodon.core.context_compressor import ContextCompressor, _estimate_msg_budget_tokens
-from opencodon.core.model_metadata import (
+from opencodon.core.context.context_compressor import ContextCompressor, _estimate_msg_budget_tokens
+from opencodon.core.providers.model_metadata import (
     _is_cjk_token_dense_char,
     estimate_messages_tokens_rough,
     estimate_tokens_rough,
@@ -27,7 +27,7 @@ def test_compressor_tail_budget_uses_cjk_aware_message_estimate():
 
 
 def test_cjk_tail_does_not_expand_to_english_char_budget():
-    with patch("opencodon.core.context_compressor.get_model_context_length", return_value=65536):
+    with patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=65536):
         compressor = ContextCompressor(
             "test/model",
             protect_first_n=3,

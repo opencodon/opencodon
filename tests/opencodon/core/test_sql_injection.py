@@ -2,7 +2,7 @@
 
 import re
 
-from opencodon.core.insights import InsightsEngine
+from opencodon.core.memory.insights import InsightsEngine
 
 
 def test_session_cols_no_injection_chars():

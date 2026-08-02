@@ -27,8 +27,8 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from opencodon.core.codex_responses_adapter import _summarize_user_message_for_log
-from opencodon.core.conversation_compression import (
+from opencodon.core.providers.codex_responses_adapter import _summarize_user_message_for_log
+from opencodon.core.context.conversation_compression import (
     COMPRESSION_RETRY_CONTEXT_REDUCED_STATUS_TEMPLATE,
     COMPRESSION_RETRY_MESSAGES_STATUS_TEMPLATE,
     COMPRESSION_RETRY_TOKENS_STATUS_TEMPLATE,
@@ -58,7 +58,7 @@ from opencodon.core.message_sanitization import (
     _strip_images_from_messages,
     _strip_non_ascii,
 )
-from opencodon.core.model_metadata import (
+from opencodon.core.providers.model_metadata import (
     MINIMUM_CONTEXT_LENGTH,
     _estimate_tools_tokens_rough,
     estimate_messages_tokens_rough,
@@ -69,7 +69,7 @@ from opencodon.core.model_metadata import (
     save_context_length,
 )
 from opencodon.core.process_bootstrap import _install_safe_stdio
-from opencodon.core.prompt_caching import apply_anthropic_cache_control
+from opencodon.core.prompt.prompt_caching import apply_anthropic_cache_control
 from opencodon.core.retry_utils import (
     adaptive_rate_limit_backoff,
     is_zai_coding_overload_error,
@@ -77,7 +77,7 @@ from opencodon.core.retry_utils import (
     zai_coding_overload_retry_ceiling,
 )
 from opencodon.core.trajectory import has_incomplete_scratchpad
-from opencodon.core.usage_pricing import estimate_usage_cost, normalize_usage
+from opencodon.core.providers.usage_pricing import estimate_usage_cost, normalize_usage
 from opencodon_constants import PARTIAL_STREAM_STUB_ID
 from opencodon_logging import set_session_context
 from opencodon.tools.skill_provenance import set_current_write_origin
@@ -272,7 +272,7 @@ def _billing_or_entitlement_message(
     # OpenRouter, …) so every text surface — CLI, gateway messaging, TUI
     # transcript — shows the same actionable link, not just OpenRouter.
     try:
-        from opencodon.core.billing_links import build_billing_block
+        from opencodon.core.providers.billing_links import build_billing_block
 
         _link = build_billing_block(provider=provider, base_url=base_url, model=model)
         if _link.provider_label:
@@ -297,7 +297,7 @@ def _billing_or_entitlement_message(
 def _billing_block_dict(provider, base_url, model, message="") -> Optional[dict]:
     """Best-effort structured billing descriptor (None if billing_links is unavailable)."""
     try:
-        from opencodon.core.billing_links import build_billing_block
+        from opencodon.core.providers.billing_links import build_billing_block
 
         return build_billing_block(
             provider=provider, base_url=str(base_url), model=model, message=message
@@ -819,7 +819,7 @@ def run_conversation(
             for _si in range(len(messages) - 1, -1, -1):
                 _sm = messages[_si]
                 if isinstance(_sm, dict) and _sm.get("role") == "tool":
-                    from opencodon.core.prompt_builder import format_steer_marker
+                    from opencodon.core.prompt.prompt_builder import format_steer_marker
                     marker = format_steer_marker(_pre_api_steer)
                     existing = _sm.get("content", "")
                     if isinstance(existing, str):
@@ -2980,8 +2980,8 @@ def run_conversation(
                     and not _retry.anthropic_auth_retry_attempted
                 ):
                     _retry.anthropic_auth_retry_attempted = True
-                    from opencodon.core.anthropic_adapter import _is_oauth_token
-                    from opencodon.core.azure_identity_adapter import is_token_provider
+                    from opencodon.core.providers.anthropic_adapter import _is_oauth_token
+                    from opencodon.core.providers.azure_identity_adapter import is_token_provider
                     if agent._try_refresh_anthropic_client_credentials():
                         print(f"{agent.log_prefix}🔐 Anthropic credentials refreshed after 401. Retrying request...")
                         continue
@@ -5567,7 +5567,7 @@ def run_conversation(
                         # Posture is fixed for the session — resolve once + cache.
                         coding = getattr(agent, "_resolved_is_coding", None)
                         if coding is None:
-                            from opencodon.core.coding_context import is_coding_context
+                            from opencodon.core.context.coding_context import is_coding_context
                             coding = bool(is_coding_context(platform=getattr(agent, "platform", "") or ""))
                             agent._resolved_is_coding = coding
                         _verify_nudge2 = get_pre_verify_continue_message(

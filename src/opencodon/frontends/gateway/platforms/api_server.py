@@ -1486,7 +1486,7 @@ class APIServerAdapter(BasePlatformAdapter):
         """
         if not profile:
             try:
-                from opencodon.core.secret_scope import is_multiplex_active
+                from opencodon.core.credentials.secret_scope import is_multiplex_active
 
                 if is_multiplex_active():
                     from opencodon.frontends.gateway.run import _profile_runtime_scope
@@ -5392,7 +5392,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return False
 
         try:
-            from opencodon.core.auth import has_usable_secret
+            from opencodon.core.credentials.auth import has_usable_secret
             if not has_usable_secret(self._api_key, min_length=16):
                 logger.error(
                     "[%s] Refusing to start: API_SERVER_KEY is a "

@@ -21,13 +21,13 @@ import threading
 
 import pytest
 
-from opencodon.core import credential_pool as CP
-from opencodon.core.credential_pool import (
+from opencodon.core.credentials import credential_pool as CP
+from opencodon.core.credentials.credential_pool import (
     AUTH_TYPE_OAUTH,
     CredentialPool,
     PooledCredential,
 )
-from opencodon.core import auth as A
+from opencodon.core.credentials import auth as A
 
 
 def _write_store(path, store):

@@ -396,7 +396,7 @@ def classify_verification_command(
     if not command or not isinstance(command, str):
         return None
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
 
         facts = project_facts_for(cwd)
     except Exception:
@@ -504,7 +504,7 @@ def mark_workspace_edited(
     """Mark verification evidence stale after a successful file edit."""
 
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
 
         facts = project_facts_for(cwd)
     except Exception:
@@ -557,7 +557,7 @@ def verification_status(
     """Return the best known verification state for a session/workspace."""
 
     try:
-        from opencodon.core.coding_context import project_facts_for
+        from opencodon.core.context.coding_context import project_facts_for
 
         facts = project_facts_for(cwd)
     except Exception:

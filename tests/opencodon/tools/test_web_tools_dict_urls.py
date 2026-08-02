@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from opencodon.core import web_search_registry
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers import web_search_registry
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 from opencodon.tools import web_tools
 
 

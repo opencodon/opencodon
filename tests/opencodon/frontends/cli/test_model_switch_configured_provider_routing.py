@@ -60,12 +60,12 @@ def _run_switch(
     with patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None), \
          patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]), \
          patch("opencodon.frontends.cli.model_switch.normalize_model_for_provider", side_effect=lambda model, provider: model), \
-         patch("opencodon.core.models.validate_requested_model", return_value=validation), \
-         patch("opencodon.core.models.detect_provider_for_model", return_value=None), \
+         patch("opencodon.core.providers.models.validate_requested_model", return_value=validation), \
+         patch("opencodon.core.providers.models.detect_provider_for_model", return_value=None), \
          patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None), \
          patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None), \
          patch(
-             "opencodon.core.runtime_provider.resolve_runtime_provider",
+             "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "***",
                  "base_url": current_base_url or "http://resolved/v1",

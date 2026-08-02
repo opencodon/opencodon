@@ -12,7 +12,7 @@ from opencodon.config import (
     get_custom_provider_extra_headers,
     normalize_extra_headers,
 )
-from opencodon.core import models as models_mod
+from opencodon.core.providers import models as models_mod
 
 
 def test_normalize_extra_headers_stringifies_and_drops_none():

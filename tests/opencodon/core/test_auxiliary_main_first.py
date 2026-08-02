@@ -422,14 +422,14 @@ class TestResolveVisionMainFirst:
         ), patch(
             "opencodon.core.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "opencodon.core.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "opencodon.core.copilot_auth.copilot_request_headers",
+            "opencodon.core.credentials.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -459,14 +459,14 @@ class TestResolveVisionMainFirst:
         with patch(
             "opencodon.core.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "opencodon.core.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "opencodon.core.copilot_auth.copilot_request_headers",
+            "opencodon.core.credentials.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()

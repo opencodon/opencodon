@@ -173,9 +173,9 @@ class TestRunOneJobHonoursInterruptedFlag:
         sched._interrupted_job_ids.add(job["id"])
 
         with patch("opencodon.cron.scheduler.claim_dispatch", return_value=True), \
-             patch("opencodon.core.secret_scope.set_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.build_profile_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.reset_secret_scope"), \
+             patch("opencodon.core.credentials.secret_scope.set_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.build_profile_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.reset_secret_scope"), \
              patch(
                  "opencodon.cron.scheduler.run_job",
                  return_value=(True, "full output", "final response", None),
@@ -208,9 +208,9 @@ class TestRunOneJobHonoursInterruptedFlag:
         sched._interrupted_job_ids.add(job["id"])
 
         with patch("opencodon.cron.scheduler.claim_dispatch", return_value=True), \
-             patch("opencodon.core.secret_scope.set_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.build_profile_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.reset_secret_scope"), \
+             patch("opencodon.core.credentials.secret_scope.set_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.build_profile_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.reset_secret_scope"), \
              patch(
                  "opencodon.cron.scheduler.run_job",
                  return_value=(True, "full output", "a plausible final response", None),
@@ -242,9 +242,9 @@ class TestRunOneJobHonoursInterruptedFlag:
         job = self._make_job()
 
         with patch("opencodon.cron.scheduler.claim_dispatch", return_value=True), \
-             patch("opencodon.core.secret_scope.set_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.build_profile_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.reset_secret_scope"), \
+             patch("opencodon.core.credentials.secret_scope.set_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.build_profile_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.reset_secret_scope"), \
              patch(
                  "opencodon.cron.scheduler.run_job",
                  return_value=(True, "full output", "final response", None),
@@ -267,9 +267,9 @@ class TestRunOneJobHonoursInterruptedFlag:
         sched._interrupted_job_ids.add(job["id"])
 
         with patch("opencodon.cron.scheduler.claim_dispatch", return_value=True), \
-             patch("opencodon.core.secret_scope.set_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.build_profile_secret_scope", return_value=None), \
-             patch("opencodon.core.secret_scope.reset_secret_scope"), \
+             patch("opencodon.core.credentials.secret_scope.set_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.build_profile_secret_scope", return_value=None), \
+             patch("opencodon.core.credentials.secret_scope.reset_secret_scope"), \
              patch("opencodon.cron.scheduler.run_job", side_effect=RuntimeError("boom")), \
              patch("opencodon.cron.scheduler.mark_job_run") as mock_mark:
             result = sched.run_one_job(job)

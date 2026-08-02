@@ -88,11 +88,11 @@ def _prune_replaced_custom_model_config_credentials(
     can be selected before the freshly saved config is tried.
     """
     try:
-        from opencodon.core.credential_pool import (
+        from opencodon.core.credentials.credential_pool import (
             CUSTOM_POOL_PREFIX,
             get_custom_provider_pool_key,
         )
-        from opencodon.core.auth import read_credential_pool, write_credential_pool
+        from opencodon.core.credentials.auth import read_credential_pool, write_credential_pool
 
         active_pool_key = get_custom_provider_pool_key(
             base_url,
@@ -170,7 +170,7 @@ def _model_flow_openrouter(config, current_model=""):
     """OpenRouter provider: ensure API key, then pick model."""
     from opencodon.frontends.cli.main import _prompt_api_key
     from opencodon_constants import OPENROUTER_BASE_URL
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         ProviderConfig,
         _prompt_model_selection,
         _save_model_choice,
@@ -197,7 +197,7 @@ def _model_flow_openrouter(config, current_model=""):
     if abort:
         return
 
-    from opencodon.core.models import model_ids, get_pricing_for_provider
+    from opencodon.core.providers.models import model_ids, get_pricing_for_provider
 
     openrouter_models = model_ids(force_refresh=True)
 
@@ -252,7 +252,7 @@ def _model_flow_moa(config, current_model=""):
     always show the preset list (even when there is only one) so the user sees
     what they are selecting, then print the full preset breakdown on selection.
     """
-    from opencodon.core.auth import _save_model_choice, deactivate_provider
+    from opencodon.core.credentials.auth import _save_model_choice, deactivate_provider
     from opencodon.config import load_config, save_config
     from opencodon.config.moa_config import normalize_moa_config
 
@@ -331,7 +331,7 @@ def _model_flow_moa(config, current_model=""):
 
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         get_codex_auth_status,
         _prompt_model_selection,
         _save_model_choice,
@@ -340,7 +340,7 @@ def _model_flow_openai_codex(config, current_model=""):
         PROVIDER_REGISTRY,
         DEFAULT_CODEX_BASE_URL,
     )
-    from opencodon.core.codex_models import get_codex_model_ids
+    from opencodon.core.providers.codex_models import get_codex_model_ids
 
     status = get_codex_auth_status()
     if status.get("logged_in"):
@@ -394,7 +394,7 @@ def _model_flow_openai_codex(config, current_model=""):
         pass
     if not _codex_token:
         try:
-            from opencodon.core.auth import resolve_codex_runtime_credentials
+            from opencodon.core.credentials.auth import resolve_codex_runtime_credentials
 
             _codex_creds = resolve_codex_runtime_credentials()
             _codex_token = _codex_creds.get("api_key")
@@ -419,7 +419,7 @@ def _model_flow_openai_codex(config, current_model=""):
 
 def _model_flow_xai_oauth(_config, current_model="", *, args=None):
     """xAI Grok OAuth (SuperGrok / Premium+) provider: ensure logged in, then pick model."""
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         get_xai_oauth_auth_status,
         _prompt_model_selection,
         _save_model_choice,
@@ -429,7 +429,7 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
         DEFAULT_XAI_OAUTH_BASE_URL,
         PROVIDER_REGISTRY,
     )
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     status = get_xai_oauth_auth_status()
     if status.get("logged_in"):
@@ -501,7 +501,7 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
 def _model_flow_qwen_oauth(_config, current_model=""):
     """Qwen OAuth provider: reuse local Qwen CLI login, then pick model."""
     from opencodon.frontends.cli.main import _DEFAULT_QWEN_PORTAL_MODELS
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         get_qwen_auth_status,
         resolve_qwen_runtime_credentials,
         _prompt_model_selection,
@@ -509,7 +509,7 @@ def _model_flow_qwen_oauth(_config, current_model=""):
         _update_config_for_provider,
         DEFAULT_QWEN_BASE_URL,
     )
-    from opencodon.core.models import fetch_api_models
+    from opencodon.core.providers.models import fetch_api_models
 
     status = get_qwen_auth_status()
     if not status.get("logged_in"):
@@ -548,7 +548,7 @@ def _model_flow_qwen_oauth(_config, current_model=""):
 
 def _model_flow_minimax_oauth(config, current_model="", args=None):
     """MiniMax OAuth provider: ensure logged in, then pick model."""
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
         _save_model_choice,
@@ -584,7 +584,7 @@ def _model_flow_minimax_oauth(config, current_model="", args=None):
         print(format_auth_error(exc))
         return
 
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     model_ids = _PROVIDER_MODELS.get("minimax-oauth", [])
     selected = _prompt_model_selection(
@@ -607,7 +607,7 @@ def _model_flow_custom(config):
     so it appears in the provider menu on subsequent runs.
     """
     from opencodon.frontends.cli.main import _auto_provider_name, _prompt_custom_api_mode_selection, _save_custom_provider
-    from opencodon.core.auth import _save_model_choice, deactivate_provider
+    from opencodon.core.credentials.auth import _save_model_choice, deactivate_provider
     from opencodon.config import get_env_value, load_config, save_config
     from opencodon.frontends.cli.secret_prompt import masked_secret_prompt
 
@@ -668,7 +668,7 @@ def _model_flow_custom(config):
             print(f"  Updated URL: {effective_url}")
         print()
 
-    from opencodon.core.models import probe_api_models
+    from opencodon.core.providers.models import probe_api_models
 
     probe = probe_api_models(effective_key, effective_url)
     if probe.get("used_fallback") and probe.get("resolved_base_url"):
@@ -857,7 +857,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     :func:`agent.model_metadata.get_model_context_length` chain
     (models.dev, provider metadata, hardcoded family fallbacks).
     """
-    from opencodon.core.auth import _save_model_choice, deactivate_provider  # noqa: F401
+    from opencodon.core.credentials.auth import _save_model_choice, deactivate_provider  # noqa: F401
     from opencodon.config import (
         get_env_value,
         save_env_value,
@@ -956,7 +956,7 @@ def _model_flow_azure_foundry(config, current_model=""):
 
     if use_entra:
         try:
-            from opencodon.core.azure_identity_adapter import (
+            from opencodon.core.providers.azure_identity_adapter import (
                 EntraIdentityConfig,
                 SCOPE_AI_AZURE_DEFAULT,
                 build_token_provider,
@@ -1200,9 +1200,9 @@ def _model_flow_named_custom(config, provider_info):
     Falls back to the saved model if probing fails.
     """
     from opencodon.frontends.cli.main import _custom_provider_api_key_config_value, _custom_provider_base_url_config_value, _save_custom_provider
-    from opencodon.core.auth import _save_model_choice, deactivate_provider
+    from opencodon.core.credentials.auth import _save_model_choice, deactivate_provider
     from opencodon.config import load_config, save_config
-    from opencodon.core.models import fetch_api_models
+    from opencodon.core.providers.models import fetch_api_models
 
     name = provider_info["name"]
     base_url = provider_info["base_url"]
@@ -1387,7 +1387,7 @@ def _model_flow_named_custom(config, provider_info):
 def _model_flow_copilot(config, current_model=""):
     """GitHub Copilot flow using env vars, gh CLI, or OAuth device code."""
     from opencodon.frontends.cli.main import _current_reasoning_effort, _prompt_reasoning_effort_selection, _set_reasoning_effort
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -1395,7 +1395,7 @@ def _model_flow_copilot(config, current_model=""):
         resolve_api_key_provider_credentials,
     )
     from opencodon.config import save_env_value, load_config, save_config
-    from opencodon.core.models import (
+    from opencodon.core.providers.models import (
         _PROVIDER_MODELS,
         fetch_api_models,
         fetch_github_model_catalog,
@@ -1435,7 +1435,7 @@ def _model_flow_copilot(config, current_model=""):
 
         if choice == "1":
             try:
-                from opencodon.core.copilot_auth import copilot_device_code_login
+                from opencodon.core.credentials.copilot_auth import copilot_device_code_login
 
                 token = copilot_device_code_login()
                 if token:
@@ -1461,7 +1461,7 @@ def _model_flow_copilot(config, current_model=""):
                 return
             # Validate token type
             try:
-                from opencodon.core.copilot_auth import validate_copilot_token
+                from opencodon.core.credentials.copilot_auth import validate_copilot_token
 
                 valid, msg = validate_copilot_token(new_key)
                 if not valid:
@@ -1585,7 +1585,7 @@ def _model_flow_copilot(config, current_model=""):
 
 def _model_flow_copilot_acp(config, current_model=""):
     """GitHub Copilot ACP flow using the local Copilot CLI."""
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -1594,7 +1594,7 @@ def _model_flow_copilot_acp(config, current_model=""):
         resolve_api_key_provider_credentials,
         resolve_external_process_provider_credentials,
     )
-    from opencodon.core.models import (
+    from opencodon.core.providers.models import (
         _PROVIDER_MODELS,
         fetch_github_model_catalog,
         normalize_copilot_model_id,
@@ -1709,7 +1709,7 @@ def _model_flow_kimi(config, current_model=""):
     No manual base URL prompt — endpoint is determined by key prefix.
     """
     from opencodon.frontends.cli.main import _prompt_api_key
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         PROVIDER_REGISTRY,
         KIMI_CODE_BASE_URL,
         _prompt_model_selection,
@@ -1722,7 +1722,7 @@ def _model_flow_kimi(config, current_model=""):
         load_config,
         save_config,
     )
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     provider_id = "kimi-coding"
     pconfig = PROVIDER_REGISTRY[provider_id]
@@ -1796,7 +1796,7 @@ def _model_flow_kimi(config, current_model=""):
 def _model_flow_stepfun(config, current_model=""):
     """StepFun Step Plan flow with region-specific endpoints."""
     from opencodon.frontends.cli.main import _infer_stepfun_region, _prompt_api_key, _prompt_provider_choice, _stepfun_base_url_for_region
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -1808,7 +1808,7 @@ def _model_flow_stepfun(config, current_model=""):
         load_config,
         save_config,
     )
-    from opencodon.core.models import _PROVIDER_MODELS, fetch_api_models
+    from opencodon.core.providers.models import _PROVIDER_MODELS, fetch_api_models
 
     provider_id = "stepfun"
     pconfig = PROVIDER_REGISTRY[provider_id]
@@ -1913,7 +1913,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     For developers who don't have an AWS account but received a Bedrock API Key
     from their AWS admin. Works like any OpenAI-compatible endpoint.
     """
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
@@ -1924,7 +1924,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         get_env_value,
         save_env_value,
     )
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     mantle_base_url = f"https://bedrock-mantle.{region}.api.aws/v1"
 
@@ -2010,17 +2010,17 @@ def _model_flow_bedrock(config, current_model=""):
     Auth is handled by the AWS SDK default credential chain (env vars, profile,
     instance role), so no API key prompt is needed.
     """
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
     from opencodon.config import load_config, save_config
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     # 1. Check for AWS credentials
     try:
-        from opencodon.core.bedrock_adapter import (
+        from opencodon.core.providers.bedrock_adapter import (
             has_aws_credentials,
             resolve_aws_auth_env_var,
             resolve_bedrock_region,
@@ -2217,13 +2217,13 @@ def _model_flow_vertex(config, current_model=""):
     *path* lives in .env (VERTEX_CREDENTIALS_PATH / GOOGLE_APPLICATION_CREDENTIALS);
     project ID and region are non-secret and saved to config.yaml under vertex:.
     """
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
     from opencodon.config import load_config, save_config, get_env_value
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     # 1. Credential source detection (fast, no network / no google-auth import).
     sa_path = (
@@ -2317,14 +2317,14 @@ def _select_zai_endpoint(current_base: str) -> str:
 
     Offers the four official Z.AI endpoints (Global, China, Coding Plan
     Global, Coding Plan China) plus a custom-proxy option.  The list is
-    sourced from ``ZAI_ENDPOINTS`` in ``opencodon.core.auth`` so it stays in
+    sourced from ``ZAI_ENDPOINTS`` in ``opencodon.core.credentials.auth`` so it stays in
     sync with the probe list.
 
     Returns the selected base URL.  Falls back to *current_base* on cancel
     or error.
     """
     from opencodon.frontends.cli.main import _prompt_provider_choice
-    from opencodon.core.auth import ZAI_ENDPOINTS
+    from opencodon.core.credentials.auth import ZAI_ENDPOINTS
 
     # Build label + URL pairs from the shared endpoint list.
     options = [(label, url) for _, url, _, label in ZAI_ENDPOINTS]
@@ -2373,7 +2373,7 @@ def _select_zai_endpoint(current_base: str) -> str:
 def _model_flow_api_key_provider(config, provider_id, current_model=""):
     """Generic flow for API-key providers (z.ai, MiniMax, OpenCode, etc.)."""
     from opencodon.frontends.cli.main import _prompt_api_key
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -2385,7 +2385,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         load_config,
         save_config,
     )
-    from opencodon.core.models import (
+    from opencodon.core.providers.models import (
         _PROVIDER_MODELS,
         fetch_api_models,
         opencode_model_api_mode,
@@ -2415,7 +2415,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     # errors fall through without blocking.
     if provider_id == "gemini" and existing_key:
         try:
-            from opencodon.core.gemini_native_adapter import probe_gemini_tier
+            from opencodon.core.providers.gemini_native_adapter import probe_gemini_tier
         except Exception:
             probe_gemini_tier = None
         if probe_gemini_tier is not None:
@@ -2516,8 +2516,8 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     # LM Studio: live /api/v1/models probe (no models.dev catalog).
     # Ollama Cloud: merged discovery (live API + models.dev + disk cache).
     if provider_id == "lmstudio":
-        from opencodon.core.auth import AuthError
-        from opencodon.core.models import fetch_lmstudio_models
+        from opencodon.core.credentials.auth import AuthError
+        from opencodon.core.providers.models import fetch_lmstudio_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         try:
@@ -2531,7 +2531,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         if model_list:
             print(f"  Found {len(model_list)} model(s) from LM Studio")
     elif provider_id == "ollama-cloud":
-        from opencodon.core.models import fetch_ollama_cloud_models
+        from opencodon.core.providers.models import fetch_ollama_cloud_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         # During setup, force a live refresh so the picker reflects newly
@@ -2546,7 +2546,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         if model_list:
             print(f"  Found {len(model_list)} model(s) from Ollama Cloud")
     elif provider_id == "novita":
-        from opencodon.core.models import fetch_api_models
+        from opencodon.core.providers.models import fetch_api_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         curated = _PROVIDER_MODELS.get(provider_id, [])
@@ -2557,7 +2557,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         else:
             mdev_models: list = []
             try:
-                from opencodon.core.models_dev import list_agentic_models
+                from opencodon.core.providers.models_dev import list_agentic_models
 
                 mdev_models = list_agentic_models(provider_id)
             except Exception:
@@ -2582,7 +2582,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         # Try models.dev first — returns tool-capable models, filtered for noise
         mdev_models: list = []
         try:
-            from opencodon.core.models_dev import list_agentic_models
+            from opencodon.core.providers.models_dev import list_agentic_models
 
             mdev_models = list_agentic_models(provider_id)
         except Exception:
@@ -2639,7 +2639,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         # beyond the catalog lookup that already happened above.
         pricing: dict = {}
         try:
-            from opencodon.core.models import get_pricing_for_provider
+            from opencodon.core.providers.models import get_pricing_for_provider
 
             pricing = get_pricing_for_provider(provider_id) or {}
         except Exception:
@@ -2687,7 +2687,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
 def _model_flow_anthropic(config, current_model=""):
     """Flow for Anthropic provider — OAuth subscription, API key, or Claude Code creds."""
     from opencodon.frontends.cli.main import _run_anthropic_oauth_flow
-    from opencodon.core.auth import (
+    from opencodon.core.credentials.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
@@ -2698,15 +2698,15 @@ def _model_flow_anthropic(config, current_model=""):
         save_config,
         save_anthropic_api_key,
     )
-    from opencodon.core.models import _PROVIDER_MODELS
+    from opencodon.core.providers.models import _PROVIDER_MODELS
 
     # Check ALL credential sources
-    from opencodon.core.auth import get_anthropic_key
+    from opencodon.core.credentials.auth import get_anthropic_key
 
     existing_key = get_anthropic_key()
     cc_available = False
     try:
-        from opencodon.core.anthropic_adapter import (
+        from opencodon.core.providers.anthropic_adapter import (
             read_claude_code_credentials,
             is_claude_code_token_valid,
             _is_oauth_token,
@@ -2732,7 +2732,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Show what we found
         if existing_key:
             from opencodon.config.env_loader import format_secret_source_suffix
-            from opencodon.core.auth import PROVIDER_REGISTRY
+            from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
             # Surface which env var supplied the key so users with
             # Bitwarden see "(from Bitwarden)" — without this, a detected

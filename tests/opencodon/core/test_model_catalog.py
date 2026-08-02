@@ -1,4 +1,4 @@
-"""Tests for opencodon.core.model_catalog — remote manifest fetch + cache + fallback."""
+"""Tests for opencodon.core.providers.model_catalog — remote manifest fetch + cache + fallback."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def isolated_home(tmp_path, monkeypatch):
 
     # Force a fresh catalog module state for each test.
     import importlib
-    from opencodon.core import model_catalog
+    from opencodon.core.providers import model_catalog
     importlib.reload(model_catalog)
     yield home
     model_catalog.reset_cache()
@@ -47,41 +47,41 @@ def _valid_manifest() -> dict:
 
 class TestValidation:
     def test_accepts_well_formed_manifest(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         assert _validate_manifest(_valid_manifest()) is True
 
     def test_rejects_non_dict(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         assert _validate_manifest("string") is False
         assert _validate_manifest([]) is False
         assert _validate_manifest(None) is False
 
     def test_rejects_missing_version(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         m = _valid_manifest()
         del m["version"]
         assert _validate_manifest(m) is False
 
     def test_rejects_future_version(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         m = _valid_manifest()
         m["version"] = 999
         assert _validate_manifest(m) is False
 
     def test_rejects_missing_providers(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         m = _valid_manifest()
         del m["providers"]
         assert _validate_manifest(m) is False
 
     def test_rejects_malformed_model_entry(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         m = _valid_manifest()
         m["providers"]["openrouter"]["models"][0] = {"id": ""}  # empty id
         assert _validate_manifest(m) is False
 
     def test_rejects_non_string_model_id(self, isolated_home):
-        from opencodon.core.model_catalog import _validate_manifest
+        from opencodon.core.providers.model_catalog import _validate_manifest
         m = _valid_manifest()
         m["providers"]["openrouter"]["models"][0] = {"id": 42}
         assert _validate_manifest(m) is False
@@ -89,7 +89,7 @@ class TestValidation:
 
 class TestFetchSuccess:
     def test_fetch_and_cache_writes_disk(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         manifest = _valid_manifest()
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=manifest
@@ -105,7 +105,7 @@ class TestFetchSuccess:
             assert json.load(fh) == manifest
 
     def test_second_call_uses_in_process_cache(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         manifest = _valid_manifest()
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=manifest
@@ -115,7 +115,7 @@ class TestFetchSuccess:
         assert fetch.call_count == 1
 
     def test_force_refresh_always_refetches(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         manifest = _valid_manifest()
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=manifest
@@ -127,13 +127,13 @@ class TestFetchSuccess:
 
 class TestFetchFailure:
     def test_network_failure_returns_empty_when_no_cache(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         with patch.object(model_catalog, "_fetch_manifest", return_value=None):
             result = model_catalog.get_catalog(force_refresh=True)
         assert result == {}
 
     def test_network_failure_falls_back_to_disk_cache(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         # Prime disk cache with a fresh copy.
         manifest = _valid_manifest()
         with patch.object(model_catalog, "_fetch_manifest", return_value=manifest):
@@ -147,7 +147,7 @@ class TestFetchFailure:
         assert result == manifest
 
     def test_fetch_failure_falls_back_to_stale_cache(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         manifest = _valid_manifest()
         # Write stale cache directly (mtime in the past).
         cache = model_catalog._cache_path()
@@ -180,7 +180,7 @@ class TestFallbackChain:
     )
 
     def test_uses_primary_when_it_succeeds(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         calls: list[str] = []
 
         def fake_fetch(url, timeout):
@@ -194,7 +194,7 @@ class TestFallbackChain:
         assert calls == [self.PRIMARY], "fallback URLs must not be touched on primary success"
 
     def test_falls_through_to_fallback_on_primary_failure(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         calls: list[str] = []
 
         def fake_fetch(url, timeout):
@@ -212,7 +212,7 @@ class TestFallbackChain:
         assert calls == [self.PRIMARY, self.FALLBACK]
 
     def test_returns_none_when_all_urls_fail(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
 
         with patch.object(model_catalog, "_fetch_manifest", return_value=None) as fetch:
             result = model_catalog._fetch_manifest_with_fallback(self.PRIMARY, 5.0)
@@ -224,7 +224,7 @@ class TestFallbackChain:
     def test_dedupes_when_primary_equals_fallback(self, isolated_home):
         """Operator who configured ``model_catalog.url`` to the raw GitHub URL
         should not get a duplicate fetch from the fallback list."""
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
 
         with patch.object(model_catalog, "_fetch_manifest", return_value=None) as fetch:
             model_catalog._fetch_manifest_with_fallback(self.FALLBACK, 5.0)
@@ -234,7 +234,7 @@ class TestFallbackChain:
     def test_get_catalog_routes_through_the_fallback_helper(self, isolated_home):
         """End-to-end: ``get_catalog`` goes through the fallback helper, so a
         configured fallback list is honoured on a primary failure."""
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         manifest = _valid_manifest()
         calls: list[str] = []
 
@@ -256,7 +256,7 @@ class TestFallbackChain:
 
 class TestCuratedAccessors:
     def test_openrouter_returns_tuples(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=_valid_manifest()
         ):
@@ -269,7 +269,7 @@ class TestCuratedAccessors:
 
 
     def test_openrouter_returns_none_when_catalog_empty(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         with patch.object(model_catalog, "_fetch_manifest", return_value=None):
             assert model_catalog.get_curated_openrouter_models() is None
 
@@ -285,7 +285,7 @@ class TestDefaultModelFromCache:
         return m
 
     def test_reads_label_from_disk_cache(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         cache = isolated_home / "cache"
         cache.mkdir()
         (cache / "model_catalog.json").write_text(
@@ -299,7 +299,7 @@ class TestDefaultModelFromCache:
             fetch.assert_not_called()
 
     def test_no_label_returns_none(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         cache = isolated_home / "cache"
         cache.mkdir()
         (cache / "model_catalog.json").write_text(json.dumps(_valid_manifest()))
@@ -308,7 +308,7 @@ class TestDefaultModelFromCache:
             fetch.assert_not_called()
 
     def test_no_cache_returns_none_without_network(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         with patch.object(model_catalog, "_fetch_manifest") as fetch:
             assert model_catalog.get_default_model_from_cache("openrouter") is None
             fetch.assert_not_called()
@@ -316,10 +316,10 @@ class TestDefaultModelFromCache:
     def test_shipped_manifest_labels_glm52_default(self, isolated_home):
         """Contract with the in-repo manifest: both provider blocks label the
         same default entry the code constant points at."""
-        import opencodon.core.model_catalog as model_catalog
-        from opencodon.core.models import PREFERRED_SILENT_DEFAULT_MODEL
+        import opencodon.core.providers.model_catalog as model_catalog
+        from opencodon.core.providers.models import PREFERRED_SILENT_DEFAULT_MODEL
 
-        repo_root = Path(model_catalog.__file__).resolve().parents[3]
+        repo_root = Path(model_catalog.__file__).resolve().parents[4]
         manifest = json.loads(
             (repo_root / "catalog" / "model-catalog.json").read_text()
         )
@@ -333,7 +333,7 @@ class TestDefaultModelFromCache:
 
 class TestDisabled:
     def test_disabled_config_short_circuits(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
         with patch.object(
             model_catalog,
             "_load_catalog_config",
@@ -352,7 +352,7 @@ class TestDisabled:
 
 class TestProviderOverride:
     def test_override_url_takes_precedence(self, isolated_home):
-        from opencodon.core import model_catalog
+        from opencodon.core.providers import model_catalog
 
         override_payload = {
             "version": 1,

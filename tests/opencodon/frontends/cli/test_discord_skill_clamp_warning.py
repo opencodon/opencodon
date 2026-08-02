@@ -53,7 +53,7 @@ def test_clamp_collision_emits_warning_naming_both_skills(
     }
 
     with caplog.at_level(logging.WARNING, logger="opencodon.frontends.cli.commands"), (
-        patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds)
+        patch("opencodon.core.skills.skill_commands.get_skill_commands", return_value=fake_cmds)
     ), patch("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir):
         categories, uncategorized, hidden = discord_skill_commands_by_category(
             reserved_names=set(),
@@ -109,7 +109,7 @@ def test_clamp_collision_with_reserved_name_emits_distinct_warning(
     }
 
     with caplog.at_level(logging.WARNING, logger="opencodon.frontends.cli.commands"), (
-        patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds)
+        patch("opencodon.core.skills.skill_commands.get_skill_commands", return_value=fake_cmds)
     ), patch("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir):
         categories, uncategorized, hidden = discord_skill_commands_by_category(
             reserved_names={"help"},
@@ -155,7 +155,7 @@ def test_no_collision_no_warning(tmp_path: Path, caplog) -> None:
     }
 
     with caplog.at_level(logging.WARNING, logger="opencodon.frontends.cli.commands"), (
-        patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds)
+        patch("opencodon.core.skills.skill_commands.get_skill_commands", return_value=fake_cmds)
     ), patch("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir):
         categories, uncategorized, hidden = discord_skill_commands_by_category(
             reserved_names=set(),
@@ -207,7 +207,7 @@ def test_long_skill_name_preserves_cmd_key_through_by_category(
         },
     }
 
-    with patch("opencodon.core.skill_commands.get_skill_commands", return_value=fake_cmds), \
+    with patch("opencodon.core.skills.skill_commands.get_skill_commands", return_value=fake_cmds), \
          patch("opencodon.tools.skills_tool.SKILLS_DIR", skills_dir):
         categories, uncategorized, hidden = discord_skill_commands_by_category(
             reserved_names=set(),

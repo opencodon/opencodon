@@ -1,4 +1,4 @@
-"""Tests for opencodon.core.runtime_provider._detect_api_mode_for_url.
+"""Tests for opencodon.core.providers.runtime_provider._detect_api_mode_for_url.
 
 The helper maps base URLs to api_modes for four cases:
   * api.openai.com    → codex_responses
@@ -19,7 +19,7 @@ future update to the detection logic lives in one place.
 
 from __future__ import annotations
 
-from opencodon.core.runtime_provider import _detect_api_mode_for_url
+from opencodon.core.providers.runtime_provider import _detect_api_mode_for_url
 
 
 class TestCodexResponsesDetection:

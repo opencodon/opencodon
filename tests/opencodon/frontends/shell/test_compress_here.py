@@ -37,7 +37,7 @@ def test_compress_here_compresses_head_only(capsys):
     summary = [{"role": "user", "content": "[summary of earlier turns]"}]
     _wire_agent(shell, summary)
 
-    with patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100):
+    with patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100):
         shell._manual_compress("/compress here 2")
 
     # _compress_context should have been called with the HEAD only
@@ -60,7 +60,7 @@ def test_compress_here_reappends_verbatim_tail(capsys):
     summary = [{"role": "assistant", "content": "[summary]"}]
     _wire_agent(shell, summary)
 
-    with patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100):
+    with patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100):
         shell._manual_compress("/compress here 2")
 
     # Result = compressed head + verbatim tail (last 2 exchanges).
@@ -79,7 +79,7 @@ def test_compress_here_banner_mentions_summarizing_up_to_here(capsys):
     shell.conversation_history = history
     _wire_agent(shell, [{"role": "user", "content": "[summary]"}])
 
-    with patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100):
+    with patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100):
         shell._manual_compress("/compress here")
 
     out = capsys.readouterr().out
@@ -94,7 +94,7 @@ def test_bare_compress_still_full(capsys):
     shell.conversation_history = history
     _wire_agent(shell, list(history))
 
-    with patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100):
+    with patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100):
         shell._manual_compress("/compress")
 
     call = shell.agent._compress_context.call_args
@@ -111,7 +111,7 @@ def test_focus_still_works(capsys):
     shell.conversation_history = history
     _wire_agent(shell, list(history))
 
-    with patch("opencodon.core.model_metadata.estimate_request_tokens_rough", return_value=100):
+    with patch("opencodon.core.providers.model_metadata.estimate_request_tokens_rough", return_value=100):
         shell._manual_compress("/compress database schema")
 
     call = shell.agent._compress_context.call_args

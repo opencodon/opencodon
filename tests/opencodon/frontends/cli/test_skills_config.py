@@ -198,7 +198,7 @@ class TestIsSkillDisabled:
 # ---------------------------------------------------------------------------
 
 class TestGetDisabledSkillNames:
-    """Tests for opencodon.core.skill_utils.get_disabled_skill_names."""
+    """Tests for opencodon.core.skills.skill_utils.get_disabled_skill_names."""
 
     def test_explicit_platform_param(self, tmp_path, monkeypatch):
         """Explicit platform= parameter should resolve per-platform list."""
@@ -215,7 +215,7 @@ class TestGetDisabledSkillNames:
         monkeypatch.delenv("OPENCODON_PLATFORM", raising=False)
         monkeypatch.delenv("OPENCODON_SESSION_PLATFORM", raising=False)
 
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         result = get_disabled_skill_names(platform="telegram")
         assert result == {"tg-only-skill", "global-skill"}
 
@@ -234,7 +234,7 @@ class TestGetDisabledSkillNames:
         monkeypatch.delenv("OPENCODON_PLATFORM", raising=False)
         monkeypatch.setenv("OPENCODON_SESSION_PLATFORM", "discord")
 
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         result = get_disabled_skill_names()
         assert result == {"discord-skill", "global-skill"}
 
@@ -253,7 +253,7 @@ class TestGetDisabledSkillNames:
         monkeypatch.setenv("OPENCODON_PLATFORM", "telegram")
         monkeypatch.setenv("OPENCODON_SESSION_PLATFORM", "discord")
 
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         result = get_disabled_skill_names()
         assert result == {"tg-skill"}
 
@@ -272,7 +272,7 @@ class TestGetDisabledSkillNames:
         monkeypatch.setenv("OPENCODON_PLATFORM", "telegram")
         monkeypatch.setenv("OPENCODON_SESSION_PLATFORM", "telegram")
 
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         result = get_disabled_skill_names(platform="slack")
         assert result == {"slack-skill"}
 
@@ -291,7 +291,7 @@ class TestGetDisabledSkillNames:
         monkeypatch.delenv("OPENCODON_PLATFORM", raising=False)
         monkeypatch.delenv("OPENCODON_SESSION_PLATFORM", raising=False)
 
-        from opencodon.core.skill_utils import get_disabled_skill_names
+        from opencodon.core.skills.skill_utils import get_disabled_skill_names
         result = get_disabled_skill_names()
         assert result == {"global-skill"}
 
@@ -311,7 +311,7 @@ class TestFindAllSkillsFiltering:
         # Point SKILLS_DIR at the real tempdir so iter_skill_index_files
         # (which uses os.walk) can actually find the file.
         import opencodon.tools.skills_tool as _st
-        import opencodon.core.skill_utils as _su
+        import opencodon.core.skills.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
         from opencodon.tools.skills_tool import _find_all_skills
@@ -326,7 +326,7 @@ class TestFindAllSkillsFiltering:
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text("---\nname: my-skill\ndescription: A test skill\n---\nContent")
         import opencodon.tools.skills_tool as _st
-        import opencodon.core.skill_utils as _su
+        import opencodon.core.skills.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
         from opencodon.tools.skills_tool import _find_all_skills
@@ -342,7 +342,7 @@ class TestFindAllSkillsFiltering:
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text("---\nname: my-skill\ndescription: A test skill\n---\nContent")
         import opencodon.tools.skills_tool as _st
-        import opencodon.core.skill_utils as _su
+        import opencodon.core.skills.skill_utils as _su
         monkeypatch.setattr(_st, "SKILLS_DIR", tmp_path)
         monkeypatch.setattr(_su, "get_external_skills_dirs", lambda: [])
         from opencodon.tools.skills_tool import _find_all_skills

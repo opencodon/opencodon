@@ -537,8 +537,8 @@ class TestCommandWinsOverPlugin:
         }
 
         # Register a plugin under the SAME name. It must NOT fire.
-        from opencodon.core.transcription_provider import TranscriptionProvider
-        from opencodon.core.transcription_registry import (
+        from opencodon.core.media.transcription_provider import TranscriptionProvider
+        from opencodon.core.media.transcription_registry import (
             _reset_for_tests,
             register_provider,
         )
@@ -570,8 +570,8 @@ class TestCommandWinsOverPlugin:
         audio = _make_silent_wav(tmp_path / "audio.wav")
         cfg = {"provider": "fake-plugin"}
 
-        from opencodon.core.transcription_provider import TranscriptionProvider
-        from opencodon.core.transcription_registry import (
+        from opencodon.core.media.transcription_provider import TranscriptionProvider
+        from opencodon.core.media.transcription_registry import (
             _reset_for_tests,
             register_provider,
         )

@@ -5442,7 +5442,7 @@ class TelegramAdapter(BasePlatformAdapter):
         so all surfaces stay consistent.
         """
         try:
-            from opencodon.core.models import group_providers
+            from opencodon.core.providers.models import group_providers
         except Exception:
             group_providers = None
 
@@ -5734,7 +5734,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 return
 
             try:
-                from opencodon.core.model_cost_guard import expensive_model_warning
+                from opencodon.core.providers.model_cost_guard import expensive_model_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -5799,7 +5799,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # --- Provider group selected: show member providers ---
             group_id = data[4:]
             try:
-                from opencodon.core.models import PROVIDER_GROUPS
+                from opencodon.core.providers.models import PROVIDER_GROUPS
                 _label, _desc, member_slugs = PROVIDER_GROUPS.get(group_id, ("", "", []))
             except Exception:
                 _label, member_slugs = "", []

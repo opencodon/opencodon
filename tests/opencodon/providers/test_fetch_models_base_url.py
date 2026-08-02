@@ -204,10 +204,10 @@ class TestModelPickerBaseUrlIntegration:
 
         with (
             patch("providers.get_provider_profile", return_value=mock_profile),
-            patch("opencodon.core.auth.resolve_api_key_provider_credentials",
+            patch("opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
                   return_value={"api_key": "sk-test", "base_url": "https://custom.proxy.com"}),
         ):
-            from opencodon.core.models import provider_model_ids
+            from opencodon.core.providers.models import provider_model_ids
             result = provider_model_ids("test-provider")
             # Verify fetch_models was called with base_url
             mock_profile.fetch_models.assert_called_once()

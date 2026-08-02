@@ -8,7 +8,7 @@ change-detector.
 
 from __future__ import annotations
 
-from opencodon.core import learning_graph
+from opencodon.core.memory import learning_graph
 from opencodon_constants import reset_opencodon_home_override, set_opencodon_home_override
 
 

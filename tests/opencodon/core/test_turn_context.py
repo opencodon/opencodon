@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 from opencodon.core.turn_context import TurnContext, build_turn_context
 from opencodon.state import SessionDB
 
@@ -120,7 +120,7 @@ def _make_agent_with_cooldown(db_path, session_id, *, cooldown_until=None):
     if cooldown_until is not None:
         db.record_compression_failure_cooldown(session_id, cooldown_until, "timeout")
 
-    with patch("opencodon.core.context_compressor.get_model_context_length", return_value=100000):
+    with patch("opencodon.core.context.context_compressor.get_model_context_length", return_value=100000):
         compressor = ContextCompressor(
             model="test/model",
             threshold_percent=0.85,

@@ -6,7 +6,7 @@ These are invariant tests, not catalog snapshots: they assert how
 vendors, which is expected to change over time.
 """
 
-from opencodon.core.models import (
+from opencodon.core.providers.models import (
     CANONICAL_PROVIDERS,
     PROVIDER_GROUPS,
     group_providers,

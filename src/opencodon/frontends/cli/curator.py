@@ -37,7 +37,7 @@ def _fmt_ts(ts: Optional[str]) -> str:
 
 
 def _cmd_status(args) -> int:
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     from opencodon.tools import skill_usage
 
     state = curator.load_state()
@@ -170,7 +170,7 @@ def _cmd_status(args) -> int:
 
 
 def _cmd_run(args) -> int:
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     if not curator.is_enabled():
         print("curator: disabled via config; enable with `curator.enabled: true`")
         return 1
@@ -233,14 +233,14 @@ def _cmd_run(args) -> int:
 
 
 def _cmd_pause(args) -> int:
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     curator.set_paused(True)
     print("curator: paused")
     return 0
 
 
 def _cmd_resume(args) -> int:
-    from opencodon.core import curator
+    from opencodon.core.memory import curator
     curator.set_paused(False)
     print("curator: resumed")
     return 0
@@ -387,7 +387,7 @@ def _cmd_prune(args) -> int:
 def _cmd_backup(args) -> int:
     """Take a manual snapshot of the skills tree. Same mechanism as the
     automatic pre-run snapshot, just user-initiated."""
-    from opencodon.core import curator_backup
+    from opencodon.core.memory import curator_backup
     if not curator_backup.is_enabled():
         print(
             "curator: backups are disabled via config "
@@ -411,7 +411,7 @@ def _cmd_rollback(args) -> int:
     snapshot of the current tree is always taken first, so rollbacks are
     themselves undoable.
     """
-    from opencodon.core import curator_backup
+    from opencodon.core.memory import curator_backup
 
     if getattr(args, "list", False):
         print(curator_backup.summarize_backups())

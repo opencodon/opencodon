@@ -59,7 +59,7 @@ def _supports_same_provider_pool_setup(provider: str) -> bool:
         return False
     if provider == "openrouter":
         return True
-    from opencodon.core.auth import PROVIDER_REGISTRY
+    from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
     pconfig = PROVIDER_REGISTRY.get(provider)
     if not pconfig:
@@ -490,7 +490,7 @@ def _print_setup_summary(config: dict, opencodon_home):
         # setups don't show as "missing FAL_KEY".
         _img_backend = None
         try:
-            from opencodon.core.image_gen_registry import list_providers
+            from opencodon.core.media.image_gen_registry import list_providers
             from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
@@ -868,7 +868,7 @@ def _xai_oauth_logged_in_for_setup() -> bool:
     through ``opencodon model`` -> xAI Grok OAuth (SuperGrok / Premium+).
     """
     try:
-        from opencodon.core.auth import get_xai_oauth_auth_status
+        from opencodon.core.credentials.auth import get_xai_oauth_auth_status
 
         return bool(get_xai_oauth_auth_status().get("logged_in"))
     except Exception:
@@ -882,7 +882,7 @@ def _run_xai_oauth_login_from_setup() -> bool:
     to whatever the user picked next, e.g. Edge TTS).
     """
     try:
-        from opencodon.core.auth import (
+        from opencodon.core.credentials.auth import (
             DEFAULT_XAI_OAUTH_BASE_URL,
             _is_remote_session,
             _save_xai_oauth_tokens,
@@ -1979,7 +1979,7 @@ def _model_section_has_credentials(config: dict) -> bool:
     """Return True when any known inference provider has usable credentials.
 
     Sources of truth:
-      * ``PROVIDER_REGISTRY`` in ``opencodon.core.auth`` — lists every supported
+      * ``PROVIDER_REGISTRY`` in ``opencodon.core.credentials.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
         external-OAuth providers (Codex, Qwen, Gemini CLI, ...).
@@ -1987,14 +1987,14 @@ def _model_section_has_credentials(config: dict) -> bool:
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
     try:
-        from opencodon.core.auth import get_active_provider
+        from opencodon.core.credentials.auth import get_active_provider
         if get_active_provider():
             return True
     except Exception:
         pass
 
     try:
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
     except Exception:
         PROVIDER_REGISTRY = {}  # type: ignore[assignment]
 
@@ -2212,7 +2212,7 @@ def run_setup_wizard(args):
         return
 
     # Check if this is an existing installation with a provider configured
-    from opencodon.core.auth import get_active_provider
+    from opencodon.core.credentials.auth import get_active_provider
 
     active_provider = get_active_provider()
     is_existing = (

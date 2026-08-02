@@ -275,7 +275,7 @@ def get_skills_directory_mount(
 
     # Mount external skill dirs
     try:
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
         for idx, ext_dir in enumerate(get_external_skills_dirs()):
             if ext_dir.is_dir():
                 host_path = _safe_skills_path(ext_dir)
@@ -362,7 +362,7 @@ def iter_skills_files(
 
     # Include external skill dirs
     try:
-        from opencodon.core.skill_utils import get_external_skills_dirs
+        from opencodon.core.skills.skill_utils import get_external_skills_dirs
         for idx, ext_dir in enumerate(get_external_skills_dirs()):
             if not ext_dir.is_dir():
                 continue

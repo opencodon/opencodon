@@ -514,7 +514,7 @@ def _assistant_msg_with_encrypted_reasoning(text="hi from grok", encrypted="enc_
 
 def test_codex_reasoning_replay_default_includes_encrypted_content():
     """Native Codex backend (default) must still replay encrypted reasoning."""
-    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -537,7 +537,7 @@ def test_codex_reasoning_replay_includes_encrypted_content_for_xai():
     cross-turn coherence — that's the whole point of the partnership
     integration.
     """
-    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1139,7 +1139,7 @@ def test_grok_4_3_context_length_is_1m():
     opencodon' substring-match fallback used to return 256k (from the
     "grok-4" catch-all) which under-reported the model's real capacity.
     """
-    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.providers.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     # The entry exists with the expected value.
     assert DEFAULT_CONTEXT_LENGTHS["grok-4.3"] == 1_000_000
@@ -1160,7 +1160,7 @@ def test_grok_4_3_context_length_is_1m():
 
 def test_grok_4_still_resolves_to_256k():
     """Regression guard: grok-4 (non-.3) must still resolve to 256k."""
-    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.providers.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     for slug in ("grok-4", "grok-4-0709"):
         matched_key = max(
@@ -1182,7 +1182,7 @@ def test_grok_composer_context_length_is_200k():
     the input+output budget at ~262144, but the usable context (what we
     track) is 200k.
     """
-    from opencodon.core.model_metadata import DEFAULT_CONTEXT_LENGTHS
+    from opencodon.core.providers.model_metadata import DEFAULT_CONTEXT_LENGTHS
 
     assert DEFAULT_CONTEXT_LENGTHS["grok-composer"] == 200_000
     slug = "grok-composer-2.5-fast"
@@ -1231,7 +1231,7 @@ def test_cross_issuer_reasoning_is_dropped_on_replay():
     swap that returned invalid_encrypted_content on every turn after the
     user changed model mid-session.
     """
-    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1254,7 +1254,7 @@ def test_same_issuer_reasoning_is_still_replayed():
     """Same-endpoint reasoning replay is the documented happy path (May 2026
     reversal). The cross-issuer guard must not regress it.
     """
-    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1276,7 +1276,7 @@ def test_unstamped_reasoning_is_replayed_for_backwards_compat():
     """Reasoning items persisted before this patch don't carry _issuer_kind.
     They must still be replayed (legacy-compatible behaviour).
     """
-    from opencodon.core.codex_responses_adapter import _chat_messages_to_responses_input
+    from opencodon.core.providers.codex_responses_adapter import _chat_messages_to_responses_input
 
     msgs = [
         {"role": "user", "content": "hi"},
@@ -1309,7 +1309,7 @@ def test_normalize_codex_response_stamps_issuer_on_reasoning():
     """
     from types import SimpleNamespace
 
-    from opencodon.core.codex_responses_adapter import _normalize_codex_response
+    from opencodon.core.providers.codex_responses_adapter import _normalize_codex_response
 
     reasoning_item = SimpleNamespace(
         type="reasoning",

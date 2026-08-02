@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from opencodon.core import tts_registry
-from opencodon.core.tts_provider import TTSProvider
+from opencodon.core.media import tts_registry
+from opencodon.core.media.tts_provider import TTSProvider
 from opencodon.frontends.cli import tools_config
 
 

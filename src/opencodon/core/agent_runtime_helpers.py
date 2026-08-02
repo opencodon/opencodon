@@ -33,10 +33,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from opencodon.config.timeouts import get_provider_request_timeout
-from opencodon.core.prompt_builder import format_steer_marker
+from opencodon.core.prompt.prompt_builder import format_steer_marker
 from opencodon.core.tool_dispatch_helpers import _trajectory_normalize_msg, make_tool_result_message
 from opencodon.core.trajectory import convert_scratchpad_to_think
-from opencodon.core.credential_pool import STATUS_EXHAUSTED
+from opencodon.core.credentials.credential_pool import STATUS_EXHAUSTED
 from opencodon.core.error_classifier import FailoverReason
 from opencodon.core.turn_context import drop_stale_api_content
 from utils import base_url_host_matches, base_url_hostname, env_var_enabled, atomic_json_write
@@ -906,7 +906,7 @@ def recover_with_credential_pool(
         _custom_match = False
         if current_provider == "custom" and pool_provider.startswith("custom:"):
             try:
-                from opencodon.core.credential_pool import get_custom_provider_pool_key
+                from opencodon.core.credentials.credential_pool import get_custom_provider_pool_key
                 _agent_base = (getattr(agent, "base_url", "") or "").strip()
                 _custom_match = bool(_agent_base) and (
                     (get_custom_provider_pool_key(_agent_base) or "").strip().lower()
@@ -1211,7 +1211,7 @@ def try_recover_primary_transport(
         agent.api_key = rt["api_key"]
 
         if agent.api_mode == "anthropic_messages":
-            from opencodon.core.anthropic_adapter import build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client
             agent._anthropic_api_key = rt["anthropic_api_key"]
             agent._anthropic_base_url = rt["anthropic_base_url"]
             agent._anthropic_client = build_anthropic_client(
@@ -1383,7 +1383,7 @@ def restore_primary_runtime(agent) -> bool:
 
         # ── Rebuild client for the primary provider ──
         if agent.api_mode == "anthropic_messages":
-            from opencodon.core.anthropic_adapter import build_anthropic_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_client
             agent._anthropic_api_key = rt["anthropic_api_key"]
             agent._anthropic_base_url = rt["anthropic_base_url"]
             agent._anthropic_client = build_anthropic_client(
@@ -1425,7 +1425,7 @@ def restore_primary_runtime(agent) -> bool:
             and pool_provider.startswith("custom:")
         ):
             try:
-                from opencodon.core.credential_pool import get_custom_provider_pool_key
+                from opencodon.core.credentials.credential_pool import get_custom_provider_pool_key
 
                 primary_key = (
                     get_custom_provider_pool_key(str(rt.get("base_url") or "")) or ""
@@ -1436,7 +1436,7 @@ def restore_primary_runtime(agent) -> bool:
         if pool is not None and pool_provider and not pool_matches_primary:
             agent._credential_pool = None
             try:
-                from opencodon.core.credential_pool import load_pool
+                from opencodon.core.credentials.credential_pool import load_pool
 
                 agent._credential_pool = load_pool(primary_provider)
             except Exception as exc:
@@ -1468,14 +1468,14 @@ def restore_primary_runtime(agent) -> bool:
                 # ``recover_with_credential_pool`` (see above) and correctly
                 # disambiguates multiple custom providers that share one gateway
                 # base_url. Fixes #56885.
-                from opencodon.core.credential_pool import CUSTOM_POOL_PREFIX
+                from opencodon.core.credentials.credential_pool import CUSTOM_POOL_PREFIX
                 if (
                     primary_provider == "custom"
                     and entry_provider.startswith(CUSTOM_POOL_PREFIX)
                 ):
                     entry_matches_primary = False
                     try:
-                        from opencodon.core.credential_pool import get_custom_provider_pool_key
+                        from opencodon.core.credentials.credential_pool import get_custom_provider_pool_key
                         primary_base_url = str(rt.get("base_url") or "").strip()
                         primary_key = (
                             get_custom_provider_pool_key(primary_base_url) or ""
@@ -1774,7 +1774,7 @@ def anthropic_prompt_cache_policy(
         try:
             from opencodon.config import load_config as _load_moa_cfg
             from opencodon.config.moa_config import resolve_moa_preset
-            from opencodon.core.runtime_provider import resolve_runtime_provider
+            from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
             _preset = resolve_moa_preset(
                 _load_moa_cfg().get("moa") or {}, eff_model or None
@@ -1814,7 +1814,7 @@ def anthropic_prompt_cache_policy(
     # every turn.  Observed within-turn progression with cache enabled:
     # 1% → 67% → 84% → 97% (#25970).  Reuses the canonical family matcher
     # (covers bare k1./k2./k25 release slugs the substring check missed).
-    from opencodon.core.anthropic_adapter import _model_name_is_kimi_family
+    from opencodon.core.providers.anthropic_adapter import _model_name_is_kimi_family
     is_kimi = (
         _model_name_is_kimi_family(eff_model) or "moonshot" in model_lower
     )
@@ -1888,7 +1888,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
     _validate_proxy_env_urls()
     _validate_base_url(client_kwargs.get("base_url"))
     if agent.provider == "copilot-acp" or str(client_kwargs.get("base_url", "")).startswith("acp://copilot"):
-        from opencodon.core.copilot_acp_client import CopilotACPClient
+        from opencodon.core.providers.copilot_acp_client import CopilotACPClient
 
         client = CopilotACPClient(**client_kwargs)
         _ra().logger.info(
@@ -1899,7 +1899,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
         )
         return client
     if agent.provider == "gemini":
-        from opencodon.core.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
+        from opencodon.core.providers.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
 
         base_url = str(client_kwargs.get("base_url", "") or "")
         if is_native_gemini_base_url(base_url):
@@ -2092,7 +2092,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
             # recovery guard rejects it and every later 401/429 skips rotation.
             agent._credential_pool = None
             try:
-                from opencodon.core.credential_pool import load_pool
+                from opencodon.core.credentials.credential_pool import load_pool
                 agent._credential_pool = load_pool(new_provider)
             except Exception as _pool_exc:  # noqa: BLE001
                 logger.warning(
@@ -2122,7 +2122,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
             agent._client_kwargs = {}
             agent.client = MoAClient(agent.model or "default")
         elif api_mode == "anthropic_messages":
-            from opencodon.core.anthropic_adapter import (
+            from opencodon.core.providers.anthropic_adapter import (
                 build_anthropic_client,
                 resolve_anthropic_token,
                 _is_oauth_token,
@@ -2138,7 +2138,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
             # the matching block in agent_init.py for the full rationale.
             if new_provider == "minimax-oauth" and isinstance(effective_key, str) and effective_key:
                 try:
-                    from opencodon.core.auth import build_minimax_oauth_token_provider
+                    from opencodon.core.credentials.auth import build_minimax_oauth_token_provider
                     effective_key = build_minimax_oauth_token_provider()
                 except Exception as _mm_exc:  # noqa: BLE001
                     import logging as _logging
@@ -2227,7 +2227,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
 
     # ── Update context compressor ──
     if hasattr(agent, "context_compressor") and agent.context_compressor:
-        from opencodon.core.model_metadata import get_model_context_length
+        from opencodon.core.providers.model_metadata import get_model_context_length
         # Re-read custom_providers from live config so per-model
         # context_length overrides are honored when switching to a
         # custom provider mid-session (closes #15779).
@@ -2960,7 +2960,7 @@ def looks_like_codex_intermediate_ack(
     # for vision requests routed through the OpenAI-compat API server. A
     # truthy list survives ``(user_message or "")`` and then ``.strip()``
     # raises ``AttributeError`` — flatten to text first.
-    from opencodon.core.codex_responses_adapter import _summarize_user_message_for_log
+    from opencodon.core.providers.codex_responses_adapter import _summarize_user_message_for_log
 
     user_text = _summarize_user_message_for_log(user_message).strip().lower()
     user_targets_workspace = (

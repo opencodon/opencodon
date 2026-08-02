@@ -13,7 +13,7 @@ policy). These pin the two behaviors that would silently regress:
 
 from decimal import Decimal
 
-from opencodon.core.usage_pricing import (
+from opencodon.core.providers.usage_pricing import (
     _OFFICIAL_DOCS_PRICING,
     _lookup_official_docs_pricing,
     resolve_billing_route,

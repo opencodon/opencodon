@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from opencodon.core import coding_context as cc
+from opencodon.core.context import coding_context as cc
 
 
 def test_coding_guidance_advertises_persistent_terminal_state():

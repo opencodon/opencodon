@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from opencodon.core import models as M
+from opencodon.core.providers import models as M
 from opencodon.core.providers import OPENCODON_OVERLAYS
 
 

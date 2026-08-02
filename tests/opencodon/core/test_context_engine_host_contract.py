@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 from opencodon.state import SessionDB
 from opencodon.core.run_agent import AIAgent
 
@@ -168,7 +168,7 @@ def test_reset_session_state_rebinds_builtin_compressor_after_session_switch(tmp
     db.set_compression_fallback_streak("old-sid", 2)
 
     monkeypatch.setattr(
-        "opencodon.core.context_compressor.get_model_context_length",
+        "opencodon.core.context.context_compressor.get_model_context_length",
         lambda *_a, **_k: 100_000,
     )
     compressor = ContextCompressor(
@@ -204,7 +204,7 @@ def test_update_from_response_forwards_canonical_cache_buckets():
     # Test the contract directly: a usage_dict built from CanonicalUsage must
     # contain the canonical buckets in addition to the legacy keys. We don't
     # spin up the full conversation loop; we just verify the dict shape.
-    from opencodon.core.usage_pricing import CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage
 
     canonical = CanonicalUsage(
         input_tokens=1000,

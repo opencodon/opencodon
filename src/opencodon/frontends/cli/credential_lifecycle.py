@@ -51,7 +51,7 @@ __all__ = [
 def _providers_for_env_var(env_var: str) -> List[str]:
     """Provider ids whose registered api_key_env_vars include ``env_var``."""
     try:
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
     except Exception:
         return []
     hits: List[str] = []
@@ -75,7 +75,7 @@ def _prune_env_pool_entries(env_var: str) -> List[str]:
 
     Returns the list of provider ids that had entries pruned.
     """
-    from opencodon.core.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+    from opencodon.core.credentials.auth import _auth_store_lock, _load_auth_store, _save_auth_store
 
     source = f"env:{env_var}"
     pruned: List[str] = []
@@ -191,7 +191,7 @@ def purge_env_credential_references(
     # otherwise re-seed the pool entry on the next load_pool(). The matching
     # save path lifts the suppression on an explicit re-add.
     try:
-        from opencodon.core.auth import suppress_credential_source
+        from opencodon.core.credentials.auth import suppress_credential_source
 
         for provider in providers:
             suppress_credential_source(provider, f"env:{env_var}")
@@ -199,7 +199,7 @@ def purge_env_credential_references(
         pass
     if clear_models_cache and providers:
         try:
-            from opencodon.core.models import clear_provider_models_cache
+            from opencodon.core.providers.models import clear_provider_models_cache
 
             for provider in providers:
                 clear_provider_models_cache(provider)
@@ -232,7 +232,7 @@ def save_provider_env_credential(env_var: str, value: str) -> Dict[str, Any]:
     # save is an explicit re-add, so lift the suppression for every provider
     # that reads this var.
     try:
-        from opencodon.core.auth import unsuppress_credential_source
+        from opencodon.core.credentials.auth import unsuppress_credential_source
 
         for provider in _providers_for_env_var(env_var):
             unsuppress_credential_source(provider, f"env:{env_var}")

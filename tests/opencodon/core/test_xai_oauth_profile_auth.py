@@ -2,8 +2,8 @@
 
 import pytest
 
-from opencodon.core import auth
-from opencodon.core.auth import AuthError
+from opencodon.core.credentials import auth
+from opencodon.core.credentials.auth import AuthError
 
 
 def test_read_xai_oauth_tokens_uses_credential_pool_when_provider_tokens_empty(monkeypatch):

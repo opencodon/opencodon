@@ -1003,7 +1003,7 @@ def check_image_generation_requirements() -> bool:
     # Probe only the explicitly selected plugin. Merely possessing a cloud
     # provider key must not opt a user into a paid image-generation backend.
     try:
-        from opencodon.core.image_gen_registry import get_provider
+        from opencodon.core.media.image_gen_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -1190,7 +1190,7 @@ def _dispatch_to_plugin_provider(
     try:
         # Import locally so plugin discovery isn't triggered just by
         # importing this module (tests rely on that).
-        from opencodon.core.image_gen_registry import get_provider
+        from opencodon.core.media.image_gen_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -1229,7 +1229,7 @@ def _dispatch_to_plugin_provider(
             kwargs["image_url"] = image_url.strip()
         norm_refs = None
         if reference_image_urls is not None:
-            from opencodon.core.image_gen_provider import normalize_reference_images
+            from opencodon.core.media.image_gen_provider import normalize_reference_images
 
             norm_refs = normalize_reference_images(reference_image_urls)
         if norm_refs:
@@ -1353,7 +1353,7 @@ def _maybe_route_managed_krea(
         return None
 
     try:
-        from opencodon.core.image_gen_registry import get_provider
+        from opencodon.core.media.image_gen_registry import get_provider
         from opencodon.plugins_runtime import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
@@ -1374,7 +1374,7 @@ def _maybe_route_managed_krea(
             kwargs["image_url"] = image_url.strip()
         norm_refs = None
         if reference_image_urls is not None:
-            from opencodon.core.image_gen_provider import normalize_reference_images
+            from opencodon.core.media.image_gen_provider import normalize_reference_images
 
             norm_refs = normalize_reference_images(reference_image_urls)
         if norm_refs:
@@ -1470,7 +1470,7 @@ def _active_image_capabilities() -> Dict[str, Any]:
     configured_provider = _read_configured_image_provider()
     if configured_provider and configured_provider != "fal":
         try:
-            from opencodon.core.image_gen_registry import get_provider
+            from opencodon.core.media.image_gen_registry import get_provider
             from opencodon.plugins_runtime import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()

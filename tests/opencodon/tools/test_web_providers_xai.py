@@ -57,7 +57,7 @@ class TestXAIProviderIdentity:
         assert XAIWebSearchProvider().name == "xai"
 
     def test_implements_web_search_provider(self):
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
         from plugins.web.xai.provider import XAIWebSearchProvider
         assert issubclass(XAIWebSearchProvider, WebSearchProvider)
 
@@ -775,7 +775,7 @@ class TestXAIProviderOAuthPath:
         pair only to ``providers.xai-oauth`` leaves the manual row stale and
         breaks the next main-runtime load.
         """
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
         from opencodon.tools.xai_http import resolve_xai_http_credentials
 
         monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
@@ -823,7 +823,7 @@ class TestXAIProviderOAuthPath:
             }
 
         monkeypatch.setattr(
-            "opencodon.core.auth.refresh_xai_oauth_pure",
+            "opencodon.core.credentials.auth.refresh_xai_oauth_pure",
             fake_refresh,
         )
 

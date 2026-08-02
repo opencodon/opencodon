@@ -26,7 +26,7 @@ import logging
 import os
 from typing import Any, Dict
 
-from opencodon.core.web_search_provider import WebSearchProvider
+from opencodon.core.providers.web_search_provider import WebSearchProvider
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """Regression tests for xAI provider label disambiguation."""
 
-from opencodon.core.models import provider_label
+from opencodon.core.providers.models import provider_label
 from opencodon.core.providers import get_label
 
 

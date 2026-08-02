@@ -6,7 +6,7 @@ AttributeError. This caused an infinite TUI crash loop in production.
 """
 import json
 import pytest
-from opencodon.core.context_compressor import _summarize_tool_result
+from opencodon.core.context.context_compressor import _summarize_tool_result
 
 
 class TestTypeSafety:
@@ -244,7 +244,7 @@ class TestBackstopWrapper:
         """When a branch does fail, the fallback names the tool and size."""
         from unittest.mock import patch as _patch
         with _patch(
-            "opencodon.core.context_compressor._summarize_tool_result_unguarded",
+            "opencodon.core.context.context_compressor._summarize_tool_result_unguarded",
             side_effect=TypeError("boom"),
         ):
             result = _summarize_tool_result("terminal", "{}", "y" * 300)
@@ -253,7 +253,7 @@ class TestBackstopWrapper:
     def test_backstop_handles_non_string_content(self):
         from unittest.mock import patch as _patch
         with _patch(
-            "opencodon.core.context_compressor._summarize_tool_result_unguarded",
+            "opencodon.core.context.context_compressor._summarize_tool_result_unguarded",
             side_effect=TypeError("boom"),
         ):
             result = _summarize_tool_result("terminal", "{}", None)

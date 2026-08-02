@@ -12,7 +12,7 @@ import contextlib
 import socket
 
 
-from opencodon.core import auth as auth_mod
+from opencodon.core.credentials import auth as auth_mod
 
 PROVIDER_DOCS_URL = "https://example.invalid/docs/provider-oauth"
 

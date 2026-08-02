@@ -15,8 +15,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 
-from opencodon.core.context_compressor import SUMMARY_PREFIX
-from opencodon.core.conversation_compression import COMPACTION_DONE_STATUS, COMPACTION_STATUS
+from opencodon.core.context.context_compressor import SUMMARY_PREFIX
+from opencodon.core.context.conversation_compression import COMPACTION_DONE_STATUS, COMPACTION_STATUS
 from opencodon.core.run_agent import AIAgent
 from opencodon.core import run_agent
 

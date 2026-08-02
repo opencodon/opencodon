@@ -39,11 +39,11 @@ class TestTryAnthropicBaseUrlHostValidation:
                 "opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="***",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client"
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
             ) as mock_build,
         ):
             mock_build.return_value = MagicMock()
@@ -74,11 +74,11 @@ class TestTryAnthropicBaseUrlHostValidation:
                 "opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="***",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client"
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
             ) as mock_build,
         ):
             mock_build.return_value = MagicMock()
@@ -106,11 +106,11 @@ class TestTryAnthropicBaseUrlHostValidation:
                 "opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="***",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client"
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
             ) as mock_build,
         ):
             mock_build.return_value = MagicMock()
@@ -140,11 +140,11 @@ class TestTryAnthropicBaseUrlHostValidation:
                 "opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="***",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client"
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
             ) as mock_build,
         ):
             mock_build.return_value = MagicMock()
@@ -172,11 +172,11 @@ class TestTryAnthropicBaseUrlHostValidation:
                 "opencodon.core.auxiliary_client._select_pool_entry", return_value=(False, None)
             ),
             patch(
-                "opencodon.core.anthropic_adapter.resolve_anthropic_token",
+                "opencodon.core.providers.anthropic_adapter.resolve_anthropic_token",
                 return_value="***",
             ),
             patch(
-                "opencodon.core.anthropic_adapter.build_anthropic_client"
+                "opencodon.core.providers.anthropic_adapter.build_anthropic_client"
             ) as mock_build,
         ):
             mock_build.return_value = MagicMock()

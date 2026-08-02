@@ -30,17 +30,17 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse, urlunparse
 
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 from opencodon.core.iteration_budget import IterationBudget
-from opencodon.core.memory_manager import StreamingContextScrubber
-from opencodon.core.model_metadata import (
+from opencodon.core.memory.memory_manager import StreamingContextScrubber
+from opencodon.core.providers.model_metadata import (
     MINIMUM_CONTEXT_LENGTH,
     fetch_model_metadata,
     is_local_endpoint,
     query_ollama_num_ctx,
 )
 from opencodon.core.process_bootstrap import _install_safe_stdio
-from opencodon.core.subdirectory_hints import SubdirectoryHintTracker
+from opencodon.core.context.subdirectory_hints import SubdirectoryHintTracker
 from opencodon.core.think_scrubber import StreamingThinkScrubber
 from opencodon.core.tool_guardrails import (
     ToolCallGuardrailConfig,
@@ -105,8 +105,8 @@ def _provider_default_routes(provider: str) -> set[str]:
         pass
 
     try:
-        from opencodon.core.auth import PROVIDER_REGISTRY
-        from opencodon.core.models import normalize_provider as normalize_model_provider
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
+        from opencodon.core.providers.models import normalize_provider as normalize_model_provider
         from opencodon.core.providers import normalize_provider as normalize_registry_provider
 
         for provider_id, config in PROVIDER_REGISTRY.items():
@@ -154,7 +154,7 @@ def _context_route_mismatch(
     if not configured_provider:
         return False
     try:
-        from opencodon.core.models import normalize_provider as normalize_model_provider
+        from opencodon.core.providers.models import normalize_provider as normalize_model_provider
 
         configured_provider = normalize_model_provider(configured_provider)
         active_provider = normalize_model_provider(active_provider)
@@ -617,7 +617,7 @@ def init_agent(
     # URL-based auto-detection block above (fixed #63425).
     if credential_pool is not None:
         try:
-            from opencodon.core.credential_pool import credential_pool_matches_provider
+            from opencodon.core.credentials.credential_pool import credential_pool_matches_provider
 
             if not credential_pool_matches_provider(
                 credential_pool,
@@ -936,12 +936,12 @@ def init_agent(
     _provider_timeout = get_provider_request_timeout(agent.provider, agent.model)
 
     if agent.api_mode == "anthropic_messages":
-        from opencodon.core.anthropic_adapter import build_anthropic_client, resolve_anthropic_token
+        from opencodon.core.providers.anthropic_adapter import build_anthropic_client, resolve_anthropic_token
         # Bedrock + Claude → use AnthropicBedrock SDK for full feature parity
         # (prompt caching, thinking budgets, adaptive thinking).
         _is_bedrock_anthropic = agent.provider == "bedrock"
         if _is_bedrock_anthropic:
-            from opencodon.core.anthropic_adapter import build_anthropic_bedrock_client
+            from opencodon.core.providers.anthropic_adapter import build_anthropic_bedrock_client
             _region_match = re.search(r"bedrock-runtime\.([a-z0-9-]+)\.", base_url or "")
             _br_region = _region_match.group(1) if _region_match else "us-east-1"
             agent._bedrock_region = _br_region
@@ -975,7 +975,7 @@ def init_agent(
             # state cost is one file read + one timestamp compare per request.
             if agent.provider == "minimax-oauth" and isinstance(effective_key, str) and effective_key:
                 try:
-                    from opencodon.core.auth import build_minimax_oauth_token_provider
+                    from opencodon.core.credentials.auth import build_minimax_oauth_token_provider
                     effective_key = build_minimax_oauth_token_provider()
                 except Exception as _mm_exc:  # noqa: BLE001 — never block startup on this
                     import logging as _logging
@@ -995,7 +995,7 @@ def init_agent(
             # so injects Claude-Code identity headers and system prompts
             # that cause 401/403 on their endpoints.  Guards #1739 and
             # the third-party identity-injection bug.
-            from opencodon.core.anthropic_adapter import _is_oauth_token as _is_oat
+            from opencodon.core.providers.anthropic_adapter import _is_oauth_token as _is_oat
             agent._is_anthropic_oauth = _is_oat(effective_key) if (_is_native_anthropic and isinstance(effective_key, str)) else False
             agent._anthropic_client = build_anthropic_client(effective_key, base_url, timeout=_provider_timeout)
             # No OpenAI client needed for Anthropic mode
@@ -1008,7 +1008,7 @@ def init_agent(
                 # The Anthropic adapter installs an httpx event hook
                 # that mints a fresh JWT per request — we never
                 # invoke or inspect the callable in the banner.
-                from opencodon.core.azure_identity_adapter import is_token_provider
+                from opencodon.core.providers.azure_identity_adapter import is_token_provider
 
                 if is_token_provider(effective_key):
                     print("🔑 Using credentials: Microsoft Entra ID")
@@ -1124,7 +1124,7 @@ def init_agent(
             elif base_url_host_matches(effective_base, "api.routermint.com"):
                 client_kwargs["default_headers"] = _ra()._routermint_headers()
             elif base_url_host_matches(effective_base, "githubcopilot.com"):
-                from opencodon.core.models import copilot_default_headers
+                from opencodon.core.providers.models import copilot_default_headers
 
                 client_kwargs["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(effective_base, "api.kimi.com"):
@@ -1181,7 +1181,7 @@ def init_agent(
                     # (e.g. alibaba → DASHSCOPE_API_KEY, not ALIBABA_API_KEY).
                     _env_hint = f"{_explicit.upper()}_API_KEY"
                     try:
-                        from opencodon.core.auth import PROVIDER_REGISTRY
+                        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
                         _pcfg = PROVIDER_REGISTRY.get(_explicit)
                         if _pcfg and _pcfg.api_key_env_vars:
                             _env_hint = _pcfg.api_key_env_vars[0]
@@ -1312,7 +1312,7 @@ def init_agent(
                 # provider (Azure Foundry). The OpenAI SDK mints a
                 # fresh JWT per request internally — the banner
                 # never invokes or inspects the callable.
-                from opencodon.core.azure_identity_adapter import is_token_provider
+                from opencodon.core.providers.azure_identity_adapter import is_token_provider
 
                 key_used = client_kwargs.get("api_key", "none")
                 if is_token_provider(key_used):
@@ -1595,7 +1595,7 @@ def init_agent(
             _mem_provider_name = mem_config.get("provider", "") if mem_config else ""
 
             if _mem_provider_name and _mem_provider_name.strip():
-                from opencodon.core.memory_manager import MemoryManager as _MemoryManager
+                from opencodon.core.memory.memory_manager import MemoryManager as _MemoryManager
                 from plugins.memory import load_memory_provider as _load_mem
                 agent._memory_manager = _MemoryManager()
                 _mp = _load_mem(_mem_provider_name)
@@ -1655,7 +1655,7 @@ def init_agent(
             _ra().logger.warning("Memory provider plugin init failed: %s", _mpe)
             agent._memory_manager = None
 
-    from opencodon.core.memory_manager import inject_memory_provider_tools as _inject_memory_provider_tools
+    from opencodon.core.memory.memory_manager import inject_memory_provider_tools as _inject_memory_provider_tools
     _inject_memory_provider_tools(agent)
 
     # Skills config: nudge interval for skill creation reminders
@@ -1995,7 +1995,7 @@ def init_agent(
             and not _configured_provider_norm.startswith("custom:")
         ):
             try:
-                from opencodon.core.auth import resolve_provider as resolve_auth_provider
+                from opencodon.core.credentials.auth import resolve_provider as resolve_auth_provider
 
                 _resolved_auth_provider = resolve_auth_provider(
                     _configured_provider_norm
@@ -2234,7 +2234,7 @@ def init_agent(
         # not apply. Drop it. (#44439)
         agent._compression_threshold_autoraised = None
         # Resolve context_length for plugin engines — mirrors switch_model() path
-        from opencodon.core.model_metadata import get_model_context_length
+        from opencodon.core.providers.model_metadata import get_model_context_length
         _plugin_ctx_len = get_model_context_length(
             agent.model,
             base_url=agent.base_url,
@@ -2338,7 +2338,7 @@ def init_agent(
             for t in agent.tools
             if isinstance(t, dict)
         }
-        from opencodon.core.memory_manager import normalize_tool_schema as _normalize_tool_schema
+        from opencodon.core.memory.memory_manager import normalize_tool_schema as _normalize_tool_schema
         for _raw_schema in agent.context_compressor.get_tool_schemas():
             _schema = _normalize_tool_schema(_raw_schema)
             if _schema is None:

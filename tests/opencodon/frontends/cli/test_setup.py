@@ -331,7 +331,7 @@ def test_select_provider_and_model_warns_if_named_custom_provider_disappears(
         save_config(current)
         return next(i for i, label in enumerate(choices) if label.startswith("Local (localhost:8080/v1)"))
 
-    monkeypatch.setattr("opencodon.core.auth.resolve_provider", lambda provider: None)
+    monkeypatch.setattr("opencodon.core.credentials.auth.resolve_provider", lambda provider: None)
     monkeypatch.setattr("opencodon.frontends.cli.main._prompt_provider_choice", fake_prompt_provider_choice)
     monkeypatch.setattr(
         "opencodon.frontends.cli.main._model_flow_named_custom",

@@ -1,6 +1,6 @@
 """Tests for opencodon_cli/fallback_config.py — fallback entry API-key resolution."""
 
-from opencodon.core.fallback_config import resolve_entry_api_key
+from opencodon.core.providers.fallback_config import resolve_entry_api_key
 
 
 class TestResolveEntryApiKey:

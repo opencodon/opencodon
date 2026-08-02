@@ -56,7 +56,7 @@ os.environ["OPENCODON_QUIET"] = "1"  # Our own modules
 
 import yaml
 
-from opencodon.core.fallback_config import get_fallback_chain
+from opencodon.core.providers.fallback_config import get_fallback_chain
 from opencodon.frontends.cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from opencodon.frontends.cli.cli_commands_mixin import CLICommandsMixin
 
@@ -96,13 +96,13 @@ import threading
 import queue
 
 def CanonicalUsage(*args, **kwargs):
-    from opencodon.core.usage_pricing import CanonicalUsage as _CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage as _CanonicalUsage
 
     return _CanonicalUsage(*args, **kwargs)
 
 
 def estimate_usage_cost(*args, **kwargs):
-    from opencodon.core.usage_pricing import estimate_usage_cost as _estimate_usage_cost
+    from opencodon.core.providers.usage_pricing import estimate_usage_cost as _estimate_usage_cost
 
     return _estimate_usage_cost(*args, **kwargs)
 
@@ -316,7 +316,7 @@ class ShellShowMixin:
 
         # Warn about low context lengths (common with local servers). Keep
         # this tied to the runtime guard so guidance cannot drift again.
-        from opencodon.core.model_metadata import MINIMUM_CONTEXT_LENGTH
+        from opencodon.core.providers.model_metadata import MINIMUM_CONTEXT_LENGTH
         if ctx_len and ctx_len < MINIMUM_CONTEXT_LENGTH:
             self._console_print()
             self._console_print(
@@ -463,7 +463,7 @@ class ShellShowMixin:
 
     def _fast_command_available(self) -> bool:
         try:
-            from opencodon.core.models import model_supports_fast_mode
+            from opencodon.core.providers.models import model_supports_fast_mode
         except Exception:
             return False
         agent = getattr(self, "agent", None)
@@ -625,7 +625,7 @@ class ShellShowMixin:
         
         # ``self.api_key`` may be a callable (Azure Foundry Entra ID bearer
         # provider). Never invoke it; just identify the auth surface.
-        from opencodon.core.azure_identity_adapter import is_token_provider
+        from opencodon.core.providers.azure_identity_adapter import is_token_provider
         if is_token_provider(self.api_key):
             api_key_display = "Microsoft Entra ID"
         elif isinstance(self.api_key, str) and len(self.api_key) > 12:
@@ -916,7 +916,7 @@ class ShellShowMixin:
         base_url = getattr(agent, "base_url", None) or getattr(self, "base_url", None)
         api_key = getattr(agent, "api_key", None) or getattr(self, "api_key", None)
         # Lazy import — pulls the OpenAI SDK chain, only needed here.
-        from opencodon.core.account_usage import fetch_account_usage, render_account_usage_lines
+        from opencodon.core.providers.account_usage import fetch_account_usage, render_account_usage_lines
         account_snapshot = None
         if provider:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
@@ -966,7 +966,7 @@ class ShellShowMixin:
 
         try:
             from opencodon.state import SessionDB
-            from opencodon.core.insights import InsightsEngine
+            from opencodon.core.memory.insights import InsightsEngine
 
             db = SessionDB()
             engine = InsightsEngine(db)

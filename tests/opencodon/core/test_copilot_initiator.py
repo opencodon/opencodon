@@ -136,13 +136,13 @@ class TestHeaderValues:
     """copilot_default_headers(is_agent_turn=...) sets x-initiator correctly."""
 
     def test_default_is_agent(self):
-        from opencodon.core.models import copilot_default_headers
+        from opencodon.core.providers.models import copilot_default_headers
         assert copilot_default_headers()["x-initiator"] == "agent"
 
     def test_user_turn(self):
-        from opencodon.core.models import copilot_default_headers
+        from opencodon.core.providers.models import copilot_default_headers
         assert copilot_default_headers(is_agent_turn=False)["x-initiator"] == "user"
 
     def test_agent_turn_explicit(self):
-        from opencodon.core.models import copilot_default_headers
+        from opencodon.core.providers.models import copilot_default_headers
         assert copilot_default_headers(is_agent_turn=True)["x-initiator"] == "agent"

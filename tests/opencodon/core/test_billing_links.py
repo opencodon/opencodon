@@ -6,7 +6,7 @@ few that are the whole point of the mapping (the host they must land on).
 
 from __future__ import annotations
 
-from opencodon.core.billing_links import (
+from opencodon.core.providers.billing_links import (
     BillingBlock,
     build_billing_block,
 )

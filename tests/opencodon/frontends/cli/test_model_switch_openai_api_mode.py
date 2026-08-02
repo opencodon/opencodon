@@ -40,7 +40,7 @@ def _run_openai_switch(
         patch("opencodon.frontends.cli.model_switch.resolve_alias", return_value=None),
         patch("opencodon.frontends.cli.model_switch.list_provider_models", return_value=[]),
         patch(
-            "opencodon.core.runtime_provider.resolve_runtime_provider",
+            "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
             return_value={
                 "api_key": "sk-test",
                 "base_url": runtime_base_url,
@@ -48,12 +48,12 @@ def _run_openai_switch(
             },
         ),
         patch(
-            "opencodon.core.models.validate_requested_model",
+            "opencodon.core.providers.models.validate_requested_model",
             return_value=_MOCK_VALIDATION,
         ),
         patch("opencodon.frontends.cli.model_switch.get_model_info", return_value=None),
         patch("opencodon.frontends.cli.model_switch.get_model_capabilities", return_value=None),
-        patch("opencodon.core.models.detect_provider_for_model", return_value=None),
+        patch("opencodon.core.providers.models.detect_provider_for_model", return_value=None),
     ):
         return switch_model(
             raw_input=raw_input,

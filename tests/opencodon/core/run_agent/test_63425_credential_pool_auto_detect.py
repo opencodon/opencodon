@@ -37,12 +37,12 @@ class TestCredentialPoolPreservedOnAutoDetect:
 
         with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(None, None)), \
              patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]), \
-             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.providers.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.providers.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.providers.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.providers.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credentials.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
              patch('opencodon.core.iteration_budget.IterationBudget'), \
@@ -92,12 +92,12 @@ class TestCredentialPoolPreservedOnAutoDetect:
         with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://chatgpt.com/backend-api/codex"), None)), \
              patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]), \
              patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()), \
-             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.providers.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.providers.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.providers.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.providers.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credentials.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
              patch('opencodon.core.iteration_budget.IterationBudget'), \
@@ -142,12 +142,12 @@ class TestCredentialPoolPreservedOnAutoDetect:
         with patch("opencodon.core.auxiliary_client.resolve_provider_client", return_value=(_mock_client("key", "https://api.x.ai"), None)), \
              patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]), \
              patch("opencodon.core.run_agent.OpenAI", return_value=MagicMock()), \
-             patch('opencodon.core.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
-             patch('opencodon.core.anthropic_adapter.resolve_anthropic_token', return_value=''), \
-             patch('opencodon.core.anthropic_adapter._is_oauth_token', return_value=False), \
-             patch('opencodon.core.azure_identity_adapter.is_token_provider', return_value=False), \
+             patch('opencodon.core.providers.anthropic_adapter.build_anthropic_client', return_value=MagicMock()), \
+             patch('opencodon.core.providers.anthropic_adapter.resolve_anthropic_token', return_value=''), \
+             patch('opencodon.core.providers.anthropic_adapter._is_oauth_token', return_value=False), \
+             patch('opencodon.core.providers.azure_identity_adapter.is_token_provider', return_value=False), \
              patch('opencodon.common.model_normalize.normalize_model_for_provider', return_value='test-model'), \
-             patch('opencodon.core.credential_pool.load_pool', return_value=MagicMock()), \
+             patch('opencodon.core.credentials.credential_pool.load_pool', return_value=MagicMock()), \
              patch('opencodon.config.load_config', return_value={}), \
              patch('opencodon.config.get_compatible_custom_providers', return_value=[]), \
              patch('opencodon.core.iteration_budget.IterationBudget'), \

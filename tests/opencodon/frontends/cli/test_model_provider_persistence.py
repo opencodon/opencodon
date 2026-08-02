@@ -40,7 +40,7 @@ class TestSaveModelChoiceAlwaysDict:
     def test_string_model_becomes_dict(self, config_home):
         """When config.model is a plain string, _save_model_choice must
         convert it to a dict so provider can be set afterwards."""
-        from opencodon.core.auth import _save_model_choice
+        from opencodon.core.credentials.auth import _save_model_choice
 
         _save_model_choice("kimi-k2.5")
 
@@ -58,7 +58,7 @@ class TestSaveModelChoiceAlwaysDict:
         (config_home / "config.yaml").write_text(
             "model:\n  default: old-model\n  provider: openrouter\n"
         )
-        from opencodon.core.auth import _save_model_choice
+        from opencodon.core.credentials.auth import _save_model_choice
 
         _save_model_choice("new-model")
 
@@ -72,7 +72,7 @@ class TestSaveModelChoiceAlwaysDict:
 class TestProviderPersistsAfterModelSave:
     def test_update_config_for_provider_uses_atomic_yaml_write(self, config_home):
         """Provider switches should delegate config writes to atomic_yaml_write."""
-        from opencodon.core.auth import _update_config_for_provider
+        from opencodon.core.credentials.auth import _update_config_for_provider
 
         config_path = config_home / "config.yaml"
         original_text = config_path.read_text(encoding="utf-8")
@@ -85,7 +85,7 @@ class TestProviderPersistsAfterModelSave:
             assert kwargs["sort_keys"] is False
             raise OSError("simulated atomic write failure")
 
-        with patch("opencodon.core.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
+        with patch("opencodon.core.credentials.auth.atomic_yaml_write", side_effect=_boom) as mock_write:
             with pytest.raises(OSError, match="simulated atomic write failure"):
                 _update_config_for_provider(
                     "nous",
@@ -99,7 +99,7 @@ class TestProviderPersistsAfterModelSave:
     def test_api_key_provider_saved_when_model_was_string(self, config_home, monkeypatch):
         """_model_flow_api_key_provider must persist the provider even when
         config.model started as a plain string."""
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
         pconfig = PROVIDER_REGISTRY.get("kimi-coding")
         if not pconfig:
@@ -113,8 +113,8 @@ class TestProviderPersistsAfterModelSave:
 
         # Mock the model selection prompt to return "kimi-k2.5"
         # Also mock input() for the base URL prompt and builtins.input
-        with patch("opencodon.core.auth._prompt_model_selection", return_value="kimi-k2.5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="kimi-k2.5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "kimi-coding", "old-model")
 
@@ -133,7 +133,7 @@ class TestProviderPersistsAfterModelSave:
         from opencodon.config import load_config
 
         with patch(
-            "opencodon.core.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "gh-cli-token",
@@ -141,7 +141,7 @@ class TestProviderPersistsAfterModelSave:
                 "source": "gh auth token",
             },
         ), patch(
-            "opencodon.core.models.fetch_github_model_catalog",
+            "opencodon.core.providers.models.fetch_github_model_catalog",
             return_value=[
                 {
                     "id": "gpt-4.1",
@@ -155,13 +155,13 @@ class TestProviderPersistsAfterModelSave:
                 },
             ],
         ), patch(
-            "opencodon.core.auth._prompt_model_selection",
+            "opencodon.core.credentials.auth._prompt_model_selection",
             return_value="gpt-5.4",
         ), patch(
             "opencodon.frontends.cli.main._prompt_reasoning_effort_selection",
             return_value="high",
         ), patch(
-            "opencodon.core.auth.deactivate_provider",
+            "opencodon.core.credentials.auth.deactivate_provider",
         ):
             _model_flow_copilot(load_config(), "old-model")
 
@@ -193,9 +193,9 @@ class TestProviderPersistsAfterModelSave:
         # Patch fetch_api_models so the named custom flow returns one model;
         # force the curses menu to error so the input() fallback runs; patch
         # input to auto-select the first model from the fallback prompt.
-        with patch("opencodon.core.auth._save_model_choice"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
-             patch("opencodon.core.models.fetch_api_models", return_value=["gpt-5.4"]), \
+        with patch("opencodon.core.credentials.auth._save_model_choice"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
+             patch("opencodon.core.providers.models.fetch_api_models", return_value=["gpt-5.4"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=OSError("no tty in test")), \
              patch("builtins.input", return_value="1"):
             _model_flow_named_custom({}, provider_info)
@@ -238,9 +238,9 @@ class TestProviderPersistsAfterModelSave:
             "provider_key": "minimax-cn",
         }
 
-        with patch("opencodon.core.auth._save_model_choice"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
-             patch("opencodon.core.models.fetch_api_models", return_value=["MiniMax-M3"]), \
+        with patch("opencodon.core.credentials.auth._save_model_choice"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
+             patch("opencodon.core.providers.models.fetch_api_models", return_value=["MiniMax-M3"]), \
              patch("opencodon.frontends.cli.curses_ui.curses_radiolist", side_effect=OSError("no tty in test")), \
              patch("builtins.input", return_value="1"):
             _model_flow_named_custom({}, provider_info)
@@ -258,14 +258,14 @@ class TestProviderPersistsAfterModelSave:
         from opencodon.config import load_config
 
         with patch(
-            "opencodon.core.auth.get_external_process_provider_status",
+            "opencodon.core.credentials.auth.get_external_process_provider_status",
             return_value={
                 "resolved_command": "/usr/local/bin/copilot",
                 "command": "copilot",
                 "base_url": "acp://copilot",
             },
         ), patch(
-            "opencodon.core.auth.resolve_external_process_provider_credentials",
+            "opencodon.core.credentials.auth.resolve_external_process_provider_credentials",
             return_value={
                 "provider": "copilot-acp",
                 "api_key": "copilot-acp",
@@ -275,7 +275,7 @@ class TestProviderPersistsAfterModelSave:
                 "source": "process",
             },
         ), patch(
-            "opencodon.core.auth.resolve_api_key_provider_credentials",
+            "opencodon.core.credentials.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "gh-cli-token",
@@ -283,7 +283,7 @@ class TestProviderPersistsAfterModelSave:
                 "source": "gh auth token",
             },
         ), patch(
-            "opencodon.core.models.fetch_github_model_catalog",
+            "opencodon.core.providers.models.fetch_github_model_catalog",
             return_value=[
                 {
                     "id": "gpt-4.1",
@@ -297,10 +297,10 @@ class TestProviderPersistsAfterModelSave:
                 },
             ],
         ), patch(
-            "opencodon.core.auth._prompt_model_selection",
+            "opencodon.core.credentials.auth._prompt_model_selection",
             return_value="gpt-5.4",
         ), patch(
-            "opencodon.core.auth.deactivate_provider",
+            "opencodon.core.credentials.auth.deactivate_provider",
         ):
             _model_flow_copilot_acp(load_config(), "old-model")
 
@@ -320,9 +320,9 @@ class TestProviderPersistsAfterModelSave:
 
         monkeypatch.setenv("OPENCODE_GO_API_KEY", "test-key")
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["opencode-go/kimi-k2.5", "opencode-go/minimax-m2.7"]), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="kimi-k2.5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["opencode-go/kimi-k2.5", "opencode-go/minimax-m2.7"]), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="kimi-k2.5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "opencode-go", "opencode-go/kimi-k2.5")
 
@@ -347,9 +347,9 @@ class TestProviderPersistsAfterModelSave:
             "  api_mode: chat_completions\n"
         )
 
-        with patch("opencodon.core.models.fetch_api_models", return_value=["opencode-go/kimi-k2.5", "opencode-go/minimax-m2.5"]), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="minimax-m2.5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.providers.models.fetch_api_models", return_value=["opencode-go/kimi-k2.5", "opencode-go/minimax-m2.5"]), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="minimax-m2.5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "opencode-go", "kimi-k2.5")
 
@@ -374,7 +374,7 @@ class TestBaseUrlValidation:
 
     def test_invalid_base_url_rejected(self, config_home, monkeypatch, capsys):
         """Typing a non-URL string should not be saved as the base URL."""
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
         pconfig = PROVIDER_REGISTRY.get("minimax")
         if not pconfig:
@@ -386,8 +386,8 @@ class TestBaseUrlValidation:
         from opencodon.config import load_config, get_env_value
 
         # User types a shell command instead of a URL at the base URL prompt
-        with patch("opencodon.core.auth._prompt_model_selection", return_value="MiniMax-M2"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="MiniMax-M2"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value="nano ~/.opencodon/.env"):
             _model_flow_api_key_provider(load_config(), "minimax", "old-model")
 
@@ -400,7 +400,7 @@ class TestBaseUrlValidation:
 
     def test_valid_base_url_accepted(self, config_home, monkeypatch):
         """A proper URL should be saved normally."""
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
         pconfig = PROVIDER_REGISTRY.get("minimax")
         if not pconfig:
@@ -411,8 +411,8 @@ class TestBaseUrlValidation:
         from opencodon.frontends.cli.main import _model_flow_api_key_provider
         from opencodon.config import load_config, get_env_value
 
-        with patch("opencodon.core.auth._prompt_model_selection", return_value="MiniMax-M2"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="MiniMax-M2"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value="https://custom.minimax.example/v1"):
             _model_flow_api_key_provider(load_config(), "minimax", "old-model")
 
@@ -421,7 +421,7 @@ class TestBaseUrlValidation:
 
     def test_empty_base_url_keeps_default(self, config_home, monkeypatch):
         """Pressing Enter (empty) should not change the base URL."""
-        from opencodon.core.auth import PROVIDER_REGISTRY
+        from opencodon.core.credentials.auth import PROVIDER_REGISTRY
 
         pconfig = PROVIDER_REGISTRY.get("minimax")
         if not pconfig:
@@ -433,8 +433,8 @@ class TestBaseUrlValidation:
         from opencodon.frontends.cli.main import _model_flow_api_key_provider
         from opencodon.config import load_config, get_env_value
 
-        with patch("opencodon.core.auth._prompt_model_selection", return_value="MiniMax-M2"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+        with patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="MiniMax-M2"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "minimax", "old-model")
 
@@ -447,7 +447,7 @@ class TestZaiEndpointPicker:
 
     def test_select_global_endpoint(self, config_home, monkeypatch):
         """Selecting Global should save the direct API base URL."""
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         from opencodon.frontends.cli.main import _model_flow_api_key_provider
         from opencodon.config import load_config
 
@@ -455,8 +455,8 @@ class TestZaiEndpointPicker:
         monkeypatch.setenv("GLM_API_KEY", "test-key")
 
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=0), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -465,7 +465,7 @@ class TestZaiEndpointPicker:
 
     def test_select_coding_plan_global_endpoint(self, config_home, monkeypatch):
         """Selecting Coding Plan Global should save the coding base URL."""
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         from opencodon.frontends.cli.main import _model_flow_api_key_provider
         from opencodon.config import load_config
 
@@ -474,8 +474,8 @@ class TestZaiEndpointPicker:
 
         # Index 2 = Coding Plan Global in ZAI_ENDPOINTS
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=2), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5.2"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5.2"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -484,7 +484,7 @@ class TestZaiEndpointPicker:
 
     def test_select_china_endpoint(self, config_home, monkeypatch):
         """Selecting China should save the bigmodel.cn base URL."""
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         from opencodon.frontends.cli.main import _model_flow_api_key_provider
         from opencodon.config import load_config
 
@@ -492,8 +492,8 @@ class TestZaiEndpointPicker:
         monkeypatch.setenv("GLM_API_KEY", "test-key")
 
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=1), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -507,11 +507,11 @@ class TestZaiEndpointPicker:
 
         monkeypatch.setenv("GLM_API_KEY", "test-key")
 
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         custom_idx = len(ZAI_ENDPOINTS)  # last option = custom proxy
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=custom_idx), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value="https://proxy.example.com/glm/v4"):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -525,12 +525,12 @@ class TestZaiEndpointPicker:
 
         monkeypatch.setenv("GLM_API_KEY", "test-key")
         monkeypatch.delenv("GLM_BASE_URL", raising=False)
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         custom_idx = len(ZAI_ENDPOINTS)
 
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=custom_idx), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value="not-a-url"):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -550,8 +550,8 @@ class TestZaiEndpointPicker:
 
         # _prompt_provider_choice returns None on cancel
         with patch("opencodon.frontends.cli.main._prompt_provider_choice", return_value=None), \
-             patch("opencodon.core.auth._prompt_model_selection", return_value="glm-5"), \
-             patch("opencodon.core.auth.deactivate_provider"), \
+             patch("opencodon.core.credentials.auth._prompt_model_selection", return_value="glm-5"), \
+             patch("opencodon.core.credentials.auth.deactivate_provider"), \
              patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "zai", "old-model")
 
@@ -561,7 +561,7 @@ class TestZaiEndpointPicker:
 
     def test_current_endpoint_is_default_choice(self, config_home, monkeypatch):
         """When a known endpoint is already active, it should be the default."""
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         from opencodon.frontends.cli.model_setup_flows import _select_zai_endpoint
 
         coding_url = ZAI_ENDPOINTS[2][1]  # coding-global
@@ -582,7 +582,7 @@ class TestZaiEndpointPicker:
 
     def test_custom_url_active_defaults_to_custom_option(self, config_home, monkeypatch):
         """When a non-standard URL is active, Custom proxy should be default."""
-        from opencodon.core.auth import ZAI_ENDPOINTS
+        from opencodon.core.credentials.auth import ZAI_ENDPOINTS
         from opencodon.frontends.cli.model_setup_flows import _select_zai_endpoint
 
         custom_url = "https://my-proxy.example.com/v4"

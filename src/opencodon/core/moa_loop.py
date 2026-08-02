@@ -188,7 +188,7 @@ def _slot_runtime(slot: dict[str, Any]) -> dict[str, Any]:
     model = str(slot.get("model") or "").strip()
     out: dict[str, Any] = {"provider": provider, "model": model}
     try:
-        from opencodon.core.runtime_provider import resolve_runtime_provider
+        from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
         rt = resolve_runtime_provider(requested=provider, target_model=model)
         # Forward the resolved endpoint through to call_llm unconditionally.
@@ -238,7 +238,7 @@ def _maybe_apply_moa_cache_control(
         from types import SimpleNamespace
 
         from opencodon.core.agent_runtime_helpers import anthropic_prompt_cache_policy
-        from opencodon.core.prompt_caching import apply_anthropic_cache_control
+        from opencodon.core.prompt.prompt_caching import apply_anthropic_cache_control
 
         # The policy function reads agent.* only as fallbacks for kwargs we
         # don't pass; provide a stub so the slot is judged purely on its own
@@ -292,7 +292,7 @@ def _run_reference(
     ``call_llm`` is synchronous/blocking, so threads (not asyncio) are the right
     concurrency primitive, mirroring ``delegate_task``'s batch fan-out.
     """
-    from opencodon.core.usage_pricing import CanonicalUsage, estimate_usage_cost, normalize_usage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage, estimate_usage_cost, normalize_usage
 
     label = _slot_label(slot)
     runtime = _slot_runtime(slot)
@@ -396,7 +396,7 @@ def _run_references_parallel(
     Each element is ``(label, text, usage)`` where usage is a
     ``CanonicalUsage`` (zeroed for skipped/failed references).
     """
-    from opencodon.core.usage_pricing import CanonicalUsage
+    from opencodon.core.providers.usage_pricing import CanonicalUsage
 
     if not reference_models:
         return []
@@ -819,7 +819,7 @@ class MoAChatCompletions:
         # accounting. Set on every create() (zeroed on a cache HIT so per-turn
         # advisor spend is counted exactly once). Consumed via
         # ``consume_reference_usage``.
-        from opencodon.core.usage_pricing import CanonicalUsage
+        from opencodon.core.providers.usage_pricing import CanonicalUsage
 
         self._pending_reference_usage: Any = CanonicalUsage()
         self._pending_reference_cost: Any = None
@@ -841,7 +841,7 @@ class MoAChatCompletions:
         always a ``CanonicalUsage`` (zeroed if none); cost is a summed-dollars
         float or ``None`` when no advisor could be priced.
         """
-        from opencodon.core.usage_pricing import CanonicalUsage
+        from opencodon.core.providers.usage_pricing import CanonicalUsage
 
         usage = self._pending_reference_usage or CanonicalUsage()
         cost = self._pending_reference_cost
@@ -1054,7 +1054,7 @@ class MoAChatCompletions:
         if not preset.get("enabled", True):
             reference_models = []
 
-        from opencodon.core.usage_pricing import CanonicalUsage
+        from opencodon.core.providers.usage_pricing import CanonicalUsage
 
         reference_outputs: list[tuple[str, str, Any]] = []
         ref_messages = _reference_messages(messages)

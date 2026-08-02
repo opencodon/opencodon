@@ -643,7 +643,7 @@ class ComputeHost:
                 # no-op when the mirror already emitted or discarded it.
                 try:
                     from opencodon.frontends.tui import server as _server
-                    from opencodon.core.conversation_compression import (
+                    from opencodon.core.context.conversation_compression import (
                         finalize_context_engine_compression_notification,
                     )
 

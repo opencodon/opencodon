@@ -1,6 +1,6 @@
-"""Tests for placeholder API key detection in opencodon.core.auth."""
+"""Tests for placeholder API key detection in opencodon.core.credentials.auth."""
 
-from opencodon.core.auth import has_usable_secret
+from opencodon.core.credentials.auth import has_usable_secret
 
 
 def test_has_usable_secret_rejects_documented_placeholder_key() -> None:

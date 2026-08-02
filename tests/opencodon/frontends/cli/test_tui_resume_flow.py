@@ -1201,7 +1201,7 @@ def test_oneshot_run_agent_closes_agent_after_chat(monkeypatch):
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "key",
             "base_url": "https://example.invalid",
@@ -1251,7 +1251,7 @@ def test_oneshot_run_agent_closes_agent_when_chat_raises(monkeypatch):
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "key",
             "base_url": "https://example.invalid",
@@ -1306,7 +1306,7 @@ def test_oneshot_run_agent_closes_session_db(monkeypatch):
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "key",
             "base_url": "https://example.invalid",
@@ -1353,7 +1353,7 @@ def test_oneshot_run_agent_closes_session_db_when_agent_init_raises(monkeypatch)
         lambda: {"model": {"default": "gpt-test", "provider": "openai"}},
     )
     monkeypatch.setattr(
-        "opencodon.core.runtime_provider.resolve_runtime_provider",
+        "opencodon.core.providers.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "key",
             "base_url": "https://example.invalid",
@@ -1607,14 +1607,14 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
     )
     monkeypatch.setitem(
         sys.modules,
-        "opencodon.core.models",
-        mod("opencodon.core.models", detect_provider_for_model=lambda *_args, **_kwargs: None),
+        "opencodon.core.providers.models",
+        mod("opencodon.core.providers.models", detect_provider_for_model=lambda *_args, **_kwargs: None),
     )
     monkeypatch.setitem(
         sys.modules,
-        "opencodon.core.runtime_provider",
+        "opencodon.core.providers.runtime_provider",
         mod(
-            "opencodon.core.runtime_provider",
+            "opencodon.core.providers.runtime_provider",
             resolve_runtime_provider=lambda **_kwargs: {
                 "api_key": "k",
                 "base_url": "u",

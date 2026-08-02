@@ -20,7 +20,7 @@ from typing import List
 from rich.console import Console
 from rich.table import Table
 
-from opencodon.core.skill_bundles import (
+from opencodon.core.skills.skill_bundles import (
     _bundles_dir,
     delete_bundle,
     get_bundle,

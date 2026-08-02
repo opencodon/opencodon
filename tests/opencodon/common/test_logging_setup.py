@@ -320,7 +320,7 @@ class TestGatewayMode:
         tool_logger = logging.getLogger("opencodon.tools.terminal_tool")
         tool_logger.info("running command")
 
-        agent_logger = logging.getLogger("opencodon.core.context_compressor")
+        agent_logger = logging.getLogger("opencodon.core.context.context_compressor")
         agent_logger.info("compressing context")
 
         opencodon_logging.flush_log_queue()

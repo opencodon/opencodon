@@ -75,7 +75,7 @@ class TestNonInteractiveSetup:
             patch("opencodon.frontends.cli.setup.ensure_opencodon_home"),
             patch("opencodon.frontends.cli.setup.load_config", return_value={}),
             patch("opencodon.frontends.cli.setup.get_opencodon_home", return_value="/tmp/.opencodon"),
-            patch("opencodon.core.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
+            patch("opencodon.core.credentials.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
             patch("builtins.input", side_effect=AssertionError("input should not be called")),
         ):
             run_setup_wizard(args)
@@ -93,7 +93,7 @@ class TestNonInteractiveSetup:
             patch("opencodon.frontends.cli.setup.ensure_opencodon_home"),
             patch("opencodon.frontends.cli.setup.load_config", return_value={}),
             patch("opencodon.frontends.cli.setup.get_opencodon_home", return_value="/tmp/.opencodon"),
-            patch("opencodon.core.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
+            patch("opencodon.core.credentials.auth.get_active_provider", side_effect=AssertionError("wizard continued")),
             patch("sys.stdin") as mock_stdin,
             patch("builtins.input", side_effect=AssertionError("input should not be called")),
         ):

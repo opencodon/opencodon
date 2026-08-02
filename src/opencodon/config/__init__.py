@@ -4415,7 +4415,7 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     config.yaml.  Returns a list of dicts suitable for prompting.
     """
     try:
-        from opencodon.core.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
+        from opencodon.core.skills.skill_utils import discover_all_skill_config_vars, SKILL_CONFIG_PREFIX
     except Exception:
         return []
 
@@ -5358,7 +5358,7 @@ def reconcile_config(interactive: bool = True, quiet: bool = False) -> Dict[str,
             print()
             config = read_raw_config()
             try:
-                from opencodon.core.skill_utils import SKILL_CONFIG_PREFIX
+                from opencodon.core.skills.skill_utils import SKILL_CONFIG_PREFIX
             except Exception:
                 SKILL_CONFIG_PREFIX = "skills.config"
             for var in missing_skill_config:
@@ -7062,7 +7062,7 @@ def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
     if val:
         return val
     try:
-        from opencodon.core.secret_scope import (
+        from opencodon.core.credentials.secret_scope import (
             UnscopedSecretError,
             get_secret as _get_secret,
         )
@@ -7206,7 +7206,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from opencodon.core.auth import get_anthropic_key
+    from opencodon.core.credentials.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -7337,7 +7337,7 @@ def show_config():
     
     # Skill config
     try:
-        from opencodon.core.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
+        from opencodon.core.skills.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
         skill_vars = discover_all_skill_config_vars()
         if skill_vars:
             resolved = resolve_skill_config_values(skill_vars)

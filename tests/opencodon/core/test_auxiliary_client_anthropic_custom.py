@@ -27,7 +27,7 @@ def _install_anthropic_adapter_mocks():
     """Patch build_anthropic_client so the test doesn't need the SDK."""
     fake_client = MagicMock(name="anthropic_client")
     return patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         return_value=fake_client,
     ), fake_client
 
@@ -75,7 +75,7 @@ def test_custom_endpoint_anthropic_messages_falls_back_when_sdk_missing():
         "opencodon.core.auxiliary_client._read_main_model",
         return_value="claude-sonnet-4-6",
     ), patch(
-        "opencodon.core.anthropic_adapter.build_anthropic_client",
+        "opencodon.core.providers.anthropic_adapter.build_anthropic_client",
         side_effect=import_error,
     ):
         client, model = _try_custom_endpoint()

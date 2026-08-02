@@ -45,7 +45,7 @@ class TestSearXNGSearchProviderIsConfigured:
         assert SearXNGWebSearchProvider().name == "searxng"
 
     def test_implements_web_search_provider(self):
-        from opencodon.core.web_search_provider import WebSearchProvider
+        from opencodon.core.providers.web_search_provider import WebSearchProvider
         from plugins.web.searxng.provider import SearXNGWebSearchProvider
         assert issubclass(SearXNGWebSearchProvider, WebSearchProvider)
 
@@ -338,7 +338,7 @@ class TestSearXNGOnlyExtractCrawlErrors:
     def _populate_web_registry(self):
         self._register_providers()
         yield
-        from opencodon.core.web_search_registry import _reset_for_tests
+        from opencodon.core.providers.web_search_registry import _reset_for_tests
         _reset_for_tests()
 
     def test_web_extract_searxng_returns_clear_error(self, monkeypatch):

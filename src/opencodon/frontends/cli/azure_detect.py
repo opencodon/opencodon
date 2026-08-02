@@ -382,7 +382,7 @@ def lookup_context_length(model: str,
     if not model_id:
         return None
     try:
-        from opencodon.core.model_metadata import (
+        from opencodon.core.providers.model_metadata import (
             DEFAULT_FALLBACK_CONTEXT,
             get_model_context_length,
         )

@@ -1794,7 +1794,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("opencodon.core.run_agent.get_tool_definitions", return_value=[])
     @patch("opencodon.core.run_agent.check_toolset_requirements", return_value={})
-    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.providers.copilot_acp_client.CopilotACPClient")
     def test_provider_name_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1825,7 +1825,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("opencodon.core.run_agent.get_tool_definitions", return_value=[])
     @patch("opencodon.core.run_agent.check_toolset_requirements", return_value={})
-    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.providers.copilot_acp_client.CopilotACPClient")
     def test_acp_base_url_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1846,7 +1846,7 @@ class TestCopilotACPStreamingDecision:
 
     @patch("opencodon.core.run_agent.get_tool_definitions", return_value=[])
     @patch("opencodon.core.run_agent.check_toolset_requirements", return_value={})
-    @patch("opencodon.core.copilot_acp_client.CopilotACPClient")
+    @patch("opencodon.core.providers.copilot_acp_client.CopilotACPClient")
     def test_acp_tcp_url_triggers_non_streaming(
         self, mock_acp_cls, _mock_check, _mock_tools
     ):
@@ -1939,7 +1939,7 @@ class TestBedrockIamStreamingFallback:
         }
 
         with patch(
-            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.providers.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             response = agent._interruptible_streaming_api_call(
@@ -1965,7 +1965,7 @@ class TestBedrockIamStreamingFallback:
         )
 
         with patch(
-            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.providers.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             with pytest.raises(ClientError):
@@ -2006,7 +2006,7 @@ def test_on_event_fires_per_bedrock_event():
     """FIX 1: on_event fires once for EVERY yielded Bedrock event — text,
     tool-input delta, messageStop, and metadata alike — providing wire-level
     liveness (not just text deltas)."""
-    from opencodon.core.bedrock_adapter import stream_converse_with_callbacks
+    from opencodon.core.providers.bedrock_adapter import stream_converse_with_callbacks
 
     events = [
         {"contentBlockDelta": {"delta": {"text": "a"}}},
@@ -2028,7 +2028,7 @@ def test_on_event_fires_per_bedrock_event():
 
 def test_on_event_exception_is_swallowed():
     """FIX 1: a raising on_event callback must never abort the stream."""
-    from opencodon.core.bedrock_adapter import stream_converse_with_callbacks
+    from opencodon.core.providers.bedrock_adapter import stream_converse_with_callbacks
 
     events = [{"messageStop": {"stopReason": "end_turn"}}]
 
@@ -2080,7 +2080,7 @@ class TestBedrockStreamLivenessWatchdog:
 
         try:
             with patch(
-                "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
+                "opencodon.core.providers.bedrock_adapter._get_bedrock_runtime_client",
                 return_value=client,
             ):
                 with pytest.raises(TimeoutError):
@@ -2105,7 +2105,7 @@ class TestBedrockStreamLivenessWatchdog:
 
         client = MagicMock()
         with patch(
-            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.providers.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             with pytest.raises(RuntimeError, match="unresponsive"):
@@ -2134,7 +2134,7 @@ class TestBedrockStreamLivenessWatchdog:
         client.converse_stream.return_value = {"stream": iter(events)}
 
         with patch(
-            "opencodon.core.bedrock_adapter._get_bedrock_runtime_client",
+            "opencodon.core.providers.bedrock_adapter._get_bedrock_runtime_client",
             return_value=client,
         ):
             response = agent._interruptible_streaming_api_call(

@@ -28,7 +28,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from opencodon.core.image_gen_provider import (
+from opencodon.core.media.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
     resolve_aspect_ratio,

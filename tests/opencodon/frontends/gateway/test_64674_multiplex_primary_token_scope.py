@@ -25,7 +25,7 @@ from opencodon.frontends.gateway.config import GatewayConfig, Platform, Platform
 
 @pytest.fixture(autouse=True)
 def _reset_multiplex_flag():
-    from opencodon.core import secret_scope as ss
+    from opencodon.core.credentials import secret_scope as ss
 
     ss.set_multiplex_active(False)
     yield

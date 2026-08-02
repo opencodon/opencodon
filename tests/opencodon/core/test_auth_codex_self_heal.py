@@ -14,8 +14,8 @@ import json
 
 import pytest
 
-import opencodon.core.auth as auth
-from opencodon.core.auth import AuthError, _refresh_codex_auth_tokens, resolve_codex_runtime_credentials
+import opencodon.core.credentials.auth as auth
+from opencodon.core.credentials.auth import AuthError, _refresh_codex_auth_tokens, resolve_codex_runtime_credentials
 
 STALE = {"access_token": "stale-access", "refresh_token": "stale-refresh"}
 

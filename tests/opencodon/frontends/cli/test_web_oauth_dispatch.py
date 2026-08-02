@@ -56,10 +56,10 @@ def test_minimax_login_does_not_launch_anthropic_flow():
         "state": "stub-state",
     }
     with patch(
-        "opencodon.core.auth._minimax_request_user_code",
+        "opencodon.core.credentials.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "opencodon.core.auth._minimax_pkce_pair",
+        "opencodon.core.credentials.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ), patch(
         "opencodon.frontends.cli.web_server._minimax_poller",
@@ -126,10 +126,10 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
         "state": "stub-state",
     }
     with patch(
-        "opencodon.core.auth._minimax_request_user_code",
+        "opencodon.core.credentials.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "opencodon.core.auth._minimax_pkce_pair",
+        "opencodon.core.credentials.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ), patch(
         "opencodon.frontends.cli.web_server._minimax_poller",
@@ -152,8 +152,8 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
 
 def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch):
     from opencodon.frontends.cli import web_server as ws
-    from opencodon.core.auth import get_active_provider
-    from opencodon.core.runtime_provider import resolve_runtime_provider
+    from opencodon.core.credentials.auth import get_active_provider
+    from opencodon.core.providers.runtime_provider import resolve_runtime_provider
 
     access_token = "h.eyJleHAiOjk5OTk5OTk5OTl9.s"
 
@@ -212,7 +212,7 @@ def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch)
 
 
 def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkeypatch):
-    from opencodon.core import auth as auth_mod
+    from opencodon.core.credentials import auth as auth_mod
     from opencodon.frontends.cli import web_server as ws
     from opencodon_constants import get_opencodon_home
 
@@ -354,7 +354,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
 
     try:
         with patch(
-            "opencodon.core.auth._minimax_poll_token",
+            "opencodon.core.credentials.auth._minimax_poll_token",
             return_value={
                 "status": "success",
                 "access_token": "access",
@@ -363,7 +363,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
                 "token_type": "Bearer",
             },
         ), patch(
-            "opencodon.core.auth._minimax_save_auth_state",
+            "opencodon.core.credentials.auth._minimax_save_auth_state",
             side_effect=lambda state: captured_state.update(state),
         ):
             ws._minimax_poller(session_id)
@@ -465,7 +465,7 @@ def test_oauth_catalog_marks_external_providers_not_disconnectable():
 
 def test_external_oauth_disconnect_rejected_before_auth_mutation(monkeypatch):
     """DELETE must not pretend to remove credentials owned by another CLI."""
-    from opencodon.core import auth as auth_mod
+    from opencodon.core.credentials import auth as auth_mod
 
     def fail_clear_provider_auth(provider_id=None):
         raise AssertionError("external providers must not reach clear_provider_auth")
@@ -497,7 +497,7 @@ def test_env_sourced_oauth_status_is_not_disconnectable(monkeypatch):
 
 def test_xai_oauth_device_code_start_returns_user_code(monkeypatch):
     """Start MUST hand back xAI's verification URL and user code."""
-    from opencodon.core import auth as auth_mod
+    from opencodon.core.credentials import auth as auth_mod
     from opencodon.frontends.cli import web_server as ws
 
     monkeypatch.setattr(
@@ -545,9 +545,9 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     ``device_code`` suppression left by a prior ``opencodon auth remove
     xai-oauth``.
     """
-    from opencodon.core import auth as auth_mod
+    from opencodon.core.credentials import auth as auth_mod
     from opencodon.frontends.cli import web_server as ws
-    from opencodon.core.credential_pool import load_pool
+    from opencodon.core.credentials.credential_pool import load_pool
 
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     monkeypatch.delenv("OPENCODON_XAI_BASE_URL", raising=False)
@@ -652,7 +652,7 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
     Providers appended to the Accounts tab from the unified provider_catalog()
     carry status_fn=None and may have no explicit branch in
     _resolve_provider_status. Before the fallthrough they rendered permanently
-    logged-out; now they dispatch to opencodon.core.auth.get_auth_status (the
+    logged-out; now they dispatch to opencodon.core.credentials.auth.get_auth_status (the
     canonical slug dispatcher) so membership AND status both auto-extend.
     """
     import opencodon.frontends.cli.web_server as ws
@@ -665,7 +665,7 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
         "expires_at": "2026-12-01T00:00:00Z",
         "has_refresh_token": True,
     }
-    with patch("opencodon.core.auth.get_auth_status", return_value=fake_status):
+    with patch("opencodon.core.credentials.auth.get_auth_status", return_value=fake_status):
         out = ws._resolve_provider_status("some-future-oauth", None)
 
     assert out["logged_in"] is True
@@ -682,7 +682,7 @@ def test_status_hardcoded_branch_wins_over_generic_fallback():
     import opencodon.frontends.cli.web_server as ws
 
     with patch(
-        "opencodon.core.auth.get_codex_auth_status",
+        "opencodon.core.credentials.auth.get_codex_auth_status",
         return_value={"logged_in": True, "source": "codex_cli",
                       "auth_mode": "ChatGPT", "api_key": "sk-test"},
     ):
@@ -695,6 +695,6 @@ def test_status_unknown_provider_degrades_to_logged_out():
     """A provider the generic dispatcher can't resolve stays logged-out cleanly."""
     import opencodon.frontends.cli.web_server as ws
 
-    with patch("opencodon.core.auth.get_auth_status", return_value={"logged_in": False}):
+    with patch("opencodon.core.credentials.auth.get_auth_status", return_value={"logged_in": False}):
         out = ws._resolve_provider_status("totally-unknown", None)
     assert out["logged_in"] is False

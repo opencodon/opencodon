@@ -2505,7 +2505,7 @@ class TestMemoryProviderExternalPaths:
 
     def test_abc_backup_paths_defaults_empty(self):
         """The ABC default returns [] so providers opt in explicitly."""
-        from opencodon.core.memory_provider import MemoryProvider
+        from opencodon.core.memory.memory_provider import MemoryProvider
 
         class _Dummy(MemoryProvider):
             @property

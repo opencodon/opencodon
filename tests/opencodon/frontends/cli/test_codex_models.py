@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch
 
-from opencodon.core.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
+from opencodon.core.providers.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
 
 
 def test_get_codex_model_ids_prioritizes_default_and_cache(tmp_path, monkeypatch):
@@ -41,7 +41,7 @@ def test_setup_wizard_codex_import_resolves():
     """Regression test for #712: setup.py must import the correct function name."""
     # This mirrors the exact import used in opencodon_cli/setup.py line 873.
     # A prior bug had 'get_codex_models' (wrong) instead of 'get_codex_model_ids'.
-    from opencodon.core.codex_models import get_codex_model_ids as setup_import
+    from opencodon.core.providers.codex_models import get_codex_model_ids as setup_import
     assert callable(setup_import)
 
 
@@ -59,7 +59,7 @@ def test_get_codex_model_ids_falls_back_to_curated_defaults(tmp_path, monkeypatc
 
 def test_get_codex_model_ids_adds_forward_compat_models_from_templates(monkeypatch):
     monkeypatch.setattr(
-        "opencodon.core.codex_models._fetch_models_from_api",
+        "opencodon.core.providers.codex_models._fetch_models_from_api",
         lambda access_token: ["gpt-5.3-codex"],
     )
 
@@ -85,7 +85,7 @@ def test_fetch_from_api_keeps_supported_in_api_false_models(monkeypatch):
     the separate signal that *should* still filter entries out.
     """
     import sys
-    from opencodon.core import codex_models
+    from opencodon.core.providers import codex_models
 
     class _FakeResp:
         status_code = 200
@@ -122,7 +122,7 @@ def test_fetch_from_api_sends_chatgpt_account_id_header(monkeypatch):
     responses and HTTP 520/120s SSE hangs.
     """
     import sys
-    from opencodon.core import codex_models
+    from opencodon.core.providers import codex_models
 
     captured = {}
 
@@ -165,7 +165,7 @@ def test_fetch_from_api_omits_account_id_header_when_jwt_unparseable(monkeypatch
     returns ``[]`` cleanly without the optional header.
     """
     import sys
-    from opencodon.core import codex_models
+    from opencodon.core.providers import codex_models
 
     captured = {}
 
@@ -198,11 +198,11 @@ def test_model_command_uses_runtime_access_token_for_codex_list(monkeypatch):
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "opencodon.core.auth.get_codex_auth_status",
+        "opencodon.core.credentials.auth.get_codex_auth_status",
         lambda: {"logged_in": True},
     )
     monkeypatch.setattr(
-        "opencodon.core.auth.resolve_codex_runtime_credentials",
+        "opencodon.core.credentials.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "codex-access-token"},
     )
 
@@ -216,11 +216,11 @@ def test_model_command_uses_runtime_access_token_for_codex_list(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        "opencodon.core.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         _fake_get_codex_model_ids,
     )
     monkeypatch.setattr(
-        "opencodon.core.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         _fake_prompt_model_selection,
     )
 
@@ -239,11 +239,11 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "opencodon.core.auth.get_codex_auth_status",
+        "opencodon.core.credentials.auth.get_codex_auth_status",
         lambda: {"logged_in": True, "source": "hermes-auth-store"},
     )
     monkeypatch.setattr(
-        "opencodon.core.auth.resolve_codex_runtime_credentials",
+        "opencodon.core.credentials.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "fresh-codex-token"},
     )
 
@@ -251,13 +251,13 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
         captured["login_calls"] += 1
         captured["force_new_login"] = force_new_login
 
-    monkeypatch.setattr("opencodon.core.auth._login_openai_codex", _fake_login)
+    monkeypatch.setattr("opencodon.core.credentials.auth._login_openai_codex", _fake_login)
     monkeypatch.setattr(
-        "opencodon.core.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.4", "gpt-5.3-codex"],
     )
     monkeypatch.setattr(
-        "opencodon.core.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda model_ids, current_model="", **_kwargs: None,
     )
 
@@ -278,11 +278,11 @@ def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "opencodon.core.auth.get_codex_auth_status",
+        "opencodon.core.credentials.auth.get_codex_auth_status",
         lambda: {"logged_in": True, "source": "hermes-auth-store"},
     )
     monkeypatch.setattr(
-        "opencodon.core.auth.resolve_codex_runtime_credentials",
+        "opencodon.core.credentials.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "existing-codex-token"},
     )
 
@@ -291,15 +291,15 @@ def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
         return ["gpt-5.4"]
 
     monkeypatch.setattr(
-        "opencodon.core.codex_models.get_codex_model_ids",
+        "opencodon.core.providers.codex_models.get_codex_model_ids",
         _fake_get_codex_model_ids,
     )
     monkeypatch.setattr(
-        "opencodon.core.auth._prompt_model_selection",
+        "opencodon.core.credentials.auth._prompt_model_selection",
         lambda model_ids, current_model="", **_kwargs: None,
     )
     monkeypatch.setattr(
-        "opencodon.core.auth._login_openai_codex",
+        "opencodon.core.credentials.auth._login_openai_codex",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not reauthenticate")),
     )
 
@@ -433,7 +433,7 @@ class TestNormalizeModelForProvider:
 
         assert cli._model_is_default is True
         with patch(
-            "opencodon.core.codex_models.get_codex_model_ids",
+            "opencodon.core.providers.codex_models.get_codex_model_ids",
             return_value=["gpt-5.3-codex", "gpt-5.4"],
         ):
             changed = cli._normalize_model_for_provider("openai-codex")
@@ -463,7 +463,7 @@ class TestNormalizeModelForProvider:
             cli = OpencodonCLI()
 
         with patch(
-            "opencodon.core.codex_models.get_codex_model_ids",
+            "opencodon.core.providers.codex_models.get_codex_model_ids",
             side_effect=Exception("offline"),
         ):
             changed = cli._normalize_model_for_provider("openai-codex")

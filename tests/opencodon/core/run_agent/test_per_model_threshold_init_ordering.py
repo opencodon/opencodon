@@ -18,8 +18,8 @@ Covers the gaps flagged in the review of PR #63020:
 
 from unittest.mock import patch
 
-from opencodon.core.context_compressor import ContextCompressor
-from opencodon.core.context_engine import ContextEngine
+from opencodon.core.context.context_compressor import ContextCompressor
+from opencodon.core.context.context_engine import ContextEngine
 
 
 class _StubEngine(ContextEngine):
@@ -61,7 +61,7 @@ def test_plugin_engine_gets_model_thresholds_before_initial_update_model():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=1_000_000),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=1_000_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -99,7 +99,7 @@ def test_plugin_engine_without_overrides_keeps_global_threshold():
     with (
         patch("opencodon.config.load_config", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
-        patch("opencodon.core.model_metadata.get_model_context_length", return_value=1_000_000),
+        patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=1_000_000),
         patch("opencodon.core.run_agent.get_tool_definitions", return_value=[]),
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
@@ -132,7 +132,7 @@ def test_model_thresholds_key_in_default_config():
 class TestFloorInteractionOnModelSwitch:
     """The small-context floor stacks on per-model overrides at switch time."""
 
-    @patch("opencodon.core.context_compressor.get_model_context_length")
+    @patch("opencodon.core.context.context_compressor.get_model_context_length")
     def test_switch_override_below_floor_is_raised_to_floor(self, mock_ctx):
         """Switching to a small-context model with a sub-floor override → floor."""
         mock_ctx.return_value = 1_000_000
@@ -150,7 +150,7 @@ class TestFloorInteractionOnModelSwitch:
         assert cc.threshold_percent == 0.75  # raise-only floor wins
         assert cc.threshold_tokens == int(128_000 * 0.75)
 
-    @patch("opencodon.core.context_compressor.get_model_context_length")
+    @patch("opencodon.core.context.context_compressor.get_model_context_length")
     def test_switch_override_above_floor_wins(self, mock_ctx):
         """Switching to a small-context model with an above-floor override → override."""
         mock_ctx.return_value = 1_000_000

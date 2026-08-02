@@ -10,8 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from opencodon.core import image_gen_registry
-from opencodon.core.image_gen_provider import ImageGenProvider
+from opencodon.core.media import image_gen_registry
+from opencodon.core.media.image_gen_provider import ImageGenProvider
 
 
 class _FakeProvider(ImageGenProvider):

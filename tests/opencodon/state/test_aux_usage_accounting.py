@@ -346,7 +346,7 @@ class TestInsightsAuxTotals:
     def test_overview_totals_include_aux_usage(self, db):
         """`opencodon insights` overview must count aux tokens, not just the
         sessions counters (issues #58592, #9979)."""
-        from opencodon.core.insights import InsightsEngine
+        from opencodon.core.memory.insights import InsightsEngine
 
         db.create_session("s1", source="cli")
         db.update_token_counts(
@@ -366,7 +366,7 @@ class TestInsightsAuxTotals:
 
     def test_overview_totals_not_double_counted_with_absolute_updates(self, db):
         """Gateway absolute overwrites + aux rows must not inflate totals."""
-        from opencodon.core.insights import InsightsEngine
+        from opencodon.core.memory.insights import InsightsEngine
 
         db.create_session("s2", source="telegram")
         db.update_token_counts(

@@ -24,7 +24,7 @@ def curator_modules(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import opencodon.tools.skill_usage as skill_usage
-    import opencodon.core.curator as curator
+    import opencodon.core.memory.curator as curator
 
     importlib.reload(skill_usage)
     importlib.reload(curator)

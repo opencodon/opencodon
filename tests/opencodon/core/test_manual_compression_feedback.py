@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from opencodon.core.manual_compression_feedback import summarize_manual_compression
+from opencodon.core.context.manual_compression_feedback import summarize_manual_compression
 
 
 def _messages(count: int) -> list[dict[str, str]]:

@@ -57,7 +57,7 @@ def _make_agent():
         patch("opencodon.core.run_agent.check_toolset_requirements", return_value={}),
         patch("opencodon.core.run_agent.OpenAI"),
         patch("opencodon.core.run_agent._opencodon_home", opencodon_home),
-        patch("opencodon.core.model_metadata.fetch_model_metadata", return_value={}),
+        patch("opencodon.core.providers.model_metadata.fetch_model_metadata", return_value={}),
     ):
         agent = AIAgent(
             api_key="test-key",

@@ -10,7 +10,7 @@ sentinel (403 without it).
 from unittest.mock import MagicMock, patch
 
 from opencodon.core.run_agent import AIAgent
-from opencodon.core.context_compressor import ContextCompressor
+from opencodon.core.context.context_compressor import ContextCompressor
 
 
 def _make_agent(provider="copilot", base_url="https://api.githubcopilot.com") -> AIAgent:
@@ -42,7 +42,7 @@ def _make_agent(provider="copilot", base_url="https://api.githubcopilot.com") ->
     return agent
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_to_openrouter_reapplies_attribution_headers(mock_ctx_len):
     """Switching to an openrouter.ai base_url must attach the OpenRouter
     attribution headers (HTTP-Referer / X-Title) to the rebuilt client
@@ -61,7 +61,7 @@ def test_switch_to_openrouter_reapplies_attribution_headers(mock_ctx_len):
     assert headers.get("X-Title")
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_to_kimi_reapplies_user_agent_sentinel(mock_ctx_len):
     """Kimi requires a User-Agent sentinel; a switch to api.kimi.com must
     carry it or every request 403s."""
@@ -78,7 +78,7 @@ def test_switch_to_kimi_reapplies_user_agent_sentinel(mock_ctx_len):
     assert headers.get("User-Agent", "").startswith("claude-code/")
 
 
-@patch("opencodon.core.model_metadata.get_model_context_length", return_value=131_072)
+@patch("opencodon.core.providers.model_metadata.get_model_context_length", return_value=131_072)
 def test_switch_away_from_headered_provider_clears_stale_headers(mock_ctx_len):
     """Switching FROM a headered provider TO one with no URL-specific headers
     must not carry the old provider's headers along."""
