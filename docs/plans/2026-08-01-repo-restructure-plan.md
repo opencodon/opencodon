@@ -196,11 +196,29 @@ __file__-derived repo-root anchors onto one shared helper so depth never
 bites again (excluding modules whose tests monkeypatch __file__ for
 relocation logic, e.g. whatsapp_common).
 
-- **3b — regroup within the new tree.** `core/` internal split
-  (providers/context/memory/media/credentials/skills/prompt), the
-  auth/models/runtime_provider/profiles relocation out of frontends/cli
-  into core, and the frontends/server split out of frontends/cli.
-  Incremental, one cluster per commit, tests move alongside.
+- **3b — regroup within the new tree.** DONE 2026-08-02, four commits on
+  `restructure/phase-3b-regroup`:
+  - 3b-0: ~45 per-module `parents[N]` repo-root anchors consolidated onto
+    `opencodon.common.repo` (REPO_ROOT/SRC_ROOT). Gotchas: import must
+    precede first use (cron/scheduler uses it mid-header), entry points
+    must keep `opencodon_bootstrap` as first import, and tests that
+    relocated roots by monkeypatching `module.__file__` now patch
+    `module.REPO_ROOT`.
+  - 3b-1: auth/models/runtime_provider/profiles (+7 satellites) moved
+    from frontends/cli into core; urllib_security + version metadata into
+    common. Net −46/+7 grandfathered layering edges. Gotcha: plain
+    substring flips hit `auth_commands` via the `auth` prefix — all later
+    flips use `(?![A-Za-z0-9_])` boundary guards.
+  - 3b-2: 66 flat core modules regrouped into providers/ credentials/
+    context/ prompt/ memory/ media/ skills/ (providers.py became the
+    providers/ package __init__ so existing imports kept working);
+    `agent.<module>` aliases generated from a table in _legacy_aliases.
+  - 3b-3: web_server/web_app/web_git/webhook/proxy/dashboard_auth/PTY
+    bridges split into frontends/server; web_dist + vite outDir +
+    Dockerfile ENV followed.
+  Every cluster gated on the full suite (37.7k passed, macOS baseline
+  only) + lint-imports 7/7 + CLI boot; test mirrors moved alongside with
+  anchor-depth sweeps each time.
 - `git mv` `agent/ → src/opencodon/core/` with the subpackage regrouping.
 - `gateway/`, `tui_gateway/ → frontends/tui/`, `acp_adapter/ → frontends/acp/`,
   `mcp_serve.py → frontends/mcp/`.
