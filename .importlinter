@@ -16,12 +16,19 @@ source_modules = opencodon.core
 forbidden_modules = opencodon.frontends.cli
 allow_indirect_imports = True
 ignore_imports =
+    opencodon.core.gemini_native_adapter -> opencodon.frontends.cli
     opencodon.core.account_usage -> opencodon.frontends.cli.auth
     opencodon.core.account_usage -> opencodon.frontends.cli.runtime_provider
+    opencodon.core.agent_clients -> opencodon.frontends.cli.auth
+    opencodon.core.agent_clients -> opencodon.frontends.cli.copilot_auth
+    opencodon.core.agent_clients -> opencodon.frontends.cli.models
     opencodon.core.agent_init -> opencodon.frontends.cli.auth
     opencodon.core.agent_init -> opencodon.frontends.cli.models
     opencodon.core.agent_init -> opencodon.frontends.cli.profiles
     opencodon.core.agent_init -> opencodon.frontends.cli.providers
+    opencodon.core.agent_lifecycle -> opencodon.frontends.cli.models
+    opencodon.core.agent_message_prep -> opencodon.frontends.cli.models
+    opencodon.core.agent_persistence -> opencodon.frontends.cli.profiles
     opencodon.core.agent_runtime_helpers -> opencodon.frontends.cli.auth
     opencodon.core.agent_runtime_helpers -> opencodon.frontends.cli.providers
     opencodon.core.agent_runtime_helpers -> opencodon.frontends.cli.runtime_provider
@@ -40,7 +47,6 @@ ignore_imports =
     opencodon.core.credential_sources -> opencodon.frontends.cli.auth
     opencodon.core.curator -> opencodon.frontends.cli.runtime_provider
     opencodon.core.display -> opencodon.frontends.cli.skin_engine
-    opencodon.core.gemini_native_adapter -> opencodon.frontends.cli
     opencodon.core.lsp.install -> opencodon.frontends.cli.tools_config
     opencodon.core.moa_loop -> opencodon.frontends.cli.runtime_provider
     opencodon.core.model_metadata -> opencodon.frontends.cli.models
@@ -48,10 +54,7 @@ ignore_imports =
     opencodon.core.models_dev -> opencodon.frontends.cli.models
     opencodon.core.prompt_builder -> opencodon.frontends.cli.projects_db
     opencodon.core.run_agent -> opencodon.frontends.cli
-    opencodon.core.run_agent -> opencodon.frontends.cli.auth
-    opencodon.core.run_agent -> opencodon.frontends.cli.copilot_auth
     opencodon.core.run_agent -> opencodon.frontends.cli.models
-    opencodon.core.run_agent -> opencodon.frontends.cli.profiles
     opencodon.core.skill_commands -> opencodon.frontends.cli.commands
 
 [importlinter:contract:tools-not-cli-frontend]
@@ -144,6 +147,23 @@ forbidden_modules =
     opencodon.frontends
 allow_indirect_imports = True
 ignore_imports =
+    opencodon.state -> opencodon.core.memory_manager
+    opencodon.state -> opencodon.core.message_sanitization
+    opencodon.state._compression_state -> opencodon.core.memory_manager
+    opencodon.state._compression_state -> opencodon.core.message_sanitization
+    opencodon.state._fts -> opencodon.core.memory_manager
+    opencodon.state._fts -> opencodon.core.message_sanitization
+    opencodon.state._gateway_meta -> opencodon.core.memory_manager
+    opencodon.state._gateway_meta -> opencodon.core.message_sanitization
+    opencodon.state._handoff -> opencodon.core.memory_manager
+    opencodon.state._handoff -> opencodon.core.message_sanitization
+    opencodon.state._porting -> opencodon.core.memory_manager
+    opencodon.state._porting -> opencodon.core.message_sanitization
+    opencodon.state._schema -> opencodon.core.memory_manager
+    opencodon.state._schema -> opencodon.core.message_sanitization
+    opencodon.state._transcripts -> opencodon.core.agent_runtime_helpers
+    opencodon.state._transcripts -> opencodon.core.memory_manager
+    opencodon.state._transcripts -> opencodon.core.message_sanitization
     opencodon.common.logging_setup -> opencodon.core.redact
     opencodon.common.model_normalize -> opencodon.frontends.cli.models
     opencodon.common.route_identity -> opencodon.core.agent_init
@@ -181,8 +201,5 @@ ignore_imports =
     opencodon.plugins_runtime -> opencodon.tools.registry
     opencodon.providers.base -> opencodon.frontends.cli
     opencodon.providers.base -> opencodon.frontends.cli.urllib_security
-    opencodon.state -> opencodon.core.agent_runtime_helpers
-    opencodon.state -> opencodon.core.memory_manager
-    opencodon.state -> opencodon.core.message_sanitization
     opencodon.toolsets -> opencodon.frontends.gateway.platform_registry
     opencodon.toolsets -> opencodon.tools.registry

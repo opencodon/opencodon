@@ -211,7 +211,15 @@ relocation logic, e.g. whatsapp_common).
 - Land at a quiet moment: open PRs merged/rebased first (multiple agent
   sessions + worktrees share this repo).
 
-### Phase 4 — Split the god files (incremental, many PRs, after 1–3)
+### Phase 4 — Split the god files — mixin decomposition DONE 2026-08-01 (PR #43)
+
+SessionDB (9,825→4,122 across 7 mixins), OpencodonCLI (15,762→9,579
+across 10), AIAgent (6,587→1,332 across 9). Verbatim method moves;
+classes reassembled in place; lazy module-proxy pattern (+ force-late-
+binding of all test-patched global names) preserves patch semantics and
+is reload/cycle-safe. Remaining (follow-up, not blocking): method-body
+decomposition of run (2.5k-line REPL), chat, process_command,
+run_conversation; extraction of shell.py's 106 top-level functions.
 - `cli.py`: command registry already exists → handlers extract to
   `frontends/cli/commands/*.py`; `OpencodonCLI` becomes a thin dispatcher.
 - `opencodon_state.py` → `state/` split (db/sessions/search/migrations).

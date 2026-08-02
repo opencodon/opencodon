@@ -370,13 +370,15 @@ def test_new_session_with_duplicate_title_surfaces_error(capsys):
     # the method's __globals__ dict is the one from the live module — patch
     # the exact dict the method will read.
     warnings: list[str] = []
-    method_globals = cli.new_session.__globals__
-    original = method_globals["_cprint"]
-    method_globals["_cprint"] = lambda msg: warnings.append(msg)
+    # new_session now lives in the ShellSessionUXMixin; it resolves _cprint
+    # through the shell module at call time (lazy proxy), so patch the module.
+    import opencodon.frontends.cli.shell as _shell_mod
+    original = _shell_mod._cprint
+    _shell_mod._cprint = lambda msg: warnings.append(msg)
     try:
         cli.new_session(title="Dup")
     finally:
-        method_globals["_cprint"] = original
+        _shell_mod._cprint = original
 
     cli._session_db.set_session_title.assert_called_once()
     joined = "\n".join(warnings)

@@ -538,7 +538,7 @@ class TestVoiceStatusUsesConfigKey:
 
     def test_show_voice_status_not_hardcoded(self):
         """Source check: _show_voice_status must not hardcode Ctrl+B."""
-        with open("src/opencodon/frontends/cli/shell.py") as f:
+        with open("src/opencodon/frontends/cli/shell_show.py") as f:
             source = f.read()
 
         lines = source.split("\n")
@@ -556,7 +556,7 @@ class TestVoiceStatusUsesConfigKey:
 
     def test_show_voice_status_reads_config(self):
         """Source check: _show_voice_status must use load_config()."""
-        with open("src/opencodon/frontends/cli/shell.py") as f:
+        with open("src/opencodon/frontends/cli/shell_show.py") as f:
             source = f.read()
 
         lines = source.split("\n")
@@ -695,7 +695,7 @@ class TestKeyHandlerNeverBlocks:
     def test_processing_set_atomically_with_recording_false(self):
         """Source check: _voice_stop_and_transcribe must set _voice_processing = True
         in the same lock block where it sets _voice_recording = False."""
-        with open("src/opencodon/frontends/cli/shell.py") as f:
+        with open("src/opencodon/frontends/cli/shell_voice.py") as f:
             source = f.read()
 
         lines = source.split("\n")

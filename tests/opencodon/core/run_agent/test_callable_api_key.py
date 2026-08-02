@@ -282,7 +282,7 @@ class TestInlinedDisplayMasks:
         run_agent banners."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "src" / "opencodon" / "frontends" / "cli" / "shell.py").read_text()
+               / "src" / "opencodon" / "frontends" / "cli" / "shell_show.py").read_text()
         assert "is_token_provider(self.api_key)" in src, (
             "cli.OpencodonCLI.show_config must guard self.api_key via "
             "is_token_provider so callable Entra ID providers don't "
@@ -303,7 +303,7 @@ class TestInlinedDisplayMasks:
         ``len(callable)``."""
         from pathlib import Path
         src = (Path(__file__).resolve().parents[4]
-               / "src" / "opencodon" / "core" / "run_agent.py").read_text()
+               / "src" / "opencodon" / "core" / "agent_errors.py").read_text()
         # The function now starts with a callable check.
         assert (
             "if callable(key) and not isinstance(key, str):" in src
