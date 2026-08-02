@@ -20,44 +20,44 @@ from opencodon.tools.registry import registry
 
 
 def _openalex():
-    from science.literature import openalex
+    from opencodon.science.literature import openalex
 
     return openalex
 
 
 def _crossref():
-    from science.literature import crossref
+    from opencodon.science.literature import crossref
 
     return crossref
 
 
 def _pubmed():
-    from science.literature import pubmed
+    from opencodon.science.literature import pubmed
 
     return pubmed
 
 
 def _biorxiv():
-    from science.literature import biorxiv
+    from opencodon.science.literature import biorxiv
 
     return biorxiv
 
 
 def _arxiv():
-    from science.literature import arxiv
+    from opencodon.science.literature import arxiv
 
     return arxiv
 
 
 def _europepmc():
-    from science.literature import europepmc
+    from opencodon.science.literature import europepmc
 
     return europepmc
 
 
 def _call(fn, **kwargs) -> str:
     """Run a literature call, rendering both outcomes as JSON for the model."""
-    from science.literature.client import ScholarlyError
+    from opencodon.science.literature.client import ScholarlyError
 
     try:
         return json.dumps(fn(**kwargs), ensure_ascii=False, default=str)

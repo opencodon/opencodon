@@ -20,7 +20,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable, Iterable, Literal, NoReturn, Sequence
 
-from opencodon.tools.ansi_strip import strip_ansi as _strip_ansi
+from opencodon.common.ansi_strip import strip_ansi as _strip_ansi
 
 
 ConsoleStatus = Literal["ok", "error", "confirm_required", "exit", "clear"]

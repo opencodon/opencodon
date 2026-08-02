@@ -1087,7 +1087,7 @@ class ProcessRegistry:
         # this guard, kill_process() and the reader thread can both call
         # _move_to_finished(), producing duplicate [IMPORTANT: ...] messages.
         if was_running and session.notify_on_complete:
-            from opencodon.tools.ansi_strip import strip_ansi
+            from opencodon.common.ansi_strip import strip_ansi
             output_tail = strip_ansi(session.output_buffer[-2000:]) if session.output_buffer else ""
             self.completion_queue.put({
                 "type": "completion",
@@ -1332,7 +1332,7 @@ class ProcessRegistry:
 
     def poll(self, session_id: str) -> dict:
         """Check status and get new output for a background process."""
-        from opencodon.tools.ansi_strip import strip_ansi
+        from opencodon.common.ansi_strip import strip_ansi
 
         session = self.get(session_id)
         if session is None:
@@ -1375,7 +1375,7 @@ class ProcessRegistry:
 
     def read_log(self, session_id: str, offset: int = 0, limit: int = 200) -> dict:
         """Read the full output log with optional pagination by lines."""
-        from opencodon.tools.ansi_strip import strip_ansi
+        from opencodon.common.ansi_strip import strip_ansi
 
         session = self.get(session_id)
         if session is None:
@@ -1422,7 +1422,7 @@ class ProcessRegistry:
             dict with status ("exited", "timeout", "interrupted", "not_found")
             and output snapshot.
         """
-        from opencodon.tools.ansi_strip import strip_ansi
+        from opencodon.common.ansi_strip import strip_ansi
         from opencodon.tools.interrupt import is_interrupted as _is_interrupted
 
         try:
@@ -1511,7 +1511,7 @@ class ProcessRegistry:
         discards each result and therefore must not suppress an autonomous
         output-bearing completion notification.
         """
-        from opencodon.tools.ansi_strip import strip_ansi
+        from opencodon.common.ansi_strip import strip_ansi
 
         session = self.get(session_id)
         if session is None:

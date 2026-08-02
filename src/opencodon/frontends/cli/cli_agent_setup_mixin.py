@@ -531,7 +531,7 @@ class CLIAgentSetupMixin:
         an indicator for earlier hidden messages.
         """
         from opencodon.frontends.cli.shell import CLI_CONFIG, _record_output_history_entry, _strip_reasoning_tags, _suspend_output_history
-        from opencodon.tools.ansi_strip import sanitize_display_text as _sanitize_display_text
+        from opencodon.common.ansi_strip import sanitize_display_text as _sanitize_display_text
         if not self.conversation_history:
             return
 
@@ -575,7 +575,7 @@ class CLIAgentSetupMixin:
                 # Stored history is untrusted for display: strip escape
                 # sequences/control chars so replaying a message can't
                 # clear the screen, retitle the window, or restyle the
-                # recap panel (see tools/ansi_strip.sanitize_display_text).
+                # recap panel (see common/ansi_strip.sanitize_display_text).
                 text = _sanitize_display_text(text)
                 if len(text) > MAX_USER_LEN:
                     text = text[:MAX_USER_LEN] + "..."

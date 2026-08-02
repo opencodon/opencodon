@@ -13,13 +13,13 @@ from opencodon.tools.registry import registry
 
 
 def _env():
-    from science import envmanager
+    from opencodon.science import envmanager
 
     return envmanager
 
 
 def _call(fn, **kwargs) -> str:
-    from science.envmanager import EnvError
+    from opencodon.science.envmanager import EnvError
 
     try:
         result = fn(**kwargs)

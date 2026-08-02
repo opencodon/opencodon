@@ -256,7 +256,15 @@ src/opencodon/                 # THE package — one importable namespace, stric
 │   └── <~65 flat modules>     #   agent loop plumbing (tool_executor, turn_*, stream_*, errors, ...)
 ├── tools/                     # Tool implementations — auto-discovered via src/opencodon/tools/registry.py
 │   ├── model_tools.py         #   Tool orchestration, handle_function_call()
+│   ├── science_host.py        #   Registers core/tools impls into science.hostinfra (the inversion seam)
 │   └── environments/          #   Terminal backends (local, docker, ssh, modal, daytona, ...)
+├── science/                   # Science layer — persistent kernels, artifacts/lineage, reproduce,
+│   │                          #   literature/biodata API clients, RO-Crate export. Sits BELOW
+│   │                          #   core/tools: it may import state/config/common only; anything it
+│   │                          #   needs from above (LLM calls, tool dispatch, lazy installs) comes
+│   │                          #   through science/hostinfra.py, populated by tools/science_host.py.
+│   │                          #   Table DDL lives in state/science_schema.py (state owns state.db DDL).
+│   └── kernels.py, runtime.py, bridge.py, host_bridge.py, provisioners/, literature/, biodata/
 ├── toolsets.py                # Toolset definitions, _OPENCODON_CORE_TOOLS list
 ├── cron/                      # Scheduler — jobs.py, scheduler.py
 └── frontends/                 # Delivery surfaces — they import core; NOTHING imports them
@@ -287,7 +295,7 @@ scripts/          # run_tests.sh, CI helpers;  bin/opencodon = dev launcher
 ```
 
 **Layering is CI-enforced** (`.importlinter`, blocking): `frontends → core/tools/cron
-→ config/state/providers/plugins_runtime → common`. Frontends must not import each
+→ science → config/state/providers/plugins_runtime → common`. Frontends must not import each
 other or `shell.py`. The grandfathered-edge lists in `.importlinter` may only
 shrink; adding a new inversion edge fails CI.
 

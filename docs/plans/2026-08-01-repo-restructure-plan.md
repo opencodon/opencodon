@@ -56,7 +56,7 @@ src/opencodon/
 ```
 
 Repo root keeps: `plugins/`, `skills/`, `optional-skills/`, `apps/`,
-`science/`, `tests/`, `tests-js/`, `scripts/`, `docs/`, `docker/`, `nix/`.
+`tests/`, `tests-js/`, `scripts/`, `docs/`, `docker/`, `nix/`.
 
 Why `src/` + `opencodon/` (two levels, each with one job): `src/` is a
 non-importable container that keeps the code off the default `sys.path`, so
@@ -270,6 +270,35 @@ and the `tests.secret_sources.conformance` cross-test import.
 - Rewrite AGENTS.md "Project Structure" + CLAUDE.md path references.
 - Root-clutter sweep: `test_durations.json`, duplicate `.pytest-cache`,
   `cli-config.yaml.example` (81KB), `.web_ui_build.lock`, stray `__pycache__`.
+
+### Phase 6 — Science layer into the package (DONE 2026-08-02)
+
+`science/` (repo root, a second generic top-level package in the wheel)
+moved to `src/opencodon/science/` as a proper layer:
+`frontends → core/tools → science → state/config → common`.
+
+The tools↔science import cycle (lazy in-function imports both ways) was
+broken by inversion, same pattern as Phase 2's config loader:
+
+- `science/hostinfra.py` — service seam; science's ONLY channel upward.
+  Populated at import time by `tools/science_host.py` (imported first by
+  `tools/science_tools.py`, which every science entry point goes through;
+  `tests/opencodon/science/conftest.py` mirrors that). Unregistered access
+  raises LookupError naming the registration module.
+- Two utilities moved DOWN instead of being injected: `tools/ansi_strip.py`
+  → `common/` (pure stdlib) and `science/schema.py` → `state/science_schema.py`
+  (state owns all state.db DDL; also removed `state/_schema.py`'s
+  try/except-ImportError silent skip — the DDL can no longer be absent).
+- New `.importlinter` contract `science-below-core-and-tools` (zero
+  ignores) + science added to the lower-layers-purity forbidden list.
+- Alias finder gained `science → opencodon.science`; the dead
+  `"science", "science.*"` include entries left pyproject (they never
+  matched under `where = ["src"]` — root `science/` was likely absent
+  from wheels; the move fixes that).
+- `tests/science/` → `tests/opencodon/science/` (bare `from conftest
+  import` had to become `tests.opencodon.science.conftest` once the dir
+  gained `__init__.py`). Fresh-interpreter audit: kernel-injected SDK is
+  stdlib-only, provisioners never import the package remotely — no sites.
 
 ## Risks
 

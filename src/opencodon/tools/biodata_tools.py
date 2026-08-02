@@ -14,43 +14,43 @@ from opencodon.tools.registry import registry
 
 
 def _genes():
-    from science.biodata import genes
+    from opencodon.science.biodata import genes
 
     return genes
 
 
 def _variants():
-    from science.biodata import variants
+    from opencodon.science.biodata import variants
 
     return variants
 
 
 def _chemistry():
-    from science.biodata import chemistry
+    from opencodon.science.biodata import chemistry
 
     return chemistry
 
 
 def _expression():
-    from science.biodata import expression
+    from opencodon.science.biodata import expression
 
     return expression
 
 
 def _structures():
-    from science.biodata import structures
+    from opencodon.science.biodata import structures
 
     return structures
 
 
 def _clinical():
-    from science.biodata import clinical
+    from opencodon.science.biodata import clinical
 
     return clinical
 
 
 def _call(fn, **kwargs) -> str:
-    from science.apiclient import ApiError
+    from opencodon.science.apiclient import ApiError
 
     try:
         return json.dumps(fn(**kwargs), ensure_ascii=False, default=str)

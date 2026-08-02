@@ -93,8 +93,18 @@ ignore_imports =
     opencodon.frontends.tui.server -> opencodon.frontends.cli.shell
     opencodon.frontends.tui.slash_worker -> opencodon.frontends.cli.shell
 
+[importlinter:contract:science-below-core-and-tools]
+name = opencodon.science must not import core, tools, or frontends (use science.hostinfra)
+type = forbidden
+source_modules = opencodon.science
+forbidden_modules =
+    opencodon.core
+    opencodon.tools
+    opencodon.frontends
+allow_indirect_imports = True
+
 [importlinter:contract:lower-layers-purity]
-name = opencodon common/config/state/providers/plugins_runtime must not import core, tools, or frontends
+name = opencodon common/config/state/providers/plugins_runtime must not import core, tools, science, or frontends
 type = forbidden
 source_modules =
     opencodon.common
@@ -106,6 +116,7 @@ source_modules =
 forbidden_modules =
     opencodon.core
     opencodon.tools
+    opencodon.science
     opencodon.frontends
 allow_indirect_imports = True
 ignore_imports =

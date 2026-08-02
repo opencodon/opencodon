@@ -204,20 +204,19 @@ class SchemaMaintenanceMixin:
         # content_snapshots) ───────────────────────────────────────────
         # The science tables live in state.db — not a sidecar DB — so a
         # tool-result append and its execution/provenance rows can commit
-        # in one transaction. Their DDL is owned by science/schema.py and
-        # goes through the same declarative reconciliation as SCHEMA_SQL.
+        # in one transaction. Their DDL lives in state/science_schema.py
+        # (state owns all state.db DDL; the tables serve the science layer)
+        # and goes through the same declarative reconciliation as SCHEMA_SQL.
         # Index creation is deferred until after reconciliation for the
         # same reason as DEFERRED_INDEX_SQL above.
-        try:
-            from science.schema import SCIENCE_INDEX_SQL, SCIENCE_SCHEMA_SQL
+        from opencodon.state.science_schema import (
+            SCIENCE_INDEX_SQL,
+            SCIENCE_SCHEMA_SQL,
+        )
 
-            cursor.executescript(SCIENCE_SCHEMA_SQL)
-            self._reconcile_columns(cursor, schema_sql=SCIENCE_SCHEMA_SQL)
-            cursor.executescript(SCIENCE_INDEX_SQL)
-        except ImportError as exc:
-            # Partial installs (e.g. a trimmed vendored copy) may lack the
-            # science package; core session persistence must keep working.
-            logger.warning("science schema unavailable, skipping: %s", exc)
+        cursor.executescript(SCIENCE_SCHEMA_SQL)
+        self._reconcile_columns(cursor, schema_sql=SCIENCE_SCHEMA_SQL)
+        cursor.executescript(SCIENCE_INDEX_SQL)
 
         # Heal NULL root_session_id rows on every startup (same idempotent
         # pattern as the ``active`` repair above). This is both the one-time

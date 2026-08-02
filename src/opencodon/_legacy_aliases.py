@@ -31,6 +31,7 @@ ALIASES = {
     "run_agent": "opencodon.core.run_agent",
     "model_tools": "opencodon.tools.model_tools",
     "opencodon_state": "opencodon.state",
+    "science": "opencodon.science",
     "utils": "opencodon.common.utils",
     "opencodon_constants": "opencodon.common.constants",
     "opencodon_logging": "opencodon.common.logging_setup",
