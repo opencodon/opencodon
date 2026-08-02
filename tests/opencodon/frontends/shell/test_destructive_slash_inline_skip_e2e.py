@@ -48,6 +48,8 @@ def _make_cli_stub():
         self_, type(self_)
     )
     self_.process_command = OpencodonCLI.process_command.__get__(self_, type(self_))
+    # process_command's /new branch was extracted to a helper — bind it too.
+    self_._slash_new = OpencodonCLI._slash_new.__get__(self_, type(self_))
     return self_, new_session_calls
 
 
@@ -118,6 +120,7 @@ def test_new_without_skip_token_still_consults_modal():
         self_, type(self_)
     )
     self_.process_command = OpencodonCLI.process_command.__get__(self_, type(self_))
+    self_._slash_new = OpencodonCLI._slash_new.__get__(self_, type(self_))
 
     with patch(
         "cli.load_cli_config",
