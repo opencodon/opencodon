@@ -29,7 +29,7 @@ from opencodon.state import SessionDB
 
 from opencodon.core.turn_context import build_turn_context
 
-from tests.opencodon.core.test_compression_concurrent_fork import _build_agent_with_db
+from tests.opencodon.core.context.test_compression_concurrent_fork import _build_agent_with_db
 
 
 def _prep_idle_agent(db: SessionDB, session_id: str, *, idle_after: int = 60,
