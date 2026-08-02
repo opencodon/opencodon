@@ -10,6 +10,7 @@ Modular wizard with independently-runnable sections:
 
 Config files are stored in ~/.opencodon/ for easy access.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import importlib.util
 import logging
@@ -26,7 +27,7 @@ from opencodon_constants import get_optional_skills_dir
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 
 _DOCS_BASE = "https://github.com/opencodon/opencodon/tree/main/docs"
 

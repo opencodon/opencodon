@@ -4,6 +4,7 @@ Base platform adapter interface.
 All platform adapters (Telegram, Discord, WhatsApp, Slack, and more) inherit from this
 and implement the required methods.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import inspect
@@ -495,7 +496,7 @@ from typing import Dict, List, Optional, Any, Callable, Awaitable, Tuple, Union
 from enum import Enum
 
 from pathlib import Path as _Path
-sys.path.insert(0, str(_Path(__file__).resolve().parents[5]))
+sys.path.insert(0, str(REPO_ROOT))
 
 from opencodon.frontends.gateway.config import Platform, PlatformConfig
 from opencodon.frontends.gateway.session import SessionSource, build_session_key

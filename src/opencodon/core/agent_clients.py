@@ -23,6 +23,7 @@ Usage:
     agent = AIAgent(base_url="http://localhost:30000/v1", model="claude-opus-4-20250514")
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
+from opencodon.common.repo import REPO_ROOT
 
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
@@ -127,7 +128,7 @@ from opencodon.config.timeouts import (
 )
 
 _opencodon_home = get_opencodon_home()
-_project_env = Path(__file__).resolve().parents[3] / '.env'
+_project_env = REPO_ROOT / '.env'
 _loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:

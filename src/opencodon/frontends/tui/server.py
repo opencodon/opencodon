@@ -1,3 +1,4 @@
+from opencodon.common.repo import REPO_ROOT
 import atexit
 import concurrent.futures
 import contextlib
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 _opencodon_home = get_opencodon_home()
 load_opencodon_dotenv(
-    opencodon_home=_opencodon_home, project_env=Path(__file__).resolve().parents[4] / ".env"
+    opencodon_home=_opencodon_home, project_env=REPO_ROOT / ".env"
 )
 
 

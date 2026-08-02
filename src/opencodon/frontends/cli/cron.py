@@ -4,13 +4,14 @@ Cron subcommand for opencodon CLI.
 Handles standalone cron management commands like list, create, edit,
 pause/resume/run/remove, status, and tick.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import sys
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from opencodon.common.colors import Colors, color

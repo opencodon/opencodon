@@ -8,6 +8,7 @@ Usage:
     python -m opencodon_cli.main web          # Start on http://127.0.0.1:9119
     python -m opencodon_cli.main web --port 8080
 """
+from opencodon.common.repo import REPO_ROOT
 
 import contextlib
 from contextlib import asynccontextmanager, contextmanager
@@ -51,7 +52,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 

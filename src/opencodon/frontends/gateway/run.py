@@ -12,7 +12,6 @@ Usage:
     # Or from CLI
     python cli.py --gateway
 """
-
 # IMPORTANT: opencodon_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See opencodon_bootstrap.py for full rationale.
 try:
@@ -23,6 +22,8 @@ except ModuleNotFoundError:
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
+
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import concurrent.futures
@@ -177,7 +178,7 @@ def _ensure_windows_gateway_venv_imports() -> None:
     if sys.platform != "win32":
         return
 
-    project_root = Path(__file__).resolve().parents[4]
+    project_root = REPO_ROOT
     candidates: list[Path] = []
     if os.environ.get("VIRTUAL_ENV"):
         candidates.append(Path(os.environ["VIRTUAL_ENV"]))
@@ -1385,7 +1386,7 @@ os.environ["_OPENCODON_GATEWAY"] = "1"
 _ensure_ssl_certs()
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(REPO_ROOT))
 
 # Resolve opencodon home directory (respects OPENCODON_HOME override)
 from opencodon_constants import get_opencodon_home, get_opencodon_home_override
@@ -1397,7 +1398,7 @@ _opencodon_home = get_opencodon_home()
 from dotenv import load_dotenv  # noqa: F401  # backward-compat for tests that monkeypatch this symbol
 from opencodon.config.env_loader import load_opencodon_dotenv
 _env_path = _opencodon_home / '.env'
-load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=Path(__file__).resolve().parents[4] / '.env')
+load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=REPO_ROOT / '.env')
 
 
 def _reload_runtime_env_preserving_config_authority() -> None:
@@ -1424,7 +1425,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
 
     load_opencodon_dotenv(
         opencodon_home=_opencodon_home,
-        project_env=Path(__file__).resolve().parents[4] / '.env',
+        project_env=REPO_ROOT / '.env',
     )
     _bridge_max_turns_from_config(_opencodon_home)
 
@@ -2466,7 +2467,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
 
         # Check optional skills (shipped with repo but not installed)
         from opencodon_constants import get_optional_skills_dir
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = REPO_ROOT
         optional_dir = get_optional_skills_dir(repo_root / "optional-skills")
         if optional_dir.exists():
             for skill_md in optional_dir.rglob("SKILL.md"):
@@ -6786,7 +6787,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewaySlashCommandsMixin):
             # inherits the gateway marker, `opencodon gateway restart` refuses to
             # run as a self-restart loop guard and the gateway stays stopped.
             watcher_env.pop("_OPENCODON_GATEWAY", None)
-            project_root = Path(__file__).resolve().parents[4]
+            project_root = REPO_ROOT
             watcher_python = sys.executable
             try:
                 # Prefer a real GUI-subsystem interpreter for the watcher

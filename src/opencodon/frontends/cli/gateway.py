@@ -3,6 +3,7 @@ Gateway subcommand for opencodon CLI.
 
 Handles: opencodon gateway [run|start|stop|restart|status|install|uninstall|setup]
 """
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import json
@@ -27,7 +28,7 @@ if os.name == "posix":
     if _missing:
         os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + os.pathsep.join(sorted(_missing))
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 
 from opencodon.frontends.gateway.config import coerce_systemd_watchdog_seconds, load_gateway_config
 from opencodon.frontends.gateway.status import terminate_pid

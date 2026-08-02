@@ -7,6 +7,7 @@ calls this every 60 seconds from a background thread.
 Uses a file-based lock (~/.opencodon/cron/.tick.lock) so only one tick
 runs at a time if multiple processes overlap.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import atexit
@@ -37,7 +38,7 @@ from typing import Any, List, Optional
 # Add parent directory to path for imports BEFORE repo-level imports.
 # Without this, standalone invocations (e.g. after `opencodon update` reloads
 # the module) fail with ModuleNotFoundError for opencodon_time et al.
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(REPO_ROOT))
 
 from opencodon_constants import get_opencodon_home
 from opencodon.common._subprocess_compat import windows_hide_flags
@@ -2140,7 +2141,7 @@ def _windows_cron_python_invocation(python_exe: str) -> tuple[str, dict[str, str
             interpreter = base_python
             env_overlay["VIRTUAL_ENV"] = str(venv_dir)
             pythonpath_entries = [
-                str(Path(__file__).resolve().parents[3]),
+                str(REPO_ROOT),
                 str(site_packages),
             ]
             existing_pythonpath = os.environ.get("PYTHONPATH", "")

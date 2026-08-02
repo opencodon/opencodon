@@ -12,6 +12,7 @@ This is a library module (not an agent tool). It provides:
 
 Used by opencodon_cli/skills_hub.py for CLI commands and the /skills slash command.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import hashlib
 import json
@@ -3182,7 +3183,7 @@ class OptionalSkillSource(SkillSource):
         from opencodon_constants import get_optional_skills_dir
 
         self._optional_dir = get_optional_skills_dir(
-            Path(__file__).resolve().parents[3] / "optional-skills"
+            REPO_ROOT / "optional-skills"
         )
 
     def source_id(self) -> str:

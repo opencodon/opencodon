@@ -14,6 +14,7 @@ Run as a module to print edge-density stats against real data:
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import re
@@ -246,7 +247,7 @@ def _memory_skill_edges(memory_cards: list[dict[str, Any]], skills: list[SkillNo
 
 
 def _skill_roots() -> list[tuple[str, Path]]:
-    repo = Path(__file__).resolve().parents[3]
+    repo = REPO_ROOT
     home_skills = get_opencodon_home() / "skills"
     return [("base", repo / "skills"), ("profile", home_skills)]
 

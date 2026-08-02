@@ -29,6 +29,7 @@ Supported languages: en, zh, ja, de, es, fr, tr, uk.  Unknown values fall back t
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import logging
 import os
@@ -77,7 +78,7 @@ def _locales_dir() -> Path:
         )
 
     # agent/i18n.py -> agent/ -> repo root (source checkout, editable install)
-    source_dir = Path(__file__).resolve().parents[3] / "locales"
+    source_dir = REPO_ROOT / "locales"
     return source_dir
 
 

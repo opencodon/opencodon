@@ -24,13 +24,14 @@ Behaviour:
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 from pathlib import Path
 from typing import Optional
 
 # Path is resolved relative to this module so it works regardless of cwd —
 # matches the pattern used by ``banner._resolve_repo_dir``.
-_BUILD_SHA_FILE = Path(__file__).resolve().parents[4] / ".opencodon_build_sha"
+_BUILD_SHA_FILE = REPO_ROOT / ".opencodon_build_sha"
 
 
 def get_build_sha(short: int = 8) -> Optional[str]:

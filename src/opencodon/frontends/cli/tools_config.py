@@ -8,6 +8,7 @@ that need API keys, run through provider-aware configuration.
 Saves per-platform tool configuration to ~/.opencodon/config.yaml under
 the `platform_toolsets` key.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json as _json
 import logging
@@ -68,7 +69,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
 # every tool resolution for a persistently-corrupt config (#38798).
 _warned_invalid_platform_toolsets: Set[str] = set()
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────

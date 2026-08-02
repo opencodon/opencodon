@@ -13,6 +13,7 @@ This module provides:
 - opencodon config unset    - Remove a user configuration value
 - opencodon config wizard   - Re-run setup wizard
 """
+from opencodon.common.repo import REPO_ROOT
 
 import copy
 import json
@@ -364,7 +365,7 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
     """
     if project_root is not None:
         return project_root
-    return Path(__file__).resolve().parents[3]
+    return REPO_ROOT
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
@@ -661,7 +662,7 @@ def get_env_path() -> Path:
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
-    return Path(__file__).resolve().parents[3]
+    return REPO_ROOT
 
 def _resolve_opencodon_uid_gid() -> tuple[Optional[int], Optional[int]]:
     """Read the OPENCODON_UID / OPENCODON_GID env vars set by Docker deployments.
@@ -8065,7 +8066,7 @@ def _inject_platform_plugin_env_vars() -> None:
 
         # Resolve the bundled plugins dir from this file's location so the
         # injector works regardless of CWD.
-        repo_root = Path(__file__).resolve().parents[3]
+        repo_root = REPO_ROOT
         platforms_dir = repo_root / "plugins" / "platforms"
         if not platforms_dir.is_dir():
             return

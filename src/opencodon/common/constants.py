@@ -3,6 +3,7 @@
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import os
 import shutil
@@ -302,7 +303,7 @@ def _candidate_node_command_names(command: str) -> list[str]:
 
 _OPENCODON_NODE_TARGET_MAJOR = int(os.environ.get("OPENCODON_NODE_TARGET_MAJOR", "22"))
 _managed_node_heal_attempted = False
-_NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "lib" / "node-bootstrap.sh"
+_NODE_BOOTSTRAP_SCRIPT = REPO_ROOT / "scripts" / "lib" / "node-bootstrap.sh"
 
 
 def node_tool_runnable(path: str | None) -> bool:

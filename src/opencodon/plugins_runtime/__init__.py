@@ -32,6 +32,7 @@ so plugin-defined tools appear alongside the built-in tools.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import importlib.metadata
@@ -62,7 +63,7 @@ def get_bundled_plugins_dir() -> Path:
     env_override = os.getenv("OPENCODON_BUNDLED_PLUGINS")
     if env_override:
         return Path(env_override)
-    return Path(__file__).resolve().parents[3] / "plugins"
+    return REPO_ROOT / "plugins"
 
 try:
     import yaml

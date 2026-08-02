@@ -26,6 +26,7 @@ Design notes
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import ctypes
 import locale
@@ -217,7 +218,7 @@ def _launch_elevated_gateway_command(command: str, extra_args: list[str] | None 
     if extra_args:
         args.extend(extra_args)
     params = subprocess.list2cmdline(args)
-    cwd = str(Path(__file__).resolve().parents[4])
+    cwd = str(REPO_ROOT)
     elevated_python = _derive_venv_pythonw(sys.executable)
     try:
         result = ctypes.windll.shell32.ShellExecuteW(
@@ -406,7 +407,7 @@ def _build_gateway_cmd_script(
     # if someone imports opencodon_constants-based logic during startup.
     lines.append(f'set "VIRTUAL_ENV={_preserve_opencodon_home_path(venv_dir)}"')
     pythonpath_entries = [
-        _preserve_opencodon_home_path(Path(__file__).resolve().parents[4]),
+        _preserve_opencodon_home_path(REPO_ROOT),
         *[_preserve_opencodon_home_path(entry) for entry in extra_pythonpath],
     ]
     lines.append(f'set "PYTHONPATH={";".join([*pythonpath_entries, "%PYTHONPATH%"])}"')
@@ -469,7 +470,7 @@ def _build_gateway_vbs_script(
     # list2cmdline gives CreateProcess-correct quoting for WScript.Shell.Run.
     command_line = subprocess.list2cmdline(prog_args)
 
-    repo_root = _preserve_opencodon_home_path(Path(__file__).resolve().parents[4])
+    repo_root = _preserve_opencodon_home_path(REPO_ROOT)
     static_pythonpath = os.pathsep.join(
         [repo_root, *[_preserve_opencodon_home_path(entry) for entry in extra_pythonpath]]
     )

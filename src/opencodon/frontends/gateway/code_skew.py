@@ -16,10 +16,11 @@ stays ``None`` and skew detection no-ops — it never produces a false positive.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[4]
+_PROJECT_ROOT = REPO_ROOT
 _boot_fingerprint: str | None = None
 
 

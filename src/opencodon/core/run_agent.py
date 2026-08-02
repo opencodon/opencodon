@@ -30,6 +30,7 @@ except ModuleNotFoundError:
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import base64
@@ -123,7 +124,7 @@ from opencodon.config.timeouts import (
 )
 
 _opencodon_home = get_opencodon_home()
-_project_env = Path(__file__).resolve().parents[3] / '.env'
+_project_env = REPO_ROOT / '.env'
 _loaded_env_paths = load_opencodon_dotenv(opencodon_home=_opencodon_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:

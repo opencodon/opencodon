@@ -14,6 +14,7 @@ call time (run.py fully loaded by then), avoiding an import cycle.
 """
 
 from __future__ import annotations
+from opencodon.common.repo import REPO_ROOT
 
 import asyncio
 import dataclasses
@@ -4592,7 +4593,7 @@ class GatewaySlashCommandsMixin:
         if is_managed():
             return f"✗ {format_managed_message('update opencodon')}"
 
-        project_root = Path(__file__).resolve().parents[4]
+        project_root = REPO_ROOT
         git_dir = project_root / '.git'
 
         if not git_dir.exists():

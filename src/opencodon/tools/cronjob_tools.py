@@ -4,6 +4,7 @@ Cron job management tools for opencodon.
 Expose a single compressed action-oriented tool to avoid schema/context bloat.
 Compatibility wrappers remain for direct Python callers and legacy tests.
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import logging
@@ -17,7 +18,7 @@ from opencodon_constants import display_opencodon_home
 logger = logging.getLogger(__name__)
 
 # Import from cron module (will be available when properly installed)
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(REPO_ROOT))
 
 from opencodon.cron.jobs import (
     AmbiguousJobReference,

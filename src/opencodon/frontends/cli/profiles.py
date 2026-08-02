@@ -18,6 +18,7 @@ Usage::
     opencodon profile use coder             # set as sticky default
     opencodon profile delete coder          # remove profile + alias + service
 """
+from opencodon.common.repo import REPO_ROOT
 
 import json
 import os
@@ -1159,7 +1160,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
             "user_modified": [],
             "skipped_opt_out": True,
         }
-    project_root = Path(__file__).resolve().parents[4]
+    project_root = REPO_ROOT
     try:
         result = subprocess.run(
             [sys.executable, "-c",

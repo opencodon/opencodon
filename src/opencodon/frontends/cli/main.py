@@ -42,6 +42,7 @@ try:
     import opencodon_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     pass
+from opencodon.common.repo import REPO_ROOT
 
 import os
 import sys
@@ -441,7 +442,7 @@ def _require_tty(command_name: str) -> None:
 
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = REPO_ROOT
 sys.path.insert(0, str(PROJECT_ROOT))
 
 

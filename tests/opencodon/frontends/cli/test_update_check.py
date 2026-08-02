@@ -47,10 +47,7 @@ def test_check_for_updates_invalidates_on_version_change(tmp_path, monkeypatch):
     import opencodon.frontends.cli.banner as banner
 
     # No local git checkout -> the PyPI path is exercised (pip-install class).
-    fake_banner = tmp_path / "src" / "opencodon_cli" / "banner.py"
-    fake_banner.parent.mkdir(parents=True, exist_ok=True)
-    fake_banner.touch()
-    monkeypatch.setattr(banner, "__file__", str(fake_banner))
+    monkeypatch.setattr(banner, "REPO_ROOT", tmp_path / "src")
 
     # Fresh (within TTL) cache that says "behind", but stamped with an OLD version.
     cache_file = tmp_path / ".update_check"
@@ -225,12 +222,8 @@ def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
     """Returns None when .git directory doesn't exist anywhere (no source tree)."""
     import opencodon.frontends.cli.banner as banner
 
-    # Create a fake banner.py so the fallback path also has no .git
-    fake_banner = tmp_path / "src" / "opencodon_cli" / "banner.py"
-    fake_banner.parent.mkdir(parents=True, exist_ok=True)
-    fake_banner.touch()
-
-    monkeypatch.setattr(banner, "__file__", str(fake_banner))
+    # Point the consolidated repo-root anchor at a tree with no .git anywhere.
+    monkeypatch.setattr(banner, "REPO_ROOT", tmp_path / "src")
     monkeypatch.setenv("OPENCODON_HOME", str(tmp_path))
     with patch("opencodon.frontends.cli.banner.subprocess.run") as mock_run:
         result = banner.check_for_updates()
