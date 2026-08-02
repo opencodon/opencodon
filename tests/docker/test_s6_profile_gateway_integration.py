@@ -75,7 +75,7 @@ def test_s6_register_creates_service_dir_in_live_container(
 
     # list_profile_gateways picks it up.
     r = docker_exec(container_name, "python3", "-c", (
-        "from opencodon_cli.service_manager import S6ServiceManager;"
+        "from opencodon.frontends.cli.service_manager import S6ServiceManager;"
         "print(S6ServiceManager().list_profile_gateways())"
     ))
     assert "phase3test" in r.stdout, f"list output: {r.stdout!r}"
@@ -105,7 +105,7 @@ def test_s6_unregister_removes_service_dir_in_live_container(
 
     # list_profile_gateways no longer includes it.
     r = docker_exec(container_name, "python3", "-c", (
-        "from opencodon_cli.service_manager import S6ServiceManager;"
+        "from opencodon.frontends.cli.service_manager import S6ServiceManager;"
         "print(S6ServiceManager().list_profile_gateways())"
     ))
     assert "phase3test" not in r.stdout

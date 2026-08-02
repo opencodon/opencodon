@@ -248,11 +248,17 @@ def test_cron_provider_package_does_not_shadow_core_cron_package(monkeypatch):
     monkeypatch.syspath_prepend(str(repo_root / "src"))
     monkeypatch.syspath_prepend(str(repo_root / "plugins"))
 
-    cron_spec = PathFinder.find_spec("cron")
+    # The legacy-alias meta-path finder resolves "cron" ahead of any path
+    # entry, so plugins/cron_providers can never shadow the core package —
+    # assert via the full import machinery, not PathFinder alone.
+    import importlib.util
+    import opencodon  # ensure the alias finder is installed  # noqa: F401
+    cron_spec = importlib.util.find_spec("cron")
     assert cron_spec is not None
-    # The importable top-level "cron" is now the Phase 3a shim tree; the
-    # invariant is unchanged: the repo package wins over plugins/cron_providers.
-    assert Path(cron_spec.origin).resolve() == repo_root / "src" / "cron" / "__init__.py"
+    # The importable top-level "cron" resolves through the legacy-alias
+    # meta-path finder to the canonical package; the invariant is unchanged:
+    # opencodon's cron wins over plugins/cron_providers.
+    assert Path(cron_spec.origin).resolve() == repo_root / "src" / "opencodon" / "cron" / "__init__.py"
 
     jobs_spec = PathFinder.find_spec("opencodon.cron.jobs", [str(repo_root / "src" / "opencodon" / "cron")])
     assert jobs_spec is not None

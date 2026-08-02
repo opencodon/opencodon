@@ -19,6 +19,10 @@ remain (CPU count, xdist worker count) are addressed by the canonical
 test runner at ``scripts/run_tests.sh``.
 """
 
+# Installs the legacy-alias meta-path finder before any test imports a
+# pre-restructure module name (agent.*, cli, opencodon_cli.*, ...).
+import opencodon  # noqa: F401
+
 import asyncio
 import os
 import sys

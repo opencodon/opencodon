@@ -226,7 +226,12 @@ run_conversation; extraction of shell.py's 106 top-level functions.
 - `run_agent.py` shrinks to the `AIAgent` shell as already-extracted helpers
   in `agent/` move home under `core/`.
 
-### Phase 5 — Tests, CI, docs
+### Phase 5 — Tests, CI, docs (in progress 2026-08-02)
+
+Shim-deletion DEFERRED: the compat shim trees stay until the first
+release ships the new layout (external ~/.opencodon plugins import the
+legacy names). Everything else in this phase proceeds: AGENTS.md/
+CLAUDE.md structure rewrite, root-clutter sweep, root-test re-mirror.
 - Re-mirror `tests/` to the new tree; update CI change classifier path rules,
   `scripts/run_tests.sh`, Dockerfile, nix, `.github/`.
 - Rewrite AGENTS.md "Project Structure" + CLAUDE.md path references.

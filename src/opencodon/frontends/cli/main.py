@@ -4736,15 +4736,8 @@ def _clear_bytecode_cache(root: Path) -> int:
 # left with a bricked CLI or desktop backend. The post-pull syntax guard
 # validates these and auto-rolls-back on failure.
 _UPDATE_CRITICAL_FILES = (
-    "src/opencodon_cli/main.py",
-    "src/opencodon_cli/config.py",
-    "src/opencodon_cli/__init__.py",
-    "src/opencodon_cli/web_server.py",
-    "src/cli.py",
     "opencodon.core.run_agent.py",
     "opencodon.tools.model_tools.py",
-    "src/toolsets.py",
-    "src/opencodon_constants.py",
     # Canonical homes after restructure Phase 1 — the root-level entries
     # above are now thin shims aliasing these (see docs/plans/
     # 2026-08-01-repo-restructure-plan.md).

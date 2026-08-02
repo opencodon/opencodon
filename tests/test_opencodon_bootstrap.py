@@ -245,8 +245,6 @@ class TestEntryPointsImportBootstrap:
         "src/opencodon/frontends/acp/entry.py",  # opencodon-acp (console_script)
         "src/opencodon/frontends/gateway/run.py",  # gateway
         "src/opencodon/frontends/cli/shell.py",  # legacy direct-launch CLI
-        "src/cli.py",                # root shim, still a process entry
-        "src/run_agent.py",          # root shim (console_script on old installs)
     ]
 
     @pytest.mark.parametrize("path", ENTRY_POINTS)
