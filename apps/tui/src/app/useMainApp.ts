@@ -1,3 +1,4 @@
+import { useStore } from '@nanostores/react'
 import {
   forceRedraw,
   type ScrollBoxHandle,
@@ -7,7 +8,6 @@ import {
   useStdout,
   useTerminalTitle
 } from '@opencodon/ink'
-import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DASHBOARD_TUI_MODE, STARTUP_RESUME_ID } from '../config/env.js'
@@ -30,6 +30,7 @@ import type {
 } from '../gatewayTypes.js'
 import { useGitBranch } from '../hooks/useGitBranch.js'
 import { useVirtualHistory } from '../hooks/useVirtualHistory.js'
+import { VOICE_UI_ENABLED } from '../lib/featureFlags.js'
 import { composerPromptWidth } from '../lib/inputMetrics.js'
 import { appendTranscriptMessage } from '../lib/messages.js'
 import { DEFAULT_VOICE_RECORD_KEY, isMac, type ParsedVoiceRecordKey } from '../lib/platform.js'
@@ -1157,11 +1158,14 @@ export function useMainApp(gw: GatewayClient) {
       turnStartedAt: ui.sid ? turnStartedAt : null,
       // CLI parity: the classic prompt_toolkit status bar shows a red dot
       // on REC (cli.py:_get_voice_status_fragments line 2344).
-      voiceLabel: voiceRecording
-        ? '● REC'
-        : voiceProcessing
-          ? '◉ STT'
-          : `voice ${voiceEnabled ? 'on' : 'off'}${voiceTts ? ' [tts]' : ''}`
+      // Empty string drops the segment entirely — appChrome gates on !!voiceLabel.
+      voiceLabel: !VOICE_UI_ENABLED
+        ? ''
+        : voiceRecording
+          ? '● REC'
+          : voiceProcessing
+            ? '◉ STT'
+            : `voice ${voiceEnabled ? 'on' : 'off'}${voiceTts ? ' [tts]' : ''}`
     }),
     [
       cwd,
