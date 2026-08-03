@@ -20,75 +20,77 @@ const SYSTEM_MONO =
 
 export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SANS, fontMono: SYSTEM_MONO }
 
-const NOUS_BLUE = '#0053FD'
-const PSYCHE_BLUE = '#1540B1'
-const PSYCHE_WARM = '#FFE6CB'
+/** Bio-lime — the Opencodon brand colour, matching the shipped mark asset. */
+const BRAND_LIME = '#89C219'
+/** Content sitting ON the brand fill: 9.79:1. White would be 2.14:1. */
+const BRAND_ON = '#0B0F0A'
 
-const nousTint = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, #FFFFFF)`
-const nousTintTransparent = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, transparent)`
+const brandTint = (pct: number) => `color-mix(in srgb, ${BRAND_LIME} ${pct}%, #FFFFFF)`
+const brandTintTransparent = (pct: number) => `color-mix(in srgb, ${BRAND_LIME} ${pct}%, transparent)`
 
 /**
- * Nous — canonical Opencodon desktop identity. The palette keeps the current
- * glass geometry neutral, then lets the old bb/gui blue and psyche cream
- * return as accent seeds.
+ * Opencodon — canonical desktop identity. Glass geometry stays neutral; bio-lime
+ * carries the brand as an accent. Lime is a FILL, never light-mode body text
+ * (2.14:1 on white), which is why `primaryForeground` is near-black.
  */
-export const nousTheme: DesktopTheme = {
-  name: 'nous',
-  label: 'Nous',
-  description: 'Glass neutrals with Nous blue accents',
+export const opencodonTheme: DesktopTheme = {
+  name: 'opencodon',
+  label: 'Opencodon',
+  description: 'Glass neutrals with bio-lime accents',
   colors: {
-    background: '#F8FAFF',
+    background: '#F9FAF7',
     foreground: '#17171A',
     card: '#FFFFFF',
     cardForeground: '#17171A',
-    muted: nousTint(5),
+    muted: brandTint(5),
     mutedForeground: '#666678',
     popover: '#FFFFFF',
     popoverForeground: '#17171A',
-    primary: NOUS_BLUE,
-    primaryForeground: '#FCFCFC',
-    secondary: nousTint(7),
+    primary: BRAND_LIME,
+    primaryForeground: BRAND_ON,
+    secondary: brandTint(7),
     secondaryForeground: '#242432',
-    accent: nousTint(10),
+    accent: brandTint(10),
     accentForeground: '#202030',
-    border: nousTintTransparent(22),
-    input: nousTintTransparent(30),
-    ring: NOUS_BLUE,
-    midground: NOUS_BLUE,
-    composerRing: NOUS_BLUE,
+    border: brandTintTransparent(22),
+    input: brandTintTransparent(30),
+    ring: BRAND_LIME,
+    midground: BRAND_LIME,
+    composerRing: BRAND_LIME,
     destructive: '#C72E4D',
     destructiveForeground: '#FFFFFF',
-    sidebarBackground: '#F3F7FF',
-    sidebarBorder: nousTintTransparent(18),
-    userBubble: nousTint(6),
-    userBubbleBorder: nousTintTransparent(24)
+    sidebarBackground: '#F4F6F1',
+    sidebarBorder: brandTintTransparent(18),
+    userBubble: brandTint(6),
+    userBubbleBorder: brandTintTransparent(24)
   },
   darkColors: {
-    background: '#0D2F86',
-    foreground: PSYCHE_WARM,
-    card: '#12378F',
-    cardForeground: PSYCHE_WARM,
-    muted: '#183F9A',
-    mutedForeground: '#B5C7F3',
-    popover: '#123A96',
-    popoverForeground: PSYCHE_WARM,
-    primary: PSYCHE_WARM,
-    primaryForeground: '#0D2F86',
-    secondary: '#1B45A4',
-    secondaryForeground: '#E0E8FF',
-    accent: PSYCHE_BLUE,
-    accentForeground: '#F0F4FF',
-    border: '#3158AD',
-    input: '#0B2566',
-    ring: PSYCHE_WARM,
-    midground: NOUS_BLUE,
-    composerRing: PSYCHE_WARM,
-    destructive: '#C0473A',
-    destructiveForeground: '#FEF2F2',
-    sidebarBackground: '#09286F',
-    sidebarBorder: '#234A9C',
-    userBubble: '#143B91',
-    userBubbleBorder: '#3A63BD'
+    background: '#0B0F0A',
+    foreground: '#E8EDE4',
+    card: '#141A10',
+    cardForeground: '#E8EDE4',
+    muted: '#1B2216',
+    mutedForeground: '#9AA694',
+    popover: '#161D12',
+    popoverForeground: '#E8EDE4',
+    // Lime is at its best here — 9.01:1 on the dark canvas.
+    primary: BRAND_LIME,
+    primaryForeground: BRAND_ON,
+    secondary: '#1F2819',
+    secondaryForeground: '#D7E0D0',
+    accent: brandTintTransparent(14),
+    accentForeground: '#E8EDE4',
+    border: '#2A3324',
+    input: '#131A0F',
+    ring: BRAND_LIME,
+    midground: BRAND_LIME,
+    composerRing: BRAND_LIME,
+    destructive: '#E75E78',
+    destructiveForeground: '#1A0E11',
+    sidebarBackground: '#080B07',
+    sidebarBorder: '#232B1E',
+    userBubble: '#171E12',
+    userBubbleBorder: '#2C3626'
   },
   typography: {
     fontSans: SYSTEM_SANS,
@@ -278,7 +280,7 @@ export const slateTheme: DesktopTheme = {
 }
 
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
-  nous: nousTheme,
+  opencodon: opencodonTheme,
   midnight: midnightTheme,
   ember: emberTheme,
   mono: monoTheme,
@@ -289,4 +291,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nous'
+export const DEFAULT_SKIN_NAME = 'opencodon'
