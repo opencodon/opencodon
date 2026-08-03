@@ -10,17 +10,17 @@ describe('forceLoneHeaderForPanes', () => {
   const noCollapse = () => false
 
   it('forces a header for session-tile ids even without registered chrome', () => {
-    expect(forceLoneHeaderForPanes(['session-tile:abc'], () => ({}), noCollapse)).toBe(true)
+    expect(forceLoneHeaderForPanes(['session-tile:abc'], ['session-tile:abc'], () => ({}), noCollapse)).toBe(true)
   })
 
   it('forces a header for closeable placement:main panes', () => {
-    expect(forceLoneHeaderForPanes(['workspace'], chrome('main', true), noCollapse)).toBe(false)
-    expect(forceLoneHeaderForPanes(['some-page'], chrome('main', false), noCollapse)).toBe(true)
+    expect(forceLoneHeaderForPanes(['some-page'], ['some-page'], chrome('main', false), noCollapse)).toBe(true)
   })
 
   it('forces a header for a lone collapse tool pane', () => {
     expect(
       forceLoneHeaderForPanes(
+        ['terminal'],
         ['terminal'],
         () => ({}),
         id => id === 'terminal'
@@ -29,6 +29,19 @@ describe('forceLoneHeaderForPanes', () => {
   })
 
   it('leaves a lone uncloseable workspace headerless', () => {
-    expect(forceLoneHeaderForPanes(['workspace'], chrome('main', true), noCollapse)).toBe(false)
+    expect(forceLoneHeaderForPanes(['workspace'], ['workspace'], chrome('main', true), noCollapse)).toBe(false)
+  })
+
+  it('leaves a lone session tile in the MAIN zone headerless', () => {
+    // The everyday layout: one session tab, workspace tab auto-hidden beside
+    // it. Forcing here is what kept a permanent "NEW SESSION" strip on screen.
+    const zonePanes = ['workspace', 'session-tile:abc']
+    const chromeOf = (id: string) => (id === 'workspace' ? { placement: 'main', uncloseable: true } : {})
+
+    expect(forceLoneHeaderForPanes(['session-tile:abc'], zonePanes, chromeOf, noCollapse)).toBe(false)
+  })
+
+  it('still forces a header for a tile split into a zone of its own', () => {
+    expect(forceLoneHeaderForPanes(['session-tile:abc'], ['session-tile:abc'], () => ({}), noCollapse)).toBe(true)
   })
 })

@@ -134,11 +134,16 @@ export function normalize(node: LayoutNode): LayoutNode | null {
     }
 
     const active = node.panes.includes(node.active) ? node.active : node.panes[0]
-    // A zone down to one pane clears a redundant HIDDEN override (the lone-pane
-    // default is already headerless) but KEEPS an explicit SHOWN override —
-    // once a zone has ever had a tab bar, closing back to one tab leaves it
-    // shown (sticky bar; the off switch is "Hide tab bar"). `false` survives.
-    const headerHidden = node.panes.length <= 1 && node.headerHidden !== false ? undefined : node.headerHidden
+    // A zone down to one pane drops its header override ENTIRELY, hidden or
+    // shown, and returns to the contextual default.
+    //
+    // The shown override used to survive ("sticky bar": once a zone had a tab
+    // bar, closing back to one tab kept it). That stickiness is what turned
+    // every transient stack into permanent chrome — close the second session
+    // tab, or let boot prune a stale tile pane, and the zone kept a one-tab
+    // strip nothing could take back. Nothing writes an override automatically
+    // anymore (see insertAtGroup), so what survives here is only ever residue.
+    const headerHidden = node.panes.length <= 1 ? undefined : node.headerHidden
 
     if (active === node.active && headerHidden === node.headerHidden) {
       return node
@@ -235,20 +240,18 @@ export function insertAtGroup(
         const at = before ? n.panes.indexOf(before) : -1
         const panes = at >= 0 ? [...n.panes.slice(0, at), paneId, ...n.panes.slice(at)] : [...n.panes, paneId]
 
-        // Gaining a pane pins the header EXPLICITLY shown (not just cleared):
-        // a stack you can't see is a trap, and once a zone has ever stacked
-        // the bar STAYS when it drops back to one tab — the auto-hide flicker
-        // while dragging tabs around felt broken. Hiding is the user's call
-        // (double-click / zone menu). Active moves only on a gesture; an empty
-        // target has no prior tab, so the newcomer takes it regardless.
+        // Gaining a pane CLEARS an explicit hide — a stack you can't see is a
+        // trap — but writes no override of its own: a real stack shows its bar
+        // from the default rule (2+ tabs), so pinning `false` only left residue
+        // that outlived the stack. Hiding stays the user's call (double-click /
+        // zone menu). Active moves only on a gesture; an empty target has no
+        // prior tab, so the newcomer takes it regardless.
         //
-        // ONLY for a real stack. A pane landing in an EMPTY zone is a lone
-        // pane, and the lone-pane default is headerless (forceLoneHeaderForPanes
-        // already covers the surfaces that must keep a tab). Pinning it here is
-        // how boot-time pane adoption gave every side zone a permanent one-tab
-        // strip that nothing could take back.
+        // A pane landing in an EMPTY zone is a lone pane and keeps that zone's
+        // state untouched — the lone-pane default is headerless
+        // (forceLoneHeaderForPanes covers the surfaces that must keep a tab).
         const active = activate || n.panes.length === 0 ? paneId : n.active
-        const headerHidden = n.panes.length === 0 ? n.headerHidden : false
+        const headerHidden = n.panes.length === 0 ? n.headerHidden : undefined
 
         return { ...n, panes, active, headerHidden }
       }
