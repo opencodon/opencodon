@@ -21,14 +21,7 @@ export function PageLoader({
       className={cn('grid h-full place-items-center', className)}
       role={role}
     >
-      <Loader
-        aria-hidden="true"
-        className="size-10 text-primary/70"
-        pathSteps={220}
-        role="presentation"
-        strokeScale={0.72}
-        type="rose-curve"
-      />
+      <Loader aria-hidden="true" className="size-10 opacity-70" role="presentation" />
     </div>
   )
 }

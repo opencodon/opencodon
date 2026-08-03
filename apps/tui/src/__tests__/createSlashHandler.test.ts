@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createSlashHandler } from '../app/createSlashHandler.js'
+import { VOICE_UI_ENABLED } from '../lib/featureFlags.js'
 import { getOverlayState, resetOverlayState } from '../app/overlayStore.js'
 import { DASHBOARD_EXIT_DISABLED_MESSAGE, DASHBOARD_UPDATE_DISABLED_MESSAGE } from '../app/slash/commands/core.js'
 import { getUiState, patchUiState, resetUiState } from '../app/uiStore.js'
@@ -470,7 +471,7 @@ describe('createSlashHandler', () => {
   // every response, or a config edit shows the new shortcut in text
   // while push-to-talk still fires the old one until the next mtime
   // poll (~5s).
-  it('/voice status renders the gateway record_key and pushes it into frontend state', async () => {
+  it.skipIf(!VOICE_UI_ENABLED)('/voice status renders the gateway record_key and pushes it into frontend state', async () => {
     const rpc = vi.fn(() => Promise.resolve({ enabled: true, record_key: 'ctrl+space', tts: false }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
@@ -483,7 +484,7 @@ describe('createSlashHandler', () => {
     )
   })
 
-  it('/voice on renders the configured binding for the start/stop hint', async () => {
+  it.skipIf(!VOICE_UI_ENABLED)('/voice on renders the configured binding for the start/stop hint', async () => {
     const rpc = vi.fn(() => Promise.resolve({ enabled: true, record_key: 'alt+r', tts: false }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
@@ -495,7 +496,7 @@ describe('createSlashHandler', () => {
     expect(ctx.voice.setVoiceRecordKey).toHaveBeenCalledWith(expect.objectContaining({ ch: 'r', mod: 'alt' }))
   })
 
-  it('/voice falls back to Ctrl+B when the gateway response omits record_key', async () => {
+  it.skipIf(!VOICE_UI_ENABLED)('/voice falls back to Ctrl+B when the gateway response omits record_key', async () => {
     const rpc = vi.fn(() => Promise.resolve({ enabled: false, tts: false }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
@@ -510,7 +511,7 @@ describe('createSlashHandler', () => {
   // include it) MUST NOT clobber the user's cached binding back to
   // Ctrl+B. The label still renders the default for display; the
   // frontend state keeps whatever was last authoritatively set.
-  it('/voice tts without record_key does not clobber cached frontend binding', async () => {
+  it.skipIf(!VOICE_UI_ENABLED)('/voice tts without record_key does not clobber cached frontend binding', async () => {
     const rpc = vi.fn(() => Promise.resolve({ enabled: true, tts: true }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
@@ -519,6 +520,19 @@ describe('createSlashHandler', () => {
       expect(ctx.transcript.sys).toHaveBeenCalledWith('Voice TTS enabled.')
     })
     expect(ctx.voice.setVoiceRecordKey).not.toHaveBeenCalled()
+  })
+
+  // Voice is hidden until it ships: the command is dropped from the registry,
+  // so it must not resolve at all rather than half-work with no indicator.
+  it.skipIf(VOICE_UI_ENABLED)('does not register /voice while voice is hidden', () => {
+    const rpc = vi.fn(() => Promise.resolve({ enabled: true, tts: false }))
+    const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
+
+    createSlashHandler(ctx)('/voice status')
+
+    // The invariant that matters: voice can no longer be toggled from the TUI.
+    expect(rpc).not.toHaveBeenCalled()
+    expect(ctx.voice.setVoiceEnabled).not.toHaveBeenCalled()
   })
 
   it('cycles details mode and persists it', async () => {

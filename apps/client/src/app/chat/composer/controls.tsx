@@ -25,6 +25,17 @@ export const PRIMARY_ICON_BTN = cn(
   'disabled:bg-foreground/30 disabled:text-background disabled:opacity-100'
 )
 
+/**
+ * Voice is built but not shipped yet, so the composer hides its three controls:
+ * dictation (mic), auto-speak (speaker), and the voice-conversation button that
+ * otherwise replaces Send on an empty composer. Everything behind this flag is
+ * still wired up — flip it to `true` to bring the whole row back.
+ *
+ * Typed as `boolean` rather than inferred as `false` so the guarded branches
+ * stay type-checked instead of narrowing to dead code.
+ */
+const VOICE_UI_ENABLED: boolean = false
+
 interface ConversationProps {
   active: boolean
   level: number
@@ -68,18 +79,23 @@ export function ComposerControls({
   const { t } = useI18n()
   const c = t.composer
 
-  if (conversation.active) {
+  if (VOICE_UI_ENABLED && conversation.active) {
     return <ConversationPill {...conversation} disabled={disabled} />
   }
 
-  const showVoicePrimary = !busy && !hasComposerPayload
+  // With voice hidden this stays false, so the Send button always renders.
+  const showVoicePrimary = VOICE_UI_ENABLED && !busy && !hasComposerPayload
   const busyLabel = busyAction === 'queue' ? c.queueMessage : busyAction === 'steer' ? c.steer : c.stop
 
   return (
     <div className="ml-auto flex shrink-0 items-center gap-(--composer-control-gap)">
       <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
-      <DictationButton disabled={disabled} onToggle={onDictate} state={state.voice} status={voiceStatus} />
-      <AutoSpeakButton active={autoSpeak} disabled={disabled} onToggle={onToggleAutoSpeak} />
+      {VOICE_UI_ENABLED && (
+        <DictationButton disabled={disabled} onToggle={onDictate} state={state.voice} status={voiceStatus} />
+      )}
+      {VOICE_UI_ENABLED && (
+        <AutoSpeakButton active={autoSpeak} disabled={disabled} onToggle={onToggleAutoSpeak} />
+      )}
       {busyAction === 'steer' ? (
         <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueMessage} />}>
           <Button

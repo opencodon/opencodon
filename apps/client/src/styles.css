@@ -143,16 +143,16 @@
     color-scheme: light;
 
     --theme-foreground: #17171a;
-    --theme-primary: #0053fd;
-    --theme-secondary: color-mix(in srgb, #0053fd 7%, #ffffff);
-    --theme-accent-soft: color-mix(in srgb, #0053fd 10%, #ffffff);
-    --theme-midground: #0053fd;
+    --theme-primary: #89c219;
+    --theme-secondary: color-mix(in srgb, #89c219 7%, #ffffff);
+    --theme-accent-soft: color-mix(in srgb, #89c219 10%, #ffffff);
+    --theme-midground: #89c219;
     --theme-warm: #cf806d;
-    --theme-background-seed: #f8faff;
-    --theme-sidebar-seed: #f3f7ff;
+    --theme-background-seed: #f9faf7;
+    --theme-sidebar-seed: #f4f6f1;
     --theme-card-seed: #ffffff;
     --theme-elevated-seed: #ffffff;
-    --theme-bubble-seed: color-mix(in srgb, #0053fd 6%, #ffffff);
+    --theme-bubble-seed: color-mix(in srgb, #89c219 6%, #ffffff);
     --theme-neutral-chrome: #f3f3f3;
     --theme-neutral-sidebar: #f3f3f3;
     --theme-neutral-card: #fcfcfc;
@@ -306,7 +306,9 @@
     --dt-popover: color-mix(in srgb, var(--ui-bg-elevated) 96%, transparent);
     --dt-popover-foreground: var(--ui-text-primary);
     --dt-primary: var(--theme-primary);
-    --dt-primary-foreground: #fcfcfc;
+    /* Content sitting ON the brand fill. Bio-lime is a light accent: near-black
+       scores 9.79:1 against it, white only 2.14:1 — so this must stay dark. */
+    --dt-primary-foreground: #0b0f0a;
     --dt-secondary: var(--theme-secondary);
     --dt-secondary-foreground: var(--ui-text-secondary);
     --dt-accent: var(--theme-accent-soft);
@@ -666,10 +668,39 @@
   }
 }
 
+/* Brand loading state: the Opencodon mark, rotating. The mark is a gapped ring,
+   so spinning it reads as progress without needing a separate spinner shape. */
+@keyframes brand-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.brand-spin {
+  animation: brand-spin 1.4s linear infinite;
+}
+
+/* Reduced motion: hold the mark still and breathe the opacity instead. */
+@keyframes brand-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-spin {
+    animation: brand-breathe 1.6s ease-in-out infinite;
+  }
+}
+
 /* Command-palette deep-link: briefly flash the targeted settings row. */
 @keyframes setting-field-flash {
   0% {
-    background-color: color-mix(in srgb, var(--dt-primary, #f59e0b) 22%, transparent);
+    background-color: color-mix(in srgb, var(--dt-primary, #89c219) 22%, transparent);
   }
   100% {
     background-color: transparent;

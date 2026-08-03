@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { shouldPassThroughToGlobalHandler, shouldPreserveCtrlJNewline } from '../components/textInput.js'
+import { VOICE_UI_ENABLED } from '../lib/featureFlags.js'
 import { DEFAULT_VOICE_RECORD_KEY, parseVoiceRecordKey } from '../lib/platform.js'
 
 const key = (overrides: Record<string, unknown> = {}) => ({ ctrl: false, meta: false, ...overrides }) as any
@@ -22,7 +23,7 @@ describe('shouldPreserveCtrlJNewline', () => {
 })
 
 describe('shouldPassThroughToGlobalHandler', () => {
-  it('passes through the configured voice shortcut while composer is focused', () => {
+  it.skipIf(!VOICE_UI_ENABLED)('passes through the configured voice shortcut while composer is focused', () => {
     expect(shouldPassThroughToGlobalHandler('o', key({ ctrl: true }), parseVoiceRecordKey('ctrl+o'))).toBe(true)
     expect(shouldPassThroughToGlobalHandler('r', key({ meta: true }), parseVoiceRecordKey('alt+r'))).toBe(true)
     expect(shouldPassThroughToGlobalHandler(' ', key({ ctrl: true }), parseVoiceRecordKey('ctrl+space'))).toBe(true)
@@ -31,9 +32,17 @@ describe('shouldPassThroughToGlobalHandler', () => {
     ).toBe(true)
   })
 
-  it('keeps the legacy default pass-through when no custom key is provided', () => {
+  it.skipIf(!VOICE_UI_ENABLED)('keeps the legacy default pass-through when no custom key is provided', () => {
     expect(shouldPassThroughToGlobalHandler('b', key({ ctrl: true }), DEFAULT_VOICE_RECORD_KEY)).toBe(true)
     expect(shouldPassThroughToGlobalHandler('b', key({ ctrl: true }))).toBe(true)
+  })
+
+  // With voice hidden the record key must stop being diverted to the global
+  // handler, so a binding like ctrl+v goes back to being an ordinary paste.
+  it.skipIf(VOICE_UI_ENABLED)('does not divert the voice record key while voice is hidden', () => {
+    expect(shouldPassThroughToGlobalHandler('o', key({ ctrl: true }), parseVoiceRecordKey('ctrl+o'))).toBe(false)
+    expect(shouldPassThroughToGlobalHandler('r', key({ meta: true }), parseVoiceRecordKey('alt+r'))).toBe(false)
+    expect(shouldPassThroughToGlobalHandler('b', key({ ctrl: true }), DEFAULT_VOICE_RECORD_KEY)).toBe(false)
   })
 
   it('does not swallow ordinary typing keys', () => {

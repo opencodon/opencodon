@@ -573,9 +573,9 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     layout_table.add_column("right", justify="left")
 
     # Resolve skin colors once for the entire banner
-    accent = _skin_color("banner_accent", "#FFBF00")
-    dim = _skin_color("banner_dim", "#B8860B")
-    text = _skin_color("banner_text", "#FFF8DC")
+    accent = _skin_color("banner_accent", "#89C219")
+    dim = _skin_color("banner_dim", "#4D7C0F")
+    text = _skin_color("banner_text", "#E8EDE4")
     session_color = _skin_color("session_border", "#8B8682")
 
     # Hero art is opt-in per skin; there is no default. Only skins that set
@@ -812,8 +812,8 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     right_content = "\n".join(right_lines)
     layout_table.add_row(left_content, right_content)
 
-    title_color = _skin_color("banner_title", "#FFD700")
-    border_color = _skin_color("banner_border", "#CD7F32")
+    title_color = _skin_color("banner_title", "#A3E635")
+    border_color = _skin_color("banner_border", "#4D7C0F")
     version_label = format_banner_version_label()
     release_info = get_latest_release_tag()
     if release_info:

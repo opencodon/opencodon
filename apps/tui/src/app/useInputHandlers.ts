@@ -1,5 +1,5 @@
-import { forceRedraw, useInput } from '@opencodon/ink'
 import { useStore } from '@nanostores/react'
+import { forceRedraw, useInput } from '@opencodon/ink'
 import { useEffect, useRef } from 'react'
 
 import { DASHBOARD_TUI_MODE } from '../config/env.js'
@@ -11,6 +11,7 @@ import type {
   SudoRespondResponse,
   VoiceRecordResponse
 } from '../gatewayTypes.js'
+import { VOICE_UI_ENABLED } from '../lib/featureFlags.js'
 import { isAction, isCopyShortcut, isMac, isVoiceToggleKey } from '../lib/platform.js'
 import { computePrecisionWheelStep, initPrecisionWheel } from '../lib/precisionWheel.js'
 import { computeWheelStep, initWheelAccelForHost } from '../lib/wheelAccel.js'
@@ -478,7 +479,7 @@ export function useInputHandlers(ctx: InputHandlerContext): InputHandlerResult {
     // generic Esc handlers below; otherwise queue-edit cancel / selection-clear
     // would swallow the chord and /voice would advertise a shortcut that never
     // actually toggles recording in those UI states.
-    if (key.escape && isVoiceToggleKey(key, ch, voice.recordKey)) {
+    if (VOICE_UI_ENABLED && key.escape && isVoiceToggleKey(key, ch, voice.recordKey)) {
       return voiceRecordToggle()
     }
 
@@ -589,7 +590,7 @@ export function useInputHandlers(ctx: InputHandlerContext): InputHandlerResult {
       return
     }
 
-    if (isVoiceToggleKey(key, ch, voice.recordKey)) {
+    if (VOICE_UI_ENABLED && isVoiceToggleKey(key, ch, voice.recordKey)) {
       return voiceRecordToggle()
     }
 

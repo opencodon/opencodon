@@ -4,6 +4,7 @@ import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'rea
 
 import { setInputSelection } from '../app/inputSelectionStore.js'
 import { readClipboardText, writeClipboardText } from '../lib/clipboard.js'
+import { VOICE_UI_ENABLED } from '../lib/featureFlags.js'
 import { cursorLayout, offsetFromPosition } from '../lib/inputMetrics.js'
 import {
   DEFAULT_VOICE_RECORD_KEY,
@@ -1492,7 +1493,9 @@ export const shouldPassThroughToGlobalHandler = (
   key.pageUp ||
   key.pageDown ||
   key.escape ||
-  isVoiceToggleKey(key, input, voiceRecordKey)
+  // With voice hidden the record key must NOT be stolen from the composer —
+  // it goes back to being an ordinary keystroke (paste, when bound to ctrl+v).
+  (VOICE_UI_ENABLED && isVoiceToggleKey(key, input, voiceRecordKey))
 
 export interface TextInputMouseApi {
   dragAt: (row: number, col: number) => void
