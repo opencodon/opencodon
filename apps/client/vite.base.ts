@@ -26,14 +26,32 @@ const real = (p: string): null | string => {
   }
 }
 
+/**
+ * Every `node_modules` Node could resolve from, walking up to the filesystem
+ * root. Listing only the worktree's own two is not enough: a git worktree gets
+ * a separate, often incomplete `node_modules`, so anything missing there —
+ * `@vscode/codicons` and its `codicon.ttf`, for one — resolves to the MAIN
+ * checkout's copy, which sits outside the worktree root. Vite then refuses to
+ * serve it and every codicon renders as a tofu box for the whole dev session.
+ */
+const ancestorNodeModules = (from: string): string[] => {
+  const found: string[] = []
+
+  for (let dir = from; ; dir = path.dirname(dir)) {
+    const resolved = real(path.join(dir, 'node_modules'))
+
+    if (resolved !== null) {
+      found.push(resolved)
+    }
+
+    if (path.dirname(dir) === dir) {
+      return found
+    }
+  }
+}
+
 export const fsAllow = [
-  ...new Set(
-    [
-      path.resolve(clientRoot, '../..'),
-      real(path.resolve(clientRoot, 'node_modules')),
-      real(path.resolve(clientRoot, '../../node_modules'))
-    ].filter((p): p is string => p !== null)
-  )
+  ...new Set([path.resolve(clientRoot, '../..'), ...ancestorNodeModules(clientRoot)])
 ]
 
 /** Static assets (icons, ds-assets) belong to the UI, not to a host. */
