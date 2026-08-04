@@ -6,5 +6,5 @@ pyproject.toml.
 """
 
 # Opencodon's own version line — independent of the upstream fork point.
-__version__ = "0.1.0"
-__release_date__ = "2026.7.25"
+__version__ = "0.2.0"
+__release_date__ = "2026.8.4"

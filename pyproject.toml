@@ -2,7 +2,7 @@
 
 [project]
 name = "opencodon"
-version = "0.1.0"
+version = "0.2.0"
 description = "The open-science AI agent — provenance-first research sessions with reproducible, exportable results"
 readme = "README.md"
 # Upper bound is load-bearing, not cosmetic. uv resolves the project's
