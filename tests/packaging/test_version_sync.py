@@ -98,12 +98,16 @@ def test_member_without_a_version_is_skipped(tmp_path: Path) -> None:
     root = write_repo(tmp_path, workspaces=["apps/*"])
     harness = root / "apps" / "harness"
     harness.mkdir(parents=True)
-    (harness / "package.json").write_text(json.dumps({"name": "harness"}), encoding="utf-8")
+    (harness / "package.json").write_text(
+        json.dumps({"name": "harness"}), encoding="utf-8"
+    )
 
     assert check(root)
 
 
-def test_build_system_version_is_not_mistaken_for_the_project_version(tmp_path: Path) -> None:
+def test_build_system_version_is_not_mistaken_for_the_project_version(
+    tmp_path: Path,
+) -> None:
     # pyproject has other tables with `version` keys; only [project] counts.
     write_repo(tmp_path, py="1.2.3", module="1.2.3")
 

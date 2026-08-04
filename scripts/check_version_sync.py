@@ -11,9 +11,11 @@ link to each other:
 
 They drifted badly before 0.2.0 (the Python line said 0.1.0 while the JS
 workspaces still carried the donor's 0.17.0, 1.0.0 and 0.0.1), which is
-invisible until something ships with the wrong number stamped on it. The
-release workflow runs this before it builds anything, so a mistyped tag fails
-in seconds instead of producing installers that lie about what they are.
+invisible until something ships with the wrong number stamped on it.
+
+`scripts/release.py` calls this after it stamps the new version and before it
+commits, so the writing and the checking can never quietly disagree. It also
+stands alone: run it any time to confirm the tree is self-consistent.
 
 Usage:
     check_version_sync.py                 # all sources agree with each other
@@ -86,7 +88,9 @@ def npm_versions(root: Path) -> dict[Path, str]:
 
     manifests = [root / ROOT_PACKAGE_JSON]
     for glob in npm_workspace_globs(root):
-        manifests.extend(sorted((root / glob).parent.glob(f"{Path(glob).name}/package.json")))
+        manifests.extend(
+            sorted((root / glob).parent.glob(f"{Path(glob).name}/package.json"))
+        )
 
     for manifest in manifests:
         if not manifest.is_file():
@@ -118,8 +122,12 @@ def check(root: Path, expect: str | None = None) -> dict[Path, str]:
 
     distinct = sorted(set(versions.values()))
     if len(distinct) > 1:
-        listing = "\n".join(f"  {path}: {version}" for path, version in sorted(versions.items()))
-        raise VersionError(f"version sources disagree ({', '.join(distinct)}):\n{listing}")
+        listing = "\n".join(
+            f"  {path}: {version}" for path, version in sorted(versions.items())
+        )
+        raise VersionError(
+            f"version sources disagree ({', '.join(distinct)}):\n{listing}"
+        )
 
     if expect is not None:
         wanted = normalize_expected(expect)
@@ -134,9 +142,16 @@ def check(root: Path, expect: str | None = None) -> dict[Path, str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--expect", help="version (or git tag) every source must match")
-    parser.add_argument("--root", type=Path, default=REPO_ROOT, help="repo root (default: this checkout)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=REPO_ROOT,
+        help="repo root (default: this checkout)",
+    )
     args = parser.parse_args(argv)
 
     try:
