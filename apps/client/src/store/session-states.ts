@@ -770,11 +770,19 @@ export const selectionHomesToWorkspace = (selected: null | string, tiles: readon
  * `revealTreePane('workspace')` explicitly. Notably `startFreshSessionDraft`
  * cannot lean on the selection-homing listener, because starting a draft while
  * one is already open sets null over null and nanostores notifies nothing.
+ *
+ * `showsPage` is the other half of that latch. A full page (Capabilities /
+ * Artifacts / Provenance / a plugin route) renders in the workspace pane and is
+ * not the draft this rule exists to hide — it is the surface the user just
+ * asked for. Without the exemption those nav rows read as dead: the route
+ * changed and the sidebar row lit up, but the pane rendering the page stayed
+ * hidden behind the session tabs.
  */
 export const workspaceTabHides = ({
   hasSessionTabs,
   holdsDraft,
-  isActive
+  isActive,
+  showsPage
 }: {
   /** At least one real session tab exists to show instead. */
   hasSessionTabs: boolean
@@ -782,7 +790,9 @@ export const workspaceTabHides = ({
   holdsDraft: boolean
   /** The workspace is the tab currently being viewed. */
   isActive: boolean
-}): boolean => holdsDraft && hasSessionTabs && !isActive
+  /** The workspace renders a full page rather than the chat. */
+  showsPage: boolean
+}): boolean => holdsDraft && hasSessionTabs && !isActive && !showsPage
 
 // Homing also FRONTS the workspace tab: the resumed chat loads in the workspace
 // pane, so a zone parked on a tile tab must switch back or the click looks dead.
