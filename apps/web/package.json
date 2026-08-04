@@ -1,6 +1,6 @@
 {
   "name": "@opencodon/web",
-  "version": "0.17.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Browser host for the Opencodon session UI. Serves the client bundle from the dashboard at /app.",
   "type": "module",

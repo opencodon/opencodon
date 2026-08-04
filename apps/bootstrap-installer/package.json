@@ -1,7 +1,7 @@
 {
   "name": "@opencodon/bootstrap-installer",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "Opencodon Setup — signed installer that drives scripts/install.ps1 with a polished native UI.",
   "type": "module",
   "scripts": {
