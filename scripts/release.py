@@ -378,6 +378,34 @@ def insert_changelog(section: str) -> None:
 # ── publish ─────────────────────────────────────────────────────────────────
 
 
+def release_paths() -> list[Path]:
+    """Every file the release itself rewrites."""
+    return [
+        VERSION_PY,
+        PYPROJECT,
+        CHANGELOG,
+        REPO_ROOT / "uv.lock",
+        REPO_ROOT / "package-lock.json",
+        *npm_manifests(),
+    ]
+
+
+def dirty_release_paths() -> list[str]:
+    """Uncommitted edits to the files the release is about to rewrite.
+
+    Scoped rather than whole-tree on purpose. The guard exists so the release
+    never sweeps up (or silently overwrites) work in progress in the files it
+    stamps — and staging explicit paths already keeps everything else out. A
+    whole-tree check just means an unrelated edit anywhere, including another
+    session's or worktree's, blocks the release for no reason.
+    """
+    relative = [
+        str(path.relative_to(REPO_ROOT)) for path in release_paths() if path.exists()
+    ]
+    status = git("status", "--porcelain", "--untracked-files=no", "--", *relative)
+    return [line.strip() for line in status.splitlines() if line.strip()]
+
+
 def verify_versions(expect: str) -> None:
     """Reuse the standalone guard so writing and checking never disagree."""
     result = subprocess.run(
@@ -430,10 +458,9 @@ def main(argv: list[str] | None = None) -> int:
 def run(args: argparse.Namespace) -> int:
     # Only on the publish path: a dry run writes nothing, and refusing to
     # preview the notes because some other file is dirty is just obstructive.
-    if args.publish and git("status", "--porcelain", "--untracked-files=no"):
-        raise ReleaseError(
-            "working tree has uncommitted changes — commit or stash them first"
-        )
+    if args.publish and (dirty := dirty_release_paths()):
+        listing = "\n".join(f"  {entry}" for entry in dirty)
+        raise ReleaseError(f"these release files have uncommitted changes:\n{listing}")
 
     current = current_version()
     version = args.version or bump(current, args.bump)
@@ -488,8 +515,18 @@ def run(args: argparse.Namespace) -> int:
 
     # Explicit paths only: other sessions and worktrees share this checkout.
     git("add", *[str(path.relative_to(REPO_ROOT)) for path in touched])
-    git("commit", "-m", f"chore: release {tag}")
-    print(f"  ✓ committed chore: release {tag}")
+
+    # Nothing staged means the version was already stamped and the changelog
+    # already written — the "release PR" flow, where a reviewed PR carries the
+    # bump and this run only tags the merge. Committing an empty tree here
+    # would just fail, so tag what is already there.
+    if git("diff", "--cached", "--name-only"):
+        git("commit", "-m", f"chore: release {tag}")
+        print(f"  ✓ committed chore: release {tag}")
+    else:
+        print(
+            f"  · already at {version} — tagging the existing commit, nothing to commit"
+        )
 
     notes_file = REPO_ROOT / ".release_notes.md"
     notes_file.write_text(notes, encoding="utf-8")
