@@ -19,7 +19,7 @@ import { DesktopInstallOverlay } from '@/components/desktop-install-overlay'
 import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overlay'
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
-import { $newSessionTabAction } from '@/components/pane-shell/tree/store'
+import { $newSessionTabAction, revealTreePane } from '@/components/pane-shell/tree/store'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
@@ -81,6 +81,7 @@ import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
 import {
+  $workspaceIsPage,
   CRON_ROUTE,
   routeProjectId,
   routeProjectScope,
@@ -181,10 +182,23 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // `syncLandingOpen` is the coarser twin: not which page the workspace shows,
   // but whether there is a workspace at all. It must see EVERY path (overlays
   // included) to keep its base-route memory honest — see routes.ts.
+  //
+  // Navigating TO a page also has to front the workspace pane. The page renders
+  // inside it, and once session tabs exist that pane is routinely hidden or
+  // parked behind a tile (see syncWorkspaceTabVisibility) — so without this the
+  // Capabilities / Artifacts / Provenance rows lit up in the sidebar while the
+  // window kept showing the session that was already there, which is what "the
+  // selection does nothing" was. Keyed on `location.key` (fresh per navigation,
+  // pathname or not) so clicking the row for the page you are already routed to
+  // brings it back rather than no-op'ing.
   useEffect(() => {
     syncWorkspaceIsPage(location.pathname)
     syncLandingOpen(location.pathname)
-  }, [location.pathname])
+
+    if ($workspaceIsPage.get()) {
+      revealTreePane('workspace')
+    }
+  }, [location.key, location.pathname])
 
   // The route owns project scope. Every surface that scopes to a project (the
   // sidebar's session list, the files pane, terminals, artifacts) reads

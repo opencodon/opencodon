@@ -112,6 +112,7 @@ describe('workspaceTabHides', () => {
     hasSessionTabs: true,
     holdsDraft: true,
     isActive: false,
+    showsPage: false,
     ...over
   })
 
@@ -131,6 +132,13 @@ describe('workspaceTabHides', () => {
     // With no session tabs the workspace is the only thing to show; hiding it
     // would leave the zone blank.
     expect(workspaceTabHides(state({ hasSessionTabs: false }))).toBe(false)
+  })
+
+  it('never hides a full page — the surface the user just navigated to', () => {
+    // The Capabilities/Artifacts/Provenance regression: the row lit up, the
+    // route changed, and the pane rendering the page stayed hidden behind the
+    // session tabs, so the click read as dead.
+    expect(workspaceTabHides(state({ showsPage: true }))).toBe(false)
   })
 
   it('latches: a hidden tab stays hidden until something reveals it', () => {

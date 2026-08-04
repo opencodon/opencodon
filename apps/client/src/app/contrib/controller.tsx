@@ -665,7 +665,8 @@ function syncWorkspaceTabVisibility(): void {
     workspaceTabHides({
       hasSessionTabs: $sessionTiles.get().length > 0,
       holdsDraft: $selectedStoredSessionId.get() === null,
-      isActive: group?.active === 'workspace'
+      isActive: group?.active === 'workspace',
+      showsPage: $workspaceIsPage.get()
     })
   )
 }
@@ -673,6 +674,7 @@ function syncWorkspaceTabVisibility(): void {
 $selectedStoredSessionId.listen(syncWorkspaceTabVisibility)
 $sessionTiles.listen(syncWorkspaceTabVisibility)
 $layoutTree.listen(syncWorkspaceTabVisibility)
+$workspaceIsPage.listen(syncWorkspaceTabVisibility)
 syncWorkspaceTabVisibility()
 
 // ---------------------------------------------------------------------------
