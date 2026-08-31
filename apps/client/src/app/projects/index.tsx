@@ -40,6 +40,7 @@ import {
   refreshProjectTree
 } from '@/store/projects'
 
+import { ProjectDialog } from '../chat/sidebar/project-dialog'
 import { sortProjectsForOverview } from '../chat/sidebar/projects/model'
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { projectRoute, SETTINGS_ROUTE } from '../routes'
@@ -288,6 +289,13 @@ export function ProjectsLanding() {
           )}
         </div>
       </div>
+
+      {/* The create/rename/add-folder dialog is driven by the $projectDialog
+          atom, which openProjectCreate() sets. It also mounts in the chat
+          sidebar, but the landing replaces the shell rather than rendering
+          inside it — without this mount the "New project" button sets the
+          atom with nothing listening and the click does nothing. */}
+      <ProjectDialog />
     </div>
   )
 }
