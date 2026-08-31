@@ -2097,6 +2097,9 @@ export interface Translations {
       loadingResponse: string
       resumeWhenBackgroundDone: (count: number) => string
       thinking: string
+      activityWorking: string
+      activityWorked: (duration: string) => string
+      activitySteps: (count: number) => string
       today: (time: string) => string
       yesterday: (time: string) => string
       copy: string
