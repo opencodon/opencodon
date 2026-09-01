@@ -80,7 +80,7 @@ dependencies = [
   "urllib3>=2.7.0,<3",
   # cryptography is pulled in transitively by PyJWT[crypto]; pin it
   # explicitly so dependent crypto paths can't drift below the CVE-fixed floor.
-  "cryptography==48.0.1",  # CVE-2026-39892, CVE-2026-34073; 48.0.1 fixes the 2026-07 X.509 path-validation advisory
+  "cryptography==50.0.0",  # CVE-2026-39892, CVE-2026-34073; 48.0.1 fixes the 2026-07 X.509 path-validation advisory
   # Windows has no IANA tzdata shipped with the OS, so Python's ``zoneinfo``
   # (PEP 615) raises ``ZoneInfoNotFoundError`` for every non-UTC timezone
   # out of the box.  ``tzdata`` ships the Olson database as a data package
