@@ -16,7 +16,8 @@ import {
   getSessionPreviewRecord,
   type PreviewTarget,
   progressPreviewServerRestart,
-  setCurrentSessionPreviewTarget
+  setCurrentSessionPreviewTarget,
+  setPreviewRenderMode
 } from './preview'
 import { $activeSessionId, $selectedStoredSessionId } from './session'
 
@@ -50,6 +51,56 @@ describe('preview store', () => {
     $selectedStoredSessionId.set(null)
     clearSessionPreviewRegistry()
     window.localStorage.clear()
+  })
+
+  it('opens a tool-row click as a source file tab, not the live preview', () => {
+    const target: PreviewTarget = {
+      kind: 'file',
+      label: 'thing.ts',
+      language: 'typescript',
+      path: '/work/src/thing.ts',
+      previewKind: 'text',
+      source: 'src/thing.ts',
+      url: 'file:///work/src/thing.ts'
+    }
+
+    setCurrentSessionPreviewTarget(target, 'tool-row')
+
+    expect($filePreviewTabs.get()).toHaveLength(1)
+    expect($filePreviewTabs.get()[0]?.target.path).toBe('/work/src/thing.ts')
+    // The live-preview tab is for runnable artifacts; a source peek is a file tab.
+    expect($previewTarget.get()).toBeNull()
+  })
+
+  it('flips an html target between rendered and source in place', () => {
+    const target = previewTarget('/work/demo.html')
+
+    setCurrentSessionPreviewTarget(target, 'file-browser')
+
+    const tabId = $filePreviewTabs.get()[0]?.id
+
+    expect($filePreviewTabs.get()[0]?.target.renderMode).toBe('source')
+
+    setPreviewRenderMode($filePreviewTabs.get()[0]!.target, 'preview')
+
+    // Same tab, different renderer — never a second tab for the same file.
+    expect($filePreviewTabs.get()).toHaveLength(1)
+    expect($filePreviewTabs.get()[0]?.id).toBe(tabId)
+    expect($filePreviewTabs.get()[0]?.target.renderMode).toBe('preview')
+
+    setPreviewRenderMode($filePreviewTabs.get()[0]!.target, 'source')
+
+    expect($filePreviewTabs.get()[0]?.target.renderMode).toBe('source')
+  })
+
+  it('keeps the render mode when the session preview record is restored', () => {
+    const target = previewTarget('/work/demo.html')
+
+    setCurrentSessionPreviewTarget(target, 'tool-result')
+    setPreviewRenderMode($previewTarget.get()!, 'source')
+
+    expect($previewTarget.get()?.renderMode).toBe('source')
+    expect(getSessionPreviewRecord('session-1')?.normalized.renderMode).toBe('source')
   })
 
   it('does not notify status subscribers for restart progress text', () => {

@@ -1,3 +1,5 @@
+import { isAutoSurfacedArtifact } from '@opencodon/shared'
+
 import { type ToolTitleKey, translateNow } from '@/i18n'
 import { normalizeExternalUrl } from '@/lib/external-link'
 import { summarizeShellCommand } from '@/lib/summarize-command'
@@ -61,7 +63,7 @@ function fileEditPath(args: Record<string, unknown>, result: Record<string, unkn
   return (
     firstStringField(args, ['path', 'file', 'filepath']) ||
     firstStringField(result, ['path', 'file', 'filepath', 'resolved_path']) ||
-    htmlPathFromInlineDiff(firstStringField(result, ['inline_diff', 'diff']))
+    artifactPathFromInlineDiff(firstStringField(result, ['inline_diff', 'diff']))
   )
 }
 
@@ -701,6 +703,21 @@ function durationLabel(resultRecord: Record<string, unknown>): string | undefine
   return formatDurationSeconds(seconds)
 }
 
+/** The file a row acted on — written, patched, or read. Unlike
+ *  `toolPreviewTarget` this says nothing about whether the file is an artifact;
+ *  it only answers "is there a file here the user could open". */
+function toolOpenPath(toolName: string, args: Record<string, unknown>, result: Record<string, unknown>): string {
+  if (isFileEditTool(toolName)) {
+    return fileEditPath(args, result)
+  }
+
+  if (toolName === 'read_file') {
+    return firstStringField(args, ['path', 'file', 'filepath']) || firstStringField(result, ['path', 'resolved_path'])
+  }
+
+  return ''
+}
+
 function toolPreviewTarget(toolName: string, args: Record<string, unknown>, result: Record<string, unknown>): string {
   const direct =
     firstStringField(result, ['preview', 'url', 'target']) ||
@@ -718,7 +735,11 @@ function toolPreviewTarget(toolName: string, args: Record<string, unknown>, resu
   }
 
   if (isFileEditTool(toolName)) {
-    return htmlPathFromInlineDiff(firstStringField(result, ['inline_diff', 'diff']))
+    // An edit tool names the file it wrote, and that name is often relative
+    // ("notes.md") — which `direct` above skips because it doesn't look like a
+    // path. Trust the tool's own path here; the artifact-class gate downstream
+    // decides whether it's worth surfacing.
+    return fileEditPath(args, result)
   }
 
   return ''
@@ -755,13 +776,16 @@ export function stripInlineDiffChrome(value: string): string {
     : ''
 }
 
-function htmlPathFromInlineDiff(value: string): string {
+/** First path in a diff header that reads as a produced artifact (a document,
+ *  data file, image, or HTML page) — the fallback for edit tools that report
+ *  only a diff and no path argument. */
+function artifactPathFromInlineDiff(value: string): string {
   const cleaned = stripInlineDiffChrome(value)
 
-  for (const match of cleaned.matchAll(/(?:^|\s)(?:[ab]\/)?([^\s]+\.html?)(?=\s|$)/gi)) {
+  for (const match of cleaned.matchAll(/(?:^|\s)(?:[ab]\/)?([^\s]+\.[A-Za-z0-9]+)(?=\s|$)/g)) {
     const candidate = match[1]?.trim()
 
-    if (candidate) {
+    if (candidate && isAutoSurfacedArtifact(candidate)) {
       return candidate
     }
   }
@@ -1417,6 +1441,7 @@ export function buildToolView(part: ToolPart, inlineDiff: string): ToolView {
     icon: meta.icon,
     imageUrl: toolImageUrl(argsRecord, resultRecord),
     inlineDiff,
+    openPath: toolOpenPath(part.toolName, argsRecord, resultRecord) || undefined,
     previewTarget: toolPreviewTarget(part.toolName, argsRecord, resultRecord),
     rendersAnsi: rendersAnsi || undefined,
     searchQuery: searchQuery || undefined,

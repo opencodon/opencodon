@@ -31,10 +31,20 @@ import {
 import { Check, Pencil, X } from '@/lib/icons'
 import { shikiLanguageForFilename } from '@/lib/markdown-code'
 import { cn } from '@/lib/utils'
-import type { PreviewTarget } from '@/store/preview'
+import { type PreviewTarget, setPreviewRenderMode } from '@/store/preview'
 import { setPreviewDirty } from '@/store/preview-edit'
 import { $currentCwd } from '@/store/session'
 import { notifyWorkspaceChanged } from '@/store/workspace-events'
+
+import {
+  CsvTableView,
+  JsonTreeView,
+  type JsonValue,
+  parseDelimited,
+  parseJsonValue,
+  parseTomlValue,
+  parseYamlValue
+} from './preview-data'
 
 const SHIKI_THEME = { dark: 'github-dark-default', light: 'github-light-default' } as const
 const TEXT_PREVIEW_MAX_BYTES = 512 * 1024
@@ -338,7 +348,7 @@ function MarkdownPreview({ text }: { text: string }) {
   )
 }
 
-function PreviewModeSwitcher({
+export function PreviewModeSwitcher({
   active,
   modes,
   onSelect,
@@ -359,7 +369,9 @@ function PreviewModeSwitcher({
   const label: Record<PreviewViewMode, string> = {
     diff: t.preview.diff,
     rendered: t.preview.renderedPreview,
-    source: t.preview.source
+    source: t.preview.source,
+    table: t.preview.table,
+    tree: t.preview.tree
   }
 
   return (
@@ -561,7 +573,17 @@ function SourceView({ filePath, language, text }: { filePath: string; language: 
   )
 }
 
-type PreviewViewMode = 'diff' | 'rendered' | 'source'
+type PreviewViewMode = 'diff' | 'rendered' | 'source' | 'table' | 'tree'
+
+type StructuredPreview = { kind: 'table'; rows: string[][] } | { kind: 'tree'; value: JsonValue }
+
+/** Languages whose documents the tree view can show, keyed by the language id
+ *  the preview target carries. */
+const TREE_PARSERS: Record<string, (text: string) => { value: JsonValue } | null> = {
+  json: parseJsonValue,
+  toml: parseTomlValue,
+  yaml: parseYamlValue
+}
 
 export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; target: PreviewTarget }) {
   const { t } = useI18n()
@@ -590,6 +612,35 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
   const hoverRef = useRef(false)
   const filePath = filePathForTarget(target)
   const isImage = target.previewKind === 'image'
+  const language = state.language || target.language || ''
+  // TSV and CSV share a language id; only the extension distinguishes them.
+  const delimiter = language === 'csv' ? (filePath.toLowerCase().endsWith('.tsv') ? '\t' : ',') : ''
+
+  // Parse here, not in the view components: a file that doesn't parse (still
+  // streaming, or a delimiter guess that didn't hold) simply doesn't offer the
+  // structured mode, rather than rendering an empty pane.
+  const structured = useMemo<StructuredPreview | null>(() => {
+    if (state.text === undefined) {
+      return null
+    }
+
+    const parseTree = TREE_PARSERS[language]
+
+    if (parseTree) {
+      const parsed = parseTree(state.text)
+
+      return parsed ? { kind: 'tree', value: parsed.value } : null
+    }
+
+    if (delimiter) {
+      const rows = parseDelimited(state.text, delimiter)
+
+      // One column means it isn't really tabular; source reads better.
+      return (rows[0]?.length ?? 0) >= 2 ? { kind: 'table', rows } : null
+    }
+
+    return null
+  }, [delimiter, language, state.text])
 
   useEffect(() => {
     setUserMode(null)
@@ -602,9 +653,10 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
     baselineRef.current = ''
   }, [filePath, reloadKey])
 
-  // HTML files are rendered as source code, not in a webview - so they take
-  // the same path as plain text files. `previewKind === 'binary'` arrives
-  // when the file is forcibly previewed past the binary refusal screen.
+  // An HTML file reaches this component only in `renderMode: 'source'` — the
+  // webview branch in PreviewPane handles the rendered side — so here it takes
+  // the same path as plain text. `previewKind === 'binary'` arrives when the
+  // file is forcibly previewed past the binary refusal screen.
   const isText = target.previewKind === 'text' || target.previewKind === 'binary' || target.previewKind === 'html'
 
   const blockedByTarget = !isImage && !forcePreview && (target.binary || target.large)
@@ -908,13 +960,18 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
   }
 
   if (isText && state.text !== undefined) {
-    const isMarkdown = (state.language || target.language) === 'markdown'
+    const isMarkdown = language === 'markdown'
+    const isHtml = target.previewKind === 'html'
     const hasDiff = Boolean(state.diff && state.diff.trim())
     // Order the toggle reads left→right; default lands on the most useful view.
     const modes: PreviewViewMode[] = []
 
-    if (isMarkdown) {
+    if (isMarkdown || isHtml) {
       modes.push('rendered')
+    }
+
+    if (structured) {
+      modes.push(structured.kind)
     }
 
     modes.push('source')
@@ -923,7 +980,21 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
       modes.push('diff')
     }
 
-    const autoMode: PreviewViewMode = hasDiff ? 'diff' : isMarkdown ? 'rendered' : 'source'
+    // HTML's rendered view isn't ours to draw — picking it flips the target's
+    // renderMode so the rail swaps this pane for the webview.
+    const selectMode = (next: PreviewViewMode) => {
+      if (isHtml && next === 'rendered') {
+        setPreviewRenderMode(target, 'preview')
+
+        return
+      }
+
+      setUserMode(next)
+    }
+
+    // A diff means the user is looking at a change, which outranks the
+    // structured views; otherwise the richest available view wins.
+    const autoMode: PreviewViewMode = hasDiff ? 'diff' : isMarkdown ? 'rendered' : (structured?.kind ?? 'source')
     const mode = userMode && modes.includes(userMode) ? userMode : autoMode
 
     return (
@@ -945,7 +1016,7 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
         <PreviewModeSwitcher
           active={mode}
           modes={modes}
-          onSelect={setUserMode}
+          onSelect={selectMode}
           trailing={
             canEdit ? (
               <Tip label={`${t.preview.edit} (e)`}>
@@ -964,6 +1035,10 @@ export function LocalFilePreview({ reloadKey, target }: { reloadKey: number; tar
         <div className="min-h-0 flex-1 overflow-auto">
           {mode === 'rendered' ? (
             <MarkdownPreview text={state.text} />
+          ) : mode === 'tree' && structured?.kind === 'tree' ? (
+            <JsonTreeView value={structured.value} />
+          ) : mode === 'table' && structured?.kind === 'table' ? (
+            <CsvTableView rows={structured.rows} />
           ) : mode === 'diff' ? (
             <FileDiffPanel
               className="mx-0 mb-0 h-full max-h-none"

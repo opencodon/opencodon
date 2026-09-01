@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./artifacts": "./src/artifacts.ts",
     "./billing": "./src/billing-types.ts",
     "./skin": "./src/skin.ts"
   },

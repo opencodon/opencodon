@@ -1971,6 +1971,10 @@ export interface Translations {
     source: string
     renderedPreview: string
     diff: string
+    tree: string
+    table: string
+    expandAll: string
+    collapseAll: string
     unknownSize: string
     binaryTitle: string
     binaryBody: (label: string) => string

@@ -1,3 +1,5 @@
+import { isAutoSurfacedArtifact } from '@opencodon/shared'
+
 import type { ToolPart } from './types'
 
 export function looksLikeUrl(value: string): boolean {
@@ -8,13 +10,27 @@ export function looksLikePath(value: string): boolean {
   return /^file:\/\//i.test(value) || /^(?:\/|\.{1,2}\/|~\/).+/.test(value)
 }
 
+/**
+ * Should this target be surfaced unprompted as "the turn produced this"?
+ *
+ * Local dev URLs always qualify. Files qualify by artifact class — documents,
+ * data files, images, HTML — but never source code: during ordinary editing
+ * every touched `.ts` would otherwise become a chip. Source files remain
+ * openable from the file browser, which routes through the same preview pane.
+ *
+ * Relative paths are allowed because file-edit tools name their target that
+ * way; the status row resolves them against the cwd captured at detection.
+ */
 export function isPreviewableTarget(target: string): boolean {
-  return Boolean(
-    target &&
-    (/^file:\/\//i.test(target) ||
-      /^(?:\/|\.{1,2}\/|~\/).+\.html?$/i.test(target) ||
-      /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(target))
-  )
+  if (!target) {
+    return false
+  }
+
+  if (looksLikeUrl(target)) {
+    return /^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(target)
+  }
+
+  return isAutoSurfacedArtifact(target)
 }
 
 export function stableHash(value: string): string {

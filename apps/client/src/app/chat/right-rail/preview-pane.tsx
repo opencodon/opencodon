@@ -10,7 +10,12 @@ import { Bug } from '@/lib/icons'
 import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
-import { $previewServerRestart, failPreviewServerRestart, type PreviewTarget } from '@/store/preview'
+import {
+  $previewServerRestart,
+  failPreviewServerRestart,
+  type PreviewTarget,
+  setPreviewRenderMode
+} from '@/store/preview'
 
 import {
   clampConsoleHeight,
@@ -21,7 +26,7 @@ import {
   PreviewConsoleTitlebarIcon
 } from './preview-console'
 import { type ConsoleEntry, createPreviewConsoleState } from './preview-console-state'
-import { LocalFilePreview, PreviewEmptyState } from './preview-file'
+import { LocalFilePreview, PreviewEmptyState, PreviewModeSwitcher } from './preview-file'
 
 type PreviewWebview = HTMLElement & {
   closeDevTools?: () => void
@@ -146,7 +151,11 @@ export function PreviewPane({
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<PreviewLoadErrorState | null>(null)
   const [localReloadKey, setLocalReloadKey] = useState(0)
-  const isWebPreview = target.kind === 'url' || (target.previewKind === 'html' && target.renderMode !== 'source')
+  const isHtmlFile = target.kind === 'file' && target.previewKind === 'html'
+  const isWebPreview = target.kind === 'url' || (isHtmlFile && target.renderMode !== 'source')
+  // A local HTML file has two equally valid readings, so the rendered side gets
+  // the same switcher the source side has — one tab, two renderers.
+  const showRenderModeSwitcher = isHtmlFile && isWebPreview
   const currentLabel = compactUrl(currentUrl)
 
   const previewLabel =
@@ -625,6 +634,16 @@ export function PreviewPane({
                 </a>
               </Tip>
             </div>
+          </div>
+        )}
+
+        {showRenderModeSwitcher && (
+          <div className="pointer-events-auto">
+            <PreviewModeSwitcher
+              active="rendered"
+              modes={['rendered', 'source']}
+              onSelect={mode => setPreviewRenderMode(target, mode === 'source' ? 'source' : 'preview')}
+            />
           </div>
         )}
 

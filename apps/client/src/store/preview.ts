@@ -40,7 +40,7 @@ export interface PreviewServerRestart {
   url: string
 }
 
-export type PreviewRecordSource = 'explicit-link' | 'file-browser' | 'manual' | 'tool-result'
+export type PreviewRecordSource = 'explicit-link' | 'file-browser' | 'manual' | 'tool-result' | 'tool-row'
 
 export interface SessionPreviewRecord {
   autoOpen?: boolean
@@ -151,6 +151,45 @@ export function filePreviewTabId(target: PreviewTarget): `file:${string}` {
   return `file:${target.url}`
 }
 
+/**
+ * Flip an HTML target between its rendered (webview) and source views.
+ *
+ * The rail tab id is derived from the url alone, so the switch happens in place
+ * — the same tab swaps renderers rather than opening a second one. The session
+ * registry row is updated too, otherwise re-entering the session would restore
+ * the mode the user just switched away from.
+ */
+export function setPreviewRenderMode(target: PreviewTarget, renderMode: 'preview' | 'source') {
+  if (target.renderMode === renderMode) {
+    return
+  }
+
+  const next: PreviewTarget = { ...target, renderMode }
+  const id = filePreviewTabId(target)
+  const tabs = $filePreviewTabs.get()
+
+  if (tabs.some(tab => tab.id === id)) {
+    $filePreviewTabs.set(tabs.map(tab => (tab.id === id ? { ...tab, target: next } : tab)))
+  }
+
+  if ($previewTarget.get()?.url === target.url) {
+    $previewTarget.set(next)
+  }
+
+  const registry = $sessionPreviewRegistry.get()
+  const sessionId = currentPreviewSessionId()
+  const records = registry[sessionId]
+
+  if (records?.some(record => record.normalized.url === target.url)) {
+    $sessionPreviewRegistry.set({
+      ...registry,
+      [sessionId]: records.map(record =>
+        record.normalized.url === target.url ? { ...record, normalized: next } : record
+      )
+    })
+  }
+}
+
 function openFilePreviewTarget(target: PreviewTarget) {
   const id = filePreviewTabId(target)
   const current = $filePreviewTabs.get()
@@ -162,10 +201,11 @@ function openFilePreviewTarget(target: PreviewTarget) {
   selectRightRailTab(id)
 }
 
-// Manual/file-browser opens are "peeking at a file" → source view in the file
-// pane. Tool/explicit-link opens are runnable artifacts → live preview pane.
+// Manual/file-browser/tool-row opens are "peeking at a file" → source view in
+// the file pane. Tool-result/explicit-link opens are runnable artifacts → live
+// preview pane.
 function isFilePreviewSource(source: PreviewRecordSource): boolean {
-  return source === 'file-browser' || source === 'manual'
+  return source === 'file-browser' || source === 'manual' || source === 'tool-row'
 }
 
 function previewTargetForSource(target: PreviewTarget, source: PreviewRecordSource): PreviewTarget {
@@ -223,7 +263,7 @@ function isPreviewRecord(value: unknown): value is SessionPreviewRecord {
     typeof r.id === 'string' &&
     isPreviewTarget(r.normalized) &&
     typeof r.sessionId === 'string' &&
-    ['explicit-link', 'file-browser', 'manual', 'tool-result'].includes(String(r.source)) &&
+    ['explicit-link', 'file-browser', 'manual', 'tool-result', 'tool-row'].includes(String(r.source)) &&
     typeof r.target === 'string' &&
     (r.dismissedAt === undefined || typeof r.dismissedAt === 'number')
   )
