@@ -8,6 +8,7 @@ import { type ComponentProps, type FC, type ReactNode, useEffect, useRef, useSta
 
 import { ClarifyTool } from '@/components/assistant-ui/clarify-tool'
 import { MarkdownText, MarkdownTextContent } from '@/components/assistant-ui/markdown-text'
+import { ActivityProvider, ActivitySection } from '@/components/assistant-ui/thread/activity-group'
 import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
 import { useElapsedSeconds } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
@@ -183,9 +184,11 @@ const ReasoningAccordionGroup: FC<{ children?: ReactNode; endIndex: number; star
   }
 
   return (
-    <ThinkingDisclosure messageRunning={messageRunning} pending={pending} timerKey={`reasoning:${messageId}`}>
-      {children}
-    </ThinkingDisclosure>
+    <ActivitySection startIndex={startIndex}>
+      <ThinkingDisclosure messageRunning={messageRunning} pending={pending} timerKey={`reasoning:${messageId}`}>
+        {children}
+      </ThinkingDisclosure>
+    </ActivitySection>
   )
 }
 
@@ -206,6 +209,20 @@ const ReasoningTextPart: ReasoningMessagePartComponent = () => {
   )
 }
 
+// Tool runs collapse under the same shared header as reasoning runs, so a
+// turn that interleaves the two still reads as one line.
+const ActivityToolGroup: FC<{ children?: ReactNode; endIndex: number; startIndex: number }> = ({
+  children,
+  endIndex,
+  startIndex
+}) => (
+  <ActivitySection startIndex={startIndex}>
+    <ToolGroupSlot endIndex={endIndex} startIndex={startIndex}>
+      {children}
+    </ToolGroupSlot>
+  </ActivitySection>
+)
+
 // Module-level constant so the `components` prop on `MessagePrimitive.Parts`
 // has a stable identity across renders. Without this every AssistantMessage
 // render would create a fresh `components` object, invalidating the memo on
@@ -217,6 +234,8 @@ export const MESSAGE_PARTS_COMPONENTS = {
   Reasoning: ReasoningTextPart,
   ReasoningGroup: ReasoningAccordionGroup,
   Text: MarkdownText,
-  ToolGroup: ToolGroupSlot,
+  ToolGroup: ActivityToolGroup,
   tools: { Fallback: ChainToolFallback }
 } as const
+
+export { ActivityProvider }

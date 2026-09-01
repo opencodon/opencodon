@@ -343,6 +343,16 @@ function TodoHarness({ message }: { message: ThreadMessage }) {
   )
 }
 
+// A completed turn now collapses its whole activity run (reasoning + tools)
+// behind one header, so anything below it has to be expanded first.
+function expandActivity(container: HTMLElement) {
+  const header = container.querySelector('[data-slot="aui_activity-header"] button')
+
+  if (header) {
+    fireEvent.click(header)
+  }
+}
+
 function MessageHarness({ message }: { message: ThreadMessage }) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [message],
@@ -606,6 +616,7 @@ describe('assistant-ui streaming renderer', () => {
     const { container } = render(<ReasoningHarness />)
     const ui = within(container)
 
+    expandActivity(container)
     fireEvent.click(ui.getByRole('button', { name: /thinking/i }))
 
     expect(container.querySelector('[data-slot="aui_reasoning-text"]')?.textContent).toBe(
@@ -615,6 +626,8 @@ describe('assistant-ui streaming renderer', () => {
 
   it('groups consecutive reasoning parts under one thinking disclosure', () => {
     const { container } = render(<GroupedReasoningHarness />)
+
+    expandActivity(container)
 
     const disclosures = container.querySelectorAll('[data-slot="aui_thinking-disclosure"]')
     expect(disclosures.length).toBe(1)
@@ -655,6 +668,8 @@ describe('assistant-ui streaming renderer', () => {
   it('renders completed image generation results in the tool slot', async () => {
     const { container } = render(<MessageHarness message={assistantImageMessage()} />)
 
+    expandActivity(container)
+
     await waitFor(() => {
       expect(screen.getByRole('img', { name: 'Generated image' }).getAttribute('src')).toBe(
         'https://cdn.example/cat.png'
@@ -671,6 +686,7 @@ describe('assistant-ui streaming renderer', () => {
       />
     )
 
+    expandActivity(container)
     fireEvent.click(container.querySelector('[data-tool-row] button')!)
 
     await waitFor(() => {
@@ -683,6 +699,7 @@ describe('assistant-ui streaming renderer', () => {
   it('shows the command prompt and exit code for terminal calls', async () => {
     const { container } = render(<MessageHarness message={assistantTerminalMessage()} />)
 
+    expandActivity(container)
     fireEvent.click(container.querySelector('[data-tool-row] button')!)
 
     await waitFor(() => {

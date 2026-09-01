@@ -183,6 +183,16 @@ function failedOnlyMessage(): ThreadMessage {
   } as ThreadMessage
 }
 
+// A completed turn collapses its activity run behind one header, so the tool
+// rows below it have to be expanded before they exist in the DOM.
+function expandActivity(container: HTMLElement) {
+  const header = container.querySelector('[data-slot="aui_activity-header"] button')
+
+  if (header) {
+    fireEvent.click(header)
+  }
+}
+
 function GroupHarness({ message }: { message: ThreadMessage }) {
   const runtime = useExternalStoreRuntime<ThreadMessage>({
     messages: [message],
@@ -240,6 +250,8 @@ describe('flat tool list approval surfacing', () => {
   it('lets completed tool rows be dismissed', async () => {
     const { container } = render(<GroupHarness message={completedOnlyMessage()} />)
 
+    expandActivity(container)
+
     const dismiss = await screen.findByLabelText('Dismiss')
 
     expect(container.querySelectorAll('[data-slot="tool-block"]').length).toBeGreaterThan(1)
@@ -258,6 +270,8 @@ describe('flat tool list approval surfacing', () => {
     // and rendering the same message fresh.
     const first = render(<GroupHarness message={completedOnlyMessage()} />)
 
+    expandActivity(first.container)
+
     fireEvent.click(await screen.findByLabelText('Dismiss'))
 
     await waitFor(() => {
@@ -268,6 +282,8 @@ describe('flat tool list approval surfacing', () => {
 
     const { container } = render(<GroupHarness message={completedOnlyMessage()} />)
 
+    expandActivity(container)
+
     await waitFor(() => {
       expect(container.querySelectorAll('[data-slot="tool-block"]').length).toBeGreaterThan(0)
     })
@@ -276,7 +292,9 @@ describe('flat tool list approval surfacing', () => {
   })
 
   it('lets failed tool rows be dismissed', async () => {
-    render(<GroupHarness message={failedOnlyMessage()} />)
+    const { container } = render(<GroupHarness message={failedOnlyMessage()} />)
+
+    expandActivity(container)
 
     const dismiss = await screen.findByLabelText('Dismiss')
 
@@ -288,6 +306,8 @@ describe('flat tool list approval surfacing', () => {
   })
 
   it('does not show dismiss for pending tool rows', async () => {
+    // No expandActivity here: a running turn auto-opens its activity, so
+    // clicking the header would collapse it.
     const { container } = render(<GroupHarness message={pendingOnlyMessage()} />)
 
     await waitFor(() => {
