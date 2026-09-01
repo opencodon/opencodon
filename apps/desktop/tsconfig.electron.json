@@ -13,8 +13,9 @@
     "ignoreDeprecations": "6.0",
     "composite": true,
     "declaration": true,
-    "outDir": "build/electron-types"
+    "outDir": "build/electron-types",
+    "rootDir": ".."
   },
-  "include": ["electron"],
+  "include": ["electron", "../shared/src/artifacts.ts"],
   "exclude": ["src"]
 }

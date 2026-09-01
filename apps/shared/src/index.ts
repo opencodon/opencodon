@@ -1,3 +1,14 @@
+export {
+  type ArtifactClass,
+  artifactClass,
+  fileExtension,
+  HTML_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  isAutoSurfacedArtifact,
+  isPreviewableClass,
+  LANGUAGE_BY_EXTENSION,
+  languageForPath
+} from './artifacts'
 export type { BillingBlock } from './billing-types'
 export {
   type ConnectionState,

@@ -35,6 +35,10 @@ export interface ToolView {
   icon?: string
   imageUrl?: string
   inlineDiff: string
+  /** The file this row acted on, for the row's "open in preview" control.
+   *  Separate from `previewTarget`: that one answers "did this turn produce an
+   *  artifact worth surfacing", so it excludes reads and source files. */
+  openPath?: string
   previewTarget?: string
   /** Set for tools whose output naturally contains ANSI escape codes
    *  (terminal/execute_code) so the renderer knows to run them through

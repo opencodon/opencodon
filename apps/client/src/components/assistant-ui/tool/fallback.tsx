@@ -2,6 +2,7 @@
 
 import { type ToolCallMessagePartProps, useAuiState } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
+import { isPreviewableClass } from '@opencodon/shared'
 import {
   Children,
   createContext,
@@ -34,9 +35,12 @@ import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } from '@/lib/external-link'
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
+import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { normalize } from '@/lib/text'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
+import { notifyError } from '@/store/notifications'
+import { setCurrentSessionPreviewTarget } from '@/store/preview'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { $activeSessionId, $currentCwd } from '@/store/session'
 import { $toolInlineDiff } from '@/store/tool-diffs'
@@ -52,6 +56,7 @@ import {
   inlineDiffFromResult,
   isFileEditTool,
   isPreviewableTarget,
+  looksLikeUrl,
   looksRedundant,
   type SearchResultRow,
   selectMessageRunning,
@@ -231,6 +236,20 @@ function SearchResultsList({ hits }: { hits: SearchResultRow[] }) {
 
 function LinkifiedText({ className, text }: { className?: string; text: string }) {
   return <SharedLinkifiedText className={className} pretty text={cleanVisibleText(text)} />
+}
+
+/**
+ * Files a row can hand to the preview pane. Broader than the artifact gate in
+ * `isPreviewableTarget` — that decides what gets *surfaced unprompted*, so it
+ * excludes source code; this is an explicit click, and opening the `.ts` you
+ * just edited (or read) is exactly what the user asked for.
+ */
+function openableFileTarget(target: string | undefined): string {
+  if (!target || looksLikeUrl(target) || !isPreviewableClass(target)) {
+    return ''
+  }
+
+  return target
 }
 
 function ToolTitle({
@@ -420,10 +439,51 @@ function ToolEntry({ part }: ToolEntryProps) {
   const trailing =
     isPending && !embedded ? <ActivityTimerText className={TOOL_HEADER_DURATION_CLASS} seconds={elapsed} /> : undefined
 
+  // An explicit "open this file" affordance for the path the row acted on.
+  // Source files are never auto-surfaced as artifacts (see isPreviewableTarget),
+  // so without this the only way into the pane is the file browser.
+  const openTarget = isPending ? '' : openableFileTarget(view.openPath)
+
+  const openPreviewAction = openTarget ? (
+    <Tip label={t.preview.openPreview}>
+      <Button
+        aria-label={t.preview.openPreview}
+        className={cn(
+          'size-5 rounded-md text-(--ui-text-tertiary) transition-opacity hover:text-(--ui-text-primary) hover:opacity-100',
+          open
+            ? 'opacity-80'
+            : 'opacity-0 group-hover/disclosure-row:opacity-80 group-focus-within/disclosure-row:opacity-80'
+        )}
+        onClick={event => {
+          event.stopPropagation()
+
+          void (async () => {
+            try {
+              const resolved = await normalizeOrLocalPreviewTarget(openTarget, $currentCwd.get() || undefined)
+
+              if (!resolved) {
+                throw new Error(openTarget)
+              }
+
+              setCurrentSessionPreviewTarget(resolved, 'tool-row', openTarget)
+            } catch (error) {
+              notifyError(error, t.preview.unavailable)
+            }
+          })()
+        }}
+        size="icon-xs"
+        type="button"
+        variant="ghost"
+      >
+        <Codicon name="go-to-file" size="0.75rem" />
+      </Button>
+    </Tip>
+  ) : undefined
+
   // Once a turn has settled, a hover/focus-revealed dismiss lets the user clear
   // a completed/failed row that would otherwise sit at the tail of the chat.
-  // It goes in the in-flow `action` slot (not `trailing`) so it can't overlap
-  // the disclosure caret's hit-target — see the comment above `trailing`.
+  // Like the open control it goes in the in-flow `action` slot (not `trailing`)
+  // so it can't overlap the disclosure caret's hit-target.
   const dismissAction = canDismiss ? (
     <Tip label={statusCopy.dismiss}>
       <Button
@@ -474,7 +534,14 @@ function ToolEntry({ part }: ToolEntryProps) {
     >
       <div className={cn(open && 'border-b border-(--ui-stroke-tertiary) px-2 py-1.5')}>
         <DisclosureRow
-          action={dismissAction}
+          action={
+            openPreviewAction || dismissAction ? (
+              <>
+                {openPreviewAction}
+                {dismissAction}
+              </>
+            ) : undefined
+          }
           onToggle={hasExpandableContent ? () => setToolDisclosureOpen(disclosureId, !open) : undefined}
           open={open}
           trailing={trailing}

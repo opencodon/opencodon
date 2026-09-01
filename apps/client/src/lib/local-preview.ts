@@ -1,53 +1,10 @@
+import { artifactClass, languageForPath } from '@opencodon/shared'
+
 import { isDesktopFsRemoteMode, readDesktopFileText } from '@/lib/desktop-fs'
 import type { PreviewTarget } from '@/store/preview'
 
-const HTML_EXTENSIONS = new Set(['.htm', '.html'])
-const IMAGE_EXTENSIONS = new Set(['.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
-
-const LANGUAGE_BY_EXT: Record<string, string> = {
-  '.c': 'c',
-  '.conf': 'ini',
-  '.cpp': 'cpp',
-  '.css': 'css',
-  '.csv': 'csv',
-  '.go': 'go',
-  '.graphql': 'graphql',
-  '.h': 'c',
-  '.hpp': 'cpp',
-  '.html': 'html',
-  '.java': 'java',
-  '.js': 'javascript',
-  '.json': 'json',
-  '.jsx': 'jsx',
-  '.log': 'text',
-  '.lua': 'lua',
-  '.md': 'markdown',
-  '.mjs': 'javascript',
-  '.py': 'python',
-  '.rb': 'ruby',
-  '.rs': 'rust',
-  '.sh': 'shell',
-  '.sql': 'sql',
-  '.svg': 'xml',
-  '.toml': 'toml',
-  '.ts': 'typescript',
-  '.tsx': 'tsx',
-  '.txt': 'text',
-  '.xml': 'xml',
-  '.yaml': 'yaml',
-  '.yml': 'yaml',
-  '.zsh': 'shell'
-}
-
 function basename(value: string) {
   return value.split(/[\\/]/).filter(Boolean).pop() || value
-}
-
-function extension(value: string) {
-  const clean = value.split(/[?#]/, 1)[0] || value
-  const idx = clean.lastIndexOf('.')
-
-  return idx >= 0 ? clean.slice(idx).toLowerCase() : ''
 }
 
 function joinPath(base: string, rel: string) {
@@ -90,14 +47,14 @@ export function localPreviewTarget(rawTarget: string, cwd?: string | null): Prev
     path = joinPath(cwd, raw)
   }
 
-  const ext = extension(path)
-  const isHtml = HTML_EXTENSIONS.has(ext)
-  const isImage = IMAGE_EXTENSIONS.has(ext)
+  const cls = artifactClass(path)
+  const isHtml = cls === 'web'
+  const isImage = cls === 'image'
 
   return {
     kind: 'file',
     label: basename(path),
-    language: LANGUAGE_BY_EXT[ext] || 'text',
+    language: languageForPath(path),
     path,
     // Renderer fallback can't stat/sniff without reading; assume text unless
     // image/html extension says otherwise. LocalFilePreview still guards

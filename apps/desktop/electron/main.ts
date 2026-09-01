@@ -8,6 +8,7 @@ import path from 'node:path'
 import tls from 'node:tls'
 import { pathToFileURL } from 'node:url'
 
+import { artifactClass, languageForPath } from '@opencodon/shared/artifacts'
 import {
   app,
   BrowserWindow,
@@ -792,45 +793,10 @@ const MEDIA_MIME_TYPES = {
   '.webp': 'image/webp'
 }
 
-const PREVIEW_HTML_EXTENSIONS = new Set(['.html', '.htm'])
 const PREVIEW_WATCH_DEBOUNCE_MS = 120
 const LOCAL_PREVIEW_HOSTS = new Set(['0.0.0.0', '127.0.0.1', '::1', '[::1]', 'localhost'])
 const TEXT_PREVIEW_MAX_BYTES = 512 * 1024
 
-const PREVIEW_LANGUAGE_BY_EXT = {
-  '.c': 'c',
-  '.conf': 'ini',
-  '.cpp': 'cpp',
-  '.css': 'css',
-  '.csv': 'csv',
-  '.go': 'go',
-  '.graphql': 'graphql',
-  '.h': 'c',
-  '.hpp': 'cpp',
-  '.html': 'html',
-  '.java': 'java',
-  '.js': 'javascript',
-  '.json': 'json',
-  '.jsx': 'jsx',
-  '.kt': 'kotlin',
-  '.lua': 'lua',
-  '.md': 'markdown',
-  '.mjs': 'javascript',
-  '.py': 'python',
-  '.rb': 'ruby',
-  '.rs': 'rust',
-  '.sh': 'shell',
-  '.sql': 'sql',
-  '.svg': 'xml',
-  '.toml': 'toml',
-  '.ts': 'typescript',
-  '.tsx': 'tsx',
-  '.txt': 'text',
-  '.xml': 'xml',
-  '.yaml': 'yaml',
-  '.yml': 'yaml',
-  '.zsh': 'shell'
-}
 
 function looksBinary(buffer) {
   if (!buffer.length) {
@@ -4482,8 +4448,6 @@ async function previewFileTarget(rawTarget, baseDir) {
     resolved = path.join(resolved, 'index.html')
   }
 
-  const ext = path.extname(resolved).toLowerCase()
-
   if (!fileExists(resolved)) {
     return null
   }
@@ -4492,7 +4456,7 @@ async function previewFileTarget(rawTarget, baseDir) {
 
   const mimeType = mimeTypeForPath(resolved)
   const metadata = previewFileMetadata(resolved, mimeType)
-  const isHtml = PREVIEW_HTML_EXTENSIONS.has(ext)
+  const isHtml = artifactClass(resolved) === 'web'
   const isImage = mimeType.startsWith('image/')
   const previewKind = isHtml ? 'html' : isImage ? 'image' : metadata.binary ? 'binary' : 'text'
 
@@ -4502,7 +4466,7 @@ async function previewFileTarget(rawTarget, baseDir) {
     kind: 'file',
     large: metadata.large,
     label: path.basename(resolved),
-    language: PREVIEW_LANGUAGE_BY_EXT[ext] || 'text',
+    language: languageForPath(resolved),
     mimeType,
     path: resolved,
     previewKind,
@@ -9199,7 +9163,6 @@ ipcMain.handle('opencodon:readFileText', async (_event, filePath) => {
     purpose: 'Text preview'
   })
 
-  const ext = path.extname(resolvedPath).toLowerCase()
   const handle = await fs.promises.open(resolvedPath, 'r')
   const bytesToRead = Math.min(stat.size, TEXT_PREVIEW_MAX_BYTES)
 
@@ -9210,7 +9173,7 @@ ipcMain.handle('opencodon:readFileText', async (_event, filePath) => {
     return {
       binary: looksBinary(buffer.subarray(0, Math.min(bytesRead, 4096))),
       byteSize: stat.size,
-      language: PREVIEW_LANGUAGE_BY_EXT[ext] || 'text',
+      language: languageForPath(resolvedPath),
       mimeType: mimeTypeForPath(resolvedPath),
       path: resolvedPath,
       text: buffer.subarray(0, bytesRead).toString('utf8'),
