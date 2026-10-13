@@ -62,7 +62,7 @@
     "@opencodon/client": "file:../client",
     "@opencodon/shared": "file:../shared",
     "node-pty": "1.1.0",
-    "simple-git": "^3.36.0"
+    "simple-git": "^4.0.2"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.6",
