@@ -76,7 +76,7 @@
     "remark-math": "^6.0.0",
     "remend": "^1.3.0",
     "shiki": "^4.0.2",
-    "smol-toml": "^1.8.0",
+    "smol-toml": "^1.9.1",
     "streamdown": "^2.5.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",
